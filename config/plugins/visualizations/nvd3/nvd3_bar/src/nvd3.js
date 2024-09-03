@@ -1,8 +1,9 @@
 /** This is the common wrapper for nvd3 based visualizations. */
 import * as d3 from "d3";
-import * as nv from "nvd3";
 import * as Backbone from "backbone";
 import * as _ from "underscore";
+
+import "nvd3";
 
 // TODO Disentangle jquery in the future
 /* global $ */

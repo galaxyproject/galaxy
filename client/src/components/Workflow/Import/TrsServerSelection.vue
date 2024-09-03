@@ -1,12 +1,22 @@
 <script setup lang="ts">
-import { Services } from "../services";
-import { computed, ref, watch, type Ref } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BLink } from "bootstrap-vue";
+import { computed, type Ref, ref, watch } from "vue";
+
+import { Services } from "@/components/Workflow/services";
+
 import type { TrsSelection } from "./types";
 
-const props = defineProps<{
+library.add(faCaretDown);
+
+interface Props {
     queryTrsServer?: string;
     trsSelection?: TrsSelection | null;
-}>();
+}
+
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "onError", errorMessage: string): void;
@@ -16,7 +26,7 @@ const emit = defineEmits<{
 const loading = ref(true);
 const selection: Ref<TrsSelection | null> = ref(null);
 const trsServers: Ref<TrsSelection[]> = ref([]);
-const trsSelection: Ref<TrsSelection | null> = ref(null);
+const trsSelectionLookup: Ref<TrsSelection | null> = ref(null);
 
 const showDropdown = computed(() => {
     return trsServers.value.length > 1;
@@ -37,34 +47,34 @@ async function configureTrsServers() {
     if (queryTrsServer) {
         for (const server of servers) {
             if (server.id == queryTrsServer) {
-                trsSelection.value = server;
+                trsSelectionLookup.value = server;
                 break;
             }
 
             if (possibleServeUrlsMatch(server.api_url, queryTrsServer)) {
-                trsSelection.value = server;
+                trsSelectionLookup.value = server;
                 break;
             }
 
             if (possibleServeUrlsMatch(server.link_url, queryTrsServer)) {
-                trsSelection.value = server;
+                trsSelectionLookup.value = server;
                 break;
             }
         }
     }
 
-    if (trsSelection.value === null) {
+    if (trsSelectionLookup.value === null) {
         if (queryTrsServer) {
             emit("onError", "Failed to find requested TRS server " + queryTrsServer);
         }
 
-        trsSelection.value = servers[0];
+        trsSelectionLookup.value = servers[0];
     }
 
-    selection.value = trsSelection.value;
+    selection.value = trsSelectionLookup.value;
     loading.value = false;
 
-    onTrsSelection(trsSelection.value as TrsSelection);
+    onTrsSelection(trsSelectionLookup.value as TrsSelection);
 }
 
 configureTrsServers();
@@ -87,15 +97,16 @@ function possibleServeUrlsMatch(a: string, b: string) {
 <template>
     <span v-if="!loading" class="m-1 text-muted">
         <span v-if="showDropdown" class="dropdown">
-            <b-link
+            <BLink
                 id="dropdownTrsServer"
                 data-toggle="dropdown"
                 aria-haspopup="true"
                 aria-expanded="false"
                 class="font-weight-bold">
                 {{ selection?.label }}
-                <span class="fa fa-caret-down" />
-            </b-link>
+                <FontAwesomeIcon :icon="faCaretDown" />
+            </BLink>
+
             <div class="dropdown-menu" aria-labelledby="dropdownTrsServer">
                 <a
                     v-for="serverSelection in trsServers"
@@ -103,15 +114,15 @@ function possibleServeUrlsMatch(a: string, b: string) {
                     class="dropdown-item"
                     href="javascript:void(0)"
                     role="button"
-                    @click.prevent="onTrsSelection(serverSelection)"
-                    >{{ serverSelection.label }}</a
-                >
+                    @click.prevent="onTrsSelection(serverSelection)">
+                    {{ serverSelection.label }}
+                </a>
             </div>
         </span>
         <span v-else>
-            <b-link :href="selection?.link_url" target="_blank" class="font-weight-bold" :title="selection?.doc">
+            <BLink :href="selection?.link_url" target="_blank" class="font-weight-bold" :title="selection?.doc">
                 {{ selection?.label }}
-            </b-link>
+            </BLink>
         </span>
     </span>
 </template>

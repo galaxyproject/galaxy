@@ -1,21 +1,25 @@
 """The module defines the abstract interface for dealing tool dependency resolution plugins."""
+
 import errno
 import os.path
 from abc import (
     ABCMeta,
     abstractmethod,
-    abstractproperty,
 )
 from typing import (
     Any,
     Dict,
+    List,
 )
 
 import yaml
 
 from galaxy.util import listify
 from galaxy.util.dictifiable import Dictifiable
-from ..requirements import ToolRequirement
+from ..requirements import (
+    ToolRequirement,
+    ToolRequirements,
+)
 
 
 class DependencyResolver(Dictifiable, metaclass=ABCMeta):
@@ -28,7 +32,7 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
         "can_uninstall_dependencies",
         "read_only",
     ]
-    # A "simple" dependency is one that does not depend on the the tool
+    # A "simple" dependency is one that does not depend on the tool
     # resolving the dependency. Classic tool shed dependencies are non-simple
     # because the repository install context is used in dependency resolution
     # so the same requirement tags in different tools will have very different
@@ -39,7 +43,7 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
     read_only = True
 
     @abstractmethod
-    def resolve(self, requirement, **kwds):
+    def resolve(self, requirement: ToolRequirement, **kwds) -> "Dependency":
         """Given inputs describing dependency in the abstract yield a Dependency object.
 
         The Dependency object describes various attributes (script, bin,
@@ -72,7 +76,7 @@ class MultipleDependencyResolver:
     """Variant of DependencyResolver that can optionally resolve multiple dependencies together."""
 
     @abstractmethod
-    def resolve_all(self, requirements, **kwds):
+    def resolve_all(self, requirements: ToolRequirements, **kwds) -> List["Dependency"]:
         """
         Given multiple requirements yields a list of Dependency objects if and only if they may all be resolved together.
 
@@ -232,7 +236,8 @@ class SpecificationAwareDependencyResolver(metaclass=ABCMeta):
 class SpecificationPatternDependencyResolver(SpecificationAwareDependencyResolver):
     """Implement the :class:`SpecificationAwareDependencyResolver` with a regex pattern."""
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def _specification_pattern(self):
         """Pattern of URI to match against."""
 
@@ -270,7 +275,8 @@ class Dependency(Dictifiable, metaclass=ABCMeta):
         Return shell commands to enable this dependency.
         """
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def exact(self):
         """Return true if version information wasn't discarded to resolve
         the dependency.

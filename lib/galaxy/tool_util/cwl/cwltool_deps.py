@@ -4,12 +4,13 @@ Use this as the import interface for cwltool and just call
 :func:`ensure_cwltool_available` before using any of the imported
 functionality at runtime.
 """
+
 import re
 import warnings
 
 warnings.filterwarnings("ignore", message=r"[\n.]DEPRECATION: Python 2", module="cwltool")
 
-import requests
+from galaxy.util import requests
 
 try:
     from cwltool import (

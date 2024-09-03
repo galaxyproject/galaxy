@@ -10,11 +10,13 @@
             :key="item.id"
             :name="item.name"
             :section="item.panel_section_name"
+            :ontologies="item.ontologies"
             :description="item.description"
             :summary="item.summary"
             :help="item.help"
             :local="item.target === 'galaxy_main'"
             :link="item.link"
+            :owner="item.tool_shed_repository && item.tool_shed_repository.owner"
             :workflow-compatible="item.is_workflow_compatible"
             :version="item.version"
             @open="() => onOpen(item)" />
@@ -26,9 +28,10 @@
 </template>
 
 <script>
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 import Vue from "vue";
 import infiniteScroll from "vue-infinite-scroll";
-import { useGlobalUploadModal } from "composables/globalUploadModal";
+
 import { fetchData } from "./services";
 import ToolsListItem from "./ToolsListItem";
 
@@ -57,7 +60,12 @@ export default {
     },
     computed: {
         buffer() {
-            return this.tools.slice(0, this.bufferLen);
+            return this.tools.slice(0, this.bufferLen).map((tool) => {
+                return {
+                    ...tool,
+                    ontologies: tool.edam_operations.concat(tool.edam_topics),
+                };
+            });
         },
     },
     created() {
@@ -89,7 +97,7 @@ export default {
             }
         },
         async fetchHelp(tool) {
-            await fetchData(`api/tools/${tool.id}/build`).then((response) => {
+            await fetchData(`api/tools/${encodeURIComponent(tool.id)}/build`).then((response) => {
                 const help = response.help;
                 Vue.set(tool, "_showDetails", false); // maybe not needed
                 if (help && help != "\n") {

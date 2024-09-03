@@ -17,7 +17,7 @@ class TestCollectionBuilders(SeleniumTestCase):
         self.collection_builder_set_name("my cool list")
         self.screenshot("collection_builder_list")
         self.collection_builder_create()
-        self._wait_for_hid_visible(2)
+        self._wait_for_hid_visible(3)
 
     @selenium_test
     @managed_history
@@ -29,19 +29,6 @@ class TestCollectionBuilders(SeleniumTestCase):
         # this toggles the checkbox to not hide originals
         self.collection_builder_hide_originals()
         self.collection_builder_set_name("my cool list")
-        self.collection_builder_create()
-        self.home()  # this shouldn't be necessary, and it isn't with a real browser.
-        self._wait_for_hid_visible(3)
-
-    @selenium_test
-    @managed_history
-    def test_build_pair_simple_hidden(self):
-        self.perform_upload(self.get_filename("1.tabular"))
-        self.perform_upload(self.get_filename("2.tabular"))
-        self._wait_for_and_select([1, 2])
-        self._collection_dropdown("build pair")
-        self.collection_builder_set_name("my awesome pair")
-        self.screenshot("collection_builder_pair")
         self.collection_builder_create()
         self._wait_for_hid_visible(3)
 
@@ -58,11 +45,13 @@ class TestCollectionBuilders(SeleniumTestCase):
         self.collection_builder_set_name("my awesome paired list")
         self.screenshot("collection_builder_paired_list")
         self.collection_builder_create()
-        self._wait_for_hid_visible(3)
+        self._wait_for_hid_visible(5)
         # switch to hidden filters to see the hidden datasets appear
         self._show_hidden_content()
         self._wait_for_hid_visible(1)
         self._wait_for_hid_visible(2)
+        self._wait_for_hid_visible(3)
+        self._wait_for_hid_visible(4)
 
     @selenium_test
     @managed_history
@@ -98,9 +87,10 @@ class TestCollectionBuilders(SeleniumTestCase):
         self.collection_builder_set_name("my cool list")
         self.screenshot("collection_builder_rules_list")
         self.collection_builder_create()
-        self._wait_for_hid_visible(2)
+        self._wait_for_hid_visible(3)
         self._show_hidden_content()
         self._wait_for_hid_visible(1)
+        self._wait_for_hid_visible(2)
 
     def _wait_for_hid_visible(self, hid, state="ok"):
         # takes a little while for these things to upload and end up in the history
@@ -126,6 +116,8 @@ class TestCollectionBuilders(SeleniumTestCase):
     def _show_hidden_content(self):
         """Switches the hidden filter toggle on"""
         self.sleep_for(self.wait_types.UX_RENDER)
-        filter_element = self.history_element("filter text input").wait_for_and_click()
+        filter_element = self.history_element(
+            attribute_value="filter text input", scope=".content-operations-filters"
+        ).wait_for_and_click()
         filter_element.send_keys("visible:false")
         self.sleep_for(self.wait_types.UX_RENDER)

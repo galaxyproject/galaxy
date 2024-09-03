@@ -1,5 +1,6 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+
 import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan";
 
 const localVue = getLocalVue();
@@ -12,7 +13,7 @@ describe("ObjectStoreRestrictionSpan", () => {
             propsData: { isPrivate: true },
             localVue,
         });
-        expect(wrapper.find(".stored-how").text()).toBe("private");
+        expect(wrapper.find(".stored-how").text()).toMatch("private");
         expect(wrapper.find(".stored-how").attributes("title")).toBeTruthy();
     });
 
@@ -21,7 +22,7 @@ describe("ObjectStoreRestrictionSpan", () => {
             propsData: { isPrivate: false },
             localVue,
         });
-        expect(wrapper.find(".stored-how").text()).toBe("unrestricted");
+        expect(wrapper.find(".stored-how").text()).toMatch("sharable");
         expect(wrapper.find(".stored-how").attributes("title")).toBeTruthy();
     });
 });

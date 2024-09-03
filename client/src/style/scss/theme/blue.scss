@@ -36,7 +36,7 @@ $gray-900: $text-color;
 $gray-800: $text-muted;
 $gray-700: $text-muted;
 $gray-600: $text-muted;
-$gray-500: $text-muted;
+$gray-500: darken($brand-light, 30%);
 $gray-400: $border-color;
 $black: $brand-dark;
 
@@ -110,7 +110,7 @@ $input-color-placeholder: $text-muted;
 $body-bg: $white;
 
 // Masthead
-$masthead-height: 3rem;
+$masthead-height: 2.5rem;
 
 // Side panels
 $panel-bg-color: $brand-light;
@@ -125,6 +125,7 @@ $panel_footer_height: 25px;
 
 // Portlets
 $portlet-bg-color: $gray-200;
+$portlet-focus-color: $brand-info;
 
 // Borders
 $border-radius-base: 0.1875rem;
@@ -154,8 +155,8 @@ $state-running-border: $border-color;
 
 // Workflow editor
 $workflow-editor-bg: $white;
-$workflow-editor-grid-size: 0.7rem;
 $workflow-editor-grid-color: lighten($brand-primary, 65%);
+$workflow-editor-grid-color-landmark: lighten($brand-primary, 60%);
 $workflow-overview-bg: $panel-bg-color;
 $workflow-node-width: 12.5rem;
 

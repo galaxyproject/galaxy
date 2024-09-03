@@ -10,11 +10,12 @@ from galaxy_test.driver import integration_util
 
 class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
+    test_history_id: str
 
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.history_id = self.dataset_populator.new_history()
+        self.test_history_id = self.dataset_populator.new_history()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -28,7 +29,7 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
         self._expect_dataset_purged_on(self._purge_hda_using_bulk)
 
     def _expect_dataset_purged_on(self, purge_operation: Callable):
-        hda = self.dataset_populator.new_dataset(self.history_id, wait=True)
+        hda = self.dataset_populator.new_dataset(self.test_history_id, wait=True)
         hda_id = hda["id"]
 
         # Ensure dataset file exists on disk
@@ -39,7 +40,7 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
         purge_operation(hda_id)
 
         # Ensure dataset is purged
-        self.dataset_populator.wait_for_purge(self.history_id, hda_id)
+        self.dataset_populator.wait_for_purge(self.test_history_id, hda_id)
 
         # Ensure dataset file is removed from disk after purge
         assert not self._file_exists_on_disk(dataset_file)
@@ -67,7 +68,7 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
             ],
         }
         purge_response = self._put(
-            f"histories/{self.history_id}/contents/bulk",
+            f"histories/{self.test_history_id}/contents/bulk",
             data=payload,
             json=True,
         )

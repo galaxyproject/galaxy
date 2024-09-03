@@ -1,10 +1,12 @@
-import { defineStore } from "pinia";
+import { computed, del, ref, set } from "vue";
+
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { pushOrSet } from "@/utils/pushOrSet";
-import Vue from "vue";
+
+import { defineScopedStore } from "./scopedStore";
 
 interface InvalidConnections {
-    [index: string]: string | undefined;
+    [index: ConnectionId]: string | undefined;
 }
 
 export interface State {
@@ -15,19 +17,12 @@ export interface State {
     stepToConnections: { [index: number]: Connection[] };
 }
 
-export class Connection {
+export interface Connection {
     input: InputTerminal;
     output: OutputTerminal;
-
-    constructor(input: InputTerminal, output: OutputTerminal) {
-        this.input = input;
-        this.output = output;
-    }
-
-    get id(): string {
-        return `${this.input.stepId}-${this.input.name}-${this.output.stepId}-${this.output.name}`;
-    }
 }
+
+export type ConnectionId = `${string}-${string}-${string}-${string}`;
 
 export interface BaseTerminal {
     stepId: number;
@@ -48,84 +43,9 @@ interface TerminalToOutputTerminals {
     [index: string]: OutputTerminal[];
 }
 
-export const useConnectionStore = defineStore("workflowConnectionStore", {
-    state: (): State => ({
-        connections: [] as Connection[],
-        invalidConnections: {} as InvalidConnections,
-        inputTerminalToOutputTerminals: {} as TerminalToOutputTerminals,
-        terminalToConnection: {} as { [index: string]: Connection[] },
-        stepToConnections: {} as { [index: number]: Connection[] },
-    }),
-    getters: {
-        getOutputTerminalsForInputTerminal(state: State) {
-            return (terminalId: string): OutputTerminal[] => {
-                return state.inputTerminalToOutputTerminals[terminalId] || [];
-            };
-        },
-        getConnectionsForTerminal(state: State) {
-            return (terminalId: string): Connection[] => {
-                return state.terminalToConnection[terminalId] || [];
-            };
-        },
-        getConnectionsForStep(state: State) {
-            return (stepId: number): Connection[] => state.stepToConnections[stepId] || [];
-        },
-    },
-    actions: {
-        addConnection(this, _connection: Connection) {
-            const connection = Object.freeze(_connection);
-            this.connections.push(connection);
-            const stepStore = useWorkflowStepStore();
-            stepStore.addConnection(connection);
-            this.terminalToConnection = updateTerminalToConnection(this.connections);
-            this.inputTerminalToOutputTerminals = updateTerminalToTerminal(this.connections);
-            this.stepToConnections = updateStepToConnections(this.connections);
-        },
-        markInvalidConnection(this: State, connectionId: string, reason: string) {
-            Vue.set(this.invalidConnections, connectionId, reason);
-        },
-        dropFromInvalidConnections(this: State, connectionId: string) {
-            Vue.delete(this.invalidConnections, connectionId);
-        },
-        removeConnection(this, terminal: InputTerminal | OutputTerminal | Connection["id"]) {
-            const stepStore = useWorkflowStepStore();
-            this.connections = this.connections.filter((connection) => {
-                if (typeof terminal === "string") {
-                    if (connection.id == terminal) {
-                        stepStore.removeConnection(connection);
-                        Vue.delete(this.invalidConnections, connection.id);
-                        return false;
-                    } else {
-                        return true;
-                    }
-                } else if (terminal.connectorType === "input") {
-                    if (connection.input.stepId == terminal.stepId && connection.input.name == terminal.name) {
-                        stepStore.removeConnection(connection);
-                        Vue.delete(this.invalidConnections, connection.id);
-                        return false;
-                    } else {
-                        return true;
-                    }
-                } else {
-                    if (connection.output.stepId == terminal.stepId && connection.output.name == terminal.name) {
-                        stepStore.removeConnection(connection);
-                        Vue.delete(this.invalidConnections, connection.id);
-                        return false;
-                    } else {
-                        return true;
-                    }
-                }
-            });
-            this.terminalToConnection = updateTerminalToConnection(this.connections);
-            this.inputTerminalToOutputTerminals = updateTerminalToTerminal(this.connections);
-            this.stepToConnections = updateStepToConnections(this.connections);
-        },
-    },
-});
-
 function updateTerminalToTerminal(connections: Connection[]) {
     const inputTerminalToOutputTerminals: TerminalToOutputTerminals = {};
-    connections.map((connection) => {
+    connections.forEach((connection) => {
         const terminals = getTerminals(connection);
         const inputTerminalId = getTerminalId(terminals.input);
         pushOrSet(inputTerminalToOutputTerminals, inputTerminalId, terminals.output);
@@ -135,7 +55,7 @@ function updateTerminalToTerminal(connections: Connection[]) {
 
 function updateTerminalToConnection(connections: Connection[]) {
     const terminalToConnection: { [index: string]: Connection[] } = {};
-    connections.map((connection) => {
+    connections.forEach((connection) => {
         const terminals = getTerminals(connection);
         const outputTerminalId = getTerminalId(terminals.output);
         pushOrSet(terminalToConnection, outputTerminalId, connection);
@@ -147,7 +67,7 @@ function updateTerminalToConnection(connections: Connection[]) {
 
 function updateStepToConnections(connections: Connection[]) {
     const stepToConnections: { [index: number]: Connection[] } = {};
-    connections.map((connection) => {
+    connections.forEach((connection) => {
         pushOrSet(stepToConnections, connection.input.stepId, connection);
         pushOrSet(stepToConnections, connection.output.stepId, connection);
     });
@@ -164,3 +84,109 @@ export function getTerminals(item: Connection): { input: InputTerminal; output: 
         output: { stepId: item.output.stepId, name: item.output.name, connectorType: "output" },
     };
 }
+
+export function getConnectionId(item: Connection): ConnectionId {
+    return `${item.input.stepId}-${item.input.name}-${item.output.stepId}-${item.output.name}`;
+}
+
+export type WorkflowConnectionStore = ReturnType<typeof useConnectionStore>;
+
+export const useConnectionStore = defineScopedStore("workflowConnectionStore", (workflowId) => {
+    const connections = ref<Readonly<Connection>[]>([]);
+    const invalidConnections = ref<InvalidConnections>({});
+    const inputTerminalToOutputTerminals = ref<TerminalToOutputTerminals>({});
+    const terminalToConnection = ref<{ [index: string]: Connection[] }>({});
+    const stepToConnections = ref<{ [index: number]: Connection[] }>({});
+
+    function $reset() {
+        connections.value = [];
+        invalidConnections.value = {};
+        inputTerminalToOutputTerminals.value = {};
+        terminalToConnection.value = {};
+        stepToConnections.value = {};
+    }
+
+    const getOutputTerminalsForInputTerminal = computed(
+        () => (terminalId: string) => inputTerminalToOutputTerminals.value[terminalId] || ([] as OutputTerminal[])
+    );
+
+    const getConnectionsForTerminal = computed(
+        () => (terminalId: string) => terminalToConnection.value[terminalId] || ([] as Connection[])
+    );
+
+    const getConnectionsForStep = computed(
+        () => (stepId: number) => stepToConnections.value[stepId] || ([] as Connection[])
+    );
+
+    const stepStore = useWorkflowStepStore(workflowId);
+
+    function addConnection(connection: Connection) {
+        Object.freeze(connection);
+        connections.value.push(connection);
+        stepStore.addConnection(connection);
+
+        terminalToConnection.value = updateTerminalToConnection(connections.value);
+        inputTerminalToOutputTerminals.value = updateTerminalToTerminal(connections.value);
+        stepToConnections.value = updateStepToConnections(connections.value);
+    }
+
+    function removeConnection(terminal: InputTerminal | OutputTerminal | ConnectionId) {
+        connections.value = connections.value.filter((connection) => {
+            const id = getConnectionId(connection);
+
+            if (typeof terminal === "string") {
+                if (id === terminal) {
+                    stepStore.removeConnection(connection);
+                    del(invalidConnections.value, id);
+                    return false;
+                } else {
+                    return true;
+                }
+            } else if (terminal.connectorType === "input") {
+                if (connection.input.stepId == terminal.stepId && connection.input.name == terminal.name) {
+                    stepStore.removeConnection(connection);
+                    del(invalidConnections.value, id);
+                    return false;
+                } else {
+                    return true;
+                }
+            } else {
+                if (connection.output.stepId == terminal.stepId && connection.output.name == terminal.name) {
+                    stepStore.removeConnection(connection);
+                    del(invalidConnections.value, id);
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        });
+
+        terminalToConnection.value = updateTerminalToConnection(connections.value);
+        inputTerminalToOutputTerminals.value = updateTerminalToTerminal(connections.value);
+        stepToConnections.value = updateStepToConnections(connections.value);
+    }
+
+    function markInvalidConnection(connectionId: string, reason: string) {
+        set(invalidConnections.value, connectionId, reason);
+    }
+
+    function dropFromInvalidConnections(connectionId: string) {
+        del(invalidConnections.value, connectionId);
+    }
+
+    return {
+        connections,
+        invalidConnections,
+        inputTerminalToOutputTerminals,
+        terminalToConnection,
+        stepToConnections,
+        $reset,
+        getOutputTerminalsForInputTerminal,
+        getConnectionsForTerminal,
+        getConnectionsForStep,
+        addConnection,
+        removeConnection,
+        markInvalidConnection,
+        dropFromInvalidConnections,
+    };
+});

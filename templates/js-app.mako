@@ -22,10 +22,10 @@
             | ${app.config.brand}
             %endif
         </title>
-        
+
         ## relative href for site root
         <link rel="index" href="${ h.url_for( '/' ) }"/>
-        
+
         ## TODO: use loaders to move everything but the essentials below the fold
         ${ h.dist_css(
             'base',
@@ -86,10 +86,10 @@
         ${ galaxy_client.config_google_analytics(app.config.ga_code) }
     %endif
     %if app.config.plausible_server and app.config.plausible_domain:
-            ${ galaxy_client.config_plausible_analytics(app.config.plausible_server, app.config.plausible_domain) }
+        ${ galaxy_client.config_plausible_analytics(app.config.plausible_server, app.config.plausible_domain) }
     %endif
     %if app.config.matomo_server and app.config.matomo_site_id:
-            ${ galaxy_client.config_matomo_analytics(app.config.matomo_server, app.config.matomo_site_id) }
+        ${ galaxy_client.config_matomo_analytics(app.config.matomo_server, app.config.matomo_site_id) }
     %endif
 </%def>
 

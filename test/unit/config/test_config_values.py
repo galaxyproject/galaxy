@@ -4,6 +4,7 @@ import pytest
 
 from galaxy import config
 from galaxy.config import DEFAULT_EMAIL_FROM_LOCAL_PART
+from galaxy.exceptions import ConfigurationError
 from galaxy.util.properties import running_from_source
 
 
@@ -50,6 +51,20 @@ def test_assign_email_from(monkeypatch):
         override_tempdir=False, galaxy_infrastructure_url="http://myhost:8080/galaxy/"
     )
     assert appconfig.email_from == f"{DEFAULT_EMAIL_FROM_LOCAL_PART}@myhost"
+
+
+@pytest.mark.parametrize("bracket", ["[", "]"])
+def test_error_if_database_connection_contains_brackets(bracket):
+    uri = f"dbscheme://user:pass{bracket}word@host/db"
+
+    with pytest.raises(ConfigurationError):
+        config.GalaxyAppConfiguration(override_tempdir=False, database_connection=uri)
+
+    with pytest.raises(ConfigurationError):
+        config.GalaxyAppConfiguration(override_tempdir=False, install_database_connection=uri)
+
+    with pytest.raises(ConfigurationError):
+        config.GalaxyAppConfiguration(override_tempdir=False, amqp_internal_connection=uri)
 
 
 class TestIsFetchWithCeleryEnabled:

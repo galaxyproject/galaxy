@@ -6,6 +6,8 @@ from typing import (
     List,
 )
 
+from sqlalchemy import select
+
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.workflows import RefactorRequest
 from galaxy.model import (
@@ -18,7 +20,8 @@ from galaxy.model import (
     WorkflowStep,
     WorkflowStepConnection,
 )
-from galaxy.tools.parameters.basic import workflow_building_modes
+from galaxy.model.base import transaction
+from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.workflow.refactor.schema import RefactorActionExecutionMessageTypeEnum
 from galaxy_test.base.populators import WorkflowPopulator
 from galaxy_test.base.uses_shed_api import UsesShedApi
@@ -534,6 +537,35 @@ steps:
         assert len(action_executions[0].messages) == 0
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
 
+    def test_tool_version_upgrade_keeps_when_expression(self):
+        self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  the_bool:
+    type: boolean
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: '0.1'
+    in:
+      when: the_bool
+    state:
+      inttest: 0
+    when: $(inputs.when)
+"""
+        )
+        assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
+        actions: ActionsJson = [
+            {"action_type": "upgrade_tool", "step": {"label": "the_step"}},
+        ]
+        action_executions = self._refactor(actions).action_executions
+        assert len(action_executions) == 1
+        assert len(action_executions[0].messages) == 0
+        step = self._latest_workflow.step_by_label("the_step")
+        assert step.tool_version == "0.2"
+        assert step.when_expression
+
     def test_tool_version_upgrade_state_added(self):
         self.workflow_populator.upload_yaml_workflow(
             """
@@ -556,7 +588,7 @@ steps:
 
         assert len(action_executions) == 1
         messages = action_executions[0].messages
-        assert len(messages) == 1
+        assert len(messages) == 2
         message = messages[0]
         assert message.message_type == RefactorActionExecutionMessageTypeEnum.tool_state_adjustment
         assert message.order_index == 0
@@ -766,7 +798,8 @@ steps:
             yield workflow_object
 
     def _refactor(self, actions: List[Dict[str, Any]], stored_workflow=None, dry_run=False, style="ga"):
-        user = self._app.model.session.query(User).order_by(User.id.desc()).limit(1).one()
+        stmt = select(User).order_by(User.id.desc()).limit(1)
+        user = self._app.model.session.execute(stmt).scalar_one()
         mock_trans = MockTrans(self._app, user)
 
         app = self._app
@@ -789,7 +822,8 @@ steps:
         # Do a bunch of checks to ensure nothing workflow related was written to the database
         # or even added to the sa_session.
         sa_session = self._app.model.session
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
 
         sw_update_time = self._model_last_time(StoredWorkflow)
         assert sw_update_time
@@ -803,8 +837,8 @@ steps:
         wo_last_id = self._model_last_id(WorkflowOutput)
 
         response = self._refactor(actions, stored_workflow=stored_workflow, dry_run=True)
-        sa_session.flush()
-        sa_session.expunge_all()
+        with transaction(sa_session):
+            sa_session.commit()
         assert sw_update_time == self._model_last_time(StoredWorkflow)
         assert w_update_time == self._model_last_time(Workflow)
         assert ws_last_id == self._model_last_id(WorkflowStep)
@@ -816,11 +850,13 @@ steps:
         return response
 
     def _model_last_time(self, clazz):
-        obj = self._app.model.session.query(clazz).order_by(clazz.update_time.desc()).limit(1).one()
+        stmt = select(clazz).order_by(clazz.update_time.desc()).limit(1)
+        obj = self._app.model.session.execute(stmt).unique().scalar_one()
         return obj.update_time
 
     def _model_last_id(self, clazz):
-        obj = self._app.model.session.query(clazz).order_by(clazz.id.desc()).limit(1).one_or_none()
+        stmt = select(clazz).order_by(clazz.id.desc()).limit(1)
+        obj = self._app.model.session.execute(stmt).scalar_one_or_none()
         return obj.id if obj else None
 
     @property
@@ -833,7 +869,8 @@ steps:
 
     def _recent_stored_workflow(self, n=1):
         app = self._app
-        return app.model.session.query(StoredWorkflow).order_by(StoredWorkflow.id.desc()).limit(n).all()[-1]
+        stmt = select(StoredWorkflow).order_by(StoredWorkflow.id.desc()).limit(n)
+        return app.model.session.scalars(stmt).unique().all()[-1]
 
     @property
     def _latest_workflow(self):
@@ -890,6 +927,11 @@ class MockTrans(ProvidesAppContext):
         self.user = user
         self.history = None
         self.workflow_building_mode = workflow_building_modes.ENABLED
+        self.tag_handler = app.tag_handler
+
+    @property
+    def galaxy_session(self):
+        return None
 
     @property
     def app(self):

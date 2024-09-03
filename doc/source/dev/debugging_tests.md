@@ -52,7 +52,7 @@ index 6647588dfb..c8d82957a1 100644
 @@ -14,7 +14,7 @@ jobs:
        fail-fast: false
        matrix:
-         python-version: ['3.7']
+         python-version: ['3.8']
 -        subset: ['upload_datatype', 'extended_metadata', 'kubernetes', 'not (upload_datatype or extended_metadata or kubernetes)']
 +        subset: ['not (upload_datatype or extended_metadata or kubernetes)']
      services:

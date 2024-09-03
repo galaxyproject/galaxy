@@ -9,6 +9,7 @@ A sharable Galaxy object:
     can be published effectively making it available to all other Users
     can be rated
 """
+
 import logging
 import re
 from typing import (
@@ -17,15 +18,19 @@ from typing import (
     Optional,
     Set,
     Type,
-    TYPE_CHECKING,
 )
 
 from sqlalchemy import (
-    func,
+    exists,
+    false,
+    select,
     true,
 )
 
-from galaxy import exceptions
+from galaxy import (
+    exceptions,
+    model,
+)
 from galaxy.managers import (
     annotatable,
     base,
@@ -34,10 +39,12 @@ from galaxy.managers import (
     taggable,
     users,
 )
+from galaxy.managers.base import combine_lists
 from galaxy.model import (
     User,
     UserShareAssociation,
 )
+from galaxy.model.base import transaction
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.schema.schema import (
     ShareWithExtra,
@@ -47,9 +54,6 @@ from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import ready_name_for_url
 from galaxy.util.hash_util import md5_hash_str
 
-if TYPE_CHECKING:
-    from sqlalchemy.orm import Query
-
 log = logging.getLogger(__name__)
 
 
@@ -57,7 +61,6 @@ class SharableModelManager(
     base.ModelManager,
     secured.OwnableManagerMixin,
     secured.AccessibleManagerMixin,
-    taggable.TaggableManagerMixin,
     annotatable.AnnotatableManagerMixin,
     ratable.RatableManagerMixin,
 ):
@@ -83,20 +86,20 @@ class SharableModelManager(
         `user`.
         """
         user_filter = self.model_class.table.c.user_id == user.id
-        filters = self._munge_filters(user_filter, kwargs.get("filters", None))
+        filters = combine_lists(user_filter, kwargs.get("filters", None))
         return self.list(filters=filters, **kwargs)
 
     # .... owned/accessible interfaces
-    def is_owner(self, item: "Query", user: Optional[User], **kwargs: Any) -> bool:
+    def is_owner(self, item: model.Base, user: Optional[User], **kwargs: Any) -> bool:
         """
         Return true if this sharable belongs to `user` (or `user` is an admin).
         """
         # ... effectively a good fit to have this here, but not semantically
         if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
-        return item.user == user
+        return item.user == user  # type:ignore[attr-defined]
 
-    def is_accessible(self, item: "Query", user: Optional[User], **kwargs: Any) -> bool:
+    def is_accessible(self, item, user: Optional[User], **kwargs: Any) -> bool:
         """
         If the item is importable, is owned by `user`, or (the valid) `user`
         is in 'users shared with' list for the item: return True.
@@ -149,20 +152,12 @@ class SharableModelManager(
         """
         return self._session_setattr(item, "published", False, flush=flush)
 
-    def _query_published(self, filters=None, **kwargs):
-        """
-        Return a query for all published items.
-        """
-        published_filter = self.model_class.table.c.published == true()
-        filters = self._munge_filters(published_filter, filters)
-        return self.query(filters=filters, **kwargs)
-
     def list_published(self, filters=None, **kwargs):
         """
         Return a list of all published items.
         """
         published_filter = self.model_class.table.c.published == true()
-        filters = self._munge_filters(published_filter, filters)
+        filters = combine_lists(published_filter, filters)
         return self.list(filters=filters, **kwargs)
 
     # .... user sharing
@@ -203,7 +198,9 @@ class SharableModelManager(
             self.create_unique_slug(item)
 
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return user_share_assoc
 
     def unshare_with(self, item, user: User, flush: bool = True):
@@ -214,7 +211,9 @@ class SharableModelManager(
         user_share_assoc = self.get_share_assocs(item, user=user)[0]
         self.session().delete(user_share_assoc)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return user_share_assoc
 
     def _query_shared_with(self, user, eagerloads=True, **kwargs):
@@ -279,8 +278,10 @@ class SharableModelManager(
             current_shares.remove(self.unshare_with(item, user, flush=False))
 
         if flush:
-            self.session().flush()
-        return current_shares
+            session = self.session()
+            with transaction(session):
+                session.commit()
+        return current_shares, needs_adding, needs_removing
 
     # .... slugs
     # slugs are human readable strings often used to link to sharable resources (replacing ids)
@@ -296,13 +297,16 @@ class SharableModelManager(
         if item.slug == new_slug:
             return item
 
+        session = self.session()
+
         # error if slug is already in use
-        if self._slug_exists(user, new_slug):
+        if slug_exists(session, item.__class__, user, new_slug):
             raise exceptions.Conflict("Slug already exists", slug=new_slug)
 
         item.slug = new_slug
         if flush:
-            self.session().flush()
+            with transaction(session):
+                session.commit()
         return item
 
     def is_valid_slug(self, slug):
@@ -311,10 +315,6 @@ class SharableModelManager(
         """
         VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
         return VALID_SLUG_RE.match(slug)
-
-    def _slug_exists(self, user, slug):
-        query = self.session().query(self.model_class).filter_by(user_id=user.id, slug=slug).with_entities(func.count())
-        return query.scalar() != 0
 
     def _slugify(self, start_with):
         # Replace whitespace with '-'
@@ -349,9 +349,7 @@ class SharableModelManager(
         # add integer to end.
         new_slug = slug_base
         count = 1
-        while (
-            self.session().query(item.__class__).filter_by(user=item.user, slug=new_slug, importable=True).count() != 0
-        ):
+        while importable_item_slug_exists(self.session(), item.__class__, item.user, new_slug):
             # Slug taken; choose a new slug based on count. This approach can
             # handle numerous items with the same name gracefully.
             new_slug = "%s-%i" % (slug_base, count)
@@ -366,7 +364,9 @@ class SharableModelManager(
         item.slug = self.get_unique_slug(item)
         self.session().add(item)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return item
 
     # TODO: def by_slug( self, user, **kwargs ):
@@ -511,7 +511,7 @@ class SharableModelDeserializer(
         """
         unencoded_ids = [self.app.security.decode_id(id_) for id_ in val]
         new_users_shared_with = set(self.manager.user_manager.by_ids(unencoded_ids))
-        current_shares = self.manager.update_current_sharing_with_users(item, new_users_shared_with)
+        current_shares, _, _ = self.manager.update_current_sharing_with_users(item, new_users_shared_with)
         # TODO: or should this return the list of ids?
         return current_shares
 
@@ -570,12 +570,7 @@ class SlugBuilder:
         count = 1
         # Ensure unique across model class and user and don't include this item
         # in the check in case it has previously been assigned a valid slug.
-        while (
-            sa_session.query(item.__class__)
-            .filter(item.__class__.user == item.user, item.__class__.slug == new_slug, item.__class__.id != item.id)
-            .count()
-            != 0
-        ):
+        while another_slug_exists(sa_session, item.__class__, item.user, new_slug, item.id):
             # Slug taken; choose a new slug based on count. This approach can
             # handle numerous items with the same name gracefully.
             new_slug = f"{slug_base}-{count}"
@@ -584,6 +579,25 @@ class SlugBuilder:
         # Set slug and return.
         item.slug = new_slug
         return item.slug == cur_slug
+
+
+def slug_exists(session, model_class, user, slug, ignore_deleted=False):
+    stmt = select(exists().where(model_class.user == user).where(model_class.slug == slug))
+    if ignore_deleted:  # Only check items that are NOT marked as deleted
+        stmt = stmt.where(model_class.deleted == false())
+    return session.scalar(stmt)
+
+
+def importable_item_slug_exists(session, model_class, user, slug):
+    stmt = select(
+        exists().where(model_class.user == user).where(model_class.slug == slug).where(model_class.importable == true())
+    )
+    return session.scalar(stmt)
+
+
+def another_slug_exists(session, model_class, user, slug, id):
+    stmt = select(exists().where(model_class.user == user).where(model_class.slug == slug).where(model_class.id != id))
+    return session.scalar(stmt)
 
 
 __all__ = (

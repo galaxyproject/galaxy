@@ -1,111 +1,133 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faAngleDoubleDown, faAngleDoubleUp, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { onMounted, ref, watch } from "vue";
+
+import localize from "@/utils/localization";
+
+library.add(faAngleDoubleDown, faAngleDoubleUp, faSpinner, faTimes);
+
+interface Props {
+    query?: string;
+    delay?: number;
+    loading?: boolean;
+    placeholder?: string;
+    showAdvanced?: boolean;
+    enableAdvanced?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    query: "",
+    delay: 1000,
+    loading: false,
+    placeholder: "Enter your search term here.",
+    showAdvanced: false,
+    enableAdvanced: false,
+});
+
+const emit = defineEmits<{
+    (e: "change", query: string): void;
+    (e: "onToggle", showAdvanced: boolean): void;
+}>();
+
+const queryInput = ref<string>();
+const queryCurrent = ref<string>();
+const queryTimer = ref<any>(null);
+const titleClear = ref("Clear Search (esc)");
+const titleAdvanced = ref("Toggle Advanced Search");
+const toolInput = ref<HTMLInputElement | null>(null);
+
+function clearTimer() {
+    if (queryTimer.value) {
+        clearTimeout(queryTimer.value);
+    }
+}
+
+function delayQuery(query: string) {
+    clearTimer();
+    if (query) {
+        queryTimer.value = setTimeout(() => {
+            setQuery(query);
+        }, props.delay);
+    } else {
+        setQuery(query);
+    }
+}
+
+function setQuery(queryNew: string) {
+    clearTimer();
+
+    if (queryCurrent.value !== queryInput.value || queryCurrent.value !== queryNew) {
+        queryCurrent.value = queryInput.value = queryNew;
+        emit("change", queryCurrent.value);
+    }
+}
+
+function clearBox() {
+    setQuery("");
+    toolInput.value?.focus();
+}
+
+function onToggle() {
+    emit("onToggle", !props.showAdvanced);
+}
+
+watch(
+    () => props.query,
+    (newQuery) => {
+        setQuery(newQuery);
+    }
+);
+
+onMounted(() => {
+    if (props.query) {
+        setQuery(props.query);
+    }
+});
+</script>
+
 <template>
-    <b-input-group>
-        <b-input
+    <BInputGroup>
+        <BFormInput
             ref="toolInput"
             v-model="queryInput"
             class="search-query"
             size="sm"
             autocomplete="off"
             :placeholder="placeholder"
+            data-description="filter text input"
             @input="delayQuery"
             @change="setQuery"
             @keydown.esc="setQuery('')" />
-        <b-input-group-append>
-            <b-button
+
+        <BInputGroupAppend>
+            <BButton
                 v-if="enableAdvanced"
+                v-b-tooltip.hover.bottom.noninteractive
+                aria-haspopup="true"
                 size="sm"
                 :pressed="showAdvanced"
                 :variant="showAdvanced ? 'info' : 'secondary'"
-                :title="titleAdvanced | l"
+                :title="localize(titleAdvanced)"
                 data-description="toggle advanced search"
                 @click="onToggle">
-                <icon v-if="showAdvanced" icon="angle-double-up" />
-                <icon v-else icon="angle-double-down" />
-            </b-button>
-            <b-button
+                <FontAwesomeIcon v-if="showAdvanced" fixed-width :icon="faAngleDoubleUp" />
+                <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleDown" />
+            </BButton>
+
+            <BButton
+                v-b-tooltip.hover.bottom.noninteractive
+                aria-haspopup="true"
                 class="search-clear"
                 size="sm"
-                :title="titleClear | l"
+                :title="localize(titleClear)"
                 data-description="reset query"
                 @click="clearBox">
-                <icon v-if="loading" icon="spinner" spin />
-                <icon v-else icon="times" />
-            </b-button>
-        </b-input-group-append>
-    </b-input-group>
+                <FontAwesomeIcon v-if="loading" fixed-width :icon="faSpinner" spin />
+                <FontAwesomeIcon v-else fixed-width :icon="faTimes" />
+            </BButton>
+        </BInputGroupAppend>
+    </BInputGroup>
 </template>
-<script>
-export default {
-    props: {
-        query: {
-            type: String,
-            default: "",
-        },
-        loading: {
-            type: Boolean,
-            default: false,
-        },
-        placeholder: {
-            type: String,
-            default: "Enter your search term here.",
-        },
-        delay: {
-            type: Number,
-            default: 1000,
-        },
-        enableAdvanced: {
-            type: Boolean,
-            default: false,
-        },
-        showAdvanced: {
-            type: Boolean,
-            default: false,
-        },
-    },
-    data() {
-        return {
-            queryInput: null,
-            queryTimer: null,
-            queryCurrent: null,
-            titleClear: "clear search (esc)",
-            titleAdvanced: "toggle advanced search",
-        };
-    },
-    watch: {
-        query(queryNew) {
-            this.setQuery(queryNew);
-        },
-    },
-    methods: {
-        clearTimer() {
-            if (this.queryTimer) {
-                clearTimeout(this.queryTimer);
-            }
-        },
-        delayQuery(query) {
-            this.clearTimer();
-            if (query) {
-                this.queryTimer = setTimeout(() => {
-                    this.setQuery(query);
-                }, this.delay);
-            } else {
-                this.setQuery(query);
-            }
-        },
-        setQuery(queryNew) {
-            this.clearTimer();
-            if (this.queryCurrent !== this.queryInput || this.queryCurrent !== queryNew) {
-                this.queryCurrent = this.queryInput = queryNew;
-                this.$emit("change", this.queryCurrent);
-            }
-        },
-        clearBox() {
-            this.setQuery("");
-            this.$refs.toolInput.focus();
-        },
-        onToggle() {
-            this.$emit("onToggle", !this.showAdvanced);
-        },
-    },
-};
-</script>

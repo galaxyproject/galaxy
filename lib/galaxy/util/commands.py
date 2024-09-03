@@ -1,4 +1,5 @@
 """Generic I/O and shell processing code used by Galaxy tool dependencies."""
+
 import logging
 import os
 import shlex
@@ -55,7 +56,7 @@ def redirect_aware_commmunicate(p, sys=_sys):
     return out, err
 
 
-def shell(cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **kwds: Dict[str, Any]) -> int:
+def shell(cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **kwds: Any) -> int:
     """Run shell commands with `shell_process` and wait."""
     sys = kwds.get("sys", _sys)
     assert sys is not None
@@ -68,16 +69,14 @@ def shell(cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **k
         return p.wait()
 
 
-def shell_process(
-    cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **kwds: Dict[str, Any]
-) -> subprocess.Popen:
+def shell_process(cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **kwds: Any) -> subprocess.Popen:
     """A high-level method wrapping subprocess.Popen.
 
     Handles details such as environment extension and in process I/O
     redirection.
     """
     sys = kwds.get("sys", _sys)
-    popen_kwds: Dict[str, Any] = dict()
+    popen_kwds: Dict[str, Any] = {}
     if isinstance(cmds, str):
         log.warning("Passing program arguments as a string may be a security hazard if combined with untrusted input")
         popen_kwds["shell"] = True
@@ -155,14 +154,14 @@ class CommandLineException(Exception):
         self.stderr = stderr
         self.returncode = returncode
         self.message = (
-            "Failed to execute command-line %s, stderr was:\n"
+            f"Failed to execute command-line {command}, stderr was:\n"
             "-------->>begin stderr<<--------\n"
-            "%s\n"
+            f"{stderr}\n"
             "-------->>end stderr<<--------\n"
             "-------->>begin stdout<<--------\n"
-            "%s\n"
+            f"{stdout}\n"
             "-------->>end stdout<<--------\n"
-        ) % (command, stderr, stdout)
+        )
 
     def __str__(self):
         """Return a verbose error message indicating the command problem."""

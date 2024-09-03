@@ -10,7 +10,7 @@
                     variant="secondary"
                     type="button"
                     :href="`${root}libraries/folders/${folder_id}/dataset/${dataset_id}`">
-                    <font-awesome-icon :icon="['far', 'file']" />
+                    <FontAwesomeIcon :icon="['far', 'file']" />
                     &nbsp;Dataset Details
                 </b-button>
                 <PermissionsHeader :name="dataset.name" />
@@ -66,7 +66,7 @@
                 class="toolbtn_save_permissions"
                 variant="secondary"
                 @click="postPermissions">
-                <font-awesome-icon :icon="['far', 'save']" />
+                <FontAwesomeIcon :icon="['far', 'save']" />
                 &nbsp;Save
             </b-button>
         </b-container>
@@ -74,20 +74,20 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { getAppRoot } from "onload/loadConfig";
-import BootstrapVue from "bootstrap-vue";
-import { Services } from "components/Libraries/LibraryPermissions/services";
-import { Toast } from "composables/toast";
+import "vue-multiselect/dist/vue-multiselect.min.css";
+
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
-import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
-import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
+import BootstrapVue from "bootstrap-vue";
 import { initPermissionsIcons } from "components/Libraries/icons";
 import { extractRoles } from "components/Libraries/library-utils";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
-
-import "vue-multiselect/dist/vue-multiselect.min.css";
+import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
+import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
+import { Services } from "components/Libraries/LibraryPermissions/services";
+import { Toast } from "composables/toast";
+import { getAppRoot } from "onload/loadConfig";
+import Vue from "vue";
 import VueObserveVisibility from "vue-observe-visibility";
 
 Vue.use(VueObserveVisibility);

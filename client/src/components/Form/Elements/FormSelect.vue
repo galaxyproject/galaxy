@@ -1,0 +1,186 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed, type ComputedRef, onMounted, type PropType, watch } from "vue";
+import Multiselect from "vue-multiselect";
+
+import { useMultiselect } from "@/composables/useMultiselect";
+import { uid } from "@/utils/utils";
+
+library.add(faCheckSquare, faSquare);
+
+const { ariaExpanded, onOpen, onClose } = useMultiselect();
+
+type SelectValue = Record<string, unknown> | string | number | null;
+
+interface SelectOption {
+    label: string;
+    value: SelectValue;
+}
+
+const props = defineProps({
+    id: { type: String, default: `form-select-${uid()}` },
+    disabled: {
+        type: Boolean,
+        default: false,
+    },
+    multiple: {
+        type: Boolean,
+        default: false,
+    },
+    optional: {
+        type: Boolean,
+        default: false,
+    },
+    options: {
+        type: Array as PropType<Array<SelectOption>>,
+        required: true,
+    },
+    placeholder: {
+        type: String,
+        default: "Select Value",
+    },
+    value: {
+        type: [String, Array] as PropType<SelectValue | SelectValue[]>,
+        default: null,
+    },
+});
+
+const emit = defineEmits<{
+    (e: "input", value: SelectValue | Array<SelectValue>): void;
+}>();
+
+/**
+ * When there are more options than this, push selected options to the end
+ */
+const optionReorderThreshold = 8;
+
+const reorderedOptions = computed(() => {
+    if (props.options.length <= optionReorderThreshold) {
+        return props.options;
+    } else {
+        const selectedOptions: SelectOption[] = [];
+        const unselectedOptions: SelectOption[] = [];
+
+        props.options.forEach((option) => {
+            if (selectedValues.value.includes(option.value)) {
+                selectedOptions.push(option);
+            } else {
+                unselectedOptions.push(option);
+            }
+        });
+
+        return [...unselectedOptions, ...selectedOptions];
+    }
+});
+
+/**
+ * Tracks if the select field has options
+ */
+const hasOptions: ComputedRef<Boolean> = computed(() => {
+    return props.options.length > 0;
+});
+
+/**
+ * Provides initial value if necessary
+ */
+const initialValue: ComputedRef<SelectValue> = computed(() => {
+    if (props.value === null && !props.optional && hasOptions.value) {
+        const v = props.options[0];
+        if (v) {
+            return v.value;
+        }
+    }
+    return null;
+});
+
+/**
+ * Configure selected label
+ */
+const selectedLabel: ComputedRef<string> = computed(() => {
+    return props.multiple ? "Selected" : "";
+});
+
+/**
+ * Tracks selected values
+ */
+const selectedValues = computed(() => (Array.isArray(props.value) ? props.value : [props.value]));
+
+/**
+ * Tracks current value and emits changes
+ */
+const currentValue = computed({
+    get: () => props.options.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
+    set: (val: Array<SelectOption> | SelectOption): void => {
+        if (Array.isArray(val)) {
+            if (val.length > 0) {
+                const values: Array<SelectValue> = val.map((v: SelectOption) => v.value);
+                emit("input", values);
+            } else {
+                emit("input", null);
+            }
+        } else {
+            emit("input", val ? val.value : null);
+        }
+    },
+});
+
+/**
+ * Ensures that an initial value is selected for non-optional inputs
+ */
+function setInitialValue(): void {
+    if (initialValue.value) {
+        emit("input", initialValue.value);
+    }
+}
+
+/**
+ * Watches changes in select options and adjusts initial value if necessary
+ */
+watch(
+    () => props.options,
+    () => setInitialValue()
+);
+
+/**
+ * Sets initial value if necessary
+ */
+onMounted(() => {
+    setInitialValue();
+});
+</script>
+
+<template>
+    <div>
+        <Multiselect
+            v-if="hasOptions"
+            :id="id"
+            v-model="currentValue"
+            :allow-empty="optional"
+            :aria-expanded="ariaExpanded"
+            :close-on-select="!multiple"
+            :disabled="disabled"
+            :deselect-label="null"
+            label="label"
+            :multiple="multiple"
+            :options="reorderedOptions"
+            :placeholder="placeholder"
+            :selected-label="selectedLabel"
+            :select-label="null"
+            track-by="value"
+            @open="onOpen"
+            @close="onClose">
+            <template v-slot:option="{ option }">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span>{{ option.label }}</span>
+                    <FontAwesomeIcon v-if="selectedValues.includes(option.value)" :icon="faCheckSquare" />
+                    <FontAwesomeIcon v-else :icon="faSquare" />
+                </div>
+            </template>
+        </Multiselect>
+        <slot v-else name="no-options">
+            <b-alert v-localize class="w-100" variant="warning" show> No options available. </b-alert>
+        </slot>
+    </div>
+</template>

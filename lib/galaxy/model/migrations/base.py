@@ -1,6 +1,7 @@
 """
 Shared code for galaxy and tool shed migrations.
 """
+
 import abc
 import logging
 import os
@@ -32,7 +33,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.engine import (
     Connection,
-    CursorResult,
     Engine,
 )
 
@@ -49,8 +49,7 @@ class BaseParserBuilder(abc.ABC):
     """
 
     @abc.abstractmethod
-    def _get_command_object(self):
-        ...
+    def _get_command_object(self): ...
 
     def __init__(self, parser, subcommand_required=True):
         self._cmd = self._get_command_object()
@@ -58,21 +57,23 @@ class BaseParserBuilder(abc.ABC):
         self.subparsers = parser.add_subparsers(required=subcommand_required)
         self._init_arg_parsers()
 
-    def add_upgrade_command(self):
+    def add_upgrade_command(self, dev_options=False):
+        parents = self._get_upgrade_downgrade_arg_parsers(dev_options)
         parser = self._add_parser(
             "upgrade",
             self._cmd.upgrade,
             "Upgrade to a later version",
-            parents=[self._sql_arg_parser],
+            parents=parents,
         )
         parser.add_argument("revision", help="Revision identifier or release tag", nargs="?")
 
-    def add_downgrade_command(self):
+    def add_downgrade_command(self, dev_options=False):
+        parents = self._get_upgrade_downgrade_arg_parsers(dev_options)
         parser = self._add_parser(
             "downgrade",
             self._cmd.downgrade,
             "Revert to a previous version",
-            parents=[self._sql_arg_parser],
+            parents=parents,
         )
         parser.add_argument("revision", help="Revision identifier or release tag")
 
@@ -131,6 +132,13 @@ class BaseParserBuilder(abc.ABC):
     def _init_arg_parsers(self):
         self._verbose_arg_parser = self._make_verbose_arg_parser()
         self._sql_arg_parser = self._make_sql_arg_parser()
+        self._repair_arg_parser = self._make_repair_arg_parser()
+
+    def _get_upgrade_downgrade_arg_parsers(self, dev_options):
+        parsers = [self._sql_arg_parser]
+        if dev_options:
+            parsers.append(self._make_repair_arg_parser())
+        return parsers
 
     def _make_verbose_arg_parser(self):
         parser = ArgumentParser(add_help=False)
@@ -146,6 +154,20 @@ class BaseParserBuilder(abc.ABC):
         )
         return parser
 
+    def _make_repair_arg_parser(self):
+        parser = ArgumentParser(add_help=False)
+        parser.add_argument(
+            "--repair",
+            action="store_true",
+            help="""Skip revisions that conflict with the current state of the database (examples of
+            conflict: creating an object that exists or dropping an object that does not exist).
+            Note: implicitly created objects (such as those created by Alembic as part of ALTER
+            statement workaround) that may have been left over will still raise an error. Such
+            objects must be removed manually.
+            """,
+        )
+        return parser
+
     def _add_parser(self, command, func, help, aliases=None, parents=None):
         aliases = aliases or []
         parents = parents or []
@@ -158,12 +180,10 @@ class BaseDbScript(abc.ABC):
     """Facade for common database schema migration operations."""
 
     @abc.abstractmethod
-    def _set_dburl(self, config_file: Optional[str] = None) -> None:
-        ...
+    def _set_dburl(self, config_file: Optional[str] = None) -> None: ...
 
     @abc.abstractmethod
-    def _upgrade_to_head(self, is_sql_mode: bool):
-        ...
+    def _upgrade_to_head(self, is_sql_mode: bool): ...
 
     def __init__(self, config_file: Optional[str] = None) -> None:
         self.alembic_config = self._get_alembic_cfg()
@@ -174,6 +194,7 @@ class BaseDbScript(abc.ABC):
         command.revision(self.alembic_config, message=args.message, rev_id=args.rev_id, head=head)
 
     def upgrade(self, args: Namespace) -> None:
+        self._process_repair_arg(args)
         if args.revision:
             revision = self._parse_revision(args.revision)
             self._upgrade_to_revision(revision, args.sql)
@@ -181,6 +202,7 @@ class BaseDbScript(abc.ABC):
             self._upgrade_to_head(args.sql)
 
     def downgrade(self, args: Namespace) -> None:
+        self._process_repair_arg(args)
         revision = self._parse_revision(args.revision)
         command.downgrade(self.alembic_config, revision, args.sql)
 
@@ -227,15 +249,17 @@ class BaseDbScript(abc.ABC):
         # Subclasses that have revision tags should overwrite this method.
         return {}
 
+    def _process_repair_arg(self, args: Namespace) -> None:
+        if "repair" in args and args.repair:
+            self.alembic_config.set_main_option("repair", "1")
+
 
 class BaseCommand(abc.ABC):
     @abc.abstractmethod
-    def init(self, args: Namespace) -> None:
-        ...
+    def init(self, args: Namespace) -> None: ...
 
     @abc.abstractmethod
-    def _get_dbscript(self, config_file: str) -> BaseDbScript:
-        ...
+    def _get_dbscript(self, config_file: str) -> BaseDbScript: ...
 
     def upgrade(self, args: Namespace) -> None:
         self._exec_command("upgrade", args)
@@ -278,8 +302,7 @@ class BaseAlembicManager(abc.ABC):
     """
 
     @abc.abstractmethod
-    def _get_alembic_root(self):
-        ...
+    def _get_alembic_root(self): ...
 
     @staticmethod
     def is_at_revision(engine: Engine, revision: Union[str, Iterable[str]]) -> bool:
@@ -374,10 +397,11 @@ class DatabaseStateCache:
         metadata.reflect(bind=conn)
         return metadata
 
-    def _load_sqlalchemymigrate_version(self, conn: Connection) -> CursorResult:
+    def _load_sqlalchemymigrate_version(self, conn: Connection) -> Optional[int]:
         if self.has_sqlalchemymigrate_version_table():
             sql = text(f"select version from {SQLALCHEMYMIGRATE_TABLE}")
             return conn.execute(sql).scalar()
+        return None
 
 
 def pop_arg_from_args(args: List[str], arg_name) -> Optional[str]:
@@ -405,7 +429,7 @@ def get_url_string(engine: Engine) -> str:
 
 
 def load_metadata(metadata: MetaData, engine: Engine) -> None:
-    with engine.connect() as conn:
+    with engine.begin() as conn:
         metadata.create_all(bind=conn)
 
 

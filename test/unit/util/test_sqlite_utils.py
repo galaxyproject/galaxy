@@ -52,8 +52,8 @@ def __assert_query_errors(connection, query, match):
 
 
 def __assert_allowed(query):
-    assert sqlite.is_read_only_query(query), "Query [%s] fails allowlist." % query
+    assert sqlite.is_read_only_query(query), f"Query [{query}] fails allowlist."
 
 
 def __assert_not_allowed(query):
-    assert not sqlite.is_read_only_query(query), "Query [%s] incorrectly fails allowlist." % query
+    assert not sqlite.is_read_only_query(query), f"Query [{query}] incorrectly fails allowlist."

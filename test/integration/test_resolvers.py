@@ -1,4 +1,5 @@
 """Integration tests for dependency resolution."""
+
 import os
 from tempfile import mkdtemp
 from typing import ClassVar
@@ -10,7 +11,6 @@ GNUPLOT = {"version": "4.6", "type": "package", "name": "gnuplot"}
 
 
 class TestCondaResolutionIntegration(integration_util.IntegrationTestCase):
-
     """Test conda dependency resolution through API."""
 
     framework_tool_and_types = True

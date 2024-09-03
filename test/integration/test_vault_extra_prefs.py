@@ -10,16 +10,17 @@ from requests import (
     put,
 )
 
+from galaxy.model.db.user import get_user_by_email
 from galaxy_test.driver import integration_util
 
 TEST_USER_EMAIL = "vault_test_user@bx.psu.edu"
 
 
-class TestExtraUserPreferences(integration_util.IntegrationTestCase):
+class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration_util.ConfiguresDatabaseVault):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        config["vault_config_file"] = os.path.join(os.path.dirname(__file__), "vault_conf.yml")
+        cls._configure_database_vault(config)
         config["user_preferences_extra_conf_path"] = os.path.join(
             os.path.dirname(__file__), "user_preferences_extra_conf.yml"
         )
@@ -28,7 +29,7 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase):
         user = self._setup_user(TEST_USER_EMAIL)
         url = self.__url("information/inputs", user)
         app = cast(Any, self._test_driver.app if self._test_driver else None)
-        db_user = app.model.context.query(app.model.User).filter(app.model.User.email == user["email"]).first()
+        db_user = self._get_dbuser(app, user)
 
         # create some initial data
         put(
@@ -84,7 +85,7 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase):
         user = self._setup_user(TEST_USER_EMAIL)
         url = self.__url("information/inputs", user)
         app = cast(Any, self._test_driver.app if self._test_driver else None)
-        db_user = app.model.context.query(app.model.User).filter(app.model.User.email == user["email"]).first()
+        db_user = self._get_dbuser(app, user)
 
         # write the initial secret value
         put(
@@ -130,3 +131,6 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase):
 
     def __url(self, action, user):
         return self._api_url(f"users/{user['id']}/{action}", params=dict(key=self.master_api_key))
+
+    def _get_dbuser(self, app, user):
+        return get_user_by_email(app.model.session, user["email"])

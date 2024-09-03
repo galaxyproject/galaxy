@@ -194,7 +194,7 @@ class TestLibrariesApi(ApiTestCase):
         library = self.library_populator.new_private_library(library_name)
         payload, files = self.library_populator.create_dataset_request(library, file_type="txt", contents="create_test")
         create_response = self.galaxy_interactor.post(
-            "libraries/%s/contents" % library["id"], payload, files=files, key=self.master_api_key
+            f"libraries/{library['id']}/contents", payload, files=files, key=self.master_api_key
         )
         self._assert_status_code_is(create_response, 400)
 
@@ -458,7 +458,7 @@ class TestLibrariesApi(ApiTestCase):
         data = {"tags": ["#Lancelot", "name:Holy Grail", "blue"]}
         ld_updated = self._patch_library_dataset(ld["id"], data)
         self._assert_has_keys(ld_updated, "tags")
-        assert ld_updated["tags"] == "name:Lancelot, name:HolyGrail, blue"
+        assert ld_updated["tags"] == ["name:Lancelot", "name:HolyGrail", "blue"]
 
     @requires_new_library
     def test_invalid_update_dataset_in_folder(self):

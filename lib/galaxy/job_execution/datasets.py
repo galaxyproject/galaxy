@@ -1,6 +1,7 @@
 """
 Utility classes allowing Job interface to reason about datasets.
 """
+
 import os.path
 from abc import (
     ABCMeta,
@@ -94,7 +95,7 @@ class OutputsToWorkingDirectoryPathRewriter(DatasetPathRewriter):
             if self.outputs_directory_name is not None:
                 base_output_directory = os.path.join(base_output_directory, self.outputs_directory_name)
             # set false_path to uuid, no harm even if object store uses id
-            false_path = os.path.join(base_output_directory, f"galaxy_dataset_{dataset.dataset.uuid}.dat")
+            false_path = os.path.join(base_output_directory, f"dataset_{dataset.dataset.uuid}.dat")
             return false_path
         else:
             return None
@@ -112,7 +113,7 @@ class TaskPathRewriter(DatasetPathRewriter):
 
     def rewrite_dataset_path(self, dataset, dataset_type):
         """ """
-        dataset_file_name = dataset.file_name
+        dataset_file_name = dataset.get_file_name()
         job_file_name = self.job_dataset_path_rewriter.rewrite_dataset_path(dataset, dataset_type) or dataset_file_name
         return os.path.join(self.working_directory, os.path.basename(job_file_name))
 

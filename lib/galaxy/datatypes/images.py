@@ -1,6 +1,7 @@
 """
 Image classes
 """
+
 import base64
 import json
 import logging
@@ -68,7 +69,7 @@ class Image(data.Data):
     def handle_dataset_as_image(self, hda: DatasetProtocol) -> str:
         dataset = hda.dataset
         name = hda.name or ""
-        with open(dataset.file_name, "rb") as f:
+        with open(dataset.get_file_name(), "rb") as f:
             base64_image_data = base64.b64encode(f.read()).decode("utf-8")
         return f"![{name}](data:image/{self.file_ext};base64,{base64_image_data})"
 
@@ -90,10 +91,6 @@ class Png(Image):
 class Tiff(Image):
     edam_format = "format_3591"
     file_ext = "tiff"
-
-
-class OMETiff(Tiff):
-    file_ext = "ome.tiff"
     MetadataElement(
         name="offsets",
         desc="Offsets File",
@@ -113,11 +110,15 @@ class OMETiff(Tiff):
             offsets_file = dataset.metadata.spec[spec_key].param.new_file(
                 dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
             )
-        with tifffile.TiffFile(dataset.file_name) as tif:
+        with tifffile.TiffFile(dataset.get_file_name()) as tif:
             offsets = [page.offset for page in tif.pages]
-        with open(offsets_file.file_name, "w") as f:
+        with open(offsets_file.get_file_name(), "w") as f:
             json.dump(offsets, f)
         dataset.metadata.offsets = offsets_file
+
+
+class OMETiff(Tiff):
+    file_ext = "ome.tiff"
 
     def sniff(self, filename: str) -> bool:
         with tifffile.TiffFile(filename) as tif:
@@ -493,7 +494,7 @@ class Star(data.Text):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "Relion STAR data"
         else:
             dataset.peek = "file does not exist"

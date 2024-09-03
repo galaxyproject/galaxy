@@ -1,6 +1,7 @@
 """
 XML format classes
 """
+
 import logging
 import re
 from typing import List
@@ -37,7 +38,7 @@ class GenericXml(data.Text):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "XML data"
         else:
             dataset.peek = "file does not exist"
@@ -48,7 +49,7 @@ class GenericXml(data.Text):
             if not line.startswith("<?"):
                 break
         # pattern match <root or <ns:root for any ns string
-        pattern = r"^<(\w*:)?%s" % root
+        pattern = rf"^<(\w*:)?{root}"
         return re.match(pattern, line) is not None
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
@@ -90,7 +91,7 @@ class MEMEXml(GenericXml):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "MEME XML data"
         else:
             dataset.peek = "file does not exist"
@@ -106,7 +107,7 @@ class CisML(GenericXml):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "CisML data"
         else:
             dataset.peek = "file does not exist"
@@ -148,7 +149,7 @@ class Dzi(GenericXml):
         super().__init__(**kwd)
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        tree = util.parse_xml(dataset.file_name)
+        tree = util.parse_xml(dataset.get_file_name())
         root = tree.getroot()
         dataset.metadata.format = root.get("Format")
         dataset.metadata.tile_size = root.get("TileSize")
@@ -166,7 +167,7 @@ class Dzi(GenericXml):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "Deep Zoom Image"
         else:
             dataset.peek = "file does not exist"
@@ -200,7 +201,7 @@ class Phyloxml(GenericXml):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "Phyloxml data"
         else:
             dataset.peek = "file does not exist"
@@ -234,7 +235,7 @@ class Owl(GenericXml):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "Web Ontology Language OWL"
         else:
             dataset.peek = "file does not exist"
@@ -259,7 +260,7 @@ class Sbml(GenericXml):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "System Biology Markup Language SBML"
         else:
             dataset.peek = "file does not exist"

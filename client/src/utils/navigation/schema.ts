@@ -1,5 +1,5 @@
-import type { Component, SelectorTemplate } from "./index";
-import { ROOT_COMPONENT as raw_root_component } from "./index";
+import { type Component, ROOT_COMPONENT as raw_root_component, type SelectorTemplate } from "./index";
+
 interface Root_messages extends Component {
     all: SelectorTemplate;
     error: SelectorTemplate;
@@ -100,7 +100,6 @@ interface Roothistory_panelitem extends Component {
     delete_button: SelectorTemplate;
     download_button: SelectorTemplate;
     info_button: SelectorTemplate;
-    tool_help_button: SelectorTemplate;
     rerun_button: SelectorTemplate;
     alltags: SelectorTemplate;
 }
@@ -261,7 +260,6 @@ interface Rootpublished_histories extends Component {
     advanced_search_toggle: SelectorTemplate;
     advanced_search_name_input: SelectorTemplate;
     advanced_search_tag_input: SelectorTemplate;
-    advanced_search_submit: SelectorTemplate;
     tag_content: SelectorTemplate;
     column_header: SelectorTemplate;
 }
@@ -386,13 +384,6 @@ interface Rootworkflows extends Component {
     workflow_rows: SelectorTemplate;
     external_link: SelectorTemplate;
     trs_icon: SelectorTemplate;
-    pager: SelectorTemplate;
-    pager_page: SelectorTemplate;
-    pager_page_next: SelectorTemplate;
-    pager_page_first: SelectorTemplate;
-    pager_page_last: SelectorTemplate;
-    pager_page_previous: SelectorTemplate;
-    pager_page_active: SelectorTemplate;
     run_button: SelectorTemplate;
     bookmark_link: SelectorTemplate;
     workflow_with_name: SelectorTemplate;
@@ -499,6 +490,7 @@ interface Rootinvocations extends Component {
     toggle_invocation_details: SelectorTemplate;
     progress_steps_note: SelectorTemplate;
     progress_jobs_note: SelectorTemplate;
+    hide_invocation_graph: SelectorTemplate;
     invocation_tab: SelectorTemplate;
     invocation_details_tab: SelectorTemplate;
     input_details_title: SelectorTemplate;

@@ -8,7 +8,7 @@
                 class="mr-1 mb-2"
                 data-test-id="download-btn"
                 @click="download(datasetDownloadFormat, dataset_id)">
-                <font-awesome-icon icon="download" />
+                <FontAwesomeIcon icon="download" />
                 Download
             </b-button>
             <b-button
@@ -16,7 +16,7 @@
                 class="mr-1 mb-2"
                 data-test-id="import-history-btn"
                 @click="importToHistory">
-                <font-awesome-icon icon="book" />
+                <FontAwesomeIcon icon="book" />
                 to History
             </b-button>
             <span v-if="dataset.can_user_modify">
@@ -25,7 +25,7 @@
                     class="mr-1 mb-2"
                     data-test-id="modify-btn"
                     @click="isEditMode = true">
-                    <font-awesome-icon icon="pencil-alt" />
+                    <FontAwesomeIcon icon="pencil-alt" />
                     Modify
                 </b-button>
                 <b-button
@@ -33,7 +33,7 @@
                     class="mr-1 mb-2"
                     data-test-id="auto-detect-btn"
                     @click="detectDatatype">
-                    <font-awesome-icon icon="redo" />
+                    <FontAwesomeIcon icon="redo" />
                     Auto-detect datatype
                 </b-button>
             </span>
@@ -46,13 +46,13 @@
                     params: { folder_id: folder_id, dataset_id: dataset_id },
                 }"
                 data-test-id="permissions-btn">
-                <font-awesome-icon icon="users" />
+                <FontAwesomeIcon icon="users" />
                 Permissions
             </b-button>
         </div>
         <div v-if="dataset.is_unrestricted" data-test-id="unrestricted-msg">
             This dataset is unrestricted so everybody with the link can access it.
-            <copy-to-clipboard
+            <CopyToClipboard
                 message="A link to current dataset was copied to your clipboard"
                 :text="currentRouteName"
                 title="Copy link to this dataset " />
@@ -86,7 +86,7 @@
                             :current-item-id="dataset.file_ext"
                             @update:selected-item="onSelectedDatatype" />
                     </DatatypesProvider>
-                    <db-key-provider
+                    <DbKeyProvider
                         v-else-if="row.item.name === fieldTitles.genome_build"
                         v-slot="{ item: dbkeys, loading: loadingDbKeys }">
                         <SingleItemSelector
@@ -95,7 +95,7 @@
                             :items="dbkeys"
                             :current-item-id="dataset.genome_build"
                             @update:selected-item="onSelectedDbKey" />
-                    </db-key-provider>
+                    </DbKeyProvider>
                     <b-form-input
                         v-else-if="row.item.name === fieldTitles.message"
                         v-model="modifiedDataset.message"
@@ -114,11 +114,11 @@
         <!-- Edit Controls -->
         <div v-if="isEditMode">
             <b-button class="mr-1 mb-2" @click="isEditMode = false">
-                <font-awesome-icon :icon="['fas', 'times']" />
+                <FontAwesomeIcon :icon="['fas', 'times']" />
                 Cancel
             </b-button>
             <b-button class="mr-1 mb-2" @click="updateDataset">
-                <font-awesome-icon :icon="['far', 'save']" />
+                <FontAwesomeIcon :icon="['far', 'save']" />
                 Save
             </b-button>
         </div>
@@ -128,22 +128,23 @@
 </template>
 
 <script>
-import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faUsers, faRedo, faPencilAlt, faBook, faDownload, faTimes } from "@fortawesome/free-solid-svg-icons";
-import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import mod_import_dataset from "components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
-import { Services } from "components/Libraries/LibraryFolder/services";
-import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
-import download from "components/Libraries/LibraryFolder/TopToolbar/download";
+import { faSave } from "@fortawesome/free-regular-svg-icons";
+import { faBook, faDownload, faPencilAlt, faRedo, faTimes, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import CopyToClipboard from "components/CopyToClipboard";
-import { Toast } from "composables/toast";
-import { fieldTitles } from "components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
-import { DbKeyProvider, DatatypesProvider } from "components/providers";
-import SingleItemSelector from "components/SingleItemSelector";
 import { buildFields } from "components/Libraries/library-utils";
+import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
+import { fieldTitles } from "components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
+import { Services } from "components/Libraries/LibraryFolder/services";
+import download from "components/Libraries/LibraryFolder/TopToolbar/download";
+import mod_import_dataset from "components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
+import { DatatypesProvider, DbKeyProvider } from "components/providers";
+import SingleItemSelector from "components/SingleItemSelector";
+import { Toast } from "composables/toast";
+import { mapState } from "pinia";
+
+import { useUserStore } from "@/stores/userStore";
 
 library.add(faUsers, faRedo, faBook, faDownload, faPencilAlt, faTimes, faSave);
 

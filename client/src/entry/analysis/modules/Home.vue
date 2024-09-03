@@ -8,10 +8,10 @@
 </template>
 
 <script>
-import decodeUriComponent from "decode-uri-component";
-import CenterFrame from "entry/analysis/modules/CenterFrame";
 import ToolForm from "components/Tool/ToolForm";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun";
+import decodeUriComponent from "decode-uri-component";
+import CenterFrame from "entry/analysis/modules/CenterFrame";
 
 export default {
     components: {
@@ -59,6 +59,7 @@ export default {
         },
         workflowParams() {
             const workflowId = this.query.workflow_id;
+            const version = this.query.version;
             let preferSimpleForm = this.config.simplified_workflow_run_ui == "prefer";
             const preferSimpleFormOverride = this.query.simplified_workflow_run_ui;
             if (preferSimpleFormOverride == "prefer") {
@@ -68,6 +69,7 @@ export default {
             const simpleFormUseJobCache = this.config.simplified_workflow_run_ui_job_cache == "on";
             return {
                 workflowId,
+                version,
                 preferSimpleForm,
                 simpleFormTargetHistory,
                 simpleFormUseJobCache,

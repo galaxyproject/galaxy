@@ -18,11 +18,14 @@
 </template>
 
 <script>
-import { getToolPredictions } from "./modules/services";
-import { getCompatibleRecommendations } from "./modules/utilities";
 import LoadingSpan from "components/LoadingSpan";
 import _l from "utils/localization";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+
+import { useWorkflowStores } from "@/composables/workflowStores";
+import { getShortToolId } from "@/utils/tool";
+
+import { getToolPredictions } from "./modules/services";
+import { getCompatibleRecommendations } from "./modules/utilities";
 
 export default {
     components: {
@@ -39,7 +42,7 @@ export default {
         },
     },
     setup() {
-        const stepStore = useWorkflowStepStore();
+        const { stepStore } = useWorkflowStores();
         return { stepStore };
     },
     data() {
@@ -57,11 +60,7 @@ export default {
     },
     methods: {
         getToolId(toolId) {
-            if (toolId !== undefined && toolId !== null && toolId.indexOf("/") > -1) {
-                const toolIdSlash = toolId.split("/");
-                toolId = toolIdSlash[toolIdSlash.length - 2];
-            }
-            return toolId;
+            return getShortToolId(toolId ?? "");
         },
         getWorkflowPath(currentNodeId) {
             const steps = {};
@@ -129,3 +128,17 @@ export default {
     },
 };
 </script>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.workflow-recommendations {
+    display: block;
+    height: 30rem;
+
+    .header-background {
+        border-bottom: solid 1px $brand-primary;
+        margin-bottom: 0.5rem;
+    }
+}
+</style>

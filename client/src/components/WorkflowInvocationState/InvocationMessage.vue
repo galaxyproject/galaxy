@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
+
+import type { InvocationMessage } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
-import type { InvocationMessageResponseModel } from "./invocationMessageModel";
+
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
-import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
+import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
 
 type ReasonToLevel = {
     history_deleted: "cancel";
@@ -46,7 +48,7 @@ interface Invocation {
 }
 
 interface InvocationMessageProps {
-    invocationMessage: InvocationMessageResponseModel;
+    invocationMessage: InvocationMessage;
     invocation: Invocation;
 }
 
@@ -62,7 +64,12 @@ const workflow = computed(() => {
 });
 
 const workflowStep = computed(() => {
-    if ("workflow_step_id" in props.invocationMessage && workflow.value) {
+    if (
+        "workflow_step_id" in props.invocationMessage &&
+        props.invocationMessage.workflow_step_id !== undefined &&
+        props.invocationMessage.workflow_step_id !== null &&
+        workflow.value
+    ) {
         return workflow.value.steps[props.invocationMessage.workflow_step_id];
     }
     return undefined;
@@ -71,7 +78,7 @@ const workflowStep = computed(() => {
 const dependentWorkflowStep = computed(() => {
     if ("dependent_workflow_step_id" in props.invocationMessage && workflow.value) {
         const stepId = props.invocationMessage["dependent_workflow_step_id"];
-        if (stepId !== undefined) {
+        if (stepId !== undefined && stepId !== null) {
             return workflow.value.steps[stepId];
         }
     }
@@ -146,7 +153,14 @@ const infoString = computed(() => {
             invocationMessage.workflow_step_id + 1
         } is a conditional step and the result of the when expression is not a boolean type.`;
     } else if (reason === "unexpected_failure") {
-        return `${failFragment} an unexpected failure occurred.`;
+        let atStep = "";
+        if (invocationMessage.workflow_step_id !== null && invocationMessage.workflow_step_id !== undefined) {
+            atStep = ` at step ${invocationMessage.workflow_step_id + 1}`;
+        }
+        if (invocationMessage.details) {
+            return `${failFragment} an unexpected failure occurred${atStep}: '${invocationMessage.details}'`;
+        }
+        return `${failFragment} an unexpected failure occurred${atStep}.`;
     } else if (reason === "workflow_output_not_found") {
         return `Defined workflow output '${invocationMessage.output_name}' was not found in step ${
             invocationMessage.workflow_step_id + 1
@@ -164,29 +178,29 @@ const infoString = computed(() => {
         </div>
         <div v-if="dependentWorkflowStep">
             Problem occurred at this step:
-            <workflow-invocation-step
+            <WorkflowInvocationStep
                 :invocation="invocation"
                 :workflow="workflow"
-                :workflow-step="dependentWorkflowStep"></workflow-invocation-step>
+                :workflow-step="dependentWorkflowStep"></WorkflowInvocationStep>
         </div>
         <div v-if="workflowStep">
             {{ stepDescription }}
-            <workflow-invocation-step
+            <WorkflowInvocationStep
                 :invocation="invocation"
                 :workflow="workflow"
-                :workflow-step="workflowStep"></workflow-invocation-step>
+                :workflow-step="workflowStep"></WorkflowInvocationStep>
         </div>
         <div v-if="HdaId">
             This dataset failed:
-            <generic-history-item :item-id="HdaId" item-src="hda" />
+            <GenericHistoryItem :item-id="HdaId" item-src="hda" />
         </div>
         <div v-if="HdcaId">
             This dataset collection failed:
-            <generic-history-item :item-id="HdcaId" item-src="hdca" />
+            <GenericHistoryItem :item-id="HdcaId" item-src="hdca" />
         </div>
         <div v-if="jobId">
             This job failed:
-            <job-information :job_id="jobId" />
+            <JobInformation :job_id="jobId" />
         </div>
     </div>
 </template>

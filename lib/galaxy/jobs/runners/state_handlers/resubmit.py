@@ -3,6 +3,7 @@ from datetime import datetime
 
 from galaxy import model
 from galaxy.jobs.runners import JobState
+from galaxy.model.base import transaction
 from ._safe_eval import safe_eval
 
 __all__ = ("failure",)
@@ -61,7 +62,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
         # Is destination needed here, might these be serialized to the database?
         destination = resubmit.get("environment") or resubmit.get("destination")
         log.info(
-            "%s Job will be resubmitted to '%s' because %s at " "the '%s' destination",
+            "%s Job will be resubmitted to '%s' because %s at the '%s' destination",
             job_log_prefix,
             destination,
             MESSAGES[runner_state],
@@ -83,7 +84,8 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
             job.set_handler(resubmit["handler"])
             job_runner.sa_session.add(job)
             # Is this safe to do here?
-            job_runner.sa_session.flush()
+            with transaction(job_runner.sa_session):
+                job_runner.sa_session.commit()
         # Cache the destination to prevent rerunning dynamic after
         # resubmit
         job_state.job_wrapper.job_runner_mapper.cached_job_destination = new_destination
@@ -104,7 +106,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
         if job.params is None:
             job.params = {}
         job_state.runner_state_handled = True
-        info = "This job was resubmitted to the queue because %s on its " "compute resource." % MESSAGES[runner_state]
+        info = f"This job was resubmitted to the queue because {MESSAGES[runner_state]} on its compute resource."
         job_runner.mark_as_resubmitted(job_state, info=info)
         return
 

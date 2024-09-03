@@ -1,6 +1,7 @@
-<script lang="ts" setup>
-import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
+<script setup lang="ts">
 import { ref } from "vue";
+
+import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
 
 interface ToolSelectProps {
     toolPreferredObjectStoreId?: String | null;
@@ -11,7 +12,7 @@ const props = withDefaults(defineProps<ToolSelectProps>(), {
 });
 
 const selectedObjectStoreId = ref<String | null>(props.toolPreferredObjectStoreId);
-const newDatasetsDescription = "The default object store for the outputs of this tool";
+const newDatasetsDescription = "The default storage location for the outputs of this tool";
 const defaultOptionTitle = "Use Defaults";
 const defaultOptionDescription =
     "If the history has a default set, that will be used. If instead, you've set an option in your user preferences - that will be assumed to be your default selection. Finally, the Galaxy configuration will be used.";

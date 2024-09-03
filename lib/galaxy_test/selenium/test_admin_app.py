@@ -192,7 +192,6 @@ class TestAdminApp(SeleniumTestCase):
         admin_component.registration_form.wait_for_visible()
         self.screenshot("admin_user_registration")
 
-        self.admin_open()
         admin_component.index.groups.wait_for_and_click()
         admin_component.groups_grid.wait_for_visible()
         self.screenshot("admin_groups")
@@ -201,7 +200,6 @@ class TestAdminApp(SeleniumTestCase):
         admin_component.groups_create_view.wait_for_visible()
         self.screenshot("admin_groups_create")
 
-        self.admin_open()
         admin_component.index.roles.wait_for_and_click()
         admin_component.roles_grid.wait_for_visible()
         self.screenshot("admin_roles")

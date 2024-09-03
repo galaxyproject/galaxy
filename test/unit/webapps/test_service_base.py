@@ -3,7 +3,7 @@ from typing import Tuple
 import pytest
 
 from galaxy.schema.schema import ModelStoreFormat
-from galaxy.web.short_term_storage import ShortTermStorageAllocator
+from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.services.base import model_store_storage_target
 
 
@@ -13,7 +13,7 @@ class MockShortTermStorageAllocator(ShortTermStorageAllocator):
         self.expected_filename = expected_filename
         self.expected_mime_type = expected_mime_type
 
-    def new_target(self, filename, mime_type):
+    def new_target(self, filename, mime_type, duration=None, security=None):
         assert filename == self.expected_filename
         assert mime_type == self.expected_mime_type
 

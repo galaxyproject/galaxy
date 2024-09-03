@@ -17,6 +17,7 @@ from typing import (
 from galaxy.util import unicodify
 from .get_tests import (
     hashed_test_search,
+    import_test_to_command_list,
     main_test_search,
 )
 
@@ -77,7 +78,10 @@ def singularity_container_test(
 
                 for imp in test.get("imports", []):
                     try:
-                        check_output(exec_command + [test["import_lang"], f"import {imp}"], stderr=subprocess.STDOUT)
+                        check_output(
+                            exec_command + import_test_to_command_list(test["import_lang"], imp),
+                            stderr=subprocess.STDOUT,
+                        )
                     except subprocess.CalledProcessError as e:
                         errors.append({"import": imp, "output": unicodify(e.output)})
                         test_passed = False

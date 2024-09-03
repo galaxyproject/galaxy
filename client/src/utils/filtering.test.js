@@ -4,6 +4,40 @@ const filterTexts = [
     "name:'name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state:success extension:ext tag:first deleted:False visible:'TRUE'",
     'name:"name of item" hid_gt:10 hid-lt:100 create_time-gt:"2021-01-01" update_time-lt:\'2022-01-01\' state:sUccEss extension:EXT tag:FirsT deleted:false visible:true',
 ];
+const sampleFilters = [
+    {
+        filters: {
+            deleted: "true",
+            visible: null,
+            invalid: "value",
+        },
+        validFilters: {
+            deleted: true,
+        },
+        invalidFilters: {
+            invalid: "value",
+            visible: null,
+        },
+        validText: "deleted:true visible:any",
+    },
+    {
+        filters: {
+            deleted: "any",
+            related: 10,
+            hid_gt: 5,
+            hid_less_than: 20,
+        },
+        validFilters: {
+            deleted: "any",
+            related: 10,
+            hid_gt: 5,
+        },
+        invalidFilters: {
+            hid_less_than: 20,
+        },
+        validText: "deleted:any related:10 hid>5 visible:any",
+    },
+];
 
 describe("filtering", () => {
     test("parse default filter", () => {
@@ -22,18 +56,18 @@ describe("filtering", () => {
         expect(queryDict["visible"]).toBe(true);
     });
     test("parse name filter", () => {
-        const filters = HistoryFilters.getFilters("name of item");
+        const filters = HistoryFilters.getFiltersForText("name of item");
         expect(filters[0][0]).toBe("name");
         expect(filters[0][1]).toBe("name of item");
         const queryDict = HistoryFilters.getQueryDict("name of item");
         expect(queryDict["name-contains"]).toBe("name of item");
     });
     test("parse any for default parameters", () => {
-        const filters = HistoryFilters.getFilters("deleted:any");
+        const filters = HistoryFilters.getFiltersForText("deleted:any");
         expect(filters.length).toBe(0);
         const queryDict = HistoryFilters.getQueryDict("deleted:any");
         expect(Object.keys(queryDict).length).toBe(0);
-        const filtersAny = HistoryFilters.getFilters("name:any");
+        const filtersAny = HistoryFilters.getFiltersForText("name:any");
         expect(filtersAny[0][0]).toBe("name");
         expect(filtersAny[0][1]).toBe("any");
     });
@@ -47,17 +81,31 @@ describe("filtering", () => {
     });
     test("parse get filter value", () => {
         expect(HistoryFilters.getFilterValue(filterTexts[0], "name")).toBe("name of item");
-        expect(HistoryFilters.getFilterValue(filterTexts[0], "hid", "gt")).toBe("10");
-        expect(HistoryFilters.getFilterValue(filterTexts[0], "hid", "lt")).toBe("100");
+        expect(HistoryFilters.getFilterValue(filterTexts[0], "hid_gt")).toBe("10");
+        expect(HistoryFilters.getFilterValue(filterTexts[0], "hid_lt")).toBe("100");
         expect(HistoryFilters.getFilterValue(filterTexts[0], "tag")).toBe("first");
-        expect(HistoryFilters.getFilterValue(filterTexts[0], "deleted")).toBe("False");
-        expect(HistoryFilters.getFilterValue(filterTexts[0], "visible")).toBe("TRUE");
-        expect(HistoryFilters.getFilterValue(filterTexts[1], "hid", "gt")).toBe("10");
-        expect(HistoryFilters.getFilterValue(filterTexts[1], "create_time", "gt")).toBe("2021-01-01");
+        expect(HistoryFilters.getFilterValue(filterTexts[0], "deleted")).toBe(false);
+        expect(HistoryFilters.getFilterValue(filterTexts[0], "visible")).toBe(true);
+        expect(HistoryFilters.getFilterValue(filterTexts[0], "invalid")).toBe(undefined);
+        expect(HistoryFilters.getFilterValue(filterTexts[1], "hid_gt")).toBe("10");
+        expect(HistoryFilters.getFilterValue(filterTexts[1], "create_time_gt")).toBe("2021-01-01");
+        expect(HistoryFilters.getFilterValue(filterTexts[1], "create_time_gt", true)).toBe(1609459200);
+        expect(HistoryFilters.getFilterValue("", "deleted")).toBe(false);
+        expect(HistoryFilters.getFilterValue("", "visible")).toBe(true);
+        expect(HistoryFilters.getFilterValue("name_eq:Select", "name")).toBe(undefined);
+        expect(HistoryFilters.getFilterValue("name_eq:Select", "name_eq")).toBe("select");
+    });
+    test("parse get valid filters and settings", () => {
+        sampleFilters.forEach((sample) => {
+            const { validFilters, invalidFilters } = HistoryFilters.getValidFilters(sample.filters);
+            expect(validFilters).toEqual(sample.validFilters);
+            expect(invalidFilters).toEqual(sample.invalidFilters);
+            expect(HistoryFilters.getFilterText(sample.filters)).toEqual(sample.validText);
+        });
     });
     test("parse filter text as entries", () => {
         filterTexts.forEach((filterText) => {
-            const filters = HistoryFilters.getFilters(filterText);
+            const filters = HistoryFilters.getFiltersForText(filterText);
             expect(filters[0][0]).toBe("name");
             expect(filters[0][1]).toBe("name of item");
             expect(filters[1][0]).toBe("hid_gt");
@@ -78,6 +126,9 @@ describe("filtering", () => {
             expect(filters[8][1]).toBe("false");
             expect(filters[9][0]).toBe("visible");
             expect(filters[9][1]).toBe("true");
+            const filters_eq = HistoryFilters.getFiltersForText('genome_build_eq:"hg19"');
+            expect(filters_eq[0][0]).toBe("genome_build_eq");
+            expect(filters_eq[0][1]).toBe("hg19");
         });
     });
     test("parse filter text as query dictionary", () => {
@@ -94,6 +145,45 @@ describe("filtering", () => {
             expect(queryDict["deleted"]).toBe(false);
             expect(queryDict["visible"]).toBe(true);
         });
+        const queryDict = HistoryFilters.getQueryDict("name_eq:'name of item'");
+        expect(queryDict["name-eq"]).toBe("name of item");
+    });
+    test("apply valid filters to existing filterText", () => {
+        expect(HistoryFilters.applyFiltersToText(sampleFilters[0].filters, "")).toEqual("deleted:true visible:true");
+        expect(HistoryFilters.applyFiltersToText(sampleFilters[1].filters, "")).toEqual(
+            "deleted:any visible:true related:10 hid>5"
+        );
+        expect(
+            HistoryFilters.applyFiltersToText(
+                { hid_lt: 100, create_time_gt: "2021-01-01", state: "success", tag: "first" },
+                ""
+            )
+        ).toEqual("hid<100 create_time>2021-01-01 state:success tag:first");
+        expect(
+            HistoryFilters.applyFiltersToText(
+                { hid_lt: 100, create_time_gt: "2021-01-01", state: "success", tag: "first" },
+                filterTexts[0],
+                true
+            )
+        ).toEqual("name:'name of item' hid>10 update_time<2022-01-01 extension:ext");
+        expect(HistoryFilters.applyFiltersToText({ deleted: "any", visible: true }, "")).toEqual(
+            "deleted:any visible:true"
+        );
+        expect(HistoryFilters.applyFiltersToText({ deleted: "any" }, "deleted:any visible:true", true)).toEqual(
+            "visible:true deleted:any"
+        );
+    });
+    test("set a single valid filter to existing filterText", () => {
+        expect(HistoryFilters.setFilterValue("", "deleted", "any")).toEqual("deleted:any visible:true");
+        expect(HistoryFilters.setFilterValue("deleted:any visible:true", "deleted", "false")).toEqual("");
+        expect(HistoryFilters.setFilterValue("", "deleted", "true")).toEqual("deleted:true visible:true");
+        expect(HistoryFilters.setFilterValue("hid<299", "create_time_gt", "11-09-1981")).toEqual(
+            "hid<299 create_time>11-09-1981"
+        );
+        expect(HistoryFilters.setFilterValue("hid<299", "create_time_lt", "11-09-1981")).toEqual(
+            "hid<299 create_time<11-09-1981"
+        );
+        expect(HistoryFilters.setFilterValue("hid<299", "a_created_time_gt", "11-09-1981")).toEqual("hid<299");
     });
     test("validate filtering of a history item", () => {
         const item = {
@@ -108,7 +198,7 @@ describe("filtering", () => {
             visible: true,
         };
         filterTexts.forEach((filterText) => {
-            const filters = HistoryFilters.getFilters(filterText);
+            const filters = HistoryFilters.getFiltersForText(filterText);
             expect(HistoryFilters.testFilters(filters, { ...item })).toBe(true);
             expect(HistoryFilters.testFilters(filters, { ...item, hid: 10 })).toBe(false);
             expect(HistoryFilters.testFilters(filters, { ...item, hid: 100 })).toBe(false);
@@ -124,33 +214,33 @@ describe("filtering", () => {
             expect(HistoryFilters.testFilters(filters, { ...item, deleted: "nottrue" })).toBe(true);
         });
     });
-    test("Parsing & sync of filter settings", () => {
-        // Expected parsed settings
-        const parsedFilterSettings = {
-            "name:": "name of item",
-            "hid>": "10",
-            "hid<": "100",
-            "create_time>": "2021-01-01",
-            "update_time<": "2022-01-01",
-            "state:": "success",
-            "extension:": "ext",
-            "tag:": "first",
-            "deleted:": "false",
-            "visible:": "true",
+    test("Parsing & sync of filters", () => {
+        // Expected parsed filters
+        const parsedFilters = {
+            name: "name of item",
+            hid_gt: "10",
+            hid_lt: "100",
+            create_time_gt: "2021-01-01",
+            update_time_lt: "2022-01-01",
+            state: "success",
+            extension: "ext",
+            tag: "first",
+            deleted: "false",
+            visible: "true",
         };
-        // iterate through filterTexts and compare with parsedFilterSettings
+        // iterate through filterTexts and compare with parsedFilters
         filterTexts.forEach((filterText) => {
-            expect(HistoryFilters.toAlias(HistoryFilters.getFilters(filterText))).toEqual(parsedFilterSettings);
+            expect(Object.fromEntries(HistoryFilters.getFiltersForText(filterText))).toEqual(parsedFilters);
         });
     });
     test("named tag (hash) conversion", () => {
-        const filters = HistoryFilters.getFilters("tag:#test");
+        const filters = HistoryFilters.getFiltersForText("tag:#test");
         expect(filters[0][0]).toBe("tag");
         expect(filters[0][1]).toBe("#test");
-        const filtersQuote = HistoryFilters.getFilters("tag:'#test me'");
+        const filtersQuote = HistoryFilters.getFiltersForText("tag:'#test me'");
         expect(filtersQuote[0][0]).toBe("tag");
         expect(filtersQuote[0][1]).toBe("#test me");
-        const filtersQuoteDouble = HistoryFilters.getFilters('tag:"#test me"');
+        const filtersQuoteDouble = HistoryFilters.getFiltersForText('tag:"#test me"');
         expect(filtersQuoteDouble[0][0]).toBe("tag");
         expect(filtersQuoteDouble[0][1]).toBe("#test me");
         const queryDict = HistoryFilters.getQueryDict("tag:#test");

@@ -1,40 +1,55 @@
 import logging
 import os
 import shutil
-from typing import List
+from typing import (
+    List,
+    TYPE_CHECKING,
+    Union,
+)
 
-from galaxy.structured_app import StructuredApp
+from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.util import hg_util
-from galaxy.util import etree
+from galaxy.util import (
+    Element,
+    SubElement,
+)
 from galaxy.util.tool_shed import xml_util
+
+if TYPE_CHECKING:
+    from galaxy.structured_app import BasicSharedApp
 
 log = logging.getLogger(__name__)
 
 
+RequiredAppT = Union["BasicSharedApp", InstallationTarget]
+
+
 class ShedToolDataTableManager:
-    def __init__(self, app: StructuredApp):
+    app: RequiredAppT
+
+    def __init__(self, app: RequiredAppT):
         self.app = app
 
     def generate_repository_info_elem(
         self, tool_shed: str, repository_name: str, changeset_revision: str, owner: str, parent_elem=None, **kwd
-    ) -> etree.Element:
+    ) -> Element:
         """Create and return an ElementTree repository info Element."""
         if parent_elem is None:
-            elem = etree.Element("tool_shed_repository")
+            elem = Element("tool_shed_repository")
         else:
-            elem = etree.SubElement(parent_elem, "tool_shed_repository")
-        tool_shed_elem = etree.SubElement(elem, "tool_shed")
+            elem = SubElement(parent_elem, "tool_shed_repository")
+        tool_shed_elem = SubElement(elem, "tool_shed")
         tool_shed_elem.text = tool_shed
-        repository_name_elem = etree.SubElement(elem, "repository_name")
+        repository_name_elem = SubElement(elem, "repository_name")
         repository_name_elem.text = repository_name
-        repository_owner_elem = etree.SubElement(elem, "repository_owner")
+        repository_owner_elem = SubElement(elem, "repository_owner")
         repository_owner_elem.text = owner
-        changeset_revision_elem = etree.SubElement(elem, "installed_changeset_revision")
+        changeset_revision_elem = SubElement(elem, "installed_changeset_revision")
         changeset_revision_elem.text = changeset_revision
         # add additional values
         # TODO: enhance additional values to allow e.g. use of dict values that will recurse
         for key, value in kwd.items():
-            new_elem = etree.SubElement(elem, key)
+            new_elem = SubElement(elem, key)
             new_elem.text = value
         return elem
 
@@ -151,16 +166,17 @@ class ShedToolDataTableManager:
         if os.path.exists(tool_data_table_conf_filename):
             tree, error_message = xml_util.parse_xml(tool_data_table_conf_filename)
             if tree:
-                for elem in tree.getroot():
-                    # Append individual table elems or other elemes, but not tables elems.
-                    if elem.tag == "tables":
-                        # TODO: this code need to be revised
-                        for _table_elem in elems:
-                            elems.append(elem)
-                    else:
-                        elems.append(elem)
+                root = tree.getroot()
+                if root.tag == "tables":
+                    elems = list(root)
+                else:
+                    log.warning(
+                        "The '%s' data table file has '%s' instead of <tables> as root element, skipping.",
+                        tool_data_table_conf_filename,
+                        root.tag,
+                    )
         else:
-            log.debug(
+            log.warning(
                 "The '%s' data table file was not found, but was expected to be copied from '%s' during repository installation.",
                 tool_data_table_conf_filename,
                 TOOL_DATA_TABLE_FILE_SAMPLE_NAME,

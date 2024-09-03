@@ -53,8 +53,7 @@ class DisplayApplicationLink:
 
     def get_display_url(self, data, trans):
         dataset_hash, user_hash = encode_dataset_user(trans, data, None)
-        return trans.app.legacy_url_for(
-            mapper=trans.app.legacy_mapper,
+        return trans.app.url_for(
             controller="dataset",
             action="display_application",
             dataset_id=dataset_hash,

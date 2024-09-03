@@ -1,9 +1,9 @@
-import { zoom, zoomIdentity, type D3ZoomEvent } from "d3-zoom";
-import { ref, watch } from "vue";
+import { type UseScrollReturn } from "@vueuse/core";
 import { select } from "d3-selection";
-import type { Ref } from "vue";
-import type { XYPosition } from "@/stores/workflowEditorStateStore";
-import type { UseScrollReturn } from "@vueuse/core";
+import { type D3ZoomEvent, zoom, zoomIdentity } from "d3-zoom";
+import { type Ref, ref, watch } from "vue";
+
+import { type XYPosition } from "@/stores/workflowEditorStateStore";
 
 // if element is draggable it may implement its own drag handler,
 // but d3zoom would call preventDefault

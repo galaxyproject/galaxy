@@ -1,5 +1,8 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+
+import { ROOT_COMPONENT } from "@/utils/navigation/schema";
+
 import UserDeletion from "./UserDeletion.vue";
 
 const localVue = getLocalVue(true);
@@ -16,12 +19,11 @@ function mountComponent() {
     return wrapper;
 }
 
-import { ROOT_COMPONENT } from "@/utils/navigation/schema";
-
 describe("UserDeletion.vue", () => {
     it("contains a localized link", async () => {
         const wrapper = mountComponent();
         const el = await wrapper.find(ROOT_COMPONENT.preferences.delete_account.selector);
-        expect(el.text()).toBeLocalizationOf("Delete Account");
+        // todo: fix typing, see note in ExportForm.test.ts
+        (expect(el.text()) as any).toBeLocalizationOf("Delete Account");
     });
 });

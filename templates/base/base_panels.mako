@@ -142,10 +142,8 @@
             <div id="background"></div>
             
             ## Layer iframes over backgrounds
-            <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
-                ${self.masthead()}
-            </div>
-            
+            ${self.masthead()}
+
             %if self.message_box_visible:
                 <div id="messagebox" class="alert alert-${app.config.message_box_class} rounded-0 m-0 p-2">
                     ${app.config.message_box_content}
@@ -160,30 +158,22 @@
             
             ${self.overlay(visible=self.overlay_visible)}
             
-            <div id="columns">
+            <div id="columns" class="d-flex">
                 %if self.has_left_panel:
-                    <div id="left">
+                    <div id="left" style="overflow: auto;">
                         ${self.left_panel()}
-                        <div class="unified-panel-footer">
-                            <div id="left-panel-collapse" class="panel-collapse left"></div>
-                            <div id="left-panel-drag" class="drag"></div>
-                        </div>
-                    </div><!--end left-->
+                    </div>
                 %endif
                 <div id="center" class="inbound">
                     ${self.center_panel()}
-                </div><!--end center-->
+                </div>
                 %if self.has_right_panel:
                     <div id="right">
                         ${self.right_panel()}
-                        <div class="unified-panel-footer">
-                            <div id="right-panel-collapse" class="panel-collapse right"></div>
-                            <div id="right-panel-drag" class="drag"></div>
-                        </div>
-                    </div><!--end right-->
+                    </div>
                 %endif
-            </div><!--end columns-->
-        </div><!--end everything-->
+            </div>
+        </div>
 
         <div id='dd-helper' style="display: none;"></div>
         ## Allow other body level elements

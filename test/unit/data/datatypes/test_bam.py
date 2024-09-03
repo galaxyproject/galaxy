@@ -1,3 +1,5 @@
+import json
+
 from pysam import (  # type: ignore[attr-defined]
     AlignmentFile,
     view,
@@ -46,7 +48,9 @@ def test_set_meta_presorted():
     with get_dataset("1.bam") as dataset:
         b.set_meta(dataset=dataset)
         assert dataset.metadata.sort_order == "coordinate"
-        bam_file = AlignmentFile(dataset.file_name, mode="rb", index_filename=dataset.metadata.bam_index.file_name)
+        bam_file = AlignmentFile(
+            dataset.get_file_name(), mode="rb", index_filename=dataset.metadata.bam_index.get_file_name()
+        )
         assert bam_file.has_index() is True
 
 
@@ -63,3 +67,31 @@ def test_set_meta_header_info():
             "SQ": [{"SN": "ref", "LN": 45}, {"SN": "ref2", "LN": 40}],
         }
         assert dataset.metadata.reference_names == ["ref", "ref2"]
+
+
+def test_get_chunk():
+    with get_dataset("bam_from_sam.bam") as dataset:
+        chunk = _get_chunk_response(dataset, 0, 1)
+        offset = chunk["offset"]
+
+        chunk2 = _get_chunk_response(dataset, offset, 1)
+
+        offset2 = chunk2["offset"]
+        chunk3 = _get_chunk_response(dataset, offset2, 1)
+        offset3 = chunk3["offset"]
+
+        assert offset < offset2
+        assert offset2 < offset3
+
+        double_chunk = _get_chunk_response(dataset, offset, 2)
+        double_chunk["ck_data"].startswith(chunk2["ck_data"])
+        double_chunk["ck_data"].endswith(chunk3["ck_data"])
+
+        double_chunk_offset = double_chunk["offset"]
+        assert offset3 == double_chunk_offset
+
+
+def _get_chunk_response(dataset, offset, chunk_size):
+    b = Bam()
+    chunk = b.get_chunk(None, dataset, offset, chunk_size)
+    return json.loads(chunk)

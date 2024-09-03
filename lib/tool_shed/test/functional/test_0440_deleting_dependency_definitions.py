@@ -1,8 +1,6 @@
 from tool_shed_client.schema import Repository
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 column_repository_name = "column_maker_0440"
 column_repository_description = "Add column"
@@ -83,16 +81,10 @@ class TestDeletedDependencies(ShedTwillTestCase):
             category=category,
             strings_displayed=strings_displayed,
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="column_maker/column_maker.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "column_maker/column_maker.tar",
             commit_message="Uploaded column maker tool tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0010_create_convert_chars_repository(self):
@@ -111,16 +103,10 @@ class TestDeletedDependencies(ShedTwillTestCase):
             category=category,
             strings_displayed=strings_displayed,
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="convert_chars/convert_chars.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "convert_chars/convert_chars.tar",
             commit_message="Uploaded convert chars tool tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0015_create_dependency_on_convert_chars(self):
@@ -179,15 +165,14 @@ class TestDeletedDependencies(ShedTwillTestCase):
         new_changeset_revision = self.get_repository_tip(repository)
         # Check that the old changeset revision is still downloadable.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, old_changeset_revision)
-        assert metadata_record.downloadable, (
-            "The revision of %s that contains repository_dependencies.xml is no longer downloadable." % repository.name
-        )
+        assert (
+            metadata_record.downloadable
+        ), f"The revision of {repository.name} that contains repository_dependencies.xml is no longer downloadable."
         # Check that the new tip is also downloadable.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, new_changeset_revision)
-        assert metadata_record.downloadable, (
-            "The revision of %s that does not contain repository_dependencies.xml is not downloadable."
-            % repository.name
-        )
+        assert (
+            metadata_record.downloadable
+        ), f"The revision of {repository.name} that does not contain repository_dependencies.xml is not downloadable."
         # Verify that there are only two downloadable revisions.
         assert (
             len(self._db_repository(repository).downloadable_revisions) == 2
@@ -213,17 +198,7 @@ class TestDeletedDependencies(ShedTwillTestCase):
             category=category,
             strings_displayed=strings_displayed,
         )
-        self.upload_file(
-            repository,
-            filename="bwa/complex/tool_dependencies.xml",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded package tool dependency definition.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.add_file_to_repository(repository, "bwa/complex/tool_dependencies.xml")
 
     def test_0035_create_bwa_base_repository(self):
         """Create and populate the bwa_base_0440 repository.
@@ -242,16 +217,10 @@ class TestDeletedDependencies(ShedTwillTestCase):
             category=category,
             strings_displayed=strings_displayed,
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="bwa/complex/bwa_base.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "bwa/complex/bwa_base.tar",
             commit_message="Uploaded BWA nucleotide space mapping tool tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0040_create_dependency_on_bwa_package_repository(self):
@@ -309,14 +278,14 @@ class TestDeletedDependencies(ShedTwillTestCase):
         new_changeset_revision = self.get_repository_tip(repository)
         # Check that the old changeset revision is still downloadable.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, old_changeset_revision)
-        assert metadata_record.downloadable, (
-            "The revision of %s that contains tool_dependencies.xml is no longer downloadable." % repository.name
-        )
+        assert (
+            metadata_record.downloadable
+        ), f"The revision of {repository.name} that contains tool_dependencies.xml is no longer downloadable."
         # Check that the new tip is also downloadable.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, new_changeset_revision)
-        assert metadata_record.downloadable, (
-            "The revision of %s that does not contain tool_dependencies.xml is not downloadable." % repository.name
-        )
+        assert (
+            metadata_record.downloadable
+        ), f"The revision of {repository.name} that does not contain tool_dependencies.xml is not downloadable."
         # Verify that there are only two downloadable revisions.
         assert (
             len(self._db_repository(repository).downloadable_revisions) == 2
@@ -342,17 +311,7 @@ class TestDeletedDependencies(ShedTwillTestCase):
             category=category,
             strings_displayed=strings_displayed,
         )
-        self.upload_file(
-            repository,
-            filename="bwa/complex/tool_dependencies.xml",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded package tool dependency definition.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.add_file_to_repository(repository, "bwa/complex/tool_dependencies.xml")
 
     def test_0060_delete_bwa_tool_dependency_definition(self):
         """Delete the tool_dependencies.xml file from bwa_tool_dependency_0440.
@@ -371,9 +330,9 @@ class TestDeletedDependencies(ShedTwillTestCase):
         assert old_changeset_revision != new_changeset_revision
         # Check that the old changeset revision is still downloadable.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, old_changeset_revision)
-        assert metadata_record.downloadable, (
-            "The revision of %s that contains tool_dependencies.xml is no longer downloadable." % repository.name
-        )
+        assert (
+            metadata_record.downloadable
+        ), f"The revision of {repository.name} that contains tool_dependencies.xml is no longer downloadable."
         # Check that the new tip does not have a metadata revision.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, new_changeset_revision)
         # If a changeset revision does not have metadata, the above method will return None.
@@ -400,29 +359,18 @@ class TestDeletedDependencies(ShedTwillTestCase):
         # Record the current tip, so we can verify that it's still not a downloadable revision after tool_dependencies.xml
         # is re-uploaded and a new downloadable revision is created.
         old_changeset_revision = self.get_repository_tip(repository)
-        self.upload_file(
-            repository,
-            filename="bwa/complex/tool_dependencies.xml",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded package tool dependency definition.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.add_file_to_repository(repository, "bwa/complex/tool_dependencies.xml")
         new_changeset_revision = self.get_repository_tip(repository)
         # Check that the old changeset revision is still downloadable.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, old_changeset_revision)
-        assert metadata_record is None, (
-            "The revision of %s that does not contain tool_dependencies.xml should not be downloadable, but is."
-            % repository.name
-        )
+        assert (
+            metadata_record is None
+        ), f"The revision of {repository.name} that does not contain tool_dependencies.xml should not be downloadable, but is."
         # Check that the new tip is also downloadable.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, new_changeset_revision)
-        assert metadata_record.downloadable, (
-            "The revision of %s that contains tool_dependencies.xml is not downloadable." % repository.name
-        )
+        assert (
+            metadata_record.downloadable
+        ), f"The revision of {repository.name} that contains tool_dependencies.xml is not downloadable."
         # Verify that there are only two downloadable revisions.
         assert (
             len(self._db_repository(repository).downloadable_revisions) == 1

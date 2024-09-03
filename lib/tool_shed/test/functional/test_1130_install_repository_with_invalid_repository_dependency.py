@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 column_maker_repository_name = "column_maker_0110"
 column_maker_repository_description = "A flexible aligner."
@@ -18,6 +16,8 @@ running_standalone = False
 
 class TestBasicRepositoryDependencies(ShedTwillTestCase):
     """Testing emboss 5 with repository dependencies."""
+
+    requires_galaxy = True
 
     def test_0000_initiate_users(self):
         """Create necessary user accounts and login as an admin user."""
@@ -43,16 +43,10 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
         )
         if self.repository_is_new(column_maker_repository):
             running_standalone = True
-            self.upload_file(
+            self.commit_tar_to_repository(
                 column_maker_repository,
-                filename="column_maker/column_maker.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "column_maker/column_maker.tar",
                 commit_message="Uploaded column_maker tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0020_create_emboss_5_repository_and_upload_files(self):
@@ -68,16 +62,10 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="emboss/emboss.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "emboss/emboss.tar",
                 commit_message="Uploaded emboss tool tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0025_generate_repository_dependency_with_invalid_url(self):
@@ -168,7 +156,6 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
 
     def test_0045_install_repository_with_invalid_repository_dependency(self):
         """Install the repository and verify that galaxy detects invalid repository dependencies."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
         preview_strings_displayed = [
             "emboss_0110",
@@ -183,7 +170,7 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
             install_repository_dependencies=True,
             preview_strings_displayed=preview_strings_displayed,
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
         json = self.display_installed_repository_manage_json(installed_repository)

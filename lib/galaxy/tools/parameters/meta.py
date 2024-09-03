@@ -12,15 +12,16 @@ from typing import (
 
 from galaxy import (
     exceptions,
-    model,
     util,
 )
+from galaxy.model import HistoryDatasetCollectionAssociation
 from galaxy.model.dataset_collections import (
     matching,
     subcollections,
 )
 from galaxy.util import permutations
 from . import visit_input_values
+from .wrapped import process_key
 
 log = logging.getLogger(__name__)
 
@@ -153,31 +154,6 @@ def expand_workflow_inputs(param_inputs, inputs=None):
     return WorkflowParameterExpansion(param_combinations, params_keys, input_combinations)
 
 
-def process_key(incoming_key, incoming_value, d):
-    key_parts = incoming_key.split("|")
-    if len(key_parts) == 1:
-        # Regular parameter
-        if incoming_key in d and not incoming_value:
-            # In case we get an empty repeat after we already filled in a repeat element
-            return
-        d[incoming_key] = incoming_value
-    elif key_parts[0].rsplit("_", 1)[-1].isdigit():
-        # Repeat
-        input_name, index = key_parts[0].rsplit("_", 1)
-        index = int(index)
-        d.setdefault(input_name, [])
-        newlist = [{} for _ in range(index + 1)]
-        d[input_name].extend(newlist[len(d[input_name]) :])
-        subdict = d[input_name][index]
-        process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
-    else:
-        # Section / Conditional
-        input_name = key_parts[0]
-        subdict = {}
-        d[input_name] = subdict
-        process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
-
-
 ExpandedT = Tuple[List[Dict[str, Any]], Optional[matching.MatchingCollections]]
 
 
@@ -265,7 +241,9 @@ def __expand_collection_parameter(trans, input_key, incoming_val, collections_to
             encoded_hdc_id = incoming_val
             subcollection_type = None
     hdc_id = trans.app.security.decode_id(encoded_hdc_id)
-    hdc = trans.sa_session.query(model.HistoryDatasetCollectionAssociation).get(hdc_id)
+    hdc = trans.sa_session.get(HistoryDatasetCollectionAssociation, hdc_id)
+    if not hdc.collection.populated_optimized:
+        raise exceptions.ToolInputsNotReadyException("An input collection is not populated.")
     collections_to_match.add(input_key, hdc, subcollection_type=subcollection_type, linked=linked)
     if subcollection_type is not None:
         subcollection_elements = subcollections.split_dataset_collection_instance(hdc, subcollection_type)

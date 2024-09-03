@@ -2,6 +2,7 @@
 to determine application configuration. Some hard coded defaults for Galaxy but
 this should be reusable by tool shed and pulsar as well.
 """
+
 import os
 import os.path
 import sys
@@ -99,7 +100,7 @@ def load_app_properties(
 ):
     if config_file is None:
         config_file = ini_file
-        config_section = ini_section
+        config_section = config_section or ini_section
 
     # read from file or init w/no file
     if config_file:

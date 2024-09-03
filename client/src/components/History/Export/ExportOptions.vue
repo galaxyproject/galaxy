@@ -1,15 +1,15 @@
-<script setup>
+<script setup lang="ts">
+import { BCard, BCollapse, BFormCheckbox, BFormGroup, BFormSelect, BLink } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
-import { BCard, BFormSelect, BFormCheckbox, BFormGroup, BCollapse, BLink } from "bootstrap-vue";
-import { ExportParamsModel } from "components/Common/models/exportRecordModel";
-import { AVAILABLE_EXPORT_FORMATS } from "./services";
 
-const props = defineProps({
-    exportParams: {
-        type: ExportParamsModel,
-        required: true,
-    },
-});
+import { AVAILABLE_EXPORT_FORMATS } from "@/api/histories.export";
+import type { ExportParams } from "@/components/Common/models/exportRecordModel";
+
+interface Props {
+    exportParams: ExportParams;
+}
+
+const props = defineProps<Props>();
 
 const emit = defineEmits(["onValueChanged"]);
 
@@ -29,52 +29,53 @@ function onValueChanged() {
 
 <template>
     <div>
-        <b-link
+        <BLink
             id="toggle-options-link"
             :class="isExpanded ? null : 'collapsed'"
             :aria-expanded="isExpanded ? 'true' : 'false'"
             aria-controls="collapse-options"
             @click="isExpanded = !isExpanded">
             {{ title }}
-        </b-link>
-        <b-collapse id="collapse-options" v-model="isExpanded">
-            <b-card>
-                <b-form-group label="Export Format:" label-for="format">
-                    <b-form-select
+        </BLink>
+
+        <BCollapse id="collapse-options" v-model="isExpanded">
+            <BCard>
+                <BFormGroup label="Export Format:" label-for="format">
+                    <BFormSelect
                         id="format-selector"
                         v-model="localOptions.modelStoreFormat"
                         :options="AVAILABLE_EXPORT_FORMATS"
                         value-field="id"
                         text-field="name"
                         @change="onValueChanged" />
-                </b-form-group>
+                </BFormGroup>
 
-                <b-form-group label="Dataset files included in the package:">
-                    <b-form-checkbox
+                <BFormGroup label="Dataset files included in the package:">
+                    <BFormCheckbox
                         id="include-files-check"
                         v-model="localOptions.includeFiles"
                         switch
                         @change="onValueChanged">
                         Include Active
-                    </b-form-checkbox>
+                    </BFormCheckbox>
 
-                    <b-form-checkbox
+                    <BFormCheckbox
                         id="include-deleted-check"
                         v-model="localOptions.includeDeleted"
                         switch
                         @change="onValueChanged">
                         Include Deleted (not purged)
-                    </b-form-checkbox>
+                    </BFormCheckbox>
 
-                    <b-form-checkbox
+                    <BFormCheckbox
                         id="include-hidden-check"
                         v-model="localOptions.includeHidden"
                         switch
                         @change="onValueChanged">
                         Include Hidden
-                    </b-form-checkbox>
-                </b-form-group>
-            </b-card>
-        </b-collapse>
+                    </BFormCheckbox>
+                </BFormGroup>
+            </BCard>
+        </BCollapse>
     </div>
 </template>

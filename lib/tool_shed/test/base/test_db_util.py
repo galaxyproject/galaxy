@@ -1,21 +1,24 @@
 import logging
-from typing import Optional
+from typing import List
 
 from sqlalchemy import (
-    and_,
     false,
-    true,
+    select,
 )
 
 import galaxy.model
 import galaxy.model.tool_shed_install
 import tool_shed.webapp.model as model
+from galaxy.model.db.user import (
+    get_user_by_email,
+    get_user_by_username,
+)
 
 log = logging.getLogger("test.tool_shed.test_db_util")
 
 
 def sa_session():
-    from galaxy_test.driver.driver_util import tool_shed_context as sa_session
+    from .driver import tool_shed_context as sa_session
 
     return sa_session
 
@@ -26,83 +29,44 @@ def install_session():
     return install_session
 
 
-def delete_obj(obj):
-    sa_session().delete(obj)
-    sa_session().flush()
-
-
-def delete_user_roles(user):
-    for ura in user.roles:
-        sa_session().delete(ura)
-    sa_session().flush()
-
-
 def flush(obj):
     sa_session().add(obj)
     sa_session().flush()
 
 
 def get_all_repositories():
-    return sa_session().query(model.Repository).all()
+    return sa_session().scalars(select(model.Repository)).all()
 
 
-def get_all_installed_repositories(actually_installed=False):
-    if actually_installed:
-        return (
-            install_session()
-            .query(galaxy.model.tool_shed_install.ToolShedRepository)
-            .filter(
-                and_(
-                    galaxy.model.tool_shed_install.ToolShedRepository.table.c.deleted == false(),
-                    galaxy.model.tool_shed_install.ToolShedRepository.table.c.uninstalled == false(),
-                    galaxy.model.tool_shed_install.ToolShedRepository.table.c.status
-                    == galaxy.model.tool_shed_install.ToolShedRepository.installation_status.INSTALLED,
-                )
-            )
-            .all()
-        )
-    else:
-        return install_session().query(galaxy.model.tool_shed_install.ToolShedRepository).all()
-
-
-def get_galaxy_repository_by_name_owner_changeset_revision(repository_name, owner, changeset_revision):
-    return (
-        install_session()
-        .query(galaxy.model.tool_shed_install.ToolShedRepository)
-        .filter(
-            and_(
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner,
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.changeset_revision == changeset_revision,
-            )
-        )
-        .first()
+def get_all_installed_repositories(session=None) -> List[galaxy.model.tool_shed_install.ToolShedRepository]:
+    if session is None:
+        session = install_session()
+    ToolShedRepository = galaxy.model.tool_shed_install.ToolShedRepository
+    stmt = (
+        select(ToolShedRepository)
+        .where(ToolShedRepository.deleted == false())
+        .where(ToolShedRepository.uninstalled == false())
+        .where(ToolShedRepository.status == ToolShedRepository.installation_status.INSTALLED)
     )
+    return session.scalars(stmt).all()
 
 
 def get_installed_repository_by_id(repository_id):
-    return (
-        install_session()
-        .query(galaxy.model.tool_shed_install.ToolShedRepository)
-        .filter(galaxy.model.tool_shed_install.ToolShedRepository.table.c.id == repository_id)
-        .first()
-    )
+    return install_session().get(galaxy.model.tool_shed_install.ToolShedRepository, repository_id)
 
 
-def get_installed_repository_by_name_owner(repository_name, owner, return_multiple=False):
-    query = (
-        install_session()
-        .query(galaxy.model.tool_shed_install.ToolShedRepository)
-        .filter(
-            and_(
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner,
-            )
-        )
+def get_installed_repository_by_name_owner(repository_name, owner, return_multiple=False, session=None):
+    if session is None:
+        session = install_session()
+    ToolShedRepository = galaxy.model.tool_shed_install.ToolShedRepository
+    stmt = (
+        select(ToolShedRepository)
+        .where(ToolShedRepository.name == repository_name)
+        .where(ToolShedRepository.owner == owner)
     )
     if return_multiple:
-        return query.all()
-    return query.first()
+        return session.scalars(stmt).all()
+    return session.scalars(stmt.limit(1)).first()
 
 
 def get_role(user, role_name):
@@ -113,72 +77,21 @@ def get_role(user, role_name):
 
 
 def get_repository_role_association(repository_id, role_id):
-    rra = (
-        sa_session()
-        .query(model.RepositoryRoleAssociation)
-        .filter(
-            and_(
-                model.RepositoryRoleAssociation.table.c.role_id == role_id,
-                model.RepositoryRoleAssociation.table.c.repository_id == repository_id,
-            )
-        )
-        .first()
+    stmt = (
+        select(model.RepositoryRoleAssociation)
+        .where(model.RepositoryRoleAssociation.role_id == role_id)
+        .where(model.RepositoryRoleAssociation.repository_id == repository_id)
+        .limit(1)
     )
-    return rra
+    return sa_session().scalars(stmt).first()
 
 
 def get_repository_by_id(repository_id):
-    return sa_session().query(model.Repository).filter(model.Repository.table.c.id == repository_id).first()
-
-
-def get_repository_downloadable_revisions(repository_id):
-    revisions = (
-        sa_session()
-        .query(model.RepositoryMetadata)
-        .filter(
-            and_(
-                model.RepositoryMetadata.table.c.repository_id == repository_id,
-                model.RepositoryMetadata.table.c.downloadable == true(),
-            )
-        )
-        .all()
-    )
-    return revisions
-
-
-def get_repository_metadata_for_changeset_revision(
-    repository_id: int, changeset_revision: Optional[str]
-) -> model.RepositoryMetadata:
-    repository_metadata = (
-        sa_session()
-        .query(model.RepositoryMetadata)
-        .filter(
-            and_(
-                model.RepositoryMetadata.table.c.repository_id == repository_id,
-                model.RepositoryMetadata.table.c.changeset_revision == changeset_revision,
-            )
-        )
-        .first()
-    )
-    return repository_metadata
-
-
-def get_role_by_name(role_name):
-    return sa_session().query(model.Role).filter(model.Role.table.c.name == role_name).first()
+    return sa_session().get(model.Repository, repository_id)
 
 
 def get_user(email):
-    return sa_session().query(model.User).filter(model.User.table.c.email == email).first()
-
-
-def get_user_by_name(username):
-    return sa_session().query(model.User).filter(model.User.table.c.username == username).first()
-
-
-def mark_obj_deleted(obj):
-    obj.deleted = True
-    sa_session().add(obj)
-    sa_session().flush()
+    return get_user_by_email(sa_session(), email, model.User)
 
 
 def refresh(obj):
@@ -190,26 +103,21 @@ def ga_refresh(obj):
 
 
 def get_repository_by_name_and_owner(name, owner_username, return_multiple=False):
-    owner = get_user_by_name(owner_username)
-    repository = (
-        sa_session()
-        .query(model.Repository)
-        .filter(and_(model.Repository.table.c.name == name, model.Repository.table.c.user_id == owner.id))
-        .first()
+    owner = get_user_by_username(sa_session(), owner_username, model.User)
+    stmt = (
+        select(model.Repository)
+        .where(model.Repository.name == name)
+        .where(model.Repository.user_id == owner.id)
+        .limit(1)
     )
-    return repository
+    return sa_session().scalars(stmt).first()
 
 
 def get_repository_metadata_by_repository_id_changeset_revision(repository_id, changeset_revision):
-    repository_metadata = (
-        sa_session()
-        .query(model.RepositoryMetadata)
-        .filter(
-            and_(
-                model.RepositoryMetadata.table.c.repository_id == repository_id,
-                model.RepositoryMetadata.table.c.changeset_revision == changeset_revision,
-            )
-        )
-        .first()
+    stmt = (
+        select(model.RepositoryMetadata)
+        .where(model.RepositoryMetadata.repository_id == repository_id)
+        .where(model.RepositoryMetadata.changeset_revision == changeset_revision)
+        .limit(1)
     )
-    return repository_metadata
+    return sa_session().scalars(stmt).first()

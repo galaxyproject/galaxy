@@ -1,6 +1,7 @@
 <tool id="collection_paired_test" name="collection_paired_test" version="0.1.0">
   <command>
     cat $f1.forward $f1['reverse'] >> $out1;
+    echo 'Collection name: $f1.name'
   </command>
   <inputs>
     <param name="f1" type="data_collection" collection_type="paired" label="Input pair" />
@@ -11,7 +12,7 @@
   <tests>
     <test>
       <param name="f1">
-        <collection type="paired">
+        <collection type="paired" name="collection name">
           <element name="forward" value="simple_line.txt" />
           <element name="reverse" value="simple_line_alternative.txt" />
         </collection>
@@ -22,6 +23,9 @@
           <has_line line="This is a different line of text." />
         </assert_contents>
       </output>
+      <assert_stdout>
+          <has_line line="Collection name: collection name" />
+      </assert_stdout>
     </test>
   </tests>
 </tool>

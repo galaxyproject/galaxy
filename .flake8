@@ -4,6 +4,8 @@
 # E203 is whitespace before ':'; we follow black's formatting here. See https://black.readthedocs.io/en/stable/faq.html#why-are-flake8-s-e203-and-w503-violated
 # E402 module level import not at top of file # TODO, we would like to improve this.
 # E501 is line length (delegated to black)
+# E701,E704 are multiple statements on one line; we follow black's formatting here. See https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#configuration
 # W503 is line breaks before binary operators, which has been reversed in PEP 8.
 # D** are docstring linting - which we mostly ignore except D302. (Hopefully we will solve more over time).
-ignore = B008,E203,E402,E501,W503,D100,D101,D102,D103,D104,D105,D106,D107,D200,D201,D202,D204,D205,D206,D207,D208,D209,D210,D211,D300,D301,D400,D401,D402,D403,D412,D413
+ignore = B008,E203,E402,E501,E701,E704,W503,D100,D101,D102,D103,D104,D105,D106,D107,D200,D201,D202,D204,D205,D206,D207,D208,D209,D210,D211,D300,D301,D400,D401,D402,D403,D412,D413
+exclude = lib/tool_shed/test/test_data/repos

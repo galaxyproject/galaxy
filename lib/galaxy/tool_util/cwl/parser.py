@@ -145,6 +145,10 @@ class ToolProxy(metaclass=ABCMeta):
         return tool_id
 
     @abstractmethod
+    def input_fields(self) -> list:
+        """Return InputInstance objects describing mapping to Galaxy inputs."""
+
+    @abstractmethod
     def input_instances(self):
         """Return InputInstance objects describing mapping to Galaxy inputs."""
 
@@ -236,7 +240,7 @@ class CommandLineToolProxy(ToolProxy):
         else:
             return ""
 
-    def input_fields(self):
+    def input_fields(self) -> list:
         input_records_schema = self._eval_schema(self._tool.inputs_record_schema)
         if input_records_schema["type"] != "record":
             raise Exception("Unhandled CWL tool input structure")
@@ -293,6 +297,7 @@ class ExpressionToolProxy(CommandLineToolProxy):
 
 class JobProxy:
     def __init__(self, tool_proxy, input_dict, output_dict, job_directory):
+        assert RuntimeContext is not None, "cwltool is not installed, cannot run CWL jobs"
         self._tool_proxy = tool_proxy
         self._input_dict = input_dict
         self._output_dict = output_dict
@@ -327,12 +332,8 @@ class JobProxy:
                 beta_relaxed_fmt_check=beta_relaxed_fmt_check,
             )
 
-            args = []
+            args = [RuntimeContext(job_args)]
             kwargs: Dict[str, str] = {}
-            if RuntimeContext is not None:
-                args.append(RuntimeContext(job_args))
-            else:
-                kwargs = job_args
             self._cwl_job = next(self._tool_proxy._tool.job(self._input_dict, self._output_callback, *args, **kwargs))
             self._is_command_line_job = hasattr(self._cwl_job, "command_line")
 
@@ -906,7 +907,7 @@ def split_step_references(step_references, workflow_id=None, multiple=True):
     if multiple:
         return split_references
     else:
-        assert len(split_references) == 1
+        assert len(split_references) == 1, split_references
         return split_references[0]
 
 
@@ -1231,12 +1232,10 @@ class InputInstance:
         self.area = area
 
     @overload
-    def to_dict(self, itemwise: Literal[False]) -> InputInstanceDict:
-        ...
+    def to_dict(self, itemwise: Literal[False]) -> InputInstanceDict: ...
 
     @overload
-    def to_dict(self, itemwise: Literal[True]) -> Union[InputInstanceDict, InputInstanceArrayDict]:
-        ...
+    def to_dict(self, itemwise: Literal[True]) -> Union[InputInstanceDict, InputInstanceArrayDict]: ...
 
     def to_dict(self, itemwise: bool = True) -> Union[InputInstanceDict, InputInstanceArrayDict]:
         if itemwise and self.array:

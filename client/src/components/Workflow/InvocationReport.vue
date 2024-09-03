@@ -1,28 +1,27 @@
 <template>
-    <config-provider v-slot="{ config, loading }">
-        <markdown
-            v-if="!loading"
-            :markdown-config="markdownConfig"
-            :enable_beta_markdown_export="config.enable_beta_markdown_export"
-            :export-link="exportUrl"
-            @onEdit="onEdit" />
-    </config-provider>
+    <Markdown
+        v-if="isConfigLoaded"
+        :markdown-config="markdownConfig"
+        :enable_beta_markdown_export="config.enable_beta_markdown_export"
+        :export-link="exportUrl"
+        :download-endpoint="stsUrl(config)"
+        @onEdit="onEdit" />
 </template>
 
 <script>
+import BootstrapVue from "bootstrap-vue";
+import Markdown from "components/Markdown/Markdown";
+import { Toast } from "composables/toast";
 import { withPrefix } from "utils/redirect";
 import { urlData } from "utils/url";
-import { Toast } from "composables/toast";
-import ConfigProvider from "components/providers/ConfigProvider";
-import Markdown from "components/Markdown/Markdown";
 import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
+
+import { useConfig } from "@/composables/config";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        ConfigProvider,
         Markdown,
     },
     props: {
@@ -30,6 +29,10 @@ export default {
             type: String,
             required: true,
         },
+    },
+    setup() {
+        const { config, isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     data() {
         return {
@@ -59,6 +62,9 @@ export default {
     methods: {
         onEdit() {
             window.location = withPrefix(`/pages/create?invocation_id=${this.invocationId}`);
+        },
+        stsUrl(config) {
+            return `${this.dataUrl}/prepare_download`;
         },
     },
 };

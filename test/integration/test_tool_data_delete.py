@@ -45,6 +45,8 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase):
         return show_response.json()["fields"]
 
     def _testbeta_field_count(self) -> int:
+        # We need to wait for the reload message to reach the control message consumer
+        time.sleep(1)
         return len(self._testbase_fields())
 
 

@@ -1,6 +1,6 @@
 <template>
     <span itemprop="creator" itemscope itemtype="https://schema.org/Person">
-        <font-awesome-icon ref="button" icon="user" />
+        <FontAwesomeIcon ref="button" icon="user" />
         <b-popover
             triggers="click blur"
             :placement="hoverPlacement"
@@ -23,11 +23,11 @@
         </span>
         <a v-if="orcidLink" v-b-tooltip.hover title="View orcid.org profile" :href="orcidLink" target="_blank">
             <link itemprop="identifier" :href="orcidLink" />
-            <font-awesome-icon :icon="['fab', 'orcid']" />
+            <FontAwesomeIcon :icon="['fab', 'orcid']" />
         </a>
         <a v-if="url" v-b-tooltip.hover title="URL" :href="url" target="_blank">
             <link itemprop="url" :href="url" />
-            <font-awesome-icon icon="external-link-alt" />
+            <FontAwesomeIcon icon="external-link-alt" />
         </a>
         <meta
             v-for="attribute in explicitMetaAttributes"
@@ -39,12 +39,12 @@
 </template>
 
 <script>
-import ThingViewerMixin from "./ThingViewerMixin";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faUser, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
-
 import { faOrcid } from "@fortawesome/free-brands-svg-icons";
+import { faExternalLinkAlt, faUser } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+import ThingViewerMixin from "./ThingViewerMixin";
 
 library.add(faOrcid, faUser, faExternalLinkAlt);
 

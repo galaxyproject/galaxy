@@ -1,3 +1,4 @@
+import os
 from functools import wraps
 from typing import (
     Any,
@@ -5,7 +6,10 @@ from typing import (
 )
 from unittest import SkipTest
 
-import requests
+import pytest
+
+from galaxy.util import requests
+from galaxy.util.commands import which
 
 
 def is_site_up(url: str) -> bool:
@@ -30,3 +34,20 @@ def skip_if_site_down(url: str) -> Callable:
 
 
 skip_if_github_down = skip_if_site_down("https://github.com/")
+
+
+def _identity(func: Callable) -> Callable:
+    return func
+
+
+def skip_unless_executable(executable):
+    if which(executable):
+        return _identity
+    return pytest.mark.skip(f"PATH doesn't contain executable {executable}")
+
+
+def skip_unless_environ(env_var):
+    if os.environ.get(env_var):
+        return _identity
+
+    return pytest.mark.skip(f"{env_var} must be set for this test")

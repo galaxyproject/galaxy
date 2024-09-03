@@ -37,11 +37,11 @@ except Exception:
 """
 
 
-def get_metadata_compute_strategy(config, job_id, metadata_strategy_override=None, tool_id=None):
+def get_metadata_compute_strategy(config, job_id, metadata_strategy_override=None, tool_id=None, tool_type=None):
     metadata_strategy = metadata_strategy_override or config.metadata_strategy
     if metadata_strategy == "legacy":
         raise Exception("legacy metadata_strategy has been removed")
-    elif "extended" in metadata_strategy and tool_id != "__SET_METADATA__":
+    elif "extended" in metadata_strategy and tool_id != "__SET_METADATA__" and tool_type != "interactive":
         return ExtendedDirectoryMetadataGenerator(job_id)
     else:
         return PortableDirectoryMetadataGenerator(job_id)
@@ -118,7 +118,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
             rstring = f"Metadata results could not be read from '{filename_results_code}'"
 
         if not rval:
-            log.debug(f"setting metadata externally failed for {dataset.__class__.__name__} {dataset.id}: {rstring}")
+            log.warning(f"setting metadata externally failed for {dataset.__class__.__name__} {dataset.id}: {rstring}")
         return rval
 
 
@@ -186,13 +186,15 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             )
 
             outputs[name] = {
-                "filename_override": _get_filename_override(output_fnames, dataset.file_name),
+                "filename_override": _get_filename_override(output_fnames, dataset.get_file_name()),
                 "validate": validate_outputs,
                 "object_store_store_by": dataset.dataset.store_by,
                 "id": dataset.id,
-                "model_class": "LibraryDatasetDatasetAssociation"
-                if isinstance(dataset, galaxy.model.LibraryDatasetDatasetAssociation)
-                else "HistoryDatasetAssociation",
+                "model_class": (
+                    "LibraryDatasetDatasetAssociation"
+                    if isinstance(dataset, galaxy.model.LibraryDatasetDatasetAssociation)
+                    else "HistoryDatasetAssociation"
+                ),
             }
 
         metadata_params_path = os.path.join(metadata_dir, "params.json")
@@ -204,6 +206,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             "max_metadata_value_size": max_metadata_value_size,
             "max_discovered_files": max_discovered_files,
             "outputs": outputs,
+            "change_datatype_actions": job.get_change_datatype_actions(),
         }
 
         # export model objects and object store configuration for extended metadata also.
@@ -312,10 +315,14 @@ def _initialize_metadata_inputs(dataset, path_for_part, tmp_dir, kwds, real_meta
     filename_kwds = path_for_part("kwds")
     filename_override_metadata = path_for_part("override")
 
-    open(filename_out, "wt+")  # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
     # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
-    json.dump((False, "External set_meta() not called"), open(filename_results_code, "wt+"))
-    json.dump(kwds, open(filename_kwds, "wt+"), ensure_ascii=True)
+    with open(filename_out, "w+"):
+        pass
+    # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
+    with open(filename_results_code, "w+") as f:
+        json.dump((False, "External set_meta() not called"), f)
+    with open(filename_kwds, "w+") as f:
+        json.dump(kwds, f, ensure_ascii=True)
 
     override_metadata = []
     for meta_key, spec_value in dataset.metadata.spec.items():
@@ -323,10 +330,11 @@ def _initialize_metadata_inputs(dataset, path_for_part, tmp_dir, kwds, real_meta
             if not real_metadata_object:
                 metadata_temp = MetadataTempFile()
                 metadata_temp.tmp_dir = tmp_dir
-                shutil.copy(dataset.metadata.get(meta_key, None).file_name, metadata_temp.file_name)
+                shutil.copy(dataset.metadata.get(meta_key, None).get_file_name(), metadata_temp.get_file_name())
                 override_metadata.append((meta_key, metadata_temp.to_JSON()))
 
-    json.dump(override_metadata, open(filename_override_metadata, "wt+"))
+    with open(filename_override_metadata, "w+") as f:
+        json.dump(override_metadata, f)
 
     return filename_out, filename_results_code, filename_kwds, filename_override_metadata
 

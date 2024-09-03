@@ -1,6 +1,7 @@
 import axios from "axios";
-import { rethrowSimple, errorMessageAsString } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
+import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
+
 import { toSimple } from "./model";
 
 /** Workflow data request helper **/
@@ -53,13 +54,15 @@ export async function loadWorkflow({ id, version = null }) {
 export async function saveWorkflow(workflow) {
     if (workflow.hasChanges) {
         try {
-            const requestData = { workflow: toSimple(workflow), from_tool_form: true };
+            const requestData = { workflow: toSimple(workflow.id, workflow), from_tool_form: true };
             const { data } = await axios.put(`${getAppRoot()}api/workflows/${workflow.id}`, requestData);
             workflow.name = data.name;
             workflow.hasChanges = false;
             workflow.stored = true;
             workflow.version = data.version;
-            workflow.annotation = data.annotation;
+            if (workflow.annotation || data.annotation) {
+                workflow.annotation = data.annotation;
+            }
             return data;
         } catch (e) {
             rethrowSimple(e);

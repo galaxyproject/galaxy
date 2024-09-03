@@ -1,6 +1,7 @@
 """
 Dataproviders that iterate over lines from their sources.
 """
+
 import collections
 import logging
 import re
@@ -184,8 +185,7 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
         parent_gen = super().__iter__()
         yield from parent_gen
 
-        last_block = self.handle_last_block()
-        if last_block is not None:
+        if (last_block := self.handle_last_block()) is not None:
             self.num_data_returned += 1
             yield last_block
 
@@ -249,7 +249,7 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
         Called per block (just before providing).
         """
         # empty block_lines and assemble block
-        return list(self.block_lines.popleft() for i in range(len(self.block_lines)))
+        return [self.block_lines.popleft() for i in range(len(self.block_lines))]
 
     def filter_block(self, block):
         """

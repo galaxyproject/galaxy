@@ -21,17 +21,19 @@
         </template>
     </b-list-group>
 </template>
-<script lang="ts" setup>
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-import { computed, onMounted, ref, watch, type ComputedRef } from "vue";
-import {
-    type OutputTerminals,
-    type InputTerminalsAndInvalid,
-    terminalFactory,
-    type InputTerminals,
-} from "./modules/terminals";
+<script setup lang="ts">
+import { computed, type ComputedRef, onMounted, ref, watch } from "vue";
+
 import { useFocusWithin } from "@/composables/useActiveElement";
+import { useWorkflowStores } from "@/composables/workflowStores";
 import { assertDefined } from "@/utils/assertions";
+
+import {
+    type InputTerminals,
+    type InputTerminalsAndInvalid,
+    type OutputTerminals,
+    terminalFactory,
+} from "./modules/terminals";
 
 const props = defineProps<{
     terminal: OutputTerminals;
@@ -60,7 +62,8 @@ watch(focused, (focused) => {
     }
 });
 
-const stepStore = useWorkflowStepStore();
+const stores = useWorkflowStores();
+const { stepStore } = stores;
 
 interface InputObject {
     stepId: number;
@@ -95,7 +98,7 @@ function inputObjectToTerminal(inputObject: InputObject): InputTerminals {
     const step = stepStore.getStep(inputObject.stepId);
     assertDefined(step);
     const inputSource = step.inputs.find((input) => input.name == inputObject.inputName)!;
-    return terminalFactory(inputObject.stepId, inputSource, props.terminal.datatypesMapper);
+    return terminalFactory(inputObject.stepId, inputSource, props.terminal.datatypesMapper, stores);
 }
 
 const validInputs: ComputedRef<InputObject[]> = computed(() => {
@@ -128,3 +131,9 @@ function toggleConnection(inputObject: InputObject) {
     }
 }
 </script>
+
+<style scoped lang="scss">
+#input-choices-menu {
+    color: black;
+}
+</style>

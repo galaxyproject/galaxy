@@ -54,7 +54,7 @@ def example_bc_core_object() -> BioComputeObjectCore:
         email="normal@example.com",
         orcid="http://orcid.org/0000-0002-1825-0097",
     )
-    parametric_domain = ParametricDomain(__root__=[])
+    parametric_domain = ParametricDomain(root=[])
     provenance_domain = ProvenanceDomain(
         name="workflow_name",
         version="workflow_version.0",
@@ -64,7 +64,7 @@ def example_bc_core_object() -> BioComputeObjectCore:
         contributors=[contributor],
         license="MIT",
     )
-    usability_domain = UsabilityDomain(__root__=["workflow annotation"])
+    usability_domain = UsabilityDomain(root=["workflow annotation"])
     gx_extension_domains = extension_domains(
         galaxy_url="https://usegalaxy.org",
         galaxy_version="22.05.0",

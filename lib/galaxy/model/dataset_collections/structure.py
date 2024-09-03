@@ -1,5 +1,6 @@
 """ Module for reasoning about structure of and matching hierarchical collections of data.
 """
+
 import logging
 
 log = logging.getLogger(__name__)
@@ -94,12 +95,19 @@ class Tree(BaseTree):
             def get_element(collection):
                 return collection[index]  # noqa: B023
 
+            when_value = None
+            if self.when_values:
+                if len(self.when_values) == 1:
+                    when_value = self.when_values[0]
+                else:
+                    when_value = self.when_values[index]
+
             if substructure.is_leaf:
-                yield dict_map(get_element, collection_dict), self.when_values[index] if self.when_values else None
+                yield dict_map(get_element, collection_dict), when_value
             else:
                 sub_collections = dict_map(lambda collection: get_element(collection).child_collection, collection_dict)
                 for element, _when_value in substructure._walk_collections(sub_collections):
-                    yield element, self.when_values[index] if self.when_values else None
+                    yield element, when_value
 
     @property
     def is_leaf(self):
@@ -141,7 +149,7 @@ class Tree(BaseTree):
         return Tree(cloned_children, self.collection_type_description)
 
     def __str__(self):
-        return f"Tree[collection_type={self.collection_type_description},children={','.join(map(lambda identifier_and_element: f'{identifier_and_element[0]}={identifier_and_element[1]}', self.children))}]"
+        return f"Tree[collection_type={self.collection_type_description},children={','.join(f'{identifier_and_element[0]}={identifier_and_element[1]}' for identifier_and_element in self.children)}]"
 
 
 def tool_output_to_structure(get_sliced_input_collection_structure, tool_output, collections_manager):

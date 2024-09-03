@@ -1,5 +1,5 @@
-import axios from "axios";
 import { getGalaxyInstance } from "app";
+import axios from "axios";
 import { withPrefix } from "utils/redirect";
 
 /**

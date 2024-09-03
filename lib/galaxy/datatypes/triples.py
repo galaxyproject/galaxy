@@ -1,9 +1,11 @@
 """
 Triple format classes
 """
+
 import logging
 import re
 
+from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -20,6 +22,7 @@ log = logging.getLogger(__name__)
 
 TURTLE_PREFIX_PATTERN = re.compile(r"@prefix\s+[^:]*:\s+<[^>]*>\s\.")
 TURTLE_BASE_PATTERN = re.compile(r"@base\s+<[^>]*>\s\.")
+SBOL_PATTERN = re.compile(r"http[s]?://[w\.]*sbol[s]?.org/v(\d{1})#")
 
 
 class Triples(data.Data):
@@ -40,7 +43,7 @@ class Triples(data.Data):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "Triple data"
         else:
             dataset.peek = "file does not exist"
@@ -65,7 +68,7 @@ class NTriples(data.Text, Triples):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "N-Triples triple data"
         else:
             dataset.peek = "file does not exist"
@@ -89,7 +92,7 @@ class N3(data.Text, Triples):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "Notation-3 Triple data"
         else:
             dataset.peek = "file does not exist"
@@ -117,7 +120,7 @@ class Turtle(data.Text, Triples):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "Turtle triple data"
         else:
             dataset.peek = "file does not exist"
@@ -146,7 +149,7 @@ class Rdf(xml.GenericXml, Triples):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "RDF/XML triple data"
         else:
             dataset.peek = "file does not exist"
@@ -172,7 +175,7 @@ class Jsonld(text.Json, Triples):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "JSON-LD triple data"
         else:
             dataset.peek = "file does not exist"
@@ -196,8 +199,43 @@ class HDT(binary.Binary, Triples):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "HDT triple data"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+
+@build_sniff_from_prefix
+class Sbol(data.Text, Triples):
+    """
+    The SBOL data format (https://sbolstandard.org).
+    """
+
+    MetadataElement(name="version", default="", readonly=True, visible=True, optional=True)
+    edam_format = "format_3725"
+    file_ext = "sbol"
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        file_prefix = FilePrefix(filename=dataset.get_file_name())
+        match = file_prefix.search(SBOL_PATTERN)
+        if match and match.group(1):
+            dataset.metadata.version = match.group(1)
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        # http://sbols.org/v2#
+        if file_prefix.search(SBOL_PATTERN):
+            return True
+        return False
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
+            msg = "SBOL data"
+            if dataset.metadata.version != "":
+                msg += " v" + dataset.metadata.version
+            dataset.blurb = msg
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"

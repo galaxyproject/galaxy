@@ -2,14 +2,14 @@
     <div>
         <div v-if="!url">
             <b-button id="select-btn" @click="reset">
-                <font-awesome-icon icon="folder-open" /> {{ selectText }}
+                <FontAwesomeIcon icon="folder-open" /> {{ selectText }}
             </b-button>
             <FilesDialog :key="modalKey" mode="directory" :callback="setUrl" :require-writable="true" />
         </div>
         <b-breadcrumb v-if="url">
             <b-breadcrumb-item title="Select another folder" class="align-items-center" @click="reset">
                 <b-button class="pathname" variant="primary">
-                    <font-awesome-icon icon="folder-open" /> {{ url.protocol }}</b-button
+                    <FontAwesomeIcon icon="folder-open" /> {{ url.protocol }}</b-button
                 >
             </b-breadcrumb-item>
             <b-breadcrumb-item
@@ -38,8 +38,8 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faFolder, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { FilesDialog } from "components/FilesDialog";
 import _l from "utils/localization";
 

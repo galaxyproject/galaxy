@@ -1,5 +1,5 @@
 try:
-    from dropboxfs.dropboxfs import DropboxFS
+    from fs.dropboxfs import DropboxFS
 except ImportError:
     DropboxFS = None
 
@@ -8,6 +8,10 @@ from typing import (
     Union,
 )
 
+from galaxy.exceptions import (
+    AuthenticationRequired,
+    MessageException,
+)
 from . import (
     FilesSourceOptions,
     FilesSourceProperties,
@@ -23,8 +27,21 @@ class DropboxFilesSource(PyFilesystem2FilesSource):
     def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
         props = self._serialization_props(user_context)
         extra_props: Union[FilesSourceProperties, dict] = opts.extra_props or {} if opts else {}
-        handle = DropboxFS(**{**props, **extra_props})
-        return handle
+        # accessToken has been renamed to access_token in fs.dropboxfs 1.0
+        if "accessToken" in props:
+            props["access_token"] = props.pop("accessToken")
+
+        try:
+            handle = DropboxFS(**{**props, **extra_props})
+            return handle
+        except Exception as e:
+            # This plugin might raise dropbox.dropbox_client.BadInputException
+            # which is not a subclass of fs.errors.FSError
+            if "OAuth2" in str(e):
+                raise AuthenticationRequired(
+                    f"Permission Denied. Reason: {e}. Please check your credentials in your preferences for {self.label}."
+                )
+            raise MessageException(f"Error connecting to Dropbox. Reason: {e}")
 
 
 __all__ = ("DropboxFilesSource",)

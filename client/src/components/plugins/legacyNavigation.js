@@ -2,7 +2,7 @@
  * Navigation mixin for legacy code. Supplies functions to components
  * to navigation to locations not controlled by Vue.
  */
-import { redirectToUrl, prependPath } from "utils/redirect";
+import { prependPath, redirectToUrl } from "utils/redirect";
 
 // straight ifrme redirect
 export function iframeRedirect(path, target = "galaxy_main") {

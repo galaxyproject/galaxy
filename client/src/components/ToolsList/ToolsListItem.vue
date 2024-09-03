@@ -1,12 +1,27 @@
 <script setup>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import {
+    faAngleDown,
+    faAngleUp,
+    faCheck,
+    faExclamationTriangle,
+    faExternalLinkAlt,
+    faTimes,
+    faUser,
+    faWrench,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref, computed } from "vue";
-import { useFormattedToolHelp } from "composables/formattedToolHelp";
 import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton";
+import { useFormattedToolHelp } from "composables/formattedToolHelp";
+import { computed, ref } from "vue";
+
+library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle, faUser);
+
 const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
     section: { type: String, required: true },
+    ontologies: { type: Array, default: null },
     description: { type: String, default: null },
     summary: { type: String, default: null },
     help: { type: String, default: null },
@@ -14,6 +29,7 @@ const props = defineProps({
     link: { type: String, default: null },
     workflowCompatible: { type: Boolean, default: false },
     local: { type: Boolean, default: false },
+    owner: { type: String, default: null },
 });
 
 const emit = defineEmits(["open"]);
@@ -28,21 +44,6 @@ const formattedToolHelp = computed(() => {
         return "";
     }
 });
-</script>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import {
-    faWrench,
-    faExternalLinkAlt,
-    faCheck,
-    faTimes,
-    faAngleDown,
-    faAngleUp,
-    faExclamationTriangle,
-} from "@fortawesome/free-solid-svg-icons";
-
-library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle);
 </script>
 
 <template>
@@ -97,6 +98,17 @@ library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleU
                     <FontAwesomeIcon icon="fa-exclamation-triangle" />
                     Not Workflow compatible
                 </span>
+
+                <span v-if="props.owner" class="tag success">
+                    <FontAwesomeIcon icon="fa-user" />
+                    <b>Owner:</b> <b-link :to="`/tools/list?owner=${props.owner}`">{{ props.owner }}</b-link>
+                </span>
+
+                <span v-if="props.ontologies && props.ontologies.length > 0">
+                    <span v-for="ontology in props.ontologies" :key="ontology" class="tag toggle">
+                        <b-link :to="`/tools/list?ontology=${ontology}`">{{ ontology }}</b-link>
+                    </span>
+                </span>
             </div>
 
             <div v-if="props.summary" v-html="props.summary"></div>
@@ -148,6 +160,11 @@ library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleU
     .warn {
         background-color: scale-color($brand-warning, $lightness: +75%);
         border-color: scale-color($brand-warning, $lightness: +55%);
+    }
+
+    .toggle {
+        background-color: scale-color($brand-toggle, $lightness: +75%);
+        border-color: scale-color($brand-toggle, $lightness: +55%);
     }
 
     .top-bar {

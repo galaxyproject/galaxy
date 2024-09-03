@@ -8,6 +8,7 @@ from tempfile import (
     SpooledTemporaryFile,
 )
 from typing import (
+    cast,
     List,
     Optional,
     Tuple,
@@ -16,6 +17,7 @@ from typing import (
 
 from sqlalchemy import (
     false,
+    select,
     true,
 )
 
@@ -39,14 +41,20 @@ from galaxy.managers.histories import (
     HistorySerializer,
 )
 from galaxy.managers.users import UserManager
+from galaxy.model import HistoryDatasetAssociation
+from galaxy.model.base import transaction
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.store import payload_to_source_uri
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.history import HistoryIndexQueryPayload
 from galaxy.schema.schema import (
+    AnyArchivedHistoryView,
     AnyHistoryView,
+    ArchiveHistoryRequestPayload,
     AsyncFile,
     AsyncTaskResultSummary,
     CreateHistoryFromStore,
@@ -59,6 +67,8 @@ from galaxy.schema.schema import (
     JobIdResponse,
     JobImportHistoryResponse,
     LabelValuePair,
+    ShareHistoryWithStatus,
+    ShareWithPayload,
     StoreExportPayload,
     WriteStoreToPayload,
 )
@@ -69,8 +79,8 @@ from galaxy.schema.tasks import (
 )
 from galaxy.schema.types import LatestLiteral
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.util import restore_text
-from galaxy.web.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ConsumesModelStores,
@@ -78,11 +88,19 @@ from galaxy.webapps.galaxy.services.base import (
     ServesExportStores,
     ServiceBase,
 )
+from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 
 log = logging.getLogger(__name__)
 
 DEFAULT_ORDER_BY = "create_time-dsc"
+
+
+class ShareableHistoryService(ShareableService):
+    share_with_status_cls = ShareHistoryWithStatus
+
+    def share_with_users(self, trans, id: DecodedDatabaseIdField, payload: ShareWithPayload) -> ShareHistoryWithStatus:
+        return cast(ShareHistoryWithStatus, super().share_with_users(trans, id, payload))
 
 
 class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
@@ -103,6 +121,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         history_export_manager: HistoryExportManager,
         filters: HistoryFilters,
         short_term_storage_allocator: ShortTermStorageAllocator,
+        notification_service: NotificationService,
     ):
         super().__init__(security)
         self.manager = manager
@@ -112,7 +131,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         self.citations_manager = citations_manager
         self.history_export_manager = history_export_manager
         self.filters = filters
-        self.shareable_service = ShareableService(self.manager, self.serializer)
+        self.shareable_service = ShareableHistoryService(self.manager, self.serializer, notification_service)
         self.short_term_storage_allocator = short_term_storage_allocator
 
     def index(
@@ -153,7 +172,9 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                 raise glx_exceptions.AdminRequiredException(message)
         else:
             filters += [model.History.user == current_user]
-        # and any sent in from the query string
+        # exclude archived histories
+        filters += [model.History.archived == false()]
+        # and apply any other filters
         filters += self.filters.parse_filters(filter_params)
         order_by = self._build_order_by(filter_query_params.order)
 
@@ -191,6 +212,24 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         # otherwise, do the default filter of removing the deleted histories
         return [model.History.deleted == false()]
 
+    def index_query(
+        self,
+        trans,
+        payload: HistoryIndexQueryPayload,
+        serialization_params: SerializationParams,
+        include_total_count: bool = False,
+    ) -> Tuple[List[AnyHistoryView], int]:
+        """Return a list of History accessible by the user
+
+        :rtype:     list
+        :returns:   dictionaries containing History details
+        """
+        entries, total_matches = self.manager.index_query(trans, payload, include_total_count)
+        return (
+            [self._serialize_history(trans, entry, serialization_params, default_view="summary") for entry in entries],
+            total_matches,
+        )
+
     def create(
         self,
         trans: ProvidesHistoryContext,
@@ -226,11 +265,10 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                 validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
             job = self.manager.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
             job_dict = job.to_dict()
-            job_dict[
-                "message"
-            ] = f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
-            job_dict = trans.security.encode_all_ids(job_dict)
-            return JobImportHistoryResponse.construct(**job_dict)
+            job_dict["message"] = (
+                f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
+            )
+            return JobImportHistoryResponse(**job_dict)
 
         new_history = None
         # if a history id was passed, copy that history
@@ -249,7 +287,8 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
         trans.app.security_agent.history_set_default_permissions(new_history)
         trans.sa_session.add(new_history)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
         # an anonymous user can only have one history
         if self.user_manager.is_anonymous(trans.user):
@@ -283,7 +322,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             for_library=False,
             model_store_format=payload.model_store_format,
         )
-        result = import_model_store.delay(request=request)
+        result = import_model_store.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         return async_task_summary(result)
 
     def _ensure_can_create_history(self, trans):
@@ -344,10 +383,11 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             export_association_id=export_association.id,
             **payload.dict(),
         )
-        result = prepare_history_download.delay(request=request)
+        result = prepare_history_download.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         task_summary = async_task_summary(result)
         export_association.task_uuid = task_summary.id
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=task_summary)
 
     def write_store(
@@ -361,10 +401,11 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             export_association_id=export_association.id,
             **payload.dict(),
         )
-        result = write_history_to.delay(request=request)
+        result = write_history_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         task_summary = async_task_summary(result)
         export_association.task_uuid = task_summary.id
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return task_summary
 
     def update(
@@ -388,7 +429,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             any values that were different from the original and, therefore, updated
         """
         # TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
-        history = self.manager.get_owned(history_id, trans.user, current_history=trans.history)
+        history = self.manager.get_mutable(history_id, trans.user, current_history=trans.history)
         self.deserializer.deserialize(history, payload, user=trans.user, trans=trans)
         return self._serialize_history(trans, history, serialization_params)
 
@@ -406,7 +447,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         You can purge a history, removing all it's datasets from disk (if unshared),
         by passing in ``purge=True`` in the url.
         """
-        history = self.manager.get_owned(history_id, trans.user, current_history=trans.history)
+        history = self.manager.get_mutable(history_id, trans.user, current_history=trans.history)
         if purge:
             self.manager.purge(history)
         else:
@@ -427,7 +468,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
         :returns:   the undeleted history
         """
-        history = self.manager.get_owned(history_id, trans.user, current_history=trans.history)
+        history = self.manager.get_mutable(history_id, trans.user, current_history=trans.history)
         self.manager.undelete(history)
         return self._serialize_history(trans, history, serialization_params)
 
@@ -455,6 +496,19 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             for history in histories
         ]
         return rval
+
+    def count(
+        self,
+        trans: ProvidesHistoryContext,
+    ):
+        """
+        Returns number of histories for the current user.
+        """
+        current_user = self.user_manager.current_user(trans)
+        if self.user_manager.is_anonymous(current_user):
+            current_history = self.manager.get_current(trans)
+            return 1 if current_history else 0
+        return self.manager.get_active_count(current_user)
 
     def published(
         self,
@@ -550,19 +604,19 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             # we don't have a jeha, there will never be a download_url. Just let
             # the client poll on the created job_id to determine when the file has been
             # written.
-            return (JobIdResponse.construct(job_id=job.id), ready)
+            return (JobIdResponse(job_id=job.id), ready)
 
         if up_to_date and jeha.ready:
             serialized_jeha = self.history_export_manager.serialize(trans, history_id, jeha)
-            return (JobExportHistoryArchiveModel.construct(**serialized_jeha), ready)
+            return (JobExportHistoryArchiveModel(**serialized_jeha), ready)
         else:
             # Valid request, just resource is not ready yet.
             if jeha:
                 serialized_jeha = self.history_export_manager.serialize(trans, history_id, jeha)
-                return (JobExportHistoryArchiveModel.construct(**serialized_jeha), ready)
+                return (JobExportHistoryArchiveModel(**serialized_jeha), ready)
             else:
                 assert job is not None, "logic error, don't have a jeha or a job"
-                return (JobIdResponse.construct(job_id=job.id), ready)
+                return (JobIdResponse(job_id=job.id), ready)
 
     def get_ready_history_export(
         self,
@@ -617,11 +671,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         installed_builds = []
         for build in glob.glob(os.path.join(trans.app.config.len_file_path, "*.len")):
             installed_builds.append(os.path.basename(build).split(".len")[0])
-        fasta_hdas = (
-            trans.sa_session.query(model.HistoryDatasetAssociation)
-            .filter_by(history=history, extension="fasta", deleted=False)
-            .order_by(model.HistoryDatasetAssociation.hid.desc())
-        )
+        fasta_hdas = get_fasta_hdas_by_history(trans.sa_session, history.id)
         return CustomBuildsMetadataResponse(
             installed_builds=[LabelValuePair(label=ins, value=ins) for ins in installed_builds],
             fasta_hdas=[
@@ -636,16 +686,146 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         history: model.History,
         serialization_params: SerializationParams,
         default_view: str = "detailed",
-    ) -> AnyHistoryView:
+    ):
         """
         Returns a dictionary with the corresponding values depending on the
         serialization parameters provided.
         """
         serialization_params.default_view = default_view
         serialized_history = self.serializer.serialize_to_view(
-            history, user=trans.user, trans=trans, **serialization_params.dict()
+            history, user=trans.user, trans=trans, encode_id=False, **serialization_params.model_dump()
         )
         return serialized_history
 
     def _build_order_by(self, order: Optional[str]):
         return self.build_order_by(self.manager, order or DEFAULT_ORDER_BY)
+
+    def archive_history(
+        self,
+        trans: ProvidesHistoryContext,
+        history_id: DecodedDatabaseIdField,
+        payload: Optional[ArchiveHistoryRequestPayload] = None,
+    ) -> AnyArchivedHistoryView:
+        """Marks the history with the given id as archived and optionally associates it with the given archive export record in the payload.
+
+        Archived histories are not part of the active histories of the user, so they won't be shown to the user by default.
+        """
+        if trans.anonymous:
+            raise glx_exceptions.AuthenticationRequired("Only registered users can archive histories.")
+
+        history = self.manager.get_owned(history_id, trans.user)
+        if history.archived:
+            raise glx_exceptions.Conflict("History is already archived.")
+
+        archive_export_id = payload.archive_export_id if payload else None
+        if archive_export_id:
+            export_record = self.history_export_manager.get_task_export_by_id(archive_export_id)
+            self._ensure_export_record_can_be_associated_with_history_archival(history_id, export_record)
+            # After this point, the export record is valid and can be associated with the history archival
+        purge_history = payload.purge_history if payload else False
+        if purge_history:
+            if archive_export_id is None:
+                raise glx_exceptions.RequestParameterMissingException(
+                    "Cannot purge history without an export record. A valid archive_export_id is required."
+                )
+            self.manager.purge(history)
+        history = self.manager.archive_history(history, archive_export_id=archive_export_id)
+        return self._serialize_archived_history(trans, history)
+
+    def _ensure_export_record_can_be_associated_with_history_archival(
+        self, history_id: int, export_record: model.StoreExportAssociation
+    ):
+        if export_record.object_id != history_id or export_record.object_type != "history":
+            raise glx_exceptions.RequestParameterInvalidException(
+                "The given archive export record does not belong to this history."
+            )
+        export_metadata = self.history_export_manager.get_record_metadata(export_record)
+        if export_metadata is None:
+            log.error(
+                f"Trying to archive history [{history_id}] with an export record. "
+                f"But the given archive export record [{export_record.id}] does not have the required metadata."
+            )
+            raise glx_exceptions.RequestParameterInvalidException(
+                "The given archive export record does not have the required metadata."
+            )
+        if not export_metadata.is_ready():
+            raise glx_exceptions.RequestParameterInvalidException(
+                "The given archive export record must be ready before it can be used to archive a history. "
+                "Please wait for the export to finish and try again."
+            )
+        if export_metadata.is_short_term():
+            raise glx_exceptions.RequestParameterInvalidException(
+                "The given archive export record is temporal, only persistent sources can be used to archive a history."
+            )
+        # TODO: should we also ensure the export was requested to include files with `include_files`, `include_hidden`, etc.?
+
+    def restore_archived_history(
+        self,
+        trans: ProvidesHistoryContext,
+        history_id: DecodedDatabaseIdField,
+        force: Optional[bool] = False,
+    ) -> AnyHistoryView:
+        if trans.anonymous:
+            raise glx_exceptions.AuthenticationRequired("Only registered users can access archived histories.")
+
+        history = self.manager.get_owned(history_id, trans.user)
+        history = self.manager.restore_archived_history(history, force=force or False)
+        return self._serialize_archived_history(trans, history)
+
+    def get_archived_histories(
+        self,
+        trans: ProvidesHistoryContext,
+        serialization_params: SerializationParams,
+        filter_query_params: FilterQueryParams,
+        include_total_matches: bool = False,
+    ) -> Tuple[List[AnyArchivedHistoryView], Optional[int]]:
+        if trans.anonymous:
+            raise glx_exceptions.AuthenticationRequired("Only registered users can have or access archived histories.")
+
+        filters = self.filters.parse_query_filters(filter_query_params)
+        filters += [
+            model.History.user == trans.user,
+            model.History.archived == true(),
+        ]
+        total_matches = self.manager.count(filters=filters) if include_total_matches else None
+        order_by = self._build_order_by(filter_query_params.order)
+        histories = self.manager.list(
+            filters=filters, order_by=order_by, limit=filter_query_params.limit, offset=filter_query_params.offset
+        )
+
+        histories = [
+            self._serialize_archived_history(trans, history, serialization_params, default_view="summary")
+            for history in histories
+        ]
+        return histories, total_matches
+
+    def _serialize_archived_history(
+        self,
+        trans: ProvidesHistoryContext,
+        history: model.History,
+        serialization_params: Optional[SerializationParams] = None,
+        default_view: str = "detailed",
+    ):
+        if serialization_params is None:
+            serialization_params = SerializationParams()
+        archived_history = self._serialize_history(trans, history, serialization_params, default_view)
+        export_record_data = self._get_export_record_data(history)
+        archived_history["export_record_data"] = export_record_data.model_dump() if export_record_data else None
+        return archived_history
+
+    def _get_export_record_data(self, history: model.History) -> Optional[WriteStoreToPayload]:
+        if history.archive_export_id:
+            export_record = self.history_export_manager.get_task_export_by_id(history.archive_export_id)
+            export_metadata = self.history_export_manager.get_record_metadata(export_record)
+            if export_metadata and isinstance(export_metadata.request_data.payload, WriteStoreToPayload):
+                return export_metadata.request_data.payload
+        return None
+
+
+def get_fasta_hdas_by_history(session: galaxy_scoped_session, history_id: int):
+    stmt = (
+        select(HistoryDatasetAssociation)
+        .filter_by(history_id=history_id, extension="fasta", deleted=False)
+        .order_by(HistoryDatasetAssociation.hid.desc())
+    )
+    return session.scalars(stmt).all()

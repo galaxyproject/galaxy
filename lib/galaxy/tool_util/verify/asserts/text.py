@@ -1,5 +1,8 @@
 import re
-from typing import Optional
+from typing import (
+    Optional,
+    Union,
+)
 
 from ._util import (
     _assert_number,
@@ -8,14 +11,14 @@ from ._util import (
 
 
 def assert_has_text(
-    output,
-    text,
-    n: Optional[int] = None,
-    delta: int = 0,
-    min: Optional[int] = None,
-    max: Optional[int] = None,
-    negate: bool = False,
-):
+    output: str,
+    text: str,
+    n: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    negate: Union[bool, str] = False,
+) -> None:
     """Asserts specified output contains the substring specified by
     the argument text. The exact number of occurrences can be
     optionally specified by the argument n"""
@@ -36,7 +39,7 @@ def assert_has_text(
     )
 
 
-def assert_not_has_text(output, text):
+def assert_not_has_text(output: str, text: str) -> None:
     """Asserts specified output does not contain the substring
     specified by the argument text"""
     assert output is not None, "Checking not_has_text assertion on empty output (None)"
@@ -44,14 +47,14 @@ def assert_not_has_text(output, text):
 
 
 def assert_has_line(
-    output,
-    line,
-    n: Optional[int] = None,
-    delta: int = 0,
-    min: Optional[int] = None,
-    max: Optional[int] = None,
-    negate: bool = False,
-):
+    output: str,
+    line: str,
+    n: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    negate: Union[bool, str] = False,
+) -> None:
     """Asserts the specified output contains the line specified by the
     argument line. The exact number of occurrences can be optionally
     specified by the argument n"""
@@ -73,13 +76,13 @@ def assert_has_line(
 
 
 def assert_has_n_lines(
-    output,
-    n: Optional[int] = None,
-    delta: int = 0,
-    min: Optional[int] = None,
-    max: Optional[int] = None,
-    negate: bool = False,
-):
+    output: str,
+    n: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    negate: Union[bool, str] = False,
+) -> None:
     """Asserts the specified output contains ``n`` lines allowing
     for a difference in the number of lines (delta)
     or relative differebce in the number of lines"""
@@ -98,14 +101,14 @@ def assert_has_n_lines(
 
 
 def assert_has_text_matching(
-    output,
-    expression,
-    n: Optional[int] = None,
-    delta: int = 0,
-    min: Optional[int] = None,
-    max: Optional[int] = None,
-    negate: bool = False,
-):
+    output: str,
+    expression: str,
+    n: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    negate: Union[bool, str] = False,
+) -> None:
     """Asserts the specified output contains text matching the
     regular expression specified by the argument expression.
     If n is given the assertion checks for exacly n (nonoverlapping)
@@ -128,14 +131,14 @@ def assert_has_text_matching(
 
 
 def assert_has_line_matching(
-    output,
-    expression,
-    n: Optional[int] = None,
-    delta: int = 0,
-    min: Optional[int] = None,
-    max: Optional[int] = None,
-    negate: bool = False,
-):
+    output: str,
+    expression: str,
+    n: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    negate: Union[bool, str] = False,
+) -> None:
     """Asserts the specified output contains a line matching the
     regular expression specified by the argument expression. If n is given
     the assertion checks for exactly n occurences."""

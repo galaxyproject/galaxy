@@ -1,19 +1,24 @@
-import { computed, watch, unref, inject } from "vue";
+import { useHistoryStore } from "stores/historyStore";
+import { computed, unref, watch } from "vue";
 
 export function useUserHistories(user) {
-    const store = inject("store");
+    const historyStore = useHistoryStore();
 
     watch(
         () => unref(user),
-        (newUser, oldUser) => {
+        async (newUser, oldUser) => {
             if (newUser?.id !== oldUser?.id) {
-                store.dispatch("history/loadHistories");
+                await historyStore.loadHistories();
             }
         },
         { immediate: true }
     );
 
-    const currentHistoryId = computed(() => store.getters["history/currentHistoryId"]);
+    const currentHistoryId = computed(() => historyStore.currentHistoryId);
+    const currentHistory = computed(() => historyStore.currentHistory);
 
-    return { currentHistoryId };
+    return {
+        currentHistoryId,
+        currentHistory,
+    };
 }

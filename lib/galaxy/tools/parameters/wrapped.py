@@ -1,3 +1,12 @@
+from collections import UserDict
+from typing import (
+    Any,
+    Dict,
+    List,
+    Sequence,
+    Union,
+)
+
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
@@ -18,6 +27,30 @@ from galaxy.tools.wrappers import (
 )
 
 PARAMS_UNWRAPPED = object()
+
+
+class LegacyUnprefixedDict(UserDict):
+    """Track and provide access to prefixed and unprefixed tool parameter values."""
+
+    # It used to be valid to access members of conditionals without specifying the conditional.
+    # This dict provides a fallback when dict lookup fails using those old rules
+
+    def __init__(self, dict=None, **kwargs):
+        self._legacy_mapping: Dict[str, str] = {}
+        super().__init__(dict, **kwargs)
+
+    def set_legacy_alias(self, new_key: str, old_key: str):
+        self._legacy_mapping[old_key] = new_key
+
+    def __getitem__(self, key):
+        if key not in self.data and key in self._legacy_mapping:
+            return super().__getitem__(self._legacy_mapping[key])
+        return super().__getitem__(key)
+
+    def __contains__(self, key: object) -> bool:
+        if super().__contains__(key):
+            return True
+        return key in self._legacy_mapping
 
 
 def copy_identifiers(source, destination):
@@ -131,4 +164,63 @@ def make_list_copy(from_list):
     return new_list
 
 
-__all__ = ("WrappedParameters", "make_dict_copy")
+def process_key(incoming_key: str, incoming_value: Any, d: Dict[str, Any]):
+    key_parts = incoming_key.split("|")
+    if len(key_parts) == 1:
+        # Regular parameter
+        if incoming_key in d and not incoming_value:
+            # In case we get an empty repeat after we already filled in a repeat element
+            return
+        d[incoming_key] = incoming_value
+    elif key_parts[0].rsplit("_", 1)[-1].isdigit():
+        # Repeat
+        input_name, _index = key_parts[0].rsplit("_", 1)
+        index = int(_index)
+        d.setdefault(input_name, [])
+        newlist: List[Dict[Any, Any]] = [{} for _ in range(index + 1)]
+        d[input_name].extend(newlist[len(d[input_name]) :])
+        subdict = d[input_name][index]
+        process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
+    else:
+        # Section / Conditional
+        input_name = key_parts[0]
+        subdict = d.get(input_name, {})
+        d[input_name] = subdict
+        process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
+
+
+def nested_key_to_path(key: str) -> Sequence[Union[str, int]]:
+    """
+    Convert a tool state key that is separated with '|' and '_n' into path iterable.
+    E.g. "cond|repeat_0|paramA" -> ["cond", "repeat", 0, "paramA"].
+    Return value can be used with `boltons.iterutils.get_path`.
+    """
+    path: List[Union[str, int]] = []
+    key_parts = key.split("|")
+    if len(key_parts) == 1:
+        return key_parts
+    for key_part in key_parts:
+        if "_" in key_part:
+            input_name, _index = key_part.rsplit("_", 1)
+            if _index.isdigit():
+                path.extend((input_name, int(_index)))
+                continue
+        path.append(key_part)
+    return path
+
+
+def flat_to_nested_state(incoming: Dict[str, Any]):
+    nested_state: Dict[str, Any] = {}
+    for key, value in incoming.items():
+        process_key(key, value, nested_state)
+    return nested_state
+
+
+__all__ = (
+    "LegacyUnprefixedDict",
+    "WrappedParameters",
+    "make_dict_copy",
+    "process_key",
+    "flat_to_nested_state",
+    "nested_key_to_path",
+)

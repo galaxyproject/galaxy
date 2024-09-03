@@ -13,7 +13,7 @@ def _assert_h5py():
         raise Exception(IMPORT_MISSING_MESSAGE)
 
 
-def assert_has_h5_attribute(output_bytes, key, value):
+def assert_has_h5_attribute(output_bytes: bytes, key: str, value: str) -> None:
     """Asserts the specified HDF5 output has a given key-value pair as HDF5
     attribute"""
     _assert_h5py()
@@ -21,15 +21,14 @@ def assert_has_h5_attribute(output_bytes, key, value):
     local_attrs = h5py.File(output_temp, "r").attrs
     assert (
         key in local_attrs and str(local_attrs[key]) == value
-    ), f"Not a HDF5 file or H5 attributes do not match:\n\t{list(local_attrs.items())}\n\n\t({key} : {value})"
+    ), f"Not a HDF5 file or H5 attributes do not match:\n\t{[(key, str(value)) for key, value in local_attrs.items()]}\n\n\t({key} : {value})"
 
 
 # TODO the function actually queries groups. so the function and argument name are misleading
-def assert_has_h5_keys(output_bytes, keys):
+def assert_has_h5_keys(output_bytes: bytes, keys: str) -> None:
     """Asserts the specified HDF5 output has the given keys."""
     _assert_h5py()
-    keys = [k.strip() for k in keys.strip().split(",")]
-    h5_keys = sorted(keys)
+    h5_keys = sorted([k.strip() for k in keys.strip().split(",")])
     output_temp = io.BytesIO(output_bytes)
     local_keys = []
 

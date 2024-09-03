@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+
 import ServerSelection from "./ServerSelection";
 
 const localVue = getLocalVue();

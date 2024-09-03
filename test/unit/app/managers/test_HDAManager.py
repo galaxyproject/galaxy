@@ -1,11 +1,13 @@
 from unittest import mock
 
 import sqlalchemy
+from sqlalchemy import select
 
 from galaxy import (
     exceptions,
     model,
 )
+from galaxy.app_unittest_utils.galaxy_mock import mock_url_builder
 from galaxy.managers import hdas
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.histories import HistoryManager
@@ -44,7 +46,7 @@ class TestHDAManager(HDATestCase):
         hda3 = self.hda_manager.create(history=history1, hid=3)
 
         self.log("should be able to query")
-        hdas = self.trans.sa_session.query(hda_model).all()
+        hdas = self.trans.sa_session.scalars(select(hda_model)).all()
         assert self.hda_manager.list() == hdas
         assert self.hda_manager.one(filters=(hda_model.id == hda1.id)) == hda1
         assert self.hda_manager.by_id(hda1.id) == hda1
@@ -70,7 +72,7 @@ class TestHDAManager(HDATestCase):
         self.log("should be able to create a new HDA with a specified history and dataset")
         hda1 = self.hda_manager.create(history=history1, dataset=dataset1)
         assert isinstance(hda1, model.HistoryDatasetAssociation)
-        assert hda1 == self.trans.sa_session.query(model.HistoryDatasetAssociation).get(hda1.id)
+        assert hda1 == self.trans.sa_session.get(model.HistoryDatasetAssociation, hda1.id)
         assert hda1.history == history1
         assert hda1.dataset == dataset1
         assert hda1.hid == 1
@@ -88,18 +90,6 @@ class TestHDAManager(HDATestCase):
         assert isinstance(hda3.dataset, model.Dataset), "dataset will be auto created"
         assert hda3.history is None, "history will be None"
         assert hda3.hid is None, "should allow setting hid to None (or any other value)"
-
-    def test_hda_tags(self):
-        owner = self.user_manager.create(**user2_data)
-        history1 = self.history_manager.create(name="history1", user=owner)
-        dataset1 = self.dataset_manager.create()
-        hda1 = self.hda_manager.create(history=history1, dataset=dataset1)
-
-        self.log("should be able to set tags on an hda")
-        tags_to_set = ["tag-one", "tag-two"]
-        self.hda_manager.set_tags(hda1, tags_to_set, user=owner)
-        tag_str_array = self.hda_manager.get_tags(hda1)
-        assert sorted(tags_to_set) == sorted(tag_str_array)
 
     def test_hda_annotation(self):
         owner = self.user_manager.create(**user2_data)
@@ -121,7 +111,7 @@ class TestHDAManager(HDATestCase):
         self.log("should be able to copy an HDA")
         hda2 = self.hda_manager.copy(hda1, history=history1)
         assert isinstance(hda2, model.HistoryDatasetAssociation)
-        assert hda2 == self.trans.sa_session.query(model.HistoryDatasetAssociation).get(hda2.id)
+        assert hda2 == self.trans.sa_session.get(model.HistoryDatasetAssociation, hda2.id)
         assert hda2.name == hda1.name
         assert hda2.history == hda1.history
         assert hda2.dataset == hda1.dataset
@@ -130,11 +120,9 @@ class TestHDAManager(HDATestCase):
         self.log("tags should be copied between HDAs")
         tagged = self.hda_manager.create(history=history1, dataset=self.dataset_manager.create())
         tags_to_set = ["tag-one", "tag-two"]
-        self.hda_manager.set_tags(tagged, tags_to_set, user=owner)
-
+        self.app.tag_handler.add_tags_from_list(owner, tagged, tags_to_set)
         hda2 = self.hda_manager.copy(tagged, history=history1)
-        tag_str_array = self.hda_manager.get_tags(hda2)
-        assert sorted(tags_to_set) == sorted(tag_str_array)
+        assert tagged.make_tag_string_list() == hda2.make_tag_string_list()
 
         self.log("annotations should be copied between HDAs")
         annotated = self.hda_manager.create(history=history1, dataset=self.dataset_manager.create())
@@ -144,13 +132,6 @@ class TestHDAManager(HDATestCase):
         hda3 = self.hda_manager.copy(annotated, history=history1)
         hda3_annotation = self.hda_manager.annotation(hda3)
         assert annotation == hda3_annotation
-
-    # def test_copy_from_ldda( self ):
-    #    owner = self.user_manager.create( self.trans, **user2_data )
-    #    history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-    #
-    #    self.log( "should be able to copy an HDA" )
-    #    hda2 = self.hda_manager.copy_ldda( history1, hda1 )
 
     def test_delete(self):
         owner = self.user_manager.create(**user2_data)
@@ -240,8 +221,7 @@ class TestHDAManager(HDATestCase):
         assert accessible == item1
 
         self.log(
-            "after setting a dataset to private (one user) permissions, "
-            + "access should be not allowed for other users"
+            "after setting a dataset to private (one user) permissions, access should be not allowed for other users"
         )
         with self.assertRaises(exceptions.ItemAccessibilityException):
             self.hda_manager.get_accessible(
@@ -252,7 +232,7 @@ class TestHDAManager(HDATestCase):
 
         self.log(
             "a copy of a restricted dataset in another users history should be inaccessible even to "
-            + "the histories owner"
+            "the histories owner"
         )
         history2 = self.history_manager.create(name="history2", user=non_owner)
         self.trans.set_history(history2)
@@ -319,7 +299,7 @@ class TestHDAManager(HDATestCase):
 
         self.log(
             "anonymous users should not be able to access datasets within their own histories if "
-            + "permissions do not allow"
+            "permissions do not allow"
         )
         assert not self.hda_manager.is_accessible(item1, anon_user)
         with self.assertRaises(exceptions.ItemAccessibilityException):
@@ -327,7 +307,7 @@ class TestHDAManager(HDATestCase):
 
         self.log(
             "those users with access permissions should still be allowed access to datasets "
-            + "within anon users' histories"
+            "within anon users' histories"
         )
         assert self.hda_manager.is_accessible(item1, dataset_owner)
 
@@ -358,13 +338,7 @@ class TestHDAManager(HDATestCase):
     # def test_text_data( self ):
 
 
-# =============================================================================
-# web.url_for doesn't work well in the framework
-def testable_url_for(*a, **k):
-    return f"(fake url): {a}, {k}"
-
-
-@mock.patch("galaxy.managers.hdas.HDASerializer.url_for", testable_url_for)
+@mock.patch("galaxy.managers.hdas.HDASerializer.url_for", mock_url_builder)
 class TestHDASerializer(HDATestCase):
     def set_up_managers(self):
         super().set_up_managers()

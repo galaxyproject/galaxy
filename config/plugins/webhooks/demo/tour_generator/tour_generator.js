@@ -13,7 +13,8 @@ window.TourGenerator = Backbone.View.extend({
         $("#execute").attr("tour_id", "execute");
         Toastr.info("Tour generation might take some time.");
         $.getJSON(
-            `${Galaxy.root}api/webhooks/tour_generator/data/`, {
+            `${Galaxy.root}api/webhooks/tour_generator/data/`,
+            {
                 tool_id: toolId,
                 tool_version: toolVersion,
             },
@@ -31,7 +32,7 @@ window.TourGenerator = Backbone.View.extend({
             }
         );
     },
-    _getData: function(obj, attempts = 20, delay = 1000) {
+    _getData: function (obj, attempts = 20, delay = 1000) {
         let datasets = [];
         _.each(obj.data.hids, (hid) => {
             Galaxy.currHistoryPanel.collection.each((dataset) => {
@@ -49,8 +50,8 @@ window.TourGenerator = Backbone.View.extend({
             console.error("Some of the test datasets cannot be found in the history.");
         }
     },
-    _generateTour: function (data) {
-        const tour = window.bundleEntries.runTour("auto.generated", data);
+    _generateTour: async function (data) {
+        const tour = await window.bundleEntries.runTour("auto.generated", data);
         // Force ending the tour when pressing the Execute button
         $("#execute").on("mousedown", () => {
             if (tour) {

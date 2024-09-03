@@ -1,6 +1,5 @@
-import { onMounted, onUnmounted, onUpdated, ref, unref, watch } from "vue";
-import type { Ref } from "vue";
 import { createPopper } from "@popperjs/core";
+import { onMounted, onUnmounted, onUpdated, type Ref, ref, unref, watch } from "vue";
 
 export type MaybeRef<T> = T | Ref<T>;
 
@@ -33,6 +32,7 @@ export function usePopperjs(
                 trigger: MaybeRef<Trigger | undefined>;
                 delayOnMouseover: MaybeRef<number | undefined>;
                 delayOnMouseout: MaybeRef<number | undefined>;
+                disabled: MaybeRef<boolean | undefined>;
                 forceShow: MaybeRef<boolean | undefined>;
             }
     >
@@ -134,6 +134,17 @@ export function usePopperjs(
         }
     );
 
+    watch(
+        () => unref(options?.disabled),
+        () => {
+            if (unref(options?.disabled)) {
+                doOff();
+            } else {
+                doOn();
+            }
+        }
+    );
+
     const timer = ref<any>();
     const doMouseover = () => {
         if (unref(options?.delayOnMouseover) === 0) {
@@ -174,17 +185,14 @@ export function usePopperjs(
 
             case "hover": {
                 on(referenceRef.value!, "mouseover", doMouseover);
-                on(popperRef.value!, "mouseover", doMouseover);
                 on(referenceRef.value!, "mouseout", doMouseout);
-                on(popperRef.value!, "mouseout", doMouseout);
+                on(referenceRef.value!, "mousedown", doMouseout);
                 break;
             }
 
             case "focus": {
                 on(referenceRef.value!, "focus", doOpen);
-                on(popperRef.value!, "focus", doOpen);
                 on(referenceRef.value!, "blur", doClose);
-                on(popperRef.value!, "blur", doClose);
                 break;
             }
 
@@ -204,14 +212,11 @@ export function usePopperjs(
         off(referenceRef.value!, "click", doToggle);
 
         off(referenceRef.value!, "mouseover", doMouseover);
-        off(popperRef.value!, "mouseover", doMouseover);
         off(referenceRef.value!, "mouseout", doMouseout);
-        off(popperRef.value!, "mouseout", doMouseout);
+        off(referenceRef.value!, "mousedown", doMouseout);
 
         off(referenceRef.value!, "focus", doOpen);
-        off(popperRef.value!, "focus", doOpen);
         off(referenceRef.value!, "blur", doClose);
-        off(popperRef.value!, "blur", doClose);
     };
     const doCloseForDocument = (e: Event) => {
         if (referenceRef.value?.contains(e.target as Element)) {

@@ -1,10 +1,14 @@
 """
 API Controller providing experimental access to Celery Task State.
 """
+
 import logging
 from uuid import UUID
 
-from galaxy.managers.tasks import AsyncTasksManager
+from galaxy.managers.tasks import (
+    AsyncTasksManager,
+    TaskState,
+)
 from . import (
     depends,
     Router,
@@ -21,8 +25,9 @@ class FastAPITasks:
 
     @router.get(
         "/api/tasks/{task_id}/state",
+        public=True,
         summary="Determine state of task ID",
         response_description="String indicating task state.",
     )
-    def state(self, task_id: UUID) -> str:
+    def state(self, task_id: UUID) -> TaskState:
         return self.manager.get_state(task_id)

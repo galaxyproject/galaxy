@@ -1,8 +1,9 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import FormElement from "./FormElement";
+
 import FormHidden from "./Elements/FormHidden";
 import FormText from "./Elements/FormText";
+import FormElement from "./FormElement";
 
 const localVue = getLocalVue();
 
@@ -29,7 +30,7 @@ describe("FormElement", () => {
         const error = wrapper.find(".ui-form-error-text");
         expect(error.text()).toBe("error_text");
 
-        await wrapper.setProps({ error: "" });
+        await wrapper.setProps({ error: undefined });
         const no_error = wrapper.findAll(".ui-form-error");
         expect(no_error.length).toBe(0);
 

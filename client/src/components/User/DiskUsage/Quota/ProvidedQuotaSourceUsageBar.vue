@@ -10,6 +10,7 @@
 
 <script>
 import LoadingSpan from "components/LoadingSpan";
+
 import QuotaUsageBar from "./QuotaUsageBar";
 import { QuotaSourceUsageProvider } from "./QuotaUsageProvider";
 
@@ -35,7 +36,7 @@ export default {
     },
     data() {
         return {
-            loadingMessage: "Loading object store information",
+            loadingMessage: "Loading storage location information",
         };
     },
 };

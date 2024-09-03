@@ -1,7 +1,9 @@
 import errno
 import os
 import tempfile
+from enum import Enum
 from io import StringIO
+from pathlib import Path
 from typing import Dict
 
 import pytest
@@ -103,25 +105,14 @@ def test_safe_loads():
 
 
 def test_in_packages(monkeypatch):
-    monkeypatch.setattr(util, "galaxy_root_path", "a/b")
-    assert not util.in_packages()
-
-    monkeypatch.setattr(util, "galaxy_root_path", "a/b/packages")
-    assert util.in_packages()
+    util_path = Path(util.__file__).parent
+    assert util.in_packages() == (not str(util_path).endswith("lib/galaxy/util"))
 
 
 def test_galaxy_directory(monkeypatch):
-    monkeypatch.setattr(util, "galaxy_root_path", "a/b")  # a/b
-    path1 = util.galaxy_directory()
-
-    monkeypatch.setattr(util, "galaxy_root_path", "a/b/c/..")  # a/b
-    path2 = util.galaxy_directory()
-
-    monkeypatch.setattr(util, "galaxy_root_path", "a/b/packages/c/..")  # a/b/packages
-    path3 = util.galaxy_directory()
-
-    assert path1 == path2 == path3
-    assert os.path.isabs(path1)
+    galaxy_dir = util.galaxy_directory()
+    assert os.path.isabs(galaxy_dir)
+    assert os.path.isfile(os.path.join(galaxy_dir, "run.sh"))
 
 
 def test_listify() -> None:
@@ -139,3 +130,12 @@ def test_listify() -> None:
     assert util.listify(d) == [d]
     o = object()
     assert util.listify(o) == [o]
+
+
+def test_enum_values():
+    class Stuff(str, Enum):
+        A = "a"
+        C = "c"
+        B = "b"
+
+    assert util.enum_values(Stuff) == ["a", "c", "b"]

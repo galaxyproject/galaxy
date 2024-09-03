@@ -12,14 +12,12 @@
 
 import { combineLatest } from "rxjs";
 import { map } from "rxjs/operators";
-
 import { serverPath } from "utils/serverPath";
+
 import { defaultAppFactory } from "./defaultAppFactory";
 import { globalInits } from "./globalInits";
-
-// observable configs and init queue
+import { clearInitQueue, initializations$ } from "./initQueue";
 import { config$ } from "./loadConfig";
-import { initializations$, clearInitQueue } from "./initQueue";
 
 /**
  * This is the standard endpoint initialization chain. Configs are loaded, the

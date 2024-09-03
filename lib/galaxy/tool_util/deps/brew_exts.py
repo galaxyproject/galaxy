@@ -160,14 +160,14 @@ class CommandLineException(Exception):
         self.stdout = stdout
         self.stderr = stderr
         self.message = (
-            "Failed to execute command-line %s, stderr was:\n"
+            f"Failed to execute command-line {command}, stderr was:\n"
             "-------->>begin stderr<<--------\n"
-            "%s\n"
+            f"{stderr}\n"
             "-------->>end stderr<<--------\n"
             "-------->>begin stdout<<--------\n"
-            "%s\n"
+            f"{stdout}\n"
             "-------->>end stdout<<--------\n"
-        ) % (command, stderr, stdout)
+        )
 
     def __str__(self):
         return self.message
@@ -380,16 +380,16 @@ class EnvAction:
     @staticmethod
     def build_env(env_actions):
         new_env = os.environ.copy()
-        map(lambda env_action: env_action.modify_environ(new_env), env_actions)
+        (env_action.modify_environ(new_env) for env_action in env_actions)
         return new_env
 
     def modify_environ(self, environ):
         if self.action == "set" or not environ.get(self.variable, ""):
             environ[self.variable] = self.__eval("${value}")
         elif self.action == "prepend":
-            environ[self.variable] = self.__eval("${value}:%s" % environ[self.variable])
+            environ[self.variable] = self.__eval(f"${{value}}:{environ[self.variable]}")
         else:
-            environ[self.variable] = self.__eval("%s:${value}" % environ[self.variable])
+            environ[self.variable] = self.__eval(f"{environ[self.variable]}:${{value}}")
 
     def __eval(self, template):
         return string.Template(template).safe_substitute(
@@ -523,7 +523,7 @@ def recipe_cellar_path(cellar_path, recipe, version):
     recipe_base_path = os.path.join(cellar_path, recipe_base, version)
     revision_paths = glob.glob(f"{recipe_base_path}_*")
     if revision_paths:
-        revisions = map(lambda x: int(x.rsplit("_", 1)[-1]), revision_paths)
+        revisions = (int(x.rsplit("_", 1)[-1]) for x in revision_paths)
         max_revision = max(revisions)
         recipe_path = "%s_%d" % (recipe_base_path, max_revision)
     else:

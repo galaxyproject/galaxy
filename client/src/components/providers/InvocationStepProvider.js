@@ -1,13 +1,13 @@
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
 import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
+import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
 
 const TERMINAL_JOB_STATES = ["ok", "error", "deleted", "paused"];
 
 async function getInvocation({ id }) {
     try {
-        const { data } = await axios.get(`${getAppRoot()}api/invocations/any/steps/${id}`);
+        const { data } = await axios.get(`${getAppRoot()}api/invocations/steps/${id}`);
         return data;
     } catch (e) {
         rethrowSimple(e);

@@ -1,38 +1,69 @@
-import { setActivePinia, createPinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 
-import { useWorkflowStepStore, type TerminalSource } from "@/stores/workflowStepStore";
-import {
-    terminalFactory,
-    InputCollectionTerminal,
-    InputTerminal,
-    InputParameterTerminal,
-    OutputCollectionTerminal,
-    OutputTerminal,
-    OutputParameterTerminal,
-    producesAcceptableDatatype,
-    InvalidOutputTerminal,
-} from "./terminals";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { useUndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import type { DataOutput, Steps, Step } from "@/stores/workflowStepStore";
+import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
+import {
+    type DataOutput,
+    type Step,
+    type Steps,
+    type TerminalSource,
+    useWorkflowStepStore,
+} from "@/stores/workflowStepStore";
+
+import { advancedSteps, simpleSteps } from "../test_fixtures";
 import {
     ANY_COLLECTION_TYPE_DESCRIPTION,
     CollectionTypeDescription,
     NULL_COLLECTION_TYPE_DESCRIPTION,
 } from "./collectionTypeDescription";
-import { simpleSteps, advancedSteps } from "../test_fixtures";
+import {
+    InputCollectionTerminal,
+    InputParameterTerminal,
+    InputTerminal,
+    InvalidOutputTerminal,
+    OutputCollectionTerminal,
+    OutputParameterTerminal,
+    OutputTerminal,
+    producesAcceptableDatatype,
+    terminalFactory,
+} from "./terminals";
+
+function useStores(id = "mock-workflow") {
+    const connectionStore = useConnectionStore(id);
+    const stateStore = useWorkflowStateStore(id);
+    const stepStore = useWorkflowStepStore(id);
+    const commentStore = useWorkflowCommentStore(id);
+    const toolbarStore = useWorkflowEditorToolbarStore(id);
+    const undoRedoStore = useUndoRedoStore(id);
+
+    return {
+        connectionStore,
+        stateStore,
+        stepStore,
+        commentStore,
+        toolbarStore,
+        undoRedoStore,
+    };
+}
 
 function setupAdvanced() {
     const terminals: { [index: string]: { [index: string]: ReturnType<typeof terminalFactory> } } = {};
+
+    const stores = useStores();
+
     Object.values(advancedSteps).map((step) => {
         const stepLabel = step.label;
         if (stepLabel) {
             terminals[stepLabel] = {};
             step.inputs?.map((input) => {
-                terminals[stepLabel]![input.name] = terminalFactory(step.id, input, testDatatypesMapper);
+                terminals[stepLabel]![input.name] = terminalFactory(step.id, input, testDatatypesMapper, stores);
             });
             step.outputs?.map((output) => {
-                terminals[stepLabel]![output.name] = terminalFactory(step.id, output, testDatatypesMapper);
+                terminals[stepLabel]![output.name] = terminalFactory(step.id, output, testDatatypesMapper, stores);
             });
         }
     });
@@ -41,13 +72,16 @@ function setupAdvanced() {
 
 function rebuildTerminal<T extends ReturnType<typeof terminalFactory>>(terminal: T): T {
     let terminalSource: TerminalSource;
-    const step = terminal.stepStore.getStep(terminal.stepId);
+    const step = terminal.stores.stepStore.getStep(terminal.stepId);
+
+    const stores = useStores();
+
     if (terminal.terminalType === "input") {
         terminalSource = step!.inputs.find((input) => input.name == terminal.name)!;
     } else {
         terminalSource = step!.outputs.find((output) => output.name == terminal.name)!;
     }
-    return terminalFactory(terminal.stepId, terminalSource, testDatatypesMapper) as T;
+    return terminalFactory(terminal.stepId, terminalSource, testDatatypesMapper, stores) as T;
 }
 
 describe("terminalFactory", () => {
@@ -83,7 +117,9 @@ describe("terminalFactory", () => {
         expect(terminals["filter_failed"]?.["output"]).toBeInstanceOf(OutputCollectionTerminal);
     });
     it("throws error on invalid terminalSource", () => {
-        const invalidFactory = () => terminalFactory(1, {} as any, testDatatypesMapper);
+        const stores = useStores();
+
+        const invalidFactory = () => terminalFactory(1, {} as any, testDatatypesMapper, stores);
         expect(invalidFactory).toThrow();
     });
 });
@@ -95,8 +131,8 @@ describe("canAccept", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         terminals = setupAdvanced();
-        stepStore = useWorkflowStepStore();
-        connectionStore = useConnectionStore();
+        stepStore = useWorkflowStepStore("mock-workflow");
+        connectionStore = useConnectionStore("mock-workflow");
         Object.values(JSON.parse(JSON.stringify(advancedSteps)) as Steps).map((step) => {
             stepStore.addStep(step);
         });
@@ -537,29 +573,27 @@ describe("canAccept", () => {
 });
 
 describe("Input terminal", () => {
-    let stepStore: ReturnType<typeof useWorkflowStepStore>;
-    let connectionStore: ReturnType<typeof useConnectionStore>;
+    let stores: ReturnType<typeof useStores>;
     let terminals: { [index: number]: { [index: string]: ReturnType<typeof terminalFactory> } };
     beforeEach(() => {
         setActivePinia(createPinia());
-        stepStore = useWorkflowStepStore();
-        connectionStore = useConnectionStore();
+        stores = useStores();
         terminals = {};
         Object.values(simpleSteps).map((step) => {
-            stepStore.addStep(step);
+            stores.stepStore.addStep(step);
             terminals[step.id] = {};
             const stepTerminals = terminals[step.id]!;
             step.inputs?.map((input) => {
-                stepTerminals[input.name] = terminalFactory(step.id, input, testDatatypesMapper);
+                stepTerminals[input.name] = terminalFactory(step.id, input, testDatatypesMapper, stores);
             });
             step.outputs?.map((output) => {
-                stepTerminals[output.name] = terminalFactory(step.id, output, testDatatypesMapper);
+                stepTerminals[output.name] = terminalFactory(step.id, output, testDatatypesMapper, stores);
             });
         });
     });
 
     it("has step", () => {
-        expect(stepStore.getStep(1)).toEqual(simpleSteps["1"]);
+        expect(stores.stepStore.getStep(1)).toEqual(simpleSteps["1"]);
     });
     it("infers correct state", () => {
         const firstInputTerminal = terminals[1]!["input"] as InputTerminal;
@@ -592,11 +626,11 @@ describe("Input terminal", () => {
         firstInputTerminal.disconnect(connection);
         expect(firstInputTerminal.canAccept(dataInputOutputTerminal).canAccept).toBe(true);
         expect(dataInputOutputTerminal.validInputTerminals().length).toBe(1);
-        connectionStore.addConnection(connection);
+        stores.connectionStore.addConnection(connection);
         expect(firstInputTerminal.canAccept(dataInputOutputTerminal).canAccept).toBe(false);
     });
     it("will maintain invalid connections", () => {
-        const connection = connectionStore.connections[0]!;
+        const connection = stores.connectionStore.connections[0]!;
         connection.output.name = "I don't exist";
         const firstInputTerminal = terminals[1]?.["input"] as InputTerminal;
         const invalidTerminals = firstInputTerminal.getConnectedTerminals();

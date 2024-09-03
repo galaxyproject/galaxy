@@ -100,7 +100,7 @@ class BPF(Text):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """Set the metadata for this dataset from the file contents"""
         types = set()
-        with open(dataset.dataset.file_name) as fd:
+        with open(dataset.dataset.get_file_name()) as fd:
             for line in fd:
                 # Split the line on a colon rather than regexing it
                 parts = line.split(":")

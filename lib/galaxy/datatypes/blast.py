@@ -70,7 +70,7 @@ class BlastXml(GenericXml):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "NCBI Blast XML data"
         else:
             dataset.peek = "file does not exist"
@@ -173,8 +173,7 @@ class BlastXml(GenericXml):
                     # Enough to check <BlastOutput_program> and <BlastOutput_version> match
                     h.close()
                     raise ValueError(
-                        "BLAST XML headers don't match for %s and %s - have:\n%s\n...\n\nAnd:\n%s\n...\n"
-                        % (split_files[0], f, old_header[:300], header[:300])
+                        f"BLAST XML headers don't match for {split_files[0]} and {f} - have:\n{old_header[:300]}\n...\n\nAnd:\n{header[:300]}\n...\n"
                     )
                 else:
                     out.write("    <Iteration>\n")
@@ -247,7 +246,7 @@ class _BlastDb(Data):
         msg = ""
         try:
             # Try to use any text recorded in the dummy index file:
-            with open(dataset.file_name, encoding="utf-8") as handle:
+            with open(dataset.get_file_name(), encoding="utf-8") as handle:
                 msg = handle.read().strip()
         except Exception:
             pass
@@ -262,7 +261,7 @@ class _BlastDb(Data):
         raise NotImplementedError("Merging BLAST databases is non-trivial (do this via makeblastdb?)")
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """Split a BLAST database (not implemented for now)."""
         if split_params is None:
             return None

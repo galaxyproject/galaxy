@@ -1,6 +1,9 @@
 import os
 from collections import namedtuple
 
+from sqlalchemy import select
+
+from galaxy.model.base import transaction
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from galaxy_test.driver.uses_shed import UsesShed
@@ -17,7 +20,6 @@ REVISION_4 = "071084070619"
 
 
 class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):
-
     """Test data manager installation and table reload through the API"""
 
     @classmethod
@@ -64,7 +66,7 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         response = self._install_repository(revision=REVISION_4, version="0.0.3", allow_upgraded=True)[0]
         assert int(response["ctx_rev"]) >= 4
         latest_revision = response["changeset_revision"]
-        repo_response = self._get("/api/tool_shed_repositories/%s" % response["id"]).json()
+        repo_response = self._get(f"/api/tool_shed_repositories/{response['id']}").json()
         assert repo_response["tool_shed_status"]["revision_update"] == "False"  # that should really be a boolean
         # now checkout revision 3 and attempt an update
         path_components = [
@@ -85,14 +87,16 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         hg_util.update_repository(repository_path, ctx_rev="3")
         # change repo to revision 3 in database
         model = self._app.install_model
-        tsr = model.context.query(model.ToolShedRepository).first()
+        tsr = model.session.scalars(select(model.ToolShedRepository).limit(1)).first()
         assert tsr.name == REPO.name
         assert tsr.changeset_revision == latest_revision
         assert int(tsr.ctx_rev) >= 4
         tsr.ctx_rev = "3"
         tsr.installed_changeset_revision = REVISION_3
         tsr.changeset_revision = REVISION_3
-        model.context.flush()
+        session = model.context
+        with transaction(session):
+            session.commit()
         # update shed_tool_conf.xml to look like revision 3 was the installed_changeset_revision
         with open(self._app.config.shed_tool_config_file) as shed_config:
             shed_text = shed_config.read().replace(latest_revision, REVISION_3)
@@ -100,7 +104,7 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
             shed_config.write(shed_text)
         self._get("/api/tool_shed_repositories/check_for_updates", data={"id": response["id"]}, admin=True).json()
         # At this point things should look like there is minor update available
-        repo_response = self._get("/api/tool_shed_repositories/%s" % response["id"])
+        repo_response = self._get(f"/api/tool_shed_repositories/{response['id']}")
         repo_response.raise_for_status()
         repo_json = repo_response.json()
         assert repo_json["tool_shed_status"]["revision_update"] == "True"
@@ -120,9 +124,7 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         assert tool["version"] == "0.0.2"
         self.uninstall_repository(REPO.owner, REPO.name, REPO.changeset)
         response = self.get_tool(assert_ok=False)
-        assert (
-            "err_msg" in response
-        ), f"Expected an error message after tool install but response was {response.content}"
+        assert "err_msg" in response, f"Expected an error message after tool install but response was {response}"
         assert response["err_msg"]
         assert self.get_installed_repository_for(REPO.owner, REPO.name, REPO.changeset) is None
 

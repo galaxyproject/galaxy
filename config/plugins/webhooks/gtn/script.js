@@ -1,8 +1,9 @@
-(function () {
-    var gtnWebhookLoaded = false;
-    var lastUpdate = 0;
-    var urlParams = new URLSearchParams(document.location.search);
-    var autoLoadTutorial = urlParams.get('autoload_gtn_tutorial') === null ? "" : urlParams.get('autoload_gtn_tutorial');
+(() => {
+    let gtnWebhookLoaded = false;
+    let lastUpdate = 0;
+    const urlParams = new URLSearchParams(document.location.search);
+    const autoLoadTutorial =
+        urlParams.get("autoload_gtn_tutorial") === null ? "" : urlParams.get("autoload_gtn_tutorial");
 
     function removeOverlay() {
         const container = document.getElementById("gtn-container");
@@ -16,7 +17,7 @@
     }
 
     function getIframeUrl() {
-        var loc;
+        let loc;
         try {
             loc = document.getElementById("gtn-embed").contentWindow.location.pathname;
         } catch (e) {
@@ -26,7 +27,7 @@
     }
 
     function getIframeScroll() {
-        var loc;
+        let loc;
         try {
             loc = parseInt(document.getElementById("gtn-embed").contentWindow.scrollY);
         } catch (e) {
@@ -35,11 +36,9 @@
         return loc;
     }
 
-    function restoreLocation() {}
-
     function persistLocation() {
         // Don't save every scroll event.
-        var time = new Date().getTime();
+        const time = new Date().getTime();
         if (time - lastUpdate < 1000) {
             return;
         }
@@ -48,7 +47,9 @@
     }
 
     function addIframe() {
-        let url, message, onloadscroll;
+        let url;
+        let message;
+        let onloadscroll;
         gtnWebhookLoaded = true;
         let storedData = false;
         let safe = false;
@@ -59,8 +60,7 @@
         fetch("/training-material/")
             .then((response) => {
                 if (!response.ok) {
-                    url =
-                        `https://training.galaxyproject.org/training-material/${autoLoadTutorial}?utm_source=webhook&utm_medium=noproxy&utm_campaign=gxy`;
+                    url = `https://training.galaxyproject.org/training-material/${autoLoadTutorial}?utm_source=webhook&utm_medium=noproxy&utm_campaign=gxy`;
                     message = `
                         <span>
                             <a href="https://docs.galaxyproject.org/en/master/admin/special_topics/gtn.html">Click to run</a> unavailable.
@@ -68,7 +68,7 @@
                 } else {
                     safe = true;
 
-                    var storedLocation = window.localStorage.getItem("gtn-in-galaxy");
+                    const storedLocation = window.localStorage.getItem("gtn-in-galaxy");
                     if (
                         storedLocation !== null &&
                         storedLocation.split(" ")[1] !== undefined &&
@@ -113,6 +113,7 @@
                 // Depends on the iframe being present
                 document.getElementById("gtn-embed").addEventListener("load", () => {
                     // Save our current location when possible
+                    const gtnEmbed = document.getElementById("gtn-embed");
                     if (onloadscroll !== undefined) {
                         document.getElementById("gtn-embed").contentWindow.scrollTo(0, parseInt(onloadscroll));
                         onloadscroll = undefined;
@@ -121,26 +122,57 @@
                     if (safe) {
                         persistLocation();
                     }
-                    var gtn_tools = $("#gtn-embed").contents().find("span[data-tool]");
+                    // Add the class to the entire GTN page
+                    document
+                        .getElementById("gtn-embed")
+                        .contentDocument.getElementsByTagName("body")[0]
+                        .classList.add("galaxy-proxy-active");
+
+                    const gtnToolElements = document
+                        .getElementById("gtn-embed")
+                        .contentDocument.querySelectorAll("span[data-tool],a[data-tool]");
+
                     // Buttonify
-                    gtn_tools.addClass("galaxy-proxy-active");
+                    gtnToolElements.forEach(function (el) {
+                        el.addEventListener("click", function (e) {
+                            let target = e.target;
 
-                    gtn_tools.click((e) => {
-                        var target = e.target;
+                            // Sometimes we get the i or the strong, not the parent.
+                            if (e.target.tagName.toLowerCase() !== "span" && e.target.tagName.toLowerCase() !== "a") {
+                                target = e.target.parentElement;
+                            }
 
-                        // Sometimes we get the i or the strong, not the parent.
-                        if (e.target.tagName.toLowerCase() !== "span") {
-                            target = e.target.parentElement;
-                        }
+                            tool_id = target.dataset.tool;
 
-                        tool_id = $(target).data("tool");
+                            if (tool_id === "upload1" || tool_id === "upload") {
+                                document.getElementById("tool-panel-upload-button").click();
+                            } else {
+                                Galaxy.router.push({ path: `/?tool_id=${encodeURIComponent(tool_id)}` });
+                            }
+                            removeOverlay();
+                        });
+                    });
 
-                        if (tool_id === "upload1" || tool_id === "upload") {
-                            document.getElementById("tool-panel-upload-button").click();
-                        } else {
-                            Galaxy.router.push({ path: `/?tool_id=${encodeURIComponent(tool_id)}` });
-                        }
-                        removeOverlay();
+                    const gtnWorkflowElements = document
+                        .getElementById("gtn-embed")
+                        .contentDocument.querySelectorAll("span[data-workflow],a[data-workflow]");
+
+                    // Buttonify
+                    gtnWorkflowElements.forEach(function (el) {
+                        el.addEventListener("click", (e) => {
+                            let target = e.target;
+
+                            // Sometimes we get the i or the strong, not the parent.
+                            if (e.target.tagName.toLowerCase() !== "span" && e.target.tagName.toLowerCase() !== "a") {
+                                target = e.target.parentElement;
+                            }
+
+                            trs_url = target.dataset.workflow;
+                            Galaxy.router.push({
+                                path: `/workflows/trs_import?trs_url=${encodeURIComponent(trs_url)}&run_form=true`,
+                            });
+                            removeOverlay();
+                        });
                     });
                 });
             });
@@ -183,15 +215,15 @@
                 showOverlay();
             }
         });
-        if(autoLoadTutorial){
+        if (autoLoadTutorial) {
             clean.click();
         }
     });
 
     // Remove the overlay on escape button click
-    document.addEventListener("keydown", (e) => {
-        // Check for escape button - "27"
-        if (e.which === 27 || e.keyCode === 27) {
+    document.addEventListener("keydown", (event) => {
+        // Check for escape button - "Escape" (modern browsers), "27" (old browsers)
+        if (event.key === "Escape" || event.keyCode === 27) {
             removeOverlay();
         }
     });

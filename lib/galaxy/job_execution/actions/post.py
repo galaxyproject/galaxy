@@ -2,14 +2,13 @@
 Actions to be run at job completion (or output hda creation, as in the case of
 immediate_actions listed below.
 """
+
 import datetime
 
 from markupsafe import escape
 
-from galaxy.util import (
-    send_mail,
-    unicodify,
-)
+from galaxy.model import PostJobActionAssociation
+from galaxy.util import send_mail
 from galaxy.util.custom_logging import get_logger
 
 log = get_logger(__name__)
@@ -67,8 +66,8 @@ class EmailAction(DefaultJobAction):
             if link_invocation:
                 body += f"\n\nWorkflow Invocation Report:\n{link_invocation}"
             send_mail(app.config.email_from, to, subject, body, app.config)
-        except Exception as e:
-            log.error("EmailAction PJA Failed, exception: %s", unicodify(e))
+        except Exception:
+            log.exception("EmailAction PJA Failed")
 
     @classmethod
     def get_short_str(cls, pja):
@@ -110,11 +109,17 @@ class ChangeDatatypeAction(DefaultJobAction):
         for dataset_assoc in job.output_datasets:
             if action.output_name == "" or dataset_assoc.name == action.output_name:
                 app.datatypes_registry.change_datatype(dataset_assoc.dataset, action.action_arguments["newtype"])
+                return
         for dataset_collection_assoc in job.output_dataset_collection_instances:
             if action.output_name == "" or dataset_collection_assoc.name == action.output_name:
                 for dataset_instance in dataset_collection_assoc.dataset_collection_instance.dataset_instances:
                     if dataset_instance:
                         app.datatypes_registry.change_datatype(dataset_instance, action.action_arguments["newtype"])
+                else:
+                    # dynamic collection, add as PJA
+                    pjaa = PostJobActionAssociation(action, job)
+                    sa_session.add(pjaa)
+                return
 
     @classmethod
     def get_short_str(cls, pja):
@@ -139,8 +144,7 @@ class RenameDatasetAction(DefaultJobAction):
             if step_input and hasattr(step_input, "name"):
                 input_names[input_key] = step_input.name
 
-        new_name = cls._gen_new_name(action, input_names, replacement_dict)
-        if new_name:
+        if new_name := cls._gen_new_name(action, input_names, replacement_dict):
             for name, step_output in step_outputs.items():
                 if action.output_name == "" or name == action.output_name:
                     step_output.name = new_name
@@ -193,7 +197,15 @@ class RenameDatasetAction(DefaultJobAction):
                 # repeat in cat1 would be something like queries_0.input2.
                 input_file_var = input_file_var.replace(".", "|")
 
-                replacement = input_names.get(input_file_var, "")
+                replacement = None
+                if input_file_var in input_names:
+                    replacement = input_names[input_file_var]
+                else:
+                    for input_name, _replacement in input_names.items():
+                        if "|" in input_name and input_name.endswith(input_file_var):
+                            # best effort attempt at matching up unqualified input
+                            replacement = _replacement
+                            break
 
                 # In case name was None.
                 replacement = replacement or ""
@@ -215,11 +227,11 @@ class RenameDatasetAction(DefaultJobAction):
                     elif operation == "lower":
                         replacement = replacement.lower()
 
-                new_name = new_name.replace("#{%s}" % to_be_replaced, replacement)
+                new_name = new_name.replace(f"#{{{to_be_replaced}}}", replacement)
 
             if replacement_dict:
                 for k, v in replacement_dict.items():
-                    new_name = new_name.replace("${%s}" % k, v)
+                    new_name = new_name.replace(f"${{{k}}}", v)
 
         return new_name
 
@@ -239,8 +251,7 @@ class RenameDatasetAction(DefaultJobAction):
             if has_collection and hasattr(has_collection, "name"):
                 input_names[input_assoc.name] = has_collection.name
 
-        new_name = cls._gen_new_name(action, input_names, replacement_dict)
-        if new_name:
+        if new_name := cls._gen_new_name(action, input_names, replacement_dict):
             for dataset_assoc in job.output_datasets:
                 if action.output_name == "" or dataset_assoc.name == action.output_name:
                     dataset_assoc.dataset.name = new_name
@@ -358,7 +369,6 @@ class DeleteIntermediatesAction(DefaultJobAction):
         # POTENTIAL ISSUES:  When many outputs are being finish()ed
         # concurrently, sometimes non-terminal steps won't be cleaned up
         # because of the lag in job state updates.
-        sa_session.flush()
         if not job.workflow_invocation_step:
             log.debug("This job is not part of a workflow invocation, delete intermediates aborted.")
             return
@@ -438,13 +448,13 @@ class TagDatasetAction(DefaultJobAction):
     def execute_on_mapped_over(
         cls, trans, sa_session, action, step_inputs, step_outputs, replacement_dict, final_job_state=None
     ):
-        tag_handler = trans.app.tag_handler.create_tag_handler_session()
         if action.action_arguments:
             tags = [
                 t.replace("#", "name:") if t.startswith("#") else t
                 for t in [t.strip() for t in action.action_arguments.get("tags", "").split(",") if t.strip()]
             ]
-            if tags:
+            if tags and step_outputs:
+                tag_handler = trans.tag_handler
                 for name, step_output in step_outputs.items():
                     if action.output_name == "" or name == action.output_name:
                         cls._execute(tag_handler, trans.user, step_output, tags)
@@ -452,12 +462,12 @@ class TagDatasetAction(DefaultJobAction):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict, final_job_state=None):
         if action.action_arguments:
-            tag_handler = app.tag_handler.create_tag_handler_session()
             tags = [
                 t.replace("#", "name:") if t.startswith("#") else t
                 for t in [t.strip() for t in action.action_arguments.get("tags", "").split(",") if t.strip()]
             ]
             if tags:
+                tag_handler = app.tag_handler.create_tag_handler_session(job.galaxy_session)
                 for dataset_assoc in job.output_datasets:
                     if action.output_name == "" or dataset_assoc.name == action.output_name:
                         cls._execute(tag_handler, job.user, dataset_assoc.dataset, tags)
@@ -488,7 +498,7 @@ class RemoveTagDatasetAction(TagDatasetAction):
 
     @classmethod
     def _execute(cls, tag_handler, user, output, tags):
-        tag_handler.remove_tags_from_list(user, output, tags)
+        tag_handler.remove_tags_from_list(user, output, tags, flush=False)
 
 
 class ActionBox:

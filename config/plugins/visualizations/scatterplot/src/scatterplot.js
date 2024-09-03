@@ -1,13 +1,14 @@
 import "./jqglobals";
 // This is a really annoying hack to get bootstrap/jqui jquery bindings available correctly.
 /* global $ */
-import * as Backbone from "backbone";
-import * as d3 from "d3";
-import * as _ from "underscore";
-import "../../../../../client/src/ui/peek-column-selector";
-import "../../../../../client/src/ui/pagination";
+import "./peek-column-selector";
+import "./pagination";
 import "jquery-ui-bundle";
 import "bootstrap";
+
+import Backbone from "backbone";
+import * as d3 from "d3";
+import _ from "underscore";
 
 //TODO: Finish unlinking this from the Galaxy codebase (package it, use that way?)
 
@@ -821,7 +822,7 @@ var ScatterplotDisplay = Backbone.View.extend({
         var view = this,
             config = this.model.get("config"),
             //TODO: very tied to datasets - should be generalized eventually
-            baseUrl = window.parent && window.parent.galaxy_config ? window.parent.galaxy_config.root : "/",
+            baseUrl = window.parent && window.parent.options ? window.parent.options.root : "/",
             xhr = $.getJSON(baseUrl + "api/datasets/" + this.dataset.id, {
                 data_type: "raw_data",
                 provider: "dataset-column",
@@ -986,7 +987,7 @@ var ScatterplotDisplay = Backbone.View.extend({
         }
         var view = this;
         var config = this.model.get("config");
-        var meanWorker = new window.Worker("worker-stats.js");
+        var meanWorker = new window.Worker("./static/worker-stats.js");
         meanWorker.postMessage({
             data: this.data,
             keys: [config.xColumn, config.yColumn]

@@ -11,7 +11,7 @@ class TestWorkflowSharingRedirect(SeleniumTestCase):
 
     @selenium_test
     def test_share_workflow_with_login_redirect(self):
-        user_email = self.get_logged_in_user()["email"]
+        user_email = self.get_user_email()
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.logout()
         self.go_to_workflow_sharing(workflow_id)
@@ -24,7 +24,7 @@ class TestWorkflowSharingRedirect(SeleniumTestCase):
 
     @selenium_test
     def test_export_workflow_with_login_redirect(self):
-        user_email = self.get_logged_in_user()["email"]
+        user_email = self.get_user_email()
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.logout()
         self.go_to_workflow_export(workflow_id)
@@ -40,7 +40,7 @@ class TestWorkflowSharing(SeleniumTestCase, UsesWorkflowAssertions):
     def test_sharing_workflow_by_email(self):
         _, user2_email = self.setup_two_users_with_one_shared_workflow(screenshot=True)
         self.submit_login(user2_email)
-        self.workflow_index_open()
+        self.workflow_shared_with_me_open()
         # refine this to restrict checking for that workflow so published workflow don't break this test
         self._assert_showing_n_workflows(1)
         self.screenshot("workflow_shared_workflow")
@@ -49,8 +49,8 @@ class TestWorkflowSharing(SeleniumTestCase, UsesWorkflowAssertions):
     def test_sharing_workflow_by_id(self):
         _, user2_email = self.setup_two_users_with_one_shared_workflow(share_by_id=True)
         self.submit_login(user2_email)
-        self.workflow_index_open()
         # refine this to restrict checking for that workflow so published workflow don't break this test
+        self.workflow_shared_with_me_open()
         self._assert_showing_n_workflows(1)
 
     @selenium_test
@@ -60,7 +60,7 @@ class TestWorkflowSharing(SeleniumTestCase, UsesWorkflowAssertions):
         self.workflow_index_open()
         # refine this to restrict checking for that workflow so published workflow don't break this test
         self._assert_showing_n_workflows(1)
-        self.workflow_index_click_option("Share")
+        self.workflow_share_click()
 
         sharing = self.components.histories.sharing
         self.share_unshare_with_user(sharing, user2_email)
@@ -69,7 +69,7 @@ class TestWorkflowSharing(SeleniumTestCase, UsesWorkflowAssertions):
         self.workflow_index_open()
         # refine this to restrict checking for that workflow so published workflow don't break this test
         self._assert_showing_n_workflows(1)
-        self.workflow_index_click_option("Share")
+        self.workflow_share_click()
 
         self.share_ensure_by_user_available(sharing)
         unshare_user_button = sharing.unshare_with_user_button(email=user2_email)
@@ -78,7 +78,7 @@ class TestWorkflowSharing(SeleniumTestCase, UsesWorkflowAssertions):
         self.logout_if_needed()
         self.submit_login(user2_email)
         self.workflow_index_open()
-        self._assert_showing_n_workflows(0)
+        self.components.workflows.workflows_list_empty.wait_for_visible()
 
     @selenium_test
     def test_sharing_with_invalid_user(self):
@@ -143,4 +143,4 @@ class TestWorkflowSharing(SeleniumTestCase, UsesWorkflowAssertions):
     def _import_workflow_open_sharing(self):
         self.workflow_index_open()
         self._workflow_import_from_url()
-        self.workflow_index_click_option("Share")
+        self.workflow_share_click()

@@ -1,9 +1,15 @@
 <script setup>
-import { ref } from "vue";
-import svc from "./model/service";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEye, faEyeSlash, faKey, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
-import UtcDate from "components/UtcDate";
 import CopyToClipboard from "components/CopyToClipboard";
+import UtcDate from "components/UtcDate";
+import { ref } from "vue";
+
+import svc from "./model/service";
+
+library.add(faEye, faEyeSlash, faKey, faTrash);
 
 defineProps({
     item: {
@@ -34,12 +40,7 @@ const deleteKey = () => {
     <b-card title="Current API key">
         <div class="d-flex justify-content-between w-100">
             <div class="w-100">
-                <b-input-group
-                    class="w-100"
-                    @blur="hover = false"
-                    @focus="hover = true"
-                    @mouseover="hover = true"
-                    @mouseleave="hover = false">
+                <b-input-group class="w-100">
                     <b-input-group-prepend>
                         <b-input-group-text>
                             <icon icon="key" />
@@ -54,11 +55,13 @@ const deleteKey = () => {
 
                     <b-input-group-append>
                         <b-input-group-text>
-                            <copy-to-clipboard
-                                message="Key was copied to clipboard"
-                                :text="item.key"
-                                title="Copy key" />
+                            <CopyToClipboard message="Key was copied to clipboard" :text="item.key" title="Copy key" />
                         </b-input-group-text>
+
+                        <b-button v-b-tooltip.hover title="Show/hide key" @click="hover = !hover">
+                            <FontAwesomeIcon :icon="hover ? faEyeSlash : faEye" />
+                        </b-button>
+
                         <b-button title="Delete api key" @click="toggleDeleteModal">
                             <icon icon="trash" />
                         </b-button>

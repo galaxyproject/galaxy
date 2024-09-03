@@ -56,7 +56,7 @@
     %endif
 
     ## start main tag
-    <nav id="masthead" class="masthead-toolshed navbar navbar-expand navbar-fixed-top justify-content-center navbar-dark">
+    <nav id="masthead" class="masthead-simple navbar navbar-expand navbar-fixed-top justify-content-center navbar-dark">
 
         ## Logo, layered over tabs to be clickable
         <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}" aria-label="homepage" class="navbar-brand">

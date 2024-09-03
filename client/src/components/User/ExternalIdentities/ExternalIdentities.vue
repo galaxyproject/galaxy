@@ -1,5 +1,14 @@
 <template>
     <section class="external-id">
+        <b-alert :show="!!connectExternal" variant="info">
+            You are logged in. You can now connect the Galaxy user account with the email <i>{{ userEmail }}</i
+            >, to your preferred external provider.
+        </b-alert>
+        <b-alert :show="!!existingEmail" variant="warning">
+            Note: We found a Galaxy account matching the email of this identity, <i>{{ existingEmail }}</i
+            >. The active account <i>{{ userEmail }}</i> has been linked to this external identity. If you wish to link
+            this identity to a different account, you will need to disconnect it from this account first.
+        </b-alert>
         <header>
             <b-alert
                 dismissible
@@ -76,17 +85,21 @@
 
         <div v-if="enable_oidc" class="external-subheading">
             <h2 class="h-md">Connect Other External Identities</h2>
-            <external-login :login_page="false" />
+            <ExternalLogin />
         </div>
     </section>
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
-import svc from "./service";
+import BootstrapVue from "bootstrap-vue";
+import { Toast } from "composables/toast";
+import { sanitize } from "dompurify";
 import { userLogout } from "utils/logout";
+import Vue from "vue";
+
+import svc from "./service";
+
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
@@ -105,11 +118,20 @@ export default {
             errorMessage: null,
             enable_oidc: galaxy.config.enable_oidc,
             cilogonOrCustos: null,
+            userEmail: galaxy.user.get("email"),
         };
     },
     computed: {
+        connectExternal() {
+            var urlParams = new URLSearchParams(window.location.search);
+            return urlParams.has("connect_external") && urlParams.get("connect_external") == "true";
+        },
         deleteButtonVariant() {
             return this.showDeleted ? "primary" : "secondary";
+        },
+        existingEmail() {
+            var urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get("email_exists");
         },
         hasDoomed: {
             get() {
@@ -127,6 +149,11 @@ export default {
     },
     created() {
         this.loadIdentities();
+    },
+    mounted() {
+        const params = new URLSearchParams(window.location.search);
+        const notificationMessage = sanitize(params.get("notification"));
+        Toast.success(notificationMessage);
     },
     methods: {
         loadIdentities() {

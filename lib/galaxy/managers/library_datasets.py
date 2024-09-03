@@ -1,5 +1,8 @@
 """Manager and Serializer for library datasets."""
+
 import logging
+
+from sqlalchemy import select
 
 from galaxy import (
     model,
@@ -12,7 +15,12 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.managers import datasets
-from galaxy.model import tags
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.model import (
+    LibraryDataset,
+    LibraryFolder,
+)
+from galaxy.model.base import transaction
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import validation
 
@@ -26,7 +34,6 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
 
     def __init__(self, app: MinimalManagerApp):
         self.app = app
-        self.tag_handler = tags.GalaxyTagHandler(app.model.context)
 
     def get(self, trans, decoded_library_dataset_id, check_accessible=True):
         """
@@ -41,11 +48,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         :rtype:     galaxy.model.LibraryDataset
         """
         try:
-            ld = (
-                trans.sa_session.query(trans.app.model.LibraryDataset)
-                .filter(trans.app.model.LibraryDataset.table.c.id == decoded_library_dataset_id)
-                .one()
-            )
+            ld = get_library_dataset(trans.sa_session, decoded_library_dataset_id)
         except Exception as e:
             raise InternalServerError(f"Error loading from the database.{util.unicodify(e)}")
         ld = self.secure(trans, ld, check_accessible)
@@ -81,7 +84,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         self._set_from_dict(trans, ldda, payload)
         return ld
 
-    def _set_from_dict(self, trans, ldda, new_data):
+    def _set_from_dict(self, trans: ProvidesUserContext, ldda, new_data):
         changed = False
         new_name = new_data.get("name", None)
         if new_name is not None and new_name != ldda.name:
@@ -108,15 +111,16 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             changed = True
         new_tags = new_data.get("tags", None)
         if new_tags is not None and new_tags != ldda.tags:
-            self.tag_handler.delete_item_tags(item=ldda, user=trans.user)
-            tag_list = self.tag_handler.parse_tags_list(new_tags)
+            trans.tag_handler.delete_item_tags(item=ldda, user=trans.user)
+            tag_list = trans.tag_handler.parse_tags_list(new_tags)
             for tag in tag_list:
-                self.tag_handler.apply_item_tag(item=ldda, user=trans.user, name=tag[0], value=tag[1])
+                trans.tag_handler.apply_item_tag(item=ldda, user=trans.user, name=tag[0], value=tag[1])
             changed = True
         if changed:
             ldda.update_parent_folder_update_times()
             trans.sa_session.add(ldda)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return changed
 
     def _validate_and_parse_update_payload(self, payload):
@@ -249,9 +253,9 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             current_user_roles, ld
         )
         rval["is_unrestricted"] = trans.app.security_agent.dataset_is_public(ldda.dataset)
-        rval["tags"] = self.tag_handler.get_tags_str(ldda.tags)
+        rval["tags"] = trans.tag_handler.get_tags_list(ldda.tags)
 
-        #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
+        #  Manage dataset permission is always attached to the dataset itself, not the ld or ldda to maintain consistency
         rval["can_user_manage"] = trans.user_is_admin or trans.app.security_agent.can_manage_dataset(
             current_user_roles, ldda.dataset
         )
@@ -275,6 +279,11 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         else:
             # We add the current folder and traverse up one folder.
             path_to_root.append((f"F{trans.security.encode_id(folder.id)}", folder.name))
-            upper_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(folder.parent_id)
+            upper_folder = trans.sa_session.get(LibraryFolder, folder.parent_id)
             path_to_root.extend(self._build_path(trans, upper_folder))
         return path_to_root
+
+
+def get_library_dataset(session, library_dataset_id):
+    stmt = select(LibraryDataset).where(LibraryDataset.id == library_dataset_id)
+    return session.scalars(stmt).one()

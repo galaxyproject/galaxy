@@ -1,11 +1,12 @@
-import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
 import { getAppRoot } from "onload/loadConfig";
+import { createPinia } from "pinia";
+import { useUserStore } from "stores/userStore";
+import { getLocalVue } from "tests/jest/helpers";
+
 import { Services } from "../services";
 import LibraryDataset from "./LibraryDataset";
-import { useUserStore } from "stores/userStore";
 import cannotManageDatasetResponse from "./testData/cannotManageDataset.json";
 import cannotModifyDatasetResponse from "./testData/cannotModifyDataset.json";
 import restrictedDatasetResponse from "./testData/restrictedDataset.json";

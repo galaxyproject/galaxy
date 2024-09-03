@@ -1,85 +1,100 @@
-import { rethrowSimple } from "@/utils/simple-error";
-import { CleanableSummary, CleanupResult, PaginationOptions, type CleanableItem } from "./Cleanup/model";
-import { fetcher } from "@/schema";
+import { GalaxyApi } from "@/api";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
-const _fetchDiscardedDatasetsSummary = fetcher.path("/api/storage/datasets/discarded/summary").method("get").create();
+import { type CleanableItem, CleanableSummary, CleanupResult, PaginationOptions } from "./Cleanup/model";
 
 export async function fetchDiscardedDatasetsSummary(): Promise<CleanableSummary> {
-    try {
-        const { data } = await _fetchDiscardedDatasetsSummary({});
-        return new CleanableSummary(data);
-    } catch (e) {
-        rethrowSimple(e);
-    }
-}
+    const { data, error } = await GalaxyApi().GET("/api/storage/datasets/discarded/summary");
 
-const _fetchDiscardedDatasets = fetcher.path("/api/storage/datasets/discarded").method("get").create();
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return new CleanableSummary(data);
+}
 
 export async function fetchDiscardedDatasets(options?: PaginationOptions): Promise<CleanableItem[]> {
-    try {
-        options = options ?? new PaginationOptions();
-        const { data } = await _fetchDiscardedDatasets({
-            offset: options.offset,
-            limit: options.limit,
-            order: options.order,
-        });
-        return data;
-    } catch (e) {
-        rethrowSimple(e);
+    options = options ?? new PaginationOptions();
+    const { data, error } = await GalaxyApi().GET("/api/storage/datasets/discarded", {
+        params: { query: options },
+    });
+
+    if (error) {
+        rethrowSimple(error);
     }
+
+    return data;
 }
 
-const _cleanupDiscardedDatasets = fetcher.path("/api/storage/datasets").method("delete").create();
+export async function cleanupDatasets(items: CleanableItem[]): Promise<CleanupResult> {
+    const itemIds = items.map((item) => item.id);
+    const { data, error } = await GalaxyApi().DELETE("/api/storage/datasets", {
+        body: { item_ids: itemIds },
+    });
 
-export async function cleanupDiscardedDatasets(items: CleanableItem[]): Promise<CleanupResult> {
-    try {
-        const item_ids = items.map((item) => item.id);
-        const { data } = await _cleanupDiscardedDatasets({
-            item_ids,
-        });
-        return new CleanupResult(data, items);
-    } catch (error) {
-        return new CleanupResult(undefined, items, error as string);
+    if (error) {
+        return new CleanupResult(undefined, items, errorMessageAsString(error));
     }
-}
 
-const _fetchDiscardedHistoriesSummary = fetcher.path("/api/storage/histories/discarded/summary").method("get").create();
+    return new CleanupResult(data, items);
+}
 
 export async function fetchDiscardedHistoriesSummary(): Promise<CleanableSummary> {
-    try {
-        const { data } = await _fetchDiscardedHistoriesSummary({});
-        return new CleanableSummary(data);
-    } catch (e) {
-        rethrowSimple(e);
-    }
-}
+    const { data, error } = await GalaxyApi().GET("/api/storage/histories/discarded/summary");
 
-const _fetchDiscardedHistories = fetcher.path("/api/storage/histories/discarded").method("get").create();
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return new CleanableSummary(data);
+}
 
 export async function fetchDiscardedHistories(options?: PaginationOptions): Promise<CleanableItem[]> {
-    try {
-        options = options ?? new PaginationOptions();
-        const { data } = await _fetchDiscardedHistories({
-            offset: options.offset,
-            limit: options.limit,
-            order: options.order,
-        });
-        return data;
-    } catch (e) {
-        rethrowSimple(e);
+    options = options ?? new PaginationOptions();
+
+    const { data, error } = await GalaxyApi().GET("/api/storage/histories/discarded", {
+        params: { query: options },
+    });
+
+    if (error) {
+        rethrowSimple(error);
     }
+
+    return data;
 }
 
-const _cleanupDiscardedHistories = fetcher.path("/api/storage/histories").method("delete").create();
+export async function cleanupHistories(items: CleanableItem[]) {
+    const itemIds = items.map((item) => item.id);
+    const { data, error } = await GalaxyApi().DELETE("/api/storage/histories", {
+        body: { item_ids: itemIds },
+    });
 
-export async function cleanupDiscardedHistories(items: CleanableItem[]) {
-    try {
-        const item_ids = items.map((item) => item.id);
-        const { data } = await _cleanupDiscardedHistories({
-            item_ids,
-        });
-        return new CleanupResult(data, items);
-    } catch (error) {
-        return new CleanupResult(undefined, items, error as string);
+    if (error) {
+        return new CleanupResult(undefined, items, errorMessageAsString(error));
     }
+
+    return new CleanupResult(data, items);
+}
+
+export async function fetchArchivedHistoriesSummary(): Promise<CleanableSummary> {
+    const { data, error } = await GalaxyApi().GET("/api/storage/histories/archived/summary");
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return new CleanableSummary(data);
+}
+
+export async function fetchArchivedHistories(options?: PaginationOptions): Promise<CleanableItem[]> {
+    options = options ?? new PaginationOptions();
+    const { data, error } = await GalaxyApi().GET("/api/storage/histories/archived", {
+        params: { query: options },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data;
 }

@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import { ref } from "vue";
+
+import { useConfig } from "@/composables/config";
 import localize from "@/utils/localization";
 import { wait } from "@/utils/utils";
+
+import { useCleanupCategories } from "./Cleanup/categories";
+import type { CleanableItem, CleanupOperation, CleanupResult } from "./Cleanup/model";
+
 import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary.vue";
 import CleanupResultDialog from "./Cleanup/CleanupResultDialog.vue";
 import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog.vue";
-import { useCleanupCategories } from "./Cleanup/categories";
-import { useConfig } from "@/composables/config";
-import { ref } from "vue";
-import type { CleanableItem, CleanupOperation, CleanupResult } from "./Cleanup/model";
 
 interface ModalDialog {
     openModal: () => void;
@@ -60,7 +63,7 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
             </b-alert>
         </b-row>
         <b-row class="justify-content-md-center mb-5">
-            <b-alert v-if="config.enable_quotas" show>
+            <b-alert v-if="config?.enable_quotas" show>
                 {{ localize("The storage manager only shows elements that count towards your disk quota.") }}
                 <b-link :href="config.quota_url" target="_blank">{{ localize("Learn more") }}</b-link>
             </b-alert>

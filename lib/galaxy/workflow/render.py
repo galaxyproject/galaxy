@@ -23,7 +23,7 @@ class WorkflowCanvas:
         self.max_width = 0
         self.data = []
 
-    def finish(self):
+    def finish(self, for_embed=False):
         # max_x, max_y, max_width = self.max_x, self.max_y, self.max_width
         for box in self.boxes:
             self.canvas.add(box)
@@ -33,6 +33,11 @@ class WorkflowCanvas:
         for text in self.text:
             text_style_layer.add(text)
         self.canvas.add(text_style_layer)
+        # if we're embedding this in HTML - setup a viewbox and preserve aspect ratio
+        # https://css-tricks.com/scale-svg/#aa-the-viewbox-attribute
+        if for_embed:
+            self.canvas.viewbox(-5, -5, self.max_x + self.max_width, self.max_y + 150)
+            self.canvas.fit()
         return self.canvas
 
     def add_boxes(self, step_dict, width, name_fill):

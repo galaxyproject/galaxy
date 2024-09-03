@@ -1,6 +1,7 @@
 """
 Test lib/galaxy/visualization/plugins/registry.
 """
+
 import os
 
 from galaxy.app_unittest_utils import galaxy_mock

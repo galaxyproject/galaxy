@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 emboss_repository_name = "emboss_0090"
 emboss_repository_description = "Galaxy's emboss tool"
@@ -47,16 +45,10 @@ class TestRepositoryCircularDependenciesAgain(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="bwa/bwa_base.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "bwa/bwa_base.tar",
             commit_message="Uploaded BWA tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0010_create_bwa_color_repository(self):
@@ -71,16 +63,10 @@ class TestRepositoryCircularDependenciesAgain(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="bwa/bwa_color.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "bwa/bwa_color.tar",
             commit_message="Uploaded BWA color tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0020_create_emboss_repository(self):
@@ -94,16 +80,10 @@ class TestRepositoryCircularDependenciesAgain(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="emboss/emboss.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
+            "emboss/emboss.tar",
             commit_message="Uploaded emboss tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0025_create_filtering_repository(self):
@@ -117,16 +97,10 @@ class TestRepositoryCircularDependenciesAgain(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             filtering_repository,
-            filename="filtering/filtering_1.1.0.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "filtering/filtering_1.1.0.tar",
             commit_message="Uploaded filtering 1.1.0 tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0030_create_freebayes_repository(self):
@@ -140,16 +114,10 @@ class TestRepositoryCircularDependenciesAgain(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="freebayes/freebayes.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "freebayes/freebayes.tar",
             commit_message="Uploaded freebayes tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0035_create_and_upload_dependency_definitions(self):

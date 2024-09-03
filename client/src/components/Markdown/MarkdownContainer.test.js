@@ -1,14 +1,22 @@
-import axios from "axios";
-import flushPromises from "flush-promises";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
+import { getLocalVue } from "tests/jest/helpers";
 import { withPrefix } from "utils/redirect";
+
 import MountTarget from "./MarkdownContainer.vue";
 
 // mock routes
 jest.mock("utils/redirect");
 withPrefix.mockImplementation((url) => url);
+
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: {},
+        isConfigLoaded: true,
+    })),
+}));
 
 const localVue = getLocalVue();
 const axiosMock = new MockAdapter(axios);

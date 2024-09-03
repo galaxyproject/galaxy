@@ -3,6 +3,7 @@
 Implement as a connector to serve a bridge between galactic_job_json
 utility and a Galaxy API library.
 """
+
 import abc
 import json
 import logging
@@ -40,6 +41,7 @@ LOAD_TOOLS_FROM_PATH = True
 DEFAULT_USE_FETCH_API = True
 DEFAULT_FILE_TYPE = "auto"
 DEFAULT_DBKEY = "?"
+DEFAULT_DECOMPRESS = False
 
 
 class StagingInterface(metaclass=abc.ABCMeta):
@@ -70,7 +72,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
         return tool_response
 
     @abc.abstractmethod
-    def _handle_job(self, job_response):
+    def _handle_job(self, job_response: Dict[str, Any]):
         """Implementer can decide if to wait for job(s) individually or not here."""
 
     def stage(
@@ -104,6 +106,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
                     file_type=file_type,
                     dbkey=dbkey,
                     to_posix_lines=to_posix_lines,
+                    decompress=upload_target.properties.get("decompress") or DEFAULT_DECOMPRESS,
                 )
                 name = _file_path_to_name(file_path)
                 if file_path is not None:
@@ -285,7 +288,7 @@ class InteractorStaging(StagingInterface):
         assert response.status_code == 200, response.text
         return response.json()
 
-    def _handle_job(self, job_response):
+    def _handle_job(self, job_response: Dict[str, Any]):
         self.galaxy_interactor.wait_for_job(job_response["id"])
 
     @property
@@ -333,6 +336,8 @@ def _fetch_payload(history_id, file_type=DEFAULT_FILE_TYPE, dbkey=DEFAULT_DBKEY,
             element[arg] = kwd[arg]
     if "file_name" in kwd:
         element["name"] = kwd["file_name"]
+    if "decompress" in kwd:
+        element["auto_decompress"] = kwd["decompress"]
     target = {
         "destination": {"type": "hdas"},
         "elements": [element],

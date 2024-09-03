@@ -1,11 +1,29 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSave } from "@fortawesome/free-regular-svg-icons";
+import {
+    faAlignLeft,
+    faCog,
+    faDownload,
+    faEdit,
+    faHistory,
+    faMagic,
+    faPencilAlt,
+    faPlay,
+    faRecycle,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
-import { BDropdown, BDropdownItem, BButton } from "bootstrap-vue";
+
 import { useConfirmDialog } from "@/composables/confirmDialog";
+
+library.add(faPencilAlt, faEdit, faCog, faAlignLeft, faMagic, faDownload, faPlay, faHistory, faSave, faRecycle);
 
 const emit = defineEmits<{
     (e: "onAttributes"): void;
     (e: "onSave"): void;
+    (e: "onCreate"): void;
     (e: "onReport"): void;
     (e: "onSaveAs"): void;
     (e: "onLayout"): void;
@@ -16,15 +34,19 @@ const emit = defineEmits<{
 }>();
 
 const props = defineProps<{
+    isNewTempWorkflow?: boolean;
     hasChanges?: boolean;
     hasInvalidConnections?: boolean;
     requiredReindex?: boolean;
+    currentActivePanel: string;
 }>();
 
 const { confirm } = useConfirmDialog();
 
 const saveHover = computed(() => {
-    if (!props.hasChanges) {
+    if (props.isNewTempWorkflow) {
+        return "Save Workflow";
+    } else if (!props.hasChanges) {
         return "Workflow has no changes";
     } else if (props.hasInvalidConnections) {
         return "Workflow has invalid connections, review and remove invalid connections";
@@ -32,6 +54,14 @@ const saveHover = computed(() => {
         return "Save Workflow";
     }
 });
+
+function emitSaveOrCreate() {
+    if (props.isNewTempWorkflow) {
+        emit("onCreate");
+    } else {
+        emit("onSave");
+    }
+}
 
 async function onSave() {
     if (props.hasInvalidConnections) {
@@ -44,88 +74,101 @@ async function onSave() {
             }
         );
         if (confirmed) {
-            emit("onSave");
+            emitSaveOrCreate();
         }
     } else {
-        emit("onSave");
+        emitSaveOrCreate();
     }
 }
 </script>
+
 <template>
     <div class="panel-header-buttons">
-        <b-button
+        <BButton
             id="workflow-home-button"
-            v-b-tooltip.hover
+            v-b-tooltip.hover.noninteractive
             role="button"
             title="Edit Attributes"
             variant="link"
             aria-label="Edit Attributes"
             class="editor-button-attributes"
-            @click="$emit('onAttributes')">
-            <span class="fa fa-pencil-alt" />
-        </b-button>
-        <b-button-group v-b-tooltip class="editor-button-save-group" :title="saveHover">
-            <b-button
+            @click="emit('onAttributes')">
+            <FontAwesomeIcon icon="fa fa-pencil-alt" />
+        </BButton>
+
+        <b-button-group v-b-tooltip.hover.noninteractive class="editor-button-save-group" :title="saveHover">
+            <BButton
                 id="workflow-save-button"
                 role="button"
-                variant="link"
+                :variant="isNewTempWorkflow ? 'primary' : 'link'"
                 aria-label="Save Workflow"
                 class="editor-button-save"
-                :disabled="!hasChanges"
+                :disabled="!isNewTempWorkflow && !hasChanges"
                 @click="onSave">
-                <span class="fa fa-floppy-o" />
-            </b-button>
+                <FontAwesomeIcon icon="far fa-save" />
+            </BButton>
         </b-button-group>
-        <b-button
+
+        <BButton
             id="workflow-report-button"
-            v-b-tooltip.hover
+            v-b-tooltip.hover.noninteractive
             role="button"
             title="Edit Report"
             variant="link"
             aria-label="Edit Report"
             class="editor-button-report"
-            @click="$emit('onReport')">
-            <span class="fa fa-edit" />
-        </b-button>
-        <b-dropdown
+            :disabled="isNewTempWorkflow"
+            @click="emit('onReport')">
+            <FontAwesomeIcon icon="fa fa-edit" />
+        </BButton>
+
+        <BDropdown
             id="workflow-options-button"
-            v-b-tooltip.hover
+            v-b-tooltip.hover.noninteractive
             no-caret
             right
             role="button"
             title="Workflow Options"
             variant="link"
             aria-label="Workflow Options"
-            class="editor-button-options">
+            class="editor-button-options"
+            :disabled="isNewTempWorkflow">
             <template v-slot:button-content>
-                <span class="fa fa-cog" />
+                <FontAwesomeIcon icon="fa fa-cog" />
             </template>
-            <b-dropdown-item href="#" @click="$emit('onSaveAs')"
-                ><span class="fa fa-floppy-o" />Save As...</b-dropdown-item
-            >
-            <b-dropdown-item href="#" @click="$emit('onLayout')"
-                ><span class="fa fa-align-left" />Auto Layout</b-dropdown-item
-            >
-            <b-dropdown-item href="#" @click="$emit('onLint')"
-                ><span class="fa fa-magic" />Best Practices</b-dropdown-item
-            >
-            <b-dropdown-item href="#" @click="$emit('onUpgrade')"
-                ><span class="fa fa-recycle" />Upgrade Workflow</b-dropdown-item
-            >
-            <b-dropdown-item href="#" @click="$emit('onDownload')"
-                ><span class="fa fa-download" />Download</b-dropdown-item
-            >
-        </b-dropdown>
-        <b-button
+
+            <BDropdownItem href="#" @click="emit('onSaveAs')">
+                <FontAwesomeIcon icon="far fa-save" /> Save As...
+            </BDropdownItem>
+
+            <BDropdownItem href="#" @click="emit('onLayout')">
+                <FontAwesomeIcon icon="fa fa-align-left" /> Auto Layout
+            </BDropdownItem>
+
+            <BDropdownItem href="#" @click="emit('onLint')">
+                <FontAwesomeIcon icon="fa fa-magic" /> Best Practices
+            </BDropdownItem>
+
+            <BDropdownItem href="#" @click="emit('onUpgrade')">
+                <FontAwesomeIcon icon="fa fa-recycle" /> Upgrade Workflow
+            </BDropdownItem>
+
+            <BDropdownItem href="#" @click="emit('onDownload')">
+                <FontAwesomeIcon icon="fa fa-download" /> Download
+            </BDropdownItem>
+        </BDropdown>
+
+        <BButton
             id="workflow-run-button"
-            v-b-tooltip.hover
+            v-b-tooltip.hover.noninteractive
             role="button"
             title="Run Workflow"
             variant="link"
             aria-label="Run Workflow"
             class="editor-button-run"
-            @click="$emit('onRun')">
-            <span class="fa fa-play" />
-        </b-button>
+            :disabled="isNewTempWorkflow"
+            @click="emit('onRun')">
+            <FontAwesomeIcon icon="fa fa-play" />
+        </BButton>
     </div>
 </template>

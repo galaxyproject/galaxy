@@ -11,6 +11,8 @@ from galaxy.webapps.galaxy.buildapp import app_factory as galaxy_app_factory
 from galaxy_test.driver import driver_util
 from tool_shed.test.base.api_util import get_admin_api_key
 from tool_shed.webapp import buildapp as toolshedbuildapp
+from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
+from tool_shed.webapp.fast_app import initialize_fast_app as init_tool_shed_fast_app
 
 log = driver_util.build_logger()
 
@@ -36,13 +38,44 @@ shed_data_manager_conf_xml_template = """<?xml version="1.0"?>
 <data_managers>
 </data_managers>
 """
+# Global variable to pass database contexts around - only needed for older
+# Tool Shed twill tests that didn't utilize the API for such interactions.
+tool_shed_context = None
+
+
+def build_shed_app(simple_kwargs):
+    """Build a Galaxy app object from a simple keyword arguments.
+
+    Construct paste style complex dictionary. Also setup "global" reference
+    to sqlalchemy database context for tool shed database.
+    """
+    log.info("Tool shed database connection: %s", simple_kwargs["database_connection"])
+    # TODO: Simplify global_conf to match Galaxy above...
+    simple_kwargs["__file__"] = "tool_shed_wsgi.yml.sample"
+    simple_kwargs["global_conf"] = driver_util.get_webapp_global_conf()
+
+    app = ToolshedUniverseApplication(**simple_kwargs)
+    log.info("Embedded Toolshed application started")
+
+    global tool_shed_context
+    tool_shed_context = app.model.context
+
+    return app
 
 
 class ToolShedTestDriver(driver_util.TestDriver):
     """Instantiate a Galaxy-style TestDriver for testing the tool shed."""
 
-    def setup(self):
+    def setup(self) -> None:
         """Entry point for test driver script."""
+        self.external_shed = bool(os.environ.get("TOOL_SHED_TEST_EXTERNAL", None))
+        if not self.external_shed:
+            self._setup_local()
+        else:
+            # Going to also need to set TOOL_SHED_TEST_HOST.
+            assert os.environ["TOOL_SHED_TEST_HOST"]
+
+    def _setup_local(self):
         # ---- Configuration ------------------------------------------------------
         tool_shed_test_tmp_dir = driver_util.setup_tool_shed_tmp_dir()
         if not os.path.isdir(tool_shed_test_tmp_dir):
@@ -72,11 +105,11 @@ class ToolShedTestDriver(driver_util.TestDriver):
             os.environ["GALAXY_TEST_TOOL_DATA_PATH"] = tool_data_path
         galaxy_db_path = driver_util.database_files_path(tool_shed_test_tmp_dir)
         shed_file_path = os.path.join(shed_db_path, "files")
-        hgweb_config_file_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
+        whoosh_index_dir = os.path.join(shed_db_path, "toolshed_whoosh_indexes")
+        hgweb_config_dir = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
         new_repos_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
         galaxy_shed_tool_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
         galaxy_migrated_tool_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
-        hgweb_config_dir = hgweb_config_file_path
         os.environ["TEST_HG_WEB_CONFIG_DIR"] = hgweb_config_dir
         print("Directory location for hgweb.config:", hgweb_config_dir)
         toolshed_database_conf = driver_util.database_conf(shed_db_path, prefix="TOOL_SHED")
@@ -95,8 +128,8 @@ class ToolShedTestDriver(driver_util.TestDriver):
             shed_tool_data_table_config=shed_tool_data_table_conf_file,
             smtp_server="smtp.dummy.string.tld",
             email_from="functional@localhost",
-            tool_parse_help=False,
             use_heartbeat=False,
+            whoosh_index_dir=whoosh_index_dir,
         )
         kwargs.update(toolshed_database_conf)
         # Generate the tool_data_table_conf.xml file.
@@ -109,10 +142,11 @@ class ToolShedTestDriver(driver_util.TestDriver):
         # ---- Run tool shed webserver ------------------------------------------------------
         # TODO: Needed for hg middleware ('lib/galaxy/webapps/tool_shed/framework/middleware/hg.py')
         tool_shed_server_wrapper = driver_util.launch_server(
-            app_factory=lambda: driver_util.build_shed_app(kwargs),
+            app_factory=lambda: build_shed_app(kwargs),
             webapp_factory=toolshedbuildapp.app_factory,
             galaxy_config=kwargs,
             prefix="TOOL_SHED",
+            init_fast_app=init_tool_shed_fast_app,
         )
         self.server_wrappers.append(tool_shed_server_wrapper)
         tool_shed_test_host = tool_shed_server_wrapper.host

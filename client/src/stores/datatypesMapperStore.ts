@@ -1,7 +1,7 @@
-import { getDatatypesMapper } from "@/components/Datatypes";
-import type { DatatypesMapperModel } from "@/components/Datatypes/model";
-
 import { defineStore } from "pinia";
+
+import { getDatatypesMapper } from "@/components/Datatypes";
+import { type DatatypesMapperModel } from "@/components/Datatypes/model";
 import { rethrowSimple } from "@/utils/simple-error";
 
 interface State {

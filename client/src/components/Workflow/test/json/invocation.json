@@ -33,5 +33,6 @@
     "input_step_parameters": {},
     "outputs": {},
     "output_collections": {},
-    "output_values": {}
+    "output_values": {},
+    "messages": []
 }

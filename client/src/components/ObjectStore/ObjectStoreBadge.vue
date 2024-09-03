@@ -1,31 +1,34 @@
-<script lang="ts" setup>
-import { computed } from "vue";
-import { adminMarkup } from "./adminConfig";
-import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
-import type { components } from "@/schema";
+<script setup lang="ts">
 import "./badgeIcons";
+
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
+
+import { type components } from "@/api/schema";
+
+import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 
 type BadgeType = components["schemas"]["BadgeDict"];
 
 const MESSAGES = {
     restricted:
-        "This dataset is stored on storage restricted to a single user. It can not be shared, pubished, or added to Galaxy data libraries.",
-    user_defined: "This storage was user defined and is not managed by the Galaxy adminstrator.",
-    quota: "A Galaxy quota is enabled for this object store.",
-    no_quota: "No Galaxy quota is enabled for this object store.",
-    faster: "This storage has been marked as a faster option by the Galaxy adminstrator.",
-    slower: "This storage has been marked as a slower option by the Galaxy adminstrator.",
-    short_term: "This storage has been marked routinely purged by the Galaxy adminstrator.",
-    backed_up: "This storage has been marked as backed up by the Galaxy adminstrator.",
-    not_backed_up: "This storage has been marked as not backed up by the Galaxy adminstrator.",
+        "This dataset is stored on storage restricted to a single user. It can not be shared, published, or added to Galaxy data libraries.",
+    user_defined: "This storage was user defined and is not managed by the Galaxy administrator.",
+    quota: "A Galaxy quota is enabled for this storage location.",
+    no_quota: "No Galaxy quota is enabled for this storage location.",
+    faster: "This storage has been marked as a faster option by the Galaxy administrator.",
+    slower: "This storage has been marked as a slower option by the Galaxy administrator.",
+    short_term: "This storage has been marked as routinely purged by the Galaxy administrator.",
+    backed_up: "This storage has been marked as backed up by the Galaxy administrator.",
+    not_backed_up: "This storage has been marked as not backed up by the Galaxy administrator.",
     more_secure:
-        "This storage has been marked as more secure by the Galaxy adminstrator. The Galaxy web application doesn't make any additional promises regarding security for this storage.",
+        "This storage has been marked as more secure by the Galaxy administrator. The Galaxy web application doesn't make any additional promises regarding security for this storage.",
     less_secure:
-        "This storage has been marked as less secure by the Galaxy adminstrator. The Galaxy web application doesn't make any additional promises regarding security for this storage.",
+        "This storage has been marked as less secure by the Galaxy administrator. The Galaxy web application doesn't make any additional promises regarding security for this storage.",
     more_stable:
-        "This storage has been marked as more stable by the Galaxy adminstrator - expect jobs to fail less because of storage issues for this storage.",
+        "This storage has been marked as more stable by the Galaxy administrator - expect jobs to fail less because of storage issues for this storage.",
     less_stable:
-        "This storage has been marked as less stable by the Galaxy adminstrator - expect jobs to fail more because of storage issues for this storage.",
+        "This storage has been marked as less stable by the Galaxy administrator - expect jobs to fail more because of storage issues for this storage.",
     cloud: "This is cloud storage.",
 };
 
@@ -61,8 +64,8 @@ const shrink = computed(() => {
     return { transform: "shrink-6" };
 });
 
-const message = computed(() => {
-    return adminMarkup(props.badge.message);
+const message = computed<string>(() => {
+    return props.badge.message || "";
 });
 </script>
 
@@ -71,9 +74,7 @@ const message = computed(() => {
         <span ref="iconTarget" class="object-store-badge-wrapper">
             <FontAwesomeLayers :class="layerClasses" :data-badge-type="badgeType">
                 <FontAwesomeIcon v-if="badgeType == 'restricted'" icon="user-lock" :class="disadvantage" />
-                <!--
                 <FontAwesomeIcon v-if="badgeType == 'user_defined'" icon="plug" :class="neutral" />
-                -->
                 <FontAwesomeIcon v-if="badgeType == 'quota'" icon="chart-line" :class="disadvantage" />
                 <FontAwesomeIcon v-if="badgeType == 'no_quota'" icon="chart-line" :class="neutral" v-bind="shrink" />
                 <FontAwesomeIcon v-if="badgeType == 'no_quota'" icon="ban" :class="[transparent, advantage]" />
@@ -133,9 +134,10 @@ const message = computed(() => {
             "
             triggers="hover"
             placement="bottom"
+            variant="secondary"
             class="object-store-badge-popover">
             <p v-localize>{{ stockMessage }}</p>
-            <div v-html="message"></div>
+            <ConfigurationMarkdown v-if="message" :markdown="message" :admin="true" />
         </b-popover>
     </span>
 </template>

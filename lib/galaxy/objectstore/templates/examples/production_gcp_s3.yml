@@ -1,0 +1,41 @@
+# https://cloud.google.com/storage/docs/aws-simple-migration
+- id: gcp_s3_interop
+  version: 0
+  name: Google Cloud Storage
+  description: |
+    This template can be used to connect to your [Google Cloud Storage](https://cloud.google.com/storage).
+    To use these templates you will need to generate
+    [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys) - these
+    can be linked to your user or a service account. Additionally, you will need to defined
+    a [default Google cloud project](https://cloud.google.com/storage/docs/aws-simple-migration#defaultproj)
+    to allow Galaxy to access your Google Cloud Storage via the interfaces
+    described by this template.
+  variables:
+    access_key:
+      label: Access ID
+      type: string
+      help: |
+        This will be given to you by Google when you generate [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys)
+        to use your storage.
+    bucket:
+      label: Bucket
+      type: string
+      help: |
+        The name of a [bucket](https://cloud.google.com/storage/docs/buckets) you've created to store your Galaxy data. Documentation for how to create buckets
+        can be found in [this part of the Google Cloud Storage documentation](https://cloud.google.com/storage/docs/creating-buckets).
+  secrets:
+    secret_key:
+      label: Secret Key
+      help: |
+        This will be given to you by Google when you generate [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys)
+        to use your storage. It should be 40 characters long and look something like the example used
+        the Google documentation - `bGoa+V7g/yqDXvKRqq+JTFn4uQZbPiQJo4pf9RzJ`.
+  configuration:
+    type: boto3
+    auth:
+      access_key: '{{ variables.access_key }}'
+      secret_key: '{{ secrets.secret_key }}'
+    bucket:
+      name: '{{ variables.bucket }}'
+    connection:
+      endpoint_url: 'https://storage.googleapis.com/'

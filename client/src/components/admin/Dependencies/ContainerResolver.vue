@@ -4,7 +4,7 @@
             {{ resolverType }}
             <span v-if="!compact">
                 <i>{{ description }}</i>
-                <display-raw :object="containerResolver" />
+                <DisplayRaw :object="containerResolver" />
             </span>
         </span>
         <span v-else-if="compact"> </span>

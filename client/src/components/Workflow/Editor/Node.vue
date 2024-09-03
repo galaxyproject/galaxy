@@ -1,20 +1,30 @@
 <template>
-    <draggable-wrapper
+    <DraggableWrapper
         :id="idString"
         ref="el"
+        class="workflow-node card"
         :scale="scale"
         :root-offset="rootOffset"
+        :position="position"
         :name="name"
         :node-label="title"
         :class="classes"
         :style="style"
+        :disabled="readonly"
+        :selected="stateStore.getStepMultiSelected(props.id)"
         @move="onMoveTo"
         @pan-by="onPanBy">
-        <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+        <div
+            class="unselectable clearfix card-header py-1 px-2"
+            :class="headerClass"
+            @click.exact="makeActive"
+            @click.shift.capture.prevent.stop="toggleSelected"
+            @keyup.enter="makeActive">
             <b-button-group class="float-right">
-                <loading-span v-if="isLoading" spinner-only />
+                <LoadingSpan v-if="isLoading" spinner-only />
                 <b-button
-                    v-if="canClone"
+                    v-if="canClone && !readonly"
                     v-b-tooltip.hover
                     class="node-clone py-0"
                     variant="primary"
@@ -25,6 +35,7 @@
                     <i class="fa fa-files-o" />
                 </b-button>
                 <b-button
+                    v-if="!readonly"
                     v-b-tooltip.hover
                     class="node-destroy py-0"
                     variant="primary"
@@ -35,7 +46,7 @@
                     <i class="fa fa-times" />
                 </b-button>
                 <b-button
-                    v-if="isEnabled"
+                    v-if="isEnabled && !readonly"
                     :id="popoverId"
                     class="node-recommendations py-0"
                     variant="primary"
@@ -44,7 +55,7 @@
                     <i class="fa fa-arrow-right" />
                 </b-button>
                 <b-popover
-                    v-if="isEnabled"
+                    v-if="isEnabled && !readonly"
                     :target="popoverId"
                     triggers="hover"
                     placement="bottom"
@@ -60,7 +71,7 @@
             </b-button-group>
             <i :class="iconClass" />
             <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
-                <font-awesome-icon icon="fa-code-branch" />
+                <FontAwesomeIcon icon="fa-code-branch" />
             </span>
             <span
                 v-b-tooltip.hover
@@ -68,77 +79,108 @@
                 >{{ step.id + 1 }}:
             </span>
             <span class="node-title">{{ title }}</span>
+            <span class="float-right">
+                <FontAwesomeIcon
+                    v-if="isInvocation && invocationStep.headerIcon"
+                    :icon="invocationStep.headerIcon"
+                    :spin="invocationStep.headerIconSpin" />
+            </span>
         </div>
-        <b-alert v-if="!!errors" variant="danger" show class="node-error" @click="makeActive">
+        <b-alert
+            v-if="!!errors"
+            variant="danger"
+            show
+            class="node-error m-0 rounded-0 rounded-bottom"
+            @click.exact="makeActive"
+            @click.shift.capture.prevent.stop="toggleSelected">
             {{ errors }}
         </b-alert>
-        <div v-else class="node-body" @click="makeActive" @keyup.enter="makeActive">
-            <node-input
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+        <div
+            v-else
+            class="node-body position-relative card-body p-0 mx-2"
+            :class="{ 'cursor-pointer': isInvocation }"
+            @click.exact="makeActive"
+            @click.shift.capture.prevent.stop="toggleSelected"
+            @keyup.enter="makeActive">
+            <NodeInput
                 v-for="(input, index) in inputs"
-                :key="`${index}-${input.name}`"
+                :key="`in-${index}-${input.name}`"
+                :class="isInvocation && 'position-absolute'"
                 :input="input"
+                :blank="isInvocation"
                 :step-id="id"
                 :datatypes-mapper="datatypesMapper"
                 :step-position="step.position ?? { top: 0, left: 0 }"
                 :root-offset="rootOffset"
                 :scroll="scroll"
                 :scale="scale"
+                :parent-node="elHtml"
+                :readonly="readonly"
                 @onChange="onChange" />
-            <div v-if="showRule" class="rule" />
-            <node-output
+            <div v-if="!isInvocation && showRule" class="rule" />
+            <NodeInvocationText v-if="isInvocation" :invocation-step="invocationStep" />
+            <NodeOutput
                 v-for="(output, index) in outputs"
-                :key="`${index + inputs.length}-${output.name}`"
+                :key="`out-${index}-${output.name}`"
+                :class="isInvocation && 'invocation-node-output'"
                 :output="output"
                 :workflow-outputs="workflowOutputs"
                 :post-job-actions="postJobActions"
+                :blank="isInvocation"
                 :step-id="id"
                 :step-type="step.type"
                 :step-position="step.position ?? { top: 0, left: 0 }"
-                :root-offset="rootOffset"
+                :root-offset="reactive(rootOffset)"
                 :scroll="scroll"
                 :scale="scale"
                 :datatypes-mapper="datatypesMapper"
+                :parent-node="elHtml"
+                :readonly="readonly"
                 @onDragConnector="onDragConnector"
                 @stopDragging="onStopDragging"
                 @onChange="onChange" />
         </div>
-    </draggable-wrapper>
+    </DraggableWrapper>
 </template>
 
-<script lang="ts" setup>
-import type { PropType, Ref } from "vue";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import WorkflowIcons from "@/components/Workflow/icons";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import { getGalaxyInstance } from "@/app";
-import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
-import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
-import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
-import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
-import { computed, ref } from "vue";
-import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
-import { useWorkflowStateStore, type TerminalPosition, type XYPosition } from "@/stores/workflowEditorStateStore";
-import type { Step } from "@/stores/workflowStepStore";
-import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { type UseElementBoundingReturn, type UseScrollReturn, type VueInstance } from "@vueuse/core";
+import BootstrapVue from "bootstrap-vue";
+import type { PropType, Ref } from "vue";
+import Vue, { computed, reactive, ref } from "vue";
+
+import { getGalaxyInstance } from "@/app";
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
+import WorkflowIcons from "@/components/Workflow/icons";
+import type { GraphStep } from "@/composables/useInvocationGraph";
+import { useWorkflowStores } from "@/composables/workflowStores";
+import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
+import type { Step } from "@/stores/workflowStepStore";
+
+import { ToggleStepSelectedAction } from "./Actions/stepActions";
 import type { OutputTerminals } from "./modules/terminals";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
+import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
+import NodeInvocationText from "@/components/Workflow/Editor/NodeInvocationText.vue";
+import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
+import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 
 Vue.use(BootstrapVue);
 
-// @ts-ignore
 library.add(faCodeBranch);
 
 const props = defineProps({
     id: { type: Number, required: true },
     contentId: { type: String as PropType<string | null>, default: null },
     name: { type: String as PropType<string | null>, default: null },
-    step: { type: Object as PropType<Step>, required: true },
+    step: { type: Object as PropType<Step | GraphStep>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
     activeNodeId: {
         type: null as unknown as PropType<number | null>,
@@ -149,6 +191,8 @@ const props = defineProps({
     scroll: { type: Object as PropType<UseScrollReturn>, required: true },
     scale: { type: Number, default: 1 },
     highlight: { type: Boolean, default: false },
+    isInvocation: { type: Boolean, default: false },
+    readonly: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -156,7 +200,6 @@ const emit = defineEmits([
     "onActivate",
     "onChange",
     "onCreate",
-    "onUpdate",
     "onClone",
     "onUpdateStepPosition",
     "pan-by",
@@ -172,15 +215,17 @@ function remove() {
     emit("onRemove", props.id);
 }
 
-const el: Ref<HTMLElement | null> = ref(null);
+const position = computed(() => ({ x: props.step.position?.left ?? 0, y: props.step.position?.top ?? 0 }));
+
+const el: Ref<VueInstance | null> = ref(null);
+const elHtml: Ref<HTMLElement | null> = computed(() => (el.value?.$el as HTMLElement | undefined) ?? null);
+
 const postJobActions = computed(() => props.step.post_job_actions || {});
 const workflowOutputs = computed(() => props.step.workflow_outputs || []);
-const connectionStore = useConnectionStore();
-const stateStore = useWorkflowStateStore();
-const stepStore = useWorkflowStepStore();
+const { connectionStore, stateStore, stepStore, undoRedoStore } = useWorkflowStores();
 const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
 useNodePosition(
-    el,
+    elHtml,
     props.id,
     stateStore,
     computed(() => props.scale)
@@ -193,18 +238,27 @@ const canClone = computed(() => props.step.type !== "subworkflow"); // Why ?
 const isEnabled = getGalaxyInstance().config.enable_tool_recommendations; // getGalaxyInstance is not reactive
 
 const isActive = computed(() => props.id === props.activeNodeId);
+
 const classes = computed(() => {
     return {
-        "workflow-node": true,
         "node-on-scroll-to": scrolledTo.value,
         "node-highlight": props.highlight || isActive.value,
         "is-active": isActive.value,
+        "node-multi-selected": stateStore.getStepMultiSelected(props.id),
     };
 });
 const style = computed(() => {
     return { top: props.step.position!.top + "px", left: props.step.position!.left + "px" };
 });
 const errors = computed(() => props.step.errors || stateStore.getStepLoadingState(props.id)?.error);
+const headerClass = computed(() => {
+    return {
+        ...invocationStep.value.headerClass,
+        "cursor-pointer": props.isInvocation,
+        "node-header": !props.isInvocation || invocationStep.value.headerClass === undefined,
+        "cursor-move": !props.readonly && !props.isInvocation,
+    };
+});
 const inputs = computed(() => {
     const connections = connectionStore.getConnectionsForStep(props.id);
     const extraStepInputs = stepStore.getStepExtraInputs(props.id);
@@ -233,6 +287,7 @@ const invalidOutputs = computed(() => {
         return { name, optional: false, datatypes: [], valid: false };
     });
 });
+const invocationStep = computed(() => props.step as GraphStep);
 const outputs = computed(() => {
     return [...props.step.outputs, ...invalidOutputs.value];
 });
@@ -272,4 +327,76 @@ function onClone() {
 function makeActive() {
     emit("onActivate", props.id);
 }
+
+function toggleSelected() {
+    undoRedoStore.applyAction(new ToggleStepSelectedAction(stateStore, stepStore, props.id));
+}
 </script>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.workflow-node {
+    position: absolute;
+    z-index: 100;
+    width: $workflow-node-width;
+    border: solid $brand-primary 1px;
+
+    $multi-selected: lighten($brand-info, 20%);
+
+    &.node-multi-selected {
+        box-shadow: 0 0 0 2px $white, 0 0 0 4px $multi-selected;
+    }
+
+    &.node-highlight {
+        z-index: 1001;
+        border: solid $white 1px;
+        box-shadow: 0 0 0 2px $brand-primary;
+
+        &.node-multi-selected {
+            box-shadow: 0 0 0 2px $brand-primary, 0 0 0 4px $multi-selected;
+        }
+    }
+
+    &.node-on-scroll-to {
+        z-index: 1001;
+        border: solid $white 1px;
+        box-shadow: 0 0 0 4px $brand-primary;
+        transition: box-shadow 0.5s ease-in-out;
+    }
+
+    &.node-active {
+        z-index: 1001;
+        border: solid $white 1px;
+        box-shadow: 0 0 0 3px $brand-primary;
+
+        &.node-multi-selected {
+            box-shadow: 0 0 0 3px $brand-primary, 0 0 0 5px $multi-selected;
+        }
+    }
+
+    .node-header {
+        background: $brand-primary;
+        color: $white;
+        &.cursor-move {
+            cursor: move;
+        }
+    }
+
+    .node-body {
+        .invocation-node-output {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .rule {
+            height: 0;
+            border: none;
+            border-bottom: dotted $brand-primary 1px;
+            margin: 0 5px;
+        }
+    }
+}
+</style>

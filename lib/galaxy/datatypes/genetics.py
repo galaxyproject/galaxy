@@ -11,6 +11,7 @@ subsequent row values are all numeric ! Will fail if any non numeric (eg '+' or 
 ross lazarus for rgenetics
 august 20 2007
 """
+
 import logging
 import os
 import re
@@ -78,7 +79,7 @@ class GenomeGraphs(Tabular):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         dataset.metadata.markerCol = 1
-        header = open(dataset.file_name).readlines()[0].strip().split("\t")
+        header = open(dataset.get_file_name()).readlines()[0].strip().split("\t")
         dataset.metadata.columns = len(header)
         t = ["numeric" for x in header]
         t[0] = "string"
@@ -88,7 +89,7 @@ class GenomeGraphs(Tabular):
         """
         Returns file
         """
-        return open(dataset.file_name, "rb")
+        return open(dataset.get_file_name(), "rb")
 
     def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         """
@@ -114,8 +115,11 @@ class GenomeGraphs(Tabular):
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build("ucsc", dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites("ucsc"):
                     site_url = site_url.replace("/hgTracks?", "/hgGenome?")  # for genome graphs
-                    internal_url = "%s" % app.url_for(
-                        controller="dataset", dataset_id=dataset.id, action="display_at", filename=f"ucsc_{site_name}"
+                    internal_url = app.url_for(
+                        controller="dataset",
+                        dataset_id=dataset.id,
+                        action="display_at",
+                        filename=f"ucsc_{site_name}",
                     )
                     display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (
                         base_url,
@@ -148,7 +152,7 @@ class GenomeGraphs(Tabular):
         """
         try:
             out = ['<table cellspacing="0" cellpadding="3">']
-            with open(dataset.file_name) as f:
+            with open(dataset.get_file_name()) as f:
                 d = f.readlines()[:5]
             if len(d) == 0:
                 return f"Cannot find anything to parse in {dataset.name}"
@@ -177,7 +181,7 @@ class GenomeGraphs(Tabular):
         """
         Validate a gg file - all numeric after header row
         """
-        with open(dataset.file_name) as infile:
+        with open(dataset.get_file_name()) as infile:
             next(infile)  # header
             for row in infile:
                 ll = row.strip().split("\t")[1:]  # first is alpha feature identifier
@@ -330,10 +334,9 @@ class Rgenetics(Html):
         ]
         for fname in flist:
             sfname = os.path.split(fname)[-1]
-            f, e = os.path.splitext(fname)
             rval.append(f'<li><a href="{sfname}">{sfname}</a></li>')
         rval.append("</ul></body></html>")
-        with open(dataset.file_name, "w") as f:
+        with open(dataset.get_file_name(), "w") as f:
             f.write("\n".join(rval))
             f.write("\n")
 
@@ -609,7 +612,7 @@ class IdeasPre(Html):
             fn = os.path.split(fname)[-1]
             rval.append(f'<li><a href="{fn}">{fn}</a></li>')
         rval.append("</ul></body></html>")
-        with open(dataset.file_name, "w") as f:
+        with open(dataset.get_file_name(), "w") as f:
             f.write("\n".join(rval))
             f.write("\n")
 
@@ -826,7 +829,7 @@ class RexpBase(Html):
             sfname = os.path.split(fname)[-1]
             rval.append(f'<li><a href="{sfname}">{sfname}</a>')
         rval.append("</ul></html>")
-        with open(dataset.file_name, "w") as f:
+        with open(dataset.get_file_name(), "w") as f:
             f.write("\n".join(rval))
             f.write("\n")
 

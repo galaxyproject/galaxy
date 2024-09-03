@@ -71,8 +71,9 @@ class _SpalnDb(Data):
             opt_text = ""
             if composite_file.get("description"):
                 rval.append(
-                    '<li><a href="%s" type="application/binary">%s (%s)</a>%s</li>'
-                    % (fn, fn, composite_file.get("description"), opt_text)
+                    '<li><a href="{}" type="application/binary">{} ({})</a>{}</li>'.format(
+                        fn, fn, composite_file.get("description"), opt_text
+                    )
                 )
             else:
                 rval.append(f'<li><a href="{fn}" type="application/binary">{fn}</a>{opt_text}</li>')
@@ -86,15 +87,13 @@ class _SpalnDb(Data):
         efp = dataset.extra_files_path
         flist = os.listdir(efp)
         rval = [
-            "<html><head><title>Files for Composite Dataset %s</title></head><body><p/>Composite %s contains:<p/><ul>"
-            % (dataset.name, dataset.name)
+            f"<html><head><title>Files for Composite Dataset {dataset.name}</title></head><body><p/>Composite {dataset.name} contains:<p/><ul>"
         ]
         for fname in flist:
             sfname = os.path.split(fname)[-1]
-            f, e = os.path.splitext(fname)
             rval.append(f'<li><a href="{sfname}">{sfname}</a></li>')
         rval.append("</ul></body></html>")
-        with open(dataset.file_name, "w") as f:
+        with open(dataset.get_file_name(), "w") as f:
             f.write("\n".join(rval))
             f.write("\n")
 
@@ -154,7 +153,7 @@ class _SpalnDb(Data):
         msg = ""
         try:
             # Try to use any text recorded in the dummy index file:
-            with open(dataset.file_name, encoding="utf-8") as handle:
+            with open(dataset.get_file_name(), encoding="utf-8") as handle:
                 msg = handle.read().strip()
         except Exception:
             pass
@@ -172,7 +171,7 @@ class _SpalnDb(Data):
         raise NotImplementedError("Merging spaln databases is not possible")
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """Split a spaln database (not implemented)."""
         if split_params is None:
             return None

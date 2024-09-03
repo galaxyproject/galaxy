@@ -7,6 +7,7 @@ from galaxy.model.unittest_utils.store_fixtures import (
     history_model_store_dict,
     one_hda_model_store_dict,
 )
+from galaxy.util import unlink
 from galaxy_test.api.test_histories import ImportExportTests
 from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.base.api_asserts import assert_has_keys
@@ -134,7 +135,7 @@ class TestImportExportHistoryViaTasksIntegration(
         export_records = self.dataset_populator.get_history_export_tasks(history_id)
         assert len(export_records) == 1
         last_record = export_records[0]
-        self._wait_for_export_task_on_record(last_record)
+        self.dataset_populator.wait_for_export_task_on_record(last_record)
         assert last_record["ready"] is True
 
         # Check metadata
@@ -152,7 +153,7 @@ class TestImportExportHistoryViaTasksIntegration(
         export_records = self.dataset_populator.get_history_export_tasks(history_id)
         assert len(export_records) == 2
         last_record = export_records[0]
-        self._wait_for_export_task_on_record(last_record)
+        self.dataset_populator.wait_for_export_task_on_record(last_record)
         assert last_record["ready"] is True
 
         # Check metadata
@@ -195,13 +196,24 @@ class TestImportExportHistoryViaTasksIntegration(
         export_records = self.dataset_populator.get_history_export_tasks(history_id)
         assert len(export_records) == 1
         last_record = export_records[0]
-        self._wait_for_export_task_on_record(last_record)
+        self.dataset_populator.wait_for_export_task_on_record(last_record)
         assert last_record["ready"] is True
 
-    def _wait_for_export_task_on_record(self, record):
-        if record["preparing"]:
-            assert record["task_uuid"]
-            self.dataset_populator.wait_on_task_id(record["task_uuid"])
+    def test_export_missing_dataset_fails(self):
+        history_name = f"for_export_failure_{uuid4()}"
+        history_id = self.dataset_populator.new_history(history_name)
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
+
+        # Simulate data loss or some unexpected problem with the dataset file.
+        assert os.path.exists(hda["file_name"])
+        unlink(hda["file_name"])
+        assert not os.path.exists(hda["file_name"])
+
+        storage_request_id = self.dataset_populator.download_history_to_store(history_id)
+
+        result_response = self._get(f"short_term_storage/{storage_request_id}")
+        self._assert_status_code_is(result_response, 500)
+        assert "Cannot export history dataset" in result_response.json()["err_msg"]
 
 
 class TestImportExportHistoryContentsViaTasksIntegration(IntegrationTestCase, UsesCeleryTasks):

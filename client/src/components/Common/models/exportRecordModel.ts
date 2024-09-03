@@ -1,49 +1,89 @@
 import { formatDistanceToNow, parseISO } from "date-fns";
-import type { components } from "@/schema";
 
-type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
+import {
+    type ExportObjectRequestMetadata,
+    type ModelStoreFormat,
+    type ObjectExportTaskResponse,
+    type StoreExportPayload,
+} from "@/api";
 
-export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
-export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
+export interface ExportParams {
+    readonly modelStoreFormat: ModelStoreFormat;
+    readonly includeFiles: boolean;
+    readonly includeDeleted: boolean;
+    readonly includeHidden: boolean;
+}
 
-export class ExportParamsModel {
-    private _params: StoreExportPayload;
-    constructor(data: StoreExportPayload = {}) {
+export interface ExportRecord {
+    readonly id: string;
+    readonly isReady: boolean;
+    readonly isPreparing: boolean;
+    readonly isUpToDate: boolean;
+    readonly hasFailed: boolean;
+    readonly date: Date;
+    readonly elapsedTime: string;
+    readonly taskUUID: string;
+    readonly importUri?: string;
+    readonly canReimport: boolean;
+    readonly stsDownloadId?: string;
+    readonly isStsDownload: boolean;
+    readonly canDownload: boolean;
+    readonly modelStoreFormat: ModelStoreFormat;
+    readonly exportParams?: ExportParams;
+    readonly duration?: number | null;
+    readonly canExpire: boolean;
+    readonly isPermanent: boolean;
+    readonly expirationDate?: Date;
+    readonly expirationElapsedTime?: string;
+    readonly hasExpired: boolean;
+    readonly errorMessage?: string | null;
+}
+
+export class ExportParamsModel implements ExportParams {
+    private _params: Partial<StoreExportPayload>;
+    constructor(data: Partial<StoreExportPayload> = {}) {
         this._params = data;
     }
 
     get modelStoreFormat() {
-        return this._params?.model_store_format;
+        return this._params?.model_store_format ?? "tgz";
     }
 
     get includeFiles() {
-        return this._params?.include_files;
+        return Boolean(this._params?.include_files);
     }
 
     get includeDeleted() {
-        return this._params?.include_deleted;
+        return Boolean(this._params?.include_deleted);
     }
 
     get includeHidden() {
-        return this._params?.include_hidden;
+        return Boolean(this._params?.include_hidden);
     }
 
-    public equals(otherExportParams?: ExportParamsModel) {
+    public equals(otherExportParams?: ExportParams) {
         if (!otherExportParams) {
             return false;
         }
-        return (
-            this.modelStoreFormat === otherExportParams.modelStoreFormat &&
-            this.includeFiles === otherExportParams.includeFiles &&
-            this.includeDeleted === otherExportParams.includeDeleted &&
-            this.includeHidden === otherExportParams.includeHidden
-        );
+        return areEqual(this, otherExportParams);
     }
 }
 
-export class ExportRecordModel {
+export function areEqual(params1?: ExportParams, params2?: ExportParams): boolean {
+    if (!params1 || !params2) {
+        return false;
+    }
+    return (
+        params1.modelStoreFormat === params2.modelStoreFormat &&
+        params1.includeFiles === params2.includeFiles &&
+        params1.includeDeleted === params2.includeDeleted &&
+        params1.includeHidden === params2.includeHidden
+    );
+}
+
+export class ExportRecordModel implements ExportRecord {
     private _data: ObjectExportTaskResponse;
-    private _expirationDate?: Date | null;
+    private _expirationDate?: Date;
     private _requestMetadata?: ExportObjectRequestMetadata;
     private _exportParameters?: ExportParamsModel;
 
@@ -54,6 +94,10 @@ export class ExportRecordModel {
         this._exportParameters = this._requestMetadata?.payload
             ? new ExportParamsModel(this._requestMetadata?.payload)
             : undefined;
+    }
+
+    get id() {
+        return this._data.id;
     }
 
     get isReady() {
@@ -109,7 +153,7 @@ export class ExportRecordModel {
     }
 
     get modelStoreFormat() {
-        return this.exportParams?.modelStoreFormat;
+        return this.exportParams?.modelStoreFormat ?? "tgz";
     }
 
     get exportParams() {
@@ -125,9 +169,13 @@ export class ExportRecordModel {
         return this.isStsDownload && Boolean(this.duration);
     }
 
+    get isPermanent() {
+        return !this.canExpire;
+    }
+
     get expirationDate() {
         if (this._expirationDate === undefined) {
-            this._expirationDate = this.duration ? new Date(this.date.getTime() + this.duration * 1000) : null;
+            this._expirationDate = this.duration ? new Date(this.date.getTime() + this.duration * 1000) : undefined;
         }
         return this._expirationDate;
     }
@@ -135,11 +183,11 @@ export class ExportRecordModel {
     get expirationElapsedTime() {
         return this.canExpire && this.expirationDate
             ? formatDistanceToNow(this.expirationDate, { addSuffix: true })
-            : null;
+            : undefined;
     }
 
     get hasExpired() {
-        return this.canExpire && this.expirationDate && Date.now() > this.expirationDate.getTime();
+        return Boolean(this.canExpire && this.expirationDate && Date.now() > this.expirationDate.getTime());
     }
 
     get errorMessage() {

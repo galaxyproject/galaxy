@@ -6,11 +6,10 @@ import logging
 import sys
 import tempfile
 
-import requests
-
 from galaxy.tool_util.deps.conda_util import CondaContext
 from galaxy.util import (
     check_github_api_response_rate_limit,
+    requests,
     which,
 )
 from .mulled_list import get_singularity_containers
@@ -88,7 +87,7 @@ class QuaySearch:
                     results_tmp = searcher.search(query)
                     results.extend(results_tmp)
 
-            out = list()
+            out = []
 
             for result in results:
                 title = result["title"]

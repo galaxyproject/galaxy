@@ -40,16 +40,16 @@
             </td>
         </div>
         <br />
-        <job-outputs :job-outputs="outputs" paginate :title="`Job Outputs`" />
+        <JobOutputs :job-outputs="outputs" paginate :title="`Job Outputs`" />
     </div>
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
-
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { getAppRoot } from "onload/loadConfig";
+import Vue from "vue";
+
 import JobOutputs from "../JobInformation/JobOutputs";
 import JobParametersArrayValue from "./JobParametersArrayValue";
 
@@ -108,17 +108,25 @@ export default {
             return parameter ? parameter.value : `Parameter "${this.param}" is not found!`;
         },
     },
+    watch: {
+        jobId: function (newValue) {
+            this.initJob();
+        },
+    },
     created: function () {
-        let url;
-        if (this.jobId) {
-            url = `${getAppRoot()}api/jobs/${this.jobId}/parameters_display`;
-        } else {
-            url = `${getAppRoot()}api/datasets/${this.datasetId}/parameters_display?hda_ldda=${this.datasetType}`;
-        }
-        this.ajaxCall(url);
-        this.isSingleParam = this.param !== undefined && this.param !== "undefined";
+        this.initJob();
     },
     methods: {
+        initJob() {
+            let url;
+            if (this.jobId) {
+                url = `${getAppRoot()}api/jobs/${this.jobId}/parameters_display`;
+            } else {
+                url = `${getAppRoot()}api/datasets/${this.datasetId}/parameters_display?hda_ldda=${this.datasetType}`;
+            }
+            this.ajaxCall(url);
+            this.isSingleParam = this.param !== undefined && this.param !== "undefined";
+        },
         appRoot: function () {
             return getAppRoot();
         },

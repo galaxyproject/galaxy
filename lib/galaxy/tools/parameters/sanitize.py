@@ -1,6 +1,7 @@
 """
 Tool Parameter specific sanitizing.
 """
+
 import logging
 import string
 
@@ -58,7 +59,7 @@ class ToolParameterSanitizer:
             rval._valid_chars = rval.get_valid_by_name(valid_elem.get("initial", "default"))
             for action_elem in valid_elem:
                 preset = rval.get_valid_by_name(action_elem.get("preset", "none"))
-                valid_value = [val for val in action_elem.get("value", [])]
+                valid_value = list(action_elem.get("value", []))
                 if action_elem.tag.lower() == "add":
                     for val in preset + valid_value:
                         if val not in rval._valid_chars:

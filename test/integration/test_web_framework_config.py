@@ -1,4 +1,5 @@
 """Integration tests for framework configuration code."""
+
 from requests import options
 
 from galaxy_test.driver import integration_util

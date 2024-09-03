@@ -1,31 +1,42 @@
 <script setup lang="ts">
-import { computed, ref, type Ref } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheckSquare, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed, type Ref, ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
-import MultipleViewItem from "./MultipleViewItem.vue";
-import { useHistoryStore } from "@/stores/historyStore";
-import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
-import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
+
+import { type HistoryItemSummary, isHistoryItem } from "@/api";
+import { copyDataset } from "@/api/datasets";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
+import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
+import { Toast } from "@/composables/toast";
+import { useEventStore } from "@/stores/eventStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import HistoryDropZone from "../CurrentHistory/HistoryDropZone.vue";
+import MultipleViewItem from "./MultipleViewItem.vue";
+
+library.add(faCheckSquare, faPlus);
 
 const historyStore = useHistoryStore();
 
-interface History {
-    id: string;
-}
-
 const props = withDefaults(
     defineProps<{
-        histories: History[];
-        currentHistory: History;
-        // todo: stricter typedef for handlers, when MultipleViewItem is refactored
-        handlers: { [handler: string]: Function };
+        selectedHistories: { id: string }[];
         filter?: string;
     }>(),
     {
         filter: "",
     }
 );
+
+// defineEmits below
+const emit = defineEmits<{
+    (e: "update:show-modal", value: boolean): void;
+}>();
 
 const scrollContainer: Ref<HTMLElement | null> = ref(null);
 const { arrived } = useAnimationFrameScroll(scrollContainer);
@@ -38,64 +49,176 @@ useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) =>
 const scrolledLeft = computed(() => !isScrollable.value || arrived.left);
 const scrolledRight = computed(() => !isScrollable.value || arrived.right);
 
-const selectedHistories: Ref<History[]> = computed(() => historyStore.pinnedHistories);
-
-function removeHistoryFromList(history: History) {
-    historyStore.unpinHistory(history.id);
-}
-
-if (!selectedHistories.value.length ?? props.histories.length > 0) {
-    historyStore.pinHistory(props.histories[0]!.id);
-}
-
-function addHistoriesToList(histories: History[]) {
-    histories.forEach((history) => {
-        const historyExists = selectedHistories.value.find((h) => h.id === history.id);
-        if (!historyExists) {
-            historyStore.pinHistory(history.id);
+async function createAndPin() {
+    try {
+        await historyStore.createNewHistory();
+        if (!historyStore.currentHistoryId) {
+            throw new Error("Error creating history");
         }
-    });
+
+        if (historyStore.pinnedHistories.length > 0) {
+            historyStore.pinHistory(historyStore.currentHistoryId);
+        }
+    } catch (error: any) {
+        console.error(error);
+        Toast.error(errorMessageAsString(error), "Error creating and pinning history");
+    }
+}
+
+const showDropZone = ref(false);
+const processingDrop = ref(false);
+async function onDrop(evt: any) {
+    const eventStore = useEventStore();
+    if (processingDrop.value) {
+        showDropZone.value = false;
+        return;
+    }
+    processingDrop.value = true;
+    showDropZone.value = false;
+    const dragItems = eventStore.getDragItems();
+    // Filter out any non-history items
+    const historyItems = dragItems?.filter((item: any) => isHistoryItem(item)) as HistoryItemSummary[];
+    const multiple = historyItems.length > 1;
+    const originalHistoryId = historyItems?.[0]?.history_id;
+
+    if (historyItems && originalHistoryId) {
+        await historyStore.createNewHistory();
+        const currentHistoryId = historyStore.currentHistoryId;
+
+        let datasetCount = 0;
+        let collectionCount = 0;
+        if (currentHistoryId) {
+            // iterate over the data array and copy each item to the new history
+            for (const item of historyItems) {
+                const dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
+                await copyDataset(item.id, currentHistoryId, item.history_content_type, dataSource)
+                    .then(() => {
+                        if (item.history_content_type === "dataset") {
+                            datasetCount++;
+                            if (!multiple) {
+                                Toast.info(localize("Dataset copied to new history"));
+                            }
+                        } else {
+                            collectionCount++;
+                            if (!multiple) {
+                                Toast.info(localize("Collection copied to new history"));
+                            }
+                        }
+                    })
+                    .catch((error) => {
+                        Toast.error(errorMessageAsString(error));
+                    });
+            }
+            if (multiple && datasetCount > 0) {
+                Toast.info(`${datasetCount} dataset${datasetCount > 1 ? "s" : ""} copied to new history`);
+            }
+            if (multiple && collectionCount > 0) {
+                Toast.info(`${collectionCount} collection${collectionCount > 1 ? "s" : ""} copied to new history`);
+            }
+
+            if (historyStore.pinnedHistories.length > 0) {
+                // pin the newly created history via the drop
+                historyStore.pinHistory(currentHistoryId);
+                // also pin the original history where the item came from
+                historyStore.pinHistory(originalHistoryId);
+            }
+        }
+        processingDrop.value = false;
+    }
+}
+
+async function onKeyDown(evt: KeyboardEvent) {
+    if (evt.key === "Enter" || evt.key === " ") {
+        if ((evt.target as HTMLElement)?.classList?.contains("top-picker")) {
+            await createAndPin();
+        } else if ((evt.target as HTMLElement)?.classList?.contains("bottom-picker")) {
+            emit("update:show-modal", true);
+        }
+    }
 }
 </script>
 
 <template>
+    <!-- eslint-disable vuejs-accessibility/no-static-element-interactions -->
     <div class="list-container h-100" :class="{ 'scrolled-left': scrolledLeft, 'scrolled-right': scrolledRight }">
         <div ref="scrollContainer" class="d-flex h-100 w-auto overflow-auto">
-            <virtual-list
-                v-if="selectedHistories.length"
-                :estimate-size="selectedHistories.length"
+            <VirtualList
+                v-if="props.selectedHistories.length"
+                :estimate-size="props.selectedHistories.length"
                 :data-key="'id'"
                 :data-component="MultipleViewItem"
-                :data-sources="selectedHistories"
+                :data-sources="props.selectedHistories"
                 :direction="'horizontal'"
-                :extra-props="{ currentHistory, handlers, filter, removeHistoryFromList }"
-                :item-style="{ width: '15rem' }"
+                :extra-props="{ filter }"
+                :item-style="{ width: '100%', minWidth: '15rem' }"
                 item-class="d-flex mx-1 mt-1"
                 class="d-flex"
                 wrap-class="row flex-nowrap m-0">
-            </virtual-list>
+            </VirtualList>
 
             <div
-                v-b-modal.select-histories-modal
-                class="history-picker text-primary d-flex m-3 p-5 align-items-center text-nowrap">
-                Select histories
+                class="history-picker"
+                @drop.prevent="onDrop"
+                @dragenter.prevent="showDropZone = true"
+                @dragover.prevent
+                @dragleave.prevent="showDropZone = false">
+                <span v-if="!showDropZone" class="d-flex flex-column h-100">
+                    <div
+                        class="history-picker-box top-picker text-primary"
+                        tabindex="0"
+                        @keydown="onKeyDown"
+                        @click.stop="createAndPin">
+                        <FontAwesomeIcon :icon="faPlus" class="mr-1" />
+                        {{ localize("Create and pin new history") }}
+                    </div>
+                    <div
+                        class="history-picker-box bottom-picker text-primary"
+                        tabindex="0"
+                        @keydown="onKeyDown"
+                        @click.stop="emit('update:show-modal', true)">
+                        <FontAwesomeIcon :icon="faCheckSquare" class="mr-1" />
+                        {{ localize("Select histories") }}
+                    </div>
+                </span>
+                <div v-else class="history-picker-box history-picker-drop-zone text-primary">
+                    {{ localize("Create new history with this item") }}
+                    <HistoryDropZone />
+                </div>
             </div>
-
-            <SelectorModal
-                id="select-histories-modal"
-                :multiple="true"
-                :histories="histories"
-                :current-history-id="currentHistory.id"
-                title="Select histories"
-                @selectHistories="addHistoriesToList" />
         </div>
     </div>
 </template>
 
 <style lang="scss" scoped>
+@import "scss/theme/blue.scss";
 .list-container {
     .history-picker {
-        border: dotted lightgray;
+        min-width: 15rem;
+        max-width: 15rem;
+        margin: 1rem;
+        .history-picker-box {
+            border: dotted lightgray;
+            cursor: pointer;
+            position: relative;
+            justify-content: center;
+            display: flex;
+            align-items: center;
+            text-wrap: none;
+            &.top-picker {
+                height: 20%;
+            }
+            &.bottom-picker {
+                height: 80%;
+            }
+            &:not(.history-picker-drop-zone) {
+                &:hover {
+                    background-color: rgba($brand-info, 0.2);
+                }
+            }
+            &.history-picker-drop-zone {
+                height: 100%;
+            }
+        }
     }
 
     position: relative;

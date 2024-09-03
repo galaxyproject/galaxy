@@ -176,8 +176,7 @@ def safe_walk(path, allowlist=None):
 
         if allowlist and i % WALK_MAX_DIRS == 0:
             raise RuntimeError(
-                "Breaking out of walk of %r after %s iterations (most likely infinite symlink recursion) at: %r"
-                % (path, WALK_MAX_DIRS, dirpath)
+                f"Breaking out of walk of {path!r} after {WALK_MAX_DIRS} iterations (most likely infinite symlink recursion) at: {dirpath!r}"
             )
         _prefix = partial(join, dirpath)
 

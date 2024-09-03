@@ -1,19 +1,28 @@
-<script lang="ts" setup>
+<script setup lang="ts">
+import { useDraggable, type UseElementBoundingReturn } from "@vueuse/core";
+import type { Ref } from "vue";
 import { computed, onMounted, ref, unref, watch } from "vue";
+
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
 import { useAnimationFrameThrottle } from "@/composables/throttle";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { AxisAlignedBoundingBox, Transform } from "./modules/geometry";
-import { useDraggable, type UseElementBoundingReturn } from "@vueuse/core";
-
+import { useWorkflowStores } from "@/composables/workflowStores";
+import type {
+    FrameWorkflowComment,
+    FreehandWorkflowComment,
+    MarkdownWorkflowComment,
+    TextWorkflowComment,
+    WorkflowComment,
+} from "@/stores/workflowEditorCommentStore";
 import type { Step, Steps } from "@/stores/workflowStepStore";
-import type { Ref } from "vue";
+
+import { drawBoxComments, drawFreehandComments, drawSteps } from "./modules/canvasDraw";
+import { AxisAlignedBoundingBox, Transform } from "./modules/geometry";
 
 const props = defineProps<{
     steps: Steps;
+    comments: WorkflowComment[];
     viewportBounds: UseElementBoundingReturn;
-    viewportPan: { x: number; y: number };
-    viewportScale: number;
+    viewportBoundingBox: AxisAlignedBoundingBox;
 }>();
 
 const emit = defineEmits<{
@@ -21,7 +30,8 @@ const emit = defineEmits<{
     (e: "moveTo", position: { x: number; y: number }): void;
 }>();
 
-const stateStore = useWorkflowStateStore();
+const { stateStore, commentStore, toolbarStore } = useWorkflowStores();
+const { isJustCreated } = commentStore;
 
 /** reference to the main canvas element */
 const canvas: Ref<HTMLCanvasElement | null> = ref(null);
@@ -29,33 +39,12 @@ let redraw = false;
 
 // it is important these throttles are defined before useAnimationFrame,
 // so that they are executed first in the frame loop
-const { throttle: viewportThrottle } = useAnimationFrameThrottle();
 const { throttle: dragThrottle } = useAnimationFrameThrottle();
 
-/** bounding box following the viewport */
-const viewportBounds = ref(new AxisAlignedBoundingBox());
 watch(
-    () => ({
-        x: props.viewportPan.x,
-        y: props.viewportPan.y,
-        scale: props.viewportScale,
-        width: unref(props.viewportBounds.width),
-        height: unref(props.viewportBounds.height),
-    }),
-    ({ x, y, scale, width, height }) => {
-        redraw = true;
-
-        viewportThrottle(() => {
-            const bounds = viewportBounds.value;
-
-            bounds.x = -x / scale;
-            bounds.y = -y / scale;
-            bounds.width = width / scale;
-            bounds.height = height / scale;
-
-            viewportBounds.value = bounds;
-        });
-    }
+    () => props.viewportBoundingBox,
+    () => (redraw = true),
+    { deep: true }
 );
 
 /** bounding box encompassing all nodes in the workflow */
@@ -81,6 +70,15 @@ function recalculateAABB() {
         }
     });
 
+    props.comments.forEach((comment) => {
+        aabb.fitRectangle({
+            x: comment.position[0],
+            y: comment.position[1],
+            width: comment.size[0],
+            height: comment.size[1],
+        });
+    });
+
     aabb.squareCenter();
     aabb.expand(120);
 
@@ -91,12 +89,14 @@ function recalculateAABB() {
     }
 }
 
-// redraw if any steps change
+// redraw if any steps or comments change
 watch(
-    props.steps,
+    () => [props.steps, props.comments, toolbarStore.inputCatcherPressed],
     () => {
-        redraw = true;
-        aabbChanged = true;
+        if (!toolbarStore.inputCatcherPressed) {
+            redraw = true;
+            aabbChanged = true;
+        }
     },
     { deep: true }
 );
@@ -161,12 +161,32 @@ function renderMinimap() {
     // apply global to local transform
     canvasTransform.applyToContext(ctx);
 
+    // sort comments by type
+    const frameComments: FrameWorkflowComment[] = [];
+    const markdownComments: MarkdownWorkflowComment[] = [];
+    const textComments: TextWorkflowComment[] = [];
+    const freehandComments: FreehandWorkflowComment[] = [];
+
+    props.comments.forEach((comment) => {
+        if (comment.type === "frame") {
+            frameComments.push(comment);
+        } else if (comment.type === "markdown") {
+            markdownComments.push(comment);
+        } else if (comment.type === "text") {
+            textComments.push(comment);
+        } else {
+            if (!isJustCreated(comment.id)) {
+                freehandComments.push(comment);
+            }
+        }
+    });
+
+    // sort steps by error state
     const allSteps = Object.values(props.steps);
     const okSteps: Step[] = [];
     const errorSteps: Step[] = [];
     let selectedStep: Step | undefined;
 
-    // sort steps into different arrays
     allSteps.forEach((step) => {
         if (stateStore.activeNodeId === step.id) {
             selectedStep = step;
@@ -180,27 +200,15 @@ function renderMinimap() {
     });
 
     // draw rects
-    ctx.beginPath();
-    ctx.fillStyle = colors.node;
-    okSteps.forEach((step) => {
-        const rect = stateStore.stepPosition[step.id];
+    drawBoxComments(ctx, frameComments, 2 / canvasTransform.scaleX, colors.node, true);
+    ctx.fillStyle = "white";
+    drawBoxComments(ctx, markdownComments, 2 / canvasTransform.scaleX, colors.node);
+    ctx.fillStyle = "rgba(0, 0, 0, 0)";
+    drawBoxComments(ctx, textComments, 1 / canvasTransform.scaleX, colors.node);
+    drawSteps(ctx, okSteps, colors.node, stateStore);
+    drawSteps(ctx, errorSteps, colors.error, stateStore);
 
-        if (rect) {
-            ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
-        }
-    });
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.fillStyle = colors.error;
-    errorSteps.forEach((step) => {
-        const rect = stateStore.stepPosition[step.id];
-
-        if (rect) {
-            ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
-        }
-    });
-    ctx.fill();
+    drawFreehandComments(ctx, freehandComments, colors.node);
 
     // draw selected
     if (selectedStep) {
@@ -228,7 +236,12 @@ function renderMinimap() {
     ctx.strokeStyle = colors.viewOutline;
     ctx.fillStyle = colors.view;
     ctx.lineWidth = 1 / canvasTransform.scaleX;
-    ctx.rect(viewportBounds.value.x, viewportBounds.value.y, viewportBounds.value.width, viewportBounds.value.height);
+    ctx.rect(
+        props.viewportBoundingBox.x,
+        props.viewportBoundingBox.y,
+        props.viewportBoundingBox.width,
+        props.viewportBoundingBox.height
+    );
     ctx.fill();
     ctx.stroke();
 }
@@ -272,7 +285,7 @@ useDraggable(canvas, {
             .scale([scaleFactor.value, scaleFactor.value])
             .apply([event.offsetX, event.offsetY]);
 
-        if (viewportBounds.value.isPointInBounds({ x, y })) {
+        if (props.viewportBoundingBox.isPointInBounds({ x, y })) {
             dragViewport = true;
         }
     },
@@ -321,11 +334,53 @@ useDraggable(canvas, {
 @import "~bootstrap/scss/_functions.scss";
 @import "theme/blue.scss";
 
-.workflow-overview-body {
-    --node-color: #{$brand-primary};
-    --error-color: #{$state-danger-bg};
-    --selected-outline-color: #{$brand-primary};
-    --view-color: #{fade-out($brand-dark, 0.8)};
-    --view-outline-color: #{$brand-info};
+.workflow-overview {
+    --workflow-overview-size: 150px;
+    --workflow-overview-min-size: 50px;
+    --workflow-overview-max-size: 300px;
+    --workflow-overview-padding: 7px;
+    --workflow-overview-border: 1px;
+
+    border-top-left-radius: 0.3rem;
+    cursor: nwse-resize;
+    position: absolute;
+    width: var(--workflow-overview-size);
+    height: var(--workflow-overview-size);
+    right: 0px;
+    bottom: 0px;
+    border-top: solid $border-color var(--workflow-overview-border);
+    border-left: solid $border-color var(--workflow-overview-border);
+    background: $workflow-overview-bg no-repeat url("assets/images/resizable.png");
+    z-index: 20000;
+    overflow: hidden;
+    padding: var(--workflow-overview-padding) 0 0 var(--workflow-overview-padding);
+
+    // account for padding and border
+    max-width: calc(
+        var(--workflow-overview-max-size) + var(--workflow-overview-padding) + var(--workflow-overview-border)
+    );
+    max-height: calc(
+        var(--workflow-overview-max-size) + var(--workflow-overview-padding) + var(--workflow-overview-border)
+    );
+    min-width: calc(
+        var(--workflow-overview-min-size) + var(--workflow-overview-padding) + var(--workflow-overview-border)
+    );
+    min-height: calc(
+        var(--workflow-overview-min-size) + var(--workflow-overview-padding) + var(--workflow-overview-border)
+    );
+
+    .workflow-overview-body {
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+
+        --node-color: #{$brand-primary};
+        --error-color: #{$state-danger-bg};
+        --selected-outline-color: #{$brand-primary};
+        --view-color: #{fade-out($brand-dark, 0.8)};
+        --view-outline-color: #{$brand-info};
+    }
 }
 </style>

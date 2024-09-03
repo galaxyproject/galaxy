@@ -17,13 +17,13 @@ def decode_dataset_user(trans, dataset_hash, user_hash):
     # decode dataset id as usual
     # decode user id using the dataset create time as the key
     dataset_id = trans.security.decode_id(dataset_hash)
-    dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(dataset_id)
+    dataset = trans.sa_session.get(trans.app.model.HistoryDatasetAssociation, dataset_id)
     assert dataset, "Bad Dataset id provided to decode_dataset_user"
     if user_hash in [None, "None"]:
         user = None
     else:
         security = IdEncodingHelper(id_secret=dataset.create_time)
         user_id = security.decode_id(user_hash)
-        user = trans.sa_session.query(trans.app.model.User).get(user_id)
+        user = trans.sa_session.get(trans.app.model.User, user_id)
         assert user, "A Bad user id was passed to decode_dataset_user"
     return dataset, user

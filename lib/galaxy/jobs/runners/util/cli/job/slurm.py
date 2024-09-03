@@ -64,7 +64,7 @@ class Slurm(BaseJobExec):
         # else line like "slurm_load_jobs error: Invalid job id specified"
         return job_states.OK
 
-    def _get_job_state(self, state):
+    def _get_job_state(self, state: str) -> str:
         try:
             return {
                 "F": job_states.ERROR,
@@ -72,7 +72,7 @@ class Slurm(BaseJobExec):
                 "CG": job_states.RUNNING,
                 "PD": job_states.QUEUED,
                 "CD": job_states.OK,
-            }.get(state)
+            }[state]
         except KeyError:
             raise KeyError(f"Failed to map slurm status code [{state}] to job state.")
 

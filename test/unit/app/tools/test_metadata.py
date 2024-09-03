@@ -5,6 +5,7 @@ from galaxy import model
 from galaxy.app_unittest_utils import tools_support
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
+from galaxy.model.base import transaction
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.util import (
     galaxy_directory,
@@ -23,7 +24,8 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         sa_session.add(job)
         history = model.History()
         job.history = history
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
         self.job = job
         self.history = history
         self.job_working_directory = os.path.join(self.test_directory, "job_working")
@@ -50,7 +52,8 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             extension="fasta",
         )
         sa_session = self.app.model.session
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
         output_datasets = {
             "out_file1": output_dataset,
         }
@@ -82,7 +85,8 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             extension="auto",
         )
         sa_session = self.app.model.session
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
         output_datasets = {
             "out_file1": output_dataset,
         }
@@ -120,7 +124,8 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             extension="auto",
         )
         sa_session = self.app.model.session
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
         output_datasets = {
             "out_file1": output_dataset,
         }
@@ -165,7 +170,9 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         self.history.add_dataset_collection(output_dataset_collection)
         assert output_dataset_collection.collection
         self.app.model.session.add(output_dataset_collection)
-        self.app.model.session.flush()
+        session = self.app.model.session
+        with transaction(session):
+            session.commit()
         return output_dataset_collection
 
     def _create_output_dataset(self, **kwd):
@@ -181,7 +188,7 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             f.write(contents)
 
     def _write_output_dataset_contents(self, output_dataset, contents):
-        with open(output_dataset.dataset.file_name, "w") as f:
+        with open(output_dataset.dataset.get_file_name(), "w") as f:
             f.write(contents)
 
     def _write_galaxy_json(self, contents):
@@ -210,7 +217,7 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         safe_makedirs(os.path.join(self.job_working_directory, "metadata"))
         self.app.datatypes_registry.to_xml_file(path=datatypes_config)
         job_metadata = os.path.join(self.tool_working_directory, self.tool.provided_metadata_file)
-        output_fnames = [DatasetPath(o.dataset.id, o.dataset.file_name, None) for o in output_datasets.values()]
+        output_fnames = [DatasetPath(o.dataset.id, o.dataset.get_file_name(), None) for o in output_datasets.values()]
         command = metadata_compute_strategy.setup_external_metadata(
             output_datasets,
             output_collections,

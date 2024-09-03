@@ -1,6 +1,7 @@
 """
 Constructs for grouping tool parameters
 """
+
 import io
 import logging
 import os
@@ -28,7 +29,7 @@ from galaxy.util import (
     sanitize_for_filename,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.expressions import ExpressionContext
 
 if TYPE_CHECKING:
@@ -36,10 +37,25 @@ if TYPE_CHECKING:
     from galaxy.tools.parameter.basic import ToolParameter
 
 log = logging.getLogger(__name__)
-URI_PREFIXES = [f"{x}://" for x in ["http", "https", "ftp", "file", "gxfiles", "gximport", "gxuserimport", "gxftp"]]
+URI_PREFIXES = [
+    f"{x}://"
+    for x in [
+        "http",
+        "https",
+        "ftp",
+        "file",
+        "gxfiles",
+        "gximport",
+        "gxuserimport",
+        "gxftp",
+        "drs",
+        "invenio",
+        "zenodo",
+    ]
+]
 
 
-class Group(Dictifiable):
+class Group(UsesDictVisibleKeys):
     dict_collection_visible_keys = ["name", "type"]
     type: str
 
@@ -71,7 +87,7 @@ class Group(Dictifiable):
         raise TypeError("Not implemented")
 
     def to_dict(self, trans):
-        group_dict = super().to_dict()
+        group_dict = self._dictify_view_keys()
         return group_dict
 
 
@@ -100,6 +116,7 @@ class Repeat(Group):
     def title_plural(self):
         return inflector.pluralize(self.title)
 
+    @property
     def label(self):
         return f"Repeat ({self.title})"
 
@@ -181,6 +198,7 @@ class Section(Group):
     def title_plural(self):
         return inflector.pluralize(self.title)
 
+    @property
     def label(self):
         return f"Section ({self.title})"
 
@@ -267,7 +285,7 @@ class UploadDataset(Group):
         if dataset_name is None:
             dataset_name = context.get("files_metadata", {}).get("base_name", None)
         if dataset_name is None:
-            filenames = list()
+            filenames = []
             for composite_file in context.get("files", []):
                 if not composite_file.get("ftp_files", ""):
                     filenames.append((composite_file.get("file_data") or {}).get("filename", ""))
@@ -408,8 +426,7 @@ class UploadDataset(Group):
                 return Bunch(type=None, path=None, name=None)
 
         def get_url_paste_urls_or_filename(group_incoming, override_name=None, override_info=None):
-            url_paste_file = group_incoming.get("url_paste", None)
-            if url_paste_file is not None:
+            if (url_paste_file := group_incoming.get("url_paste", None)) is not None:
                 url_paste = open(url_paste_file).read()
 
                 def start_of_url(content):
@@ -614,8 +631,8 @@ class UploadDataset(Group):
         writable_files = d_type.writable_files
         writable_files_offset = 0
         groups_incoming = [None for _ in range(file_count)]
-        for group_incoming in context.get(self.name, []):
-            i = int(group_incoming["__index__"])
+        for i, group_incoming in enumerate(context.get(self.name, [])):
+            i = int(group_incoming.get("__index__", i))
             groups_incoming[i] = group_incoming
         if d_type.composite_type is not None or force_composite:
             # handle uploading of composite datatypes
@@ -721,7 +738,7 @@ class Conditional(Group):
 
     def __init__(self):
         Group.__init__(self)
-        self.test_param: Optional["ToolParameter"] = None
+        self.test_param: Optional[ToolParameter] = None
         self.cases = []
         self.value_ref = None
         self.value_ref_in_group = True  # When our test_param is not part of the conditional Group, this is False
@@ -744,7 +761,7 @@ class Conditional(Group):
     def value_to_basic(self, value, app, use_security=False):
         if self.test_param is None:
             raise Exception("Must set 'test_param' attribute to use.")
-        rval = dict()
+        rval = {}
         rval[self.test_param.name] = self.test_param.value_to_basic(value[self.test_param.name], app)
         current_case = rval["__current_case__"] = self.get_current_case(value[self.test_param.name])
         for input in self.cases[current_case].inputs.values():
@@ -755,7 +772,7 @@ class Conditional(Group):
     def value_from_basic(self, value, app, ignore_errors=False):
         if self.test_param is None:
             raise Exception("Must set 'test_param' attribute to use.")
-        rval = dict()
+        rval = {}
         try:
             rval[self.test_param.name] = self.test_param.value_from_basic(
                 value.get(self.test_param.name), app, ignore_errors
@@ -805,7 +822,7 @@ class Conditional(Group):
         return cond_dict
 
 
-class ConditionalWhen(Dictifiable):
+class ConditionalWhen(UsesDictVisibleKeys):
     dict_collection_visible_keys = ["value"]
 
     def __init__(self):
@@ -815,7 +832,7 @@ class ConditionalWhen(Dictifiable):
     def to_dict(self, trans):
         if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
-        when_dict = super().to_dict()
+        when_dict = self._dictify_view_keys()
 
         def input_to_dict(input):
             return input.to_dict(trans)

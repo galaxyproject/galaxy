@@ -1,15 +1,25 @@
 import abc
 import os
 import time
+from dataclasses import (
+    dataclass,
+    field,
+)
+from enum import Enum
 from typing import (
     Any,
     ClassVar,
+    List,
     Optional,
     Set,
+    Tuple,
+    Type,
     TYPE_CHECKING,
+    Union,
 )
 
 from typing_extensions import (
+    Literal,
     NotRequired,
     TypedDict,
 )
@@ -17,7 +27,9 @@ from typing_extensions import (
 from galaxy.exceptions import (
     ConfigurationError,
     ItemAccessibilityException,
+    RequestParameterInvalidException,
 )
+from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.util.bool_expressions import (
     BooleanExpressionEvaluator,
     TokenContainedEvaluator,
@@ -26,9 +38,58 @@ from galaxy.util.template import fill_template
 
 DEFAULT_SCHEME = "gxfiles"
 DEFAULT_WRITABLE = False
+DEFAULT_PAGE_LIMIT = 25
 
 if TYPE_CHECKING:
-    from galaxy.files import ConfiguredFileSourcesConfig
+    from galaxy.files import (
+        FileSourcesUserContext,
+        OptionalUserContext,
+    )
+
+
+class PluginKind(str, Enum):
+    """Enum to distinguish between different kinds or categories of plugins."""
+
+    rfs = "rfs"
+    """Remote File System
+
+    A remote file system is a file source that is backed by a remote file system
+    that is accessible via a URI. Examples include FTP, SFTP, S3, etc.
+    """
+
+    drs = "drs"
+    """Data Repository Service
+
+    A data repository service is a file source that is backed by a remote data
+    repository service implementing the (DRS) API which provides a generic interface
+    to data repositories so data consumers, including workflow systems,
+    can access data in a single, standard way regardless of where it's stored and how it's managed.
+    """
+
+    rdm = "rdm"
+    """Research Data Management
+
+    A research data management file source is a file source that is backed by a remote
+    research data management system that can provide DOIs. Examples include InvenioRDM, Zenodo, etc.
+    """
+
+    stock = "stock"
+    """Stock Plugin
+
+    A stock plugin is a file source that is shipped with Galaxy and covers common
+    use cases. Examples include the UserFTP, LibraryImport, UserLibraryImport, etc.
+    """
+
+
+class FileSourceSupports(TypedDict):
+    """Feature support flags for a file source plugin"""
+
+    # Indicates whether the file source supports pagination for listing files
+    pagination: NotRequired[bool]
+    # Indicates whether the file source supports server-side search for listing files
+    search: NotRequired[bool]
+    # Indicates whether the file source supports server-side sorting for listing files
+    sorting: NotRequired[bool]
 
 
 class FilesSourceProperties(TypedDict):
@@ -38,7 +99,7 @@ class FilesSourceProperties(TypedDict):
     filesource specific properties.
     """
 
-    file_sources_config: NotRequired["ConfiguredFileSourcesConfig"]
+    file_sources_config: NotRequired[FileSourcePluginsConfig]
     id: NotRequired[str]
     label: NotRequired[str]
     doc: NotRequired[Optional[str]]
@@ -46,20 +107,67 @@ class FilesSourceProperties(TypedDict):
     writable: NotRequired[bool]
     requires_roles: NotRequired[Optional[str]]
     requires_groups: NotRequired[Optional[str]]
+    disable_templating: NotRequired[Optional[bool]]
     # API helper values
     uri_root: NotRequired[str]
     type: NotRequired[str]
     browsable: NotRequired[bool]
+    url: NotRequired[Optional[str]]
+    supports: NotRequired[FileSourceSupports]
 
 
+@dataclass
 class FilesSourceOptions:
-    """Options to control behaviour of filesource operations, such as realize_to and write_from"""
+    """Options to control behavior of file source operations, such as realize_to, write_from and list."""
+
+    # Indicates access to the FS operation with intent to write.
+    # Even if a file source is "writeable" some directories (or elements) may be restricted or read-only
+    # so those should be skipped while browsing with writeable=True.
+    writeable: Optional[bool] = False
 
     # Property overrides for values initially configured through the constructor. For example
     # the HTTPFilesSource passes in additional http_headers through these properties, which
     # are merged with constructor defined http_headers. The interpretation of these properties
     # are filesystem specific.
-    extra_props: Optional[FilesSourceProperties]
+    extra_props: Optional[FilesSourceProperties] = field(default_factory=lambda: FilesSourceProperties())
+
+
+class EntryData(TypedDict):
+    """Provides data to create a new entry in a file source."""
+
+    name: str
+    # May contain additional properties depending on the file source
+
+
+class Entry(TypedDict):
+    """Represents the result of creating a new entry in a file source."""
+
+    name: str
+    uri: str
+    # May contain additional properties depending on the file source
+    external_link: NotRequired[str]
+
+
+class RemoteEntry(TypedDict):
+    name: str
+    uri: str
+    path: str
+
+
+TDirectoryClass = TypedDict("TDirectoryClass", {"class": Literal["Directory"]})
+TFileClass = TypedDict("TFileClass", {"class": Literal["File"]})
+
+
+class RemoteDirectory(RemoteEntry, TDirectoryClass):
+    pass
+
+
+class RemoteFile(RemoteEntry, TFileClass):
+    size: int
+    ctime: str
+
+
+AnyRemoteEntry = Union[RemoteDirectory, RemoteFile]
 
 
 class SingleFileSource(metaclass=abc.ABCMeta):
@@ -82,12 +190,16 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         """Return a boolean indicating whether this target is writable."""
 
     @abc.abstractmethod
-    def user_has_access(self, user_context) -> bool:
+    def user_has_access(self, user_context: "OptionalUserContext") -> bool:
         """Return a boolean indicating whether the user can access the FileSource."""
 
     @abc.abstractmethod
     def realize_to(
-        self, source_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+        self,
+        source_path: str,
+        native_path: str,
+        user_context: "OptionalUserContext" = None,
+        opts: Optional[FilesSourceOptions] = None,
     ):
         """Realize source path (relative to uri root) to local file system path.
 
@@ -96,14 +208,18 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         :param native_path: local path to write to. e.g. `/tmp/myfile.txt`
         :type native_path: str
         :param user_context: A user context , defaults to None
-        :type user_context: FileSourceDictifiable, optional
+        :type user_context: OptionalUserContext, optional
         :param opts: A set of options to exercise additional control over the realize_to method. Filesource specific, defaults to None
         :type opts: Optional[FilesSourceOptions], optional
         """
 
     @abc.abstractmethod
     def write_from(
-        self, target_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+        self,
+        target_path: str,
+        native_path: str,
+        user_context: "OptionalUserContext" = None,
+        opts: Optional[FilesSourceOptions] = None,
     ):
         """Write file at native path to target_path (relative to uri root).
 
@@ -154,7 +270,7 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         returned unchanged."""
 
     @abc.abstractmethod
-    def to_dict(self, for_serialization=False, user_context=None) -> FilesSourceProperties:
+    def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> FilesSourceProperties:
         """Return a dictified representation of this FileSource instance.
 
         If ``user_context`` is supplied, properties should be written so user
@@ -176,8 +292,18 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
         """Return a prefix for the root (e.g. gxfiles://prefix/)."""
 
     @abc.abstractmethod
-    def list(self, path="/", recursive=False, user_context=None, opts: Optional[FilesSourceOptions] = None) -> dict:
-        """Return dictionary of 'Directory's and 'File's."""
+    def list(
+        self,
+        path="/",
+        recursive=False,
+        user_context: "OptionalUserContext" = None,
+        opts: Optional[FilesSourceOptions] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[AnyRemoteEntry], int]:
+        """Return a list of 'Directory's and 'File's and the total count in a tuple."""
 
 
 class FilesSource(SingleFileSource, SupportsBrowsing):
@@ -186,28 +312,37 @@ class FilesSource(SingleFileSource, SupportsBrowsing):
     implements the `SupportsBrowsing` interface.
     """
 
+    plugin_type: ClassVar[str]
+
     @abc.abstractmethod
     def get_browsable(self) -> bool:
         """Return true if the filesource implements the SupportsBrowsing interface."""
 
 
+def file_source_type_is_browsable(target_type: Type["BaseFilesSource"]) -> bool:
+    # Check whether the list method has been overridden
+    return target_type.list != BaseFilesSource.list or target_type._list != BaseFilesSource._list
+
+
 class BaseFilesSource(FilesSource):
-    plugin_type: ClassVar[str]
+    plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
+    supports_pagination: ClassVar[bool] = False
+    supports_search: ClassVar[bool] = False
+    supports_sorting: ClassVar[bool] = False
 
     def get_browsable(self) -> bool:
-        # Check whether the list method has been overridden
-        return type(self).list != BaseFilesSource.list or type(self)._list != BaseFilesSource._list
+        return file_source_type_is_browsable(type(self))
 
     def get_prefix(self) -> Optional[str]:
         return self.id
 
     def get_scheme(self) -> str:
-        return "gxfiles"
+        return self.scheme or "gxfiles"
 
     def get_writable(self) -> bool:
         return self.writable
 
-    def user_has_access(self, user_context) -> bool:
+    def user_has_access(self, user_context: "OptionalUserContext") -> bool:
         if user_context is None and self.user_context_required:
             return False
         return (
@@ -228,6 +363,10 @@ class BaseFilesSource(FilesSource):
             root = uri_join(root, prefix)
         return root
 
+    def get_url(self) -> Optional[str]:
+        """Returns a URL that can be used to link to the remote source."""
+        return None
+
     def to_relative_path(self, url: str) -> str:
         return url.replace(self.get_uri_root(), "") or "/"
 
@@ -235,7 +374,7 @@ class BaseFilesSource(FilesSource):
         root = self.get_uri_root()
         return len(root) if root in url else 0
 
-    def uri_from_path(self, path) -> str:
+    def uri_from_path(self, path: str) -> str:
         uri_root = self.get_uri_root()
         return uri_join(uri_root, path)
 
@@ -248,14 +387,16 @@ class BaseFilesSource(FilesSource):
         self.writable = kwd.pop("writable", DEFAULT_WRITABLE)
         self.requires_roles = kwd.pop("requires_roles", None)
         self.requires_groups = kwd.pop("requires_groups", None)
+        self.disable_templating = kwd.pop("disable_templating", False)
         self._validate_security_rules()
         # If coming from to_dict, strip API helper values
         kwd.pop("uri_root", None)
         kwd.pop("type", None)
         kwd.pop("browsable", None)
+        kwd.pop("supports", None)
         return kwd
 
-    def to_dict(self, for_serialization=False, user_context=None) -> FilesSourceProperties:
+    def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> FilesSourceProperties:
         rval: FilesSourceProperties = {
             "id": self.id,
             "type": self.plugin_type,
@@ -265,9 +406,18 @@ class BaseFilesSource(FilesSource):
             "browsable": self.get_browsable(),
             "requires_roles": self.requires_roles,
             "requires_groups": self.requires_groups,
+            "disable_templating": self.disable_templating,
+            "scheme": self.get_scheme(),
+            "supports": {
+                "pagination": self.supports_pagination,
+                "search": self.supports_search,
+                "sorting": self.supports_sorting,
+            },
         }
         if self.get_browsable():
             rval["uri_root"] = self.get_uri_root()
+        if self.get_url() is not None:
+            rval["url"] = self.get_url()
         if for_serialization:
             rval.update(self._serialization_props(user_context=user_context))
         return rval
@@ -281,35 +431,117 @@ class BaseFilesSource(FilesSource):
             return ctime.strftime("%m/%d/%Y %I:%M:%S %p")
 
     @abc.abstractmethod
-    def _serialization_props(self, user_context=None) -> FilesSourceProperties:
+    def _serialization_props(self, user_context: "OptionalUserContext" = None) -> FilesSourceProperties:
         """Serialize properties needed to recover plugin configuration.
         Used in to_dict method if for_serialization is True.
         """
 
-    def list(self, path="/", recursive=False, user_context=None, opts: Optional[FilesSourceOptions] = None):
+    def list(
+        self,
+        path="/",
+        recursive=False,
+        user_context: "OptionalUserContext" = None,
+        opts: Optional[FilesSourceOptions] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[AnyRemoteEntry], int]:
         self._check_user_access(user_context)
-        return self._list(path, recursive, user_context, opts)
+        if not self.supports_pagination and (limit is not None or offset is not None):
+            raise RequestParameterInvalidException("Pagination is not supported by this file source.")
+        if not self.supports_search and query:
+            raise RequestParameterInvalidException("Server-side search is not supported by this file source.")
+        if not self.supports_sorting and sort_by:
+            raise RequestParameterInvalidException("Server-side sorting is not supported by this file source.")
+        if self.supports_pagination:
+            if limit is not None and limit < 1:
+                raise RequestParameterInvalidException("Limit must be greater than 0.")
+            if offset is not None and offset < 0:
+                raise RequestParameterInvalidException("Offset must be greater than or equal to 0.")
 
-    def _list(self, path="/", recursive=False, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        pass
+        return self._list(path, recursive, user_context, opts, limit, offset, query)
 
-    def write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        if not self.get_writable():
-            raise Exception("Cannot write to a non-writable file source.")
+    def _list(
+        self,
+        path="/",
+        recursive=False,
+        user_context: "OptionalUserContext" = None,
+        opts: Optional[FilesSourceOptions] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[AnyRemoteEntry], int]:
+        raise NotImplementedError()
+
+    def create_entry(
+        self,
+        entry_data: EntryData,
+        user_context: "OptionalUserContext" = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ) -> Entry:
+        self._ensure_writeable()
+        self._check_user_access(user_context)
+        return self._create_entry(entry_data, user_context, opts)
+
+    def _create_entry(
+        self,
+        entry_data: EntryData,
+        user_context: "OptionalUserContext" = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ) -> Entry:
+        """Create a new entry (directory) in the file source.
+
+        The file source must be writeable.
+        This function can be overridden by subclasses to provide a way of creating entries in the file source.
+        """
+        raise NotImplementedError()
+
+    def write_from(
+        self,
+        target_path: str,
+        native_path: str,
+        user_context: "OptionalUserContext" = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ):
+        self._ensure_writeable()
         self._check_user_access(user_context)
         self._write_from(target_path, native_path, user_context=user_context, opts=opts)
 
     @abc.abstractmethod
-    def _write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
+    def _write_from(
+        self,
+        target_path: str,
+        native_path: str,
+        user_context: "OptionalUserContext" = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ):
         pass
 
-    def realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
+    def realize_to(
+        self,
+        source_path: str,
+        native_path: str,
+        user_context: "OptionalUserContext" = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ):
         self._check_user_access(user_context)
         self._realize_to(source_path, native_path, user_context, opts=opts)
 
     @abc.abstractmethod
-    def _realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
+    def _realize_to(
+        self,
+        source_path: str,
+        native_path: str,
+        user_context: "OptionalUserContext" = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ):
         pass
+
+    def _ensure_writeable(self):
+        if not self.get_writable():
+            raise Exception("Cannot write to a non-writable file source.")
 
     def _check_user_access(self, user_context):
         """Raises an exception if the given user doesn't have the rights to access this file source.
@@ -320,8 +552,13 @@ class BaseFilesSource(FilesSource):
         if user_context is not None and not self.user_has_access(user_context):
             raise ItemAccessibilityException(f"User {user_context.username} has no access to file source.")
 
-    def _evaluate_prop(self, prop_val: Any, user_context):
+    def _evaluate_prop(self, prop_val: Any, user_context: "OptionalUserContext"):
         rval = prop_val
+
+        # just return if we've disabled templating for this plugin
+        if self.disable_templating:
+            return rval
+
         if isinstance(prop_val, str) and "$" in prop_val:
             template_context = dict(
                 user=user_context,
@@ -336,12 +573,12 @@ class BaseFilesSource(FilesSource):
 
         return rval
 
-    def _user_has_required_roles(self, user_context) -> bool:
+    def _user_has_required_roles(self, user_context: "FileSourcesUserContext") -> bool:
         if self.requires_roles:
             return self._evaluate_security_rules(self.requires_roles, user_context.role_names)
         return True
 
-    def _user_has_required_groups(self, user_context) -> bool:
+    def _user_has_required_groups(self, user_context: "FileSourcesUserContext") -> bool:
         if self.requires_groups:
             return self._evaluate_security_rules(self.requires_groups, user_context.group_names)
         return True
@@ -364,10 +601,9 @@ class BaseFilesSource(FilesSource):
             raise ConfigurationError(_get_error_msg_for("requires_groups"))
 
 
-def uri_join(*args):
+def uri_join(*args: str) -> str:
     # url_join doesn't work with non-standard scheme
-    arg0 = args[0]
-    if "://" in arg0:
+    if "://" in (arg0 := args[0]):
         scheme, path = arg0.split("://", 1)
         rval = f"{scheme}://{slash_join(path, *args[1:]) if path else slash_join(*args[1:])}"
     else:
@@ -375,6 +611,6 @@ def uri_join(*args):
     return rval
 
 
-def slash_join(*args):
+def slash_join(*args: str) -> str:
     # https://codereview.stackexchange.com/questions/175421/joining-strings-to-form-a-url
     return "/".join(arg.strip("/") for arg in args)

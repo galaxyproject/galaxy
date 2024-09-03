@@ -21,7 +21,7 @@ TEST_METADATA_LINE = "set_metadata_and_stuff.sh"
 TEST_FILES_PATH = "file_path"
 TEE_REDIRECT = '> "$__out" 2> "$__err"'
 RETURN_CODE_CAPTURE = "; return_code=$?; echo $return_code > galaxy_1.ec"
-CP_WORK_DIR_OUTPUTS = '; \nif [ -f "foo" ] ; then cp "foo" "bar" ; fi'
+CP_WORK_DIR_OUTPUTS = '; \nif [ -f "foo" -a -f "bar" ] ; then cp "foo" "bar" ; fi'
 
 
 class TestCommandFactory(TestCase):
@@ -64,12 +64,7 @@ class TestCommandFactory(TestCase):
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
         self._assert_command_is(
-            self._surround_command(
-                "{} {}/tool_script.sh".format(
-                    self.job_wrapper.shell,
-                    self.job_wrapper.working_directory,
-                )
-            )
+            self._surround_command(f"{self.job_wrapper.shell} {self.job_wrapper.working_directory}/tool_script.sh")
         )
         self.__assert_tool_script_is(f"#!/bin/sh\n{dep_commands[0]}; {MOCK_COMMAND_LINE}")
 
@@ -105,7 +100,7 @@ class TestCommandFactory(TestCase):
         self.workdir_outputs = [("foo*bar", "foo_x_bar")]
         self._assert_command_is(
             self._surround_command(
-                MOCK_COMMAND_LINE, '; \nif [ -f "foo"*"bar" ] ; then cp "foo"*"bar" "foo_x_bar" ; fi'
+                MOCK_COMMAND_LINE, '; \nif [ -f "foo"*"bar" -a -f "foo_x_bar" ] ; then cp "foo"*"bar" "foo_x_bar" ; fi'
             )
         )
 

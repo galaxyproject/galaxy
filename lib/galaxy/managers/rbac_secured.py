@@ -6,6 +6,7 @@ from galaxy import (
     security,
 )
 from galaxy.managers import users
+from galaxy.model.base import transaction
 
 log = logging.getLogger(__name__)
 
@@ -41,10 +42,10 @@ class RBACPermission:
             error_info = dict(model_class=item.__class__, id=getattr(item, "id", None))
             raise self.permission_failed_error_class(**error_info)
 
-    def grant(self, item, user, flush=True):
+    def grant(self, item, user, flush: bool = True):
         raise NotImplementedError("abstract parent class")
 
-    def revoke(self, item, user, flush=True):
+    def revoke(self, item, user, flush: bool = True):
         raise NotImplementedError("abstract parent class")
 
     def _role_is_permitted(self, item, role):
@@ -110,7 +111,9 @@ class DatasetRBACPermission(RBACPermission):
         for role in roles:
             permissions.append(self._create(dataset, role, flush=False))
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return permissions
 
     def clear(self, dataset, flush=True):
@@ -122,7 +125,9 @@ class DatasetRBACPermission(RBACPermission):
         permission = self.permissions_class(self.action_name, dataset, role)
         self.session().add(permission)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return permission
 
     def _roles(self, dataset):
@@ -142,7 +147,9 @@ class DatasetRBACPermission(RBACPermission):
             else:
                 self.session().delete(permission)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
 
     def _revoke_role(self, dataset, role, flush=True):
         role_permissions = self.by_roles(dataset, [role])
@@ -190,13 +197,13 @@ class ManageDatasetRBACPermission(DatasetRBACPermission):
                 return True
         return False
 
-    def grant(self, dataset, user, flush=True):
+    def grant(self, item, user, flush: bool = True):
         private_role = self._user_private_role(user)
-        return self._grant_role(dataset, private_role, flush=flush)
+        return self._grant_role(item, private_role, flush=flush)
 
-    def revoke(self, dataset, user, flush=True):
+    def revoke(self, item, user, flush: bool = True):
         private_role = self._user_private_role(user)
-        return self._revoke_role(dataset, private_role, flush=flush)
+        return self._revoke_role(item, private_role, flush=flush)
 
     # ---- private
     def _role_is_permitted(self, dataset, role):
@@ -208,8 +215,7 @@ class ManageDatasetRBACPermission(DatasetRBACPermission):
         return self.user_manager.private_role(user)
 
     def _grant_role(self, dataset, role, flush=True):
-        existing = self.by_role(dataset, role)
-        if existing:
+        if existing := self.by_role(dataset, role):
             return existing
         return self._create(dataset, role, flush=flush)
 
@@ -247,13 +253,13 @@ class AccessDatasetRBACPermission(DatasetRBACPermission):
             or self._user_has_all_roles(user, current_roles)
         )
 
-    def grant(self, item, user):
+    def grant(self, item, user, flush: bool = True):
         pass
         # not so easy
         # need to check for a sharing role
         # then add the new user to it
 
-    def revoke(self, item, user):
+    def revoke(self, item, user, flush: bool = True):
         pass
         # not so easy
 

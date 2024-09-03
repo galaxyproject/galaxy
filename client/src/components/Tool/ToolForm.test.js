@@ -1,16 +1,19 @@
-import MockAdapter from "axios-mock-adapter";
-import axios from "axios";
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "tests/jest/helpers";
-import ToolForm from "./ToolForm";
-import MockConfigProvider from "../providers/MockConfigProvider";
-import MockCurrentHistory from "components/providers/MockCurrentHistory";
-import Vue from "vue";
-import Vuex from "vuex";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { historyStore } from "store/historyStore";
-import { configStore } from "store/configStore";
-import { useUserStore } from "stores/userStore";
+import { getLocalVue } from "tests/jest/helpers";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import MockCurrentHistory from "@/components/providers/MockCurrentHistory";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+
+import ToolForm from "./ToolForm.vue";
+
+const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
 const pinia = createPinia();
@@ -19,29 +22,31 @@ describe("ToolForm", () => {
     let wrapper;
     let axiosMock;
     let userStore;
+    let historyStore;
 
     beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
+        server.use(
+            http.get("/api/configuration", ({ response }) => {
+                return response.untyped(
+                    HttpResponse.json({
+                        enable_tool_source_display: false,
+                        object_store_allows_id_selection: false,
+                    })
+                );
+            })
+        );
 
-        const toolData = {
+        axiosMock = new MockAdapter(axios);
+        axiosMock.onGet(`/api/tools/tool_id/build?tool_version=version`).reply(200, {
             id: "tool_id",
             name: "tool_name",
             version: "version",
             inputs: [],
             help: "help_text",
-        };
-        axiosMock.onGet(`/api/tools/tool_id/build?tool_version=version`).reply(200, toolData);
-        axiosMock.onGet(`/api/webhooks`).reply(200, []);
-
-        const citations = [];
-        axiosMock.onGet(`/api/tools/tool_id/citations`).reply(200, citations);
-
-        const store = new Vuex.Store({
-            modules: {
-                config: mockModule(configStore),
-                history: mockModule(historyStore, { currentHistoryId: "fakehistory", histories: { fakehistory: {} } }),
-            },
+            creator: [{ class: "Person", givenName: "FakeName", familyName: "FakeSurname", email: "fakeEmail" }],
         });
+        axiosMock.onGet(`/api/webhooks`).reply(200, []);
+        axiosMock.onGet(`/api/tools/tool_id/citations`).reply(200, []);
 
         wrapper = mount(ToolForm, {
             propsData: {
@@ -50,16 +55,17 @@ describe("ToolForm", () => {
             },
             localVue,
             stubs: {
-                UserHistories: MockCurrentHistory({ id: "fakehistory" }),
-                ConfigProvider: MockConfigProvider({ id: "fakeconfig" }),
+                UserHistories: MockCurrentHistory({ id: "fakeHistory" }),
                 FormDisplay: true,
             },
-            store,
-            provide: { store },
             pinia,
         });
         userStore = useUserStore();
-        userStore.currentUser = { id: "fakeUser" };
+        userStore.currentUser = getFakeRegisteredUser({ id: "fakeUser" });
+
+        historyStore = useHistoryStore();
+        historyStore.setHistories([{ id: "fakeHistory" }]);
+        historyStore.setCurrentHistoryId("fakeHistory");
     });
 
     afterEach(() => {
@@ -68,12 +74,14 @@ describe("ToolForm", () => {
     });
 
     it("shows props", async () => {
-        await Vue.nextTick();
+        await flushPromises();
         const button = wrapper.find(".btn-primary");
         expect(button.attributes("title")).toBe("Run tool: tool_name (version)");
         const dropdown = wrapper.findAll(".dropdown-item");
         expect(dropdown.length).toBe(2);
         const help = wrapper.find(".form-help");
         expect(help.text()).toBe("help_text");
+        const creator = wrapper.find(".creative-work-creator");
+        expect(creator.text()).toContain("FakeName FakeSurname");
     });
 });

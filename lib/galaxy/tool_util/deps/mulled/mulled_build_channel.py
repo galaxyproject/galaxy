@@ -22,8 +22,7 @@ import subprocess
 import sys
 import time
 
-import requests
-
+from galaxy.util import requests
 from ._cli import arg_parser
 from .mulled_build import (
     add_build_arguments,

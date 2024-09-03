@@ -3,6 +3,7 @@
 This file defines the baked in resource mapper types, and this package contains an
 example of a more open, pluggable approach with greater control.
 """
+
 import functools
 import logging
 import os
@@ -70,7 +71,7 @@ def _resource_parameters_by_group(trans, **kwds):
         for group_name, group_def in by_group.get("groups", {}).items():
             if group_name == default_group or group_name in user_groups:
                 for tag in group_def:
-                    if type(tag) is dict:
+                    if isinstance(tag, dict):
                         if tag.get("name") not in user_permissions:
                             user_permissions[tag.get("name")] = {}
                         for option in tag.get("options"):
@@ -131,7 +132,7 @@ def validate_by_group_workflow_parameters_mapper(by_group, workflow_resource_par
             )
         for group in by_group["groups"]:
             for attrib in by_group["groups"][group]:
-                if type(attrib) is dict:
+                if isinstance(attrib, dict):
                     if "name" not in attrib:
                         raise Exception(
                             "'workflow_resource_params_mapper' YAML file is malformed, "

@@ -1,55 +1,44 @@
+<script setup lang="ts">
+import { BCard, BTab, BTabs } from "bootstrap-vue";
+
+import { useFileSources } from "@/composables/fileSources";
+
+import ToLink from "./ToLink.vue";
+import ToRemoteFile from "./ToRemoteFile.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+const { isLoading: initializingFileSources, hasWritable: hasWritableFileSources } = useFileSources();
+
+interface ExportHistoryProps {
+    historyId: string;
+}
+
+const props = defineProps<ExportHistoryProps>();
+</script>
 <template>
     <span class="history-export-component">
         <h1 class="h-lg">Export history archive</h1>
         <span v-if="initializingFileSources">
-            <loading-span :message="initializeFileSourcesMessage" />
+            <LoadingSpan message="Loading file sources configuration from Galaxy server." />
         </span>
         <span v-else-if="hasWritableFileSources">
-            <b-card no-body>
-                <b-tabs pills card vertical>
-                    <b-tab title="to a link" title-link-class="tab-export-to-link" active>
+            <BCard no-body>
+                <BTabs pills card vertical class="history-export-tabs">
+                    <BTab title="to a link" title-link-class="tab-export-to-link" active>
                         <b-card-text>
-                            <ToLink :history-id="historyId" />
+                            <ToLink :history-id="props.historyId" />
                         </b-card-text>
-                    </b-tab>
-                    <b-tab title="to a remote file" title-link-class="tab-export-to-file">
+                    </BTab>
+                    <BTab title="to a remote file" title-link-class="tab-export-to-file">
                         <b-card-text>
-                            <ToRemoteFile :history-id="historyId" />
+                            <ToRemoteFile :history-id="props.historyId" />
                         </b-card-text>
-                    </b-tab>
-                </b-tabs>
-            </b-card>
+                    </BTab>
+                </BTabs>
+            </BCard>
         </span>
         <span v-else>
-            <ToLink :history-id="historyId" />
+            <ToLink :history-id="props.historyId" />
         </span>
     </span>
 </template>
-
-<script>
-import { BCard, BTabs, BTab } from "bootstrap-vue";
-import ToLink from "./ToLink.vue";
-import ToRemoteFile from "./ToRemoteFile.vue";
-
-import exportsMixin from "components/Common/exportsMixin";
-
-export default {
-    components: {
-        ToLink,
-        ToRemoteFile,
-        BCard,
-        BTabs,
-        BTab,
-    },
-    mixins: [exportsMixin],
-    props: {
-        historyId: {
-            type: String,
-            required: true,
-        },
-    },
-    async mounted() {
-        await this.initializeFilesSources();
-    },
-};
-</script>

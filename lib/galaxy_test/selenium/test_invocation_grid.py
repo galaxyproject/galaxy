@@ -19,22 +19,20 @@ class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
             history_id=history_id,
             assert_ok=True,
             wait=True,
-            invocations=2,
+            invocations=30,
         )
         gx_selenium_context.navigate_to_invocations()
-        self._assert_showing_n_invocations(2)
-
-        # by default the pager only appears when there are too many invocations
-        # for one page - so verify it is absent and then swap to showing just
-        # one invocation per page.
         invocations = gx_selenium_context.components.invocations
-        invocations.pager.wait_for_absent_or_hidden()
-        self.re_get_with_query_params("rows_per_page=1")
-        self._assert_showing_n_invocations(1)
+        invocations.invocations_table.wait_for_visible()
+
+        # shows a maximum of 25 invocations per page
+        self._assert_showing_n_invocations(25)
         invocations.pager.wait_for_visible()
         self.screenshot("invocations_paginated_first_page")
         self._next_page(invocations)
         self._assert_current_page_is(invocations, 2)
+        # shows the remaining 5 invocations on the second page
+        self._assert_showing_n_invocations(5)
         self.screenshot("invocations_paginated_next_page")
         self._previous_page(invocations)
         self._assert_current_page_is(invocations, 1)

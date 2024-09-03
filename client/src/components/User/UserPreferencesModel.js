@@ -27,18 +27,6 @@ export const getUserPreferencesModel = (user_id) => {
             redirect: "/user",
             disabled: config.use_remote_user || !config.enable_account_interface,
         },
-        permissions: {
-            title: _l("Set Dataset Permissions for New Histories"),
-            id: "edit-preferences-permissions",
-            description: _l(
-                "Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored."
-            ),
-            url: `/api/users/${user_id}/permissions/inputs`,
-            icon: "fa-users",
-            submitTitle: "Save Permissions",
-            redirect: "/user",
-            disabled: config.single_user,
-        },
         toolbox_filters: {
             title: _l("Manage Toolbox Filters"),
             id: "edit-preferences-toolbox-filters",

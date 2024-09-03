@@ -46,15 +46,15 @@ class BaseExportTestCase(BaseTestCase):
 
     @contextmanager
     def _expect_get_history(self, history):
-        self.app.history_manager.get_accessible.return_value = history  # type: ignore[attr-defined,union-attr]
+        self.app.history_manager.get_accessible.return_value = history
         yield
-        self.app.history_manager.get_accessible.assert_called_once_with(history.id, self.trans.user)  # type: ignore[attr-defined,union-attr]
+        self.app.history_manager.get_accessible.assert_called_once_with(history.id, self.trans.user)
 
     @contextmanager
     def _expect_get_hda(self, hda, hda_id=1):
-        self.app.hda_manager.get_accessible.return_value = hda  # type: ignore[attr-defined,union-attr]
+        self.app.hda_manager.get_accessible.return_value = hda
         yield
-        self.app.hda_manager.get_accessible.assert_called_once_with(hda.id, self.trans.user)  # type: ignore[attr-defined,union-attr]
+        self.app.hda_manager.get_accessible.assert_called_once_with(hda.id, self.trans.user)
 
     def _new_pair_collection(self):
         hda_forward = self._new_hda(contents="Forward dataset.")
@@ -222,7 +222,7 @@ history_dataset_type(history_dataset_id=1)
         hdca.collection = self._new_pair_collection()
         hdca.id = 1
 
-        self.trans.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca  # type: ignore[attr-defined,union-attr]
+        self.trans.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca
         example = """# Example
 ```galaxy
 history_dataset_collection_display(history_dataset_collection_id=1)
@@ -243,7 +243,7 @@ history_dataset_collection_display(history_dataset_collection_id=1)
         stored_workflow.latest_workflow = workflow
         workflow_step_0 = model.WorkflowStep()
         workflow.steps = [workflow_step_0]
-        self.trans.app.workflow_manager.get_stored_accessible_workflow.return_value = stored_workflow  # type: ignore[attr-defined,union-attr]
+        self.trans.app.workflow_manager.get_stored_accessible_workflow.return_value = stored_workflow
         example = """# Example
 ```galaxy
 workflow_display(workflow_id=1)
@@ -278,9 +278,10 @@ invocation_time(invocation_id=1)
 ```
 """
         invocation = self._new_invocation()
-        self.app.workflow_manager.get_invocation.side_effect = [invocation]  # type: ignore[attr-defined,union-attr]
+        self.app.workflow_manager.get_invocation.side_effect = [invocation]
         result = self._to_basic(example)
-        assert f"\n    {invocation.create_time.isoformat()}" in result
+        expectedtime = invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S")
+        assert f"\n    {expectedtime}" in result
 
     def test_job_parameters(self):
         job = model.Job()
@@ -355,7 +356,7 @@ history_dataset_display(history_dataset_id=1)
 history_dataset_display(history_dataset_id=2)
 ```
 """
-        self.app.hda_manager.get_accessible.side_effect = [hda, hda2]  # type: ignore[attr-defined,union-attr]
+        self.app.hda_manager.get_accessible.side_effect = [hda, hda2]
         export_markdown, extra_data = self._ready_export(example)
         assert "history_datasets" in extra_data
         assert len(extra_data["history_datasets"]) == 2
@@ -368,7 +369,7 @@ history_dataset_display(history_dataset_id=2)
         hdca.history_id = 1
         hdca.collection_id = hdca.collection.id
 
-        self.trans.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca  # type: ignore[attr-defined,union-attr]
+        self.trans.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca
         example = """# Example
 ```galaxy
 history_dataset_collection_display(history_dataset_collection_id=1)
@@ -403,7 +404,7 @@ generate_time()
 
     def test_get_invocation_time(self):
         invocation = self._new_invocation()
-        self.app.workflow_manager.get_invocation.side_effect = [invocation]  # type: ignore[attr-defined,union-attr]
+        self.app.workflow_manager.get_invocation.side_effect = [invocation]
         example = """# Example
 ```galaxy
 invocation_time(invocation_id=1)
@@ -412,7 +413,9 @@ invocation_time(invocation_id=1)
         result, extra_data = self._ready_export(example)
         assert "invocations" in extra_data
         assert "create_time" in extra_data["invocations"]["be8be0fd2ce547f6"]
-        assert extra_data["invocations"]["be8be0fd2ce547f6"]["create_time"] == invocation.create_time.isoformat()
+        assert extra_data["invocations"]["be8be0fd2ce547f6"]["create_time"] == invocation.create_time.strftime(
+            "%Y-%m-%d, %H:%M:%S"
+        )
 
     def _ready_export(self, example):
         return ready_galaxy_markdown_for_export(self.trans, example)

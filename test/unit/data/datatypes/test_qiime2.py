@@ -22,7 +22,7 @@ def test_qza_set_meta():
     qza = QIIME2Artifact()
     with get_input_files("qiime2.qza") as input_files:
         dataset = MockDataset(1)
-        dataset.file_name = input_files[0]
+        dataset.set_file_name(input_files[0])
 
         qza.set_meta(dataset)
 
@@ -37,7 +37,10 @@ def test_qza_set_peek():
     qza = QIIME2Artifact()
     with get_input_files("qiime2.qza") as input_files:
         dataset = MockDataset(1)
-        dataset.file_name = input_files[0]
+        dataset.set_file_name(input_files[0])
+        dataset.metadata.semantic_type = None
+        dataset.metadata.uuid = None
+        assert qza.display_peek(dataset) == "Peek unavailable"
 
         qza.set_meta(dataset)
         qza.set_peek(dataset)
@@ -64,7 +67,7 @@ def test_qzv_set_meta():
     qzv = QIIME2Visualization()
     with get_input_files("qiime2.qzv") as input_files:
         dataset = MockDataset(1)
-        dataset.file_name = input_files[0]
+        dataset.set_file_name(input_files[0])
 
         qzv.set_meta(dataset)
 
@@ -78,7 +81,7 @@ def test_qzv_set_peek():
     qzv = QIIME2Visualization()
     with get_input_files("qiime2.qzv") as input_files:
         dataset = MockDataset(1)
-        dataset.file_name = input_files[0]
+        dataset.set_file_name(input_files[0])
 
         qzv.set_meta(dataset)
         qzv.set_peek(dataset)
@@ -110,7 +113,7 @@ def test_qiime2tabular_set_meta():
     q2md = QIIME2Metadata()
     with get_input_files("qiime2.qiime2.tabular") as input_files:
         dataset = MockDataset(1)
-        dataset.file_name = input_files[0]
+        dataset.set_file_name(input_files[0])
 
         q2md.set_meta(dataset)
 
@@ -144,7 +147,7 @@ def test_strip_properties_single():
 
 
 def test_strip_properties_double():
-    double_expression = 'FeatureData[Taxonomy % Properties("SILVIA"), ' 'DistanceMatrix % Axes("ASV", "ASV")]'
+    double_expression = 'FeatureData[Taxonomy % Properties("SILVIA"), DistanceMatrix % Axes("ASV", "ASV")]'
     stripped_expression = "FeatureData[Taxonomy, DistanceMatrix]"
 
     reconstructed_expression = _strip_properties(double_expression)
@@ -153,7 +156,7 @@ def test_strip_properties_double():
 
 
 def test_strip_properties_nested():
-    nested_expression = "Tuple[FeatureData[Taxonomy % " 'Properties("SILVIA")] % Axes("ASV", "ASV")]'
+    nested_expression = 'Tuple[FeatureData[Taxonomy % Properties("SILVIA")] % Axes("ASV", "ASV")]'
     stripped_expression = "Tuple[FeatureData[Taxonomy]]"
 
     reconstructed_expression = _strip_properties(nested_expression)
@@ -174,7 +177,7 @@ def test_strip_properties_complex():
 
 
 def test_strip_properties_keeps_different_binop():
-    expression_with_different_binop = 'FeatureData[Taxonomy % Properties("SILVIA"), ' "Taxonomy & Properties]"
+    expression_with_different_binop = 'FeatureData[Taxonomy % Properties("SILVIA"), Taxonomy & Properties]'
     stripped_expression = "FeatureData[Taxonomy, Taxonomy & Properties]"
 
     reconstructed_expression = _strip_properties(expression_with_different_binop)

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
+
 import { keyedColorScheme } from "@/utils/color";
 
 interface TagProps {
@@ -19,7 +20,6 @@ const emit = defineEmits<{
     (e: "deleted", tag: string): void;
 }>();
 
-//@ts-ignore bad types
 library.add(faTimes);
 
 const color = computed(() => keyedColorScheme(props.option));
@@ -42,7 +42,8 @@ const searched = computed(() => props.option?.toLowerCase() === props.search?.to
         :data-option="props.option"
         :class="{ editable, clickable, searched }"
         :style="`--color-primary: ${color.primary}; --color-darker: ${color.darker}; --color-dimmed: ${color.dimmed}`"
-        @click.prevent.stop="onClick">
+        @click.prevent.stop="onClick"
+        @mousedown.prevent.stop>
         <span :class="{ 'font-weight-bold': named }">
             {{ props.option }}
         </span>

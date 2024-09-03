@@ -6,7 +6,7 @@ class Job:
     def __init__(self):
         self.input_datasets = []
         self.input_library_datasets = []
-        self.param_values = dict()
+        self.param_values = {}
         self.parameters = []
 
     def get_param_values(self, app, ignore_errors=False):
@@ -34,14 +34,17 @@ class NotAFile:
 
 class Dataset:
     def __init__(self, file_name, file_ext, value):
-        self.file_name = file_name
+        self.file_name_ = file_name
         self.datatype = Datatype(file_ext)
         self.ext = file_ext
-        self.metadata = dict()
+        self.metadata = {}
         self.metadata["sequences"] = value
 
     def get_metadata(self):
         return self.metadata
+
+    def get_file_name(self, sync_cache=True):
+        return self.file_name_
 
 
 class Datatype:

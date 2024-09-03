@@ -2,6 +2,7 @@
 Middleware that profiles the request with cProfile and displays profiling
 information at the bottom of each page.
 """
+
 import cProfile
 import pstats
 import threading
@@ -37,7 +38,6 @@ show profile output: <a href="javascript:show_inline();">inline</a> | <a href="j
 
 
 class ProfileMiddleware:
-
     """
     Middleware that profiles all requests.
 
@@ -171,7 +171,7 @@ def func_std_string(func_name):
         # special case for built-in functions
         name = func_name[2]
         if name.startswith("<") and name.endswith(">"):
-            return "{%s}" % name[1:-1]
+            return f"{{{name[1:-1]}}}"
         else:
             return name
     else:

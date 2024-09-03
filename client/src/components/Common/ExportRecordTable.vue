@@ -1,27 +1,31 @@
-<script setup>
-import { computed, ref } from "vue";
-import { BCard, BButton, BButtonGroup, BButtonToolbar, BCollapse, BTable, BLink } from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+<script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
-    faExclamationCircle,
     faCheckCircle,
     faDownload,
+    faExclamationCircle,
     faFileImport,
-    faSpinner,
     faLink,
+    faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BButtonGroup, BButtonToolbar, BCard, BCollapse, BLink, BTable } from "bootstrap-vue";
+import { computed, ref } from "vue";
 
-library.add(faExclamationCircle, faCheckCircle, faDownload, faFileImport, faSpinner, faLink);
+import { type ExportRecord } from "./models/exportRecordModel";
 
-const props = defineProps({
-    records: {
-        type: Array,
-        required: true,
-    },
-});
+library.add(faCheckCircle, faDownload, faExclamationCircle, faFileImport, faLink, faSpinner);
 
-const emit = defineEmits(["onReimport", "onDownload"]);
+interface Props {
+    records: ExportRecord[];
+}
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "onReimport", record: ExportRecord): void;
+    (e: "onDownload", record: ExportRecord): void;
+    (e: "onCopyDownloadLink", record: ExportRecord): void;
+}>();
 
 const fields = [
     { key: "elapsedTime", label: "Exported" },
@@ -33,109 +37,120 @@ const fields = [
 ];
 
 const isExpanded = ref(false);
+
 const title = computed(() => (isExpanded.value ? `Hide old export records` : `Show old export records`));
 
-async function reimportObject(record) {
+async function reimportObject(record: ExportRecord) {
     emit("onReimport", record);
 }
 
-function downloadObject(record) {
+function downloadObject(record: ExportRecord) {
     emit("onDownload", record);
 }
 
-function copyDownloadLink(record) {
+function copyDownloadLink(record: ExportRecord) {
     emit("onCopyDownloadLink", record);
 }
 </script>
 
 <template>
     <div>
-        <b-link
+        <BLink
             :class="isExpanded ? null : 'collapsed'"
             :aria-expanded="isExpanded ? 'true' : 'false'"
             aria-controls="collapse-previous"
             @click="isExpanded = !isExpanded">
             {{ title }}
-        </b-link>
-        <b-collapse id="collapse-previous" v-model="isExpanded">
-            <b-card>
-                <b-table :items="props.records" :fields="fields">
+        </BLink>
+
+        <BCollapse id="collapse-previous" v-model="isExpanded">
+            <BCard>
+                <BTable :items="props.records" :fields="fields">
                     <template v-slot:cell(elapsedTime)="row">
                         <span :title="row.item.date">{{ row.value }}</span>
                     </template>
+
                     <template v-slot:cell(format)="row">
                         <span>{{ row.item.modelStoreFormat }}</span>
                     </template>
+
                     <template v-slot:cell(expires)="row">
                         <span v-if="row.item.hasExpired">Expired</span>
-                        <span v-else-if="row.item.expirationDate" :title="row.item.expirationDate">{{
-                            row.item.expirationElapsedTime
-                        }}</span>
+
+                        <span v-else-if="row.item.expirationDate" :title="row.item.expirationDate">
+                            {{ row.item.expirationElapsedTime }}
+                        </span>
+
                         <span v-else>No</span>
                     </template>
+
                     <template v-slot:cell(isUpToDate)="row">
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-if="row.item.isUpToDate"
-                            icon="check-circle"
+                            :icon="faCheckCircle"
                             class="text-success"
                             title="This export record contains the latest changes." />
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-else
-                            icon="exclamation-circle"
+                            :icon="faExclamationCircle"
                             class="text-danger"
                             title="This export record is outdated. Please consider generating a new export if you need the latest changes." />
                     </template>
+
                     <template v-slot:cell(isReady)="row">
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-if="row.item.isReady"
-                            icon="check-circle"
+                            :icon="faCheckCircle"
                             class="text-success"
                             title="Ready to download or import." />
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-else-if="row.item.isPreparing"
-                            icon="spinner"
+                            :icon="faSpinner"
                             spin
                             class="text-info"
                             title="Exporting in progress..." />
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-else-if="row.item.hasExpired"
-                            icon="exclamation-circle"
+                            :icon="faExclamationCircle"
                             class="text-danger"
                             title="The export has expired." />
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-else
-                            icon="exclamation-circle"
+                            :icon="faExclamationCircle"
                             class="text-danger"
                             title="The export failed." />
                     </template>
+
                     <template v-slot:cell(actions)="row">
-                        <b-button-toolbar aria-label="Actions">
-                            <b-button-group>
-                                <b-button
+                        <BButtonToolbar aria-label="Actions">
+                            <BButtonGroup>
+                                <BButton
                                     v-b-tooltip.hover.bottom
                                     :disabled="!row.item.canDownload"
                                     title="Download"
                                     @click="downloadObject(row.item)">
-                                    <font-awesome-icon icon="download" />
-                                </b-button>
-                                <b-button
+                                    <FontAwesomeIcon :icon="faDownload" />
+                                </BButton>
+
+                                <BButton
                                     v-if="row.item.canDownload"
                                     title="Copy Download Link"
                                     @click.stop="copyDownloadLink(row.item)">
-                                    <font-awesome-icon icon="link" />
-                                </b-button>
-                                <b-button
+                                    <FontAwesomeIcon :icon="faLink" />
+                                </BButton>
+
+                                <BButton
                                     v-b-tooltip.hover.bottom
                                     :disabled="!row.item.canReimport"
                                     title="Reimport"
                                     @click="reimportObject(row.item)">
-                                    <font-awesome-icon icon="file-import" />
-                                </b-button>
-                            </b-button-group>
-                        </b-button-toolbar>
+                                    <FontAwesomeIcon :icon="faFileImport" />
+                                </BButton>
+                            </BButtonGroup>
+                        </BButtonToolbar>
                     </template>
-                </b-table>
-            </b-card>
-        </b-collapse>
+                </BTable>
+            </BCard>
+        </BCollapse>
     </div>
 </template>

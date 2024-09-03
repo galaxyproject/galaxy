@@ -139,7 +139,7 @@ class TestToolEvaluator(TestCase, UsesApp):
         self.tool.config_files.append(("conf1", None, "$thresh"))
         self.tool._command_line = "prog1 $conf1"
         self._set_compute_environment()
-        command_line, _, extra_filenames, _ = self.evaluator.build()
+        command_line, _, extra_filenames, *_ = self.evaluator.build()
         assert len(extra_filenames) == 1
         config_filename = extra_filenames[0]
         config_basename = os.path.basename(config_filename)
@@ -219,7 +219,7 @@ class TestToolEvaluator(TestCase, UsesApp):
 
     def _setup_test_bwa_job(self):
         def hda(id, name, path):
-            hda = HistoryDatasetAssociation(name=name, metadata=dict())
+            hda = HistoryDatasetAssociation(name=name, metadata={})
             hda.dataset = Dataset(id=id, external_filename=path)
             return hda
 
@@ -232,7 +232,7 @@ class TestToolEvaluator(TestCase, UsesApp):
 
 class MockHistoryDatasetAssociation(HistoryDatasetAssociation):
     def __init__(self, **kwds):
-        self._metadata = dict()
+        self._metadata = {}
         super().__init__(**kwds)
 
 

@@ -3,6 +3,7 @@
 These files define tool lists, sections, labels, etc... the elements of the
 Galaxy tool panel.
 """
+
 from abc import (
     ABCMeta,
     abstractmethod,

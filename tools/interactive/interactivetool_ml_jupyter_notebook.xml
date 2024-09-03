@@ -1,9 +1,9 @@
-<tool id="interactive_tool_ml_jupyter_notebook" tool_type="interactive" name="GPU enabled Interactive Jupyter Notebook for Machine Learning" version="@VERSION@" profile="22.01">
+<tool id="interactive_tool_ml_jupyter_notebook" tool_type="interactive" name="GPU-enabled Interactive Jupyter Notebook for Machine Learning" version="@VERSION@" profile="22.01">
     <macros>
-        <token name="@VERSION@">0.2</token>
+        <token name="@VERSION@">0.4</token>
     </macros>
     <requirements>
-        <container type="docker">docker.io/anupkumar/docker-ml-jupyterlab:galaxy-integration-@VERSION@</container>
+        <container type="docker">quay.io/galaxy/docker-ml-jupyterlab:galaxy-integration-@VERSION@</container>
     </requirements>
     <entry_points>
         <entry_point name="GPU enabled Interactive Jupyter Notebook for Machine Learning" requires_domain="True">
@@ -80,6 +80,15 @@ except FileNotFoundError:
     </configfiles>
     
     <command><![CDATA[
+        ## Check if the node has GPU. Activate CPU or GPU version of tensorflow
+        if nvidia-smi 2> /dev/null; then
+            echo An NVDIA GPU was detected. ;
+            ln -s \$PYTHON_LIB_PATH/tensorflow-GPU-cached \$PYTHON_LIB_PATH/tensorflow ;
+        else
+            echo No compatible GPU present. ;
+            ln -s \$PYTHON_LIB_PATH/tensorflow-CPU-cached \$PYTHON_LIB_PATH/tensorflow ;
+        fi &&
+
         python staging_script.py &&
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs &&
@@ -88,6 +97,10 @@ except FileNotFoundError:
         export HOME=/home/\$NB_USER/ &&
         export PATH=/home/\$NB_USER/.local/bin:\$PATH &&
         cp '${galaxy_input_startup_script}' /home/\$NB_USER/.ipython/profile_default/startup/02-load.py &&
+
+        ## Disable popups informing that "a new release is available"
+        jupyter labextension disable "@jupyterlab/apputils-extension:announcements" &&
+
         #set $output_notebook_name = 'jupyterlab_notebook.ipynb'
         #if $mode.mode_select == 'scratch':
             cp -r /home/\$NB_USER/data ./ &&
@@ -95,6 +108,10 @@ except FileNotFoundError:
             cp -r /home/\$NB_USER/notebooks ./ &&
             cp -r /home/\$NB_USER/usecases ./ &&
             cp -r /home/\$NB_USER/home_page.ipynb ./ &&
+            jupyter lab --no-browser --NotebookApp.shutdown_button=True
+        #elif $mode.mode_select == 'github':
+            cp /home/\$NB_USER/home_page.ipynb ./ &&
+            git clone $mode.repo_url &&
             jupyter lab --no-browser --NotebookApp.shutdown_button=True
         #else:
             #import re
@@ -119,9 +136,13 @@ except FileNotFoundError:
         <conditional name="mode">
             <param name="mode_select" type="select" label="Do you already have a notebook?" help="Select a set of default notebooks or load an existing one.">
                 <option value="scratch">Start with default notebooks</option>
+                <option value="pull_repo">Start with a code repository</option>
                 <option value="previous">Load an existing notebook</option>
             </param>
             <when value="scratch"/>
+            <when value="pull_repo">
+                <param name="repo_url" type="text" value="" label="Online code repository (Git-based) URL" optional="False" help="Provide URL of Git-based code repository (for example: GitHub repository URL such as https://github.com/anuprulez/gpu_jupyterlab_ct_image_segmentation)"/>
+            </when>
             <when value="previous">
                 <param name="ipynb" type="data" format="ipynb" label="IPython Notebook" required="true"/>
                 <param name="run_it" type="boolean" truevalue="true" falsevalue="false" label="Execute notebook and return a new one." help="This option is useful in workflows when you just want to execute a notebook and not dive into the webfrontend."/>

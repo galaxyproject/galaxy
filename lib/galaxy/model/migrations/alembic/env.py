@@ -11,6 +11,7 @@ from alembic.script import ScriptDirectory
 from alembic.script.base import Script
 from sqlalchemy import create_engine
 
+from galaxy.model import Base
 from galaxy.model.migrations import (
     GXY,
     ModelId,
@@ -18,7 +19,7 @@ from galaxy.model.migrations import (
 )
 
 config = context.config
-target_metadata = None  # Not implemented: used for autogenerate, which we don't use here.
+target_metadata = Base.metadata
 log = logging.getLogger(__name__)
 
 
@@ -57,7 +58,7 @@ def _run_migrations_invoked_via_script(run_migrations: Callable[[str], None]) ->
         if revision_str:
             if len(revision_str) > 1:
                 log.error("Please run the commmand for one revision at a time")
-            revision_str = revision_str[0]  # type: ignore[union-attr]
+            revision_str = revision_str[0]
 
     if revision_str.startswith(f"{GXY}@"):
         url = urls[GXY]

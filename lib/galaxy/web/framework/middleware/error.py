@@ -9,6 +9,7 @@ Error handler middleware
 When an exception is thrown from the wrapper application, this logs
 the exception and displays an error page.
 """
+import logging
 import sys
 import traceback
 from io import StringIO
@@ -25,6 +26,8 @@ from paste.exceptions import (
     reporter,
 )
 
+log = logging.getLogger(__name__)
+
 __all__ = ("ErrorMiddleware", "handle_exception")
 
 
@@ -37,7 +40,6 @@ NoDefault = _NoDefault()
 
 
 class ErrorMiddleware:
-
     """
     Error handling middleware
 
@@ -170,10 +172,11 @@ class ErrorMiddleware:
                 for expect in environ.get("paste.expected_exceptions", []):
                     if isinstance(exc_info[1], expect):
                         raise
+                log.exception("Uncaught Exception")
                 start_response("500 Internal Server Error", [("content-type", "text/html")], exc_info)
                 # @@: it would be nice to deal with bad content types here
                 response = self.exception_handler(exc_info, environ)
-                return [response]
+                return [response.encode(errors="ignore")]
             finally:
                 # clean up locals...
                 exc_info = None
@@ -184,7 +187,7 @@ class ErrorMiddleware:
             return app_iter
         return CatchingIter(app_iter, environ, sr_checker, self)
 
-    def exception_handler(self, exc_info, environ):
+    def exception_handler(self, exc_info, environ) -> str:
         simple_html_error = False
         if self.xmlhttp_key:
             get_vars = wsgilib.parse_querystring(environ)
@@ -193,7 +196,6 @@ class ErrorMiddleware:
         return handle_exception(
             exc_info,
             environ["wsgi.errors"],
-            html=True,
             debug_mode=self.debug_mode,
             error_email=self.error_email,
             error_log=self.error_log,
@@ -223,7 +225,6 @@ class ResponseStartChecker:
 
 
 class CatchingIter:
-
     """
     A wrapper around the application iterator that will catch
     exceptions raised by the a generator, or by the close method, and
@@ -286,7 +287,6 @@ class CatchingIter:
 
 
 class Supplement:
-
     """
     This is a supplement used to display standard WSGI information in
     the traceback.
@@ -344,7 +344,6 @@ class Supplement:
 def handle_exception(
     exc_info,
     error_stream,
-    html=True,
     debug_mode=False,
     error_email=None,
     error_log=None,
@@ -358,7 +357,7 @@ def handle_exception(
     error_message=None,
     simple_html_error=False,
     environ=None,
-):
+) -> str:
     """
     For exception handling outside of a web context
 
@@ -389,54 +388,51 @@ def handle_exception(
             smtp_use_tls=smtp_use_tls,
             subject_prefix=error_subject_prefix,
         )
-        rep_err = send_report(rep, exc_data, html=html)
+        rep_err = send_report(rep, exc_data, html=True)
         if rep_err:
             extra_data += rep_err
         else:
             reported = True
     if error_log:
         rep = reporter.LogReporter(filename=error_log)
-        rep_err = send_report(rep, exc_data, html=html)
+        rep_err = send_report(rep, exc_data, html=True)
         if rep_err:
             extra_data += rep_err
         else:
             reported = True
     if show_exceptions_in_wsgi_errors:
         rep = reporter.FileReporter(file=error_stream)
-        rep_err = send_report(rep, exc_data, html=html)
+        rep_err = send_report(rep, exc_data, html=True)
         if rep_err:
             extra_data += rep_err
         else:
             reported = True
     else:
         error_stream.write(f"Error - {exc_data.exception_type}: {exc_data.exception_value}\n")
-    if html:
-        if debug_mode and simple_html_error:
-            return_error = formatter.format_html(
-                exc_data, include_hidden_frames=False, include_reusable=False, show_extra_data=False
-            )
-            reported = True
-        elif debug_mode and not simple_html_error:
-            error_html = formatter.format_html(exc_data, include_hidden_frames=True, include_reusable=False)
-            head_html = formatter.error_css + formatter.hide_display_js
-            return_error = error_template(head_html, error_html, extra_data)
-            extra_data = ""
-            reported = True
-        else:
-            msg = (
-                error_message
-                or """
-            An error occurred.
-            """
-            )
-            extra = "<p><b>The error has been logged to our team.</b>"
-            if "sentry_event_id" in environ:
-                extra += " If you want to contact us about this error, please reference the following<br><br>"
-                extra += f"<b><large>GURU MEDITATION: #{environ['sentry_event_id']}</large></b>"
-            extra += "</p>"
-            return_error = error_template("", msg, extra)
+    if debug_mode and simple_html_error:
+        return_error = formatter.format_html(
+            exc_data, include_hidden_frames=False, include_reusable=False, show_extra_data=False
+        )
+        reported = True
+    elif debug_mode and not simple_html_error:
+        error_html = formatter.format_html(exc_data, include_hidden_frames=True, include_reusable=False)
+        head_html = formatter.error_css + formatter.hide_display_js
+        return_error = error_template(head_html, error_html, extra_data)
+        extra_data = ""
+        reported = True
     else:
-        return_error = None
+        msg = (
+            error_message
+            or """
+        An error occurred.
+        """
+        )
+        extra = "<p><b>The error has been logged to our team.</b>"
+        if "sentry_event_id" in environ:
+            extra += " If you want to contact us about this error, please reference the following<br><br>"
+            extra += f"<b><large>GURU MEDITATION: #{environ['sentry_event_id']}</large></b>"
+        extra += "</p>"
+        return_error = error_template("", msg, extra)
     if not reported and error_stream:
         err_report = formatter.format_text(exc_data, show_hidden_frames=True)
         err_report += f"\n{'-' * 60}\n"
@@ -453,13 +449,11 @@ def send_report(rep, exc_data, html=True):
         output = StringIO()
         traceback.print_exc(file=output)
         if html:
-            return """
-            <p>Additionally an error occurred while sending the {} report:
+            return f"""
+            <p>Additionally an error occurred while sending the {markupsafe.escape(str(rep))} report:
 
-            <pre>{}</pre>
-            </p>""".format(
-                markupsafe.escape(str(rep)), output.getvalue()
-            )
+            <pre>{output.getvalue()}</pre>
+            </p>"""
         else:
             return f"Additionally an error occurred while sending the {rep} report:\n{output.getvalue()}"
     else:
@@ -467,7 +461,7 @@ def send_report(rep, exc_data, html=True):
 
 
 def error_template(head_html, exception, extra):
-    return """
+    return f"""
     <!DOCTYPE HTML>
     <html>
     <head>
@@ -476,7 +470,7 @@ def error_template(head_html, exception, extra):
     .content {{ max-width: 720px; margin: auto; margin-top: 50px; }}
     </style>
     <title>Internal Server Error</title>
-    {}
+    {head_html}
     </head>
     <body>
     <div class="content">
@@ -484,16 +478,14 @@ def error_template(head_html, exception, extra):
 
     <h2>Galaxy was unable to successfully complete your request</h2>
 
-    <p>{}</p>
+    <p>{exception}</p>
 
     This may be an intermittent problem due to load or other unpredictable factors, reloading the page may address the problem.
 
-    {}
+    {extra}
     </div>
     </body>
-    </html>""".format(
-        head_html, exception, extra
-    )
+    </html>"""
 
 
 def make_error_middleware(app, global_conf, **kw):

@@ -513,13 +513,13 @@ execution:
       # trust tool's specified container - a destination wide override
       # can be set. This will cause all jobs on this destination to use
       # that docker image.
-      #docker_container_id_override: busybox:ubuntu-14.04
+      #docker_container_id_override: busybox:1.36.1-glibc
 
       # Likewise, if deployer wants to use docker for isolation and
       # does trust tool's specified container - but also wants tool's not
       # configured to run in a container the following option can provide
       # a fallback. -->
-      #docker_default_container_id: busybox:ubuntu-14.04
+      #docker_default_container_id: busybox:1.36.1-glibc
 
       # If the destination should be secured to only allow containerized jobs
       # the following parameter may be set for the job destination. Some tools
@@ -550,6 +550,13 @@ execution:
       # 'command: <command>' to execute a command on the node and use its output
       #container_monitor_get_ip_method: null
 
+      # Container resolvers can be defined per execution environment using
+      # either a yaml file
+      #container_resolvers_config_file: null
+      
+      # Alternatively the yaml can be defined inline using 
+      #container_resolvers:
+
     singularity_local:
       runner: local
       # Enable Singularity execution of tools with the follow property.
@@ -564,7 +571,7 @@ execution:
       # This doesn't work in Singularity because if any parent directory is mounted as ro
       # none of its children will be rw. So the job directory will be mounted rw for
       # Singularity.
-      #singularity_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>
+      #singularity_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro
 
       # You can configure singularity to run using sudo - this probably should not
       # be set and may be removed in the future.
@@ -626,7 +633,7 @@ execution:
         - type: docker
           shell: '/bin/sh'
           resolve_dependencies: false
-          identifier: 'busybox:ubuntu-14.04'
+          identifier: 'busybox:1.36.1-glibc'
         - type: singularity
           shell: '/bin/sh'
           resolve_dependencies: false
@@ -635,7 +642,7 @@ execution:
         - type: docker
           shell: '/bin/sh'
           resolve_dependencies: false
-          identifier: 'busybox:ubuntu-14.04'
+          identifier: 'busybox:1.36.1-glibc'
         - type: singularity
           shell: '/bin/sh'
           resolve_dependencies: false
@@ -792,7 +799,7 @@ execution:
       function: map_tool_to_destination
       rules_module: tpv.rules
       tpv_config_files:
-        - https://raw.githubusercontent.com/galaxyproject/total-perspective-vortex/main/tests/fixtures/mapping-sample.yml
+        - https://gxy.io/tpv/db.yml
         # - config/tpv_rules_local.yml
 
     docker_dispatch:

@@ -534,7 +534,7 @@ Environment=VIRTUAL_ENV=/srv/galaxy/venv PATH=/srv/galaxy/venv/bin:/usr/local/sb
 WantedBy=multi-user.target
 ```
 
-We can now enable and start the the Galaxy services with systemd:
+We can now enable and start the Galaxy services with systemd:
 
 ```console
 # systemctl enable galaxy

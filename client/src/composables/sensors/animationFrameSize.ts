@@ -1,8 +1,9 @@
-import { resolveUnref, type MaybeComputedRef } from "@vueuse/core";
-import { useAnimationFrameResizeObserver } from "./animationFrameResizeObserver";
+import { type MaybeRefOrGetter, resolveUnref } from "@vueuse/core";
 import { ref } from "vue";
 
-export function useAnimationFrameSize(target: MaybeComputedRef<HTMLElement | null>) {
+import { useAnimationFrameResizeObserver } from "./animationFrameResizeObserver";
+
+export function useAnimationFrameSize(target: MaybeRefOrGetter<HTMLElement | null>) {
     const width = ref(0);
     const height = ref(0);
 

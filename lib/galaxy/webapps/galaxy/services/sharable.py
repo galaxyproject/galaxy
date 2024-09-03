@@ -1,9 +1,12 @@
 import logging
 from typing import (
+    Dict,
     List,
     Optional,
     Set,
     Tuple,
+    Type,
+    Union,
 )
 
 from sqlalchemy import false
@@ -13,8 +16,22 @@ from galaxy.managers.sharable import (
     SharableModelManager,
     SharableModelSerializer,
 )
-from galaxy.model import User
+from galaxy.model import (
+    History,
+    Page,
+    StoredWorkflow,
+    User,
+    Visualization,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.notifications import (
+    NewSharedItemNotificationContent,
+    NotificationCreateData,
+    NotificationCreateRequest,
+    NotificationRecipients,
+    PersonalNotificationCategory,
+    SharableItemType,
+)
 from galaxy.schema.schema import (
     SetSlugPayload,
     ShareWithPayload,
@@ -23,8 +40,16 @@ from galaxy.schema.schema import (
     SharingStatus,
     UserIdentifier,
 )
+from galaxy.webapps.galaxy.services.notifications import NotificationService
 
 log = logging.getLogger(__name__)
+
+SharableItem = Union[
+    History,
+    StoredWorkflow,
+    Visualization,
+    Page,
+]
 
 
 class ShareableService:
@@ -36,9 +61,17 @@ class ShareableService:
     and have a compatible SharableModelSerializer implementation.
     """
 
-    def __init__(self, manager: SharableModelManager, serializer: SharableModelSerializer) -> None:
+    share_with_status_cls: Type[ShareWithStatus] = ShareWithStatus
+
+    def __init__(
+        self,
+        manager: SharableModelManager,
+        serializer: SharableModelSerializer,
+        notification_service: NotificationService,
+    ) -> None:
         self.manager = manager
         self.serializer = serializer
+        self.notification_service = notification_service
 
     def set_slug(self, trans, id: DecodedDatabaseIdField, payload: SetSlugPayload):
         item = self._get_item_by_id(trans, id)
@@ -80,11 +113,12 @@ class ShareableService:
     def share_with_users(self, trans, id: DecodedDatabaseIdField, payload: ShareWithPayload) -> ShareWithStatus:
         item = self._get_item_by_id(trans, id)
         users, errors = self._get_users(trans, payload.user_ids)
-        extra = self._share_with_options(trans, item, users, errors, payload.share_option)
+        extra, users_to_notify = self._share_with_options(trans, item, users, errors, payload.share_option)
         base_status = self._get_sharing_status(trans, item)
-        status = ShareWithStatus.construct(**base_status.dict())
-        status.extra = extra
+        status = self.share_with_status_cls.model_construct(**base_status.model_dump(), extra=extra)
         status.errors.extend(errors)
+        galaxy_url = str(trans.url_builder("/", qualified=True)).rstrip("/") if trans.url_builder else None
+        self._send_notification_to_users(users_to_notify, item, status, galaxy_url)
         return status
 
     def _share_with_options(
@@ -95,11 +129,12 @@ class ShareableService:
         errors: Set[str],
         share_option: Optional[SharingOptions] = None,
     ):
+        new_users = None
         extra = self.manager.get_sharing_extra_information(trans, item, users, errors, share_option)
         if not extra or extra.can_share:
-            self.manager.update_current_sharing_with_users(item, users)
+            _, new_users, _ = self.manager.update_current_sharing_with_users(item, users)
             extra = None
-        return extra
+        return extra, new_users
 
     def _get_item_by_id(self, trans, id: DecodedDatabaseIdField):
         class_name = self.manager.model_class.__name__
@@ -107,12 +142,11 @@ class ShareableService:
         return item
 
     def _get_sharing_status(self, trans, item):
-        status = self.serializer.serialize_to_view(item, user=trans.user, trans=trans, default_view="sharing")
-        status["users_shared_with"] = [
-            {"id": self.manager.app.security.encode_id(a.user.id), "email": a.user.email}
-            for a in item.users_shared_with
-        ]
-        return SharingStatus.construct(**status)
+        status = self.serializer.serialize_to_view(
+            item, user=trans.user, trans=trans, default_view="sharing", encode_id=False
+        )
+        status["users_shared_with"] = [{"id": a.user.id, "email": a.user.email} for a in item.users_shared_with]
+        return SharingStatus(**status)
 
     def _get_users(self, trans, emails_or_ids: List[UserIdentifier]) -> Tuple[Set[User], Set[str]]:
         send_to_users: Set[User] = set()
@@ -139,3 +173,51 @@ class ShareableService:
                 send_to_users.add(send_to_user)
 
         return send_to_users, send_to_err
+
+    def _send_notification_to_users(
+        self, users_to_notify: Set[User], item: SharableItem, status: ShareWithStatus, galaxy_url: Optional[str] = None
+    ):
+        if (
+            self.notification_service.notification_manager.notifications_enabled
+            and not status.errors
+            and users_to_notify
+        ):
+            request = SharedItemNotificationFactory.build_notification_request(
+                item, users_to_notify, status, galaxy_url
+            )
+            # We can set force_sync=True here because we already have the set of users to notify
+            # and there is no need to resolve them asynchronously as no groups or roles are involved.
+            self.notification_service.send_notification_internal(request, force_sync=True)
+
+
+class SharedItemNotificationFactory:
+    source = "galaxy_sharing_system"
+
+    type_map: Dict[Type[SharableItem], SharableItemType] = {
+        History: "history",
+        StoredWorkflow: "workflow",
+        Visualization: "visualization",
+        Page: "page",
+    }
+
+    @staticmethod
+    def build_notification_request(
+        item: SharableItem, users_to_notify: Set[User], status: ShareWithStatus, galaxy_url: Optional[str] = None
+    ) -> NotificationCreateRequest:
+        user_ids = [user.id for user in users_to_notify]
+        request = NotificationCreateRequest(
+            recipients=NotificationRecipients.model_construct(user_ids=user_ids),
+            notification=NotificationCreateData(
+                source=SharedItemNotificationFactory.source,
+                variant="info",
+                category=PersonalNotificationCategory.new_shared_item,
+                content=NewSharedItemNotificationContent(
+                    item_type=SharedItemNotificationFactory.type_map[type(item)],
+                    item_name=status.title,
+                    owner_name=status.username,
+                    slug=status.username_and_slug,
+                ),
+            ),
+            galaxy_url=galaxy_url,
+        )
+        return request

@@ -1,31 +1,37 @@
-<script setup>
-import { computed, ref } from "vue";
+<script setup lang="ts">
 import { BModal } from "bootstrap-vue";
-import { InvocationExportPlugin } from "./model";
-import ExportForm from "components/Common/ExportForm";
+import { computed, ref } from "vue";
 
-const modal = ref(null);
+import { type InvocationExportPlugin } from "./model";
 
-const props = defineProps({
-    exportPlugin: { type: InvocationExportPlugin, required: true },
-    invocationId: { type: String, required: true },
-});
+import ExportForm from "@/components/Common/ExportForm.vue";
 
-const emit = defineEmits(["onExportToFileSource"]);
+const modal = ref<BModal>();
+
+interface Props {
+    exportPlugin: InvocationExportPlugin;
+    invocationId: string;
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "onExportToFileSource", exportDirectory: string, fileName: string): void;
+}>();
 
 const title = computed(() => `Export ${props.exportPlugin.title} to remote file source`);
 
 /** Opens the modal dialog. */
 function showModal() {
-    modal.value.show();
+    modal.value?.show();
 }
 
 /** Closes the modal dialog. */
 function hideModal() {
-    modal.value.hide();
+    modal.value?.hide();
 }
 
-function doExport(exportDirectory, fileName) {
+function doExport(exportDirectory: string, fileName: string) {
     emit("onExportToFileSource", exportDirectory, fileName);
 }
 
@@ -33,7 +39,7 @@ defineExpose({ showModal, hideModal });
 </script>
 
 <template>
-    <b-modal ref="modal" :title="title" title-tag="h2" centered hide-footer>
+    <BModal ref="modal" :title="title" title-tag="h2" centered hide-footer>
         <ExportForm what="workflow invocation" @export="doExport" />
-    </b-modal>
+    </BModal>
 </template>

@@ -20,6 +20,7 @@ TEST_KEYS_FOR_ADMIN_ONLY = [
     "user_library_import_dir",
     "allow_library_path_paste",
     "allow_user_deletion",
+    "tool_shed_urls",
 ]
 
 

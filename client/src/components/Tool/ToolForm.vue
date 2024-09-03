@@ -1,137 +1,149 @@
 <template>
-    <ConfigProvider v-slot="{ config }">
-        <UserHistories v-if="currentUser" v-slot="{ currentHistoryId }" :user="currentUser">
-            <div v-if="currentHistoryId">
-                <b-alert :show="messageShow" :variant="messageVariant">
-                    {{ messageText }}
-                </b-alert>
-                <LoadingSpan v-if="showLoading" message="Loading Tool" />
-                <div v-if="showEntryPoints">
-                    <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
+    <div v-if="currentUser && currentHistoryId && isConfigLoaded">
+        <b-alert :show="messageShow" :variant="messageVariant">
+            {{ messageText }}
+        </b-alert>
+        <b-alert v-if="!showLoading && !canMutateHistory" show variant="warning">
+            {{ immutableHistoryMessage }}
+        </b-alert>
+        <LoadingSpan v-if="showLoading" message="Loading Tool" />
+        <div v-if="showEntryPoints">
+            <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
+        </div>
+        <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
+            <b-alert v-if="errorMessage" show variant="danger">
+                {{ errorMessage }}
+            </b-alert>
+            <b-alert show variant="warning">
+                The server could not complete this request. Please verify your parameter settings, retry submission and
+                contact the Galaxy Team if this error persists. A transcript of the submitted data is shown below.
+            </b-alert>
+            <small class="text-muted">
+                <pre>{{ errorContentPretty }}</pre>
+            </small>
+        </b-modal>
+        <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
+        <ToolCard
+            v-if="showForm"
+            :id="formConfig.id"
+            :version="formConfig.version"
+            :title="formConfig.name"
+            :description="formConfig.description"
+            :options="formConfig"
+            :message-text="messageText"
+            :message-variant="messageVariant"
+            :disabled="disabled || showExecuting"
+            :allow-object-store-selection="config.object_store_allows_id_selection"
+            :preferred-object-store-id="preferredObjectStoreId"
+            itemscope="itemscope"
+            itemtype="https://schema.org/CreativeWork"
+            @updatePreferredObjectStoreId="onUpdatePreferredObjectStoreId"
+            @onChangeVersion="onChangeVersion">
+            <template v-slot:body>
+                <div class="mt-2 mb-4">
+                    <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
+                    <FormDisplay
+                        :id="toolId"
+                        :inputs="formConfig.inputs"
+                        :errors="formConfig.errors"
+                        :loading="loading"
+                        :validation-scroll-to="validationScrollTo"
+                        :warnings="formConfig.warnings"
+                        @onChange="onChange"
+                        @onValidation="onValidation" />
                 </div>
-                <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
-                    <b-alert v-if="errorMessage" show variant="danger">
-                        {{ errorMessage }}
-                    </b-alert>
-                    <b-alert show variant="warning">
-                        The server could not complete this request. Please verify your parameter settings, retry
-                        submission and contact the Galaxy Team if this error persists. A transcript of the submitted
-                        data is shown below.
-                    </b-alert>
-                    <small class="text-muted">
-                        <pre>{{ errorContentPretty }}</pre>
-                    </small>
-                </b-modal>
-                <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
-                <ToolCard
-                    v-if="showForm"
-                    :id="formConfig.id"
-                    :version="formConfig.version"
-                    :title="formConfig.name"
-                    :description="formConfig.description"
-                    :options="formConfig"
-                    :message-text="messageText"
-                    :message-variant="messageVariant"
-                    :disabled="disabled || showExecuting"
-                    :allow-object-store-selection="config.object_store_allows_id_selection"
-                    :preferred-object-store-id="preferredObjectStoreId"
-                    itemscope="itemscope"
-                    itemtype="https://schema.org/CreativeWork"
-                    @updatePreferredObjectStoreId="onUpdatePreferredObjectStoreId"
-                    @onChangeVersion="onChangeVersion">
-                    <template v-slot:body>
-                        <div class="mt-2 mb-4">
-                            <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
-                            <FormDisplay
-                                :id="toolId"
-                                :inputs="formConfig.inputs"
-                                :validation-scroll-to="validationScrollTo"
-                                @onChange="onChange"
-                                @onValidation="onValidation" />
-                        </div>
 
-                        <div
-                            v-if="emailAllowed(config, currentUser) || remapAllowed || reuseAllowed(currentUser)"
-                            class="mt-2 mb-4">
-                            <Heading h2 separator bold size="sm"> Additional Options </Heading>
-                            <FormElement
-                                v-if="emailAllowed(config, currentUser)"
-                                id="send_email_notification"
-                                v-model="useEmail"
-                                title="Email notification"
-                                help="Send an email notification when the job completes."
-                                type="boolean" />
-                            <FormElement
-                                v-if="remapAllowed"
-                                id="rerun_remap_job_id"
-                                v-model="useJobRemapping"
-                                :title="remapTitle"
-                                :help="remapHelp"
-                                type="boolean" />
-                            <FormElement
-                                v-if="reuseAllowed(currentUser)"
-                                id="use_cached_job"
-                                v-model="useCachedJobs"
-                                title="Attempt to re-use jobs with identical parameters?"
-                                help="This may skip executing jobs that you have already run."
-                                type="boolean" />
-                        </div>
-                    </template>
-                    <template v-slot:header-buttons>
-                        <ButtonSpinner
-                            id="execute"
-                            title="Run Tool"
-                            class="btn-sm"
-                            :wait="showExecuting"
-                            :tooltip="tooltip"
-                            @onClick="onExecute(config, currentHistoryId)" />
-                    </template>
-                    <template v-slot:buttons>
-                        <ButtonSpinner
-                            title="Run Tool"
-                            class="mt-3 mb-3"
-                            :wait="showExecuting"
-                            :tooltip="tooltip"
-                            @onClick="onExecute(config, currentHistoryId)" />
-                    </template>
-                </ToolCard>
-            </div>
-        </UserHistories>
-    </ConfigProvider>
+                <div
+                    v-if="emailAllowed(config, currentUser) || remapAllowed || reuseAllowed(currentUser)"
+                    class="mt-2 mb-4">
+                    <Heading h2 separator bold size="sm"> Additional Options </Heading>
+                    <FormElement
+                        v-if="emailAllowed(config, currentUser)"
+                        id="send_email_notification"
+                        v-model="useEmail"
+                        title="Email notification"
+                        help="Send an email notification when the job completes."
+                        type="boolean" />
+                    <FormElement
+                        v-if="remapAllowed"
+                        id="rerun_remap_job_id"
+                        v-model="useJobRemapping"
+                        :title="remapTitle"
+                        :help="remapHelp"
+                        type="boolean" />
+                    <FormElement
+                        v-if="reuseAllowed(currentUser)"
+                        id="use_cached_job"
+                        v-model="useCachedJobs"
+                        title="Attempt to re-use jobs with identical parameters?"
+                        help="This may skip executing jobs that you have already run."
+                        type="boolean" />
+                    <FormSelect
+                        v-if="formConfig.model_class === 'DataManagerTool'"
+                        id="data_manager_mode"
+                        v-model="dataManagerMode"
+                        :options="bundleOptions"
+                        title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
+                </div>
+            </template>
+            <template v-slot:header-buttons>
+                <ButtonSpinner
+                    id="execute"
+                    title="Run Tool"
+                    :disabled="!canMutateHistory"
+                    class="btn-sm"
+                    :wait="showExecuting"
+                    :tooltip="tooltip"
+                    @onClick="onExecute(config, currentHistoryId)" />
+            </template>
+            <template v-slot:buttons>
+                <ButtonSpinner
+                    title="Run Tool"
+                    class="mt-3 mb-3"
+                    :disabled="!canMutateHistory"
+                    :wait="showExecuting"
+                    :tooltip="tooltip"
+                    @onClick="onExecute(config, currentHistoryId)" />
+            </template>
+        </ToolCard>
+    </div>
 </template>
 
 <script>
 import { getGalaxyInstance } from "app";
-import { useUserStore } from "@/stores/userStore";
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
-import { useJobStore } from "stores/jobStore";
-import { mapState, mapActions } from "pinia";
-import { mapGetters } from "vuex";
-import { getToolFormData, updateToolFormData, submitJob } from "./services";
-import { allowCachedJobs } from "./utilities";
-import { refreshContentsWrapper } from "utils/data";
-import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
-import ConfigProvider from "components/providers/ConfigProvider";
-import LoadingSpan from "components/LoadingSpan";
+import Heading from "components/Common/Heading";
 import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
+import LoadingSpan from "components/LoadingSpan";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
+import { mapActions, mapState, storeToRefs } from "pinia";
+import { useHistoryItemsStore } from "stores/historyItemsStore";
+import { useJobStore } from "stores/jobStore";
+import { refreshContentsWrapper } from "utils/data";
+
+import { canMutateHistory } from "@/api";
+import { useConfigStore } from "@/stores/configurationStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+
 import ToolRecommendation from "../ToolRecommendation";
-import UserHistories from "components/providers/UserHistories";
-import Heading from "components/Common/Heading";
+import { getToolFormData, submitJob, updateToolFormData } from "./services";
+import ToolCard from "./ToolCard";
+import { allowCachedJobs } from "./utilities";
+
+import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
 export default {
     components: {
         ButtonSpinner,
-        ConfigProvider,
         LoadingSpan,
         FormDisplay,
         ToolCard,
         FormElement,
+        FormSelect,
         ToolEntryPoints,
         ToolRecommendation,
-        UserHistories,
         Heading,
     },
     props: {
@@ -152,10 +164,14 @@ export default {
             default: null,
         },
     },
+    setup() {
+        const { config, isLoaded: isConfigLoaded } = storeToRefs(useConfigStore());
+        return { config, isConfigLoaded };
+    },
     data() {
         return {
             disabled: false,
-            initialized: false,
+            loading: false,
             showLoading: true,
             showForm: false,
             showEntryPoints: false,
@@ -163,7 +179,7 @@ export default {
             showError: false,
             showExecuting: false,
             formConfig: {},
-            formData: {},
+            formData: undefined,
             remapAllowed: false,
             errorTitle: null,
             errorContent: null,
@@ -174,6 +190,7 @@ export default {
             useCachedJobs: false,
             useEmail: false,
             useJobRemapping: false,
+            dataManagerMode: "populate",
             entryPoints: [],
             jobDef: {},
             jobResponse: {},
@@ -181,12 +198,18 @@ export default {
             validationScrollTo: null,
             currentVersion: this.version,
             preferredObjectStoreId: null,
+            bundleOptions: [
+                { label: "populate", value: "populate" },
+                { label: "bundle", value: "bundle" },
+            ],
+            immutableHistoryMessage:
+                "This history is immutable and you cannot run tools in it. Please switch to a different history.",
         };
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
-        ...mapState(useHistoryItemsStore, ["getLastUpdateTime"]),
-        ...mapGetters("history", ["currentHistoryId"]),
+        ...mapState(useHistoryStore, ["currentHistoryId", "currentHistory"]),
+        ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
         toolName() {
             return this.formConfig.name;
         },
@@ -197,6 +220,9 @@ export default {
             return id.endsWith(version) ? id : `${id}/${version}`;
         },
         tooltip() {
+            if (!this.canMutateHistory) {
+                return this.immutableHistoryMessage;
+            }
             return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
         },
         errorContentPretty() {
@@ -216,20 +242,26 @@ export default {
                 return "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
             }
         },
+        initialized() {
+            return this.formData !== undefined;
+        },
+        canMutateHistory() {
+            return this.currentHistory && canMutateHistory(this.currentHistory);
+        },
+        runButtonTitle() {
+            return "Run Tool";
+        },
     },
     watch: {
         currentHistoryId() {
             this.onHistoryChange();
         },
-        getLastUpdateTime() {
+        lastUpdateTime() {
             this.onHistoryChange();
         },
     },
     created() {
-        this.requestTool().then(() => {
-            this.initialized = true;
-            console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
-        });
+        this.requestTool();
     },
     methods: {
         ...mapActions(useJobStore, ["saveLatestResponse"]),
@@ -272,6 +304,7 @@ export default {
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;
             this.disabled = true;
+            this.loading = true;
             console.debug("ToolForm - Requesting tool.", this.id);
             return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id)
                 .then((data) => {
@@ -291,6 +324,7 @@ export default {
                 })
                 .finally(() => {
                     this.disabled = false;
+                    this.loading = false;
                     this.showLoading = false;
                 });
         },
@@ -323,6 +357,9 @@ export default {
             if (this.preferredObjectStoreId) {
                 jobDef.preferred_object_store_id = this.preferredObjectStoreId;
             }
+            if (this.dataManagerMode === "bundle") {
+                jobDef.data_manager_mode = this.dataManagerMode;
+            }
             console.debug("toolForm::onExecute()", jobDef);
             const prevRoute = this.$route.fullPath;
             submitJob(jobDef).then(
@@ -337,14 +374,12 @@ export default {
                     const nJobs = jobResponse && jobResponse.jobs ? jobResponse.jobs.length : 0;
                     if (nJobs > 0) {
                         this.showForm = false;
-                        this.jobDef = jobDef;
-                        this.jobResponse = jobResponse;
-                        const response = {
-                            jobDef: this.jobDef,
-                            jobResponse: this.jobResponse,
-                            toolName: this.toolName,
-                        };
-                        this.saveLatestResponse(response);
+                        const toolName = this.toolName;
+                        this.saveLatestResponse({
+                            jobDef,
+                            jobResponse,
+                            toolName,
+                        });
                         changeRoute = prevRoute === this.$route.fullPath;
                     } else {
                         this.showError = true;
@@ -358,7 +393,7 @@ export default {
                         if ([true, "true"].includes(config.enable_tool_recommendations)) {
                             this.showRecommendation = true;
                         }
-                        document.querySelector(".center-panel").scrollTop = 0;
+                        document.querySelector("#center").scrollTop = 0;
                     }
                 },
                 (e) => {

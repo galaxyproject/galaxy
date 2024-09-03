@@ -29,10 +29,14 @@ List of behavior changes associated with profile versions:
 - Disable default tool version of 1.0.0.
 - Use non zero exit code as default stdio error condition (before non-empty stderr).
 
+#### 17.09
+
+- Introduce `provided_metadata_style` with default `"default"`. Restore legacy behavior by setting
+  this to `"legacy"`.
+
 #### 18.01
 
 - Use a separate home directory for each job.
-- Introduce `provided_metadata_style` with default `"default"` before `"legacy"`.
 
 #### 18.09
 
@@ -58,11 +62,17 @@ List of behavior changes associated with profile versions:
 ### 21.09
 
 - Do not strip leading and trailing whitespaces in `from_work_dir` attribute.
+- Do not use Galaxy Python virtual environment for `data_source` tools. `data_source` tools should explicitly use the `galaxy-util` package.
 
 ### 23.0
 
 - Text parameters that are inferred to be optional (i.e the `optional` tag is not set, but the tool parameter accepts an empty string)
   are set to `None` for templating in Cheetah. Older tools receive the empty string `""` as the templated value.
+
+### 24.0
+
+- Do not use Galaxy python environment for `data_source_async` tools.
+- Drop request parameters received by data source tools that are not declared in `<request_param_translation>` section.
 
 ### Examples
 
@@ -115,8 +125,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
           </xs:annotation>
         </xs:element>
         <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
-        <xs:element name="version_command" type="VersionCommand" minOccurs="0">
-        </xs:element>
+        <xs:element name="version_command" type="VersionCommand" minOccurs="0"/>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1" />
         <xs:element name="environment_variables" type="EnvironmentVariables" minOccurs="0" maxOccurs="1"/>
         <xs:element name="command" type="Command" minOccurs="0" maxOccurs="1"/>
@@ -220,13 +229,14 @@ graphical tool form by setting this to ``false``.</xs:documentation>
           <xs:documentation xml:lang="en">Allows for certain framework
 functionality to be performed on certain types of tools. Normal tools that execute
 typical command-line jobs do not need to specify this, special kinds of tools such
-as [Data Source](https://galaxyproject.org/admin/internals/data-sources/) and
+as [Data Source](https://docs.galaxyproject.org/en/latest/dev/data_source.html) and
 [Data Manager](https://galaxyproject.org/admin/tools/data-managers/) tools should
-set this to have values such as ``data_source`` or ``manage_data``.</xs:documentation>
+set this to have values such as ``data_source``, ``data_source_async`` or
+``manage_data``.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="profile" type="xs:string">
-        <xs:annotation>
+        <xs:annotation gxdocs:best_practices="tool-profile">
           <xs:documentation xml:lang="en">This string specifies the minimum Galaxy
 version that should be required to run this tool. Certain legacy behaviors such
 as using standard error content to detect errors instead of exit code are disabled
@@ -264,9 +274,16 @@ this tool is usable within a workflow (defaults to ``true`` for normal tools and
       </xs:attribute>
       <xs:attribute name="URL_method" type="URLmethodType">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Only used if ``tool_type`` attribute value
-is ``data_source`` - this attribute defines the HTTP request method to use when
-communicating with an external data source application (the default is ``get``).</xs:documentation>
+          <xs:documentation xml:lang="en">*Deprecated* and ignored,
+use a [request_param](#tool-request-param-translation-request-param) element with ``galaxy_name="URL_method"`` instead.
+Was only used if ``tool_type`` attribute value is ``data_source`` or ``data_source_async`` -
+this attribute defined the HTTP request method to use when communicating with an external data source application
+(default: ``get``).</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="require_login" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Documentation needed</xs:documentation>
         </xs:annotation>
       </xs:attribute>
     </xs:complexType>
@@ -342,6 +359,19 @@ Usage example:
        ]]></xs:documentation>
         </xs:annotation>
       </xs:element>
+      <xs:element name="macro" type="xs:anyType" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">
+            <![CDATA[
+A generalisation for macro tokens, templates and xml macros, i.e.
+`<macro name="an_xml_macro" type="xml">` is identical to `<xml name="an_xml_macro">`,
+`<macro name="a_template" type="template">` is identical to `<template name="a_template">`, and
+`<macro name="a_token" type="xml">` is identical to `<token name="a_token">`.
+
+Note that 
+       ]]></xs:documentation>
+        </xs:annotation>
+      </xs:element>
     </xs:sequence>
   </xs:complexType>
 
@@ -370,7 +400,7 @@ to provide access to graphical tools in real-time.
 
 ```xml
 <entry_points>
-  <entry_point name="Example name">
+  <entry_point name="Example name" label="example">
     <port>80</port>
     <url>landing/${template_enabled}/index.html</url>
   </entry_point>
@@ -385,12 +415,43 @@ to provide access to graphical tools in real-time.
     </xs:sequence>
         <xs:attribute name="name" type="xs:string" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This value defines the name of the entry point.</xs:documentation>
+            <xs:documentation xml:lang="en">The name of the entry point.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="requires_domain" type="PermissiveBoolean" default="false">
+        <xs:attribute name="label" type="xs:string" use="optional">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This value declares if domain-based proxying is required. Default is False. Currently only works when True.</xs:documentation>
+            <xs:documentation xml:lang="en">A unique label to identify the entry point. Used by interactive client tools to connect.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="requires_domain" type="PermissiveBoolean" default="true">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Whether domain-based proxying is required for the entry point. Default is True.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="requires_path_in_url" type="PermissiveBoolean" default="false">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"><![CDATA[
+Whether the InteractiveTool proxy will add the entry point path to the URL provided to the interactive tool. Only
+relevant when path-based proxying is configured (``requires_domain=False``). A value of False implies that the web service
+for the interactive tool fully operates with relative links. A value of True implies that the unique entry point path,
+which is autogenerated each run, must be somehow provided to the web service. This can be done by injecting the path
+into an environment variable by setting the attribute ``inject="entry_point_path_for_label"`` in the tool XML.
+Alternatively, the attribute ``requires_path_in_header_named`` can be set to provide the path in the specified HTTP header.
+The entry point path should in any case be used to configure the web service in the interactive tool to serve the content
+from the provided URL path. Default value of ``requires_path_in_url`` is False.
+]]>
+            </xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="requires_path_in_header_named" type="xs:string" default="">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"><![CDATA[
+Whether the InteractiveTool proxy will add the entry point path to an HTTP header. An empty string as value (default) means
+that the path will not be provided in an HTTP header. Any other string value will define the name of the HTTP header
+where the path will be injected by the proxy. See the documentation of ``requires_path_in_url`` for more information.
+Default value of ``requires_path_in_header_named`` is False.
+]]>
+            </xs:documentation>
           </xs:annotation>
         </xs:attribute>
   </xs:complexType>
@@ -713,7 +774,7 @@ Example:
 ```
 
 Read more about configuring Galaxy to run Docker jobs
-[here](https://galaxyproject.org/admin/tools/docker/).
+[here](https://docs.galaxyproject.org/en/master/admin/container_resolvers.html).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
@@ -1544,17 +1605,9 @@ of ``type`` ``data``.</xs:documentation>
 Please use this option only when is not possible to include the files in the `test-data` folder, since
 this is more error prone due to external factors like remote availability.
 You can use it in two ways:
-- In combination with `value` it will look for the input file specified in `value`, if it's not available on disk it will
-download the file pointed by `location` using the same name as in `value` and then use it as input.
-- Specifiying the `location` without a `value`, it will download the file and use it as an alias of `value`. The name of the file
-will be infered from the last component of the location URL. For example, `location="https://my_url/my_file.txt"` will be equivalent to `value="my_file.txt"`.
-If you specify a `checksum`, it will be also used to check the integrity of the download.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="checksum" type="xs:string" gxdocs:added="23.1">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">If specified in combination with `location`, after downloading the test input file, the checksum should match the value specified
-here. This value should have the form ``hash_type$hash_value`` (e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``).</xs:documentation>
+- If only ``location`` is given (and `value` is absent), the input file will be uploaded directly to Galaxy from the URL specified by the ``location``  (same as regular pasted URL upload).
+- If ``location`` as well as ``value`` are given, the input file specified in ``value`` will be used from the tes data directory, if it's not available on disk it will use the ``location`` to upload the input as the previous case.
+</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -1585,6 +1638,11 @@ non-optional composite inputs must be specified as part of the ``param``.
         <xs:documentation xml:lang="en">Type of collection to create.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The identifier of the collection. Default is ``"Unnamed Collection"``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="tags" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Comma separated list of tags to apply to the dataset (only works for elements of collections - e.g. ``element`` XML tags).</xs:documentation>
@@ -1606,7 +1664,7 @@ Different methods can be chosen for the comparison with the local file specified
 by ``file`` using the ``compare`` attribute:
 
 - ``diff``: uses diff to compare the history data set and the file provided by
-  ``file``. Compressed files are decompressed before the compariopm if
+  ``file``. Compressed files are decompressed before the comparison if
   ``decompress`` is set to ``true``. BAM files are converted to SAM before the
   comparision and for pdf some special rules are implemented. The number of
   allowed differences can be set with ``lines_diff``.  If ``sort="true"`` history
@@ -1624,6 +1682,10 @@ by ``file`` using the ``compare`` attribute:
 - ``sim_size``: compares the size of the history dataset and the ``file`` subject to
   the values of the ``delta`` and ``delta_frac`` attributes. Note that a ``has_size``
   content assertion should be preferred, because this avoids storing the test file.
+- ``image_diff``: compares the pixel data of the history data set and the file
+  provided by ``file``. The difference of the images is quantified according to their
+  pixel-wise distance with respect to a specific ``metric``. The check passes if the
+  distance is not larger than the value set for ``eps``. Only 2-D images can be used.
 
         ]]></xs:documentation>
     </xs:annotation>
@@ -1692,7 +1754,7 @@ useful for non-deterministic output.
         <xs:documentation xml:lang="en"><![CDATA[
 
 If specified, the target output's MD5 hash should match the value specified
-here. For large static files it may be inconvenient to upload the entiry file
+here. For large static files it may be inconvenient to upload the entire file
 and this can be used instead.
 
 ]]></xs:documentation>
@@ -1705,7 +1767,7 @@ and this can be used instead.
 If specified, the target output's checksum should match the value specified
 here. This value should have the form ``hash_type$hash_value``
 (e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files
-it may be inconvenient to upload the entiry file and this can be used instead.
+it may be inconvenient to upload the entire file and this can be used instead.
 
 ]]></xs:documentation>
       </xs:annotation>
@@ -1720,7 +1782,15 @@ it may be inconvenient to upload the entiry file and this can be used instead.
     <xs:attribute name="decompress" type="PermissiveBoolean">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-When this attribute is true and ``compare`` is set to ``diff``, try to decompress files if needed. This flag is useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip will be automatically decompressed. This is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
+If this attribute is true then try to decompress files if needed. This applies to
+test assertions expressed with ``assert_contents`` or ``compare`` set to anything
+but ``sim_size``.
+This flag is useful for testing compressed outputs that are non-deterministic
+despite having deterministic decompressed contents. By default, only files compressed
+with bz2, gzip and zip will be automatically decompressed.
+Note, for specifying assertions for compressed as well as decompressed output
+the corresponding output tag can be specified multiple times.
+This is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -1750,6 +1820,18 @@ download the file pointed by `location` using the same name as in `file` (or `va
 - Specifiying the `location` without a `file` (or `value`), it will download the file and use it as an alias of `file`. The name of the file
 will be infered from the last component of the location URL. For example, `location="https://my_url/my_file.txt"` will be equivalent to `file="my_file.txt"`.
 If you specify a `checksum`, it will be also used to check the integrity of the download.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="metric" type="TestOutputMetricType" default="mae">
+    </xs:attribute>
+    <xs:attribute name="eps" type="xs:float" default="0.01">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If ``compare`` is set to ``image_diff``, this is the maximum allowed distance between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute, with distances computed with respect to the specified ``metric``. Default value is 0.01.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="pin_labels" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If ``compare`` is set to ``image_diff`` and ``metric`` is set to ``iou``, by default, object correspondances are established by maximizing the pairwise intersection over the union. If, however, the label of an object is listed in ``pin_labels``, then the corresponding object is determined according to the same label value (and that object cannot be the corresponding object of any other object with a different label).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -2105,6 +2187,7 @@ module.
       <xs:group ref="TestAssertionsXml" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsJson" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsH5" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsImage" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:complexType>
   <xs:group name="TestAssertionsGeneral">
@@ -2169,6 +2252,20 @@ module.
       <xs:element name="has_json_property_with_text" type="AssertHasJsonPropertyWithText"/>
     </xs:choice>
   </xs:group>
+  <xs:group name="TestAssertionsImage">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Assertions for image data]]></xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="has_image_width" type="AssertHasImageWidth" />
+      <xs:element name="has_image_height" type="AssertHasImageHeight" />
+      <xs:element name="has_image_channels" type="AssertHasImageChannels" />
+      <xs:element name="has_image_mean_intensity" type="AssertHasImageMeanIntensity" />
+      <xs:element name="has_image_center_of_mass" type="AssertHasImageCenterOfMass" />
+      <xs:element name="has_image_n_labels" type="AssertHasImageNLabels" />
+      <xs:element name="has_image_mean_object_size" type="AssertHasImageMeanObjectSize" />
+    </xs:choice>
+  </xs:group>
   <xs:group name="TestAssertionsH5">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Assertions for H5 data]]></xs:documentation>
@@ -2190,9 +2287,14 @@ $attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="value" type="Bytes" use="optional">
+    <xs:attribute name="size" type="Bytes" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Desired size of the output (in bytes), can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="Bytes" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">An outdated alias for `size`</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="delta" type="Bytes" use="optional">
@@ -2344,6 +2446,11 @@ $attribute_list::5
     </xs:annotation>
     <xs:attributeGroup ref="AssertAttributeN"/>
     <xs:attributeGroup ref="AssertAttributeNegate"/>
+    <xs:attribute name="sep" type="xs:string" default="&#009;">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Separator defining columns, default: tab</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="comment" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Comment character(s) used to skip comment lines (which should not be used for counting columns)</xs:documentation>
@@ -2407,6 +2514,7 @@ $attribute_list::5
       <xs:group ref="TestAssertionsJson" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsXml" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsH5" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsImage" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="path" type="xs:string">
       <xs:annotation>
@@ -2656,6 +2764,264 @@ $attribute_list::5
     <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
+  <xs:complexType name="AssertHasImageWidth">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the output is an image and has a specific width (in pixels),
+plus/minus ``delta`` (e.g., ``<has_image_width width="512" delta="2" />``).
+Alternatively the range of the expected width can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="width" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Expected width of the image (in pixels).`</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delta" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum allowed difference of the image width (in pixels, default is 0). The observed width has to be in the range ``value +- delta``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="min" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Minimum allowed width of the image (in pixels).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="max" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum allowed width of the image (in pixels).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertHasImageHeight">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the output is an image and has a specific height (in pixels),
+plus/minus ``delta`` (e.g., ``<has_image_height height="512" delta="2" />``).
+Alternatively the range of the expected height can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="height" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Expected height of the image (in pixels).`</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delta" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum allowed difference of the image height (in pixels, default is 0). The observed height has to be in the range ``value +- delta``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="min" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Minimum allowed height of the image (in pixels).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="max" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum allowed height of the image (in pixels).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertHasImageChannels">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the output is an image and has a specific number of channels,
+plus/minus ``delta`` (e.g., ``<has_image_channels channels="3" />``).
+Alternatively the range of the expected number of channels can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="channels" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Expected number of channels of the image.`</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delta" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum allowed difference of the number of channels (default is 0). The observed number of channels has to be in the range ``value +- delta``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="min" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Minimum allowed number of channels.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="max" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum allowed number of channels.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertHasImageMeanIntensity">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the output is an image and has a specific mean intensity value,
+plus/minus ``eps`` (e.g., ``<has_image_mean_intensity mean_intensity="0.83" />``).
+Alternatively the range of the expected mean intensity value can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="mean_intensity" type="xs:float" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The required mean value of the image intensities.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="eps" type="xs:float" use="optional" default="0.01">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean value of the image intensities has to be in the range ``value +- eps``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="min" type="xs:float" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">A lower bound of the required mean value of the image intensities.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="max" type="xs:float" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">An upper bound of the required mean value of the image intensities.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="channel" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertHasImageCenterOfMass">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the output is an image and has a specific center of mass,
+or has an Euclidean distance of ``eps`` or less to that point (e.g.,
+``<has_image_center_of_mass center_of_mass="511.07, 223.34" />``).
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="center_of_mass" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The required center of mass of the image intensities (horizontal and vertical coordinate, separated by a comma).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="eps" type="xs:float" use="optional" default="0.01">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The maximum allowed Euclidean distance to the required center of mass (defaults to ``0.01``).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="channel" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertHasImageNLabels">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the output is an image and has the specified number of labels, or unique values (e.g.,
+``<has_image_n_labels n="187" exclude_labels="0" />``).
+The primary usage of this assertion is to verify the number of objects in images with uniquely labeled objects.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="n" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Expected number of labels.`</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delta" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum allowed difference of the number of labels (default is 0). The observed number of labels has to be in the range ``value +- delta``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="min" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Minimum allowed number of labels.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="max" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum allowed number of labels.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="channel" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel). Must be used with multi-channel imags.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="labels" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">List of labels, separated by a comma. Labels *not* on this list will be excluded from consideration. Cannot be used in combination with ``exclude_labels``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="exclude_labels" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">List of labels to be excluded from consideration, separated by a comma. The primary usage of this attribute is to exclude the background of a label image. Cannot be used in combination with ``labels``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertHasImageMeanObjectSize">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the output is an image with labeled objects which have the specified mean size (number of pixels),
+plus/minus ``eps`` (e.g., ``<has_image_mean_object_size mean_object_size="111.87" exclude_labels="0" />``).
+The labels must be unique.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="mean_object_size" type="xs:float" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The required mean size of the uniquely labeled objects.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="eps" type="xs:float" use="optional" default="0.01">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean size of the uniquely labeled objects has to be in the range ``value +- eps``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="min" type="xs:float" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">A lower bound of the required mean size of the uniquely labeled objects.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="max" type="xs:float" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">An upper bound of the required mean size of the uniquely labeled objects.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="channel" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel). Must be used with multi-channel imags.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="labels" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">List of labels, separated by a comma. Labels *not* on this list will be excluded from consideration. Cannot be used in combination with ``exclude_labels``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="exclude_labels" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">List of labels to be excluded from consideration, separated by a comma. The primary usage of this attribute is to exclude the background of a label image. Cannot be used in combination with ``labels``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="AssertHasJsonPropertyWithValue">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -2810,7 +3176,9 @@ tools will not need to specify any attributes on this tag itself.]]>
     </xs:attribute>
     <xs:attribute name="method" type="URLmethodType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Data source HTTP action (e.g. ``get`` or ``put``) to use.</xs:documentation>
+        <xs:documentation xml:lang="en">*Deprecated* and ignored,
+use a [request_param](#tool-request-param-translation-request-param) element with ``galaxy_name="URL_method"`` instead.
+Data source HTTP action (e.g. ``get`` or ``put``) to use.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="target" type="TargetType">
@@ -2939,10 +3307,10 @@ between paired inputs of single stranded inputs.
     <xs:complexContent>
       <xs:extension base="InputType">
         <xs:sequence>
-          <xs:group ref="InputElement" minOccurs="0" maxOccurs="1" />
+          <xs:element name="param" type="Param" minOccurs="1" maxOccurs="1" />
           <xs:element name="when" type="ConditionalWhen" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
-        <xs:attribute name="name" type="xs:string">
+        <xs:attribute name="name" type="xs:string" use="required">
           <xs:annotation>
             <xs:documentation xml:lang="en">Name for this element</xs:documentation>
           </xs:annotation>
@@ -3243,6 +3611,19 @@ value of "V1".
 <param name="xlab" type="text" value="V1" label="Label for x axis" />
 ```
 
+Unlike other types of parameters, type="text" parameters are always optional, and tool
+author need to restrict the input with validator elements. By using a profile of at
+least 23.0 text parameters that set ``optional="false"`` or define a validator are
+indicated as required, but without validator the tool can be executed in any case.
+That is a mandatory text parameter should be implemented as:
+
+```
+  <param name="mandatory" type="text" optional="false">
+    <validator type="empty_field"/>
+  </param>
+```
+
+
 The ``area`` boolean attribute can be used to change the ``text`` parameter to a
 two-dimensional text area instead of a single line text box.
 
@@ -3369,7 +3750,9 @@ $attribute_list:data_ref,dynamic_options,display,multiple:5
 
 #### ``data_column``
 
-This parameter type is used to select columns from a parameter.
+This parameter type is used to select columns from a data parameter.
+It uses the ``column_names`` metadata if present (only since 24.0)
+and as a fallback the tab separated values of the first line.
 
 $attribute_list:force_select,numerical,use_header_name,multiple:5
 
@@ -3451,7 +3834,7 @@ Describes the parameter type - each different type as different semantics and
 the tool form widget is different. Currently valid parameter types are:
 ``text``,  ``integer``,  ``float``,  ``boolean``,  ``genomebuild``,  ``select``,
 ``color``,  ``data_column``,  ``hidden``,  ``hidden_data``,  ``baseurl``,
-``file``,  ``ftpfile``,  ``data``,  ``data_collection``,  ``library_data``,
+``file``,  ``ftpfile``,  ``data``,  ``data_collection``,
 ``drill_down``. The definition of supported parameter types as defined in the
 ``parameter_types`` dictionary in
 [/lib/galaxy/tools/parameters/basic.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/basic.py).
@@ -3477,7 +3860,7 @@ rendered as a one line text box (if ``false``, the default) or a multi-line text
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="argument" type="xs:string">
-          <xs:annotation>
+          <xs:annotation gxdocs:best_practices="parameter-name-argument-and-help">
             <xs:documentation xml:lang="en"><![CDATA[
 
 If the parameter reflects just one command line argument of a certain tool, this
@@ -3498,7 +3881,7 @@ displayed on the tool page as the label of the form field
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="help" type="xs:string">
-          <xs:annotation gxdocs:best_practices="parameter-help">
+          <xs:annotation>
             <xs:documentation xml:lang="en">Short bit of text, rendered on the
 tool form just below the associated field to provide information about the
 field.</xs:documentation>
@@ -3628,7 +4011,7 @@ drop-down menu select list. Used only when the ``type`` attribute value is
             <xs:documentation xml:lang="en">Allow multiple values to be
 selected. ``select`` parameters with ``multiple="true"`` are optional by
 default. Used only when the ``type`` attribute value is ``data``, ``group_tag``,
-or ``select``.</xs:documentation>
+or ``select``. Default is ``false``</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="numerical" type="PermissiveBoolean">
@@ -3708,6 +4091,7 @@ allow access to Python code to generate options for a select list. See
       <xs:element name="options" type="ParamOptions"/>
       <xs:element name="validator" type="Validator" />
       <xs:element name="sanitizer" type="Sanitizer"/>
+      <xs:element name="default" type="ParamDefault" />
       <xs:element name="help" type="xs:string">
         <xs:annotation>
           <xs:documentation xml:lang="en">Documentation for help</xs:documentation>
@@ -3727,7 +4111,6 @@ allow access to Python code to generate options for a select list. See
       <xs:enumeration value="color"/>
       <xs:enumeration value="boolean"/>
       <xs:enumeration value="genomebuild"/>
-      <xs:enumeration value="library_data"/>
       <xs:enumeration value="select"/>
       <xs:enumeration value="data_column"/>
       <xs:enumeration value="hidden"/>
@@ -3883,8 +4266,8 @@ Name | Description
 ``$__tool_data_path__`` | ``config/galaxy.ini``'s tool_data_path value
 ``$__root_dir__`` | Top-level Galaxy source directory made absolute via ``os.path.abspath()``
 ``$__datatypes_config__`` | ``config/galaxy.ini``'s datatypes_config value
-``$__user_id__`` | Email's numeric ID (id column of ``galaxy_user`` table in the database)
-``$__user_email__`` | User's email address
+``$__user_id__`` | Numeric ID of user (id column of ``galaxy_user`` table in the database)
+``$__user_email__`` | Email address of user
 ``$__app__`` | The ``galaxy.app.UniverseApplication`` instance, gives access to all other configuration file variables (e.g. $__app__.config.output_size_limit). Should be used as a last resort, may go away in future releases.
 ``$__target_datatype__`` | Only available in converter tools when run internally by Galaxy. Contains the target datatype of the conversion
 
@@ -3981,6 +4364,16 @@ of "type" specified for this expression block.
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="ecma5.1" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="RequestMethodType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Select a request method, defaults to GET if unspecified</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="GET" />
+      <xs:enumeration value="POST" />
     </xs:restriction>
   </xs:simpleType>
 
@@ -4093,20 +4486,89 @@ dataset for the contained input of the type specified using the ``type`` tag.
     </xs:attribute>
   </xs:complexType>
 
+  <xs:complexType name="ParamDefault">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+]]>
+</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <!-- can have zero or one collection elements -->
+      <xs:element name="element" type="ParamDefaultElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="collection_type" type="CollectionType" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Collection type for default collection (if param type is data_collection). Simple collection types are
+either ``list`` or ``paired``, nested collections are specified as colon separated list of simple
+collection types (the most common types are ``list``, ``paired``,
+``list:paired``, or ``list:list``).
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+    <xs:attribute name="location" type="xs:anyURI" gxdocs:added="23.2" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Galaxy-aware URI for the default file. This should only be used with parameters of type "data".
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+  </xs:complexType>
+
+  <xs:complexType name="ParamDefaultCollection">
+    <xs:sequence>
+      <xs:element name="element" type="ParamDefaultElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+
+    <xs:attribute name="collection_type" type="CollectionType" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Collection type for default collection (if param type is data_collection). Simple collection types are
+either ``list`` or ``paired``, nested collections are specified as colon separated list of simple
+collection types (the most common types are ``list``, ``paired``,
+``list:paired``, or ``list:list``).
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+  </xs:complexType>
+
+  <xs:complexType name="ParamDefaultElement">
+    <xs:sequence>
+      <xs:element name="collection" type="ParamDefaultCollection" minOccurs="0" maxOccurs="1" />
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name (and element identifier) for this element</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="location" type="xs:anyURI" gxdocs:added="23.2" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Galaxy-aware URI for the default file for collection element.
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
   <xs:complexType name="ParamOptions">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
+This tag set is optionally contained within the ``<param>`` tag when the
+``type`` attribute value is ``select`` or ``data`` and used to dynamically
+generated lists of options.
 See [/tools/extract/liftOver_wrapper.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/extract/liftOver_wrapper.xml)
-for an example of how to use this tag set. This tag set is optionally contained
-within the ``<param>`` tag when the ``type`` attribute value is ``select`` or
-``data`` and used to dynamically generated lists of options.
+and [test/functional/tools/select_dynamic.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/select_dynamic.xml)
+for an examples of how to use this tag set.
 
 For data parameters this tag can be used to restrict possible input datasets to datasets that match the ``dbkey`` of another data input by including a ``data_meta`` filter. See for
 instance here: [/tools/maf/interval2maf.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/maf/interval2maf.xml)
 
 For select parameters this tag set dynamically creates a list of options whose
-values can be obtained from a predefined file stored locally or a dataset
-selected from the current history.
+values can be obtained from a predefined file stored locally, a dataset
+selected from the current history or data fetched from a URL.
 
 There are at least five basic ways to use this tag - four of these correspond to
 a ``from_XXX`` attribute on the ``options`` directive and the other is to
@@ -4115,6 +4577,7 @@ exclusively use ``filter``s to populate options.
 * ``from_data_table`` - The options for the select list are dynamically obtained
   from a file specified in the Galaxy configuration file
   ``tool_data_table_conf.xml`` or from a Tool Shed installed data manager.
+* `from_url` - Fetches a list of available options from a remote server.
 * ``from_dataset`` - The options for the select list are dynamically obtained
   from input dataset selected for the tool from the current history.
 * ``from_file`` - The options for the select list are dynamically obtained from
@@ -4228,6 +4691,62 @@ example below demonstrates (many more examples are present in the
 </param>
 ```
 
+### ``from_url``
+
+The following example demonstrates getting options from a third-party server
+with server side requests.
+
+```xml
+<param name="url_param_value" type="select">
+    <options from_url="https://usegalaxy.org/api/genomes">
+    </options>
+</param>
+```
+
+Here a GET request is made to [https://usegalaxy.org/api/genomes](https://usegalaxy.org/api/genomes), which returns
+an array of arrays, such as
+
+```json
+[
+    ["unspecified (?)", "?"],
+    ["A. ceylanicum Mar. 2014 (WS243/Acey_2013.11.30.genDNA/ancCey1) (ancCey1)", "ancCey1"],
+    ...
+]
+```
+Each inner array is a user-selectable option, where the first item in the inner array
+is the `name` of the option (as shown in the select field in the user interface), and
+the second option is the `value` that is passed on to the tool. An optional third
+element can be added to the inner array which corresponds to the `selected` state.
+If the third item is `true` then this particular option is pre-selected.
+
+A more complicated example is shown below, where a POST request is made with a templated
+request header and body. The upstream response is then also transformed using an ecma 5.1
+expression:
+
+```xml
+<param name="url_param_value_header_and_body" type="select">
+    <options from_url="https://postman-echo.com/post" request_method="POST">
+        <!-- Example for accessing user secrets via extra preferences -->
+        <request_headers type="json">
+            {"x-api-key": "${__user__.extra_preferences.fake_api_key if $__user__ else "anon"}"}
+        </request_headers>
+        <request_body type="json">
+            {"name": "value"}
+        </request_body>
+        <!-- https://postman-echo.com/post echos values sent to it, so here we list the response headers -->
+        <postprocess_expression type="ecma5.1"><![CDATA[${
+            return Object.keys(inputs.headers).map((header) => [header, header])
+        }]]]]><![CDATA[></postprocess_expression>
+    </options>
+</param>
+```
+
+The header and body templating mechanism can be used to access protected resources,
+and the `postprocess_expression` can be used to transform arbitrary JSON responses
+to arrays of `name` and `value`, or arrays of `name`, `value` and `selected`.
+
+For an example tool see [select_from_url.xml](https://github.com/galaxyproject/galaxy/tree/dev/test/functional/tools/select_from_url.xml).
+
 ### ``from_file``
 
 The following example is for Blast databases. In this example users maybe select
@@ -4268,7 +4787,7 @@ used to generate dynamic options.
 </xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="OptionsElement" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="OptionsElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attribute name="from_dataset" type="xs:string">
       <xs:annotation>
@@ -4283,6 +4802,16 @@ used to generate dynamic options.
     <xs:attribute name="from_data_table" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Determine options from a data table. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="from_url" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Determine options from data hosted at specified URL. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="request_method" type="RequestMethodType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Set the request method to use for options provided using 'from_url'. </xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_parameter" type="xs:string">
@@ -4318,9 +4847,12 @@ used to generate dynamic options.
   </xs:complexType>
   <xs:group name="OptionsElement">
     <xs:choice>
-      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="column" type="Column" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="column" type="Column" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="1" />
+      <xs:element name="postprocess_expression" type="Expression" minOccurs="0" maxOccurs="1" />
+      <xs:element name="request_body" type="RequestBody" minOccurs="0" maxOccurs="1" />
+      <xs:element name="request_headers" type="RequestHeaders" minOccurs="0" maxOccurs="1" />
       <xs:element name="file" type="xs:string" minOccurs="0" maxOccurs="unbounded">
         <xs:annotation>
           <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
@@ -4329,6 +4861,20 @@ used to generate dynamic options.
       <xs:element name="option" type="ParamDrillDownOption" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:group>
+  <xs:complexType name="RequestBody">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="xs:string"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="RequestHeaders">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="xs:string"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
   <xs:complexType name="Column">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Optionally contained within an
@@ -4408,6 +4954,7 @@ Note that each data parameter has automatically a metadata validator that checks
 if all non-optional metadata are set, i.e. ``<validator type="metadata/>``.
 - ``unspecified_build``: Check of a build is defined.
 - ``dataset_ok_validator``: Check if the data set is in state OK.
+- ``dataset_metadata_equal``: Check if metadata (given by ``metadata_name``) is equal to a given string value (given by ``value``) or JSON encoded value (given by ``value_json``). ``value_json`` needs to be used for all non string types (e.g. int, float, list, dict).
 - ``dataset_metadata_in_range``: Check if a numeric metadata value is within
 a given range.
 - ``dataset_metadata_in_data_table``: Check if a metadata value is contained in a column of a data table.
@@ -4496,7 +5043,7 @@ use in filenames may not contain ``..``.
           <xs:annotation>
             <xs:documentation xml:lang="en"><![CDATA[
 Valid values are: ``expression``, ``regex``, ``in_range``, ``length``,
-``metadata``, ``unspecified_build``, ``no_options``, ``empty_field``,
+``metadata``, ``metadata_eq`` ``unspecified_build``, ``no_options``, ``empty_field``,
 ``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``,
 ``value_in_data_table``, ``value_not_in_data_table``,
 ``dataset_ok_validator``, ``dataset_metadata_in_range``.
@@ -4593,6 +5140,18 @@ not be modified.</xs:documentation>
             <xs:documentation xml:lang="en">Comma-seperated list of metadata
 fields to skip if type is ``metadata``. If not specified, all non-optional
 metadata fields will be checked unless ``check`` attribute is specified.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="value" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Value to check the metadata against. Only
+applicable to ``dataset_metadata_equal``. Mutually exclusive with ``value_json``.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="value_json" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">JSON encoded value to check the metadata against. Only
+applicable to ``dataset_metadata_equal``. Mutually exclusive with ``value``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="line_startswith" type="xs:string">
@@ -4811,6 +5370,8 @@ The ``static_value`` and ``regexp`` filters can be inverted by setting ``keep`` 
 * ``unique_value``: remove options that have duplicate entries in the given ``column``.
 * ``sort_by``: sort options by the entries of a given ``column``. If ``reverse_sort_order`` is set to ``true``, reverse sort order from ascending to descending.
 * ``multiple_splitter``: split the entries of the specified ``column``(s) in the referenced file using a ``separator``. Thereby the number of columns is increased.
+* ``attribute_value_splitter``: split the attribute-value pairs within the specified ``column`` in the referenced file using ``pair_separator`` and ``name_val_separator``. Thereby a new column is introduced before ``column`` containing a list of all attribute names.
+
 
 ### Examples
 
@@ -4907,6 +5468,20 @@ demonstrates splitting up strings into multiple values.
     </options>
 </param>
 ```
+
+This example demonstrates compiling a list of available attributes by parsing a GFF containing a column of multiple attribute-value pairs formatted in the input as ``gene_id=ABC;transcript_id=abc;transcript_biotype=mRNA``
+
+```xml
+<param name="available_attributes" type="select" label="List of all attributes mentioned in a GFF">
+    <options from_data_table="a_gff_as_table">
+        <column name="name" index="8"/>
+        <column name="value" index="8"/>
+        <filter type="attribute_value_splitter" column="8" pair_separator=";" name_val_separator="="/>
+    </options>
+</param>
+```
+
+
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="type" type="FilterType" use="required">
@@ -4914,10 +5489,6 @@ demonstrates splitting up strings into multiple values.
         <xs:documentation xml:lang="en"><![CDATA[
 Currently the filters in the ``filter_types`` dictionary in the module
 [/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/dynamic_options.py) are defined.
-
-Deprecated filter types:
-
-* ``attribute_value_splitter``
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -4966,7 +5537,7 @@ only used if ``multiple`` is set to ``true``.]]></xs:documentation>
       <xs:annotation>
         <xs:documentation xml:lang="en">If ``true``, keep columns matching the
 value, if ``false`` discard columns matching the value. Used when ``type`` is
-either ``static_value``, ``regexp`` or ``param_value``.</xs:documentation>
+either ``static_value``, ``regexp`` or ``param_value``. Default: true</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
@@ -5003,6 +5574,16 @@ from the list.</xs:documentation>
         <xs:documentation xml:lang="en">Used when ``type`` is ``sort_by``, if set to
         ``true`` it will reverse the sort order from ascending to descending. Default
         is ``false``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="pair_separator" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Only used if ``type`` is ``attribute_value_splitter``. This is used to separate attribute-value pairs from other pairs, i.e. ``;`` if the target content is ``A=V; B=W; C=Y`` . Default is ``,``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name_val_separator" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Only used if ``type`` is ``attribute_value_splitter``. This is used to separate attributes and values from each other within an attribute-value pair, i.e. ``=`` if the target content is ``A=V; B=W; C=Y``. Defaults to whitespace.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -5064,11 +5645,13 @@ The default is ``galaxy.json``.
   <xs:attributeGroup name="OutputCommon">
     <xs:attribute name="format" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">The short name for the output datatype.
-The valid values for format can be found in
+        <xs:documentation xml:lang="en"><![CDATA[
+The short name for the output datatype. The valid values for format can be found in
 [/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
-(e.g. ``format="pdf"`` or ``format="fastqsanger"``). For collections this is the default format for all included
-elements. Note that the format specified here is ignored for discovered data sets.</xs:documentation>
+(e.g. ``format="pdf"`` or ``format="fastqsanger"``). For collections this is the default
+format for all included elements. Note that the format specified here is ignored for
+discovered data sets on Galaxy versions prior to 24.0 and should be specified using the ``<discovered_data>`` tag set.
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format_source" type="xs:string">
@@ -5117,8 +5700,8 @@ This only applies to collections that are mapped over a non-collection input and
     <xs:attribute name="metadata_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This copies the metadata information
-from the tool's input dataset. This is particularly useful for interval data
-types where the order of the columns is not set.</xs:documentation>
+from the tool's input dataset to serve as default for information that cannot be detected from the output.
+One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_work_dir" type="xs:string">
@@ -5248,13 +5831,37 @@ on Human (hg18)``.
     <xs:attributeGroup ref="OutputDataAttributes"/>
   </xs:complexType>
 
+  <!-- Allowed tags included in collection-data -->
+  <xs:group name="OutputCollectionDataElement">
+    <xs:choice>
+      <xs:element name="actions" type="Actions" />
+      <xs:element name="change_format" type="ChangeFormat" />
+    </xs:choice>
+  </xs:group>
+
+  <!-- Allowed tags included in collection -->
   <xs:group name="OutputCollectionElement">
     <xs:choice>
-      <xs:element name="data" type="OutputData" />
+      <xs:element name="data" type="OutputCollectionData" />
       <xs:element name="discover_datasets" type="OutputCollectionDiscoverDatasets" />
       <xs:element name="filter" type="OutputFilter" />
     </xs:choice>
   </xs:group>
+
+  <xs:complexType name="OutputCollectionData">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set is contained within the ``<collection>`` tag set, and can be used to
+define the elements of a collection statically. See also [Planemo's documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#static-element-count).
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="OutputCollectionDataElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attributeGroup ref="OutputCommon" />
+    <xs:attributeGroup ref="OutputDataAttributes" />
+  </xs:complexType>
 
   <xs:complexType name="OutputCollection">
     <xs:annotation>
@@ -5303,7 +5910,6 @@ This tag describes an output to the tool.
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="OutputDataElement" minOccurs="0" maxOccurs="unbounded" />
-      <xs:group ref="OutputCollectionElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attributeGroup ref="OutputCommon"/>
     <xs:attributeGroup ref="OutputCollectionAttributes"/>
@@ -5409,23 +6015,7 @@ Therefore a filter for such a variable looks like the following example.
     </xs:simpleContent>
   </xs:complexType>
 
-  <xs:complexType name="OutputDiscoverDatasets">
-     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[
-
-Describe datasets to dynamically collect after the job complete.
-
-There are many simple tools with examples of this element distributed with
-Galaxy, including:
-
-* [multi_output.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output.xml)
-* [multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_assign_primary.xml)
-* [multi_output_configured.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_configured.xml)
-
-More information can be found on Planemo's documentation for
-[multiple output files](https://planemo.readthedocs.io/en/latest/writing_advanced.html#multiple-output-files).
-]]></xs:documentation>
-    </xs:annotation>
+  <xs:attributeGroup name="OutputDiscoverDatasetsCommon">
     <xs:attribute name="from_provided_metadata" type="xs:boolean" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort must not be set.</xs:documentation>
@@ -5463,7 +6053,12 @@ More information can be found on Planemo's documentation for
     </xs:attribute>
     <xs:attribute name="sort_by" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">A string `[reverse_][SORT_COMP_]SORTBY` describing the desired sort order of the collection elements. `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either `lexical` or `numeric`. Default is lexical sorting by filename.</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+        A string `[reverse_][SORT_COMP_]SORTBY` describing the desired sort order of the collection elements.
+        `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either
+        `lexical` or `numeric`. Default is lexical sorting by filename. 
+        Note that lexical sorting is case sensitive, i.e. upper case characters come before lower case characters (e.g. "Apple" < "Banana" < "apple" < "banana").
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="visible" type="xs:boolean" use="optional">
@@ -5471,6 +6066,26 @@ More information can be found on Planemo's documentation for
         <xs:documentation xml:lang="en">Indication if this dataset is visible in output history. This defaults to ``false``, but probably shouldn't - be sure to set to ``true`` if that is your intention.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:complexType name="OutputDiscoverDatasets">
+     <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+Describe datasets to dynamically collect after the job complete.
+
+There are many simple tools with examples of this element distributed with
+Galaxy, including:
+
+* [multi_output.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output.xml)
+* [multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_assign_primary.xml)
+* [multi_output_configured.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_configured.xml)
+
+More information can be found on Planemo's documentation for
+[multiple output files](https://planemo.readthedocs.io/en/latest/writing_advanced.html#multiple-output-files).
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="OutputDiscoverDatasetsCommon"/>
     <xs:attribute name="assign_primary_output" type="xs:boolean" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Replace the primary dataset described by the parameter ``data`` parameter with the first output discovered.</xs:documentation>
@@ -5494,51 +6109,7 @@ Galaxy, including:
 
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:attribute name="from_provided_metadata" type="xs:boolean" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort_by must not be set.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="pattern" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Regular expression used to find filenames and parse dynamic properties.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="directory" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Directory (relative to working directory) to search for files.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="recurse" type="xs:boolean" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Indicates that the specified directory should be searched recursively for matching files.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="match_relative_path" type="xs:boolean" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Indicates that the entire path of the discovered dataset relative to the specified directory should be available for matching patterns.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="format" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``ext``).</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="ext" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``format``).</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="sort_by" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">A string `[reverse_][SORT_COMP_]SORTBY` describing the desired sort order of the collection elements. `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either `lexical` or `numeric`. Default is lexical sorting by filename.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="visible" type="xs:boolean" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Indication if this dataset is visible in the history. This defaults to ``false``, but probably shouldn't - be sure to set to ``true`` if that is your intention.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="OutputDiscoverDatasetsCommon"/>
   </xs:complexType>
   <xs:complexType name="Actions">
     <xs:annotation>
@@ -6117,6 +6688,7 @@ define.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="api_key" />
+      <xs:enumeration value="entry_point_path_for_label" />
     </xs:restriction>
   </xs:simpleType>
   <xs:complexType name="ConfigFiles">
@@ -6161,7 +6733,7 @@ tool config.
       xrange = c(NULL, NULL)
       yrange = c(NULL, NULL)
       #for $i, $s in enumerate($series)
-          s${i} = read.table("${s.input.file_name}")
+          s${i} = read.table("${s.input.get_file_name()}")
           x${i} = s${i}[,${s.xcol}]
           y${i} = s${i}[,${s.ycol}]
           xrange = range(x${i}, xrange)
@@ -6242,8 +6814,11 @@ A contrived example of a tool that uses this is the test tool
 
 By default this file will not contain paths for data or collection inputs. To include simple
 paths for data or collection inputs set the ``data_style`` attribute to ``paths`` (see [inputs_as_json_with_paths.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_paths.xml) for an example).
-To include a dictionary with staging paths, paths and metadata files set the ``data_style`` attribute to ``staging_path_and_source_path``.
+To include a dictionary with element identifiers, datatypes, staging paths, paths and metadata files set the ``data_style`` attribute to ``staging_path_and_source_path`` (element identifiers and datatypes are available since 24.0).
 An example tool that uses ``staging_path_and_source_path`` is [inputs_as_json_with_staging_path_and_source_path.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_staging_path_and_source_path.xml)
+
+Note that the element identifiers are stored as lists, where the last element is the actual element identifier of the dataset
+and the other elements the identifiers of the collections containing the dataset.
 
 For tools with profile >= 20.05 a select with ``multiple="true"`` is rendered as an array which is empty if nothing is selected. For older profile versions select lists are rendered as comma separated strings or a literal ``null`` in case nothing is selected.
 ]]></xs:documentation>
@@ -6263,9 +6838,9 @@ response to this directive.
             <xs:documentation xml:lang="en">Path relative to the working directory of the tool for the inputs JSON file created in response to this directive.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="data_style" type="xs:string">
+        <xs:attribute name="data_style" type="InputsConfigfileDatastyleType">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file. Set to 'staging_path_and_source_path' to include a staging path, a source path and all metadata files.</xs:documentation>
+            <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file. Set to 'staging_path_and_source_path' to include element identifiers, datatype, staging path, a source path and all metadata files.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -6344,7 +6919,7 @@ Examples are included in the test tools directory including:
 
   <xs:complexType name="RequestParameterTranslation">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[See [/tools/data_source/ucsc_tablebrowser.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/data_source/ucsc_tablebrowser.xml) for an example of how to use this tag set. This tag set is used only in "data_source" tools (i.e. whose ``tool_type`` attribute is ``data_source``). This tag set contains a set of [request_param](#tool-request-param-translation-request-param) elements.]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[See [/tools/data_source/ucsc_tablebrowser.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/data_source/ucsc_tablebrowser.xml) for an example of how to use this tag set. This tag set is used only in "data_source" tools (i.e. whose ``tool_type`` attribute is ``data_source`` or ``data_source_async``). This tag set contains a set of [request_param](#tool-request-param-translation-request-param) elements.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="request_param" minOccurs="0" maxOccurs="unbounded" type="RequestParameter"/>
@@ -6391,6 +6966,7 @@ Examples are included in the test tools directory including:
       <xs:enumeration value="dbkey" />
       <xs:enumeration value="organism" />
       <xs:enumeration value="table" />
+      <xs:enumeration value="position" />
       <xs:enumeration value="description" />
       <xs:enumeration value="name" />
       <xs:enumeration value="info" />
@@ -6700,6 +7276,27 @@ stderr are checked. If ``Branch A`` is at the beginning of stdout or stderr, the
 a warning will be registered and the source that contained ``Branch A`` will be
 prepended with the warning ``Warning: Branch A was taken in execution``.
 
+Since Galaxy 24.0 groups defined in the regular expression are expanded in the
+description (using the syntax of the [``expand`` function](https://docs.python.org/3/library/re.html#re.Match.expand)).
+For the first ``regex`` in the following example the ``\1`` will be replaced
+by the content of the text matching ``.*`` that follows on ``INFO: ``,
+i.e. the content of the first group.
+The second regular expression defines a named group ``error_message``
+which then replaces the corresponding placeholder ``\g<error_message>`` in the
+description. Note the quoting of the ``<`` and ``>`` characters in XML.
+
+```xml
+<stdio>
+    <regex match="\(INFO\): (.*)"
+           source="stderr"
+           level="warning"
+           description="\1" />
+    <regex match="\(ERROR|WARNING\): (?P&lt;error_message&gt;.*)"
+           source="stderr"
+           level="fatal"
+           description="\g&lt;error_message&gt;" />
+</stdio>
+```
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="source" type="SourceType">
@@ -6726,8 +7323,9 @@ prepended with the warning ``Warning: Branch A was taken in execution``.
 
   <xs:complexType name="ChangeFormat">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[See
-[extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tools/extract_genomic_dna/extract_genomic_dna.xml)
+      <xs:documentation xml:lang="en"><![CDATA[
+Change the format of an output depending on the value of another input paramter.
+See [extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
 [output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for simple examples of how this tag set is used in a tool. This tag set is
@@ -6741,8 +7339,7 @@ for the following ``<when>`` tag set.]]></xs:documentation>
   <xs:complexType name="ChangeFormatWhen">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-
-If the data type of the output dataset is the specified type, the data type is
+If the value of referenced parameter has the specified value, the data type is
 changed to the desired type.
 
 ### Examples
@@ -6777,13 +7374,16 @@ or the test tool
 [output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for more examples.
 
+For parameters that are nested in sections, conditionals, or repeats are accessed with object access syntax,
+e.g. a parameter with name ``p`` that is in a conditional with name ``c``that is in a section with name ``s``
+is referenced by ``s.c.p``"].
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence/>
     <xs:attribute name="input" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This attribute should be the name of
-the desired input parameter (e.g. ``input="out_format"`` above).</xs:documentation>
+the desired input parameter (e.g. ``input="out_format"`` above). Parameters that are nested are accessed like an object.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
@@ -6963,6 +7563,11 @@ and ``bibtex`` are the only supported options.</xs:documentation>
           <xs:documentation xml:lang="en">Maximum CUDA device count, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
         </xs:annotation>
       </xs:enumeration>
+      <xs:enumeration value="shm_size">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Size of /dev/shm. The format is `<number><unit>`. <number> must be greater than 0. Unit is optional and can be `b` (bytes), `k` (kilobytes), `m` (megabytes), or `g` (gigabytes). If you omit the unit, the default is bytes. If you omit the size entirely, the value is `64m`.]]></xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="ContainerType">
@@ -6980,6 +7585,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="data_source"/>
+      <xs:enumeration value="data_source_async"/>
       <xs:enumeration value="manage_data"/>
       <xs:enumeration value="interactive"/>
       <xs:enumeration value="expression"/>
@@ -7042,6 +7648,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="in_range"/>
       <xs:enumeration value="length"/>
       <xs:enumeration value="metadata"/>
+      <xs:enumeration value="dataset_metadata_equal" gxdocs:added="23.1"/>
       <xs:enumeration value="unspecified_build"/>
       <xs:enumeration value="no_options"/>
       <xs:enumeration value="empty_field"/>
@@ -7065,7 +7672,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="regexp"/>
       <xs:enumeration value="unique_value"/>
       <xs:enumeration value="multiple_splitter"/>
-      <xs:enumeration value="attribute_value_splitter" />
+      <xs:enumeration value="attribute_value_splitter"/>
       <xs:enumeration value="add_value"/>
       <xs:enumeration value="remove_value"/>
       <xs:enumeration value="sort_by"/>
@@ -7080,6 +7687,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="insert_column"/>
       <xs:enumeration value="column_strip"/>
       <xs:enumeration value="multiple_splitter"/>
+      <xs:enumeration value="attribute_value_splitter"/>
       <xs:enumeration value="column_replace"/>
       <xs:enumeration value="metadata_value"/>
       <xs:enumeration value="boolean"/>
@@ -7148,8 +7756,9 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en">Type of comparison to use when comparing
 test generated output files to expected output files. Currently valid value are
-``diff`` (the default), ``re_match``, ``re_match_multiline``,
-and ``contains``. In addition there is ``sim_size`` which is discouraged in favour of a ``has_size`` assertion.</xs:documentation>
+``diff`` (the default), ``re_match``, ``re_match_multiline``, ``contains``,
+and ``image_diff``. In addition there is ``sim_size`` which is discouraged in
+favour of a ``has_size`` assertion.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="diff"/>
@@ -7157,33 +7766,61 @@ and ``contains``. In addition there is ``sim_size`` which is discouraged in favo
       <xs:enumeration value="sim_size"/>
       <xs:enumeration value="re_match_multiline"/>
       <xs:enumeration value="contains"/>
+      <xs:enumeration value="image_diff"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="TestOutputMetricType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">If ``compare`` is set to ``image_diff``, this is the metric used to compute the distance between images for quantification of their difference. For intensity images, possible metrics are *mean absolute error* (``mae``, the default), *mean squared error* (``mse``), *root mean squared* error (``rms``), and the *Frobenius norm* (``fro``). In addition, for binary images and label maps (with multiple objects), ``iou`` can be used to compute *one minus* the *intersection over the union* (IoU). Object correspondances are established by taking the pair of objects, for which the IoU is highest (also see the ``pin_labels`` attribute), and the distance of the images is the worst value determined for any pair of corresponding objects.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="mae"/>
+      <xs:enumeration value="mse"/>
+      <xs:enumeration value="rms"/>
+      <xs:enumeration value="fro"/>
+      <xs:enumeration value="iou"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="PermissiveBoolean">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for PermissiveBoolean</xs:documentation>
     </xs:annotation>
-    <xs:restriction base="xs:string">
-      <xs:enumeration value="0"/>
-      <xs:enumeration value="1"/>
-      <xs:enumeration value="true"/>
-      <xs:enumeration value="false"/>
-      <xs:enumeration value="True"/>
-      <xs:enumeration value="False"/>
-      <xs:enumeration value="yes"/>
-      <xs:enumeration value="no"/>
-    </xs:restriction>
+    <xs:union>
+      <xs:simpleType>
+        <xs:restriction base="xs:boolean"/>
+      </xs:simpleType>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="true"/>
+          <xs:enumeration value="false"/>
+          <xs:enumeration value="True"/>
+          <xs:enumeration value="False"/>
+          <xs:enumeration value="yes"/>
+          <xs:enumeration value="no"/>
+          <xs:enumeration value="0"/>
+          <xs:enumeration value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:union>
   </xs:simpleType>
   <xs:simpleType name="Bytes">
     <xs:annotation>
       <xs:documentation xml:lang="en">Number of bytes allowing for suffix (k|K|M|G|P|E)i? </xs:documentation>
     </xs:annotation>
-    <xs:restriction base="xs:string">
-      <xs:pattern value="(0|[1-9][0-9]*)([kKMGTPE]i?)?"></xs:pattern>
-    </xs:restriction>
+    <xs:union>
+       <xs:simpleType>
+         <xs:restriction base="xs:integer">
+         </xs:restriction>
+       </xs:simpleType>
+       <xs:simpleType>
+         <xs:restriction base="xs:string">
+          <xs:pattern value="(0|[1-9][0-9]*)([kKMGTPE]i?)?"></xs:pattern>
+         </xs:restriction>
+       </xs:simpleType>
+    </xs:union>
   </xs:simpleType>
   <xs:complexType name="EdamTopics">
-    <xs:annotation>
+    <xs:annotation gxdocs:best_practices="tool-annotations-edam">
       <xs:documentation xml:lang="en"><![CDATA[
 Container tag set for the ``<edam_topic>`` tags.
 A tool can have any number of EDAM topic references.
@@ -7199,7 +7836,7 @@ A tool can have any number of EDAM topic references.
     <xs:sequence>
       <xs:element name="edam_topic" minOccurs="0" maxOccurs="unbounded">
         <xs:simpleType>
-          <xs:restriction base="xs:string">
+          <xs:restriction base="singleLineString">
             <xs:pattern value="topic_[0-9]{4}"></xs:pattern>
           </xs:restriction>
         </xs:simpleType>
@@ -7207,7 +7844,7 @@ A tool can have any number of EDAM topic references.
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="EdamOperations">
-    <xs:annotation>
+    <xs:annotation gxdocs:best_practices="tool-annotations-edam">
       <xs:documentation xml:lang="en"><![CDATA[
 Container tag set for the ``<edam_operation>`` tags.
 A tool can have any number of EDAM operation references.
@@ -7224,7 +7861,7 @@ A tool can have any number of EDAM operation references.
     <xs:sequence>
       <xs:element name="edam_operation" minOccurs="0" maxOccurs="unbounded">
         <xs:simpleType>
-          <xs:restriction base="xs:string">
+          <xs:restriction base="singleLineString">
             <xs:pattern value="operation_[0-9]{4}"></xs:pattern>
           </xs:restriction>
         </xs:simpleType>
@@ -7232,7 +7869,7 @@ A tool can have any number of EDAM operation references.
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="xrefs">
-    <xs:annotation>
+    <xs:annotation gxdocs:best_practices="tool-cross-references-bio-tools">
       <xs:documentation xml:lang="en"><![CDATA[
 Container tag set for the ``<xref>`` tags.
 A tool can refer multiple reference IDs.
@@ -7259,10 +7896,10 @@ A tool can refer multiple reference IDs.
 information according to a catalog.</xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
-      <xs:extension base="xs:string">
+      <xs:extension base="singleLineString">
         <xs:attribute name="type" type="xrefType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools`` and ``bioconductor`` are
+            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools``, ``bioconductor``, and ``biii`` are
 the only supported options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -7276,13 +7913,23 @@ the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bio.tools"/>
       <xs:enumeration value="bioconductor"/>
+      <xs:enumeration value="biii"/>
       <!--xs:enumeration value="whatelse"/-->
     </xs:restriction>
   </xs:simpleType>
 
   <xs:simpleType name="MacroImportType">
-    <xs:restriction base="xs:string">
+    <xs:restriction base="singleLineString">
       <xs:pattern value="[a-zA-Z0-9_\-\.]+.xml"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="singleLineString">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">A string without newline characters.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:whiteSpace value="collapse"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -7307,6 +7954,15 @@ the only supported options.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:pattern value="(list|paired)([:,](list|paired))*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="InputsConfigfileDatastyleType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="paths"/>
+      <xs:enumeration value="staging_path_and_source_path"/>
     </xs:restriction>
   </xs:simpleType>
 </xs:schema>

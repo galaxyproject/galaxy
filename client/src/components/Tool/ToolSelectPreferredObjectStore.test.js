@@ -1,15 +1,26 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
-setupSelectableMock();
-
 import flushPromises from "flush-promises";
+import { getLocalVue } from "tests/jest/helpers";
+
+import { useServerMock } from "@/api/client/__mocks__";
+import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
+import { ROOT_COMPONENT } from "@/utils/navigation";
 
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore.vue";
 
+setupSelectableMock();
+
 const localVue = getLocalVue(true);
 
+const { server, http } = useServerMock();
+
 function mountComponent() {
+    server.use(
+        http.get("/api/configuration", ({ response }) => {
+            return response(200).json({});
+        })
+    );
+
     const wrapper = mount(ToolSelectPreferredObjectStore, {
         propsData: { toolPreferredObjectStoreId: null },
         localVue,
@@ -17,13 +28,12 @@ function mountComponent() {
     return wrapper;
 }
 
-import { ROOT_COMPONENT } from "@/utils/navigation";
-
 const PREFERENCES = ROOT_COMPONENT.preferences;
 
 describe("ToolSelectPreferredObjectStore.vue", () => {
     it("updates object store to default on selection null", async () => {
         const wrapper = mountComponent();
+
         await flushPromises();
         const els = wrapper.findAll(PREFERENCES.object_store_selection.option_buttons.selector);
         expect(els.length).toBe(3);

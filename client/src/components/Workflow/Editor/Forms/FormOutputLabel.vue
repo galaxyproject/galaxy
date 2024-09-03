@@ -9,12 +9,15 @@
         @input="onInput" />
 </template>
 
-<script lang="ts" setup>
-import FormElement from "@/components/Form/FormElement.vue";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-import { computed, ref } from "vue";
+<script setup lang="ts">
 import type { Ref } from "vue";
+import { computed, ref } from "vue";
+
+import { useStepActions } from "@/components/Workflow/Editor/Actions/stepActions";
+import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Step } from "@/stores/workflowStepStore";
+
+import FormElement from "@/components/Form/FormElement.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -27,7 +30,7 @@ const props = withDefaults(
     }
 );
 
-const stepStore = useWorkflowStepStore();
+const { stepStore, undoRedoStore, stateStore, connectionStore } = useWorkflowStores();
 
 const error: Ref<string | undefined> = ref(undefined);
 const id = computed(() => `__label__${props.name}`);
@@ -44,6 +47,8 @@ const label = computed(() => {
     return null;
 });
 
+const { setOutputLabel } = useStepActions(stepStore, undoRedoStore, stateStore, connectionStore);
+
 function onInput(newLabel: string | undefined | null) {
     if (newLabel === undefined || newLabel === null) {
         // form got activated or we set a workflow output through the checkbox
@@ -51,12 +56,14 @@ function onInput(newLabel: string | undefined | null) {
         return;
     }
 
+    const oldLabel = label.value || null;
+
     if (newLabel === "") {
         // user deleted existing label, we inactivate this as output
         const strippedWorkflowOutputs = (props.step.workflow_outputs || []).filter(
             (workflowOutput) => workflowOutput.output_name !== props.name
         );
-        stepStore.updateStep({ ...props.step, workflow_outputs: strippedWorkflowOutputs });
+        setOutputLabel(props.step, strippedWorkflowOutputs, oldLabel, newLabel);
         error.value = undefined;
         return;
     }
@@ -71,7 +78,7 @@ function onInput(newLabel: string | undefined | null) {
             label: newLabel,
             output_name: props.name,
         });
-        stepStore.updateStep({ ...props.step, workflow_outputs: newWorkflowOutputs });
+        setOutputLabel(props.step, newWorkflowOutputs, oldLabel, newLabel);
         error.value = undefined;
     } else if (existingWorkflowOutput.stepId !== props.step.id) {
         error.value = `Duplicate output label '${newLabel}' will be ignored.`;

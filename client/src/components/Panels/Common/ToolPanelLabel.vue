@@ -1,35 +1,36 @@
+<script setup lang="ts">
+import { computed } from "vue";
+
+import type { ToolSectionLabel } from "@/stores/toolStore";
+
+import ToolPanelLinks from "./ToolPanelLinks.vue";
+
+const props = defineProps<{
+    definition: ToolSectionLabel;
+}>();
+
+const description = computed(() => props.definition.description || undefined);
+</script>
+
 <template>
-    <div
-        v-b-tooltip.topright.hover
-        class="tool-panel-label"
-        :title="description"
-        @mouseover="hover = true"
-        @mouseleave="hover = false">
+    <div v-b-tooltip.topright.hover.noninteractive class="tool-panel-label" tabindex="0" :title="description">
         {{ definition.text }}
-        <ToolPanelLinks :show="hover" :links="definition.links" />
+        <ToolPanelLinks :links="definition.links || undefined" />
     </div>
 </template>
 
-<script>
-import ToolPanelLinks from "./ToolPanelLinks";
+<style scoped lang="scss">
+.tool-panel-label {
+    &:deep(.tool-panel-links) {
+        display: none;
+    }
 
-export default {
-    components: { ToolPanelLinks },
-    props: {
-        definition: {
-            type: Object,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            hover: false,
-        };
-    },
-    computed: {
-        description() {
-            return this.definition.description;
-        },
-    },
-};
-</script>
+    &:hover,
+    &:focus,
+    &:focus-within {
+        &:deep(.tool-panel-links) {
+            display: inline;
+        }
+    }
+}
+</style>

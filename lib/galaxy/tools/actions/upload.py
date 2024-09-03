@@ -1,13 +1,34 @@
 import json
 import logging
 import os
+from typing import Optional
 
 from galaxy.exceptions import RequestParameterMissingException
+from galaxy.model import (
+    History,
+    Job,
+)
+from galaxy.model.base import transaction
+from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import UninitializedTree
 from galaxy.tools.actions import upload_common
+from galaxy.tools.execute import (
+    DatasetCollectionElementsSliceT,
+    DEFAULT_DATASET_COLLECTION_ELEMENTS,
+    DEFAULT_JOB_CALLBACK,
+    DEFAULT_PREFERRED_OBJECT_STORE_ID,
+    DEFAULT_RERUN_REMAP_JOB_ID,
+    DEFAULT_SET_OUTPUT_HID,
+    JobCallbackT,
+    ToolParameterRequestInstanceT,
+)
+from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.util import ExecutionTimer
 from galaxy.util.bunch import Bunch
-from . import ToolAction
+from . import (
+    ToolAction,
+    ToolActionExecuteResult,
+)
 
 log = logging.getLogger(__name__)
 
@@ -15,7 +36,24 @@ log = logging.getLogger(__name__)
 class BaseUploadToolAction(ToolAction):
     produces_real_jobs = True
 
-    def execute(self, tool, trans, incoming=None, history=None, **kwargs):
+    def execute(
+        self,
+        tool,
+        trans,
+        incoming: Optional[ToolParameterRequestInstanceT] = None,
+        history: Optional[History] = None,
+        job_params=None,
+        rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
+        execution_cache: Optional[ToolExecutionCache] = None,
+        dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = DEFAULT_DATASET_COLLECTION_ELEMENTS,
+        completed_job: Optional[Job] = None,
+        collection_info: Optional[MatchingCollections] = None,
+        job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
+        preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
+        flush_job: bool = True,
+        skip: bool = False,
+    ) -> ToolActionExecuteResult:
         trans.check_user_activation()
         incoming = incoming or {}
         dataset_upload_inputs = []
@@ -150,5 +188,6 @@ def _precreate_fetched_collection_instance(trans, history, target, outputs):
     )
     outputs.append(hdca)
     # Following flushed needed for an ID.
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
     target["destination"]["object_id"] = hdca.id

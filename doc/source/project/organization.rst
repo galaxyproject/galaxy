@@ -42,10 +42,10 @@ Members
 -------
 
 - Enis Afgan (@afgane)
+- Ahmed Awan (@ahmedhamidawan)
 - Dannon Baker (@dannon)
 - Matthias Bernt (@bernt-matthias)
 - Daniel Blankenberg (@blankenberg)
-- Dave Bouvier (@davebx)
 - Martin Čech (@martenson)
 - John Chilton (@jmchilton)
 - Nate Coraor (@natefoo)
@@ -54,6 +54,7 @@ Members
 - Nuwan Goonasekera (@nuwang)
 - Björn Grüning (@bgruening)
 - Aysam Guerler (@guerler)
+- Alireza Heidari (@itisAliRH)
 - Jennifer Hillman Jackson (@jennaj)
 - David López (@davelopez)
 - Laila Los (@ElectronicBlueberry)

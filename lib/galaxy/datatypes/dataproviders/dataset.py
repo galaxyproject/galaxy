@@ -5,6 +5,7 @@ Dataproviders that use either:
     - or provide data in some way relevant to bioinformatic data
         (e.g. parsing genomic regions from their source)
 """
+
 import logging
 import sys
 
@@ -14,6 +15,7 @@ from bx import (
 )
 
 from galaxy.util import sqlite
+from galaxy.util.compression_utils import get_fileobj
 from . import (
     base,
     column,
@@ -53,7 +55,7 @@ class DatasetDataProvider(base.DataProvider):
         # this dataset file is obviously the source
         # TODO: this might be a good place to interface with the object_store...
         mode = "rb" if dataset.datatype.is_binary else "r"
-        super().__init__(open(dataset.file_name, mode))
+        super().__init__(get_fileobj(dataset.get_file_name(), mode))
 
     # TODO: this is a bit of a mess
     @classmethod
@@ -655,7 +657,7 @@ class SamtoolsDataProvider(line.RegexLineDataProvider):
         command = ["samtools", subcommand]
         # add options and switches, input file, regions list (if any)
         command.extend(self.to_options_list(options_string, options_dict))
-        command.append(self.dataset.file_name)
+        command.append(self.dataset.get_file_name())
         command.extend(regions)
         return command
 
@@ -714,7 +716,7 @@ class SQliteDataProvider(base.DataProvider):
 
     def __init__(self, source, query=None, **kwargs):
         self.query = query
-        self.connection = sqlite.connect(source.dataset.file_name)
+        self.connection = sqlite.connect(source.dataset.get_file_name())
         super().__init__(source, **kwargs)
 
     def __iter__(self):
@@ -736,7 +738,7 @@ class SQliteDataTableProvider(base.DataProvider):
         self.query = query
         self.headers = headers
         self.limit = limit
-        self.connection = sqlite.connect(source.dataset.file_name)
+        self.connection = sqlite.connect(source.dataset.get_file_name())
         super().__init__(source, **kwargs)
 
     def __iter__(self):
@@ -748,7 +750,7 @@ class SQliteDataTableProvider(base.DataProvider):
             for i, row in enumerate(results):
                 if i >= self.limit:
                     break
-                yield [val for val in row]
+                yield list(row)
         else:
             yield
 
@@ -763,7 +765,7 @@ class SQliteDataDictProvider(base.DataProvider):
 
     def __init__(self, source, query=None, **kwargs):
         self.query = query
-        self.connection = sqlite.connect(source.dataset.file_name)
+        self.connection = sqlite.connect(source.dataset.get_file_name())
         super().__init__(source, **kwargs)
 
     def __iter__(self):

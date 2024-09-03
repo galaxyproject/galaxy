@@ -3,13 +3,13 @@ import os
 import re
 import urllib.parse
 
-import requests
 import yaml
 
 from galaxy.exceptions import MessageException
 from galaxy.util import (
     asbool,
     DEFAULT_SOCKET_TIMEOUT,
+    requests,
 )
 from galaxy.util.search import parse_filters
 
@@ -74,8 +74,7 @@ class TrsProxy:
         return TrsServer(trs_url)
 
     def match_url(self, url):
-        matches = re.match(TRS_URL_REGEX, url)
-        if matches:
+        if matches := re.match(TRS_URL_REGEX, url):
             match_dict = matches.groupdict()
             match_dict["tool_id"] = urllib.parse.unquote(match_dict["tool_id"])
             return match_dict

@@ -11,10 +11,10 @@
                 <CreatorViewer :creator="creator">
                     <template v-slot:buttons>
                         <span v-b-tooltip.hover title="Edit Creator"
-                            ><font-awesome-icon icon="edit" @click="onEdit(index)"
+                            ><FontAwesomeIcon icon="edit" @click="onEdit(index)"
                         /></span>
                         <span v-b-tooltip.hover title="Remove Creator">
-                            <font-awesome-icon icon="times" @click="onRemove(index)" />
+                            <FontAwesomeIcon icon="times" @click="onRemove(index)" />
                         </span>
                     </template>
                 </CreatorViewer>
@@ -31,16 +31,16 @@
 </template>
 
 <script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+import CreatorViewer from "./CreatorViewer";
+import OrganizationForm from "./OrganizationForm";
+import PersonForm from "./PersonForm";
 
 library.add(faTimes);
 library.add(faEdit);
-
-import PersonForm from "./PersonForm";
-import CreatorViewer from "./CreatorViewer";
-import OrganizationForm from "./OrganizationForm";
 
 export default {
     components: {
@@ -52,6 +52,7 @@ export default {
     props: {
         creators: {
             type: Array,
+            default: () => [],
         },
     },
     data() {
@@ -61,8 +62,11 @@ export default {
         };
     },
     watch: {
-        creators() {
-            this.creatorsCurrent = this.creators;
+        creators: {
+            handler(newCreators) {
+                this.creatorsCurrent = newCreators;
+            },
+            immediate: true,
         },
     },
     methods: {

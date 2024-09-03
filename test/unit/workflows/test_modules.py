@@ -207,7 +207,7 @@ steps:
     -   output_name: "out_file1"
 """
 
-COLLECTION_TYPE_WORKLFOW_YAML = """
+COLLECTION_TYPE_WORKFLOW_YAML = """
 steps:
   - type: "data_collection_input"
     label: "input1"
@@ -234,7 +234,7 @@ def test_subworkflow_new_inputs():
 
 
 def test_subworkflow_new_inputs_collection_type():
-    subworkflow_module = __new_subworkflow_module(COLLECTION_TYPE_WORKLFOW_YAML)
+    subworkflow_module = __new_subworkflow_module(COLLECTION_TYPE_WORKFLOW_YAML)
     inputs = subworkflow_module.get_data_inputs()
     assert inputs[0]["collection_type"] == "list:list"
 
@@ -247,6 +247,43 @@ def test_subworkflow_new_outputs():
     assert output1["name"] == "out1"
     assert output1["extensions"] == ["input"]
     assert output2["name"] == "4:out_file1", output2["name"]
+
+
+def test_to_cwl():
+    hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+    hda.dataset.state = model.Dataset.states.OK
+    hdas = [hda]
+    hda_references = []
+    result = modules.to_cwl(hdas, hda_references, model.WorkflowStep())
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert result[0]["class"] == "File"
+    assert hda_references == hdas
+
+
+def test_to_cwl_nested_collection():
+    hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+    hda.dataset.state = model.Dataset.states.OK
+    dc_inner = model.DatasetCollection(collection_type="list")
+    model.DatasetCollectionElement(collection=dc_inner, element_identifier="inner", element=hda)
+    dc_outer = model.DatasetCollection(collection_type="list:list")
+    model.DatasetCollectionElement(collection=dc_outer, element_identifier="outer", element=dc_inner)
+    hdca = model.HistoryDatasetCollectionAssociation(name="the collection", collection=dc_outer)
+    result = modules.to_cwl(hdca, [], model.WorkflowStep())
+    assert result["outer"][0]["class"] == "File"
+    assert result["outer"][0]["basename"] == "inner"
+
+
+def test_to_cwl_dataset_collection_element():
+    hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+    hda.dataset.state = model.Dataset.states.OK
+    dc_inner = model.DatasetCollection(collection_type="list")
+    model.DatasetCollectionElement(collection=dc_inner, element_identifier="inner", element=hda)
+    dc_outer = model.DatasetCollection(collection_type="list:list")
+    dce_outer = model.DatasetCollectionElement(collection=dc_outer, element_identifier="outer", element=dc_inner)
+    result = modules.to_cwl(dce_outer, [], model.WorkflowStep())
+    assert result[0]["class"] == "File"
+    assert result[0]["basename"] == "inner"
 
 
 class MapOverTestCase(NamedTuple):
@@ -415,7 +452,10 @@ def __new_subworkflow_module(workflow=TEST_WORKFLOW_YAML):
 
 
 def __assert_has_runtime_input(module, label=None, collection_type=None):
-    inputs = module.get_runtime_inputs()
+    test_step = getattr(module, "test_step", None)
+    if test_step is None:
+        test_step = mock.MagicMock()
+    inputs = module.get_runtime_inputs(test_step)
     assert len(inputs) == 1
     assert "input" in inputs
     input_param = inputs["input"]
@@ -480,7 +520,6 @@ def __mock_tool(
         params_from_strings=mock.Mock(),
         check_and_update_param_values=mock.Mock(),
         to_json=_to_json,
-        assert_finalized=lambda: None,
     )
 
     return tool

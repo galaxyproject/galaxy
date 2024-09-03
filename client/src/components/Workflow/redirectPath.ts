@@ -1,9 +1,6 @@
-import type { RawLocation } from "vue-router";
+import { type RawLocation } from "vue-router";
 
-const statusMap = new Map([
-    ["error", "danger"],
-    ["success", "success"],
-]);
+import { Toast } from "@/composables/toast";
 
 export function getRedirectOnImportPath(
     response: { id?: string; message?: string; status?: string },
@@ -12,12 +9,14 @@ export function getRedirectOnImportPath(
     if (isRunFormRedirect) {
         return { path: "/workflows/run", query: { id: response.id } };
     } else {
+        if (response.status === "error") {
+            Toast.error(response.message ?? "Import Failed");
+        } else {
+            Toast.success(response.message ?? "Import Successful");
+        }
+
         return {
             path: "/workflows/list",
-            query: {
-                message: response.message ?? "Import Successful",
-                status: statusMap.get(response.status ?? "") ?? "success",
-            },
         };
     }
 }

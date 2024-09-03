@@ -1,7 +1,10 @@
 import logging
 import sys
 import time
-from typing import Any
+from typing import (
+    Any,
+    Optional,
+)
 
 from sqlalchemy.orm.scoping import scoped_session
 
@@ -18,6 +21,7 @@ from galaxy.app import (
 from galaxy.config import configure_logging
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
+from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.users import UserManager
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.tags import CommunityTagHandler
@@ -27,9 +31,9 @@ from galaxy.quota import (
 )
 from galaxy.security import idencoding
 from galaxy.structured_app import BasicSharedApp
-from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import application_stack_instance
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
+from tool_shed.managers.model_cache import ModelCache
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util.hgweb_config import hgweb_config_manager
 from tool_shed.webapp.model.migrations import verify_database
@@ -80,7 +84,8 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
         self._register_singleton(SharedModelMapping, model)
         self._register_singleton(mapping.ToolShedModelMapping, model)
         self._register_singleton(scoped_session, self.model.context)
-        self.user_manager = self._register_singleton(UserManager, UserManager)
+        self.model_cache = ModelCache(self.config.model_cache_dir)
+        self.user_manager = self._register_singleton(UserManager, UserManager(self, app_type="tool_shed"))
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
         # initialize the Tool Shed tag handler.
         self.tag_handler = CommunityTagHandler(self)
@@ -101,10 +106,18 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
         # Let the Tool Shed's HgwebConfigManager know where the hgweb.config file is located.
         self.hgweb_config_manager = hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
+        self.hgweb_config_manager.hgweb_repo_prefix = self.config.hgweb_repo_prefix
         # Initialize the repository registry.
-        self.repository_registry = tool_shed.repository_registry.Registry(self)
+        if config.SHED_API_VERSION != "v2":
+            self.repository_registry = tool_shed.repository_registry.Registry(self)
+        else:
+            self.repository_registry = tool_shed.repository_registry.NullRepositoryRegistry(self)
         # Configure Sentry client if configured
         self.configure_sentry_client()
         #  used for cachebusting -- refactor this into a *SINGLE* UniverseApplication base.
         self.server_starttime = int(time.time())
         log.debug("Tool shed hgweb.config file is: %s", self.hgweb_config_manager.hgweb_config)
+
+
+# Global instance of the universe app.
+app: Optional[ToolShedApp] = None

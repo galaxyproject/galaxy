@@ -10,8 +10,8 @@ from os.path import (
     join,
 )
 
-import pkg_resources
 import yaml
+from dparse import parse
 
 from galaxy.util import (
     asbool,
@@ -63,20 +63,19 @@ class ConditionalDependencies:
                 job_conf_path = join(dirname(self.config_file), "job_conf.yml")
                 if not exists(job_conf_path):
                     job_conf_path = join(dirname(self.config_file), "job_conf.xml")
+            else:
+                job_conf_path = join(dirname(self.config_file), job_conf_path)
             if ".xml" in job_conf_path:
                 try:
-                    try:
-                        for plugin in parse_xml(job_conf_path).find("plugins").findall("plugin"):
+                    job_conf_tree = parse_xml(job_conf_path)
+                    plugins_elem = job_conf_tree.find("plugins")
+                    if plugins_elem:
+                        for plugin in plugins_elem.findall("plugin"):
                             if "load" in plugin.attrib:
                                 self.job_runners.append(plugin.attrib["load"])
-                    except OSError:
-                        pass
-                    try:
-                        for plugin in parse_xml(job_conf_path).findall('.//destination/param[@id="rules_module"]'):
-                            self.job_rule_modules.append(plugin.text)
-                    except OSError:
-                        pass
-                except etree.ParseError:
+                    for plugin in job_conf_tree.findall('.//destination/param[@id="rules_module"]'):
+                        self.job_rule_modules.append(plugin.text)
+                except (OSError, etree.ParseError):
                     pass
             else:
                 try:
@@ -171,8 +170,10 @@ class ConditionalDependencies:
 
     def get_conditional_requirements(self):
         crfile = join(dirname(__file__), "conditional-requirements.txt")
-        for req in pkg_resources.parse_requirements(open(crfile).readlines()):
-            self.conditional_reqs.append(req)
+        with open(crfile) as fh:
+            dependency_file = parse(fh.read(), file_type="requirements.txt")
+            for dep in dependency_file.dependencies:
+                self.conditional_reqs.append(dep)
 
     def check(self, name):
         try:
@@ -203,7 +204,7 @@ class ConditionalDependencies:
     def check_pbs_python(self):
         return "galaxy.jobs.runners.pbs:PBSJobRunner" in self.job_runners
 
-    def check_pykube(self):
+    def check_pykube_ng(self):
         return "galaxy.jobs.runners.kubernetes:KubernetesJobRunner" in self.job_runners or which("kubectl")
 
     def check_chronos_python(self):
@@ -233,6 +234,9 @@ class ConditionalDependencies:
     def check_azure_storage(self):
         return "azure_blob" in self.object_stores
 
+    def check_boto3(self):
+        return "boto3" in self.object_stores
+
     def check_kamaki(self):
         return "pithos" in self.object_stores
 
@@ -258,7 +262,13 @@ class ConditionalDependencies:
     def check_fs_gcsfs(self):
         return "googlecloudstorage" in self.file_sources
 
-    def check_fs_onedatafs(self):
+    def check_google_cloud_storage(self):
+        return "googlecloudstorage" in self.file_sources
+
+    def check_onedatafilerestclient(self):
+        return "onedata" in self.object_stores
+
+    def check_fs_onedatarestfs(self):
         return "onedata" in self.file_sources
 
     def check_fs_basespace(self):
@@ -284,6 +294,10 @@ class ConditionalDependencies:
         # See notes in ./conditional-requirements.txt for more information.
         return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
 
+    def check_pydyf(self):
+        # See notes in ./conditional-requirements.txt for more information.
+        return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
+
     def check_custos_sdk(self):
         return "custos" == self.vault_type
 
@@ -292,6 +306,9 @@ class ConditionalDependencies:
 
     def check_pkce(self):
         return self.pkce_support
+
+    def check_rucio_clients(self):
+        return "rucio" in self.object_stores and sys.version_info >= (3, 9)
 
 
 def optional(config_file=None):
@@ -302,7 +319,7 @@ def optional(config_file=None):
         return []
     rval = []
     conditional = ConditionalDependencies(config_file)
-    for opt in conditional.conditional_reqs:
-        if conditional.check(opt.key):
-            rval.append(str(opt))
+    for dependency in conditional.conditional_reqs:
+        if conditional.check(dependency.name):
+            rval.append(dependency.line)
     return rval

@@ -3,32 +3,26 @@ import logging
 import os
 import socket
 import string
-from typing import TYPE_CHECKING
+from typing import (
+    List,
+    TYPE_CHECKING,
+)
 
-import sqlalchemy.orm.exc
 from sqlalchemy import (
-    and_,
     false,
+    func,
+    select,
     true,
 )
+from sqlalchemy.orm import scoped_session
 
 from galaxy import util
-from galaxy.tool_shed.util.shed_util_common import (
-    can_eliminate_repository_dependency,
-    clean_dependency_relationships,
-    generate_tool_guid,
-    get_ctx_rev,
-    get_next_prior_import_or_install_required_dict_entry,
-    get_tool_panel_config_tool_path_install_dir,
-    get_user,
-    have_shed_tool_conf_for_install,
-    set_image_paths,
-    tool_shed_is_this_tool_shed,
-)
+from galaxy.tool_shed.util.shed_util_common import get_user
 from galaxy.util import (
     checkers,
     unicodify,
 )
+from galaxy.web import url_for
 from tool_shed.util import (
     basic_util,
     common_util,
@@ -38,6 +32,7 @@ from tool_shed.util import (
 
 if TYPE_CHECKING:
     from tool_shed.structured_app import ToolShedApp
+    from tool_shed.webapp.model import Repository
 
 log = logging.getLogger(__name__)
 
@@ -87,65 +82,37 @@ changes were made to the repository named "${repository_name}".
 -----------------------------------------------------------------------------
 """
 
-contact_owner_template = """
-GALAXY TOOL SHED REPOSITORY MESSAGE
-------------------------
-
-The user '${username}' sent you the following message regarding your tool shed
-repository named '${repository_name}'.  You can respond by sending a reply to
-the user's email address: ${email}.
------------------------------------------------------------------------------
-${message}
------------------------------------------------------------------------------
-This message was sent from the Galaxy Tool Shed instance hosted on the server
-'${host}'
-"""
-
 
 def count_repositories_in_category(app: "ToolShedApp", category_id: str) -> int:
-    sa_session = app.model.session
-    return (
-        sa_session.query(app.model.RepositoryCategoryAssociation)
-        .filter(app.model.RepositoryCategoryAssociation.table.c.category_id == app.security.decode_id(category_id))
-        .count()
+    stmt = (
+        select(func.count())
+        .select_from(app.model.RepositoryCategoryAssociation)
+        .where(app.model.RepositoryCategoryAssociation.category_id == app.security.decode_id(category_id))
     )
+    return app.model.session.scalar(stmt)
 
 
 def get_categories(app: "ToolShedApp"):
     """Get all categories from the database."""
     sa_session = app.model.session
-    return (
-        sa_session.query(app.model.Category)
-        .filter(app.model.Category.table.c.deleted == false())
-        .order_by(app.model.Category.table.c.name)
-        .all()
-    )
+    stmt = select(app.model.Category).where(app.model.Category.deleted == false()).order_by(app.model.Category.name)
+    return sa_session.scalars(stmt).all()
 
 
 def get_category(app: "ToolShedApp", id: str):
     """Get a category from the database."""
     sa_session = app.model.session
-    return sa_session.query(app.model.Category).get(app.security.decode_id(id))
+    return sa_session.get(app.model.Category, app.security.decode_id(id))
 
 
 def get_category_by_name(app: "ToolShedApp", name: str):
     """Get a category from the database via name."""
     sa_session = app.model.session
-    try:
-        return sa_session.query(app.model.Category).filter_by(name=name).one()
-    except sqlalchemy.orm.exc.NoResultFound:
-        return None
+    stmt = select(app.model.Category).filter_by(name=name).limit(1)
+    return sa_session.scalars(stmt).first()
 
 
-def get_repository_categories(app, id):
-    """Get categories of a repository on the tool shed side from the database via id"""
-    sa_session = app.model.session
-    return sa_session.query(app.model.RepositoryCategoryAssociation).filter(
-        app.model.RepositoryCategoryAssociation.table.c.repository_id == app.security.decode_id(id)
-    )
-
-
-def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
+def get_repository_file_contents(app: "ToolShedApp", file_path: str, repository_id: str, is_admin: bool = False) -> str:
     """Return the display-safe contents of a repository file for display in a browser."""
     safe_str = ""
     if not _is_path_browsable(app, file_path, repository_id, is_admin):
@@ -169,20 +136,14 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
                 safe_str = f"{safe_str}{basic_util.to_html_string(line)}"
                 # Stop reading after string is larger than MAX_CONTENT_SIZE.
                 if len(safe_str) > MAX_CONTENT_SIZE:
-                    large_str = (
-                        "<br/>File contents truncated because file size is larger than maximum viewing size of %s<br/>"
-                        % util.nice_size(MAX_CONTENT_SIZE)
-                    )
+                    large_str = f"<br/>File contents truncated because file size is larger than maximum viewing size of {util.nice_size(MAX_CONTENT_SIZE)}<br/>"
                     safe_str = f"{safe_str}{large_str}"
                     break
 
         if len(safe_str) > basic_util.MAX_DISPLAY_SIZE:
             # Eliminate the middle of the file to display a file no larger than basic_util.MAX_DISPLAY_SIZE.
             # This may not be ideal if the file is larger than MAX_CONTENT_SIZE.
-            join_by_str = (
-                "<br/><br/>...some text eliminated here because file size is larger than maximum viewing size of %s...<br/><br/>"
-                % util.nice_size(basic_util.MAX_DISPLAY_SIZE)
-            )
+            join_by_str = f"<br/><br/>...some text eliminated here because file size is larger than maximum viewing size of {util.nice_size(basic_util.MAX_DISPLAY_SIZE)}...<br/><br/>"
             safe_str = util.shrink_string_by_size(
                 safe_str,
                 basic_util.MAX_DISPLAY_SIZE,
@@ -206,7 +167,7 @@ def get_repository_files(folder_path):
     return contents
 
 
-def get_repository_from_refresh_on_change(app, **kwd):
+def get_repository_from_refresh_on_change(app: "ToolShedApp", **kwd):
     # The changeset_revision_select_field in several grids performs a refresh_on_change which sends in request parameters like
     # changeset_revison_1, changeset_revision_2, etc.  One of the many select fields on the grid performed the refresh_on_change,
     # so we loop through all of the received values to see which value is not the repository tip.  If we find it, we know the
@@ -224,52 +185,14 @@ def get_repository_from_refresh_on_change(app, **kwd):
     return v, None
 
 
-def get_repository_type_from_tool_shed(app, tool_shed_url, name, owner):
-    """
-    Send a request to the tool shed to retrieve the type for a repository defined by the
-    combination of a name and owner.
-    """
-    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
-    params = dict(name=name, owner=owner)
-    pathspec = ["repository", "get_repository_type"]
-    repository_type = util.url_get(
-        tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
-    )
-    return repository_type
-
-
-def get_tool_dependency_definition_metadata_from_tool_shed(app, tool_shed_url, name, owner):
-    """
-    Send a request to the tool shed to retrieve the current metadata for a
-    repository of type tool_dependency_definition defined by the combination
-    of a name and owner.
-    """
-    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
-    params = dict(name=name, owner=owner)
-    pathspec = ["repository", "get_tool_dependency_definition_metadata"]
-    metadata = util.url_get(
-        tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
-    )
-    return metadata
-
-
-def get_tool_path_by_shed_tool_conf_filename(app, shed_tool_conf):
-    """
-    Return the tool_path config setting for the received shed_tool_conf file by searching the tool box's in-memory list of shed_tool_confs for the
-    dictionary whose config_filename key has a value matching the received shed_tool_conf.
-    """
-    for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
-        config_filename = shed_tool_conf_dict["config_filename"]
-        if config_filename == shed_tool_conf:
-            return shed_tool_conf_dict["tool_path"]
-        else:
-            file_name = basic_util.strip_path(config_filename)
-            if file_name == shed_tool_conf:
-                return shed_tool_conf_dict["tool_path"]
-    return None
-
-
-def handle_email_alerts(app, host, repository, content_alert_str="", new_repo_alert=False, admin_only=False):
+def handle_email_alerts(
+    app: "ToolShedApp",
+    host: str,
+    repository: "Repository",
+    content_alert_str: str = "",
+    new_repo_alert: bool = False,
+    admin_only: bool = False,
+) -> None:
     """
     There are 2 complementary features that enable a tool shed user to receive email notification:
 
@@ -350,9 +273,7 @@ def handle_email_alerts(app, host, repository, content_alert_str="", new_repo_al
             subject = f"Galaxy tool shed alert for new repository named {str(repository.name)}"
             subject = subject[:80]
             email_alerts = []
-            for user in sa_session.query(app.model.User).filter(
-                and_(app.model.User.table.c.deleted == false(), app.model.User.table.c.new_repo_alert == true())
-            ):
+            for user in get_users_with_repo_alert(sa_session, app.model.User):
                 if admin_only:
                     if user.email in admin_users:
                         email_alerts.append(user.email)
@@ -360,7 +281,7 @@ def handle_email_alerts(app, host, repository, content_alert_str="", new_repo_al
                     email_alerts.append(user.email)
         else:
             subject = f"Galaxy tool shed update alert for repository named {str(repository.name)}"
-            email_alerts = json.loads(repository.email_alerts)
+            email_alerts = json.loads(repository.email_alerts)  # type:ignore[arg-type]
         for email in email_alerts:
             to = email.strip()
             # Send it
@@ -373,7 +294,7 @@ def handle_email_alerts(app, host, repository, content_alert_str="", new_repo_al
                 log.exception("An error occurred sending a tool shed repository update alert by email.")
 
 
-def _is_path_browsable(app, path, repository_id, is_admin=False):
+def _is_path_browsable(app: "ToolShedApp", path: str, repository_id: str, is_admin: bool = False) -> bool:
     """
     Detects whether the given path is browsable i.e. is within the
     allowed repository folders. Admins can additionaly browse folders
@@ -384,21 +305,20 @@ def _is_path_browsable(app, path, repository_id, is_admin=False):
     return is_path_within_repo(app, path, repository_id)
 
 
-def is_path_within_dependency_dir(app, path):
+def is_path_within_dependency_dir(app: "ToolShedApp", path: str) -> bool:
     """
     Detect whether the given path is within the tool_dependency_dir folder on the disk.
     (Specified by the config option). Use to filter malicious symlinks targeting outside paths.
     """
     allowed = False
     resolved_path = os.path.realpath(path)
-    tool_dependency_dir = app.config.get("tool_dependency_dir", None)
-    if tool_dependency_dir:
+    if tool_dependency_dir := app.config.get("tool_dependency_dir", None):
         dependency_path = os.path.abspath(tool_dependency_dir)
         allowed = os.path.commonprefix([dependency_path, resolved_path]) == dependency_path
     return allowed
 
 
-def is_path_within_repo(app, path, repository_id):
+def is_path_within_repo(app: "ToolShedApp", path: str, repository_id: str) -> bool:
     """
     Detect whether the given path is within the repository folder on the disk.
     Use to filter malicious symlinks targeting outside paths.
@@ -408,7 +328,9 @@ def is_path_within_repo(app, path, repository_id):
     return os.path.commonprefix([repo_path, resolved_path]) == repo_path
 
 
-def open_repository_files_folder(app, folder_path, repository_id, is_admin=False):
+def open_repository_files_folder(
+    app: "ToolShedApp", folder_path: str, repository_id: str, is_admin: bool = False
+) -> List:
     """
     Return a list of dictionaries, each of which contains information for a file or directory contained
     within a directory in a repository file hierarchy.
@@ -449,28 +371,29 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
     return folder_contents
 
 
+def tool_shed_is_this_tool_shed(toolshed_base_url, trans=None):
+    """Determine if a tool shed is the current tool shed."""
+    cleaned_toolshed_base_url = common_util.remove_protocol_from_tool_shed_url(toolshed_base_url)
+    hostname = trans.repositories_hostname if trans else str(url_for("/", qualified=True))
+    cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(hostname)
+    return cleaned_toolshed_base_url == cleaned_tool_shed
+
+
+def get_users_with_repo_alert(session: scoped_session, user_model):
+    stmt = select(user_model).where(user_model.deleted == false()).where(user_model.new_repo_alert == true())
+    return session.scalars(stmt)
+
+
 __all__ = (
-    "can_eliminate_repository_dependency",
-    "clean_dependency_relationships",
     "count_repositories_in_category",
-    "generate_tool_guid",
     "get_categories",
     "get_category",
     "get_category_by_name",
-    "get_ctx_rev",
-    "get_next_prior_import_or_install_required_dict_entry",
-    "get_repository_categories",
     "get_repository_file_contents",
-    "get_repository_type_from_tool_shed",
-    "get_tool_dependency_definition_metadata_from_tool_shed",
-    "get_tool_panel_config_tool_path_install_dir",
-    "get_tool_path_by_shed_tool_conf_filename",
     "get_user",
     "handle_email_alerts",
-    "have_shed_tool_conf_for_install",
     "is_path_within_dependency_dir",
     "is_path_within_repo",
     "open_repository_files_folder",
-    "set_image_paths",
     "tool_shed_is_this_tool_shed",
 )

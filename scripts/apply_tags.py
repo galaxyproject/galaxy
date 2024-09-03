@@ -29,12 +29,12 @@ class ApplyTagsHistory:
             try:
                 update_history = history.show_history(self.history_id)
             except Exception as exception:
-                print("Some problem occurred with history: %s" % self.history_id)
+                print(f"Some problem occurred with history: {self.history_id}")
                 print(exception)
                 return
         update_history_id = update_history["id"]
-        print("History name: %s" % update_history["name"])
-        print("History id: %s" % update_history_id)
+        print(f"History name: {update_history['name']}")
+        print(f"History id: {update_history_id}")
         self.find_dataset_parents_update_tags(history, job, update_history_id)
 
     def find_dataset_parents_update_tags(self, history, job, history_id):
@@ -42,9 +42,9 @@ class ApplyTagsHistory:
         Operate on datasets for a particular history and recursively find parents
         for a dataset
         """
-        datasets_inheritance_chain = dict()
-        own_tags = dict()
-        parent_tags = dict()
+        datasets_inheritance_chain = {}
+        own_tags = {}
+        parent_tags = {}
         count_datasets_updated = 0
         # get all datasets belonging to a history
         all_datasets = history.show_history(history_id, contents=True)
@@ -107,7 +107,7 @@ class ApplyTagsHistory:
                 for parent in dataset_parents:
                     find_parent_recursive(parent, recursive_parents)
 
-        recursive_parent_ids = dict()
+        recursive_parent_ids = {}
         for item in datasets_inheritance_chain:
             recursive_parents: List = []
 
@@ -136,9 +136,8 @@ class ApplyTagsHistory:
         self_tags = self.collect_hash_tags(own_tags[dataset_id])
         # find unique tags from all parents
         all_tags_set = set(all_tags)
-        self_tags_set = set(self_tags)
         # update tags if there are new tags from parents
-        if all_tags_set != self_tags_set:
+        if all_tags_set != (self_tags_set := set(self_tags)):
             if not all_tags_set.issubset(self_tags_set):
                 # append the tags of the child itself
                 all_tags.extend(self_tags)

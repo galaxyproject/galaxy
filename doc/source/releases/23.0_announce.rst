@@ -1,6 +1,6 @@
 
 ===========================================================
- 2023 Galaxy Release (v 23.0)
+23.0 Galaxy Release (April 2023)
 ===========================================================
 
 .. include:: _header.rst
@@ -159,7 +159,7 @@ The following files are new, or recently converted to yaml
 -  ``config/themes_conf.yml.sample``
 
 
-Deprecation Notice
+Deprecation Notices
 ===========================================================
 
 Trackster is deprecated and will be removed in the next release.  This functionality will be provided by other visualization plugins (IGV.js, JBrowse).

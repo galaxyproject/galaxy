@@ -184,6 +184,168 @@ class TestHistoryContentsApi(ApiTestCase):
         contents_response = self._get(f"histories/{history_id}/contents?v=dev&details={hda1['id']}, ,{hda1['id']}")
         self._assert_status_code_is(contents_response, 400)
 
+    def test_view_and_keys_parameters_for_datasets(self, history_id):
+        created_hda = self.dataset_populator.new_dataset(history_id)
+        hda_id = created_hda["id"]
+        item_type = "dataset"
+
+        summary_view_keys = [
+            "id",
+            "name",
+            "history_id",
+            "hid",
+            "history_content_type",
+            "deleted",
+            "visible",
+            "type_id",
+            "type",
+            "create_time",
+            "update_time",
+            "url",
+            "tags",
+            "dataset_id",
+            "state",
+            "extension",
+            "purged",
+            "genome_build",
+        ]
+
+        detailed_view_only_keys = [
+            "created_from_basename",
+            "api_type",
+            "accessible",
+            "misc_info",
+            "resubmitted",
+            "misc_blurb",
+            "hda_ldda",
+            "file_size",
+            "hashes",
+            "drs_id",
+            "validated_state_message",
+            "creating_job",
+            "file_ext",
+            "copied_from_ldda_id",
+            "peek",
+            "validated_state",
+            "permissions",
+            "uuid",
+            "model_class",
+            "sources",
+            "annotation",
+            "display_apps",
+            "display_types",
+            "file_name",
+            "download_url",
+            "rerunnable",
+            "data_type",
+            "meta_files",
+        ]
+
+        detailed_view_keys = summary_view_keys + detailed_view_only_keys
+
+        # Expect summary view to be returned.
+        view = "summary"
+        keys = None
+        item = self._get_history_item_with_custom_serialization(history_id, hda_id, item_type, view, keys)
+        self._assert_has_keys(item, *summary_view_keys)
+        for key in detailed_view_only_keys:
+            assert key not in item
+        # Expect "dynamic" metadata fields to NOT be returned.
+        metadata_keys = [key for key in item.keys() if key.startswith("metadata_")]
+        assert len(metadata_keys) == 0
+
+        # Expect detailed view to be returned.
+        view = "detailed"
+        keys = None
+        item = self._get_history_item_with_custom_serialization(history_id, hda_id, item_type, view, keys)
+        self._assert_has_keys(item, *detailed_view_keys)
+        # Expect also "dynamic" metadata fields to be returned.
+        metadata_keys = [key for key in item.keys() if key.startswith("metadata_")]
+        assert len(metadata_keys) > 0
+
+        # Expect only specific keys to be returned.
+        view = None
+        keys = detailed_view_only_keys + ["id"]
+        item = self._get_history_item_with_custom_serialization(history_id, hda_id, item_type, view, keys)
+        self._assert_has_keys(item, *keys)
+        assert len(item) == len(keys)
+        # Make sure the id is encoded in the response.
+        assert isinstance(item["id"], str)
+        assert item["id"] == hda_id
+
+        # Expect combined view and keys to be returned.
+        view = "summary"
+        keys = ["file_size"]
+        item = self._get_history_item_with_custom_serialization(history_id, hda_id, item_type, view, keys)
+        self._assert_has_keys(item, *summary_view_keys, *keys)
+        assert "peek" not in item
+
+    def test_view_and_keys_parameters_for_collections(self, history_id):
+        fetch_response = self.dataset_collection_populator.create_list_in_history(history_id, direct_upload=True).json()
+        created_dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        hdca_id = created_dataset_collection["id"]
+        item_type = "dataset_collection"
+
+        # Collections seems to have 3 different views, "collection", "element" and "element-reference".
+        # We cannot use the keys parameter with collections, so we will only test the view parameter.
+        collection_view_keys = [
+            "hid",
+            "history_id",
+            "history_content_type",
+            "visible",
+            "deleted",
+            "job_source_id",
+            "job_source_type",
+            "job_state_summary",
+            "create_time",
+            "update_time",
+            "id",
+            "name",
+            "collection_id",
+            "collection_type",
+            "populated",
+            "populated_state",
+            "populated_state_message",
+            "element_count",
+            "elements_datatypes",
+            "type",
+            "model_class",
+            "tags",
+            "url",
+            "contents_url",
+        ]
+
+        element_view_only_keys = ["elements", "implicit_collection_jobs_id"]
+        element_view_keys = collection_view_keys + element_view_only_keys
+
+        # Expect summary view to be returned.
+        view = "collection"
+        item = self._get_history_item_with_custom_serialization(history_id, hdca_id, item_type, view)
+        self._assert_has_keys(item, *collection_view_keys)
+        for key in element_view_only_keys:
+            assert key not in item
+
+        # Expect detailed view to be returned.
+        view = "element"
+        item = self._get_history_item_with_custom_serialization(history_id, hdca_id, item_type, view)
+        self._assert_has_keys(item, *element_view_keys)
+        # The `elements` field should be populated for the "element" view.
+        assert len(item["elements"]) > 0
+
+    def _get_history_item_with_custom_serialization(
+        self,
+        history_id: str,
+        content_id: str,
+        item_type: str,
+        expected_view: Optional[str] = None,
+        expected_keys: Optional[List[str]] = None,
+    ):
+        view = f"&view={expected_view}" if expected_view else ""
+        keys = f"&keys={','.join(expected_keys)}" if expected_keys else ""
+        response = self._get(f"histories/{history_id}/contents/{item_type}s/{content_id}?v=dev{view}{keys}")
+        self._assert_status_code_is_ok(response)
+        return response.json()
+
     def test_show_hda(self, history_id):
         hda1 = self.dataset_populator.new_dataset(history_id)
         show_response = self.__show(history_id, hda1)
@@ -495,7 +657,7 @@ class TestHistoryContentsApi(ApiTestCase):
 
     def test_dataset_collection_hide_originals(self, history_id):
         payload = self.dataset_collection_populator.create_pair_payload(
-            history_id, type="dataset_collection", direct_upload=False
+            history_id, type="dataset_collection", direct_upload=False, copy_elements=False
         )
 
         payload["hide_source_items"] = True
@@ -503,9 +665,7 @@ class TestHistoryContentsApi(ApiTestCase):
         self.__check_create_collection_response(dataset_collection_response)
 
         contents_response = self._get(f"histories/{history_id}/contents")
-        datasets = [
-            d for d in contents_response.json() if d["history_content_type"] == "dataset" and d["hid"] in [1, 2]
-        ]
+        datasets = [d for d in contents_response.json() if d["history_content_type"] == "dataset"]
         # Assert two datasets in source were hidden.
         assert len(datasets) == 2
         assert not datasets[0]["visible"]
@@ -553,7 +713,7 @@ class TestHistoryContentsApi(ApiTestCase):
         assert len(contents) == 1
         new_forward, _ = self.__get_paired_response_elements(history_id, contents[0])
         self._assert_has_keys(new_forward, "history_id")
-        assert new_forward["history_id"] == history_id
+        assert new_forward["history_id"] == second_history_id
 
     def test_hdca_copy_with_new_dbkey(self, history_id):
         fetch_response = self.dataset_collection_populator.create_pair_in_history(history_id, wait=True).json()
@@ -802,6 +962,45 @@ class TestHistoryContentsApi(ApiTestCase):
         collection = contents_response.json()[0]
         assert sorted(collection["elements_datatypes"]) == sorted(expected_datatypes)
 
+    @skip_without_tool("cat1")
+    def test_cannot_run_tools_on_immutable_histories(self, history_id):
+        create_response = self.dataset_collection_populator.create_pair_in_history(
+            history_id, contents=["123", "456"], wait=True
+        )
+        hdca_id = create_response.json()["outputs"][0]["id"]
+        inputs = {
+            "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
+        }
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        with self.assertRaisesRegex(AssertionError, "History is immutable"):
+            self.dataset_populator.run_tool("cat1", inputs=inputs, history_id=history_id)
+
+    def test_cannot_update_dataset_collection_on_immutable_history(self, history_id):
+        hdca = self._create_pair_collection(history_id)
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        body = dict(name="newnameforpair")
+        update_response = self._put(
+            f"histories/{history_id}/contents/dataset_collections/{hdca['id']}", data=body, json=True
+        )
+        self._assert_status_code_is(update_response, 403)
+        assert update_response.json()["err_msg"] == "History is immutable"
+
+    def test_cannot_update_dataset_on_immutable_history(self, history_id):
+        hda1 = self._wait_for_new_hda(history_id)
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        update_response = self._update(history_id, hda1["id"], dict(name="Updated Name"))
+        self._assert_status_code_is(update_response, 403)
+        assert update_response.json()["err_msg"] == "History is immutable"
+
 
 class TestHistoryContentsApiBulkOperation(ApiTestCase):
     """
@@ -844,7 +1043,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
                     },
                 ],
             }
-            expected_hidden_item_ids = list(map(lambda item: item["id"], payload["items"]))
+            expected_hidden_item_ids = [item["id"] for item in payload["items"]]
             expected_hidden_item_count = len(expected_hidden_item_ids)
             bulk_operation_result = self._apply_bulk_operation(history_id, payload)
             history_contents = self._get_history_contents(history_id)
@@ -987,6 +1186,41 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
                 if item["history_content_type"] == "dataset":
                     self.dataset_populator.wait_for_purge(history_id=history_id, content_id=item["id"])
 
+    def test_deleting_collection_should_delete_contents(self):
+        with self.dataset_populator.test_history() as history_id:
+            num_expected_datasets = 2
+            # Create collection and datasets
+            collection_ids = self._create_collection_in_history(history_id, num_collections=1)
+            original_collection_id = collection_ids[0]
+            # Check datasets are hidden and not deleted
+            history_contents = self._get_history_contents(history_id)
+            datasets = list(filter(lambda item: item["history_content_type"] == "dataset", history_contents))
+            assert len(datasets) == num_expected_datasets
+            for dataset in datasets:
+                assert dataset["deleted"] is False
+                assert dataset["visible"] is False
+
+            # Delete the collection
+            payload = {
+                "operation": "delete",
+                "items": [
+                    {
+                        "id": original_collection_id,
+                        "history_content_type": "dataset_collection",
+                    },
+                ],
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            self._assert_bulk_success(bulk_operation_result, 1)
+
+            # We expect the original collection and the datasets to be deleted
+            num_expected_history_contents = num_expected_datasets + 1
+
+            history_contents = self._get_history_contents(history_id)
+            assert len(history_contents) == num_expected_history_contents
+            for item in history_contents:
+                assert item["deleted"] is True
+
     @requires_new_user
     def test_only_owner_can_apply_bulk_operations(self):
         with self.dataset_populator.test_history() as history_id:
@@ -1128,13 +1362,14 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             _, collection_ids, history_contents = self._create_test_history_contents(history_id)
 
             history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
+            original_collection_update_times = []
             for item in history_contents:
                 if item["history_content_type"] == "dataset":
                     assert item["extension"] == "txt"
                     assert item["data_type"] == "galaxy.datatypes.data.Text"
                     assert "metadata_column_names" not in item
-
-            self.dataset_populator.wait_for_history_jobs(history_id)
+                if item["history_content_type"] == "dataset_collection":
+                    original_collection_update_times.append(item["update_time"])
 
             expected_datatype = "tabular"
             # Change datatype of all datasets
@@ -1154,11 +1389,16 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             self.dataset_populator.wait_for_history(history_id)
 
             history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
+            new_collection_update_times = []
             for item in history_contents:
                 if item["history_content_type"] == "dataset":
                     assert item["extension"] == "tabular"
                     assert item["data_type"] == "galaxy.datatypes.tabular.Tabular"
                     assert "metadata_column_names" in item
+                if item["history_content_type"] == "dataset_collection":
+                    new_collection_update_times.append(item["update_time"])
+
+            assert original_collection_update_times != new_collection_update_times
 
     def test_bulk_datatype_change_should_skip_set_metadata_on_deferred_data(self):
         with self.dataset_populator.test_history() as history_id:
@@ -1344,7 +1584,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
         collection_ids = self._create_collection_in_history(history_id, num_expected_collections)
         history_contents = self._get_history_contents(history_id)
         datasets = filter(lambda item: item["history_content_type"] == "dataset", history_contents)
-        datasets_ids = list(map(lambda dataset: dataset["id"], datasets))
+        datasets_ids = [dataset["id"] for dataset in datasets]
         assert len(history_contents) == num_expected_datasets + num_expected_collections
         assert len(datasets_ids) == num_expected_datasets
         for dataset_id in datasets_ids:
@@ -1385,6 +1625,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
         return None
 
     def _apply_bulk_operation(self, history_id: str, payload, query: str = "", expected_status_code: int = 200):
+        original_history_update_time = self._get_history_update_time(history_id)
         if query:
             query = f"?{query}"
         response = self._put(
@@ -1393,8 +1634,22 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             json=True,
         )
         self._assert_status_code_is(response, expected_status_code)
-        return response.json()
+        result = response.json()
+
+        if "err_msg" in result or result.get("success_count", 0) == 0:
+            # We don't need to check the history update time if there was an error or no items were updated
+            return result
+
+        # After a successful operation, history update time should be updated so the changes can be detected by the frontend
+        after_bulk_operation_history_update_time = self._get_history_update_time(history_id)
+        assert after_bulk_operation_history_update_time > original_history_update_time
+
+        return result
 
     def _assert_bulk_success(self, bulk_operation_result, expected_success_count: int):
         assert bulk_operation_result["success_count"] == expected_success_count, bulk_operation_result
         assert not bulk_operation_result["errors"]
+
+    def _get_history_update_time(self, history_id: str):
+        history = self._get(f"histories/{history_id}").json()
+        return history.get("update_time")

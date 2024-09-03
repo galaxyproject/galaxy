@@ -1,9 +1,11 @@
 <template>
     <div>
         <FolderTopBar
+            :search-text="searchText"
+            :can-add-library-item="canAddLibraryItem"
             :folder-contents="folderContents"
             :include-deleted.sync="includeDeleted"
-            :folder_id="currentFolderId"
+            :folder-id="currentFolderId"
             :selected="selected"
             :metadata="folder_metadata"
             :unselected="unselected"
@@ -43,14 +45,14 @@
                 </div>
             </template>
             <template v-slot:head(selected)="">
-                <font-awesome-icon
+                <FontAwesomeIcon
                     v-if="isAllSelectedMode && !isAllSelectedOnPage()"
                     class="select-checkbox cursor-pointer"
                     size="lg"
                     title="Check to select all datasets"
                     icon="minus-square"
                     @click="toggleSelect" />
-                <font-awesome-icon
+                <FontAwesomeIcon
                     v-else
                     class="select-checkbox cursor-pointer"
                     size="lg"
@@ -59,7 +61,7 @@
                     @click="toggleSelect" />
             </template>
             <template v-slot:cell(selected)="row">
-                <font-awesome-icon
+                <FontAwesomeIcon
                     v-if="!row.item.isNewFolder && !row.item.deleted"
                     class="select-checkbox lib-folder-checkbox"
                     size="lg"
@@ -140,8 +142,8 @@
                 </div>
             </template>
             <template v-slot:cell(type_icon)="row">
-                <font-awesome-icon v-if="row.item.type === 'folder'" :icon="['far', 'folder']" title="Folder" />
-                <font-awesome-icon v-else-if="row.item.type === 'file'" title="Dataset" :icon="['far', 'file']" />
+                <FontAwesomeIcon v-if="row.item.type === 'folder'" :icon="['far', 'folder']" title="Folder" />
+                <FontAwesomeIcon v-else-if="row.item.type === 'file'" title="Dataset" :icon="['far', 'file']" />
             </template>
             <template v-slot:cell(type)="row">
                 <div v-if="row.item.type === 'folder'">{{ row.item.type }}</div>
@@ -159,10 +161,10 @@
                 <UtcDate v-if="row.item.update_time" :date="row.item.update_time" mode="elapsed" />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
-                <font-awesome-icon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
-                <font-awesome-icon v-else-if="row.item.deleted" title="Marked deleted" icon="ban"></font-awesome-icon>
-                <font-awesome-icon v-else-if="row.item.is_private" title="Private dataset" icon="key" />
-                <font-awesome-icon
+                <FontAwesomeIcon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
+                <FontAwesomeIcon v-else-if="row.item.deleted" title="Marked deleted" icon="ban"></FontAwesomeIcon>
+                <FontAwesomeIcon v-else-if="row.item.is_private" title="Private dataset" icon="key" />
+                <FontAwesomeIcon
                     v-else-if="row.item.is_private === false && row.item.is_unrestricted === false"
                     title="Restricted dataset"
                     icon="shield-alt" />
@@ -174,14 +176,14 @@
                         class="primary-button btn-sm permission_folder_btn save_folder_btn"
                         :title="'save ' + row.item.name"
                         @click="row.item.isNewFolder ? createNewFolder(row.item) : saveChanges(row.item)">
-                        <font-awesome-icon :icon="['far', 'save']" />
+                        <FontAwesomeIcon :icon="['far', 'save']" />
                         Save
                     </button>
                     <button
                         class="primary-button btn-sm permission_folder_btn"
                         title="Discard Changes"
                         @click="toggleEditMode(row.item)">
-                        <font-awesome-icon :icon="['fas', 'times']" />
+                        <FontAwesomeIcon :icon="['fas', 'times']" />
                         Cancel
                     </button>
                 </div>
@@ -194,7 +196,7 @@
                         class="lib-btn permission_folder_btn edit_folder_btn"
                         :title="'Edit ' + row.item.name"
                         @click="toggleEditMode(row.item)">
-                        <font-awesome-icon icon="pencil-alt" />
+                        <FontAwesomeIcon icon="pencil-alt" />
                         Edit
                     </b-button>
                     <b-button
@@ -203,7 +205,7 @@
                         class="lib-btn permission_lib_btn"
                         :title="`Permissions of ${row.item.name}`"
                         :to="{ path: `${navigateToPermission(row.item)}` }">
-                        <font-awesome-icon icon="users" />
+                        <FontAwesomeIcon icon="users" />
                         Manage
                     </b-button>
                     <button
@@ -212,7 +214,7 @@
                         class="lib-btn primary-button btn-sm undelete_dataset_btn"
                         type="button"
                         @click="undelete(row.item, folder_id)">
-                        <font-awesome-icon icon="unlock" />
+                        <FontAwesomeIcon icon="unlock" />
                         Undelete
                     </button>
                 </div>
@@ -260,22 +262,24 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import { sanitize } from "dompurify";
-import { getAppRoot } from "onload/loadConfig";
-import UtcDate from "components/UtcDate";
-import BootstrapVue from "bootstrap-vue";
-import { Services } from "./services";
-import Utils from "utils/utils";
-import linkifyHtml from "linkify-html";
-import { fields } from "./table-fields";
-import { Toast } from "composables/toast";
-import FolderTopBar from "./TopToolbar/FolderTopBar";
-import { initFolderTableIcons } from "components/Libraries/icons";
-import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE } from "components/Libraries/library-utils";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import BootstrapVue from "bootstrap-vue";
+import { initFolderTableIcons } from "components/Libraries/icons";
+import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
+import UtcDate from "components/UtcDate";
+import { Toast } from "composables/toast";
+import { sanitize } from "dompurify";
+import linkifyHtml from "linkify-html";
+import { getAppRoot } from "onload/loadConfig";
+import { mapState } from "pinia";
+import Utils from "utils/utils";
+import Vue from "vue";
+
+import { useUserStore } from "@/stores/userStore";
+
+import { Services } from "./services";
+import { fields } from "./table-fields";
+import FolderTopBar from "./TopToolbar/FolderTopBar";
 
 initFolderTableIcons();
 
@@ -283,6 +287,7 @@ Vue.use(BootstrapVue);
 
 function initialFolderState() {
     return {
+        canAddLibraryItem: false,
         selected: [],
         unselected: [],
         expandedMessage: [],
@@ -385,6 +390,7 @@ export default {
                 .then((response) => {
                     this.folderContents = response.folder_contents;
                     this.folder_metadata = response.metadata;
+                    this.canAddLibraryItem = response.metadata.can_add_library_item;
                     this.total_rows = response.metadata.total_rows;
                     if (this.isAllSelectedMode) {
                         this.selected = [];

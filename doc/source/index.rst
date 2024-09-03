@@ -5,7 +5,9 @@ Galaxy is an open, web-based platform for accessible, reproducible, and transpar
 
 For more information on the Galaxy Project, please visit the https://galaxyproject.org
 
-The community maintains `a list of awesome Galaxy resources <https://github.com/galaxyproject/awesome-galaxy/>`__ related to all aspects of Galaxy.
+This site contains documentation for administrators and developers. For user documentation, and admin and developer tutorials, please visit the `Galaxy Training Network <https://training.galaxyproject.org/>`__.
+
+The community also maintains `a list of awesome Galaxy resources <https://github.com/galaxyproject/awesome-galaxy/>`__ related to all aspects of Galaxy.
 
 
 * :ref:`release-docs`
@@ -48,6 +50,7 @@ The community maintains `a list of awesome Galaxy resources <https://github.com/
    :caption: About Project
 
    Project Governance <project/organization>
+   Galaxy Release Process <project/releases>
    Issue Management <project/issues>
 
 Indices and tables

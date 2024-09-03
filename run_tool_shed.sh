@@ -3,6 +3,7 @@
 cd "$(dirname "$0")"
 
 
+export GALAXY_SKIP_CLIENT_BUILD=1
 TOOL_SHED_PID=${TOOL_SHED_PID:-tool_shed_webapp.pid}
 TOOL_SHED_LOG=${TOOL_SHED_LOG:-tool_shed_webapp.log}
 PID_FILE=$TOOL_SHED_PID

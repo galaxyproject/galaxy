@@ -8,7 +8,7 @@ from typing import (
 try:
     import mockssh
 except ImportError:
-    raise unittest.SkipTest("Skipping tests that require mockssh")
+    mockssh = None
 
 from galaxy.jobs.runners.util.cli import CliInterface
 from galaxy.security.ssh_util import (
@@ -42,6 +42,8 @@ class TestCliInterface(TestCase):
         cls.cli_interface = CliInterface()
 
     def test_secure_shell_plugin_without_strict(self):
+        if not mockssh:
+            raise unittest.SkipTest("Skipping tests that require mockssh")
         with mockssh.Server(users={self.username: self.ssh_keys.private_key_file}) as server:
             self.shell_params["port"] = server.port
             self.shell_params["plugin"] = "SecureShell"
@@ -51,6 +53,8 @@ class TestCliInterface(TestCase):
         assert result.stdout.strip() == "hello"
 
     def test_get_shell_plugin(self):
+        if not mockssh:
+            raise unittest.SkipTest("Skipping tests that require mockssh")
         with mockssh.Server(users={self.username: self.ssh_keys.private_key_file}) as server:
             self.shell_params["port"] = server.port
             self.shell_params["plugin"] = "ParamikoShell"
@@ -58,6 +62,8 @@ class TestCliInterface(TestCase):
         assert self.shell.username == self.username
 
     def test_paramiko_shell_plugin(self):
+        if not mockssh:
+            raise unittest.SkipTest("Skipping tests that require mockssh")
         with mockssh.Server(users={self.username: self.ssh_keys.private_key_file}) as server:
             self.shell_params["port"] = server.port
             self.shell_params["plugin"] = "ParamikoShell"

@@ -1345,17 +1345,17 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
         for da in inp_data:
             try:
                 # If the input is a file, check and add the size
-                if inp_data[da] is not None and os.path.isfile(inp_data[da].file_name):
+                if inp_data[da] is not None and os.path.isfile(inp_data[da].get_file_name()):
                     num_input_datasets += 1
                     if verbose:
                         message = f"Loading file: {str(da)}"
-                        message += str(inp_data[da].file_name)
+                        message += str(inp_data[da].get_file_name())
                         log.debug(message)
 
                     # Add to records if the file type is fasta
                     if inp_data[da].ext == "fasta":
                         if records_rule_present:
-                            inp_db = open(inp_data[da].file_name)
+                            inp_db = open(inp_data[da].get_file_name())
 
                             # Try to find automatically computed sequences
                             metadata = inp_data[da].get_metadata()
@@ -1367,7 +1367,7 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
                                     if line[0] == ">":
                                         records += 1
                     if filesize_rule_present:
-                        query_file = str(inp_data[da].file_name)
+                        query_file = str(inp_data[da].get_file_name())
                         file_size += os.path.getsize(query_file)
             except AttributeError:
                 # Otherwise, say that input isn't a file
@@ -1647,14 +1647,14 @@ def get_destination_list_from_job_config(job_config_location) -> set:
 
         # Add all destination IDs from the job configuration xml file
         for destination in job_conf.getroot().iter("destination"):
-            if isinstance(destination.get("id"), str):
-                destination_list.add(destination.get("id"))
-
+            destination_id = destination.get("id")
+            if destination_id:
+                destination_list.add(destination_id)
             else:
                 error = f"Destination ID '{str(destination)}"
                 error += "' in job configuration file cannot be"
                 error += " parsed. Things may not work as expected!"
-                log.debug(error)
+                log.warning(error)
 
     return destination_list
 
@@ -1773,11 +1773,13 @@ if __name__ == "__main__":
         "--check-config",
         dest="check_config",
         nargs="?",
-        help="Use this option to validate tool_destinations.yml."
-        + " Optionally, provide the path to the tool_destinations.yml"
-        + " that you would like to check, and/or the path to the related"
-        + " job_conf.xml. Default: galaxy/config/tool_destinations.yml"
-        + "and galaxy/config/job_conf.xml",
+        help=(
+            "Use this option to validate tool_destinations.yml."
+            " Optionally, provide the path to the tool_destinations.yml"
+            " that you would like to check, and/or the path to the related"
+            " job_conf.xml. Default: galaxy/config/tool_destinations.yml"
+            "and galaxy/config/job_conf.xml"
+        ),
     )
 
     parser.add_argument("-j", "--job-config", dest="job_config")

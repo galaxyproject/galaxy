@@ -25,7 +25,7 @@ class MockWebApplication(WebApplication):
 
 def test_galaxy_routes():
     test_config = Bunch(template_cache_path="/tmp")
-    app = cast(MinimalApp, Bunch(config=test_config, security=object(), trace_logger=None, name="galaxy"))
+    app = cast(MinimalApp, Bunch(config=test_config, security=object(), trace_logger=None, name="galaxy", model=None))
     test_webapp = MockWebApplication(app)
 
     galaxy_buildapp.populate_api_routes(test_webapp, app)

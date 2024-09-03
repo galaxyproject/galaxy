@@ -2,7 +2,9 @@ import bz2
 import gzip
 import io
 import logging
+import lzma
 import os
+import shutil
 import tarfile
 import tempfile
 import zipfile
@@ -28,33 +30,40 @@ from galaxy.util.path import (
 from .checkers import (
     is_bz2,
     is_gzip,
+    is_xz,
 )
+
+try:
+    from isal import isal_zlib
+except ImportError:
+    isal_zlib = None  # type: ignore[assignment,unused-ignore]
+
 
 log = logging.getLogger(__name__)
 
 FileObjTypeStr = Union[IO[str], io.TextIOWrapper]
-FileObjTypeBytes = Union[gzip.GzipFile, bz2.BZ2File, IO[bytes]]
+FileObjTypeBytes = Union[gzip.GzipFile, bz2.BZ2File, lzma.LZMAFile, IO[bytes]]
 FileObjType = Union[FileObjTypeStr, FileObjTypeBytes]
 
 
 @overload
-def get_fileobj(filename: str, mode: Literal["r"], compressed_formats: Optional[List[str]] = None) -> FileObjTypeStr:
-    ...
+def get_fileobj(
+    filename: str, mode: Literal["r"], compressed_formats: Optional[List[str]] = None
+) -> FileObjTypeStr: ...
 
 
 @overload
-def get_fileobj(filename: str, mode: Literal["rb"], compressed_formats: Optional[List[str]] = None) -> FileObjTypeBytes:
-    ...
+def get_fileobj(
+    filename: str, mode: Literal["rb"], compressed_formats: Optional[List[str]] = None
+) -> FileObjTypeBytes: ...
 
 
 @overload
-def get_fileobj(filename: str) -> FileObjTypeStr:
-    ...
+def get_fileobj(filename: str) -> FileObjTypeStr: ...
 
 
 @overload
-def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None) -> FileObjType:
-    ...
+def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None) -> FileObjType: ...
 
 
 def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None) -> FileObjType:
@@ -65,7 +74,7 @@ def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[Lis
     :param filename: path to file that should be opened
     :param mode: mode to pass to opener
     :param compressed_formats: list of allowed compressed file formats among
-      'bz2', 'gzip' and 'zip'. If left to None, all 3 formats are allowed
+      'bz2', 'gzip', 'xz' and 'zip'. If left to None, all 3 formats are allowed
     """
     return get_fileobj_raw(filename, mode, compressed_formats)[1]
 
@@ -73,34 +82,30 @@ def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[Lis
 @overload
 def get_fileobj_raw(
     filename: str, mode: Literal["r"], compressed_formats: Optional[List[str]] = None
-) -> Tuple[Optional[str], FileObjTypeStr]:
-    ...
+) -> Tuple[Optional[str], FileObjTypeStr]: ...
 
 
 @overload
 def get_fileobj_raw(
     filename: str, mode: Literal["rb"], compressed_formats: Optional[List[str]] = None
-) -> Tuple[Optional[str], FileObjTypeBytes]:
-    ...
+) -> Tuple[Optional[str], FileObjTypeBytes]: ...
 
 
 @overload
-def get_fileobj_raw(filename: str) -> Tuple[Optional[str], FileObjTypeStr]:
-    ...
+def get_fileobj_raw(filename: str) -> Tuple[Optional[str], FileObjTypeStr]: ...
 
 
 @overload
 def get_fileobj_raw(
     filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None
-) -> Tuple[Optional[str], FileObjType]:
-    ...
+) -> Tuple[Optional[str], FileObjType]: ...
 
 
 def get_fileobj_raw(
     filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None
 ) -> Tuple[Optional[str], FileObjType]:
     if compressed_formats is None:
-        compressed_formats = ["bz2", "gzip", "zip"]
+        compressed_formats = ["bz2", "gzip", "xz", "zip"]
     # Remove 't' from mode, which may cause an error for compressed files
     mode = mode.replace("t", "")
     # 'U' mode is deprecated, we open in 'r'.
@@ -108,12 +113,16 @@ def get_fileobj_raw(
         mode = "r"
     compressed_format = None
     if "gzip" in compressed_formats and is_gzip(filename):
-        fh: Union[gzip.GzipFile, bz2.BZ2File, IO[bytes]] = gzip.GzipFile(filename, mode)
+        fh: Union[gzip.GzipFile, bz2.BZ2File, lzma.LZMAFile, IO[bytes]] = gzip.GzipFile(filename, mode)
         compressed_format = "gzip"
     elif "bz2" in compressed_formats and is_bz2(filename):
         mode = cast(Literal["a", "ab", "r", "rb", "w", "wb", "x", "xb"], mode)
         fh = bz2.BZ2File(filename, mode)
         compressed_format = "bz2"
+    elif "xz" in compressed_formats and is_xz(filename):
+        mode = cast(Literal["a", "ab", "r", "rb", "w", "wb", "x", "xb"], mode)
+        fh = lzma.LZMAFile(filename, mode)
+        compressed_format = "xz"
     elif "zip" in compressed_formats and zipfile.is_zipfile(filename):
         # Return fileobj for the first file in a zip file.
         # 'b' is not allowed in the ZipFile mode argument
@@ -345,3 +354,84 @@ class CompressedFile:
             if not member_path.startswith(basename):
                 return False
         return True
+
+
+class FastZipFile(zipfile.ZipFile):
+    """
+    Simple wrapper around ZipFile that uses the default compression strategy of ISA-L
+    to write zip files. Ignores compresslevel and compresstype arguments, and is
+    3 to 4 times faster than the zlib implementation at the default compression level.
+    """
+
+    def _open_to_write(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+        zwf = super()._open_to_write(*args, **kwargs)  # type: ignore[misc]
+        if isal_zlib and self.compression == zipfile.ZIP_DEFLATED:
+            zwf._compressor = isal_zlib.compressobj(isal_zlib.ISAL_DEFAULT_COMPRESSION, isal_zlib.DEFLATED, -15, 9)
+        return zwf
+
+
+# modified from shutil._make_zipfile
+def make_fast_zipfile(
+    base_name: str,
+    base_dir: str,
+    verbose: int = 0,
+    dry_run: int = 0,
+    logger: Optional[logging.Logger] = None,
+    owner: Optional[str] = None,
+    group: Optional[str] = None,
+    root_dir: Optional[str] = None,
+) -> str:
+    """Create a zip file from all the files under 'base_dir'.
+
+    The output zip file will be named 'base_name' + ".zip".  Returns the
+    name of the output zip file.
+    """
+
+    zip_filename = base_name + ".zip"
+    archive_dir = os.path.dirname(base_name)
+
+    if archive_dir and not os.path.exists(archive_dir):
+        if logger is not None:
+            logger.info("creating %s", archive_dir)
+        if not dry_run:
+            os.makedirs(archive_dir)
+
+    if logger is not None:
+        logger.info("creating '%s' and adding '%s' to it", zip_filename, base_dir)
+
+    if not dry_run:
+        with FastZipFile(zip_filename, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+            arcname = os.path.normpath(base_dir)
+            if root_dir is not None:
+                base_dir = os.path.join(root_dir, base_dir)
+            base_dir = os.path.normpath(base_dir)
+            if arcname != os.curdir:
+                zf.write(base_dir, arcname)
+                if logger is not None:
+                    logger.info("adding '%s'", base_dir)
+            for dirpath, dirnames, filenames in os.walk(base_dir):
+                arcdirpath = dirpath
+                if root_dir is not None:
+                    arcdirpath = os.path.relpath(arcdirpath, root_dir)
+                arcdirpath = os.path.normpath(arcdirpath)
+                for name in sorted(dirnames):
+                    path = os.path.join(dirpath, name)
+                    arcname = os.path.join(arcdirpath, name)
+                    zf.write(path, arcname)
+                    if logger is not None:
+                        logger.info("adding '%s'", path)
+                for name in filenames:
+                    path = os.path.join(dirpath, name)
+                    path = os.path.normpath(path)
+                    if os.path.isfile(path):
+                        arcname = os.path.join(arcdirpath, name)
+                        zf.write(path, arcname)
+                        if logger is not None:
+                            logger.info("adding '%s'", path)
+
+    if root_dir is not None:
+        zip_filename = os.path.abspath(zip_filename)
+    return zip_filename
+
+
+shutil.register_archive_format("fastzip", make_fast_zipfile)

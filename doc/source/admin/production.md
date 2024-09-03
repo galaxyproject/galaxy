@@ -179,3 +179,20 @@ Finally, if you are using Galaxy <= release_2014.06.02, we recommend that you in
 ### Make the proxy handle uploads and downloads
 
 By default, Galaxy receives file uploads as a stream from the proxy server and then writes this file to disk.  Likewise, it sends files as a stream to the proxy server.  This occupies the GIL in that Galaxy process and will decrease responsiveness for other operations in that process.  To solve this problem, you can configure your proxy server to serve downloads directly, involving Galaxy only for the task of authorizing that the user has permission to read the dataset.  If using nginx as the proxy, you can configure it to receive uploaded files and write them to disk itself, only notifying Galaxy of the upload once it's completed.  All the details on how to configure these can be found on the [Apache](apache.md) and [nginx](nginx.md) proxy instruction pages.
+
+### Use Celery for asynchronous tasks
+
+Galaxy can use [Celery](https://docs.celeryq.dev/en/stable/index.html) to handle asynchronous tasks. This is useful for offloading tasks that are usually time-consuming and that would otherwise block the Galaxy process. Some use cases include:
+
+-   Setting metadata on datasets
+-   Purging datasets
+-   Exporting histories or other data
+-   Running periodic tasks
+
+The list of tasks that are currently handled by `Celery` can be found in `lib/galaxy/celery/tasks.py`.
+
+To enable Celery in your instance you need to follow some additional steps:
+
+-   Set `enable_celery_tasks: true` in the Galaxy config.
+-   Configure the `backend` under `celery_conf` to store the results of the tasks. For example, you can use [`redis` as the backend](https://docs.celeryq.dev/en/stable/getting-started/backends-and-brokers/redis.html#broker-redis). If you are using `redis`, make sure to install the `redis` dependency in your Galaxy environment with `pip install redis`. You can find more information on how to configure other backends in the [Celery documentation](https://docs.celeryq.dev/en/stable/userguide/tasks.html#task-result-backends).
+-   Configure one or more workers to handle the tasks. You can find more information on how to configure workers in the [Celery documentation](https://docs.celeryq.dev/en/stable/userguide/workers.html). If you are using [Gravity](https://github.com/galaxyproject/gravity) it will simplify the process of setting up Celery workers.

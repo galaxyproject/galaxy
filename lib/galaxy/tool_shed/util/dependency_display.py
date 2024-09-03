@@ -2,7 +2,9 @@ import logging
 import os
 
 from galaxy import util
+from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.util import utility_container_manager
+from galaxy.util import UNKNOWN
 from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 
 log = logging.getLogger(__name__)
@@ -24,9 +26,9 @@ class DependencyDisplayer:
         for dependency_key, requirements_dict in tool_dependencies.items():
             if dependency_key in ["set_environment"]:
                 continue
-            repository_name = requirements_dict.get("repository_name", "unknown")
-            repository_owner = requirements_dict.get("repository_owner", "unknown")
-            changeset_revision = requirements_dict.get("changeset_revision", "unknown")
+            repository_name = requirements_dict.get("repository_name", UNKNOWN)
+            repository_owner = requirements_dict.get("repository_owner", UNKNOWN)
+            changeset_revision = requirements_dict.get("changeset_revision", UNKNOWN)
             dependency_name = requirements_dict["name"]
             version = requirements_dict["version"]
             if self.app.tool_dependency_dir:
@@ -195,13 +197,13 @@ class DependencyDisplayer:
         when displaying repository dependencies for installed repositories and when displaying
         them for uninstalled repositories that are being reinstalled.
         """
-        metadata = repository.metadata_
-        if metadata:
+        if metadata := repository.metadata_:
+            irm = InstalledRepositoryManager(self.app)
             # Handle repository dependencies.
             (
                 installed_repository_dependencies,
                 missing_repository_dependencies,
-            ) = self.app.installed_repository_manager.get_installed_and_missing_repository_dependencies(repository)
+            ) = irm.get_installed_and_missing_repository_dependencies(repository)
             # Handle the current repository's tool dependencies.
             repository_tool_dependencies = metadata.get("tool_dependencies", None)
             # Make sure to display missing tool dependencies as well.
@@ -290,3 +292,20 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
         except Exception as e:
             log.debug(f"Exception in build_repository_containers: {str(e)}")
         return containers_dict
+
+
+def build_manage_repository_dict(app, status, repository):
+    dd = DependencyDisplayer(app)
+    containers_dict = dd.populate_containers_dict_from_repository_metadata(
+        repository=repository,
+    )
+    management_dict = {
+        "status": status,
+    }
+    missing_repo_dependencies = containers_dict.get("missing_repository_dependencies", None)
+    if missing_repo_dependencies:
+        management_dict["missing_repository_dependencies"] = missing_repo_dependencies.to_dict()
+    repository_dependencies = containers_dict.get("repository_dependencies", None)
+    if repository_dependencies:
+        management_dict["repository_dependencies"] = repository_dependencies.to_dict()
+    return management_dict

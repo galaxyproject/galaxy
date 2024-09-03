@@ -1,5 +1,6 @@
 from unittest import mock
 
+from galaxy.app_unittest_utils.galaxy_mock import mock_url_builder
 from galaxy.managers import (
     collections,
     hdas,
@@ -31,6 +32,7 @@ class HDCATestCase(BaseTestCase, CreatesCollectionsMixin):
     def _create_history(self, user_data=None, **kwargs):
         user_data = user_data or user2_data
         owner = self.user_manager.create(**user_data)
+        self.trans.set_user(owner)
         return self.history_manager.create(user=owner, **kwargs)
 
     def _create_hda(self, history, dataset=None, **kwargs):
@@ -51,13 +53,7 @@ class HDCATestCase(BaseTestCase, CreatesCollectionsMixin):
         return hdca
 
 
-# =============================================================================
-# web.url_for doesn't work well in the framework
-def testable_url_for(*a, **k):
-    return f"(fake url): {a}, {k}"
-
-
-@mock.patch("galaxy.managers.hdcas.HDCASerializer.url_for", testable_url_for)
+@mock.patch("galaxy.managers.base.ModelSerializer.url_for", mock_url_builder)
 class TestHDCASerializer(HDCATestCase):
     def set_up_managers(self):
         super().set_up_managers()

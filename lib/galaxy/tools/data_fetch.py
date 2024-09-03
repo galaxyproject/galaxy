@@ -90,9 +90,8 @@ def _fetch_target(upload_config: "UploadConfig", target):
     assert destination, "No destination defined."
 
     def expand_elements_from(target_or_item):
-        elements_from = target_or_item.get("elements_from", None)
         items = None
-        if elements_from:
+        if elements_from := target_or_item.get("elements_from", None):
             if elements_from == "archive":
                 decompressed_directory = _decompress_target(upload_config, target_or_item)
                 items = _directory_to_items(decompressed_directory)
@@ -139,11 +138,10 @@ def _fetch_target(upload_config: "UploadConfig", target):
         info = src_item.get("info", None)
         created_from_basename = src_item.get("created_from_basename", None)
         tags = src_item.get("tags", [])
-        object_id = src_item.get("object_id", None)
 
         if info is not None:
             target_metadata["info"] = info
-        if object_id is not None:
+        if (object_id := src_item.get("object_id", None)) is not None:
             target_metadata["object_id"] = object_id
         if tags:
             target_metadata["tags"] = tags
@@ -307,7 +305,7 @@ def _fetch_target(upload_config: "UploadConfig", target):
                 if datatype.dataset_content_needs_grooming(path):
                     err_msg = (
                         "The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be "
-                        + "<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed."
+                        "<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed."
                     )
                     raise UploadProblemException(err_msg)
 
