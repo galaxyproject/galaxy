@@ -57,21 +57,6 @@ class InteractiveToolPropagatorSQLAlchemy:
         self._engine = create_engine(database_url)
         self._encode_id = encode_id
 
-    def get(self, key, key_type):
-        with self._engine.connect() as conn:
-            stmt = select(*gxitproxy.c["token", "host", "port", "info"]).where(
-                gxitproxy.c.key == key,
-                gxitproxy.c.key_type == key_type,
-            )
-            cursor_result = conn.execute(stmt)
-            result = cursor_result.fetchone()
-
-            if result is None:
-                log.warning("get(): invalid key: %s key_type %s", key, key_type)
-                return None
-
-            return dict(key=key, key_type=key_type, **dict(zip(cursor_result.keys(), result)))
-
     def save(self, key, key_type, token, host, port, info=None):
         """
         Write out a key, key_type, token, value store that is can be used for coordinating with external resources.
