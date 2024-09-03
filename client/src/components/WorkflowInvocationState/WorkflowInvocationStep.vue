@@ -25,44 +25,33 @@
                     <div style="min-width: 1">
                         <LoadingSpan v-if="loading" :message="`Loading invocation step details`"> </LoadingSpan>
                         <div v-else>
-                            <details
-                                v-if="Object.values(stepDetails.outputs).length > 0"
-                                class="invocation-step-output-details"
-                                :open="!isDataStep && inGraphView">
-                                <summary><b>Output Datasets</b></summary>
+                            <div
+                                v-if="!isDataStep && Object.values(stepDetails.outputs).length > 0"
+                                class="invocation-step-output-details">
+                                <Heading size="md" separator>Output Datasets</Heading>
                                 <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
                                     <b>{{ name }}</b>
                                     <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
                                 </div>
-                            </details>
-                            <details
-                                v-if="Object.values(stepDetails.output_collections).length > 0"
-                                class="invocation-step-output-collection-details"
-                                :open="!isDataStep && inGraphView">
-                                <summary><b>Output Dataset Collections</b></summary>
+                            </div>
+                            <div
+                                v-if="!isDataStep && Object.values(stepDetails.output_collections).length > 0"
+                                class="invocation-step-output-collection-details">
+                                <Heading size="md" separator>Output Dataset Collections</Heading>
                                 <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
                                     <b>{{ name }}</b>
                                     <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
                                 </div>
-                            </details>
+                            </div>
                             <div class="portlet-body" style="width: 100%; overflow-x: auto">
-                                <details
+                                <div
                                     v-if="workflowStepType == 'tool'"
                                     class="invocation-step-job-details"
                                     :open="inGraphView">
-                                    <summary>
-                                        <b>{{ jobStepHeading(stepDetails) }}</b>
-                                    </summary>
-                                    <span v-if="stepDetails.jobs?.length">
-                                        <JobStep
-                                            v-if="!inGraphView"
-                                            :key="inGraphView"
-                                            :jobs="stepDetails.jobs"
-                                            :invocation-graph="inGraphView" />
-                                        <JobStepTabs v-else class="mt-1" :jobs="stepDetails.jobs" />
-                                    </span>
+                                    <Heading size="md" separator>{{ jobStepHeading(stepDetails) }}</Heading>
+                                    <JobStep v-if="stepDetails.jobs?.length" class="mt-1" :jobs="stepDetails.jobs" />
                                     <b-alert v-else v-localize variant="info" show>This step has no jobs</b-alert>
-                                </details>
+                                </div>
                                 <ParameterStep
                                     v-else-if="workflowStepType == 'parameter_input'"
                                     :parameters="[getParamInput(stepDetails)]" />
@@ -116,18 +105,18 @@ import { mapActions, mapState } from "pinia";
 import { useToolStore } from "stores/toolStore";
 import { useWorkflowStore } from "stores/workflowStore";
 
-import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
 import WorkflowStepTitle from "./WorkflowStepTitle";
 
-import JobStepTabs from "./JobStepTabs.vue";
+import Heading from "../Common/Heading.vue";
+import JobStep from "./JobStep.vue";
 import WorkflowInvocationStepHeader from "./WorkflowInvocationStepHeader.vue";
 
 export default {
     components: {
         LoadingSpan,
+        Heading,
         JobStep,
-        JobStepTabs,
         ParameterStep,
         InvocationStepProvider,
         GenericHistoryItem,
@@ -203,11 +192,7 @@ export default {
             if (stepDetails.jobs?.length > 1) {
                 return "Jobs (Click on any job to view its details)";
             } else if (stepDetails.jobs?.length === 1) {
-                if (this.inGraphView) {
-                    return "Job";
-                } else {
-                    return "Job (Click on the job to view its details)";
-                }
+                return "Job";
             } else {
                 return "No jobs";
             }
