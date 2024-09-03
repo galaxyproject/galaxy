@@ -64,6 +64,20 @@ def test_private_user_role_assoc_not_affected_by_setting_role_users(session, mak
     verify_role_associations(private_role, [user], [])
 
 
+def test_cannot_assign_private_roles(session, make_user_and_role, make_role):
+    user, private_role1 = make_user_and_role()
+    _, private_role2 = make_user_and_role()
+    new_role = make_role()
+    verify_user_associations(user, [], [private_role1])  # the only existing association is with the private role
+
+    # Try to assign 2 more roles: regular role + another private role
+    GalaxyRBACAgent(session).set_user_group_and_role_associations(
+        user, group_ids=[], role_ids=[new_role.id, private_role2.id]
+    )
+    # Only regular role has been added: other private role ignored; original private role still assigned
+    verify_user_associations(user, [], [private_role1, new_role])
+
+
 class TestSetGroupUserAndRoleAssociations:
 
     def test_add_associations_to_existing_group(self, session, make_user_and_role, make_role, make_group):
