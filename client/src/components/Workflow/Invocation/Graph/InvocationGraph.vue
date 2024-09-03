@@ -211,7 +211,7 @@ function scrollStepToView() {
             <BCard ref="stepCard" class="mt-1" no-body>
                 <BCardHeader
                     class="d-flex justify-content-between align-items-center"
-                    :class="activeNodeId ? steps[activeNodeId]?.headerClass : ''">
+                    :class="activeNodeId !== null ? steps[activeNodeId]?.headerClass : ''">
                     <Heading inline size="sm" class="w-100 mr-2">
                         <WorkflowInvocationStepHeader
                             v-if="activeNodeId !== null"
