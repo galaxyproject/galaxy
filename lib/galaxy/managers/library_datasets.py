@@ -1,23 +1,26 @@
 """Manager and Serializer for library datasets."""
 
 import logging
+from typing import (
+    Any,
+    Dict,
+)
 
 from sqlalchemy import select
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import util
 from galaxy.exceptions import (
     InsufficientPermissionsException,
     InternalServerError,
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.managers import datasets
+from galaxy.managers.base import ModelManager
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.datasets import DatasetAssociationManager
 from galaxy.model import (
     LibraryDataset,
+    LibraryDatasetDatasetAssociation,
     LibraryFolder,
 )
 from galaxy.model.base import transaction
@@ -27,13 +30,14 @@ from galaxy.util import validation
 log = logging.getLogger(__name__)
 
 
-class LibraryDatasetsManager(datasets.DatasetAssociationManager):
+class LibraryDatasetsManager(ModelManager[LibraryDataset]):
     """Interface/service object for interacting with library datasets."""
 
-    model_class = model.LibraryDatasetDatasetAssociation
+    model_class = LibraryDataset
 
     def __init__(self, app: MinimalManagerApp):
-        self.app = app
+        super().__init__(app)
+        self.dataset_assoc_manager = DatasetAssociationManager(app)
 
     def get(self, trans, decoded_library_dataset_id, check_accessible=True) -> LibraryDataset:
         """
@@ -54,14 +58,14 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         ld = self.secure(trans, ld, check_accessible)
         return ld
 
-    def update(self, trans, ld, payload):
+    def update(self, item: LibraryDataset, new_values: Dict[str, Any], flush: bool = True, **kwargs) -> LibraryDataset:
         """
         Update the given library dataset - the latest linked ldda.
         Updating older lddas (versions) is not allowed.
 
-        :param  ld:                 library dataset to change
-        :type   ld:                 LibraryDataset
-        :param  payload:            dictionary structure containing::
+        :param  item:               library dataset to change
+        :type   item:               LibraryDataset
+        :param  new_values:         dictionary structure containing::
             :param name:            new ld's name, must be longer than 0
             :type  name:            str
             :param misc_info:       new ld's misc info
@@ -72,19 +76,27 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             :type  genome_build:    str
             :param tags:            list of dataset tags
             :type  tags:            list
-        :type   payload: dict
+        :type   new_values: dict
 
         :returns:   the changed library dataset
         :rtype:     galaxy.model.LibraryDataset
         """
-        self.check_modifiable(trans, ld)
+        trans = kwargs.get("trans")
+        if not trans:
+            raise ValueError("Missing trans parameter")
         # we are going to operate on the actual latest ldda
-        ldda = ld.library_dataset_dataset_association
-        payload = self._validate_and_parse_update_payload(payload)
-        self._set_from_dict(trans, ldda, payload)
-        return ld
+        ldda = item.library_dataset_dataset_association
+        new_values = self._validate_and_parse_update_payload(new_values)
+        self._set_from_dict(trans, ldda, new_values, flush=flush)
+        return item
 
-    def _set_from_dict(self, trans: ProvidesUserContext, ldda, new_data):
+    def _set_from_dict(
+        self,
+        trans: ProvidesUserContext,
+        ldda: LibraryDatasetDatasetAssociation,
+        new_data: Dict[str, Any],
+        flush: bool = True,
+    ) -> None:
         changed = False
         new_name = new_data.get("name", None)
         if new_name is not None and new_name != ldda.name:
@@ -100,10 +112,10 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             changed = True
         new_file_ext = new_data.get("file_ext", None)
         if new_file_ext == "auto":
-            self.detect_datatype(trans, ldda)
+            self.dataset_assoc_manager.detect_datatype(trans, ldda)
         elif new_file_ext is not None and new_file_ext != ldda.extension:
             ldda.extension = new_file_ext
-            self.set_metadata(trans, ldda)
+            self.dataset_assoc_manager.set_metadata(trans, ldda)
             changed = True
         new_genome_build = new_data.get("genome_build", None)
         if new_genome_build is not None and new_genome_build != ldda.dbkey:
@@ -118,10 +130,11 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             changed = True
         if changed:
             ldda.update_parent_folder_update_times()
-            trans.sa_session.add(ldda)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-        return changed
+            session = self.session()
+            session.add(ldda)
+            if flush:
+                with transaction(session):
+                    session.commit()
 
     def _validate_and_parse_update_payload(self, payload):
         MINIMUM_STRING_LENGTH = 1

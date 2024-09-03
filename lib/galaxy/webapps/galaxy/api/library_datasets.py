@@ -199,7 +199,8 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         :rtype:     dictionary
         """
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
-        updated = self.ld_manager.update(trans, library_dataset, payload)
+        self.ld_manager.check_modifiable(trans, library_dataset)
+        updated = self.ld_manager.update(library_dataset, payload, trans=trans)
         serialized = self.ld_manager.serialize(trans, updated)
         return serialized
 
