@@ -539,6 +539,58 @@ class TestDefaultContainerResolvers(DockerContainerResolverTestCase, ContainerRe
     }
 
 
+class TestDefaultContainerResolversWithBuildInfo(DockerContainerResolverTestCase, ContainerResolverTestCases, MulledTestCaseWithBuildInfo):
+    """
+    Same as TestDefaultContainerResolvers but with a tool using build info
+    serves to check if the mulled hashes are cumputed correctly
+    """
+
+    assumptions: Dict[str, Any] = {
+        "run": {
+            "output": [
+                "bedtools v2.26.0",
+                "samtools: error while loading shared libraries: libcrypto.so.1.0.0",
+            ],
+            "cached": True,
+            "resolver_type": "mulled",  # only used to check mulled / explicit
+            "cache_name": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+            "cache_namespace": "biocontainers",
+        },
+        "list": [
+            {
+                "resolver_type": "mulled",
+                "identifier": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cached": False,
+                "cache_name": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cache_namespace": "biocontainers",
+            },
+            {
+                "resolver_type": "mulled",
+                "identifier": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cached": False,
+                "cache_name": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cache_namespace": "biocontainers",
+            },
+        ],
+        "build": [
+            {
+                "resolver_type": "mulled",
+                "identifier": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cached": True,
+                "cache_name": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cache_namespace": "biocontainers",
+            },
+            {
+                "resolver_type": "cached_mulled",
+                "identifier": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cached": True,
+                "cache_name": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cache_namespace": "biocontainers",
+            },
+        ],
+    }
+
+
 class TestDefaultSingularityContainerResolvers(
     SingularityContainerResolverTestCase, ContainerResolverTestCases, MulledTestCase
 ):
