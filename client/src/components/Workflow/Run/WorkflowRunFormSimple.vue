@@ -7,7 +7,11 @@
                     or send the results to a new one using the run settings ⚙️
                 </span>
             </BAlert>
-            <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
+            <WorkflowRunName
+                v-if="true"
+                class="workflow-information-container"
+                :model="this.model"
+                :embedded="false" />
             <ButtonSpinner
                 id="run-workflow"
                 :wait="waitingForRequest"
@@ -75,12 +79,14 @@ import { useUserStore } from "@/stores/userStore";
 
 import { invokeWorkflow } from "./services";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
+import WorkflowRunName from "./WorkflowRunName";
 
 export default {
     components: {
         ButtonSpinner,
         FormDisplay,
         WorkflowStorageConfiguration,
+        WorkflowRunName,
     },
     props: {
         model: {

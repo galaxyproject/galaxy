@@ -7,7 +7,11 @@
             </span>
         </BAlert>
         <div class="h4 clearfix mb-3">
-            <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
+            <WorkflowRunName
+                v-if="true"
+                class="workflow-information-container"
+                :model="this.model"
+                :embedded="false" />
             <ButtonSpinner
                 id="run-workflow"
                 class="float-right"
@@ -75,6 +79,7 @@ import { getReplacements } from "./model";
 import { invokeWorkflow } from "./services";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunInputStep from "./WorkflowRunInputStep";
+import WorkflowRunName from "./WorkflowRunName";
 
 export default {
     components: {
@@ -85,6 +90,7 @@ export default {
         FormElement,
         WorkflowRunDefaultStep,
         WorkflowRunInputStep,
+        WorkflowRunName,
     },
     props: {
         model: {
