@@ -1,19 +1,26 @@
 <template>
     <div>
         <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
-
-        <FontAwesomeIcon icon="chevron-up" class="fa-fw" />
-
-        <FontAwesomeIcon 
-            :icon="computedExpanded ? 'chevron-up' : 'chevron-down'" 
-            :title="computedExpanded ? 'show' : 'hide'"
-            @click="computedExpanded = !computedExpanded" />
-
-        <WorkflowInformation
-            v-if="this.workflowInfoData"
-            class="workflow-information-container"
-            :workflow-info="this.workflowInfoData"
-            :embedded="false" />
+        <div v-if="this.workflowInfoData" class="ui-portlet-section w-100">
+            <div
+                class="portlet-header portlet-operations"
+                role="button"
+                tabindex="0"
+                @keyup.enter="expandAnnotations = !expandAnnotations"
+                @click="expandAnnotations = !expandAnnotations">
+                <span class="portlet-title-text">
+                    <u v-localize class="step-title ml-2">About This Workflow</u>
+                </span>
+                <FontAwesomeIcon class="float-right" :icon="expandAnnotations ? 'chevron-up' : 'chevron-down'" />
+            </div>
+            <div class="portlet-content" :style="expandAnnotations ? 'display: none;' : ''">
+                <WorkflowInformation
+                    v-if="this.workflowInfoData"
+                    class="workflow-information-container"
+                    :workflow-info="this.workflowInfoData"
+                    :embedded="false" />
+            </div>
+        </div>
     </div>
 </template>
 
@@ -32,13 +39,10 @@ export default {
             type: Object,
             required: true,
         },
-        canMutateCurrentHistory: {
-            type: Boolean,
-            required: true,
-        },
     },
     data() {
         return {
+            expandAnnotations: true,
             workflowInfoData: {},
             fullWorkflow: {},
         };
