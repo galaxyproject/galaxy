@@ -72,21 +72,12 @@ def find_conda_prefix() -> str:
     for Miniconda installs.
     """
     home = os.path.expanduser("~")
-    miniconda_2_dest = os.path.join(home, "miniconda2")
-    miniconda_3_dest = os.path.join(home, "miniconda3")
-    anaconda_2_dest = os.path.join(home, "anaconda2")
-    anaconda_3_dest = os.path.join(home, "anaconda3")
-    # Prefer miniconda3 install if both available
-    if os.path.exists(miniconda_3_dest):
-        return miniconda_3_dest
-    elif os.path.exists(miniconda_2_dest):
-        return miniconda_2_dest
-    elif os.path.exists(anaconda_3_dest):
-        return anaconda_3_dest
-    elif os.path.exists(anaconda_2_dest):
-        return anaconda_2_dest
-    else:
-        return miniconda_3_dest
+    destinations = ["miniforge3", "miniconda3", "miniconda2", "anaconda3", "anaconda2"]
+    for destination in destinations:
+        destination = os.path.join(home, destination)
+        if os.path.exists(destination):
+            return destination
+    return "miniforge3"
 
 
 class CondaContext(installable.InstallableContext):
