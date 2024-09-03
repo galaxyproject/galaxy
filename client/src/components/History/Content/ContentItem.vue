@@ -20,7 +20,7 @@ import { useEventStore } from "@/stores/eventStore";
 import { clearDrag } from "@/utils/setDrag";
 
 import { JobStateSummary } from "./Collection/JobStateSummary";
-import { HIERARCHICAL_COLLECTION_JOB_STATES, type StateMap, STATES } from "./model/states";
+import { getContentItemState, type StateMap, STATES } from "./model/states";
 
 import CollectionDescription from "./Collection/CollectionDescription.vue";
 import ContentOptions from "./ContentOptions.vue";
@@ -135,25 +135,7 @@ const state = computed<keyof StateMap>(() => {
     if (props.isPlaceholder) {
         return "placeholder";
     }
-    if (props.item.accessible === false) {
-        return "inaccessible";
-    }
-    if (props.item.populated_state === "failed") {
-        return "failed_populated_state";
-    }
-    if (props.item.populated_state === "new") {
-        return "new_populated_state";
-    }
-    if (props.item.job_state_summary) {
-        for (const jobState of HIERARCHICAL_COLLECTION_JOB_STATES) {
-            if (props.item.job_state_summary[jobState] > 0) {
-                return jobState;
-            }
-        }
-    } else if (props.item.state) {
-        return props.item.state;
-    }
-    return "ok";
+    return getContentItemState(props.item);
 });
 
 const dataState = computed(() => {
