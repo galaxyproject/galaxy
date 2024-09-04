@@ -1,8 +1,9 @@
 <template>
     <div>
         <div v-for="(elVal, pvIndex) in parameter_value" :key="pvIndex">
+            <span v-if="elVal === null">No input provided</span>
             <GenericHistoryItem
-                v-if="['hda', 'hdca', 'dce'].includes(elVal.src)"
+                v-else-if="['hda', 'hdca', 'dce'].includes(elVal.src)"
                 :item-id="elVal.id"
                 :item-src="elVal.src" />
             <span v-else> {{ elVal.hid }}: {{ elVal.name }} </span>

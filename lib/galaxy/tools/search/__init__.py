@@ -71,8 +71,7 @@ CanConvertToInt = Union[str, int, float]
 
 def get_or_create_index(index_dir, schema):
     """Get or create a reference to the index."""
-    if not os.path.exists(index_dir):
-        os.makedirs(index_dir)
+    os.makedirs(index_dir, exist_ok=True)
     if index.exists_in(index_dir):
         idx = index.open_dir(index_dir)
         if idx.schema == schema:

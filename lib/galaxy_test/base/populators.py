@@ -1770,7 +1770,11 @@ class BaseWorkflowPopulator(BasePopulator):
         return workflow_id
 
     def wait_for_invocation(
-        self, workflow_id: str, invocation_id: str, timeout: timeout_type = DEFAULT_TIMEOUT, assert_ok: bool = True
+        self,
+        workflow_id: Optional[str],
+        invocation_id: str,
+        timeout: timeout_type = DEFAULT_TIMEOUT,
+        assert_ok: bool = True,
     ) -> str:
         url = f"invocations/{invocation_id}"
 
@@ -1818,7 +1822,7 @@ class BaseWorkflowPopulator(BasePopulator):
 
     def wait_for_workflow(
         self,
-        workflow_id: str,
+        workflow_id: Optional[str],
         invocation_id: str,
         history_id: str,
         assert_ok: bool = True,
@@ -1827,6 +1831,9 @@ class BaseWorkflowPopulator(BasePopulator):
         """Wait for a workflow invocation to completely schedule and then history
         to be complete."""
         self.wait_for_invocation(workflow_id, invocation_id, timeout=timeout, assert_ok=assert_ok)
+        for step in self.get_invocation(invocation_id)["steps"]:
+            if step["subworkflow_invocation_id"]:
+                self.wait_for_invocation(None, step["subworkflow_invocation_id"], timeout=timeout, assert_ok=assert_ok)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok, timeout=timeout)
 
     def get_invocation(self, invocation_id, step_details=False):

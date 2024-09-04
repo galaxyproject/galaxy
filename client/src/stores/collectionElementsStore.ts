@@ -36,6 +36,7 @@ const FETCH_LIMIT = 50;
 export const useCollectionElementsStore = defineStore("collectionElementsStore", () => {
     const storedCollections = ref<{ [key: string]: HDCASummary }>({});
     const loadingCollectionElements = ref<{ [key: string]: boolean }>({});
+    const loadingCollectionElementsErrors = ref<{ [key: string]: Error }>({});
     const storedCollectionElements = ref<{ [key: string]: DCEEntry[] }>({});
 
     /**
@@ -59,6 +60,12 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     const isLoadingCollectionElements = computed(() => {
         return (collection: CollectionEntry) => {
             return loadingCollectionElements.value[getCollectionKey(collection)] ?? false;
+        };
+    });
+
+    const hasLoadingCollectionElementsError = computed(() => {
+        return (collection: CollectionEntry) => {
+            return loadingCollectionElementsErrors.value[getCollectionKey(collection) ?? false];
         };
     });
 
@@ -105,6 +112,8 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
             });
 
             return { fetchedElements, elementOffset: offset };
+        } catch (error) {
+            set(loadingCollectionElementsErrors.value, collectionKey, error);
         } finally {
             del(loadingCollectionElements.value, collectionKey);
         }
@@ -161,7 +170,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     /** Returns collection from storedCollections, will load collection if not in store */
     const getCollectionById = computed(() => {
         return (collectionId: string) => {
-            if (!storedCollections.value[collectionId]) {
+            if (!storedCollections.value[collectionId] && !loadingCollectionElementsErrors.value[collectionId]) {
                 // TODO: Try to remove this as it can cause computed side effects (use keyedCache in this store instead?)
                 fetchCollection({ id: collectionId });
             }
@@ -175,6 +184,8 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
             const collection = await fetchCollectionDetails({ id: params.id });
             set(storedCollections.value, collection.id, collection);
             return collection;
+        } catch (error) {
+            set(loadingCollectionElementsErrors.value, params.id, error);
         } finally {
             del(loadingCollectionElements.value, params.id);
         }
@@ -202,6 +213,8 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         storedCollectionElements,
         getCollectionElements,
         isLoadingCollectionElements,
+        hasLoadingCollectionElementsError,
+        loadingCollectionElementsErrors,
         getCollectionById,
         fetchCollection,
         invalidateCollectionElements,

@@ -15,11 +15,13 @@ export const useCollectionAttributesStore = defineStore("collectionAttributesSto
         return data;
     }
 
-    const { storedItems, getItemById, isLoadingItem } = useKeyedCache<DatasetCollectionAttributes>(fetchAttributes);
+    const { storedItems, getItemById, isLoadingItem, hasItemLoadError } =
+        useKeyedCache<DatasetCollectionAttributes>(fetchAttributes);
 
     return {
         storedAttributes: storedItems,
         getAttributes: getItemById,
         isLoadingAttributes: isLoadingItem,
+        hasItemLoadError: hasItemLoadError,
     };
 });

@@ -12568,7 +12568,12 @@ export interface components {
              * Value
              * @description The values of the job parameter
              */
-            value?: components["schemas"]["EncodedJobParameterHistoryItem"][] | number | boolean | string | null;
+            value?:
+                | (components["schemas"]["EncodedJobParameterHistoryItem"] | null)[]
+                | number
+                | boolean
+                | string
+                | null;
         };
         /**
          * JobSourceType

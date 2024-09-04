@@ -53,8 +53,25 @@ const collectionChangeKey = ref(0);
 const attributesData = computed(() => {
     return collectionAttributesStore.getAttributes(props.collectionId);
 });
+const attributesLoadError = computed(() =>
+    errorMessageAsString(collectionAttributesStore.hasItemLoadError(props.collectionId))
+);
+
 const collection = computed(() => {
     return collectionStore.getCollectionById(props.collectionId);
+});
+const collectionLoadError = computed(() => {
+    if (collection.value) {
+        return errorMessageAsString(collectionStore.hasLoadingCollectionElementsError(collection.value));
+    }
+    return "";
+});
+watch([attributesLoadError, collectionLoadError], () => {
+    if (attributesLoadError.value) {
+        errorMessage.value = attributesLoadError.value;
+    } else if (collectionLoadError.value) {
+        errorMessage.value = collectionLoadError.value;
+    }
 });
 const databaseKeyFromElements = computed(() => {
     return attributesData.value?.dbkey;
@@ -101,7 +118,7 @@ async function clickedSave(attribute: string, newValue: any) {
         body: { dbkey: dbKey },
     });
     if (error) {
-        errorMessage.value = errorMessageAsString(error, "History import failed.");
+        errorMessage.value = errorMessageAsString(error, `Changing ${attribute} failed.`);
     }
 }
 
@@ -119,7 +136,7 @@ async function clickedConvert(selectedConverter: any) {
         await axios.post(url, data).catch(handleError);
         successMessage.value = "Conversion started successfully.";
     } catch (err) {
-        errorMessage.value = errorMessageAsString(err, "History import failed.");
+        errorMessage.value = errorMessageAsString(err, "Conversion failed.");
     }
 }
 
@@ -148,14 +165,14 @@ async function clickedDatatypeChange(selectedDatatype: any) {
     });
 
     if (error) {
-        errorMessage.value = errorMessageAsString(error, "History import failed.");
+        errorMessage.value = errorMessageAsString(error, "Datatype change failed.");
         return;
     }
     successMessage.value = "Datatype changed successfully.";
 }
 
 function handleError(err: any) {
-    errorMessage.value = errorMessageAsString(err, "History import failed.");
+    errorMessage.value = errorMessageAsString(err, "Datatype conversion failed.");
 
     if (err?.data?.stderr) {
         jobError.value = err.data;
@@ -198,14 +215,14 @@ async function saveAttrs() {
             {{ localize(infoMessage) }}
         </BAlert>
 
-        <BAlert v-if="jobError" show variant="danger" dismissible>
+        <BAlert v-if="errorMessage" show variant="danger">
             {{ localize(errorMessage) }}
         </BAlert>
 
         <BAlert v-if="successMessage" show variant="success" dismissible>
             {{ localize(successMessage) }}
         </BAlert>
-        <BTabs class="mt-3">
+        <BTabs v-if="!errorMessage" class="mt-3">
             <BTab title-link-class="collection-edit-attributes-nav" @click="updateInfoMessage('')">
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faBars" class="mr-1" />

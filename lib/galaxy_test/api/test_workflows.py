@@ -2425,6 +2425,30 @@ when:
                 if step["workflow_step_label"] == "cat1":
                     assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 1
 
+    def test_run_workflow_conditional_subworkflow_step_with_hdca_creation(self):
+        # Regression test, ensures scheduling proceeds even if a skipped step creates a collection
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs: []
+steps:
+  conditional_subworkflow_step:
+    when: $(false)
+    run:
+      class: GalaxyWorkflow
+      inputs: []
+      steps:
+        create_collection:
+          tool_id: create_input_collection
+        flatten_collection:
+          tool_id: cat_list
+          in:
+            input1: create_collection/output
+                           """,
+                history_id=history_id,
+            )
+
     def test_run_workflow_conditional_step_map_over_expression_tool(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
