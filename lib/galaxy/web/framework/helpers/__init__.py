@@ -109,6 +109,11 @@ def is_true(val):
 def is_url(val):
     """
     Regular expression to match common URL protocols
+
+    >>> assert is_url(None) == False
+    >>> assert is_url("is_url") == False
+    >>> assert is_url("http://is_url") == True
+    >>> assert is_url("https://is_url") == True
     """
     if val is not None:
         url_pattern = re.compile(r"^(https?:\/\/|ftp:\/\/)")
