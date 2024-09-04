@@ -171,7 +171,7 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         response = script_entry.render(trans=trans, embedded=True)
         assert '<script type="module" src="mysrc">' in response
         assert '<link rel="stylesheet" href="mycss">' in response
-        assert '<div id="mycontainer" data-incoming=\'{}\'></div>' in response
+        assert "<div id=\"mycontainer\" data-incoming='{}'></div>" in response
         mock_app_dir.remove()
 
 
