@@ -104,6 +104,19 @@ the URL and headers, then somewhat massaged, and finally forwarded to the correc
 
 .. note::
 
+    Entry point mappings used by the proxy are stored on a SQLite database file located at ``interactivetools_map``. In
+    `some situations <https://www.sqlite.org/whentouse.html#situations_where_a_client_server_rdbms_may_work_better>`_,
+    SQLite may not be the best choice. A common case is a high-availability production setup, meaning that multiple
+    copies of Galaxy are running on different servers behind a load balancer.
+
+    For these situations, there exists an optional |configuration option interactivetoolsproxy_map|_ that allows using
+    any database supported by SQLAlchemy (it overrides ``interactivetools_map``).
+
+.. |configuration option interactivetoolsproxy_map| replace:: configuration option ``interactivetoolsproxy_map``
+.. _configuration option interactivetoolsproxy_map: ../config.html#interactivetoolsproxy-map
+
+.. note::
+
     A previous config option ``interactivetools_shorten_url`` was removed in commit `#73100de <https://github.com/galaxyproject/galaxy/pull/16795/commits/73100de17149ca3486c83b8c6ded74987c68a836>`_
     since similar functionality is now default behavior. Setting ``interactivetools_shorten_url`` to ``true`` shortened
     long interactive tool URLs (then default) from e.g.
