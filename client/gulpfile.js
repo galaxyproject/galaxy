@@ -233,7 +233,7 @@ async function installDependenciesFromXML(xmlPath, pluginDir) {
         const installPromises = requirements.map(async (dep) => {
             const { type: reqType, package: pkgName, version } = dep.$;
 
-            if (reqType === "package" && pkgName && version) {
+            if (reqType === "npm" && pkgName && version) {
                 try {
                     const installResult = child_process.spawnSync(
                         "npm",
