@@ -1447,10 +1447,9 @@ class ColumnListParameter(SelectToolParameter):
 
     @staticmethod
     def _strip_c(column):
-        if isinstance(column, str):
-            column = column.strip()
-            if column.startswith("c") and len(column) > 1 and all(c.isdigit() for c in column[1:]):
-                column = column.lower()[1:]
+        column = str(column).strip()
+        if column.startswith("c") and len(column) > 1 and all(c.isdigit() for c in column[1:]):
+            column = column.lower()[1:]
         return column
 
     def get_column_list(self, trans, other_values):
