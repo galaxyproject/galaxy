@@ -25,7 +25,7 @@ from galaxy.util.config_templates import (
     UserDetailsDict,
 )
 
-FileSourceTemplateType = Literal["ftp", "posix", "s3fs", "azure"]
+FileSourceTemplateType = Literal["ftp", "posix", "s3fs", "azure", "onedata"]
 
 
 class PosixFileSourceTemplateConfiguration(StrictModel):
@@ -104,17 +104,37 @@ class AzureFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
+class OnedataFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["onedata"]
+    access_token: Union[str, TemplateExpansion]
+    onezone_domain: Union[str, TemplateExpansion]
+    disable_tls_certificate_validation: Union[bool, TemplateExpansion] = False
+    writable: Union[bool, TemplateExpansion] = False
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class OnedataFileSourceConfiguration(StrictModel):
+    type: Literal["onedata"]
+    access_token: str
+    onezone_domain: str
+    disable_tls_certificate_validation: bool = False
+    writable: bool = False
+
+
 FileSourceTemplateConfiguration = Union[
     PosixFileSourceTemplateConfiguration,
     S3FSFileSourceTemplateConfiguration,
     FtpFileSourceTemplateConfiguration,
     AzureFileSourceTemplateConfiguration,
+    OnedataFileSourceTemplateConfiguration,
 ]
 FileSourceConfiguration = Union[
     PosixFileSourceConfiguration,
     S3FSFileSourceConfiguration,
     FtpFileSourceConfiguration,
     AzureFileSourceConfiguration,
+    OnedataFileSourceConfiguration,
 ]
 
 
@@ -175,6 +195,7 @@ TypesToConfigurationClasses: Dict[FileSourceTemplateType, Type[FileSourceConfigu
     "posix": PosixFileSourceConfiguration,
     "s3fs": S3FSFileSourceConfiguration,
     "azure": AzureFileSourceConfiguration,
+    "onedata": OnedataFileSourceConfiguration,
 }
 
 

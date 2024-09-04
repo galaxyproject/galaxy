@@ -4,3 +4,4 @@ export type FileSourceTemplateSummary = components["schemas"]["FileSourceTemplat
 export type FileSourceTemplateSummaries = FileSourceTemplateSummary[];
 
 export type UserFileSourceModel = components["schemas"]["UserFileSourceModel"];
+export type FileSourceTypes = UserFileSourceModel["type"];
