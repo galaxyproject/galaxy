@@ -6,34 +6,17 @@ import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 
 import { type HistorySummaryExtended } from "@/api";
-import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
 import SwitchToHistoryLink from "./SwitchToHistoryLink.vue";
-
-jest.mock("@/composables/toast", () => ({
-    Toast: {
-        error: jest.fn(),
-    },
-}));
-jest.mock("vue-router/composables", () => ({
-    useRouter: jest.fn(() => ({
-        resolve: jest.fn((route) => ({
-            href: route,
-        })),
-    })),
-}));
 
 const localVue = getLocalVue(true);
 
 const selectors = {
     historyLink: ".history-link",
-    historyLinkClick: ".history-link > a",
 } as const;
 
 function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended) {
-    const windowSpy = jest.spyOn(window, "open");
-    windowSpy.mockImplementation(() => null);
     const pinia = createTestingPinia();
 
     const axiosMock = new MockAdapter(axios);
@@ -69,8 +52,6 @@ async function expectOptionForHistory(option: string, history: HistorySummaryExt
 
     expect(wrapper.html()).toContain(option);
     expect(wrapper.text()).toContain(history.name);
-
-    return wrapper;
 }
 
 describe("SwitchToHistoryLink", () => {
@@ -130,9 +111,9 @@ describe("SwitchToHistoryLink", () => {
         await expectOptionForHistory("View", history);
     });
 
-    it("should view in new tab when the history is unowned and published", async () => {
+    it("should view in new tab when the history is accessible", async () => {
         const history = {
-            id: "unowned-history-id",
+            id: "public-history-id",
             name: "History Published",
             deleted: false,
             purged: false,
@@ -140,41 +121,8 @@ describe("SwitchToHistoryLink", () => {
             published: true,
             user_id: "other_user_id",
         } as HistorySummaryExtended;
-        const wrapper = await expectOptionForHistory("View", history);
-
-        // Wait for the history to be loaded
-        await flushPromises();
-
-        // Click on the history link
-        const link = wrapper.find(selectors.historyLinkClick);
-        await link.trigger("click");
-        await wrapper.vm.$nextTick();
-
-        // History opens in a new tab
-        expect(Toast.error).toHaveBeenCalledTimes(0);
+        await expectOptionForHistory("View", history);
     });
 
-    it("should display View option and show error on click when history is unowned and not published", async () => {
-        const history = {
-            id: "published-history-id",
-            name: "History Unowned",
-            deleted: false,
-            purged: false,
-            archived: false,
-            user_id: "other_user_id",
-        } as HistorySummaryExtended;
-        const wrapper = await expectOptionForHistory("View", history);
-
-        // Wait for the history to be loaded
-        await flushPromises();
-
-        // Click on the history link
-        const link = wrapper.find(selectors.historyLinkClick);
-        await link.trigger("click");
-        await wrapper.vm.$nextTick();
-
-        // History does not open in a new tab and we get a Toast error
-        expect(Toast.error).toHaveBeenCalledTimes(1);
-        expect(Toast.error).toHaveBeenCalledWith("You do not have permission to view this history.");
-    });
+    // if the history is inaccessible, the HistorySummary would never be fetched in the first place
 });

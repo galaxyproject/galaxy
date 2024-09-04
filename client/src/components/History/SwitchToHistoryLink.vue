@@ -64,16 +64,8 @@ async function onClick(history: HistorySummary) {
 }
 
 function viewHistoryInNewTab(history: HistorySummary) {
-    if (
-        userOwnsHistory(userStore.currentUser, history) ||
-        history.published ||
-        ("importable" in history && history.importable)
-    ) {
-        const routeData = router.resolve(`/histories/view?id=${history.id}`);
-        window.open(routeData.href, "_blank");
-    } else {
-        Toast.error("You do not have permission to view this history.");
-    }
+    const routeData = router.resolve(`/histories/view?id=${history.id}`);
+    window.open(routeData.href, "_blank");
 }
 </script>
 
