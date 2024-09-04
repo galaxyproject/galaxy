@@ -439,5 +439,8 @@ class MockTemplateHelpers:
     def js(*js_files):
         pass
 
+    def is_url(*kwargs):
+        return True
+
     def url_for(*kwargs):
         return "/"

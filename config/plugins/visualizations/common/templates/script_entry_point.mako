@@ -3,9 +3,10 @@
 
 ## Add stylesheet
 <%def name="stylesheets()">
-    <% css = script_attributes.get("css") %>
-    %if css is not None:
-        <link rel="stylesheet" href="${css}">
+    <% script_css = script_attributes.get("css") %>
+    %if script_css is not None:
+        <% script_css = script_css if h.is_url(script_css) else f"{static_url}{script_css}" %>
+        <link rel="stylesheet" href="${script_css}">
     %endif
 </%def>
 
@@ -29,6 +30,7 @@
 
     ## Add script tag
     <% script_src = script_attributes.get("src") %>
+    <% script_src = script_src if h.is_url(script_src) else f"{static_url}{script_src}" %>
     <% script_type = script_attributes.get("type") or "module" %>
     <script type="${script_type}" src="${script_src}"></script>
 </%def>
