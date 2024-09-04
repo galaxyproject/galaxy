@@ -17,7 +17,6 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "cytoscape",
     "drawrna",
     "editor",
-    "example",
     "fits_image_viewer",
     "h5web",
     "heatmap/heatmap_default",
