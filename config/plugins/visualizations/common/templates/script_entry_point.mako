@@ -30,5 +30,5 @@
     ## Add script tag
     <% script_src = script_attributes.get("src") %>
     <% script_type = script_attributes.get("type") or "module" %>
-    <script type="${script_type}" src=${script_src}></script>
+    <script type="${script_type}" src="${script_src}"></script>
 </%def>
