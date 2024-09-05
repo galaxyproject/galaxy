@@ -2292,6 +2292,7 @@ module.
     <xs:choice>
       <xs:element name="has_h5_keys" type="AssertHasH5Keys"/>
       <xs:element name="has_h5_attribute" type="AssertHasH5Attribute"/>
+      <xs:element name="has_h5ad_group_entry" type="AssertHasH5ADGroupEntry"/>
     </xs:choice>
   </xs:group>
   <xs:complexType name="AssertHasSize">
@@ -3121,6 +3122,30 @@ $attribute_list::5
     <xs:attribute name="value" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Expected value of HDF5 attribute to check.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertHasH5ADGroupEntry">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts HFAD output contains the specified ``entry`` for a group (``group``), e.g.
+
+```xml
+<has_h5ad_group_entry group="obs" entry="index" />
+```
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="group" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">HDF5 attribute group to check entry of.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="entry" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Expected entry of HDF5 attribute group to check.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>

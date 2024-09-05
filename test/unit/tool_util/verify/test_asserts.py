@@ -1294,6 +1294,16 @@ if h5py is not None:
             <has_h5_attribute key="myfileattrint" value="also_wrong" />
         </assert_contents>
     """
+    H5AD_HAS_GROUP_ENTRY = """
+        <assert_contents>
+            <has_h5ad_group_entry group="myfilegroup" entry="myfileentry" />
+        </assert_contents>
+    """
+    H5AD_HAS_GROUP_ENTRY_NEGATIVE = """
+        <assert_contents>
+            <has_h5ad_group_entry group="myfilegroup" entry="wrong" />
+        </assert_contents>
+    """
 
     def test_has_h5_keys():
         """test has_h5_keys"""
@@ -1320,6 +1330,19 @@ if h5py is not None:
         )
         assert len(a) == 1
 
+    def test_has_h5ad_group_entry():
+        """test has_h5ad_group_entry"""
+        a = run_assertions(H5AD_HAS_GROUP_ENTRY, H5BYTES)
+        assert len(a) == 0
+
+    def test_has_h5ad_group_entry_failure():
+        """test has_h5ad_group_entry .. negative"""
+        a = run_assertions(H5AD_HAS_GROUP_ENTRY_NEGATIVE, H5BYTES)
+        assert (
+            "Not a HDF5 file or H5 entries do not match:\n\t[('myfilegroup', 'myfileentry')]\n\n\t(myfilegroup : wrong)"
+            in a
+        )
+        assert len(a) == 1
 
 def run_assertions(assertion_xml: str, data, decompress=False) -> Tuple:
     assertion = parse_xml_string(assertion_xml)
