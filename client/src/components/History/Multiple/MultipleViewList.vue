@@ -7,7 +7,7 @@ import { computed, type Ref, ref } from "vue";
 import VirtualList from "vue-virtual-scroll-list";
 
 import { type HistoryItemSummary, isHistoryItem } from "@/api";
-import { copyDataset } from "@/api/datasets";
+import { copyContent } from "@/api/datasets";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { Toast } from "@/composables/toast";
@@ -90,8 +90,7 @@ async function onDrop(evt: any) {
         if (currentHistoryId) {
             // iterate over the data array and copy each item to the new history
             for (const item of historyItems) {
-                const dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
-                await copyDataset(item.id, currentHistoryId, item.history_content_type, dataSource)
+                await copyContent(item.id, currentHistoryId, item.history_content_type)
                     .then(() => {
                         if (item.history_content_type === "dataset") {
                             datasetCount++;

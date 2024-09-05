@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
 
 import { type HistoryItemSummary, type HistorySummaryExtended, isHistoryItem, userOwnsHistory } from "@/api";
-import { copyDataset } from "@/api/datasets";
+import { copyContent } from "@/api/datasets";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import SelectedItems from "@/components/History/Content/SelectedItems";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
@@ -422,8 +422,7 @@ async function onDrop() {
     try {
         // iterate over the data array and copy each item to the current history
         for (const item of data) {
-            const dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
-            await copyDataset(item.id, props.history.id, item.history_content_type, dataSource);
+            await copyContent(item.id, props.history.id, item.history_content_type);
 
             if (item.history_content_type === "dataset") {
                 datasetCount++;
