@@ -1,6 +1,5 @@
 """Provides utilities for working with image files."""
 
-import imghdr
 import logging
 from typing import (
     List,
@@ -22,11 +21,7 @@ def image_type(filename: str) -> Optional[str]:
             with Image.open(filename) as im:
                 fmt = im.format
         except Exception:
-            # We continue to try with imghdr, so this is a rare case of an
-            # exception we expect to happen frequently, so we're not logging
             pass
-    if not fmt:
-        fmt = imghdr.what(filename)
     if fmt:
         return fmt.upper()
     else:
