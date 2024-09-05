@@ -1,6 +1,10 @@
+import os.path
 import tempfile
 
-from galaxy.util.checkers import check_html
+from galaxy.util.checkers import (
+    check_html,
+    check_image,
+)
 
 
 def test_check_html():
@@ -17,3 +21,10 @@ def test_check_html():
         tmpb.write(b"\x1f\x8b")
         tmpb.flush()
         assert not check_html(tmpb.name)
+
+
+def test_check_image():
+    for filename, expected in (("1.tiff", True), ("454Score.png", True), ("1.bam", False)):
+        path = f"test-data/{filename}"
+        assert os.path.exists(path)
+        assert check_image(path) is expected

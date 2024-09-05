@@ -49,7 +49,7 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
 
     # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
-        pip install '.[template,jstree,config_template]'
+        pip install '.[image_util,template,jstree,config_template]'
     elif [ "$package_dir" = "tool_util" ]; then
         pip install '.[cwl,mulled,edam,extended-assertions]'
     else
