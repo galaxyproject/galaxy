@@ -57,7 +57,8 @@
                     @onUnhighlight="onUnhighlight"
                     @onRefactor="onAttemptRefactor"
                     @onScrollTo="onScrollTo" />
-                <UndoRedoStack v-if="isActiveSideBar('workflow-undo-redo')" :store-id="id" />
+                <UndoRedoStack v-else-if="isActiveSideBar('workflow-undo-redo')" :store-id="id" />
+                <WorkflowPanel v-else-if="isActiveSideBar('workflow-editor-workflows')"></WorkflowPanel>
             </template>
         </ActivityBar>
         <div id="center" class="workflow-center">
@@ -230,6 +231,7 @@ import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
 import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
 import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
@@ -254,6 +256,7 @@ export default {
         WorkflowGraph,
         FontAwesomeIcon,
         UndoRedoStack,
+        WorkflowPanel,
     },
     props: {
         workflowId: {

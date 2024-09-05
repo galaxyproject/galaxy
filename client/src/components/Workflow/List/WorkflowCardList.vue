@@ -14,6 +14,7 @@ interface Props {
     hideRuns?: boolean;
     filterable?: boolean;
     publishedView?: boolean;
+    editorView?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -65,6 +66,7 @@ function onPreview(id: string) {
             :hide-runs="props.hideRuns"
             :filterable="props.filterable"
             :published-view="props.publishedView"
+            :editor-view="props.editorView"
             class="workflow-card"
             @tagClick="(...args) => emit('tagClick', ...args)"
             @refreshList="(...args) => emit('refreshList', ...args)"

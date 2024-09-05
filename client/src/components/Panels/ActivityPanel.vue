@@ -84,6 +84,7 @@ const hasGoToAll = computed(
         flex-direction: column;
         flex-grow: 1;
         overflow-y: hidden;
+        position: relative;
         button:first-child {
             background: none;
             border: none;

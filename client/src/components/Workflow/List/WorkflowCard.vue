@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import { faEdit, faPen, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faPen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BLink } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
-import { copyWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
-import { Toast } from "@/composables/toast";
+import { updateWorkflow } from "@/components/Workflow/workflows.services";
 import { useUserStore } from "@/stores/userStore";
 
-import AsyncButton from "@/components/Common/AsyncButton.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import WorkflowActions from "@/components/Workflow/List/WorkflowActions.vue";
 import WorkflowActionsExtend from "@/components/Workflow/List/WorkflowActionsExtend.vue";
 import WorkflowIndicators from "@/components/Workflow/List/WorkflowIndicators.vue";
 import WorkflowInvocationsCount from "@/components/Workflow/WorkflowInvocationsCount.vue";
-import WorkflowRunButton from "@/components/Workflow/WorkflowRunButton.vue";
 
 interface Props {
     workflow: any;
@@ -24,6 +21,7 @@ interface Props {
     hideRuns?: boolean;
     filterable?: boolean;
     publishedView?: boolean;
+    editorView?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -31,6 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
     publishedView: false,
     hideRuns: false,
     filterable: true,
+    editorView: false,
 });
 
 const emit = defineEmits<{
@@ -58,40 +57,6 @@ const description = computed(() => {
         return null;
     }
 });
-const editButtonTitle = computed(() => {
-    if (isAnonymous.value) {
-        return "Log in to edit Workflow";
-    } else {
-        if (workflow.value.deleted) {
-            return "You cannot edit a deleted workflow. Restore it first.";
-        } else {
-            return "Edit Workflow";
-        }
-    }
-});
-const importedButtonTitle = computed(() => {
-    if (isAnonymous.value) {
-        return "Log in to import workflow";
-    } else {
-        return "Import this workflow to edit";
-    }
-});
-const runButtonTitle = computed(() => {
-    if (isAnonymous.value) {
-        return "Log in to run workflow";
-    } else {
-        if (workflow.value.deleted) {
-            return "You cannot run a deleted workflow. Restore it first.";
-        } else {
-            return "Run workflow";
-        }
-    }
-});
-
-async function onImport() {
-    await copyWorkflow(workflow.value.id, workflow.value.owner);
-    Toast.success("Workflow imported successfully");
-}
 
 async function onTagsUpdate(tags: string[]) {
     workflow.value.tags = tags;
@@ -113,10 +78,11 @@ async function onTagClick(tag: string) {
             }">
             <div class="workflow-card-header">
                 <WorkflowIndicators
+                    class="workflow-card-indicators"
                     :workflow="workflow"
                     :published-view="publishedView"
                     :filterable="props.filterable"
-                    @update-filter="(k, v) => emit('updateFilter', k, v)" />
+                    @updateFilter="(k, v) => emit('updateFilter', k, v)" />
 
                 <div class="workflow-count-actions">
                     <WorkflowInvocationsCount
@@ -125,8 +91,9 @@ async function onTagClick(tag: string) {
                         :workflow="workflow" />
 
                     <WorkflowActions
-                        :workflow="workflow"
-                        :published="publishedView"
+                        :workflow="props.workflow"
+                        :published="props.publishedView"
+                        :editor="props.editorView"
                         @refreshList="emit('refreshList', true)" />
                 </div>
 
@@ -169,44 +136,11 @@ async function onTagClick(tag: string) {
                         @tag-click="onTagClick($event)" />
                 </div>
 
-                <div class="workflow-card-actions">
-                    <WorkflowActionsExtend
-                        :workflow="workflow"
-                        :published="publishedView"
-                        @refreshList="emit('refreshList', true)" />
-
-                    <div class="workflow-edit-run-buttons">
-                        <BButton
-                            v-if="!isAnonymous && !shared"
-                            v-b-tooltip.hover.noninteractive
-                            :disabled="workflow.deleted"
-                            size="sm"
-                            class="workflow-edit-button"
-                            :title="editButtonTitle"
-                            variant="outline-primary"
-                            :to="`/workflows/edit?id=${workflow.id}`">
-                            <FontAwesomeIcon :icon="faEdit" fixed-width />
-                            Edit
-                        </BButton>
-
-                        <AsyncButton
-                            v-else
-                            v-b-tooltip.hover.noninteractive
-                            size="sm"
-                            :disabled="isAnonymous"
-                            :title="importedButtonTitle"
-                            :icon="faUpload"
-                            variant="outline-primary"
-                            :action="onImport">
-                            Import
-                        </AsyncButton>
-
-                        <WorkflowRunButton
-                            :id="workflow.id"
-                            :disabled="isAnonymous || workflow.deleted"
-                            :title="runButtonTitle" />
-                    </div>
-                </div>
+                <WorkflowActionsExtend
+                    :workflow="workflow"
+                    :published="publishedView"
+                    :editor="editorView"
+                    @refreshList="emit('refreshList', true)" />
             </div>
         </div>
     </div>
@@ -248,16 +182,23 @@ async function onTagClick(tag: string) {
         .workflow-card-header {
             display: grid;
             position: relative;
+            grid-template-areas:
+                "i b"
+                "n n";
+
+            .workflow-card-indicators {
+                grid-area: i;
+            }
 
             .workflow-count-actions {
+                grid-area: b;
                 display: flex;
                 align-items: center;
                 flex-direction: row;
-                position: absolute;
-                right: 0.5rem;
             }
 
             .workflow-name {
+                grid-area: n;
                 font-size: 1rem;
                 font-weight: bold;
                 word-break: break-all;
@@ -272,14 +213,6 @@ async function onTagClick(tag: string) {
             .workflow-card-tags {
                 max-width: 60%;
             }
-
-            .workflow-card-actions {
-                display: flex;
-                gap: 0.25rem;
-                margin-top: 0.25rem;
-                align-items: center;
-                justify-content: end;
-            }
         }
 
         @container workflow-card (max-width: #{$breakpoint-sm}) {
@@ -289,18 +222,6 @@ async function onTagClick(tag: string) {
                 .workflow-card-tags {
                     max-width: 100%;
                 }
-            }
-        }
-
-        @container workflow-card (max-width: #{$breakpoint-sm}) {
-            .workflow-card-actions {
-                justify-content: space-between;
-            }
-        }
-
-        @container workflow-card (min-width: #{$breakpoint-sm}, max-width: #{$breakpoint-md}) {
-            .workflow-card-actions {
-                justify-content: end;
             }
         }
     }

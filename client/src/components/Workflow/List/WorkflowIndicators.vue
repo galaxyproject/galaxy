@@ -6,7 +6,7 @@ import { BBadge, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { Toast } from "@/composables/toast";
+import { useToast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { copy } from "@/utils/clipboard";
 
@@ -14,8 +14,11 @@ import UtcDate from "@/components/UtcDate.vue";
 
 library.add(faFileImport, faGlobe, faShieldAlt, faUsers, faUser);
 
+// TODO: replace me with a proper definition
+type Workflow = any;
+
 interface Props {
-    workflow: any;
+    workflow: Workflow;
     publishedView: boolean;
     noEditTime?: boolean;
     filterable?: boolean;
@@ -24,7 +27,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "update-filter", key: string, value: any): void;
+    (e: "updateFilter", key: string, value: string | boolean): void;
 }>();
 
 const router = useRouter();
@@ -67,36 +70,46 @@ const sourceTitle = computed(() => {
     }
 });
 
+const { success } = useToast();
+
 function onCopyLink() {
     if (sourceType.value == "url") {
         copy(props.workflow.source_metadata.url);
-        Toast.success("URL copied");
+        success("URL copied");
     } else if (sourceType.value.includes("trs")) {
         copy(props.workflow.source_metadata.trs_tool_id);
-        Toast.success("TRS ID copied");
+        success("TRS ID copied");
     }
 }
 
 function onViewMySharedByUser() {
     router.push(`/workflows/list_shared_with_me?owner=${props.workflow.owner}`);
-    emit("update-filter", "user", `'${props.workflow.owner}'`);
+    emit("updateFilter", "user", `'${props.workflow.owner}'`);
 }
 
 function onViewUserPublished() {
     router.push(`/workflows/list_published?owner=${props.workflow.owner}`);
-    emit("update-filter", "user", `'${props.workflow.owner}'`);
+    emit("updateFilter", "user", `'${props.workflow.owner}'`);
+}
+
+function getStepText(steps: number) {
+    if (steps === 1) {
+        return "1 step";
+    } else {
+        return `${steps} steps`;
+    }
 }
 </script>
 
 <template>
-    <div>
+    <div class="workflow-indicators">
         <BButton
             v-if="workflow.published && !publishedView"
             v-b-tooltip.noninteractive.hover
             size="sm"
             class="workflow-published-icon inline-icon-button"
             :title="publishedTitle"
-            @click="emit('update-filter', 'published', true)">
+            @click="emit('updateFilter', 'published', true)">
             <FontAwesomeIcon :icon="faGlobe" fixed-width />
         </BButton>
         <FontAwesomeIcon
@@ -132,6 +145,10 @@ function onViewUserPublished() {
             </small>
         </span>
 
+        <BBadge v-if="workflow.number_of_steps" pill class="mr-1 step-count">
+            {{ getStepText(workflow.number_of_steps) }}
+        </BBadge>
+
         <BBadge
             v-if="shared && !publishedView"
             v-b-tooltip.noninteractive.hover
@@ -158,14 +175,15 @@ function onViewUserPublished() {
 <style scoped lang="scss">
 @import "theme/blue.scss";
 
-.workflow-badge {
-    background: $brand-secondary;
-    color: $brand-primary;
-    border: 1px solid $brand-primary;
+.workflow-indicators {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
 
-    &:hover {
-        color: $brand-secondary;
-        background: $brand-primary;
-    }
+.step-count {
+    display: grid;
+    place-items: center;
+    height: 1rem;
 }
 </style>
