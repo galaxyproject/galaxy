@@ -125,8 +125,8 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             "embeddable": self.config.get("embeddable"),
             "entry_point": self.config.get("entry_point"),
             "settings": self.config.get("settings"),
-            "groups": self.config.get("groups"),
             "specs": self.config.get("specs"),
+            "tracks": self.config.get("tracks"),
             "href": self._get_url(),
         }
 
