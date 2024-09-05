@@ -8,6 +8,17 @@ from typing import (
     Union,
 )
 
+from ._types import (
+    Annotated,
+    AssertionParameter,
+    Negate,
+    NEGATE_DEFAULT,
+    OptionalXmlFloat,
+    OptionalXmlInt,
+    OutputBytes,
+    XmlFloat,
+    XmlInt,
+)
 from ._util import _assert_number
 
 try:
@@ -25,6 +36,255 @@ except ImportError:
 
 if TYPE_CHECKING:
     import numpy.typing
+
+
+JSON_STRICT_NUMBER = "typing.Union[StrictInt, StrictFloat]"
+JSON_OPTIONAL_STRICT_NUMBER = f"typing.Optional[{JSON_STRICT_NUMBER}]"
+
+
+Width = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Expected width of the image (in pixels).",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+Height = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Expected height of the image (in pixels).",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+Channels = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Expected number of channels of the image.",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+WidthDelta = Annotated[
+    XmlInt,
+    AssertionParameter(
+        "Maximum allowed difference of the image width (in pixels, default is 0). The observed width has to be in the range ``value +- delta``.",
+        json_type="StrictInt",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+WidthMin = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Minimum allowed width of the image (in pixels).",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+WidthMax = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Maximum allowed width of the image (in pixels).",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+HeightDelta = Annotated[
+    XmlInt,
+    AssertionParameter(
+        "Maximum allowed difference of the image height (in pixels, default is 0). The observed height has to be in the range ``value +- delta``.",
+        json_type="StrictInt",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+HeightMin = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Minimum allowed height of the image (in pixels).",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+HeightMax = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Maximum allowed height of the image (in pixels).",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+ChannelsDelta = Annotated[
+    XmlInt,
+    AssertionParameter(
+        "Maximum allowed difference of the number of channels (default is 0). The observed number of channels has to be in the range ``value +- delta``.",
+        json_type="StrictInt",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+ChannelsMin = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Minimum allowed number of channels.",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+ChannelsMax = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Maximum allowed number of channels.",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+MeanIntensity = Annotated[
+    OptionalXmlFloat,
+    AssertionParameter("The required mean value of the image intensities.", json_type=JSON_OPTIONAL_STRICT_NUMBER),
+]
+MeanIntensityEps = Annotated[
+    XmlFloat,
+    AssertionParameter(
+        "The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean value of the image intensities has to be in the range ``value +- eps``.",
+        json_type=JSON_STRICT_NUMBER,
+        validators=["check_non_negative_if_set"],
+    ),
+]
+MeanIntensityMin = Annotated[
+    OptionalXmlFloat,
+    AssertionParameter(
+        "A lower bound of the required mean value of the image intensities.", json_type=JSON_OPTIONAL_STRICT_NUMBER
+    ),
+]
+MeanIntensityMax = Annotated[
+    OptionalXmlFloat,
+    AssertionParameter(
+        "An upper bound of the required mean value of the image intensities.", json_type=JSON_OPTIONAL_STRICT_NUMBER
+    ),
+]
+NumLabels = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Expected number of labels.",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+NumLabelsDelta = Annotated[
+    XmlInt,
+    AssertionParameter(
+        "Maximum allowed difference of the number of labels (default is 0). The observed number of labels has to be in the range ``value +- delta``.",
+        json_type="StrictInt",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+NumLabelsMin = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Minimum allowed number of labels.",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+NumLabelsMax = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Maximum allowed number of labels.",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+
+Channel = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).",
+        json_type="typing.Optional[StrictInt]",
+    ),
+]
+CenterOfMass = Annotated[
+    str,
+    AssertionParameter(
+        "The required center of mass of the image intensities (horizontal and vertical coordinate, separated by a comma).",
+        validators=["check_center_of_mass"],
+    ),
+]
+CenterOfMassEps = Annotated[
+    XmlFloat,
+    AssertionParameter(
+        "The maximum allowed Euclidean distance to the required center of mass (defaults to ``0.01``).",
+        json_type=JSON_STRICT_NUMBER,
+        validators=["check_non_negative_if_set"],
+    ),
+]
+Labels = Annotated[
+    Optional[Union[str, List[int]]],
+    AssertionParameter(
+        "List of labels, separated by a comma. Labels *not* on this list will be excluded from consideration. Cannot be used in combination with ``exclude_labels``.",
+        xml_type="xs:string",
+        json_type="typing.Optional[typing.List[int]]",
+    ),
+]
+ExcludeLabels = Annotated[
+    Optional[Union[str, List[int]]],
+    AssertionParameter(
+        "List of labels to be excluded from consideration, separated by a comma. The primary usage of this attribute is to exclude the background of a label image. Cannot be used in combination with ``labels``.",
+        xml_type="xs:string",
+        json_type="typing.Optional[typing.List[int]]",
+    ),
+]
+MeanObjectSize = Annotated[
+    OptionalXmlFloat,
+    AssertionParameter(
+        "The required mean size of the uniquely labeled objects.",
+        xml_type="xs:float",
+        json_type=JSON_OPTIONAL_STRICT_NUMBER,
+        validators=["check_non_negative_if_set"],
+    ),
+]
+MeanObjectSizeEps = Annotated[
+    XmlFloat,
+    AssertionParameter(
+        "The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean size of the uniquely labeled objects has to be in the range ``value +- eps``.",
+        xml_type="xs:float",
+        json_type=JSON_STRICT_NUMBER,
+        validators=["check_non_negative_if_set"],
+    ),
+]
+MeanObjectSizeMin = Annotated[
+    OptionalXmlFloat,
+    AssertionParameter(
+        "A lower bound of the required mean size of the uniquely labeled objects.",
+        xml_type="xs:float",
+        json_type=JSON_OPTIONAL_STRICT_NUMBER,
+        validators=["check_non_negative_if_set"],
+    ),
+]
+MeanObjectSizeMax = Annotated[
+    OptionalXmlFloat,
+    AssertionParameter(
+        "An upper bound of the required mean size of the uniquely labeled objects.",
+        xml_type="xs:float",
+        json_type=JSON_OPTIONAL_STRICT_NUMBER,
+        validators=["check_non_negative_if_set"],
+    ),
+]
 
 
 def _assert_float(
@@ -52,15 +312,17 @@ def _assert_float(
 
 
 def assert_has_image_width(
-    output_bytes: bytes,
-    width: Optional[Union[int, str]] = None,
-    delta: Union[int, str] = 0,
-    min: Optional[Union[int, str]] = None,
-    max: Optional[Union[int, str]] = None,
-    negate: Union[bool, str] = False,
+    output_bytes: OutputBytes,
+    width: Width = None,
+    delta: WidthDelta = 0,
+    min: WidthMin = None,
+    max: WidthMax = None,
+    negate: Negate = NEGATE_DEFAULT,
 ) -> None:
-    """
-    Asserts the specified output is an image and has a width of the specified value.
+    """Asserts the output is an image and has a specific width (in pixels).
+
+    The width is plus/minus ``delta`` (e.g., ``<has_image_width width="512" delta="2" />``).
+    Alternatively the range of the expected width can be specified by ``min`` and/or ``max``.
     """
     im_arr = _get_image(output_bytes)
     _assert_number(
@@ -77,14 +339,16 @@ def assert_has_image_width(
 
 def assert_has_image_height(
     output_bytes: bytes,
-    height: Optional[Union[int, str]] = None,
-    delta: Union[int, str] = 0,
-    min: Optional[Union[int, str]] = None,
-    max: Optional[Union[int, str]] = None,
-    negate: Union[bool, str] = False,
+    height: Height = None,
+    delta: HeightDelta = 0,
+    min: HeightMin = None,
+    max: HeightMax = None,
+    negate: Negate = NEGATE_DEFAULT,
 ) -> None:
-    """
-    Asserts the specified output is an image and has a height of the specified value.
+    """Asserts the output is an image and has a specific height (in pixels).
+
+    The height is plus/minus ``delta`` (e.g., ``<has_image_height height="512" delta="2" />``).
+    Alternatively the range of the expected height can be specified by ``min`` and/or ``max``.
     """
     im_arr = _get_image(output_bytes)
     _assert_number(
@@ -101,14 +365,17 @@ def assert_has_image_height(
 
 def assert_has_image_channels(
     output_bytes: bytes,
-    channels: Optional[Union[int, str]] = None,
-    delta: Union[int, str] = 0,
-    min: Optional[Union[int, str]] = None,
-    max: Optional[Union[int, str]] = None,
-    negate: Union[bool, str] = False,
+    channels: Channels = None,
+    delta: ChannelsDelta = 0,
+    min: ChannelsMin = None,
+    max: ChannelsMax = None,
+    negate: Negate = NEGATE_DEFAULT,
 ) -> None:
-    """
-    Asserts the specified output is an image and has the specified number of channels.
+    """Asserts the output is an image and has a specific number of channels.
+
+    The number of channels is plus/minus ``delta`` (e.g., ``<has_image_channels channels="3" />``).
+
+    Alternatively the range of the expected number of channels can be specified by ``min`` and/or ``max``.
     """
     im_arr = _get_image(output_bytes)
     n_channels = 1 if im_arr.ndim < 3 else im_arr.shape[2]  # we assume here that the image is a 2-D image
@@ -165,15 +432,17 @@ def _get_image(
 
 
 def assert_has_image_mean_intensity(
-    output_bytes: bytes,
-    channel: Optional[Union[int, str]] = None,
-    mean_intensity: Optional[Union[float, str]] = None,
-    eps: Union[float, str] = 0.01,
-    min: Optional[Union[float, str]] = None,
-    max: Optional[Union[float, str]] = None,
+    output_bytes: OutputBytes,
+    channel: Channel = None,
+    mean_intensity: MeanIntensity = None,
+    eps: MeanIntensityEps = 0.01,
+    min: MeanIntensityMin = None,
+    max: MeanIntensityMax = None,
 ) -> None:
-    """
-    Asserts the specified output is an image and has the specified mean intensity value.
+    """Asserts the output is an image and has a specific mean intensity value.
+
+    The mean intensity value is plus/minus ``eps`` (e.g., ``<has_image_mean_intensity mean_intensity="0.83" />``).
+    Alternatively the range of the expected mean intensity value can be specified by ``min`` and/or ``max``.
     """
     im_arr = _get_image(output_bytes, channel)
     _assert_float(
@@ -187,22 +456,24 @@ def assert_has_image_mean_intensity(
 
 
 def assert_has_image_center_of_mass(
-    output_bytes: bytes,
-    center_of_mass: Union[Tuple[float, float], str],
-    channel: Optional[Union[int, str]] = None,
-    eps: Union[float, str] = 0.01,
+    output_bytes: OutputBytes,
+    center_of_mass: CenterOfMass,
+    channel: Channel = None,
+    eps: CenterOfMassEps = 0.01,
 ) -> None:
-    """
-    Asserts the specified output is an image and has the specified center of mass.
+    """Asserts the specified output is an image and has the specified center of mass.
+
+    Asserts the output is an image and has a specific center of mass,
+    or has an Euclidean distance of ``eps`` or less to that point (e.g.,
+    ``<has_image_center_of_mass center_of_mass="511.07, 223.34" />``).
     """
     im_arr = _get_image(output_bytes, channel)
-    if isinstance(center_of_mass, str):
-        center_of_mass_parts = [c.strip() for c in center_of_mass.split(",")]
-        assert len(center_of_mass_parts) == 2
-        center_of_mass = (float(center_of_mass_parts[0]), float(center_of_mass_parts[1]))
-    assert len(center_of_mass) == 2, "center_of_mass must have two components"
+    center_of_mass_parts = [c.strip() for c in center_of_mass.split(",")]
+    assert len(center_of_mass_parts) == 2
+    center_of_mass_tuple = (float(center_of_mass_parts[0]), float(center_of_mass_parts[1]))
+    assert len(center_of_mass_tuple) == 2, "center_of_mass must have two components"
     actual_center_of_mass = _compute_center_of_mass(im_arr)
-    distance = numpy.linalg.norm(numpy.subtract(center_of_mass, actual_center_of_mass))
+    distance = numpy.linalg.norm(numpy.subtract(center_of_mass_tuple, actual_center_of_mass))
     assert distance <= float(
         eps
     ), f"Wrong center of mass: {actual_center_of_mass} (expected {center_of_mass}, distance: {distance}, eps: {eps})"
@@ -251,18 +522,22 @@ def _get_image_labels(
 
 
 def assert_has_image_n_labels(
-    output_bytes: bytes,
-    channel: Optional[Union[int, str]] = None,
-    labels: Optional[Union[str, List[int]]] = None,
-    exclude_labels: Optional[Union[str, List[int]]] = None,
-    n: Optional[Union[int, str]] = None,
-    delta: Union[int, str] = 0,
-    min: Optional[Union[int, str]] = None,
-    max: Optional[Union[int, str]] = None,
-    negate: Union[bool, str] = False,
+    output_bytes: OutputBytes,
+    channel: Channel = None,
+    labels: Labels = None,
+    exclude_labels: ExcludeLabels = None,
+    n: NumLabels = None,
+    delta: NumLabelsDelta = 0,
+    min: NumLabelsMin = None,
+    max: NumLabelsMax = None,
+    negate: Negate = NEGATE_DEFAULT,
 ) -> None:
-    """
-    Asserts the specified output is an image and has the specified number of unique values (e.g., uniquely labeled objects).
+    """Asserts the output is an image and has the specified labels.
+
+    Labels can be a number of labels or unique values (e.g.,
+    ``<has_image_n_labels n="187" exclude_labels="0" />``).
+
+    The primary usage of this assertion is to verify the number of objects in images with uniquely labeled objects.
     """
     present_labels = _get_image_labels(output_bytes, channel, labels, exclude_labels)[1]
     _assert_number(
@@ -278,17 +553,20 @@ def assert_has_image_n_labels(
 
 
 def assert_has_image_mean_object_size(
-    output_bytes: bytes,
-    channel: Optional[Union[int, str]] = None,
-    labels: Optional[Union[str, List[int]]] = None,
-    exclude_labels: Optional[Union[str, List[int]]] = None,
-    mean_object_size: Optional[Union[float, str]] = None,
-    eps: Union[float, str] = 0.01,
-    min: Optional[Union[float, str]] = None,
-    max: Optional[Union[float, str]] = None,
+    output_bytes: OutputBytes,
+    channel: Channel = None,
+    labels: Labels = None,
+    exclude_labels: ExcludeLabels = None,
+    mean_object_size: MeanObjectSize = None,
+    eps: MeanObjectSizeEps = 0.01,
+    min: MeanObjectSizeMin = None,
+    max: MeanObjectSizeMax = None,
 ) -> None:
-    """
-    Asserts the specified output is an image with labeled objects which have the specified mean size (number of pixels).
+    """Asserts the output is an image with labeled objects which have the specified mean size (number of pixels),
+
+    The mean size is plus/minus ``eps`` (e.g., ``<has_image_mean_object_size mean_object_size="111.87" exclude_labels="0" />``).
+
+    The labels must be unique.
     """
     im_arr, present_labels = _get_image_labels(output_bytes, channel, labels, exclude_labels)
     actual_mean_object_size = sum((im_arr == label).sum() for label in present_labels) / len(present_labels)
