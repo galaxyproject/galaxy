@@ -799,7 +799,6 @@ class BaseFastq(BaseSequence):
             return False
         return self.check_first_block(file_prefix)
 
-
     @classmethod
     def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
