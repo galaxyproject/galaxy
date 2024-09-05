@@ -1,15 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema
-        xmlns:xs="http://www.w3.org/2001/XMLSchema"
-        xmlns:gxdocs="http://galaxyproject.org/xml/1.0"
-    elementFormDefault="qualified"
-    attributeFormDefault="unqualified"
-    >
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:gxdocs="http://galaxyproject.org/xml/1.0" elementFormDefault="qualified" attributeFormDefault="unqualified">
   <xs:annotation>
     <xs:appinfo>Galaxy Schema</xs:appinfo>
     <xs:documentation xml:lang="en">A Galaxy XML tool wrapper</xs:documentation>
   </xs:annotation>
-
   <xs:element name="tool">
     <xs:annotation gxdocs:best_practices="tools">
       <xs:documentation xml:lang="en"><![CDATA[
@@ -105,11 +99,11 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="macros" type="Macros" minOccurs="0"/>
         <xs:element name="edam_topics" type="EdamTopics" minOccurs="0"/>
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
-        <xs:element name="xrefs" type="xrefs" minOccurs="0" />
-        <xs:element name="creator" type="Creator" minOccurs="0" />
+        <xs:element name="xrefs" type="xrefs" minOccurs="0"/>
+        <xs:element name="creator" type="Creator" minOccurs="0"/>
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
         <xs:element name="required_files" type="RequiredFiles" minOccurs="0"/>
-        <xs:element name="entry_points" type="EntryPoints" minOccurs="0" maxOccurs="1" />
+        <xs:element name="entry_points" type="EntryPoints" minOccurs="0" maxOccurs="1"/>
         <xs:element name="description" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="tool-descriptions">
             <xs:documentation xml:lang="en"><![CDATA[The value is displayed in
@@ -126,7 +120,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
         </xs:element>
         <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
         <xs:element name="version_command" type="VersionCommand" minOccurs="0"/>
-        <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1" />
+        <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1"/>
         <xs:element name="environment_variables" type="EnvironmentVariables" minOccurs="0" maxOccurs="1"/>
         <xs:element name="command" type="Command" minOccurs="0" maxOccurs="1"/>
         <xs:element name="expression" type="Expression" minOccurs="0" maxOccurs="1"/>
@@ -136,7 +130,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
         <xs:element name="inputs" type="Inputs" minOccurs="0"/>
         <xs:element name="tests" type="Tests" minOccurs="0"/>
         <xs:element name="stdio" type="Stdio" minOccurs="0"/>
-        <xs:element name="help" type="Help" minOccurs="0" maxOccurs="1" />
+        <xs:element name="help" type="Help" minOccurs="0" maxOccurs="1"/>
         <xs:element name="code" type="Code" minOccurs="0"/>
         <xs:element name="uihints" type="UIhints" minOccurs="0"/>
         <xs:element name="options" type="Options" minOccurs="0"/>
@@ -244,7 +238,6 @@ this attribute defined the HTTP request method to use when communicating with an
       </xs:attribute>
     </xs:complexType>
   </xs:element>
-
   <xs:complexType name="Macros">
     <xs:annotation>
       <xs:documentation xml:lang="en">Frequently, tools may require the same XML
@@ -266,8 +259,7 @@ Example:
 <macros>
     <import>macros.xml</import>
 </macros>
-````]]>
-          </xs:documentation>
+````]]></xs:documentation>
         </xs:annotation>
       </xs:element>
       <xs:element name="token" type="xs:anyType" minOccurs="0" maxOccurs="unbounded">
@@ -287,14 +279,12 @@ Usage example:
 <requirements>
     <requirement type="package" version="@TOOL_VERSION@">mypackage</requirement>
 </requirements>
-````]]>
-          </xs:documentation>
+````]]></xs:documentation>
         </xs:annotation>
       </xs:element>
       <xs:element name="xml" type="xs:anyType" minOccurs="0" maxOccurs="unbounded">
         <xs:annotation>
-          <xs:documentation xml:lang="en">
-            <![CDATA[
+          <xs:documentation xml:lang="en"><![CDATA[
 The ``xml`` element, inside macros, allows defining a named XML fragment that can be reused (expanded) anywhere in the tool or tools that use the macro.
 
 Definition example:
@@ -317,8 +307,7 @@ Usage example:
       </xs:element>
       <xs:element name="macro" type="xs:anyType" minOccurs="0" maxOccurs="unbounded">
         <xs:annotation>
-          <xs:documentation xml:lang="en">
-            <![CDATA[
+          <xs:documentation xml:lang="en"><![CDATA[
 A generalisation for macro tokens, templates and xml macros, i.e.
 `<macro name="an_xml_macro" type="xml">` is identical to `<xml name="an_xml_macro">`,
 `<macro name="a_template" type="template">` is identical to `<template name="a_template">`, and
@@ -330,7 +319,6 @@ Note that
       </xs:element>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="EntryPoints">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -345,7 +333,6 @@ to a tool.
       <xs:element name="entry_point" type="EntryPoint" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="EntryPoint" mixed="true">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -369,24 +356,24 @@ to provide access to graphical tools in real-time.
       <xs:element name="port" type="EntryPointPort" minOccurs="1" maxOccurs="1"/>
       <xs:element name="url" type="EntryPointURL" minOccurs="0" maxOccurs="1"/>
     </xs:sequence>
-        <xs:attribute name="name" type="xs:string" use="required">
-          <xs:annotation>
-            <xs:documentation xml:lang="en">The name of the entry point.</xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="label" type="xs:string" use="optional">
-          <xs:annotation>
-            <xs:documentation xml:lang="en">A unique label to identify the entry point. Used by interactive client tools to connect.</xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="requires_domain" type="PermissiveBoolean" default="true">
-          <xs:annotation>
-            <xs:documentation xml:lang="en">Whether domain-based proxying is required for the entry point. Default is True.</xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="requires_path_in_url" type="PermissiveBoolean" default="false">
-          <xs:annotation>
-            <xs:documentation xml:lang="en"><![CDATA[
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the entry point.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">A unique label to identify the entry point. Used by interactive client tools to connect.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="requires_domain" type="PermissiveBoolean" default="true">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Whether domain-based proxying is required for the entry point. Default is True.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="requires_path_in_url" type="PermissiveBoolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
 Whether the InteractiveTool proxy will add the entry point path to the URL provided to the interactive tool. Only
 relevant when path-based proxying is configured (``requires_domain=False``). A value of False implies that the web service
 for the interactive tool fully operates with relative links. A value of True implies that the unique entry point path,
@@ -395,21 +382,19 @@ into an environment variable by setting the attribute ``inject="entry_point_path
 Alternatively, the attribute ``requires_path_in_header_named`` can be set to provide the path in the specified HTTP header.
 The entry point path should in any case be used to configure the web service in the interactive tool to serve the content
 from the provided URL path. Default value of ``requires_path_in_url`` is False.
-]]>
-            </xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="requires_path_in_header_named" type="xs:string" default="">
-          <xs:annotation>
-            <xs:documentation xml:lang="en"><![CDATA[
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="requires_path_in_header_named" type="xs:string" default="">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
 Whether the InteractiveTool proxy will add the entry point path to an HTTP header. An empty string as value (default) means
 that the path will not be provided in an HTTP header. Any other string value will define the name of the HTTP header
 where the path will be injected by the proxy. See the documentation of ``requires_path_in_url`` for more information.
 Default value of ``requires_path_in_header_named`` is False.
-]]>
-            </xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="EntryPointPort" mixed="true">
     <xs:annotation>
@@ -429,7 +414,6 @@ This tag set is contained within the ``<entry_point>`` tag set. It contains the 
 ]]></xs:documentation>
     </xs:annotation>
   </xs:complexType>
-
   <xs:complexType name="ToolAction">
     <xs:annotation>
       <xs:documentation xml:lang="en">Describe the backend Python action to execute for this Galaxy tool.</xs:documentation>
@@ -441,7 +425,6 @@ This tag set is contained within the ``<entry_point>`` tag set. It contains the 
     <xs:attribute name="class" type="xs:string" use="required">
     </xs:attribute>
   </xs:complexType>
-
   <xs:attributeGroup name="Thing">
     <xs:attribute name="name" type="xs:string" use="optional">
       <xs:annotation>
@@ -450,7 +433,7 @@ This tag set is contained within the ``<entry_point>`` tag set. It contains the 
     </xs:attribute>
     <xs:attribute name="url" type="xs:string" use="optional">
       <xs:annotation>
-      <xs:documentation xml:lang="en">[schema.org/url](https://schema.org/url)</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/url](https://schema.org/url)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="identifier" type="xs:string" use="optional">
@@ -489,7 +472,6 @@ This tag set is contained within the ``<entry_point>`` tag set. It contains the 
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
-
   <xs:complexType name="Person">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -523,7 +505,6 @@ Describes a person. Tries to stay close to [schema.org/Person](https://schema.or
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="Organization">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -532,14 +513,12 @@ Describes an organization. Tries to stay close to [schema.org/Organization](http
     </xs:annotation>
     <xs:attributeGroup ref="Thing"/>
   </xs:complexType>
-
   <xs:group name="PersonOrOrganization">
     <xs:choice>
-      <xs:element name="person" type="Person" />
-      <xs:element name="organization" type="Organization" />
+      <xs:element name="person" type="Person"/>
+      <xs:element name="organization" type="Organization"/>
     </xs:choice>
   </xs:group>
-
   <xs:complexType name="Creator">
     <xs:annotation>
       <xs:documentation xml:lang="en">The creator(s) of this work. See [schema.org/creator](https://schema.org/creator).</xs:documentation>
@@ -548,7 +527,6 @@ Describes an organization. Tries to stay close to [schema.org/Organization](http
       <xs:group ref="PersonOrOrganization" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="RequiredFiles">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -575,7 +553,6 @@ practice.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:simpleType name="RequiredFileReferenceType">
     <xs:annotation>
       <xs:documentation xml:lang="en">How are files referenced in RequiredFileIncludes and RequiredFileExcludes. Paths are matched relative to the tool directory. `literal` must match the filename exactly. `prefix` will match paths based on their start. `glob` and `regex` use patterns to match files.</xs:documentation>
@@ -587,7 +564,6 @@ practice.
       <xs:enumeration value="regex"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:complexType name="RequiredFileInclude">
     <xs:annotation>
       <xs:documentation xml:lang="en">Describe files to include when relocating tool directory for remote execution.</xs:documentation>
@@ -603,7 +579,6 @@ practice.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="RequiredFileExclude">
     <xs:annotation>
       <xs:documentation xml:lang="en">Describe files to exclude when relocating tool directory for remote execution.</xs:documentation>
@@ -619,7 +594,6 @@ practice.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="Requirements">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -806,7 +780,6 @@ Query sequence::
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-
   <xs:complexType name="Parallelism">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for Parallelism</xs:documentation>
@@ -1010,7 +983,6 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
 The content of ``stdout`` and ``stderr`` are strings containing the output of the process.
 
 ]]></xs:documentation>
-
     </xs:annotation>
     <xs:sequence>
       <xs:element name="hook" type="CodeHook" minOccurs="0" maxOccurs="unbounded"/>
@@ -1041,7 +1013,6 @@ The content of ``stdout`` and ``stderr`` are strings containing the output of th
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="Options">
     <xs:annotation>
       <xs:documentation xml:lang="en">This directive is used to specify some rarely modified options.</xs:documentation>
@@ -1057,32 +1028,29 @@ The content of ``stdout`` and ``stderr`` are strings containing the output of th
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="TracksterConf">
     <xs:annotation>
       <xs:documentation xml:lang="en">This directive is used to specify some rarely modified trackster options.</xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="action" type="TracksterAction" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="action" type="TracksterAction" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="TracksterAction">
     <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
+      <xs:documentation xml:lang="en"/>
     </xs:annotation>
     <xs:attribute name="name" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"/>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="output_name" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"/>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="Tests">
     <xs:annotation gxdocs:best_practices="tests">
       <xs:documentation xml:lang="en"><![CDATA[
@@ -1105,7 +1073,6 @@ documentation or the much older wiki content for
       <xs:element name="test" type="Test" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="Test">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -1220,10 +1187,10 @@ that at least one of the assumptions of the test is not met. This is most useful
   </xs:complexType>
   <xs:group name="TestParamElement">
     <xs:choice>
-      <xs:element name="param" type="TestParam" />
-      <xs:element name="repeat" type="TestRepeat" />
-      <xs:element name="conditional" type="TestConditional" />
-      <xs:element name="section" type="TestSection" />
+      <xs:element name="param" type="TestParam"/>
+      <xs:element name="repeat" type="TestRepeat"/>
+      <xs:element name="conditional" type="TestConditional"/>
+      <xs:element name="section" type="TestSection"/>
       <xs:element name="output" type="TestOutput" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="output_collection" type="TestOutputCollection"/>
       <xs:element name="assert_command" type="TestAssertions">
@@ -1301,11 +1268,10 @@ contains a test case demonstrating this block. This test case appears below:
 </test>
 ```
 
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -1447,7 +1413,7 @@ shown below.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -1523,7 +1489,7 @@ allowing multiple instances of a single repeat to be specified.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -1575,9 +1541,9 @@ select an option for a test.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="collection" type="TestCollection" minOccurs="0" maxOccurs="1" />
-      <xs:element name="composite_data" type="TestCompositeData" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="metadata" type="TestParamMetadata" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="collection" type="TestCollection" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="composite_data" type="TestCompositeData" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="metadata" type="TestParamMetadata" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -1709,7 +1675,7 @@ by ``file`` using the ``compare`` attribute:
         ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="TestOutputElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="TestOutputElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <!-- TODO: This would be more percise if this was required if at the top-level. -->
     <xs:attribute name="name" type="xs:string">
@@ -1917,7 +1883,7 @@ The following demonstrates verifying XML content with XPath-like expressions.
         </xs:annotation>
       </xs:element>
       <!-- TODO: This would be more percise if this was only allowed at the top-level. -->
-      <xs:element name="extra_files" type="TestExtraFile" />
+      <xs:element name="extra_files" type="TestExtraFile"/>
       <xs:element name="metadata" type="TestOutputMetadata"/>
     </xs:choice>
   </xs:group>
@@ -2181,7 +2147,6 @@ This value is the same as the value of the ``name`` attribute of the
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="TestAssertions">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -2195,8 +2160,7 @@ can be found below.
 The implementation of these tags are simply Python functions defined in the
 [/lib/galaxy/tool_util/verify/asserts](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tool_util/verify/asserts)
 module.
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:choice minOccurs="0" maxOccurs="unbounded">
       <xs:group ref="TestAssertionsGeneral" minOccurs="0" maxOccurs="unbounded"/>
@@ -2276,13 +2240,13 @@ module.
       <xs:documentation xml:lang="en"><![CDATA[Assertions for image data]]></xs:documentation>
     </xs:annotation>
     <xs:choice>
-      <xs:element name="has_image_width" type="AssertHasImageWidth" />
-      <xs:element name="has_image_height" type="AssertHasImageHeight" />
-      <xs:element name="has_image_channels" type="AssertHasImageChannels" />
-      <xs:element name="has_image_mean_intensity" type="AssertHasImageMeanIntensity" />
-      <xs:element name="has_image_center_of_mass" type="AssertHasImageCenterOfMass" />
-      <xs:element name="has_image_n_labels" type="AssertHasImageNLabels" />
-      <xs:element name="has_image_mean_object_size" type="AssertHasImageMeanObjectSize" />
+      <xs:element name="has_image_width" type="AssertHasImageWidth"/>
+      <xs:element name="has_image_height" type="AssertHasImageHeight"/>
+      <xs:element name="has_image_channels" type="AssertHasImageChannels"/>
+      <xs:element name="has_image_mean_intensity" type="AssertHasImageMeanIntensity"/>
+      <xs:element name="has_image_center_of_mass" type="AssertHasImageCenterOfMass"/>
+      <xs:element name="has_image_n_labels" type="AssertHasImageNLabels"/>
+      <xs:element name="has_image_mean_object_size" type="AssertHasImageMeanObjectSize"/>
     </xs:choice>
   </xs:group>
   <xs:group name="TestAssertionsH5">
@@ -2303,8 +2267,7 @@ Alternatively the range of the expected size can be specified by ``min`` and/or
 ``max``.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="size" type="Bytes" use="optional">
       <xs:annotation>
@@ -2343,8 +2306,7 @@ times, this value can be specified using ``n``. Optionally also with a certain
 ``min`` and/or ``max``.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="text" type="xs:string" use="required">
       <xs:annotation>
@@ -2360,8 +2322,7 @@ $attribute_list::5
 Asserts the specified ``text`` does not appear in the output (e.g. ``<not_has_text text="chr8" />``).
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="text" type="xs:string" use="required">
       <xs:annotation>
@@ -2380,8 +2341,7 @@ Optionally also with a certain ``delta``. Alternatively the range of expected
 occurences can be specified by ``min`` and/or ``max``.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="expression" type="xs:string" use="required">
       <xs:annotation>
@@ -2401,8 +2361,7 @@ Optionally also with a certain ``delta``. Alternatively the range of expected
 occurences can be specified by ``min`` and/or ``max``.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="line" type="xs:string" use="required">
       <xs:annotation>
@@ -2421,8 +2380,7 @@ Alternatively the range of expected occurences can be specified by ``min``
 and/or ``max``.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="AssertAttributeN"/>
     <xs:attributeGroup ref="AssertAttributeNegate"/>
@@ -2437,8 +2395,7 @@ specified using ``n``.  Optionally also with ``delta``. Alternatively the range
 of expected occurences can be specified by ``min`` and/or ``max``.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="expression" type="xs:string" use="required">
       <xs:annotation>
@@ -2460,12 +2417,11 @@ empty string), then the first non-comment line is used for determining the
 number of columns.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="AssertAttributeN"/>
     <xs:attributeGroup ref="AssertAttributeNegate"/>
-    <xs:attribute name="sep" type="xs:string" default="&#009;">
+    <xs:attribute name="sep" type="xs:string" default="&#9;">
       <xs:annotation>
         <xs:documentation xml:lang="en">Separator defining columns, default: tab</xs:documentation>
       </xs:annotation>
@@ -2478,7 +2434,7 @@ $attribute_list::5
   </xs:complexType>
   <xs:complexType name="AssertHasArchiveMember">
     <xs:annotation>
-        <xs:documentation xml:lang="en"><![CDATA[
+      <xs:documentation xml:lang="en"><![CDATA[
 This tag allows to check if ``path`` is contained in a compressed file. The path
 is a regular expression that is matched against the full paths of the objects in
 the compressed file (remember that "matching" means it is checked if a prefix of
@@ -2553,8 +2509,7 @@ $attribute_list::5
 Asserts the output is a valid XML file (e.g. ``<is_valid_xml />``).
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
   </xs:complexType>
   <xs:complexType name="AssertXMLElement">
@@ -2593,8 +2548,7 @@ Note that all other XML assertions can be expressed by this assertion (Galaxy
 also implements the other assertions by calling this one).
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attribute name="all" type="PermissiveBoolean" default="false">
@@ -2623,8 +2577,7 @@ XPath-like ``path``, e.g.
 With ``negate`` the result of the assertion can be inverted.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attributeGroup ref="AssertAttributeNegate"/>
@@ -2644,8 +2597,7 @@ can be used to specify the range of the expected number of occurences.
 With ``negate`` the result of the assertion can be inverted.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attributeGroup ref="AssertAttributeN"/>
@@ -2666,8 +2618,7 @@ With ``negate`` the result of the assertion (on the matching) can be inverted (t
 implicit assertion on the existence of the path is not affected).
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attribute name="expression" type="xs:string" use="required">
@@ -2692,8 +2643,7 @@ With ``negate`` the result of the assertion (on the equality) can be inverted (t
 implicit assertion on the existence of the path is not affected).
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attribute name="text" type="xs:string" use="required">
@@ -2718,8 +2668,7 @@ With ``negate`` the result of the assertion (on the matching) can be inverted (t
 implicit assertion on the existence of the path is not affected).
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attribute name="expression" type="xs:string" use="required">
@@ -2744,8 +2693,7 @@ With ``negate`` the result of the assertion (on the equality) can be inverted (t
 implicit assertion on the existence of the path is not affected).
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attribute name="text" type="xs:string" use="required">
@@ -2774,8 +2722,7 @@ The sub-assertions, which have their own ``negate`` attribute, are not affected
 by ``negate``.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="TestAssertionsText" minOccurs="1" maxOccurs="unbounded"/>
@@ -2791,8 +2738,7 @@ plus/minus ``delta`` (e.g., ``<has_image_width width="512" delta="2" />``).
 Alternatively the range of the expected width can be specified by ``min`` and/or ``max``.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="width" type="xs:integer" use="optional">
       <xs:annotation>
@@ -2824,8 +2770,7 @@ plus/minus ``delta`` (e.g., ``<has_image_height height="512" delta="2" />``).
 Alternatively the range of the expected height can be specified by ``min`` and/or ``max``.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="height" type="xs:integer" use="optional">
       <xs:annotation>
@@ -2857,8 +2802,7 @@ plus/minus ``delta`` (e.g., ``<has_image_channels channels="3" />``).
 Alternatively the range of the expected number of channels can be specified by ``min`` and/or ``max``.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="channels" type="xs:integer" use="optional">
       <xs:annotation>
@@ -2890,8 +2834,7 @@ plus/minus ``eps`` (e.g., ``<has_image_mean_intensity mean_intensity="0.83" />``
 Alternatively the range of the expected mean intensity value can be specified by ``min`` and/or ``max``.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="mean_intensity" type="xs:float" use="optional">
       <xs:annotation>
@@ -2927,8 +2870,7 @@ or has an Euclidean distance of ``eps`` or less to that point (e.g.,
 ``<has_image_center_of_mass center_of_mass="511.07, 223.34" />``).
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="center_of_mass" type="xs:string">
       <xs:annotation>
@@ -2954,8 +2896,7 @@ Asserts the output is an image and has the specified number of labels, or unique
 The primary usage of this assertion is to verify the number of objects in images with uniquely labeled objects.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="n" type="xs:integer" use="optional">
       <xs:annotation>
@@ -3002,8 +2943,7 @@ plus/minus ``eps`` (e.g., ``<has_image_mean_object_size mean_object_size="111.87
 The labels must be unique.
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="mean_object_size" type="xs:float" use="optional">
       <xs:annotation>
@@ -3051,8 +2991,7 @@ Asserts the JSON document contains a property or key with the specified JSON val
 ```
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="AssertAttributeProperty"/>
     <xs:attribute name="value" type="xs:string" use="required">
@@ -3071,8 +3010,7 @@ Asserts the JSON document contains a property or key with the specified text (i.
 ```
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attributeGroup ref="AssertAttributeProperty"/>
     <xs:attribute name="text" type="xs:string" use="required">
@@ -3091,8 +3029,7 @@ comma-separated list, e.g.
 <has_h5_keys keys="bins,chroms,indexes,pixels,chroms/lengths" />
 ```
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="keys" type="xs:string">
       <xs:annotation>
@@ -3110,8 +3047,7 @@ Asserts HDF5 output contains the specified ``value`` for an attribute (``key``),
 ```
 
 $attribute_list::5
-]]>
-      </xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="key" type="xs:string">
       <xs:annotation>
@@ -3124,7 +3060,6 @@ $attribute_list::5
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:attributeGroup name="AssertAttributePath">
     <xs:attribute name="path" type="xs:string" use="required">
       <xs:annotation>
@@ -3132,7 +3067,6 @@ $attribute_list::5
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
-
   <xs:attributeGroup name="AssertAttributeProperty">
     <xs:attribute name="property" type="xs:string" use="required">
       <xs:annotation>
@@ -3140,7 +3074,6 @@ $attribute_list::5
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
-
   <xs:attributeGroup name="AssertAttributeNegate">
     <xs:attribute name="negate" type="PermissiveBoolean" default="false">
       <xs:annotation>
@@ -3148,7 +3081,6 @@ $attribute_list::5
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
-
   <xs:attributeGroup name="AssertAttributeN">
     <xs:attribute name="n" type="Bytes" use="optional">
       <xs:annotation>
@@ -3171,14 +3103,12 @@ $attribute_list::5
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
-
   <xs:complexType name="Inputs">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Consists of all elements that define the
 tool's input parameters. Each [param](#tool-inputs-param) element contained in this element
 can be used as a command line parameter within the [command](#tool-command) text content. Most
-tools will not need to specify any attributes on this tag itself.]]>
-</xs:documentation>
+tools will not need to specify any attributes on this tag itself.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded"/>
@@ -3211,8 +3141,6 @@ Data source HTTP action (e.g. ``get`` or ``put``) to use.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
-
   <xs:group name="InputElement">
     <xs:choice>
       <xs:element name="param" type="Param"/>
@@ -3237,8 +3165,6 @@ Data source HTTP action (e.g. ``get`` or ``put``) to use.</xs:documentation>
     </xs:annotation>
     <xs:sequence/>
   </xs:complexType>
-
-
   <xs:complexType name="Conditional">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -3326,7 +3252,7 @@ between paired inputs of single stranded inputs.
     <xs:complexContent>
       <xs:extension base="InputType">
         <xs:sequence>
-          <xs:element name="param" type="Param" minOccurs="1" maxOccurs="1" />
+          <xs:element name="param" type="Param" minOccurs="1" maxOccurs="1"/>
           <xs:element name="when" type="ConditionalWhen" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
         <xs:attribute name="name" type="xs:string" use="required">
@@ -3355,19 +3281,14 @@ Referenced parameter to pass method.]]></xs:documentation>
 Is referenced parameter is the same group.]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
-
         <xs:attribute name="label" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Human readable description for the conditional, unused in the Galaxy UI currently.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
-
-
-
   <xs:complexType name="ConditionalWhen">
     <xs:annotation>
       <xs:documentation xml:lang="en">This directive describes one potential
@@ -3385,9 +3306,6 @@ corresponding to this ``when`` block.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
-
-
   <xs:complexType name="Repeat">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -3505,7 +3423,6 @@ demonstrates both testing strategies.
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
-
   <xs:complexType name="Section">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -3595,7 +3512,6 @@ Further examples can be found in the [test case](https://github.com/galaxyprojec
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="Param">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -3843,7 +3759,7 @@ types are more obsecure and less likely to be useful for most tool authors.
     <xs:complexContent>
       <xs:extension base="InputType">
         <xs:sequence>
-          <xs:group ref="ParamElement" minOccurs="0" maxOccurs="unbounded" />
+          <xs:group ref="ParamElement" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
         <xs:attribute name="type" type="ParamType" use="required">
           <xs:annotation>
@@ -3862,7 +3778,7 @@ the tool form widget is different. Currently valid parameter types are:
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="name" type="xs:string">
-            <xs:annotation>
+          <xs:annotation>
             <xs:documentation xml:lang="en"><![CDATA[Name for this element. This ``name``
 is used as the Cheetah variable containing the user-supplied parameter name in
 ``command`` and ``configfile`` elements. The name should not contain pipes or
@@ -4097,7 +4013,6 @@ allow access to Python code to generate options for a select list. See
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
-
   <xs:group name="ParamElement">
     <xs:choice>
       <xs:element name="label" type="xs:string">
@@ -4105,12 +4020,12 @@ allow access to Python code to generate options for a select list. See
           <xs:documentation xml:lang="en">Documentation for label</xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="conversion" type="ParamConversion" />
-      <xs:element name="option" type="ParamSelectOption" />
+      <xs:element name="conversion" type="ParamConversion"/>
+      <xs:element name="option" type="ParamSelectOption"/>
       <xs:element name="options" type="ParamOptions"/>
-      <xs:element name="validator" type="Validator" />
+      <xs:element name="validator" type="Validator"/>
       <xs:element name="sanitizer" type="Sanitizer"/>
-      <xs:element name="default" type="ParamDefault" />
+      <xs:element name="default" type="ParamDefault"/>
       <xs:element name="help" type="xs:string">
         <xs:annotation>
           <xs:documentation xml:lang="en">Documentation for help</xs:documentation>
@@ -4118,7 +4033,6 @@ allow access to Python code to generate options for a select list. See
       </xs:element>
     </xs:choice>
   </xs:group>
-
   <xs:simpleType name="ParamType">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for ParamType</xs:documentation>
@@ -4140,11 +4054,9 @@ allow access to Python code to generate options for a select list. See
       <xs:enumeration value="drill_down"/>
       <xs:enumeration value="group_tag"/>
       <xs:enumeration value="data_collection"/>
-      <xs:enumeration value="directory_uri" />
+      <xs:enumeration value="directory_uri"/>
     </xs:restriction>
   </xs:simpleType>
-
-
   <xs:complexType name="Command">
     <xs:annotation gxdocs:best_practices="command-tag">
       <xs:documentation xml:lang="en"><![CDATA[
@@ -4330,8 +4242,7 @@ The ``detect_errors`` attribute of ``command``, if present, loads a preset of er
 * ``default``: for non-legacy tools with absent stdio block non-zero exit codes are added. For legacy tools or if a stdio block is present nothing is added.
 * ``exit_code``: adds checks for non zero exit codes. The ``oom_exit_code`` parameter can be used to add an additional out of memory indicating exit code. This is the default when a tool specifies a ``profile`` >= 16.04.
 * ``aggressive``: adds checks for non zero exit codes, and checks for ``Exception:``, ``Error:`` in the standard error. Additionally checks for messages in the standard error that indicate an out of memory error (``MemoryError``, ``std::bad_alloc``, ``java.lang.OutOfMemoryError``, ``Out of memory``).
-]]>
-            </xs:documentation>
+]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="oom_exit_code" type="xs:integer">
@@ -4351,13 +4262,12 @@ The ``detect_errors`` attribute of ``command``, if present, loads a preset of er
         </xs:attribute>
         <xs:attribute name="strict" type="xs:boolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This boolean forces the ``#set -e`` directive on in shell scripts - so that in a multi-part command if any part fails the job exits with a non-zero exit code. This is enabled by default for tools with ``profile>=20.09`` and disabled on legacy tools.</xs:documentation>
+            <xs:documentation xml:lang="en">This boolean forces the ``#set -e`` directive on in shell scripts - so that in a multi-part command if any part fails the job exits with a non-zero exit code. This is enabled by default for tools with ``profile&gt;=20.09`` and disabled on legacy tools.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-
   <xs:complexType name="Expression">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -4376,26 +4286,23 @@ of "type" specified for this expression block.
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-
   <xs:simpleType name="ExpressionType">
     <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
+      <xs:documentation xml:lang="en"/>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="ecma5.1" />
+      <xs:enumeration value="ecma5.1"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="RequestMethodType">
     <xs:annotation>
       <xs:documentation xml:lang="en">Select a request method, defaults to GET if unspecified</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="GET" />
-      <xs:enumeration value="POST" />
+      <xs:enumeration value="GET"/>
+      <xs:enumeration value="POST"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:complexType name="ParamSelectOption">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -4434,8 +4341,7 @@ In general the values and the texts for the options need to be unique,
 but it is possible to specify an option two times if the 2nd has a different
 value for the ``selected`` attribute. This is handy if an option list is
 defined in a macro and different default value(s) are used.
-]]>
-</xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
@@ -4457,7 +4363,6 @@ if the corresponding option is selected by default (the default is ``false``).
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-
   <xs:complexType name="ParamDrillDownOption">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -4478,7 +4383,6 @@ See [drill_down.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/funct
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="ParamConversion">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -4490,8 +4394,7 @@ This directive is optionally contained within the ``<param>`` tag when the
 ``type`` attribute value is ``data`` and is used to dynamically generated a converted
 dataset for the contained input of the type specified using the ``type`` tag.
 
-]]>
-</xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -4504,16 +4407,14 @@ dataset for the contained input of the type specified using the ``type`` tag.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="ParamDefault">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-]]>
-</xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <!-- can have zero or one collection elements -->
-      <xs:element name="element" type="ParamDefaultElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="element" type="ParamDefaultElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="collection_type" type="CollectionType" use="optional">
       <xs:annotation>
@@ -4525,7 +4426,6 @@ collection types (the most common types are ``list``, ``paired``,
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
-
     <xs:attribute name="location" type="xs:anyURI" gxdocs:added="23.2" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
@@ -4533,14 +4433,11 @@ Galaxy-aware URI for the default file. This should only be used with parameters 
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
-
   </xs:complexType>
-
   <xs:complexType name="ParamDefaultCollection">
     <xs:sequence>
-      <xs:element name="element" type="ParamDefaultElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="element" type="ParamDefaultElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-
     <xs:attribute name="collection_type" type="CollectionType" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
@@ -4551,12 +4448,10 @@ collection types (the most common types are ``list``, ``paired``,
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
-
   </xs:complexType>
-
   <xs:complexType name="ParamDefaultElement">
     <xs:sequence>
-      <xs:element name="collection" type="ParamDefaultCollection" minOccurs="0" maxOccurs="1" />
+      <xs:element name="collection" type="ParamDefaultCollection" minOccurs="0" maxOccurs="1"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string">
       <xs:annotation>
@@ -4571,7 +4466,6 @@ Galaxy-aware URI for the default file for collection element.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="ParamOptions">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -4802,11 +4696,10 @@ wrappers for an example of these.
 Though deprecated and discouraged, [code](#tool-code) blocks can also be
 used to generate dynamic options.
 
-]]>
-</xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="OptionsElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="OptionsElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="from_dataset" type="xs:string">
       <xs:annotation>
@@ -4866,12 +4759,12 @@ used to generate dynamic options.
   </xs:complexType>
   <xs:group name="OptionsElement">
     <xs:choice>
-      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="column" type="Column" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="1" />
-      <xs:element name="postprocess_expression" type="Expression" minOccurs="0" maxOccurs="1" />
-      <xs:element name="request_body" type="RequestBody" minOccurs="0" maxOccurs="1" />
-      <xs:element name="request_headers" type="RequestHeaders" minOccurs="0" maxOccurs="1" />
+      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="column" type="Column" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="postprocess_expression" type="Expression" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="request_body" type="RequestBody" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="request_headers" type="RequestHeaders" minOccurs="0" maxOccurs="1"/>
       <xs:element name="file" type="xs:string" minOccurs="0" maxOccurs="unbounded">
         <xs:annotation>
           <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
@@ -4943,7 +4836,6 @@ target file.</xs:documentation>
   </xs:complexType>
   <xs:complexType name="Validator">
     <xs:annotation>
-
       <xs:documentation xml:lang="en"><![CDATA[
 
 This tag set is contained within the ``<param>`` tag set - it applies a
@@ -5647,20 +5539,19 @@ The default is ``galaxy.json``.
   </xs:complexType>
   <xs:group name="OutputsElement">
     <xs:choice>
-      <xs:element name="output" type="Output" />
+      <xs:element name="output" type="Output"/>
       <xs:element name="data" type="OutputData"/>
-      <xs:element name="collection" type="OutputCollection" />
+      <xs:element name="collection" type="OutputCollection"/>
     </xs:choice>
   </xs:group>
   <xs:group name="OutputDataElement">
     <xs:choice>
       <xs:element name="change_format" type="ChangeFormat"/>
-      <xs:element name="filter" type="OutputFilter" />
-      <xs:element name="discover_datasets" type="OutputDiscoverDatasets" />
+      <xs:element name="filter" type="OutputFilter"/>
+      <xs:element name="discover_datasets" type="OutputDiscoverDatasets"/>
       <xs:element name="actions" type="Actions"/>
     </xs:choice>
   </xs:group>
-
   <xs:attributeGroup name="OutputCommon">
     <xs:attribute name="format" type="xs:string">
       <xs:annotation>
@@ -5691,15 +5582,14 @@ above. The default label is ``${tool.name} on ${on_string}``.
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="name" type="xs:string" use="required">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Name for this output. This
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[Name for this output. This
 ``name`` is used as the Cheetah variable containing the Galaxy assigned output
 path in ``command`` and ``configfile`` elements. The name should not contain
 pipes or periods (e.g. ``.``).]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
-
   <xs:attributeGroup name="OutputDataAttributes">
     <xs:attribute name="auto_format" type="PermissiveBoolean">
       <xs:annotation>
@@ -5737,7 +5627,6 @@ dataset in the history view. (Default is ``false``.)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
-
   <xs:attributeGroup name="OutputCollectionAttributes">
     <xs:attribute name="structured_like" type="xs:string">
       <xs:annotation>
@@ -5756,7 +5645,6 @@ format of outputs from format of corresponding input.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
-
   <xs:complexType name="OutputData">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -5843,30 +5731,27 @@ on Human (hg18)``.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="OutputDataElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="OutputDataElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <!-- TODO: add a unique constraint for action. -->
     <xs:attributeGroup ref="OutputCommon"/>
     <xs:attributeGroup ref="OutputDataAttributes"/>
   </xs:complexType>
-
   <!-- Allowed tags included in collection-data -->
   <xs:group name="OutputCollectionDataElement">
     <xs:choice>
-      <xs:element name="actions" type="Actions" />
-      <xs:element name="change_format" type="ChangeFormat" />
+      <xs:element name="actions" type="Actions"/>
+      <xs:element name="change_format" type="ChangeFormat"/>
     </xs:choice>
   </xs:group>
-
   <!-- Allowed tags included in collection -->
   <xs:group name="OutputCollectionElement">
     <xs:choice>
-      <xs:element name="data" type="OutputCollectionData" />
-      <xs:element name="discover_datasets" type="OutputCollectionDiscoverDatasets" />
-      <xs:element name="filter" type="OutputFilter" />
+      <xs:element name="data" type="OutputCollectionData"/>
+      <xs:element name="discover_datasets" type="OutputCollectionDiscoverDatasets"/>
+      <xs:element name="filter" type="OutputFilter"/>
     </xs:choice>
   </xs:group>
-
   <xs:complexType name="OutputCollectionData">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -5876,12 +5761,11 @@ define the elements of a collection statically. See also [Planemo's documentatio
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="OutputCollectionDataElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="OutputCollectionDataElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attributeGroup ref="OutputCommon" />
-    <xs:attributeGroup ref="OutputDataAttributes" />
+    <xs:attributeGroup ref="OutputCommon"/>
+    <xs:attributeGroup ref="OutputDataAttributes"/>
   </xs:complexType>
-
   <xs:complexType name="OutputCollection">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -5898,7 +5782,7 @@ Creating collections in tools is covered in-depth in
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="OutputCollectionElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="OutputCollectionElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attributeGroup ref="OutputCommon"/>
     <xs:attributeGroup ref="OutputCollectionAttributes"/>
@@ -5919,7 +5803,6 @@ derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="Output">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -5928,7 +5811,7 @@ This tag describes an output to the tool.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="OutputDataElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="OutputDataElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attributeGroup ref="OutputCommon"/>
     <xs:attributeGroup ref="OutputCollectionAttributes"/>
@@ -5958,7 +5841,6 @@ collection types (the most common types are ``list``, ``paired``,
 derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-
   </xs:complexType>
   <xs:complexType name="OutputFilter">
     <xs:annotation>
@@ -6033,7 +5915,6 @@ Therefore a filter for such a variable looks like the following example.
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-
   <xs:attributeGroup name="OutputDiscoverDatasetsCommon">
     <xs:attribute name="from_provided_metadata" type="xs:boolean" use="optional">
       <xs:annotation>
@@ -6086,9 +5967,8 @@ Therefore a filter for such a variable looks like the following example.
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
-
   <xs:complexType name="OutputDiscoverDatasets">
-     <xs:annotation>
+    <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
 Describe datasets to dynamically collect after the job complete.
@@ -6112,8 +5992,8 @@ More information can be found on Planemo's documentation for
     </xs:attribute>
   </xs:complexType>
   <xs:complexType name="OutputCollectionDiscoverDatasets">
-     <xs:annotation>
-       <xs:documentation xml:lang="en"><![CDATA[
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
 
 This tag allows one to describe the datasets contained within an output
 collection dynamically, such that the outputs are "discovered" based on regular
@@ -6295,8 +6175,7 @@ column="1" />`` tag does), then it should be changed to ``equCab2`` (which is th
     </action>
 </actions>
 ```
-]]>
-</xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="ActionsElement" minOccurs="0" maxOccurs="unbounded"/>
@@ -6417,7 +6296,7 @@ of this directive.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-        <xs:element name="when" type="ActionsConditionalWhen" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="when" type="ActionsConditionalWhen" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -6454,7 +6333,7 @@ e.g. ``True`` or ``False`` if the referred parameter is a boolean.</xs:documenta
   </xs:complexType>
   <xs:complexType name="ActionsConditionalFilter">
     <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
+      <xs:documentation xml:lang="en"/>
     </xs:annotation>
     <xs:attribute name="type" type="ActionsConditionalFilterType" use="required">
       <xs:annotation>
@@ -6623,10 +6502,9 @@ This directive should contain one or more ``environment_variable`` definition.
       </xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="environment_variable" type="EnvironmentVariable" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="environment_variable" type="EnvironmentVariable" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="EnvironmentVariable">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -6697,17 +6575,17 @@ define.</xs:documentation>
           <xs:annotation>
             <xs:documentation xml:lang="en">Whether to strip leading and trailing whitespace from the calculated value before exporting the environment variable.</xs:documentation>
           </xs:annotation>
-      </xs:attribute>
+        </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
   <xs:simpleType name="EnvironmentVariableInject">
     <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
+      <xs:documentation xml:lang="en"/>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="api_key" />
-      <xs:enumeration value="entry_point_path_for_label" />
+      <xs:enumeration value="api_key"/>
+      <xs:enumeration value="entry_point_path_for_label"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:complexType name="ConfigFiles">
@@ -6719,10 +6597,9 @@ container for ``<configfile>`` and ``<inputs>`` tag sets - which can be used
 to setup configuration files for use by tools.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="ConfigFilesElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="ConfigFilesElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:group name="ConfigFilesElement">
     <xs:choice>
       <xs:element name="inputs" type="ConfigInputs"/>
@@ -6730,7 +6607,6 @@ to setup configuration files for use by tools.]]></xs:documentation>
       <xs:element name="configfile" type="ConfigFile"/>
     </xs:choice>
   </xs:group>
-
   <xs:complexType name="ConfigFile">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -6800,7 +6676,6 @@ the path to the file created with this directive.</xs:documentation>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-
   <xs:complexType name="ConfigInputs">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -6865,7 +6740,6 @@ response to this directive.
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-
   <xs:complexType name="ConfigFileSources">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -6889,7 +6763,6 @@ response to this directive.
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-
   <xs:complexType name="VersionCommand">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Specifies the command to be run in
@@ -6935,7 +6808,6 @@ Examples are included in the test tools directory including:
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-
   <xs:complexType name="RequestParameterTranslation">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[See [/tools/data_source/ucsc_tablebrowser.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/data_source/ucsc_tablebrowser.xml) for an example of how to use this tag set. This tag set is used only in "data_source" tools (i.e. whose ``tool_type`` attribute is ``data_source`` or ``data_source_async``). This tag set contains a set of [request_param](#tool-request-param-translation-request-param) elements.]]></xs:documentation>
@@ -6944,7 +6816,6 @@ Examples are included in the test tools directory including:
       <xs:element name="request_param" minOccurs="0" maxOccurs="unbounded" type="RequestParameter"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="RequestParameter">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Contained within the [request_param_translation](#tool-request-param-translation) tag set (used only in "data_source" tools). The external data source application may send back parameter names like "GENOME" which must be translated to "dbkey" in Galaxy.]]></xs:documentation>
@@ -6974,32 +6845,29 @@ Examples are included in the test tools directory including:
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:simpleType name="RequestParameterGalaxyNameType">
     <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
+      <xs:documentation xml:lang="en"/>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="URL" />
-      <xs:enumeration value="URL_method" />
-      <xs:enumeration value="dbkey" />
-      <xs:enumeration value="organism" />
-      <xs:enumeration value="table" />
-      <xs:enumeration value="position" />
-      <xs:enumeration value="description" />
-      <xs:enumeration value="name" />
-      <xs:enumeration value="info" />
-      <xs:enumeration value="data_type" />
+      <xs:enumeration value="URL"/>
+      <xs:enumeration value="URL_method"/>
+      <xs:enumeration value="dbkey"/>
+      <xs:enumeration value="organism"/>
+      <xs:enumeration value="table"/>
+      <xs:enumeration value="position"/>
+      <xs:enumeration value="description"/>
+      <xs:enumeration value="name"/>
+      <xs:enumeration value="info"/>
+      <xs:enumeration value="data_type"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:group name="RequestParameterElement">
     <xs:choice>
-      <xs:element name="append_param" type="RequestParameterAppend" />
-      <xs:element name="value_translation" type="RequestParameterValueTranslation" />
+      <xs:element name="append_param" type="RequestParameterAppend"/>
+      <xs:element name="value_translation" type="RequestParameterValueTranslation"/>
     </xs:choice>
   </xs:group>
-
   <xs:complexType name="RequestParameterAppend">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Optionally contained within the [request_param](#tool-request-param-translation-request-param) element if ``galaxy_name="URL"``. Some remote data sources (e.g., Gbrowse, Biomart) send parameters back to Galaxy in the initial response that must be added to the value of "URL" prior to Galaxy sending the secondary request to the remote data source via URL.]]></xs:documentation>
@@ -7029,7 +6897,6 @@ The text to use to join the param name to its value (example ``join="="``).
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="RequestParameterAppendValue">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Contained within the [append_param](#tool-request-param-translation-request-param-append-param) tag set. Allows for appending a param name / value pair to the value of URL.
@@ -7060,7 +6927,6 @@ Any valid HTTP request parameter name. The name / value pair must be received fr
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="RequestParameterValueTranslation">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Optionally contained within the [request_param](#tool-request-param-translation-request-param) tag set. The parameter value received from a remote data source may be named differently in Galaxy, and this tag set allows for the value to be appropriately translated.]]></xs:documentation>
@@ -7069,7 +6935,6 @@ Any valid HTTP request parameter name. The name / value pair must be received fr
       <xs:element name="value" minOccurs="0" maxOccurs="unbounded" type="RequestParameterValueTranslationValue"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="RequestParameterValueTranslationValue">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Contained within the [value_translation](#tool-request-param-translation-request-param-value-translation) tag set - allows for changing the data type value to something supported by Galaxy.
@@ -7101,7 +6966,6 @@ The target value (e.g. for setting data format: the list of supported data forma
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="Stdio">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Tools write the bulk of useful data to datasets, but they can also write messages to standard I/O (stdio) channels known as standard output (stdout) and standard error (stderr). Both stdout and stderr are typically written to the executing program's console or terminal. Previous versions of Galaxy checked stderr for execution errors - if any text showed up on stderr, then the tool's execution was marked as failed. However, many tools write messages to stderr that are not errors, and using stderr allows programs to redirect other interesting messages to a separate file. Programs may also exit with codes that indicate success or failure. One convention is for programs to return 0 on success and a non-zero exit code on failure.
@@ -7129,20 +6993,17 @@ configuration file, and regular expressions are also applied in the order in
 which they appear in the tool's configuration file. However, once a rule is
 triggered that causes a fatal error, no further rules are
 checked.]]></xs:documentation>
-
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="StdioElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="StdioElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:group name="StdioElement">
     <xs:choice>
       <xs:element name="regex" type="Regex"/>
       <xs:element name="exit_code" type="ExitCode"/>
     </xs:choice>
   </xs:group>
-
   <xs:complexType name="ExitCode">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -7203,8 +7064,6 @@ marked as having failed.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
-
   <xs:complexType name="Regex">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -7339,7 +7198,6 @@ description. Note the quoting of the ``<`` and ``>`` characters in XML.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="ChangeFormat">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -7431,7 +7289,6 @@ for a list of supported formats.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="Citations">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Tool files may declare one
@@ -7482,7 +7339,6 @@ will be available to the end user.
       <xs:element name="citation" type="Citation" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="Citation">
     <xs:annotation>
       <xs:documentation xml:lang="en">Each citations element can contain one or
@@ -7500,7 +7356,6 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-
   <xs:simpleType name="CitationType">
     <xs:annotation>
       <xs:documentation xml:lang="en">Type of citation represented.</xs:documentation>
@@ -7510,7 +7365,6 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="doi"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="RequirementType">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for RequirementType</xs:documentation>
@@ -7557,7 +7411,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
           <xs:documentation xml:lang="en">Maximum reserved filesystem based storage for the designated temporary directory, in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
         </xs:annotation>
       </xs:enumeration>
-       <xs:enumeration value="cuda_version_min">
+      <xs:enumeration value="cuda_version_min">
         <xs:annotation>
           <xs:documentation xml:lang="en">Minimum CUDA (runtime link library) runtime version, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
         </xs:annotation>
@@ -7682,7 +7536,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
   </xs:simpleType>
   <xs:simpleType name="FilterType">
     <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
+      <xs:documentation xml:lang="en"/>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="data_meta"/>
@@ -7699,7 +7553,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
   </xs:simpleType>
   <xs:simpleType name="ActionsConditionalFilterType">
     <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
+      <xs:documentation xml:lang="en"/>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="param_value"/>
@@ -7827,15 +7681,15 @@ favour of a ``has_size`` assertion.</xs:documentation>
       <xs:documentation xml:lang="en">Number of bytes allowing for suffix (k|K|M|G|P|E)i? </xs:documentation>
     </xs:annotation>
     <xs:union>
-       <xs:simpleType>
-         <xs:restriction base="xs:integer">
+      <xs:simpleType>
+        <xs:restriction base="xs:integer">
          </xs:restriction>
-       </xs:simpleType>
-       <xs:simpleType>
-         <xs:restriction base="xs:string">
-          <xs:pattern value="(0|[1-9][0-9]*)([kKMGTPE]i?)?"></xs:pattern>
-         </xs:restriction>
-       </xs:simpleType>
+      </xs:simpleType>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:pattern value="(0|[1-9][0-9]*)([kKMGTPE]i?)?"/>
+        </xs:restriction>
+      </xs:simpleType>
     </xs:union>
   </xs:simpleType>
   <xs:complexType name="EdamTopics">
@@ -7856,7 +7710,7 @@ A tool can have any number of EDAM topic references.
       <xs:element name="edam_topic" minOccurs="0" maxOccurs="unbounded">
         <xs:simpleType>
           <xs:restriction base="singleLineString">
-            <xs:pattern value="topic_[0-9]{4}"></xs:pattern>
+            <xs:pattern value="topic_[0-9]{4}"/>
           </xs:restriction>
         </xs:simpleType>
       </xs:element>
@@ -7881,7 +7735,7 @@ A tool can have any number of EDAM operation references.
       <xs:element name="edam_operation" minOccurs="0" maxOccurs="unbounded">
         <xs:simpleType>
           <xs:restriction base="singleLineString">
-            <xs:pattern value="operation_[0-9]{4}"></xs:pattern>
+            <xs:pattern value="operation_[0-9]{4}"/>
           </xs:restriction>
         </xs:simpleType>
       </xs:element>
@@ -7904,8 +7758,8 @@ A tool can refer multiple reference IDs.
 
 ]]></xs:documentation>
     </xs:annotation>
-      <xs:sequence>
-        <xs:element name="xref" type="xref" minOccurs="0" maxOccurs="unbounded">
+    <xs:sequence>
+      <xs:element name="xref" type="xref" minOccurs="0" maxOccurs="unbounded">
       </xs:element>
     </xs:sequence>
   </xs:complexType>
@@ -7936,13 +7790,11 @@ the only supported options.</xs:documentation>
       <!--xs:enumeration value="whatelse"/-->
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="MacroImportType">
     <xs:restriction base="singleLineString">
       <xs:pattern value="[a-zA-Z0-9_\-\.]+.xml"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="singleLineString">
     <xs:annotation>
       <xs:documentation xml:lang="en">A string without newline characters.</xs:documentation>
@@ -7951,7 +7803,6 @@ the only supported options.</xs:documentation>
       <xs:whiteSpace value="collapse"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="DetectErrorType">
     <xs:restriction base="xs:string">
       <xs:enumeration value="default"/>
