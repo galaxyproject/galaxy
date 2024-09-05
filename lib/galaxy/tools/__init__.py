@@ -134,7 +134,6 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     HiddenToolParameter,
-    ImplicitConversionRequired,
     SelectTagParameter,
     SelectToolParameter,
     ToolParameter,
@@ -153,6 +152,7 @@ from galaxy.tools.parameters.grouping import (
 )
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
+from galaxy.tools.parameters.populate_model import populate_model
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.util import (
@@ -2678,63 +2678,14 @@ class Tool(UsesDictVisibleKeys):
         """
         Populates the tool model consumed by the client form builder.
         """
-        other_values = ExpressionContext(state_inputs, other_values)
-        for input_index, input in enumerate(inputs.values()):
-            tool_dict = None
-            group_state = state_inputs.get(input.name, {})
-            if input.type == "repeat":
-                tool_dict = input.to_dict(request_context)
-                group_size = len(group_state)
-                tool_dict["cache"] = [None] * group_size
-                group_cache: List[List[str]] = tool_dict["cache"]
-                for i in range(group_size):
-                    group_cache[i] = []
-                    self.populate_model(request_context, input.inputs, group_state[i], group_cache[i], other_values)
-            elif input.type == "conditional":
-                tool_dict = input.to_dict(request_context)
-                if "test_param" in tool_dict:
-                    test_param = tool_dict["test_param"]
-                    test_param["value"] = input.test_param.value_to_basic(
-                        group_state.get(
-                            test_param["name"], input.test_param.get_initial_value(request_context, other_values)
-                        ),
-                        self.app,
-                    )
-                    test_param["text_value"] = input.test_param.value_to_display_text(test_param["value"])
-                    for i in range(len(tool_dict["cases"])):
-                        current_state = {}
-                        if i == group_state.get("__current_case__"):
-                            current_state = group_state
-                        self.populate_model(
-                            request_context,
-                            input.cases[i].inputs,
-                            current_state,
-                            tool_dict["cases"][i]["inputs"],
-                            other_values,
-                        )
-            elif input.type == "section":
-                tool_dict = input.to_dict(request_context)
-                self.populate_model(request_context, input.inputs, group_state, tool_dict["inputs"], other_values)
-            else:
-                try:
-                    initial_value = input.get_initial_value(request_context, other_values)
-                    tool_dict = input.to_dict(request_context, other_values=other_values)
-                    tool_dict["value"] = input.value_to_basic(
-                        state_inputs.get(input.name, initial_value), self.app, use_security=True
-                    )
-                    tool_dict["default_value"] = input.value_to_basic(initial_value, self.app, use_security=True)
-                    tool_dict["text_value"] = input.value_to_display_text(tool_dict["value"])
-                except ImplicitConversionRequired:
-                    tool_dict = input.to_dict(request_context)
-                    # This hack leads client to display a text field
-                    tool_dict["textable"] = True
-                except Exception:
-                    tool_dict = input.to_dict(request_context)
-                    log.exception("tools::to_json() - Skipping parameter expansion '%s'", input.name)
-            if input_index >= len(group_inputs):
-                group_inputs.append(tool_dict)
-            else:
-                group_inputs[input_index] = tool_dict
+        populate_model(
+            self.app,
+            request_context=request_context,
+            inputs=inputs,
+            state_inputs=state_inputs,
+            group_inputs=group_inputs,
+            other_values=other_values,
+        )
 
     def _map_source_to_history(self, trans, tool_inputs, params):
         # Need to remap dataset parameters. Job parameters point to original
