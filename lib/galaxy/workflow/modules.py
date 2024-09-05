@@ -16,8 +16,8 @@ from typing import (
     List,
     Literal,
     Optional,
-    Type,
     Tuple,
+    Type,
     TYPE_CHECKING,
     Union,
 )
