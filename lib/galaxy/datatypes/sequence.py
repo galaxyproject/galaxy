@@ -318,30 +318,6 @@ class Sequence(data.Text):
 
         return [cmd]
 
-
-class Alignment(data.Text):
-    """Class describing an alignment"""
-
-    edam_data = "data_0863"
-
-    MetadataElement(
-        name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True
-    )
-
-    @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
-        """Split a generic alignment file (not sensible or possible, see subclasses)."""
-        if split_params is None:
-            return None
-        raise NotImplementedError("Can't split generic alignment files")
-
-
-class BaseSequence(Sequence):
-    """
-    Common base class provides common methods used by FASTQ and FASTA sequence format classes.
-    It includes functionality for displaying data shared among FASTQ and FASTA formats.
-    """
-
     def display_data(
         self,
         trans,
@@ -368,11 +344,28 @@ class BaseSequence(Sequence):
                     headers,
                 )
         else:
-            return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
+            return super().display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
+
+
+class Alignment(data.Text):
+    """Class describing an alignment"""
+
+    edam_data = "data_0863"
+
+    MetadataElement(
+        name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True
+    )
+
+    @classmethod
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
+        """Split a generic alignment file (not sensible or possible, see subclasses)."""
+        if split_params is None:
+            return None
+        raise NotImplementedError("Can't split generic alignment files")
 
 
 @build_sniff_from_prefix
-class Fasta(BaseSequence):
+class Fasta(Sequence):
     """Class representing a FASTA sequence"""
 
     edam_format = "format_1929"
@@ -727,7 +720,7 @@ class Fastg(Sequence):
 
 
 @build_sniff_from_prefix
-class BaseFastq(BaseSequence):
+class BaseFastq(Sequence):
     """Base class for FastQ sequences"""
 
     edam_format = "format_1930"
