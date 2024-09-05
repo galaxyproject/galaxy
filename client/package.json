@@ -172,6 +172,7 @@
     "eslint-plugin-vuejs-accessibility": "^2.2.0",
     "expose-loader": "^4.1.0",
     "fake-indexeddb": "^6.0.0",
+    "fs-extra": "^11.2.0",
     "gulp": "^4.0.2",
     "ignore-loader": "^0.1.2",
     "imports-loader": "^4.0.1",
@@ -204,6 +205,7 @@
     "webpack-dev-server": "^4.15.1",
     "webpack-merge": "^5.10.0",
     "xml-js": "^1.6.11",
+    "xml2js": "^0.6.2",
     "yaml-jest": "^1.2.0",
     "yaml-loader": "^0.8.0"
   },
