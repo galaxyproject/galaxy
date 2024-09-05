@@ -344,7 +344,7 @@ class Sequence(data.Text):
                     headers,
                 )
         else:
-            return super().display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
+            return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
 
 
 class Alignment(data.Text):
