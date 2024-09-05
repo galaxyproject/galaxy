@@ -13,4 +13,21 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <entry_point entry_point_type="script" src="script.js" />
+    <settings>
+        <input>
+            <name>setting_input</name>
+            <help>setting help</help>
+            <type>setting_type</type>
+        </input>
+    </settings>
+    <groups>
+        <input>
+            <name>group_input</name>
+            <help>group help</help>
+            <type>group_type</type>
+        </input>
+    </groups>
+    <specs>
+        <spec_name>spec_value</spec_name>
+    </specs>
 </visualization>
