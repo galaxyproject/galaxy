@@ -2171,6 +2171,1150 @@ module.
       <xs:documentation xml:lang="en">An individual test assertion definition.</xs:documentation>
     </xs:annotation>
     <xs:choice>
+      <!--The following block and all children are auto-generated - please do not modify.-->
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.text.assert_has_line-->
+      <xs:element name="has_line">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the specified output contains the line specified by the
+argument line. The exact number of occurrences can be optionally
+specified by the argument n
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="line" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The full line of text to search for in the output.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="n" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.text.assert_has_line_matching-->
+      <xs:element name="has_line_matching">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the specified output contains a line matching the
+regular expression specified by the argument expression. If n is given
+the assertion checks for exactly n occurences.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="expression" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The regular expressions to attempt match in the output.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="n" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.text.assert_has_n_lines-->
+      <xs:element name="has_n_lines">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the specified output contains ``n`` lines allowing
+for a difference in the number of lines (delta)
+or relative differebce in the number of lines
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="n" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.text.assert_has_text-->
+      <xs:element name="has_text">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts specified output contains the substring specified by
+the argument text. The exact number of occurrences can be
+optionally specified by the argument n
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="text" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The text to search for in the output.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="n" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.text.assert_has_text_matching-->
+      <xs:element name="has_text_matching">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the specified output contains text matching the
+regular expression specified by the argument expression.
+If n is given the assertion checks for exacly n (nonoverlapping)
+occurences.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="expression" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The regular expressions to attempt match in the output.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="n" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.text.assert_not_has_text-->
+      <xs:element name="not_has_text">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts specified output does not contain the substring
+specified by the argument text
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="text" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The text to search for in the output.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.tabular.assert_has_n_columns-->
+      <xs:element name="has_n_columns">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts tabular output  contains the specified
+number (``n``) of columns.
+
+For instance, ``<has_n_columns n="3"/>``. The assertion tests only the first line.
+Number of columns can optionally also be specified with ``delta``. Alternatively the
+range of expected occurences can be specified by ``min`` and/or ``max``.
+
+Optionally a column separator (``sep``, default is ``       ``) `and comment character(s)
+can be specified (``comment``, default is empty string). The first non-comment
+line is used for determining the number of columns.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="n" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="sep" type="xs:string" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Separator defining columns, default: tab]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="comment" type="xs:string" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Comment character(s) used to skip comment lines (which should not be used for counting columns)]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.xml.assert_attribute_is-->
+      <xs:element name="attribute_is">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the XML ``attribute`` for the element (or tag) with the specified
+XPath-like ``path`` is the specified ``text``.
+
+For example:
+
+```xml
+<attribute_is path="outerElement/innerElement1" attribute="foo" text="bar" />
+```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the assertion (on the equality) can be inverted (the
+implicit assertion on the existence of the path is not affected).
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="path" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The Python xpath-like expression to find the target element.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="attribute" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The XML attribute name to test against from the target XML element.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="text" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The expected attribute value to test against on the target XML element]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.xml.assert_attribute_matches-->
+      <xs:element name="attribute_matches">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the XML ``attribute`` for the element (or tag) with the specified
+XPath-like ``path`` matches the regular expression specified by ``expression``.
+
+For example:
+
+```xml
+<attribute_matches path="outerElement/innerElement2" attribute="foo2" expression="bar\d+" />
+```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the assertion (on the matching) can be inverted (the
+implicit assertion on the existence of the path is not affected).
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="path" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The Python xpath-like expression to find the target element.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="attribute" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The XML attribute name to test against from the target XML element.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="expression" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The regular expressions to apply against the named attribute on the target XML element.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.xml.assert_element_text-->
+      <xs:element name="element_text">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[This tag allows the developer to recurisively specify additional assertions as
+child elements about just the text contained in the element specified by the
+XPath-like ``path``, e.g.
+
+```xml
+<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def">
+  <not_has_text text="EDK72998.1" />
+</element_text>
+```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the implicit assertions can be inverted.
+The sub-assertions, which have their own ``negate`` attribute, are not affected
+by ``negate``.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:group ref="TestAssertion" minOccurs="1" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:attribute name="path" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The Python xpath-like expression to find the target element.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.xml.assert_element_text_is-->
+      <xs:element name="element_text_is">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the text of the XML element with the specified XPath-like ``path`` is
+the specified ``text``.
+
+For example:
+
+```xml
+<element_text_is path="BlastOutput_program" text="blastp" />
+```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the assertion (on the equality) can be inverted (the
+implicit assertion on the existence of the path is not affected).
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="path" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The Python xpath-like expression to find the target element.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="text" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The expected element text (body of the XML tag) to test against on the target XML element]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.xml.assert_element_text_matches-->
+      <xs:element name="element_text_matches">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the text of the XML element with the specified XPath-like ``path``
+matches the regular expression defined by ``expression``.
+
+For example:
+
+```xml
+<element_text_matches path="BlastOutput_version" expression="BLASTP\s+2\.2.*"/>
+```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the assertion (on the matching) can be inverted (the
+implicit assertion on the existence of the path is not affected).
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="path" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The Python xpath-like expression to find the target element.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="expression" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The regular expressions to apply against the target element.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.xml.assert_has_element_with_path-->
+      <xs:element name="has_element_with_path">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the XML output contains at least one element (or tag) with the specified
+XPath-like ``path``, e.g.
+
+```xml
+<has_element_with_path path="BlastOutput_param/Parameters/Parameters_matrix" />
+```
+
+With ``negate`` the result of the assertion can be inverted.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="path" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The Python xpath-like expression to find the target element.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.xml.assert_has_n_elements_with_path-->
+      <xs:element name="has_n_elements_with_path">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the XML output contains the specified number (``n``, optionally with ``delta``) of elements (or
+tags) with the specified XPath-like ``path``.
+
+For example:
+
+```xml
+<has_n_elements_with_path n="9" path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num" />
+```
+
+Alternatively to ``n`` and ``delta`` also the ``min`` and ``max`` attributes
+can be used to specify the range of the expected number of occurences.
+With ``negate`` the result of the assertion can be inverted.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="path" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The Python xpath-like expression to find the target element.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="n" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.xml.assert_is_valid_xml-->
+      <xs:element name="is_valid_xml">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the output is a valid XML file (e.g. ``<is_valid_xml />``).
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType/>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.xml.assert_xml_element-->
+      <xs:element name="xml_element">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Assert if the XML file contains element(s) or tag(s) with the specified
+[XPath-like ``path``](https://lxml.de/xpathxslt.html).  If ``n`` and ``delta``
+or ``min`` and ``max`` are given also the number of occurences is checked.
+
+```xml
+<assert_contents>
+  <xml_element path="./elem"/>
+  <xml_element path="./elem/more[2]"/>
+  <xml_element path=".//more" n="3" delta="1"/>
+</assert_contents>
+```
+
+With ``negate="true"`` the outcome of the assertions wrt the precence and number
+of ``path`` can be negated. If there are any sub assertions then check them against
+
+- the content of the attribute ``attribute``
+- the element's text if no attribute is given
+
+```xml
+<assert_contents>
+  <xml_element path="./elem/more[2]" attribute="name">
+    <has_text_matching expression="foo$"/>
+  </xml_element>
+</assert_contents>
+```
+
+Sub-assertions are not subject to the ``negate`` attribute of ``xml_element``.
+If ``all`` is ``true`` then the sub assertions are checked for all occurences.
+
+Note that all other XML assertions can be expressed by this assertion (Galaxy
+also implements the other assertions by calling this one).
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:group ref="TestAssertion" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:attribute name="path" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The Python xpath-like expression to find the target element.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="attribute" type="xs:string" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The XML attribute name to test against from the target XML element.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="all" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first ]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="n" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.json.assert_has_json_property_with_text-->
+      <xs:element name="has_json_property_with_text">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the JSON document contains a property or key with the specified text (i.e. string) value.
+
+```xml
+<has_json_property_with_text property="color" text="red" />
+```
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="property" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The property name to search the JSON document for.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="text" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The expected text value of the target JSON attribute.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.json.assert_has_json_property_with_value-->
+      <xs:element name="has_json_property_with_value">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the JSON document contains a property or key with the specified JSON value.
+
+```xml
+<has_json_property_with_value property="skipped_columns" value="[1, 3, 5]" />
+```
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="property" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The property name to search the JSON document for.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="value" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The expected JSON value of the target JSON attribute (as a JSON encoded string).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.hdf5.assert_has_h5_attribute-->
+      <xs:element name="has_h5_attribute">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified ``value`` for an attribute (``key``), e.g.
+
+```xml
+<has_h5_attribute key="nchroms" value="15" />
+```
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="key" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[HDF5 attribute to check value of.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="value" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Expected value of HDF5 attribute to check.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.hdf5.assert_has_h5_keys-->
+      <xs:element name="has_h5_keys">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the specified HDF5 output has the given keys.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="keys" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[HDF5 attributes to check value of as a comma-separated string.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.archive.assert_has_archive_member-->
+      <xs:element name="has_archive_member">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[This tag allows to check if ``path`` is contained in a compressed file.
+
+The path is a regular expression that is matched against the full paths of the objects in
+the compressed file (remember that "matching" means it is checked if a prefix of
+the full path of an archive member is described by the regular expression).
+Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``. Note that
+depending on the archive creation method:
+
+- full paths of the members may be prefixed with ``./``
+- directories may be treated as empty files
+
+```xml
+<has_archive_member path="./path/to/my-file.txt"/>
+```
+
+With ``n`` and ``delta`` (or ``min`` and ``max``) assertions on the number of
+archive members matching ``path`` can be expressed. The following could be used,
+e.g., to assert an archive containing n&plusmn;1 elements out of which at least
+4 need to have a ``txt`` extension.
+
+```xml
+<has_archive_member path=".*" n="10" delta="1"/>
+<has_archive_member path=".*\.txt" min="4"/>
+```
+
+In addition the tag can contain additional assertions as child elements about
+the first member in the archive matching the regular expression ``path``. For
+instance
+
+```xml
+<has_archive_member path=".*/my-file.txt">
+  <not_has_text text="EDK72998.1"/>
+</has_archive_member>
+```
+
+If the ``all`` attribute is set to ``true`` then all archive members are subject
+to the assertions. Note that, archive members matching the ``path`` are sorted
+alphabetically.
+
+The ``negate`` attribute of the ``has_archive_member`` assertion only affects
+the asserts on the presence and number of matching archive members, but not any
+sub-assertions (which can offer the ``negate`` attribute on their own).  The
+check if the file is an archive at all, which is also done by the function, is
+not affected.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:group ref="TestAssertion" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:attribute name="path" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The regular expression specifying the archive member.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="all" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="n" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.size.assert_has_size-->
+      <xs:element name="has_size">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the specified output has a size of the specified value
+
+Attributes size and value or synonyms though value is considered deprecated.
+The size optionally allows for absolute (``delta``) difference.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="value" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Deprecated alias for `size`]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="size" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Desired size of the output (in bytes), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="Bytes" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.image.assert_has_image_center_of_mass-->
+      <xs:element name="has_image_center_of_mass">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the specified output is an image and has the specified center of mass.
+
+Asserts the output is an image and has a specific center of mass,
+or has an Euclidean distance of ``eps`` or less to that point (e.g.,
+``<has_image_center_of_mass center_of_mass="511.07, 223.34" />``).
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="center_of_mass" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The required center of mass of the image intensities (horizontal and vertical coordinate, separated by a comma).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="channel" type="xs:integer" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="eps" type="xs:float" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The maximum allowed Euclidean distance to the required center of mass (defaults to ``0.01``).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.image.assert_has_image_channels-->
+      <xs:element name="has_image_channels">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the output is an image and has a specific number of channels.
+
+The number of channels is plus/minus ``delta`` (e.g., ``<has_image_channels channels="3" />``).
+
+Alternatively the range of the expected number of channels can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="channels" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Expected number of channels of the image.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum allowed difference of the number of channels (default is 0). The observed number of channels has to be in the range ``value +- delta``.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum allowed number of channels.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum allowed number of channels.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.image.assert_has_image_height-->
+      <xs:element name="has_image_height">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the output is an image and has a specific height (in pixels).
+
+The height is plus/minus ``delta`` (e.g., ``<has_image_height height="512" delta="2" />``).
+Alternatively the range of the expected height can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="height" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Expected height of the image (in pixels).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum allowed difference of the image height (in pixels, default is 0). The observed height has to be in the range ``value +- delta``.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum allowed height of the image (in pixels).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum allowed height of the image (in pixels).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.image.assert_has_image_mean_intensity-->
+      <xs:element name="has_image_mean_intensity">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the output is an image and has a specific mean intensity value.
+
+The mean intensity value is plus/minus ``eps`` (e.g., ``<has_image_mean_intensity mean_intensity="0.83" />``).
+Alternatively the range of the expected mean intensity value can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="channel" type="xs:integer" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="mean_intensity" type="xs:float" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The required mean value of the image intensities.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="eps" type="xs:float" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean value of the image intensities has to be in the range ``value +- eps``.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="xs:float" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A lower bound of the required mean value of the image intensities.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="xs:float" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[An upper bound of the required mean value of the image intensities.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.image.assert_has_image_mean_object_size-->
+      <xs:element name="has_image_mean_object_size">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the output is an image with labeled objects which have the specified mean size (number of pixels),
+
+The mean size is plus/minus ``eps`` (e.g., ``<has_image_mean_object_size mean_object_size="111.87" exclude_labels="0" />``).
+
+The labels must be unique.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="channel" type="xs:integer" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="labels" type="xs:string" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[List of labels, separated by a comma. Labels *not* on this list will be excluded from consideration. Cannot be used in combination with ``exclude_labels``.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="exclude_labels" type="xs:string" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[List of labels to be excluded from consideration, separated by a comma. The primary usage of this attribute is to exclude the background of a label image. Cannot be used in combination with ``labels``.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="mean_object_size" type="xs:float" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The required mean size of the uniquely labeled objects.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="eps" type="xs:float" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean size of the uniquely labeled objects has to be in the range ``value +- eps``.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="xs:float" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A lower bound of the required mean size of the uniquely labeled objects.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="xs:float" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[An upper bound of the required mean size of the uniquely labeled objects.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.image.assert_has_image_n_labels-->
+      <xs:element name="has_image_n_labels">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the output is an image and has the specified labels.
+
+Labels can be a number of labels or unique values (e.g.,
+``<has_image_n_labels n="187" exclude_labels="0" />``).
+
+The primary usage of this assertion is to verify the number of objects in images with uniquely labeled objects.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="channel" type="xs:integer" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="labels" type="xs:string" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[List of labels, separated by a comma. Labels *not* on this list will be excluded from consideration. Cannot be used in combination with ``exclude_labels``.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="exclude_labels" type="xs:string" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[List of labels to be excluded from consideration, separated by a comma. The primary usage of this attribute is to exclude the background of a label image. Cannot be used in combination with ``labels``.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="n" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Expected number of labels.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum allowed difference of the number of labels (default is 0). The observed number of labels has to be in the range ``value +- delta``.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum allowed number of labels.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum allowed number of labels.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.image.assert_has_image_width-->
+      <xs:element name="has_image_width">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the output is an image and has a specific width (in pixels).
+
+The width is plus/minus ``delta`` (e.g., ``<has_image_width width="512" delta="2" />``).
+Alternatively the range of the expected width can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="width" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Expected width of the image (in pixels).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum allowed difference of the image width (in pixels, default is 0). The observed width has to be in the range ``value +- delta``.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum allowed width of the image (in pixels).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum allowed width of the image (in pixels).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
     </xs:choice>
   </xs:group>
   <xs:complexType name="Inputs">
