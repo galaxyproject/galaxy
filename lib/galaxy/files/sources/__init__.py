@@ -220,7 +220,7 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         native_path: str,
         user_context: "OptionalUserContext" = None,
         opts: Optional[FilesSourceOptions] = None,
-    ):
+    ) -> str:
         """Write file at native path to target_path (relative to uri root).
 
         :param target_path: url of the target file to write to within the filesource. e.g. `gxfiles://myftp1/myfile.txt`
@@ -231,6 +231,9 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         :type user_context: _type_, optional
         :param opts: A set of options to exercise additional control over the write_from method. Filesource specific, defaults to None
         :type opts: Optional[FilesSourceOptions], optional
+        :return: Actual url of the written file, fixed by the service backing the FileSource. May differ from the target
+            path.
+        :rtype: str
         """
 
     @abc.abstractmethod
@@ -504,10 +507,10 @@ class BaseFilesSource(FilesSource):
         native_path: str,
         user_context: "OptionalUserContext" = None,
         opts: Optional[FilesSourceOptions] = None,
-    ):
+    ) -> str:
         self._ensure_writeable()
         self._check_user_access(user_context)
-        self._write_from(target_path, native_path, user_context=user_context, opts=opts)
+        return self._write_from(target_path, native_path, user_context=user_context, opts=opts)
 
     @abc.abstractmethod
     def _write_from(
@@ -516,7 +519,7 @@ class BaseFilesSource(FilesSource):
         native_path: str,
         user_context: "OptionalUserContext" = None,
         opts: Optional[FilesSourceOptions] = None,
-    ):
+    ) -> str:
         pass
 
     def realize_to(

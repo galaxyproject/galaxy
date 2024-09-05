@@ -214,21 +214,29 @@ class ModelStoreManager:
         export_files = "symlink" if request.include_files else None
         target_uri = request.target_uri
         user_context = self._build_user_context(request.user.user_id)
-        export_metadata = self.set_history_export_request_metadata(request)
+
+        exception_exporting_history: Optional[Exception] = None
         try:
-            with model.store.get_export_store_factory(
+            export_store = model.store.get_export_store_factory(
                 self._app, model_store_format, export_files=export_files, user_context=user_context
-            )(target_uri) as export_store:
+            )(target_uri)
+            with export_store:
                 history = self._history_manager.by_id(request.history_id)
                 export_store.export_history(
                     history, include_hidden=request.include_hidden, include_deleted=request.include_deleted
                 )
-                self.set_history_export_result_metadata(request.export_association_id, export_metadata, success=True)
+            request.target_uri = str(export_store.file_source_uri) or request.target_uri
         except Exception as e:
-            self.set_history_export_result_metadata(
-                request.export_association_id, export_metadata, success=False, error=str(e)
-            )
+            exception_exporting_history = e
             raise
+        finally:
+            export_metadata = self.set_history_export_request_metadata(request)
+            self.set_history_export_result_metadata(
+                request.export_association_id,
+                export_metadata,
+                success=not bool(exception_exporting_history),
+                error=str(exception_exporting_history) if exception_exporting_history else None,
+            )
 
     def set_history_export_request_metadata(
         self, request: Union[WriteHistoryTo, GenerateHistoryDownload]

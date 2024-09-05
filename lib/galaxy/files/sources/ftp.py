@@ -60,7 +60,7 @@ class FtpFilesSource(PyFilesystem2FilesSource):
         native_path: str,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
-    ):
+    ) -> str:
         extra_props: FTPFilesSourceProperties
         if opts and opts.extra_props:
             extra_props = cast(FTPFilesSourceProperties, opts.extra_props)
@@ -69,6 +69,7 @@ class FtpFilesSource(PyFilesystem2FilesSource):
             extra_props = {}
         path, opts.extra_props = self._get_props_and_rel_path(extra_props, target_path)
         super()._write_from(path, native_path, user_context=user_context, opts=opts)
+        return target_path
 
     def _get_props_and_rel_path(
         self, extra_props: FTPFilesSourceProperties, url: str

@@ -114,7 +114,7 @@ class PosixFilesSource(BaseFilesSource):
         native_path: str,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
-    ):
+    ) -> str:
         effective_root = self._effective_root(user_context)
         target_native_path = self._to_native_path(target_path, user_context=user_context)
         if self.enforce_symlink_security:
@@ -136,6 +136,7 @@ class PosixFilesSource(BaseFilesSource):
         target_native_path_part = os.path.join(target_native_path_parent, f"_{target_native_path_name}.part")
         shutil.copyfile(native_path, target_native_path_part)
         os.rename(target_native_path_part, target_native_path)
+        return target_path
 
     def _to_native_path(self, source_path: str, user_context: OptionalUserContext = None):
         source_path = os.path.normpath(source_path)

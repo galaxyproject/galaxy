@@ -116,13 +116,14 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         native_path: str,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
-    ):
+    ) -> str:
         with open(native_path, "rb") as read_file:
             openfs = self._open_fs(user_context=user_context, opts=opts)
             dirname = fs.path.dirname(target_path)
             if not openfs.isdir(dirname):
                 openfs.makedirs(dirname)
             openfs.upload(target_path, read_file)
+        return target_path
 
     def _resource_info_to_dict(self, dir_path, resource_info) -> AnyRemoteEntry:
         name = resource_info.name
