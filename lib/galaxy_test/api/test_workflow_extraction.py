@@ -602,7 +602,7 @@ test_data:
                 if isinstance(value, list):
                     extract_payload[key] = dumps(value)
 
-        create_workflow_response = self._post("workflows", data=extract_payload)
+        create_workflow_response = self._post("workflows", data=extract_payload, json=True)
         self._assert_status_code_is(create_workflow_response, 200)
 
         new_workflow_id = create_workflow_response.json()["id"]

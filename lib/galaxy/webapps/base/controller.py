@@ -1114,10 +1114,13 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
 
     slug_builder = SlugBuilder()
 
-    def get_stored_workflow(self, trans, id, check_ownership=True, check_accessible=False):
+    def get_stored_workflow(self, trans, id, check_ownership=True, check_accessible=False, app_by_trans=False):
         """Get a StoredWorkflow from the database by id, verifying ownership."""
         # Load workflow from database
-        workflow_contents_manager = workflows.WorkflowsManager(self.app)
+        if app_by_trans:
+            workflow_contents_manager = workflows.WorkflowsManager(trans.app)
+        else:
+            workflow_contents_manager = workflows.WorkflowsManager(self.app)
         workflow = workflow_contents_manager.get_stored_workflow(trans=trans, workflow_id=id)
 
         if not workflow:

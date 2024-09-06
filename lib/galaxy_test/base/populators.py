@@ -1735,7 +1735,7 @@ class BaseWorkflowPopulator(BasePopulator):
             from_path=from_path,
             object_id=object_id,
         )
-        import_response = self._post("workflows", data=data)
+        import_response = self._post("workflows", data=data, json=True)
         return import_response
 
     def import_workflow_from_path(self, from_path: str, object_id: Optional[str] = None) -> str:
@@ -2283,7 +2283,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
             "workflow": workflow_str,
         }
         data.update(**kwds)
-        upload_response = self._post("workflows", data=data)
+        upload_response = self._post("workflows", data=data, json=True)
         assert upload_response.status_code == 200, upload_response.content
         return upload_response.json()
 
