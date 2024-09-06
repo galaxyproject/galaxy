@@ -3,10 +3,12 @@ import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import {
     faCaretDown,
     faCopy,
+    faDownload,
     faExternalLinkAlt,
     faFileExport,
     faLink,
     faPlay,
+    faShareAlt,
     faSpinner,
     faStar,
     faTrash,
@@ -33,12 +35,14 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "refreshList", overlayLoading?: boolean): void;
+    (e: "dropdown", open: boolean): void;
 }>();
 
-const { bookmarkLoading, deleteWorkflow, toggleBookmark, copyPublicLink, copyWorkflow } = useWorkflowActions(
-    computed(() => props.workflow),
-    () => emit("refreshList", true)
-);
+const { bookmarkLoading, deleteWorkflow, toggleBookmark, copyPublicLink, copyWorkflow, downloadUrl } =
+    useWorkflowActions(
+        computed(() => props.workflow),
+        () => emit("refreshList", true)
+    );
 
 const userStore = useUserStore();
 const { isAnonymous } = storeToRefs(userStore);
@@ -100,7 +104,9 @@ const runPath = computed(
                 class="workflow-actions-dropdown"
                 title="Workflow actions"
                 toggle-class="inline-icon-button"
-                variant="link">
+                variant="link"
+                @show="() => emit('dropdown', true)"
+                @hide="() => emit('dropdown', false)">
                 <template v-slot:button-content>
                     <FontAwesomeIcon :icon="faCaretDown" fixed-width />
                 </template>
@@ -115,44 +121,33 @@ const runPath = computed(
                         v-if="props.workflow.published"
                         size="sm"
                         title="Copy link to workflow"
-                        variant="link"
                         @click="copyPublicLink">
                         <FontAwesomeIcon :icon="faLink" fixed-width />
                         Link to Workflow
                     </BDropdownItem>
 
-                    <BDropdownItem
-                        v-if="!isAnonymous && !shared"
-                        size="sm"
-                        title="Copy workflow"
-                        variant="link"
-                        @click="copyWorkflow">
+                    <BDropdownItem v-if="!isAnonymous && !shared" size="sm" title="Copy workflow" @click="copyWorkflow">
                         <FontAwesomeIcon :icon="faCopy" fixed-width />
                         Copy
                     </BDropdownItem>
 
-                    <!--BButton
-                        id="workflow-download-button"
-                        v-b-tooltip.hover.noninteractive
+                    <BDropdownItem
                         size="sm"
                         title="Download workflow in .ga format"
-                        variant="outline-primary"
+                        target="_blank"
                         :href="downloadUrl">
                         <FontAwesomeIcon :icon="faDownload" fixed-width />
-                        <span class="compact-view">Download</span>
-                    </BButton>
+                        Download
+                    </BDropdownItem>
 
-                    <BButton
+                    <BDropdownItem
                         v-if="!isAnonymous && !shared"
-                        id="workflow-share-button"
-                        v-b-tooltip.hover.noninteractive
                         size="sm"
                         title="Share"
-                        variant="outline-primary"
                         :to="`/workflows/sharing?id=${workflow.id}`">
                         <FontAwesomeIcon :icon="faShareAlt" fixed-width />
-                        <span class="compact-view">Share</span>
-                    </BButton-->
+                        Share
+                    </BDropdownItem>
                 </template>
 
                 <BDropdownItem
@@ -160,10 +155,9 @@ const runPath = computed(
                     class="workflow-delete-button"
                     title="Delete workflow"
                     size="sm"
-                    variant="link"
                     @click="deleteWorkflow">
                     <FontAwesomeIcon :icon="faTrash" fixed-width />
-                    <span>Delete</span>
+                    Delete
                 </BDropdownItem>
 
                 <BDropdownItem
@@ -171,11 +165,10 @@ const runPath = computed(
                     class="source-trs-button"
                     :title="`View on ${props.workflow.source_metadata?.trs_server}`"
                     size="sm"
-                    variant="link"
                     :href="`https://dockstore.org/workflows${props.workflow?.source_metadata?.trs_tool_id?.slice(9)}`"
                     target="_blank">
                     <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
-                    <span>View on Dockstore</span>
+                    View on Dockstore
                 </BDropdownItem>
 
                 <BDropdownItem
@@ -183,11 +176,10 @@ const runPath = computed(
                     class="workflow-view-external-link-button"
                     title="View external link"
                     size="sm"
-                    variant="link"
                     :href="props.workflow.source_metadata?.url"
                     target="_blank">
                     <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
-                    <span>View external link</span>
+                    View external link
                 </BDropdownItem>
 
                 <BDropdownItem
@@ -195,10 +187,9 @@ const runPath = computed(
                     class="workflow-export-button"
                     title="Export"
                     size="sm"
-                    variant="link"
                     :to="`/workflows/export?id=${props.workflow.id}`">
                     <FontAwesomeIcon :icon="faFileExport" fixed-width />
-                    <span>Export</span>
+                    Export
                 </BDropdownItem>
             </BDropdown>
         </BButtonGroup>

@@ -3,7 +3,7 @@ import { faPen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BLink } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 import { updateWorkflow } from "@/components/Workflow/workflows.services";
 import { useUserStore } from "@/stores/userStore";
@@ -67,10 +67,12 @@ async function onTagsUpdate(tags: string[]) {
 async function onTagClick(tag: string) {
     emit("tagClick", tag);
 }
+
+const dropdownOpen = ref(false);
 </script>
 
 <template>
-    <div class="workflow-card" :data-workflow-id="workflow.id">
+    <div class="workflow-card" :class="{ 'dropdown-open': dropdownOpen }" :data-workflow-id="workflow.id">
         <div
             class="workflow-card-container"
             :class="{
@@ -94,7 +96,8 @@ async function onTagClick(tag: string) {
                         :workflow="props.workflow"
                         :published="props.publishedView"
                         :editor="props.editorView"
-                        @refreshList="emit('refreshList', true)" />
+                        @refreshList="emit('refreshList', true)"
+                        @dropdown="(open) => (dropdownOpen = open)" />
                 </div>
 
                 <span class="workflow-name font-weight-bold">
@@ -153,6 +156,10 @@ async function onTagClick(tag: string) {
 .workflow-card {
     container: workflow-card / inline-size;
     padding: 0 0.25rem 0.5rem 0.25rem;
+
+    &.dropdown-open {
+        z-index: 10;
+    }
 
     .workflow-rename {
         opacity: 0;
