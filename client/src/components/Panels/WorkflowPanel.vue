@@ -131,6 +131,7 @@ function scrollToTop() {
             <div v-if="allLoaded || filterText !== ''" class="list-end">
                 <span v-if="workflows.length == 1"> - 1 workflow loaded - </span>
                 <span v-else-if="workflows.length > 1"> - All {{ workflows.length }} workflows loaded - </span>
+                <span v-else> - No workflows found - </span>
             </div>
             <div v-else-if="loading" class="list-end">- loading -</div>
         </div>

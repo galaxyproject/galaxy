@@ -329,9 +329,6 @@ onMounted(() => {
 </template>
 
 <style lang="scss">
-@import "scss/mixins.scss";
-@import "breakpoints.scss";
-
 .workflows-list {
     overflow: auto;
     display: flex;
