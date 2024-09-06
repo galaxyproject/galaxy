@@ -7,7 +7,7 @@ from .basic import ImplicitConversionRequired
 log = logging.getLogger(__name__)
 
 
-def populate_model(app, request_context, inputs, state_inputs, group_inputs, other_values=None):
+def populate_model(request_context, inputs, state_inputs, group_inputs, other_values=None):
     """
     Populates the tool model consumed by the client form builder.
     """
@@ -31,7 +31,7 @@ def populate_model(app, request_context, inputs, state_inputs, group_inputs, oth
                     group_state.get(
                         test_param["name"], input.test_param.get_initial_value(request_context, other_values)
                     ),
-                    app,
+                    request_context.app,
                 )
                 test_param["text_value"] = input.test_param.value_to_display_text(test_param["value"])
                 for i in range(len(tool_dict["cases"])):
@@ -53,9 +53,9 @@ def populate_model(app, request_context, inputs, state_inputs, group_inputs, oth
                 initial_value = input.get_initial_value(request_context, other_values)
                 tool_dict = input.to_dict(request_context, other_values=other_values)
                 tool_dict["value"] = input.value_to_basic(
-                    state_inputs.get(input.name, initial_value), app, use_security=True
+                    state_inputs.get(input.name, initial_value), request_context.app, use_security=True
                 )
-                tool_dict["default_value"] = input.value_to_basic(initial_value, app, use_security=True)
+                tool_dict["default_value"] = input.value_to_basic(initial_value, request_context.app, use_security=True)
                 tool_dict["text_value"] = input.value_to_display_text(tool_dict["value"])
             except ImplicitConversionRequired:
                 tool_dict = input.to_dict(request_context)
