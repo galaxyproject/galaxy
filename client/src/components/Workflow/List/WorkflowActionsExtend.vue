@@ -38,7 +38,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     (e: "refreshList", overlayLoading?: boolean): void;
     (e: "insert"): void;
-    (e: "copySteps"): void;
+    (e: "insertSteps"): void;
 }>();
 
 const userStore = useUserStore();
@@ -198,7 +198,7 @@ const { copyPublicLink, copyWorkflow, downloadUrl, importWorkflow } = useWorkflo
                     size="sm"
                     title="Copy steps into workflow"
                     variant="outline-primary"
-                    @click="emit('copySteps')">
+                    @click="emit('insertSteps')">
                     <FontAwesomeIcon :icon="faCopy" fixed-width />
                 </BButton>
 

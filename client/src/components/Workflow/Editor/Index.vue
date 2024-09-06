@@ -58,7 +58,10 @@
                     @onRefactor="onAttemptRefactor"
                     @onScrollTo="onScrollTo" />
                 <UndoRedoStack v-else-if="isActiveSideBar('workflow-undo-redo')" :store-id="id" />
-                <WorkflowPanel v-else-if="isActiveSideBar('workflow-editor-workflows')"></WorkflowPanel>
+                <WorkflowPanel
+                    v-else-if="isActiveSideBar('workflow-editor-workflows')"
+                    @insertWorkflow="onInsertWorkflow"
+                    @insertWorkflowSteps="onInsertWorkflowSteps" />
             </template>
         </ActivityBar>
         <div id="center" class="workflow-center">

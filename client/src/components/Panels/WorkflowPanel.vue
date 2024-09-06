@@ -11,6 +11,11 @@ import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
 import WorkflowCardList from "@/components/Workflow/List/WorkflowCardList.vue";
 
+const emit = defineEmits<{
+    (e: "insertWorkflow", id: string, name: string): void;
+    (e: "insertWorkflowSteps", id: string, stepCount: number): void;
+}>();
+
 const scrollable = ref<HTMLDivElement | null>(null);
 const { arrived, scrollTop } = useAnimationFrameScroll(scrollable);
 
@@ -115,7 +120,13 @@ function scrollToTop() {
             :loading="loading"></DelayedInput>
 
         <div ref="scrollable" class="workflow-scroll-list mt-2">
-            <WorkflowCardList :hide-runs="true" :workflows="workflows" :filterable="false" editor-view />
+            <WorkflowCardList
+                :hide-runs="true"
+                :workflows="workflows"
+                :filterable="false"
+                editor-view
+                @insertWorkflow="(...args) => emit('insertWorkflow', ...args)"
+                @insertWorkflowSteps="(...args) => emit('insertWorkflowSteps', ...args)" />
 
             <div v-if="allLoaded || filterText !== ''" class="list-end">
                 <span v-if="workflows.length == 1"> - 1 workflow loaded - </span>

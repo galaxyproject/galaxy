@@ -23,6 +23,8 @@ const emit = defineEmits<{
     (e: "tagClick", tag: string): void;
     (e: "refreshList", overlayLoading?: boolean, silent?: boolean): void;
     (e: "updateFilter", key: string, value: any): void;
+    (e: "insertWorkflow", id: string, name: string): void;
+    (e: "insertWorkflowSteps", id: string, stepCount: number): void;
 }>();
 
 const modalOptions = reactive({
@@ -54,6 +56,15 @@ function onPreview(id: string) {
     modalOptions.preview.id = id;
     showPreview.value = true;
 }
+
+// TODO: clean-up types, as soon as better Workflow type is available
+function onInsert(workflow: Workflow) {
+    emit("insertWorkflow", workflow.id as any, workflow.name as any);
+}
+
+function onInsertSteps(workflow: Workflow) {
+    emit("insertWorkflowSteps", workflow.id as any, workflow.number_of_steps as any);
+}
 </script>
 
 <template>
@@ -72,7 +83,9 @@ function onPreview(id: string) {
             @refreshList="(...args) => emit('refreshList', ...args)"
             @updateFilter="(...args) => emit('updateFilter', ...args)"
             @rename="onRename"
-            @preview="onPreview">
+            @preview="onPreview"
+            @insert="onInsert(workflow)"
+            @insertSteps="onInsertSteps(workflow)">
         </WorkflowCard>
 
         <WorkflowRename
