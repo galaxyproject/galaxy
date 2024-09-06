@@ -89,6 +89,7 @@ from galaxy.tools.parameters.grouping import (
     Repeat,
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
+from galaxy.tools.parameters.populate_model import populate_model
 from galaxy.tools.parameters.workflow_utils import (
     ConnectedValue,
     is_runtime_value,
@@ -1396,6 +1397,12 @@ class InputParameterModule(WorkflowModule):
 
         parameter_type_cond.cases = cases
         return {"parameter_definition": parameter_type_cond}
+
+    def get_config_form(self, step=None):
+        """Serializes input parameters of a module into input dictionaries."""
+        group_inputs = []
+        populate_model(self.trans, self.get_inputs(), self.state.inputs, group_inputs)
+        return {"title": self.name, "inputs": group_inputs}
 
     def restrict_options(self, step, connections: Iterable[WorkflowStepConnection], default_value):
         try:
