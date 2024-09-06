@@ -5,13 +5,12 @@ import axios from "axios";
 import { BButtonGroup, BButtonToolbar, BCard, BCardTitle } from "bootstrap-vue";
 import { computed, provide, ref } from "vue";
 
+import { type InvocationExportPlugin } from "@/components/Workflow/Invocation/Export/Plugins";
 import { useMarkdown } from "@/composables/markdown";
 import { type MonitoringRequest } from "@/composables/persistentProgressMonitor";
 import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonitor";
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import { Toast } from "@/composables/toast";
-
-import { type InvocationExportPlugin } from "./model";
 
 import ActionButton from "./ActionButton.vue";
 import PersistentTaskProgressMonitorAlert from "@/components/Common/PersistentTaskProgressMonitorAlert.vue";

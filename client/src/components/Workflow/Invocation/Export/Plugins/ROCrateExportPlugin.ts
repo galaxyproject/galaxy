@@ -1,4 +1,4 @@
-import { type InvocationExportPlugin } from "../model";
+import { type InvocationExportPlugin } from "@/components/Workflow/Invocation/Export/Plugins";
 
 export const RO_CRATE_EXPORT_PLUGIN: InvocationExportPlugin = {
     id: "ro-crate",

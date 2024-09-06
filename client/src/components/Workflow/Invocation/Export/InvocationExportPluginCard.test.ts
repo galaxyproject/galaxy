@@ -4,7 +4,7 @@ import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { type InvocationExportPlugin } from "./model";
+import { type InvocationExportPlugin } from "@/components/Workflow/Invocation/Export/Plugins";
 
 import InvocationExportPluginCard from "./InvocationExportPluginCard.vue";
 
