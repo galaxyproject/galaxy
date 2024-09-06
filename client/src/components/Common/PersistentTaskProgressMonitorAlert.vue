@@ -46,6 +46,10 @@ const props = withDefaults(defineProps<Props>(), {
     requestFailedMessage: "Request failed.",
 });
 
+const emit = defineEmits<{
+    (e: "onDismiss"): void;
+}>();
+
 const { getDownloadObjectUrl } = useShortTermStorage();
 
 const {
@@ -102,11 +106,12 @@ watch(
 
 function dismissAlert() {
     reset();
+    emit("onDismiss");
 }
 </script>
 
 <template>
-    <div v-if="hasMonitoringData" class="d-flex justify-content-end">
+    <div v-if="hasMonitoringData">
         <BAlert v-if="hasExpired" variant="warning" show dismissible @dismissed="dismissAlert">
             The {{ monitorRequest.action }} task has <b>expired</b> and the result is no longer available.
         </BAlert>
