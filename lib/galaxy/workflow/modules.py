@@ -106,7 +106,7 @@ from galaxy.util.json import safe_loads
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
-from galaxy.workflow.workflow_parameter_input_definitions import get_default_source
+from galaxy.workflow.workflow_parameter_input_definitions import get_default_parameter
 
 if TYPE_CHECKING:
     from galaxy.schema.invocation import InvocationMessageUnion
@@ -918,7 +918,7 @@ class InputProxy:
         return as_dict
 
 
-def optional_param(optional):
+def optional_param(optional=None):
     bool_source = dict(name="optional", label="Optional", type="boolean", checked=optional)
     optional_value = BooleanToolParameter(None, bool_source)
     return optional_value
@@ -1200,7 +1200,6 @@ class InputParameterModule(WorkflowModule):
     def get_inputs(self):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
-        optional = parameter_def["optional"]
         select_source = dict(name="parameter_type", label="Parameter type", type="select", value=parameter_type)
         select_source["options"] = [
             {"value": "text", "label": "Text"},
@@ -1223,9 +1222,9 @@ class InputParameterModule(WorkflowModule):
         cases = []
 
         for param_type in POSSIBLE_PARAMETER_TYPES:
-            input_default_value = get_default_source(param_type, parameter_def)
+            default_parameter = get_default_parameter(param_type)
 
-            optional_value = optional_param(optional)
+            optional_value = optional_param()
             optional_cond = Conditional("optional")
             optional_cond.test_param = optional_value
 
@@ -1234,9 +1233,10 @@ class InputParameterModule(WorkflowModule):
             when_this_type.inputs = {}
             when_this_type.inputs["optional"] = optional_cond
 
-            specify_default_checked = "default" in parameter_def
             specify_default_source = dict(
-                name="specify_default", label="Specify a default value", type="boolean", checked=specify_default_checked
+                name="specify_default",
+                label="Specify a default value",
+                type="boolean",
             )
             specify_default = BooleanToolParameter(None, specify_default_source)
             specify_default_cond = Conditional("specify_default")
@@ -1245,7 +1245,7 @@ class InputParameterModule(WorkflowModule):
             when_specify_default_true = ConditionalWhen()
             when_specify_default_true.value = "true"
             when_specify_default_true.inputs = {}
-            when_specify_default_true.inputs["default"] = input_default_value
+            when_specify_default_true.inputs["default"] = default_parameter
 
             when_specify_default_false = ConditionalWhen()
             when_specify_default_false.value = "false"
@@ -1273,7 +1273,6 @@ class InputParameterModule(WorkflowModule):
                     label="Allow multiple selection",
                     help="Only applies when connected to multi-select parameter(s)",
                     type="boolean",
-                    checked=parameter_def.get("multiple", False),
                 )
 
                 specify_multiple = BooleanToolParameter(None, specify_multiple_source)
@@ -1314,34 +1313,22 @@ class InputParameterModule(WorkflowModule):
                 restrict_how_source: Dict[str, Union[str, List[Dict[str, Union[str, bool]]]]] = dict(
                     name="how", label="Restrict Text Values?", type="select"
                 )
-                if parameter_def.get("restrictions") is not None:
-                    restrict_how_value = "staticRestrictions"
-                elif parameter_def.get("restrictOnConnections") is True:
-                    restrict_how_value = "onConnections"
-                elif parameter_def.get("suggestions") is not None:
-                    restrict_how_value = "staticSuggestions"
-                else:
-                    restrict_how_value = "none"
                 restrict_how_source["options"] = [
                     {
                         "value": "none",
                         "label": "Do not specify restrictions (default).",
-                        "selected": restrict_how_value == "none",
                     },
                     {
                         "value": "onConnections",
                         "label": "Attempt restriction based on connections.",
-                        "selected": restrict_how_value == "onConnections",
                     },
                     {
                         "value": "staticRestrictions",
                         "label": "Provide list of all possible values.",
-                        "selected": restrict_how_value == "staticRestrictions",
                     },
                     {
                         "value": "staticSuggestions",
                         "label": "Provide list of suggested values.",
-                        "selected": restrict_how_value == "staticSuggestions",
                     },
                 ]
                 restrictions_cond = Conditional("restrictions")
@@ -1406,7 +1393,7 @@ class InputParameterModule(WorkflowModule):
 
     def get_config_form(self, step=None):
         """Serializes input parameters of a module into input dictionaries."""
-        group_inputs = []
+        group_inputs: List[Dict[str, Any]] = []
         populate_model(self.trans, self.get_inputs(), self.state.inputs, group_inputs)
         return {"title": self.name, "inputs": group_inputs}
 
