@@ -35,7 +35,7 @@ export interface Activity {
     visible: boolean;
 }
 
-export type ClientMode = "full" | "minimal_workflow";
+export type ClientMode = "full" | "workflow_centric" | "workflow_runner";
 
 // config materializes a RawActivity into an Activity
 export interface RawActivity {

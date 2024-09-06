@@ -3137,20 +3137,30 @@ mapping:
       client_mode:
         type: str
         default: 'full'
-        enum: ['full', 'minimal_workflow']
+        enum: ['full', 'workflow_centric', 'workflow_runner']
         required: false
         per_host: true
         desc: |
-          Set this to 'minimal_workflow' to turn on the simplified Galaxy workflow
-          UI.
+          This will change the modality and focus on the client UI. The traditional
+          full Galaxy with default activity bar is the default of 'full'.
+          'workflow_centric' & 'workflow_runner' yield client applications
+          that are geared to center a collection of workflows in Galaxy and attempts
+          to hide the concept of histories from users. The 'workflow_centric' view
+          still allows the user to manage & edit a collection of their own workflows.
+          'workflow_runner' is a mode that disables workflow management to even further
+          simplify the UI - this may be appropriate for instances that really just want
+          enable particular workflows as-is.
 
-      simplified_workflow_landing_initial_tags:
+      simplified_workflow_landing_initial_filter_text:
         type: str
         default: null
         required: false
         per_host: true
         desc: |
-          I will write this in later.
+          If the Galaxy client is in 'workflow_centric' or 'workflow_runner' "client mode",
+          this controls the initial filtering of the workflow search textbox. This can
+          be used to foreground workflows in the published workflow list by tar (e.g. 'tag:XXX')
+          or username (e.g. 'username:XXXX').
 
       simplified_workflow_run_ui:
         type: str

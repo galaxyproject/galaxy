@@ -21,11 +21,6 @@ const showHistoryPanel = computed(() => {
     return showPanels.value && config.value && config.value.client_mode == "full";
 });
 
-const showWorkflowCenter = computed(() => {
-    console.log(config.value && config.value.client_mode);
-    return config.value && config.value.client_mode == "minimal_workflow";
-});
-
 // methods
 function hideCenter() {
     showCenter.value = false;

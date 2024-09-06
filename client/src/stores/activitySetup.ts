@@ -4,12 +4,24 @@
 import { type ClientMode, type Activity, type RawActivity } from "@/stores/activityStore";
 import { type EventData } from "@/stores/eventStore";
 
-function unlessMinimalWorkflow(clientMode: ClientMode): boolean {
-    return !(clientMode == "minimal_workflow");
+function isWorkflowCentric(clientMode: ClientMode) : boolean {
+    return ["workflow_centric", "workflow_runner"].indexOf(clientMode) >= 0;
 }
 
-function ifMinimalWorkflow(clientMode: ClientMode): boolean {
-    return !(clientMode == "minimal_workflow");
+function unlessWorkflowCentric(clientMode: ClientMode): boolean {
+    if (isWorkflowCentric(clientMode)) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function ifWorkflowCentric(clientMode: ClientMode): boolean {
+    if (isWorkflowCentric(clientMode)) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 export const ActivitiesRaw: RawActivity[] = [
@@ -19,12 +31,12 @@ export const ActivitiesRaw: RawActivity[] = [
         icon: "fa-laptop",
         id: "interactivetools",
         mutable: false,
-        optional: ifMinimalWorkflow,
+        optional: ifWorkflowCentric,
         panel: false,
         title: "Interactive Tools",
         tooltip: "Show active interactive tools",
         to: "/interactivetool_entry_points/list",
-        visible: unlessMinimalWorkflow,
+        visible: unlessWorkflowCentric,
     },
     {
         anonymous: true,
@@ -32,12 +44,12 @@ export const ActivitiesRaw: RawActivity[] = [
         icon: "upload",
         id: "upload",
         mutable: false,
-        optional: ifMinimalWorkflow,
+        optional: ifWorkflowCentric,
         panel: false,
         title: "Upload",
         to: null,
         tooltip: "Download from URL or upload files from disk",
-        visible: unlessMinimalWorkflow,
+        visible: unlessWorkflowCentric,
     },
     {
         anonymous: true,
@@ -45,12 +57,12 @@ export const ActivitiesRaw: RawActivity[] = [
         icon: "wrench",
         id: "tools",
         mutable: false,
-        optional: ifMinimalWorkflow,
+        optional: ifWorkflowCentric,
         panel: true,
         title: "Tools",
         to: "/tools",
         tooltip: "Search and run tools",
-        visible: unlessMinimalWorkflow,
+        visible: unlessWorkflowCentric,
     },
     {
         anonymous: true,
@@ -89,7 +101,7 @@ export const ActivitiesRaw: RawActivity[] = [
         title: "Visualization",
         to: null,
         tooltip: "Visualize datasets",
-        visible: unlessMinimalWorkflow,
+        visible: unlessWorkflowCentric,
     },
     {
         anonymous: true,
@@ -102,7 +114,7 @@ export const ActivitiesRaw: RawActivity[] = [
         title: "Histories",
         tooltip: "Show all histories",
         to: "/histories/list",
-        visible: unlessMinimalWorkflow,
+        visible: unlessWorkflowCentric,
     },
     {
         anonymous: false,
@@ -115,7 +127,7 @@ export const ActivitiesRaw: RawActivity[] = [
         title: "History Multiview",
         tooltip: "Select histories to show in History Multiview",
         to: "/histories/view_multiple",
-        visible: unlessMinimalWorkflow,
+        visible: unlessWorkflowCentric,
     },
     {
         anonymous: false,
@@ -128,7 +140,7 @@ export const ActivitiesRaw: RawActivity[] = [
         title: "Datasets",
         tooltip: "Show all datasets",
         to: "/datasets/list",
-        visible: unlessMinimalWorkflow,
+        visible: unlessWorkflowCentric,
     },
     {
         anonymous: true,
@@ -141,7 +153,7 @@ export const ActivitiesRaw: RawActivity[] = [
         title: "Pages",
         tooltip: "Show all pages",
         to: "/pages/list",
-        visible: unlessMinimalWorkflow,
+        visible: unlessWorkflowCentric,
     },
     {
         anonymous: false,

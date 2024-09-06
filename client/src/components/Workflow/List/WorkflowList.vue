@@ -28,13 +28,13 @@ type WorkflowsList = Record<string, never>[];
 
 interface Props {
     activeList?: "my" | "shared_with_me" | "published";
-    advancedOptions?: boolean;
+    clientMode?: "full" | "workflow_centric" | "workflow_runner";
     initialFilterText?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     activeList: "my",
-    advancedOptions: true,
+    clientMode: "full",
     initialFilterText: "",
 });
 
@@ -89,6 +89,7 @@ const validFilters = computed(() => workflowFilters.value.getValidFilters(rawFil
 const invalidFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).invalidFilters);
 const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
 const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
+const allowWorkflowManagement = computed(() => props.clientMode == "full");
 
 function updateFilterValue(filterKey: string, newValue: any) {
     const currentFilterText = filterText.value;
@@ -222,10 +223,10 @@ onMounted(() => {
             <div class="d-flex flex-gapx-1">
                 <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Workflows</Heading>
 
-                <WorkflowListActions :advanced-options="advancedOptions" />
+                <WorkflowListActions v-if="allowWorkflowManagement" />
             </div>
 
-            <BNav pills justified class="mb-2">
+            <BNav pills justified class="mb-2" v-if="allowWorkflowManagement">
                 <BNavItem id="my" :active="activeList === 'my'" :disabled="userStore.isAnonymous" to="/workflows/list">
                     My workflows
                     <LoginRequired v-if="userStore.isAnonymous" target="my" title="Manage your workflows" />
@@ -233,7 +234,6 @@ onMounted(() => {
 
                 <BNavItem
                     id="shared-with-me"
-                    v-if="advancedOptions"
                     :active="sharedWithMe"
                     :disabled="userStore.isAnonymous"
                     to="/workflows/list_shared_with_me">
@@ -262,7 +262,7 @@ onMounted(() => {
                 </template>
             </FilterMenu>
 
-            <ListHeader ref="listHeader" :show-view-toggle="advancedOptions">
+            <ListHeader ref="listHeader" :show-view-toggle="allowWorkflowManagement">
                 <template v-slot:extra-filter>
                     <div v-if="activeList === 'my'">
                         Filter:
@@ -346,6 +346,7 @@ onMounted(() => {
                 :published-view="published"
                 :grid-view="view === 'grid'"
                 :class="view === 'grid' ? 'grid-view' : 'list-view'"
+                :allow-workflow-management="allowWorkflowManagement"
                 @refreshList="load"
                 @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
                 @update-filter="updateFilterValue" />
