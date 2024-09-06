@@ -192,10 +192,6 @@ export function usePersistentProgressTaskMonitor(
         currentMonitoringData.value = null;
     }
 
-    function getPersistentKey(request: MonitoringRequest) {
-        return `persistent-progress-${request.taskType}-${request.source}-${request.action}-${request.object.type}-${request.object.id}`;
-    }
-
     return {
         /**
          * Start monitoring the background process.
@@ -263,4 +259,23 @@ export function usePersistentProgressTaskMonitor(
          */
         expirationDate,
     };
+}
+
+/**
+ * Retrieves task progress data from the local storage associated with the
+ * monitoring request information provided if it exists.
+ * @param request The monitoring request information.
+ * @returns The associated task progress data or null if there is no stored data.
+ */
+export function getStoredProgressData(request: MonitoringRequest): MonitoringData | null {
+    const localStorageKey = getPersistentKey(request);
+    const currentMonitoringData = useLocalStorage<MonitoringData | null>(localStorageKey, null, {
+        serializer: StorageSerializers.object,
+    });
+
+    return currentMonitoringData.value;
+}
+
+function getPersistentKey(request: MonitoringRequest) {
+    return `persistent-progress-${request.taskType}-${request.source}-${request.action}-${request.object.type}-${request.object.id}`;
 }
