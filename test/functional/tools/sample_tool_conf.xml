@@ -139,6 +139,7 @@
   <tool file="column_param_configfile.xml" />
   <tool file="column_param_list.xml" />
   <tool file="column_multi_param.xml" />
+  <tool file="select_optional_legacy.xml" />
   <tool file="select_optional.xml" />
   <tool file="select_dynamic.xml" />
   <tool file="hidden_param.xml" />

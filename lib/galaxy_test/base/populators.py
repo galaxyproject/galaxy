@@ -3151,7 +3151,12 @@ def load_data_dict(
         elif is_dict and "type" in value:
             input_type = value.pop("type")
             if input_type == "File":
-                content = open_test_data(value)
+                if "value" in value:
+                    content = open_test_data(value)
+                elif "content" in value:
+                    content = value["content"]
+                else:
+                    raise ValueError(f"Invalid test_data def {test_data}")
                 new_dataset_kwds = {"content": content}
                 if "name" in value:
                     new_dataset_kwds["name"] = value["name"]

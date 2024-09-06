@@ -5,6 +5,7 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
+from enum import Enum
 from os.path import join
 from typing import (
     Any,
@@ -49,9 +50,18 @@ AssertionList = Optional[List[AssertionDict]]
 XmlInt = Union[str, int]
 
 
+class OutputCompareType(str, Enum):
+    diff = "diff"
+    re_match = "re_match"
+    sim_size = "sim_size"
+    re_match_multiline = "re_match_multiline"
+    contains = "contains"
+    image_diff = "image_diff"
+
+
 class ToolSourceTestOutputAttributes(TypedDict):
     object: NotRequired[Optional[Any]]
-    compare: str
+    compare: OutputCompareType
     lines_diff: int
     delta: int
     delta_frac: Optional[float]

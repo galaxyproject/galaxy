@@ -8,6 +8,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    model_validator,
     RootModel,
     StrictFloat,
     StrictInt,
