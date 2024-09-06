@@ -1286,14 +1286,20 @@ class InputParameterModule(WorkflowModule):
                 add_validators_repeat.inputs = {
                     "regex_match": TextToolParameter(
                         None,
-                        {"optional": False, "name": "regex_match", "label": "Specify a regex that must match input"},
+                        {
+                            "optional": False,
+                            "name": "regex_match",
+                            "label": "Specify regex",
+                            "help": "Provided regex must match input value for input to be valid",
+                        },
                     ),
                     "regex_doc": TextToolParameter(
                         None,
                         {
                             "optional": False,
                             "name": "regex_doc",
-                            "label": "Specify a message that should be shown as a hint",
+                            "label": "Specify a message",
+                            "help": "This message will be shown if the regex does not match the input",
                         },
                     ),
                 }
