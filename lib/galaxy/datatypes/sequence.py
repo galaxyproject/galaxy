@@ -318,6 +318,34 @@ class Sequence(data.Text):
 
         return [cmd]
 
+    def display_data(
+        self,
+        trans,
+        dataset: DatasetHasHidProtocol,
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        **kwd,
+    ):
+        headers = kwd.get("headers", {})
+        if preview:
+            with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
+                max_peek_size = 100000
+                try:
+                    chunk = fh.read(max_peek_size + 1)
+                except UnicodeDecodeError:
+                    raise InvalidFileFormatError("Dataset appears to contain binary data, cannot display.")
+                if len(chunk) <= max_peek_size:
+                    mime = "text/plain"
+                    self._clean_and_set_mime_type(trans, mime, headers)
+                    return chunk[:-1], headers
+                return (
+                    trans.fill_template_mako("/dataset/large_file.mako", truncated_data=chunk[:-1], data=dataset),
+                    headers,
+                )
+        else:
+            return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
+
 
 class Alignment(data.Text):
     """Class describing an alignment"""
@@ -763,34 +791,6 @@ class BaseFastq(Sequence):
         if not self.quality_check(headers):
             return False
         return self.check_first_block(file_prefix)
-
-    def display_data(
-        self,
-        trans,
-        dataset: DatasetHasHidProtocol,
-        preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
-        **kwd,
-    ):
-        headers = kwd.get("headers", {})
-        if preview:
-            with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
-                max_peek_size = 100000
-                try:
-                    chunk = fh.read(max_peek_size + 1)
-                except UnicodeDecodeError:
-                    raise InvalidFileFormatError("Dataset appears to contain binary data, cannot display.")
-                if len(chunk) <= max_peek_size:
-                    mime = "text/plain"
-                    self._clean_and_set_mime_type(trans, mime, headers)
-                    return chunk[:-1], headers
-                return (
-                    trans.fill_template_mako("/dataset/large_file.mako", truncated_data=chunk[:-1], data=dataset),
-                    headers,
-                )
-        else:
-            return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
 
     @classmethod
     def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
