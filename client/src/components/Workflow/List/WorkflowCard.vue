@@ -125,7 +125,7 @@ const dropdownOpen = ref(false);
 
                 <TextSummary
                     v-if="description"
-                    class="my-1"
+                    class="workflow-summary my-1"
                     :description="description"
                     :max-length="gridView ? 100 : 250" />
             </div>
@@ -155,7 +155,7 @@ const dropdownOpen = ref(false);
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
-@import "breakpoints.scss";
+@import "_breakpoints.scss";
 
 .workflow-card {
     container: workflow-card / inline-size;
@@ -193,9 +193,18 @@ const dropdownOpen = ref(false);
         .workflow-card-header {
             display: grid;
             position: relative;
+            align-items: start;
             grid-template-areas:
                 "i b"
-                "n n";
+                "n n"
+                "s s";
+
+            @container workflow-card (max-width: #{$breakpoint-xs}) {
+                grid-template-areas:
+                    "i b"
+                    "n b"
+                    "s s";
+            }
 
             .workflow-card-indicators {
                 grid-area: i;
@@ -206,6 +215,12 @@ const dropdownOpen = ref(false);
                 display: flex;
                 align-items: center;
                 flex-direction: row;
+                justify-content: end;
+
+                @container workflow-card (max-width: #{$breakpoint-xs}) {
+                    align-items: end;
+                    flex-direction: column-reverse;
+                }
             }
 
             .workflow-name {
@@ -213,6 +228,10 @@ const dropdownOpen = ref(false);
                 font-size: 1rem;
                 font-weight: bold;
                 word-break: break-all;
+            }
+
+            .workflow-summary {
+                grid-area: s;
             }
         }
 
@@ -234,20 +253,6 @@ const dropdownOpen = ref(false);
                     max-width: 100%;
                 }
             }
-        }
-    }
-
-    @container workflow-card (max-width: #{$breakpoint-md}) {
-        .workflow-count-actions {
-            align-items: baseline;
-            justify-content: end;
-        }
-    }
-
-    @container workflow-card (min-width: #{$breakpoint-md}) {
-        .workflow-count-actions {
-            align-items: end;
-            flex-direction: column-reverse;
         }
     }
 }
