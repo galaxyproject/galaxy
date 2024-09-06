@@ -257,7 +257,7 @@ function getIdpPreference() {
                     <span v-else-if="iDPInfo['custom_button_text']">
                         <BButton class="d-block mt-3" @click="submitOIDCLogin(idp)">
                             <i :class="oIDCIdps[idp]" />
-                            Sign in with {{ iDPInfo['custom_button_text'] }}
+                            Sign in with {{ iDPInfo["custom_button_text"] }}
                         </BButton>
                     </span>
                     <span v-else>

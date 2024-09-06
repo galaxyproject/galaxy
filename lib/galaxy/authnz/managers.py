@@ -137,8 +137,10 @@ class AuthnzManager:
                 if idp in BACKENDS_NAME:
                     self.oidc_backends_config[idp] = self._parse_idp_config(child)
                     self.oidc_backends_implementation[idp] = "psa"
-                    self.app.config.oidc[idp] = {"icon": self._get_idp_icon(idp),
-                                                 "custom_button_text": self._get_idp_button_text(idp)}
+                    self.app.config.oidc[idp] = {
+                        "icon": self._get_idp_icon(idp),
+                        "custom_button_text": self._get_idp_button_text(idp),
+                    }
                 elif idp in KEYCLOAK_BACKENDS:
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = "custos"
