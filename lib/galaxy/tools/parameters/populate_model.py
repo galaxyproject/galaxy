@@ -1,5 +1,9 @@
 import logging
-from typing import List
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
 from galaxy.util.expressions import ExpressionContext
 from .basic import ImplicitConversionRequired
@@ -7,7 +11,7 @@ from .basic import ImplicitConversionRequired
 log = logging.getLogger(__name__)
 
 
-def populate_model(request_context, inputs, state_inputs, group_inputs, other_values=None):
+def populate_model(request_context, inputs, state_inputs, group_inputs: List[Dict[str, Any]], other_values=None):
     """
     Populates the tool model consumed by the client form builder.
     """
