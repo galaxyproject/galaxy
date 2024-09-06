@@ -77,10 +77,17 @@ from gxformat2 import (
     ImporterGalaxyInterface,
 )
 from gxformat2.yaml import ordered_load
+from pydantic import UUID4
 from requests import Response
 from rocrate.rocrate import ROCrate
 from typing_extensions import Literal
 
+from galaxy.schema.schema import (
+    CreateToolLandingRequestPayload,
+    CreateWorkflowLandingRequestPayload,
+    ToolLandingRequest,
+    WorkflowLandingRequest,
+)
 from galaxy.tool_util.client.staging import InteractorStaging
 from galaxy.tool_util.cwl.util import (
     download_output,
@@ -369,7 +376,9 @@ class BasePopulator(metaclass=ABCMeta):
     galaxy_interactor: ApiTestInteractor
 
     @abstractmethod
-    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
+    def _post(
+        self, route, data=None, files=None, headers=None, admin=False, json: bool = False, anon: bool = False
+    ) -> Response:
         """POST data to target Galaxy instance on specified route."""
 
     @abstractmethod
@@ -757,6 +766,34 @@ class BaseDatasetPopulator(BasePopulator):
 
         wait_on(_wait_for_purge, "dataset to become purged", timeout=2)
         return self._get(dataset_url)
+
+    def create_tool_landing(self, payload: CreateToolLandingRequestPayload) -> ToolLandingRequest:
+        create_url = "tool_landings"
+        json = payload.model_dump(mode="json")
+        create_response = self._post(create_url, json, json=True, anon=True)
+        api_asserts.assert_status_code_is(create_response, 200)
+        create_response.raise_for_status()
+        return ToolLandingRequest.model_validate(create_response.json())
+
+    def create_workflow_landing(self, payload: CreateWorkflowLandingRequestPayload) -> WorkflowLandingRequest:
+        create_url = "workflow_landings"
+        json = payload.model_dump(mode="json")
+        create_response = self._post(create_url, json, json=True, anon=True)
+        api_asserts.assert_status_code_is(create_response, 200)
+        create_response.raise_for_status()
+        return WorkflowLandingRequest.model_validate(create_response.json())
+
+    def claim_tool_landing(self, uuid: UUID4) -> ToolLandingRequest:
+        url = f"tool_landings/{uuid}/claim"
+        claim_response = self._post(url, {"client_secret": "foobar"}, json=True)
+        api_asserts.assert_status_code_is(claim_response, 200)
+        return ToolLandingRequest.model_validate(claim_response.json())
+
+    def claim_workflow_landing(self, uuid: UUID4) -> WorkflowLandingRequest:
+        url = f"workflow_landings/{uuid}/claim"
+        claim_response = self._post(url, {"client_secret": "foobar"}, json=True)
+        api_asserts.assert_status_code_is(claim_response, 200)
+        return WorkflowLandingRequest.model_validate(claim_response.json())
 
     def create_tool_from_path(self, tool_path: str) -> Dict[str, Any]:
         tool_directory = os.path.dirname(os.path.abspath(tool_path))
@@ -1664,8 +1701,10 @@ class GalaxyInteractorHttpMixin:
     def _api_key(self):
         return self.galaxy_interactor.api_key
 
-    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
-        return self.galaxy_interactor.post(route, data, files=files, admin=admin, headers=headers, json=json)
+    def _post(
+        self, route, data=None, files=None, headers=None, admin=False, json: bool = False, anon: bool = False
+    ) -> Response:
+        return self.galaxy_interactor.post(route, data, files=files, admin=admin, headers=headers, json=json, anon=anon)
 
     def _put(self, route, data=None, headers=None, admin=False, json: bool = False):
         return self.galaxy_interactor.put(route, data, headers=headers, admin=admin, json=json)
@@ -1956,6 +1995,7 @@ class BaseWorkflowPopulator(BasePopulator):
         history_id: Optional[str] = None,
         inputs: Optional[dict] = None,
         request: Optional[dict] = None,
+        assert_ok: bool = True,
     ) -> Response:
         invoke_return = self.invoke_workflow(workflow_id, history_id=history_id, inputs=inputs, request=request)
         invoke_return.raise_for_status()
@@ -1968,7 +2008,7 @@ class BaseWorkflowPopulator(BasePopulator):
             if history_id.startswith("hist_id="):
                 history_id = history_id[len("hist_id=") :]
         assert history_id
-        self.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=True)
+        self.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
         return invoke_return
 
     def workflow_report_json(self, workflow_id: str, invocation_id: str) -> dict:
@@ -3320,11 +3360,14 @@ class GiHttpMixin:
     def _get(self, route, data=None, headers=None, admin=False) -> Response:
         return self._gi.make_get_request(self._url(route), params=data)
 
-    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
+    def _post(
+        self, route, data=None, files=None, headers=None, admin=False, json: bool = False, anon: bool = False
+    ) -> Response:
         if headers is None:
             headers = {}
         headers = headers.copy()
-        headers["x-api-key"] = self._gi.key
+        if not anon:
+            headers["x-api-key"] = self._gi.key
         return requests.post(self._url(route), data=data, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def _put(self, route, data=None, headers=None, admin=False, json: bool = False):

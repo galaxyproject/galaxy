@@ -145,6 +145,11 @@
         "message": "Action requires account activation."
     },
     {
+        "name": "ITEM_IS_CLAIMED",
+        "code": 403008,
+        "message": "This item has already been claimed and cannot be re-claimed."
+    },
+    {
         "name": "USER_REQUIRED",
         "code": 403008,
         "message": "Action requires user authentication."

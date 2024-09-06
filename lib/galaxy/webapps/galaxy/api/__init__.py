@@ -26,6 +26,7 @@ from fastapi import (
     APIRouter,
     Form,
     Header,
+    Path,
     Query,
     Request,
     Response,
@@ -41,7 +42,10 @@ from fastapi.security import (
     HTTPAuthorizationCredentials,
     HTTPBearer,
 )
-from pydantic import ValidationError
+from pydantic import (
+    UUID4,
+    ValidationError,
+)
 from pydantic.main import BaseModel
 from routes import (
     Mapper,
@@ -618,3 +622,10 @@ def search_query_param(model_name: str, tags: list, free_text_fields: list) -> O
         title="Search query.",
         description=description,
     )
+
+
+LandingUuidPathParam: UUID4 = Path(
+    ...,
+    title="Landing UUID",
+    description="The UUID used to identify a persisted landing request.",
+)

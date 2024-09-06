@@ -165,9 +165,10 @@ class DatasetInstanceMaterializer:
                 sa_session = object_session(dataset_instance)
             assert sa_session
             sa_session.add(materialized_dataset_instance)
-        materialized_dataset_instance.copy_from(
-            dataset_instance, new_dataset=materialized_dataset, include_tags=attached, include_metadata=True
-        )
+        if not in_place:
+            materialized_dataset_instance.copy_from(
+                dataset_instance, new_dataset=materialized_dataset, include_tags=attached, include_metadata=True
+            )
         require_metadata_regeneration = (
             materialized_dataset_instance.has_metadata_files or materialized_dataset_instance.metadata_deferred
         )

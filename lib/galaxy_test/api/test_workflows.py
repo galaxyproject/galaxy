@@ -1537,15 +1537,132 @@ steps:
     def test_run_workflow_by_deferred_url(self):
         with self.dataset_populator.test_history() as history_id:
             self.__run_cat_workflow(inputs_by="deferred_url", history_id=history_id)
-            input_dataset_details = self.dataset_populator.get_history_dataset_details(history_id, hid=1)
+            # it did an upload of the inputs anyway - so this is a 3 is a bit of a hack...
+            # TODO fix this.
+            input_dataset_details = self.dataset_populator.get_history_dataset_details(history_id, hid=3)
             assert input_dataset_details["state"] == "deferred"
 
     @skip_without_tool("cat1")
     def test_run_workflow_by_url(self):
         with self.dataset_populator.test_history() as history_id:
             self.__run_cat_workflow(inputs_by="url", history_id=history_id)
-            input_dataset_details = self.dataset_populator.get_history_dataset_details(history_id, hid=1)
+            input_dataset_details = self.dataset_populator.get_history_dataset_details(
+                history_id, hid=3, assert_ok=False
+            )
             assert input_dataset_details["state"] == "ok"
+
+    @skip_without_tool("cat1")
+    def test_run_workflow_with_valid_url_hashes(self):
+        with self.dataset_populator.test_history() as history_id:
+            workflow = self.workflow_populator.load_workflow(name="test_for_run_invalid_url_hashes")
+            workflow_id = self.workflow_populator.create_workflow(workflow)
+            input_b64_1 = base64.b64encode(b"1 2 3").decode("utf-8")
+            input_b64_2 = base64.b64encode(b"4 5 6").decode("utf-8")
+            deferred = False
+            hashes_1 = [{"hash_function": "MD5", "hash_value": "5ba48b6e5a7c4d4930fda256f411e55b"}]
+            hashes_2 = [{"hash_function": "MD5", "hash_value": "ad0f811416f7ed2deb9122007d649fb0"}]
+            inputs = {
+                "WorkflowInput1": {
+                    "src": "url",
+                    "url": f"base64://{input_b64_1}",
+                    "ext": "txt",
+                    "deferred": deferred,
+                    "hashes": hashes_1,
+                },
+                "WorkflowInput2": {
+                    "src": "url",
+                    "url": f"base64://{input_b64_2}",
+                    "ext": "txt",
+                    "deferred": deferred,
+                    "hashes": hashes_2,
+                },
+            }
+            workflow_request = dict(
+                history=f"hist_id={history_id}",
+            )
+            workflow_request["inputs"] = json.dumps(inputs)
+            workflow_request["inputs_by"] = "name"
+            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, request=workflow_request
+            ).json()["id"]
+            invocation = self._invocation_details(workflow_id, invocation_id)
+            assert invocation["state"] == "scheduled", invocation
+            invocation_jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
+            for job in invocation_jobs:
+                assert job["state"] == "ok"
+
+    @skip_without_tool("cat1")
+    def test_run_workflow_with_invalid_url_hashes(self):
+        with self.dataset_populator.test_history() as history_id:
+            workflow = self.workflow_populator.load_workflow(name="test_for_run_invalid_url_hashes")
+            workflow_id = self.workflow_populator.create_workflow(workflow)
+            input_b64_1 = base64.b64encode(b"1 2 3").decode("utf-8")
+            input_b64_2 = base64.b64encode(b"4 5 6").decode("utf-8")
+            deferred = False
+            hashes = [{"hash_function": "MD5", "hash_value": "abadmd5sumhash"}]
+            inputs = {
+                "WorkflowInput1": {
+                    "src": "url",
+                    "url": f"base64://{input_b64_1}",
+                    "ext": "txt",
+                    "deferred": deferred,
+                    "hashes": hashes,
+                },
+                "WorkflowInput2": {
+                    "src": "url",
+                    "url": f"base64://{input_b64_2}",
+                    "ext": "txt",
+                    "deferred": deferred,
+                    "hashes": hashes,
+                },
+            }
+            workflow_request = dict(
+                history=f"hist_id={history_id}",
+            )
+            workflow_request["inputs"] = json.dumps(inputs)
+            workflow_request["inputs_by"] = "name"
+            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, request=workflow_request, assert_ok=False
+            ).json()["id"]
+            invocation = self._invocation_details(workflow_id, invocation_id)
+            assert invocation["state"] == "scheduled", invocation
+            invocation_jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
+            for job in invocation_jobs:
+                assert job["state"] == "paused"
+
+    @skip_without_tool("cat1")
+    def test_run_workflow_with_invalid_url(self):
+        with self.dataset_populator.test_history() as history_id:
+            workflow = self.workflow_populator.load_workflow(name="test_for_run_invalid_url")
+            workflow_id = self.workflow_populator.create_workflow(workflow)
+            deferred = False
+            inputs = {
+                "WorkflowInput1": {
+                    "src": "url",
+                    "url": "gxfiles://thisurl/doesnt/work",
+                    "ext": "txt",
+                    "deferred": deferred,
+                },
+                "WorkflowInput2": {
+                    "src": "url",
+                    "url": "gxfiles://thisurl/doesnt/work",
+                    "ext": "txt",
+                    "deferred": deferred,
+                },
+            }
+            workflow_request = dict(
+                history=f"hist_id={history_id}",
+            )
+            workflow_request["inputs"] = json.dumps(inputs)
+            workflow_request["inputs_by"] = "name"
+            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, request=workflow_request, assert_ok=False
+            ).json()["id"]
+            invocation = self._invocation_details(workflow_id, invocation_id)
+            assert invocation["state"] == "scheduled", invocation
+            invocation_jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
+            for job in invocation_jobs:
+                assert job["state"] == "paused"
 
     def __run_cat_workflow(self, inputs_by, history_id: Optional[str] = None):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")

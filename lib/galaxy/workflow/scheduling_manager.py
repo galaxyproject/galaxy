@@ -333,26 +333,39 @@ class WorkflowRequestMonitor(Monitors):
             if not self.monitor_running:
                 return
 
+    def __attempt_materialize(self, workflow_invocation, session) -> bool:
+        try:
+            hdas_to_materialize = workflow_invocation.inputs_requiring_materialization()
+            for hda in hdas_to_materialize:
+                user = RequestUser(user_id=workflow_invocation.history.user_id)
+                task_request = MaterializeDatasetInstanceTaskRequest(
+                    user=user,
+                    history_id=workflow_invocation.history.id,
+                    source="hda",
+                    content=hda.id,
+                    validate_hashes=True,
+                )
+                self.app.hda_manager.materialize(task_request, in_place=True)
+            # place back into ready and let it proceed normally on next iteration?
+            workflow_invocation.set_state(model.WorkflowInvocation.states.READY)
+            session.add(workflow_invocation)
+            session.commit()
+            return True
+        except Exception as e:
+            log.info(f"Failed to materialize dataset for workflow {workflow_invocation.id} - {e}")
+            workflow_invocation.fail()
+            session.add(workflow_invocation)
+            session.commit()
+        return False
+
     def __attempt_schedule(self, invocation_id, workflow_scheduler):
         with self.app.model.context() as session:
             workflow_invocation = session.get(model.WorkflowInvocation, invocation_id)
             if workflow_invocation.state == workflow_invocation.states.REQUIRES_MATERIALIZATION:
-                hdas_to_materialize = workflow_invocation.inputs_requiring_materialization()
-                for hda in hdas_to_materialize:
-                    user = RequestUser(user_id=workflow_invocation.history.user_id)
-                    task_request = MaterializeDatasetInstanceTaskRequest(
-                        user=user,
-                        history_id=workflow_invocation.history.id,
-                        source="hda",
-                        content=hda.id,
-                    )
-                    self.app.hda_manager.materialize(task_request, in_place=True)
-                    # place back into ready and let it proceed normally on next iteration?
-                    workflow_invocation.set_state(model.WorkflowInvocation.states.READY)
-                    session.add(workflow_invocation)
-                    session.commit()
-                    if self.app.config.workflow_scheduling_separate_materialization_iteration:
-                        return None
+                if not self.__attempt_materialize(workflow_invocation, session):
+                    return
+                if self.app.config.workflow_scheduling_separate_materialization_iteration:
+                    return None
             try:
                 if workflow_invocation.state == workflow_invocation.states.CANCELLING:
                     workflow_invocation.cancel_invocation_steps()

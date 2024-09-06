@@ -42,6 +42,7 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.landing import LandingRequestManager
 from galaxy.managers.workflows import (
     MissingToolsException,
     RefactorRequest,
@@ -68,12 +69,15 @@ from galaxy.schema.invocation import (
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
+    ClaimLandingPayload,
+    CreateWorkflowLandingRequestPayload,
     InvocationSortByEnum,
     InvocationsStateCounts,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+    WorkflowLandingRequest,
     WorkflowSortByEnum,
 )
 from galaxy.schema.workflows import (
@@ -102,6 +106,7 @@ from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     IndexQueryTag,
+    LandingUuidPathParam,
     Router,
     search_query_param,
 )
@@ -909,6 +914,7 @@ RefactorWorkflowBody = Annotated[
 @router.cbv
 class FastAPIWorkflows:
     service: WorkflowsService = depends(WorkflowsService)
+    landing_manager: LandingRequestManager = depends(LandingRequestManager)
 
     @router.get(
         "/api/workflows",
@@ -1158,6 +1164,39 @@ class FastAPIWorkflows:
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> StoredWorkflowDetailed:
         return self.service.show_workflow(trans, workflow_id, instance, legacy, version)
+
+    @router.post("/api/workflow_landings", public=True)
+    def create_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_landing_request: CreateWorkflowLandingRequestPayload = Body(...),
+    ) -> WorkflowLandingRequest:
+        try:
+            return self.landing_manager.create_workflow_landing_request(workflow_landing_request)
+        except Exception:
+            log.exception("Problem...")
+            raise
+
+    @router.post("/api/workflow_landings/{uuid}/claim")
+    def claim_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        uuid: UUID4 = LandingUuidPathParam,
+        payload: Optional[ClaimLandingPayload] = Body(...),
+    ) -> WorkflowLandingRequest:
+        try:
+            return self.landing_manager.claim_workflow_landing_request(trans, uuid, payload)
+        except Exception:
+            log.exception("claiim problem...")
+            raise
+
+    @router.get("/api/workflow_landings/{uuid}")
+    def get_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        uuid: UUID4 = LandingUuidPathParam,
+    ) -> WorkflowLandingRequest:
+        return self.landing_manager.get_workflow_landing_request(trans, uuid)
 
 
 StepDetailQueryParam = Annotated[

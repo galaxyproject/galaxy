@@ -8880,8 +8880,10 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         hdas_to_materialize = []
         for input_dataset_assoc in self.input_datasets:
             request = input_dataset_assoc.request
-            if request and not request.get("deferred", False):
-                hdas_to_materialize.append(input_dataset_assoc.dataset)
+            if request:
+                deferred = request.get("deferred", False)
+                if not deferred:
+                    hdas_to_materialize.append(input_dataset_assoc.dataset)
         return hdas_to_materialize
 
     def _serialize(self, id_encoder, serialization_options):
@@ -11214,6 +11216,43 @@ class UserFileSource(Base, HasConfigTemplate):
             raise first_exception
 
         raise ValueError("No template sent to file_source_configuration")
+
+
+# TODO: add link from tool_request to this
+class ToolLandingRequest(Base):
+    __tablename__ = "tool_landing_request"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    update_time: Mapped[Optional[datetime]] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
+    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    tool_id: Mapped[str] = mapped_column(String(255))
+    tool_version: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+    request_state: Mapped[Optional[Dict]] = mapped_column(JSONType)
+    client_secret: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+
+    user: Mapped[Optional["User"]] = relationship()
+
+
+# TODO: add link from workflow_invocation to this
+class WorkflowLandingRequest(Base):
+    __tablename__ = "workflow_landing_request"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("stored_workflow.id"), nullable=True)
+    stored_workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow.id"), nullable=True)
+
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    update_time: Mapped[Optional[datetime]] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
+    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    request_state: Mapped[Optional[Dict]] = mapped_column(JSONType)
+    client_secret: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+
+    user: Mapped[Optional["User"]] = relationship()
+    stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship()
+    workflow: Mapped[Optional["Workflow"]] = relationship()
 
 
 class UserAction(Base, RepresentById):
