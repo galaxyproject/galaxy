@@ -38,6 +38,8 @@ const emit = defineEmits<{
     (e: "updateFilter", key: string, value: any): void;
     (e: "rename", id: string, name: string): void;
     (e: "preview", id: string): void;
+    (e: "insert"): void;
+    (e: "insertSteps"): void;
 }>();
 
 const userStore = useUserStore();
@@ -143,7 +145,9 @@ const dropdownOpen = ref(false);
                     :workflow="workflow"
                     :published="publishedView"
                     :editor="editorView"
-                    @refreshList="emit('refreshList', true)" />
+                    @refreshList="emit('refreshList', true)"
+                    @insert="(...args) => emit('insert', ...args)"
+                    @insertSteps="(...args) => emit('insertSteps', ...args)" />
             </div>
         </div>
     </div>
