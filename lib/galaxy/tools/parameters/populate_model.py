@@ -23,7 +23,7 @@ def populate_model(request_context, inputs, state_inputs, group_inputs: List[Dic
             tool_dict = input.to_dict(request_context)
             group_size = len(group_state)
             tool_dict["cache"] = [None] * group_size
-            group_cache: List[List[str]] = tool_dict["cache"]
+            group_cache: List[List[Dict[str, Any]]] = tool_dict["cache"]
             for i in range(group_size):
                 group_cache[i] = []
                 populate_model(request_context, input.inputs, group_state[i], group_cache[i], other_values)
