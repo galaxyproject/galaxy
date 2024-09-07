@@ -43,7 +43,10 @@ from galaxy.job_metrics import (
     Safety,
 )
 from galaxy.managers.collections import DatasetCollectionManager
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
@@ -70,6 +73,10 @@ from galaxy.schema.schema import (
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
+from galaxy.tools._types import (
+    ToolStateDumpedToJsonInternalT,
+    ToolStateJobInstancePopulatedT,
+)
 from galaxy.util import (
     defaultdict,
     ExecutionTimer,
@@ -82,6 +89,9 @@ from galaxy.util.search import (
 )
 
 log = logging.getLogger(__name__)
+
+JobStateT = str
+JobStatesT = Union[JobStateT, List[JobStateT]]
 
 
 class JobLock(BaseModel):
@@ -313,7 +323,15 @@ class JobSearch:
         self.ldda_manager = ldda_manager
         self.decode_id = id_encoding_helper.decode_id
 
-    def by_tool_input(self, trans, tool_id, tool_version, param=None, param_dump=None, job_state="ok"):
+    def by_tool_input(
+        self,
+        trans: ProvidesHistoryContext,
+        tool_id: str,
+        tool_version: Optional[str],
+        param: ToolStateJobInstancePopulatedT,
+        param_dump: ToolStateDumpedToJsonInternalT,
+        job_state: Optional[JobStatesT] = "ok",
+    ):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
         user = trans.user
         input_data = defaultdict(list)
@@ -355,7 +373,14 @@ class JobSearch:
         )
 
     def __search(
-        self, tool_id, tool_version, user, input_data, job_state=None, param_dump=None, wildcard_param_dump=None
+        self,
+        tool_id: str,
+        tool_version: Optional[str],
+        user: model.User,
+        input_data,
+        job_state: Optional[JobStatesT],
+        param_dump: ToolStateDumpedToJsonInternalT,
+        wildcard_param_dump=None,
     ):
         search_timer = ExecutionTimer()
 
@@ -464,7 +489,9 @@ class JobSearch:
         log.info("No equivalent jobs found %s", search_timer)
         return None
 
-    def _build_job_subquery(self, tool_id, user_id, tool_version, job_state, wildcard_param_dump):
+    def _build_job_subquery(
+        self, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump
+    ):
         """Build subquery that selects a job with correct job parameters."""
         stmt = select(model.Job.id).where(
             and_(

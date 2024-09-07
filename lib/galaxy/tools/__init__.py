@@ -121,6 +121,8 @@ from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
     params_to_incoming,
+    params_to_json,
+    params_to_json_internal,
     params_to_strings,
     populate_state,
     visit_input_values,
@@ -184,7 +186,19 @@ from galaxy.util.tool_shed.common_util import (
     get_tool_shed_url_from_tool_shed_registry,
 )
 from galaxy.version import VERSION_MAJOR
-from galaxy.work.context import proxy_work_context_for_history
+from galaxy.work.context import (
+    proxy_work_context_for_history,
+    WorkRequestContext,
+)
+from ._types import (
+    InputFormatT,
+    ParameterValidationErrorsT,
+    ToolRequestT,
+    ToolStateDumpedToJsonInternalT,
+    ToolStateDumpedToJsonT,
+    ToolStateJobInstancePopulatedT,
+    ToolStateJobInstanceT,
+)
 from .execute import (
     DatasetCollectionElementsSliceT,
     DEFAULT_JOB_CALLBACK,
@@ -196,8 +210,6 @@ from .execute import (
     ExecutionSlice,
     JobCallbackT,
     MappingParameters,
-    ToolParameterRequestInstanceT,
-    ToolParameterRequestT,
 )
 
 if TYPE_CHECKING:
@@ -713,7 +725,7 @@ class DefaultToolState:
         """
         Convert the data to a string
         """
-        value = params_to_strings(tool.inputs, self.inputs, app, nested=nested)
+        value = cast(Dict[str, Any], params_to_strings(tool.inputs, self.inputs, app, nested=nested))
         value["__page__"] = self.page
         value["__rerun_remap_job_id__"] = self.rerun_remap_job_id
         return value
@@ -1515,8 +1527,8 @@ class Tool(UsesDictVisibleKeys):
             # Repeat group
             input_type = input_source.parse_input_type()
             if input_type == "repeat":
-                group_r = Repeat()
-                group_r.name = input_source.get("name")
+                repeat_name = input_source.get("name")
+                group_r = Repeat(repeat_name)
                 group_r.title = input_source.get("title")
                 group_r.help = input_source.get("help", None)
                 page_source = input_source.parse_nested_inputs_source()
@@ -1532,15 +1544,17 @@ class Tool(UsesDictVisibleKeys):
                 group_r.default = cast(int, min(max(group_r.default, group_r.min), group_r.max))
                 rval[group_r.name] = group_r
             elif input_type == "conditional":
-                group_c = Conditional()
-                group_c.name = input_source.get("name")
-                group_c.value_ref = input_source.get("value_ref", None)
+                cond_name = input_source.get("name")
+                group_c = Conditional(cond_name)
+                value_ref = input_source.get("value_ref", None)
+                group_c.value_ref = value_ref
                 group_c.value_ref_in_group = input_source.get_bool("value_ref_in_group", True)
                 value_from = input_source.get("value_from", None)
                 if value_from:
                     value_from = value_from.split(":")
                     temp_value_from = locals().get(value_from[0])
-                    group_c.test_param = rval[group_c.value_ref]
+                    assert value_ref
+                    group_c.test_param = rval[value_ref]
                     assert isinstance(group_c.test_param, ToolParameter)
                     group_c.test_param.refresh_on_change = True
                     for attr in value_from[1].split("."):
@@ -1601,8 +1615,8 @@ class Tool(UsesDictVisibleKeys):
                         group_c.cases.append(case)
                 rval[group_c.name] = group_c
             elif input_type == "section":
-                group_s = Section()
-                group_s.name = input_source.get("name")
+                section_name = input_source.get("name")
+                group_s = Section(section_name)
                 group_s.title = input_source.get("title")
                 group_s.help = input_source.get("help", None)
                 group_s.expanded = input_source.get_bool("expanded", False)
@@ -1611,8 +1625,8 @@ class Tool(UsesDictVisibleKeys):
                 rval[group_s.name] = group_s
             elif input_type == "upload_dataset":
                 elem = input_source.elem()
-                group_u = UploadDataset()
-                group_u.name = elem.get("name")
+                upload_name = elem.get("name")
+                group_u = UploadDataset(upload_name)
                 group_u.title = elem.get("title")
                 group_u.file_type_name = elem.get("file_type_name", group_u.file_type_name)
                 group_u.default_file_type = elem.get("default_file_type", group_u.default_file_type)
@@ -1802,25 +1816,50 @@ class Tool(UsesDictVisibleKeys):
         if self.check_values:
             visit_input_values(self.inputs, values, callback)
 
-    def expand_incoming(self, trans, incoming, request_context, input_format="legacy"):
-        rerun_remap_job_id = None
-        if "rerun_remap_job_id" in incoming:
-            try:
-                rerun_remap_job_id = trans.app.security.decode_id(incoming["rerun_remap_job_id"])
-            except Exception as exception:
-                log.error(str(exception))
-                raise exceptions.MessageException(
-                    "Failure executing tool with id '%s' (attempting to rerun invalid job).", self.id
-                )
-
+    def expand_incoming(
+        self, request_context: WorkRequestContext, incoming: ToolRequestT, input_format: InputFormatT = "legacy"
+    ) -> Tuple[
+        List[ToolStateJobInstancePopulatedT],
+        List[ToolStateJobInstancePopulatedT],
+        Optional[int],
+        Optional[MatchingCollections],
+    ]:
+        rerun_remap_job_id = _rerun_remap_job_id(request_context, incoming, self.id)
         set_dataset_matcher_factory(request_context, self)
 
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool executions).
-        expanded_incomings, collection_info = expand_meta_parameters(trans, self, incoming)
+        expanded_incomings: List[ToolStateJobInstanceT]
+        collection_info: Optional[MatchingCollections]
+        expanded_incomings, collection_info = expand_meta_parameters(request_context, self, incoming)
 
-        # Remapping a single job to many jobs doesn't make sense, so disable
-        # remap if multi-runs of tools are being used.
+        self._ensure_expansion_is_valid(expanded_incomings, rerun_remap_job_id)
+
+        # Process incoming data
+        validation_timer = self.app.execution_timer_factory.get_timer(
+            "internals.galaxy.tools.validation",
+            "Validated and populated state for tool request",
+        )
+        all_errors: List[ParameterValidationErrorsT] = []
+        all_params: List[ToolStateJobInstancePopulatedT] = []
+
+        for expanded_incoming in expanded_incomings:
+            params, errors = self._populate(request_context, expanded_incoming, input_format)
+            all_errors.append(errors)
+            all_params.append(params)
+        unset_dataset_matcher_factory(request_context)
+
+        log.info(validation_timer)
+        return all_params, all_errors, rerun_remap_job_id, collection_info
+
+    def _ensure_expansion_is_valid(
+        self, expanded_incomings: List[ToolStateJobInstanceT], rerun_remap_job_id: Optional[int]
+    ) -> None:
+        """If the request corresponds to multiple jobs but this doesn't work with request configuration - raise an error.
+
+        In particular check if this is a data source job or if we're remapping a single job - in either case we should
+        not have any expansion occuring.
+        """
         produces_multiple_jobs = len(expanded_incomings) > 1
         if rerun_remap_job_id and produces_multiple_jobs:
             raise exceptions.RequestParameterInvalidException(
@@ -1832,59 +1871,74 @@ class Tool(UsesDictVisibleKeys):
                 f"Failure executing tool with id '{self.id}' (cannot create multiple jobs with this type of data source tool)."
             )
 
-        # Process incoming data
-        validation_timer = self.app.execution_timer_factory.get_timer(
-            "internals.galaxy.tools.validation",
-            "Validated and populated state for tool request",
-        )
-        all_errors = []
-        all_params = []
-        for expanded_incoming in expanded_incomings:
-            params = {}
-            errors: Dict[str, str] = {}
-            if self.input_translator:
-                self.input_translator.translate(expanded_incoming)
-            if not self.check_values:
-                # If `self.check_values` is false we don't do any checking or
-                # processing on input  This is used to pass raw values
-                # through to/from external sites.
-                params = expanded_incoming
-            else:
-                # Update state for all inputs on the current page taking new
-                # values from `incoming`.
-                populate_state(
-                    request_context,
-                    self.inputs,
-                    expanded_incoming,
-                    params,
-                    errors,
-                    simple_errors=False,
-                    input_format=input_format,
-                )
-                # If the tool provides a `validate_input` hook, call it.
-                validate_input = self.get_hook("validate_input")
-                if validate_input:
-                    # hooks are so terrible ... this is specifically for https://github.com/galaxyproject/tools-devteam/blob/main/tool_collections/gops/basecoverage/operation_filter.py
-                    legacy_non_dce_params = {
-                        k: v.hda if isinstance(v, model.DatasetCollectionElement) and v.hda else v
-                        for k, v in params.items()
-                    }
-                    validate_input(request_context, errors, legacy_non_dce_params, self.inputs)
-            all_errors.append(errors)
-            all_params.append(params)
-        unset_dataset_matcher_factory(request_context)
+    def _populate(
+        self, request_context, expanded_incoming: ToolStateJobInstanceT, input_format: InputFormatT
+    ) -> Tuple[ToolStateJobInstancePopulatedT, ParameterValidationErrorsT]:
+        """Validate expanded parameters for a job to replace references with model objects.
 
-        log.info(validation_timer)
-        return all_params, all_errors, rerun_remap_job_id, collection_info
+        So convert a ToolStateJobInstanceT to a ToolStateJobInstancePopulatedT.
+        """
+        params: ToolStateJobInstancePopulatedT = {}
+        errors: ParameterValidationErrorsT = {}
+        if self.input_translator:
+            self.input_translator.translate(expanded_incoming)
+        if not self.check_values:
+            # If `self.check_values` is false we don't do any checking or
+            # processing on input  This is used to pass raw values
+            # through to/from external sites.
+            params = cast(ToolStateJobInstancePopulatedT, expanded_incoming)
+        else:
+            # Update state for all inputs on the current page taking new
+            # values from `incoming`.
+            populate_state(
+                request_context,
+                self.inputs,
+                expanded_incoming,
+                params,
+                errors,
+                simple_errors=False,
+                input_format=input_format,
+            )
+            # If the tool provides a `validate_input` hook, call it.
+            validate_input = self.get_hook("validate_input")
+            if validate_input:
+                # hooks are so terrible ... this is specifically for https://github.com/galaxyproject/tools-devteam/blob/main/tool_collections/gops/basecoverage/operation_filter.py
+                legacy_non_dce_params = {
+                    k: v.hda if isinstance(v, model.DatasetCollectionElement) and v.hda else v
+                    for k, v in params.items()
+                }
+                validate_input(request_context, errors, legacy_non_dce_params, self.inputs)
+        return params, errors
+
+    def completed_jobs(
+        self, trans, use_cached_job: bool, all_params: List[ToolStateJobInstancePopulatedT]
+    ) -> Dict[int, Optional[model.Job]]:
+        completed_jobs: Dict[int, Optional[model.Job]] = {}
+        for i, param in enumerate(all_params):
+            if use_cached_job:
+                tool_id = self.id
+                assert tool_id
+                param_dump: ToolStateDumpedToJsonInternalT = params_to_json_internal(self.inputs, param, self.app)
+                completed_jobs[i] = self.job_search.by_tool_input(
+                    trans=trans,
+                    tool_id=tool_id,
+                    tool_version=self.version,
+                    param=param,
+                    param_dump=param_dump,
+                    job_state=None,
+                )
+            else:
+                completed_jobs[i] = None
+        return completed_jobs
 
     def handle_input(
         self,
         trans,
-        incoming: ToolParameterRequestT,
+        incoming: ToolRequestT,
         history: Optional[model.History] = None,
         use_cached_job: bool = DEFAULT_USE_CACHED_JOB,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
-        input_format: str = "legacy",
+        input_format: InputFormatT = "legacy",
     ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
@@ -1893,26 +1947,17 @@ class Tool(UsesDictVisibleKeys):
         there were no errors).
         """
         request_context = proxy_work_context_for_history(trans, history=history)
-        all_params, all_errors, rerun_remap_job_id, collection_info = self.expand_incoming(
-            trans=trans, incoming=incoming, request_context=request_context, input_format=input_format
-        )
+        expanded = self.expand_incoming(request_context, incoming=incoming, input_format=input_format)
+        all_params: List[ToolStateJobInstancePopulatedT] = expanded[0]
+        all_errors: List[ParameterValidationErrorsT] = expanded[1]
+        rerun_remap_job_id: Optional[int] = expanded[2]
+        collection_info: Optional[MatchingCollections] = expanded[3]
+
         # If there were errors, we stay on the same page and display them
         self.handle_incoming_errors(all_errors)
 
         mapping_params = MappingParameters(incoming, all_params)
-        completed_jobs: Dict[int, Optional[model.Job]] = {}
-        for i, param in enumerate(all_params):
-            if use_cached_job:
-                completed_jobs[i] = self.job_search.by_tool_input(
-                    trans=trans,
-                    tool_id=self.id,
-                    tool_version=self.version,
-                    param=param,
-                    param_dump=self.params_to_strings(param, self.app, nested=True),
-                    job_state=None,
-                )
-            else:
-                completed_jobs[i] = None
+        completed_jobs: Dict[int, Optional[model.Job]] = self.completed_jobs(trans, use_cached_job, all_params)
         execution_tracker = execute_job(
             trans,
             self,
@@ -1930,7 +1975,9 @@ class Tool(UsesDictVisibleKeys):
         raise_execution_exception = not execution_tracker.successful_jobs and len(all_params) > 0
 
         if raise_execution_exception:
-            raise exceptions.MessageException(execution_tracker.execution_errors[0])
+            example_error = execution_tracker.execution_errors[0]
+            assert example_error
+            raise exceptions.MessageException(str(example_error))
 
         return dict(
             out_data=execution_tracker.output_datasets,
@@ -1941,7 +1988,7 @@ class Tool(UsesDictVisibleKeys):
             implicit_collections=execution_tracker.implicit_collections,
         )
 
-    def handle_incoming_errors(self, all_errors):
+    def handle_incoming_errors(self, all_errors: List[ParameterValidationErrorsT]) -> None:
         if any(all_errors):
             # simple param_key -> message string for tool form.
             err_data = {key: unicodify(value) for d in all_errors for (key, value) in d.items()}
@@ -2066,7 +2113,7 @@ class Tool(UsesDictVisibleKeys):
     def execute(
         self,
         trans,
-        incoming: Optional[ToolParameterRequestInstanceT] = None,
+        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
         history: Optional[model.History] = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
@@ -2092,7 +2139,7 @@ class Tool(UsesDictVisibleKeys):
     def _execute(
         self,
         trans,
-        incoming: Optional[ToolParameterRequestInstanceT] = None,
+        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
         history: Optional[model.History] = None,
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
         execution_cache: Optional[ToolExecutionCache] = None,
@@ -2134,7 +2181,7 @@ class Tool(UsesDictVisibleKeys):
             log.error("Tool execution failed for job: %s", job_id)
             raise
 
-    def params_to_strings(self, params, app, nested=False):
+    def params_to_strings(self, params: ToolStateJobInstancePopulatedT, app, nested=False):
         return params_to_strings(self.inputs, params, app, nested)
 
     def params_from_strings(self, params, app, ignore_errors=False):
@@ -2571,7 +2618,7 @@ class Tool(UsesDictVisibleKeys):
         set_dataset_matcher_factory(request_context, self)
         # create tool state
         state_inputs: Dict[str, str] = {}
-        state_errors: Dict[str, str] = {}
+        state_errors: ParameterValidationErrorsT = {}
         populate_state(request_context, self.inputs, params.__dict__, state_inputs, state_errors)
 
         # create tool model
@@ -2597,6 +2644,8 @@ class Tool(UsesDictVisibleKeys):
         else:
             action = self.app.url_for(self.action)
 
+        state_inputs_json: ToolStateDumpedToJsonT = params_to_json(self.inputs, state_inputs, self.app)
+
         # update tool model
         tool_model.update(
             {
@@ -2611,7 +2660,7 @@ class Tool(UsesDictVisibleKeys):
                 "requirements": [{"name": r.name, "version": r.version} for r in self.requirements],
                 "errors": state_errors,
                 "tool_errors": self.tool_errors,
-                "state_inputs": params_to_strings(self.inputs, state_inputs, self.app, use_security=True, nested=True),
+                "state_inputs": state_inputs_json,
                 "job_id": trans.security.encode_id(job.id) if job else None,
                 "job_remap": job.remappable() if job else None,
                 "history_id": trans.security.encode_id(history.id) if history else None,
@@ -4127,6 +4176,21 @@ for tool_class in TOOL_CLASSES:
 
 
 # ---- Utility classes to be factored out -----------------------------------
+
+
+def _rerun_remap_job_id(trans, incoming, tool_id: Optional[str]) -> Optional[int]:
+    rerun_remap_job_id = None
+    if "rerun_remap_job_id" in incoming:
+        try:
+            rerun_remap_job_id = trans.app.security.decode_id(incoming["rerun_remap_job_id"])
+        except Exception as exception:
+            log.error(str(exception))
+            raise exceptions.MessageException(
+                "Failure executing tool with id '%s' (attempting to rerun invalid job).", tool_id
+            )
+    return rerun_remap_job_id
+
+
 class TracksterConfig:
     """Trackster configuration encapsulation."""
 

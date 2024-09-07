@@ -174,6 +174,7 @@ class ToolParameter(UsesDictVisibleKeys):
     >>> assert sorted(p.to_dict(trans).items()) == [('argument', '--parameter-name'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ToolParameter'), ('name', 'parameter_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', None)]
     """
 
+    name: str
     dict_collection_visible_keys = ["name", "argument", "type", "label", "help", "refresh_on_change"]
 
     def __init__(self, tool, input_source, context=None):

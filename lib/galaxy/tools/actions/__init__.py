@@ -37,6 +37,7 @@ from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.none_like import NoneDataset
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.execute import (
     DatasetCollectionElementsSliceT,
     DEFAULT_DATASET_COLLECTION_ELEMENTS,
@@ -45,7 +46,6 @@ from galaxy.tools.execute import (
     DEFAULT_RERUN_REMAP_JOB_ID,
     DEFAULT_SET_OUTPUT_HID,
     JobCallbackT,
-    ToolParameterRequestInstanceT,
 )
 from galaxy.tools.execution_helpers import (
     filter_output,
@@ -88,7 +88,7 @@ class ToolAction:
         self,
         tool,
         trans,
-        incoming: Optional[ToolParameterRequestInstanceT] = None,
+        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
         history: Optional[History] = None,
         job_params=None,
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
@@ -103,6 +103,21 @@ class ToolAction:
         skip: bool = False,
     ) -> ToolActionExecuteResult:
         """Perform target tool action."""
+
+    @abstractmethod
+    def get_output_name(
+        self,
+        output,
+        dataset=None,
+        tool=None,
+        on_text=None,
+        trans=None,
+        incoming=None,
+        history=None,
+        params=None,
+        job_params=None,
+    ) -> str:
+        """Get name to assign a tool output."""
 
 
 class DefaultToolAction(ToolAction):
@@ -401,7 +416,7 @@ class DefaultToolAction(ToolAction):
         self,
         tool,
         trans,
-        incoming: Optional[ToolParameterRequestInstanceT] = None,
+        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
         history: Optional[History] = None,
         job_params=None,
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
@@ -951,7 +966,7 @@ class DefaultToolAction(ToolAction):
         history=None,
         params=None,
         job_params=None,
-    ):
+    ) -> str:
         if output.label:
             params["tool"] = tool
             params["on_string"] = on_text

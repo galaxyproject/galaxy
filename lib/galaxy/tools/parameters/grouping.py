@@ -6,6 +6,7 @@ import io
 import logging
 import os
 import unicodedata
+from math import inf
 from typing import (
     Any,
     Callable,
@@ -35,6 +36,7 @@ from galaxy.util.expressions import ExpressionContext
 if TYPE_CHECKING:
     from galaxy.tools import Tool
     from galaxy.tools.parameter.basic import ToolParameter
+    from galaxy.tools.parameters import ToolInputsT
 
 log = logging.getLogger(__name__)
 URI_PREFIXES = [
@@ -58,9 +60,10 @@ URI_PREFIXES = [
 class Group(UsesDictVisibleKeys):
     dict_collection_visible_keys = ["name", "type"]
     type: str
+    name: str
 
-    def __init__(self):
-        self.name = None
+    def __init__(self, name: str):
+        self.name = name
 
     @property
     def visible(self):
@@ -94,15 +97,18 @@ class Group(UsesDictVisibleKeys):
 class Repeat(Group):
     dict_collection_visible_keys = ["name", "type", "title", "help", "default", "min", "max"]
     type = "repeat"
+    inputs: "ToolInputsT"
+    min: int
+    max: float
 
-    def __init__(self):
-        Group.__init__(self)
+    def __init__(self, name: str):
+        Group.__init__(self, name)
         self._title = None
-        self.inputs = None
+        self.inputs = {}
         self.help = None
         self.default = 0
-        self.min = None
-        self.max = None
+        self.min = 0
+        self.max = inf
 
     @property
     def title(self):
@@ -186,11 +192,12 @@ class Repeat(Group):
 class Section(Group):
     dict_collection_visible_keys = ["name", "type", "title", "help", "expanded"]
     type = "section"
+    inputs: "ToolInputsT"
 
-    def __init__(self):
-        Group.__init__(self)
+    def __init__(self, name: str):
+        Group.__init__(self, name)
         self.title = None
-        self.inputs = None
+        self.inputs = {}
         self.help = None
         self.expanded = False
 
@@ -266,11 +273,12 @@ class Dataset(Bunch):
 
 class UploadDataset(Group):
     type = "upload_dataset"
+    inputs: "ToolInputsT"
 
-    def __init__(self):
-        Group.__init__(self)
+    def __init__(self, name: str):
+        Group.__init__(self, name)
         self.title = None
-        self.inputs = None
+        self.inputs = {}
         self.file_type_name = "file_type"
         self.default_file_type = "txt"
         self.file_type_to_ext = {"auto": self.default_file_type}
@@ -735,12 +743,13 @@ class UploadDataset(Group):
 class Conditional(Group):
     type = "conditional"
     value_from: Callable[[ExpressionContext, "Conditional", "Tool"], Mapping[str, str]]
+    cases: List["ConditionalWhen"]
 
-    def __init__(self):
-        Group.__init__(self)
+    def __init__(self, name: str):
+        Group.__init__(self, name)
         self.test_param: Optional[ToolParameter] = None
         self.cases = []
-        self.value_ref = None
+        self.value_ref: Optional[str] = None
         self.value_ref_in_group = True  # When our test_param is not part of the conditional Group, this is False
 
     @property
@@ -761,7 +770,7 @@ class Conditional(Group):
     def value_to_basic(self, value, app, use_security=False):
         if self.test_param is None:
             raise Exception("Must set 'test_param' attribute to use.")
-        rval = {}
+        rval: Dict[str, Any] = {}
         rval[self.test_param.name] = self.test_param.value_to_basic(value[self.test_param.name], app)
         current_case = rval["__current_case__"] = self.get_current_case(value[self.test_param.name])
         for input in self.cases[current_case].inputs.values():
