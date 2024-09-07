@@ -569,7 +569,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset_manager = self.dataset_manager_by_type[hda_ldda]
         dataset = dataset_manager.get_accessible(dataset_id, trans.user)
         dataset_manager.update_permissions(trans, dataset, **payload_dict)
-        return dataset_manager.serialize_dataset_association_roles(trans, dataset)
+        return dataset_manager.serialize_dataset_association_roles(dataset)
 
     def extra_files(
         self,
