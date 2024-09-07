@@ -11170,8 +11170,7 @@ export interface components {
              */
             tool_version?: string | null;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "data_collection_input";
@@ -11213,8 +11212,7 @@ export interface components {
              */
             tool_version?: string | null;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "data_input";
@@ -11256,8 +11254,7 @@ export interface components {
              */
             tool_version?: string | null;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "parameter_input";
@@ -14135,8 +14132,7 @@ export interface components {
              */
             tool_version?: string | null;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "pause";
@@ -15581,8 +15577,7 @@ export interface components {
              */
             tool_version?: string | null;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "subworkflow";
@@ -15859,8 +15854,7 @@ export interface components {
              */
             tool_version?: string | null;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "tool";
