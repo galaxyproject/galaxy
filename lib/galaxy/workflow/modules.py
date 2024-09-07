@@ -1256,12 +1256,15 @@ class InputParameterModule(WorkflowModule):
 
             when_true = ConditionalWhen()
             when_true.value = "true"
-            when_true.inputs = {}
-            when_true.inputs["default"] = specify_default_cond
+            when_true.inputs = {"default": specify_default_cond}
 
             when_false = ConditionalWhen()
             when_false.value = "false"
-            when_false.inputs = {}
+            # This is only present for backwards compatibility,
+            # We don't need this conditional since you can set
+            # a default value for optional and required parameters.
+            # TODO: version the state and upgrade it to a simpler version
+            when_false.inputs = {"default": specify_default_cond}
 
             optional_cases = [when_true, when_false]
             optional_cond.cases = optional_cases
@@ -1585,7 +1588,6 @@ class InputParameterModule(WorkflowModule):
         if "default" in state:
             default_set = True
             default_value = state["default"]
-            state["optional"] = True
         multiple = state.get("multiple")
         validators = state.get("validators")
         restrictions = state.get("restrictions")
