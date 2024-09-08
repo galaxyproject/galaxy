@@ -1360,7 +1360,8 @@ class XmlInputSource(InputSource):
         for elem in self.input_elem.findall("validator"):
             elem_dict = {"content": elem.text}
             for attribute, type_cast in attributes.items():
-                if val := elem.get(attribute):
+                val = elem.get(attribute)
+                if val:
                     elem_dict[attribute] = type_cast(val)
             elements.append(elem_dict)
         return elements
