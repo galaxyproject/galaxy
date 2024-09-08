@@ -1280,9 +1280,8 @@ class InputParameterModule(WorkflowModule):
 
                 specify_multiple = BooleanToolParameter(None, specify_multiple_source)
 
-                add_validators_repeat = Repeat()
+                add_validators_repeat = Repeat("validators")
                 add_validators_repeat._title = "Add validator to restrict valid input"
-                add_validators_repeat.name = "validators"
                 add_validators_repeat.min = 0
                 add_validators_repeat.max = math.inf
                 add_validators_repeat.inputs = {
@@ -1569,7 +1568,6 @@ class InputParameterModule(WorkflowModule):
             input_value = default_value.get("value", NO_REPLACEMENT)
         input_param = self.get_runtime_inputs(self)["input"]
         # TODO: raise DelayedWorkflowEvaluation if replacement not ready ? Need test
-        # TODO: move (at least regex) to frontend. failing here is kind of stupid
         try:
             input_param.validate(input_value)
         except ValueError as e:
