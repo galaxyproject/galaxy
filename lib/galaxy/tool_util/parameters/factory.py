@@ -229,7 +229,9 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
             if typed_value == default_test_value:
                 is_default_when = True
             whens.append(
-                ConditionalWhen(discriminator=value, parameters=tool_parameter_models, is_default_when=is_default_when)
+                ConditionalWhen(
+                    discriminator=typed_value, parameters=tool_parameter_models, is_default_when=is_default_when
+                )
             )
         return ConditionalParameterModel(
             name=input_source.parse_name(),

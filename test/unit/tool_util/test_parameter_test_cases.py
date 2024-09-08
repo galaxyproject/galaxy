@@ -1,7 +1,10 @@
 import os
 import re
 import sys
-from typing import List
+from typing import (
+    List,
+    Optional,
+)
 
 import pytest
 
@@ -76,7 +79,7 @@ def test_parameter_test_cases_validate():
 
 def test_legacy_features_fail_validation_with_24_2(tmp_path):
     for filename in TOOLS_THAT_USE_UNQUALIFIED_PARAMETER_ACCESS + TOOLS_THAT_USE_TRUE_FALSE_VALUE_BOOLEAN_SPECIFICATION:
-        _assert_tool_test_parsing_only_fails_with_newer_profile(tmp_path, filename)
+        _assert_tool_test_parsing_only_fails_with_newer_profile(tmp_path, filename, index=None)
 
     # column parameters need to be indexes
     _assert_tool_test_parsing_only_fails_with_newer_profile(tmp_path, "column_param.xml", index=2)
@@ -85,7 +88,7 @@ def test_legacy_features_fail_validation_with_24_2(tmp_path):
     _assert_tool_test_parsing_only_fails_with_newer_profile(tmp_path, "multi_select.xml", index=1)
 
 
-def _assert_tool_test_parsing_only_fails_with_newer_profile(tmp_path, filename: str, index: int = 0):
+def _assert_tool_test_parsing_only_fails_with_newer_profile(tmp_path, filename: str, index: Optional[int] = 0):
     test_tool_directory = functional_test_tool_directory()
     original_path = os.path.join(test_tool_directory, filename)
     new_path = tmp_path / filename
@@ -96,11 +99,19 @@ def _assert_tool_test_parsing_only_fails_with_newer_profile(tmp_path, filename: 
     with open(new_path, "w") as wf:
         wf.write(new_profile_contents)
     test_cases = list(parse_tool_test_descriptions(get_tool_source(original_path)))
-    assert test_cases[index].to_dict()["error"] is False
+    if index is not None:
+        assert test_cases[index].to_dict()["error"] is False
+    else:
+        # just make sure there is at least one failure...
+        assert not any(c.to_dict()["error"] is True for c in test_cases)
+
     test_cases = list(parse_tool_test_descriptions(get_tool_source(new_path)))
-    assert (
-        test_cases[index].to_dict()["error"] is True
-    ), f"expected {filename} to have validation failure preventing loading of tools"
+    if index is not None:
+        assert (
+            test_cases[index].to_dict()["error"] is True
+        ), f"expected {filename} to have validation failure preventing loading of tools"
+    else:
+        assert any(c.to_dict()["error"] is True for c in test_cases)
 
 
 def test_validate_framework_test_tools():

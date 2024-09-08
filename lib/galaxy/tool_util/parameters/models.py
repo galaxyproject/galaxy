@@ -272,15 +272,6 @@ class MultiDataInstanceInternal(StrictModel):
     id: StrictInt
 
 
-class DataTestCaseValue(StrictModel):
-    src: TestCaseDataSrcT
-    path: str
-
-
-class MultipleDataTestCaseValue(RootModel):
-    root: List[DataTestCaseValue]
-
-
 MultiDataRequestInternal: Type = union_type([MultiDataInstanceInternal, List[MultiDataInstanceInternal]])
 
 
@@ -368,6 +359,8 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type))
         elif state_representation == "request_internal":
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type_internal))
+        elif state_representation == "job_internal":
+            return dynamic_model_information_from_py_type(self, self.py_type_internal)
         elif state_representation == "workflow_step":
             return dynamic_model_information_from_py_type(self, type(None), requires_value=False)
         elif state_representation == "workflow_step_linked":
@@ -641,11 +634,13 @@ class GenomeBuildParameterModel(BaseGalaxyToolParameterModelDefinition):
 DrillDownHierarchyT = Literal["recurse", "exact"]
 
 
-def drill_down_possible_values(options: List[DrillDownOptionsDict], multiple: bool) -> List[str]:
+def drill_down_possible_values(
+    options: List[DrillDownOptionsDict], multiple: bool, hierarchy: DrillDownHierarchyT
+) -> List[str]:
     possible_values = []
 
     def add_value(option: str, is_leaf: bool):
-        if not multiple and not is_leaf:
+        if not multiple and not is_leaf and hierarchy == "recurse":
             return
         possible_values.append(option)
 
@@ -673,7 +668,8 @@ class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
     def py_type(self) -> Type:
         if self.options is not None:
             literal_options: List[Type] = [
-                cast_as_type(Literal[o]) for o in drill_down_possible_values(self.options, self.multiple)
+                cast_as_type(Literal[o])
+                for o in drill_down_possible_values(self.options, self.multiple, self.hierarchy)
             ]
             py_type = union_type(literal_options)
         else:
@@ -819,6 +815,7 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
     whens: List[ConditionalWhen]
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        is_boolean = isinstance(self.test_parameter, BooleanParameterModel)
         test_param_name = self.test_parameter.name
         test_info = self.test_parameter.pydantic_template(state_representation)
         extra_validators = test_info.validators
@@ -832,7 +829,7 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
                 initialize_test = ...
             else:
                 initialize_test = None
-
+            tag = str(discriminator) if not is_boolean else str(discriminator).lower()
             extra_kwd = {test_param_name: (Union[str, bool], initialize_test)}
             when_types.append(
                 cast(
@@ -845,7 +842,7 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
                             extra_kwd=extra_kwd,
                             extra_validators=extra_validators,
                         ),
-                        Tag(str(discriminator)),
+                        Tag(tag),
                     ],
                 )
             )

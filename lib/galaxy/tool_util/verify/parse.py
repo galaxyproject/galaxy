@@ -1,7 +1,9 @@
 import logging
 import os
+from dataclasses import dataclass
 from typing import (
     Any,
+    Dict,
     Iterable,
     List,
     Optional,
@@ -14,6 +16,8 @@ from packaging.version import Version
 from galaxy.tool_util.parameters import (
     input_models_for_tool_source,
     test_case_state as case_state,
+    TestCaseToolState,
+    ToolParameterBundleModel,
 )
 from galaxy.tool_util.parser.interface import (
     InputSource,
@@ -64,15 +68,18 @@ def parse_tool_test_descriptions(
     profile = tool_source.parse_profile()
     for i, raw_test_dict in enumerate(raw_tests_dict.get("tests", [])):
         validation_exception: Optional[Exception] = None
-        if validate_on_load:
+        request_and_schema: Optional[TestRequestAndSchema] = None
+        try:
             tool_parameter_bundle = input_models_for_tool_source(tool_source)
-            try:
-                case_state(raw_test_dict, tool_parameter_bundle.parameters, profile, validate=True)
-            except Exception as e:
-                # TOOD: restrict types of validation exceptions a bit probably?
-                validation_exception = e
+            validated_test_case = case_state(raw_test_dict, tool_parameter_bundle.parameters, profile, validate=True)
+            request_and_schema = TestRequestAndSchema(
+                validated_test_case.tool_state,
+                tool_parameter_bundle,
+            )
+        except Exception as e:
+            validation_exception = e
 
-        if validation_exception:
+        if validation_exception and validate_on_load:
             tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
             test = ToolTestDescription.from_tool_source_dict(
                 InvalidToolTestDict(
@@ -88,13 +95,23 @@ def parse_tool_test_descriptions(
                 )
             )
         else:
-            test = _description_from_tool_source(tool_source, raw_test_dict, i, tool_guid)
+            test = _description_from_tool_source(tool_source, raw_test_dict, i, tool_guid, request_and_schema)
         tests.append(test)
     return tests
 
 
+@dataclass
+class TestRequestAndSchema:
+    request: TestCaseToolState
+    request_schema: ToolParameterBundleModel
+
+
 def _description_from_tool_source(
-    tool_source: ToolSource, raw_test_dict: ToolSourceTest, test_index: int, tool_guid: Optional[str]
+    tool_source: ToolSource,
+    raw_test_dict: ToolSourceTest,
+    test_index: int,
+    tool_guid: Optional[str],
+    request_and_schema: Optional[TestRequestAndSchema],
 ) -> ToolTestDescription:
     required_files: RequiredFilesT = []
     required_data_tables: RequiredDataTablesT = []
@@ -106,6 +123,12 @@ def _description_from_tool_source(
     maxseconds = raw_test_dict.get("maxseconds", None)
     if maxseconds is not None:
         maxseconds = int(maxseconds)
+
+    request: Optional[Dict[str, Any]] = None
+    request_schema: Optional[Dict[str, Any]] = None
+    if request_and_schema:
+        request = request_and_schema.request.input_state
+        request_schema = request_and_schema.request_schema.dict()
 
     tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
     processed_test_dict: Union[ValidToolTestDict, InvalidToolTestDict]
@@ -121,6 +144,8 @@ def _description_from_tool_source(
         processed_test_dict = ValidToolTestDict(
             {
                 "inputs": processed_inputs,
+                "request": request,
+                "request_schema": request_schema,
                 "outputs": raw_test_dict["outputs"],
                 "output_collections": raw_test_dict["output_collections"],
                 "num_outputs": num_outputs,

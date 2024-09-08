@@ -26,6 +26,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.8']
+        use-legacy-api: ['if_needed', 'always']
     services:
       postgres:
         image: postgres:13
@@ -66,7 +67,7 @@ jobs:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-framework-tools
       - name: Run tests
-        run: ./run_tests.sh --coverage --framework-tools
+        run: GALAXY_TEST_USE_LEGACY_TOOL_API="${{ matrix.use-legacy-api }}" ./run_tests.sh --coverage --framework-tools
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v3
         with:

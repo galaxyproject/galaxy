@@ -24,11 +24,16 @@ from packaging.version import Version
 
 from galaxy import model
 from galaxy.exceptions import ToolInputsNotOKException
+from galaxy.model import ToolRequest
 from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import (
     get_structure,
     tool_output_to_structure,
+)
+from galaxy.tool_util.parameters.state import (
+    JobInternalToolState,
+    RequestInternalToolState,
 )
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.execution_helpers import (
@@ -69,8 +74,58 @@ class PartialJobExecution(Exception):
 
 
 class MappingParameters(NamedTuple):
+    # the raw request - might correspond to multiple jobs
     param_template: ToolRequestT
+    # parameters corresponding to individual job
     param_combinations: List[ToolStateJobInstancePopulatedT]
+    # schema driven parameters
+    # model validated tool request - might correspond to multiple jobs
+    validated_param_template: Optional[RequestInternalToolState] = None
+    # validated job parameters for individual jobs
+    validated_param_combinations: Optional[List[JobInternalToolState]] = None
+
+    def ensure_validated(self):
+        assert self.validated_param_template is not None
+        assert self.validated_param_combinations is not None
+
+
+def execute_async(
+    trans,
+    tool: "Tool",
+    mapping_params: MappingParameters,
+    history: model.History,
+    tool_request: ToolRequest,
+    completed_jobs: Optional[CompletedJobsT] = None,
+    rerun_remap_job_id: Optional[int] = None,
+    preferred_object_store_id: Optional[str] = None,
+    collection_info: Optional[MatchingCollections] = None,
+    workflow_invocation_uuid: Optional[str] = None,
+    invocation_step: Optional[model.WorkflowInvocationStep] = None,
+    max_num_jobs: Optional[int] = None,
+    job_callback: Optional[Callable] = None,
+    workflow_resource_parameters: Optional[Dict[str, Any]] = None,
+    validate_outputs: bool = False,
+) -> "ExecutionTracker":
+    """The tool request/async version of execute."""
+    completed_jobs = completed_jobs or {}
+    mapping_params.ensure_validated()
+    return _execute(
+        trans,
+        tool,
+        mapping_params,
+        history,
+        tool_request,
+        rerun_remap_job_id,
+        preferred_object_store_id,
+        collection_info,
+        workflow_invocation_uuid,
+        invocation_step,
+        max_num_jobs,
+        job_callback,
+        completed_jobs,
+        workflow_resource_parameters,
+        validate_outputs,
+    )
 
 
 def execute(
@@ -88,12 +143,48 @@ def execute(
     completed_jobs: Optional[CompletedJobsT] = None,
     workflow_resource_parameters: Optional[WorkflowResourceParametersT] = None,
     validate_outputs: bool = False,
-):
+) -> "ExecutionTracker":
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
     """
     completed_jobs = completed_jobs or {}
+    return _execute(
+        trans,
+        tool,
+        mapping_params,
+        history,
+        None,
+        rerun_remap_job_id,
+        preferred_object_store_id,
+        collection_info,
+        workflow_invocation_uuid,
+        invocation_step,
+        max_num_jobs,
+        job_callback,
+        completed_jobs,
+        workflow_resource_parameters,
+        validate_outputs,
+    )
+
+
+def _execute(
+    trans,
+    tool: "Tool",
+    mapping_params: MappingParameters,
+    history: model.History,
+    tool_request: Optional[model.ToolRequest],
+    rerun_remap_job_id: Optional[int],
+    preferred_object_store_id: Optional[str],
+    collection_info: Optional[MatchingCollections],
+    workflow_invocation_uuid: Optional[str],
+    invocation_step: Optional[model.WorkflowInvocationStep],
+    max_num_jobs: Optional[int],
+    job_callback: Optional[Callable],
+    completed_jobs: Dict[int, Optional[model.Job]],
+    workflow_resource_parameters: Optional[Dict[str, Any]],
+    validate_outputs: bool,
+) -> "ExecutionTracker":
     if max_num_jobs is not None:
         assert invocation_step is not None
     if rerun_remap_job_id:
@@ -118,8 +209,9 @@ def execute(
             "internals.galaxy.tools.execute.job_single", SINGLE_EXECUTION_SUCCESS_MESSAGE
         )
         params = execution_slice.param_combination
-        if "__data_manager_mode" in mapping_params.param_template:
-            params["__data_manager_mode"] = mapping_params.param_template["__data_manager_mode"]
+        request_state = mapping_params.param_template
+        if "__data_manager_mode" in request_state:
+            params["__data_manager_mode"] = request_state["__data_manager_mode"]
         if workflow_invocation_uuid:
             params["__workflow_invocation_uuid__"] = workflow_invocation_uuid
         elif "__workflow_invocation_uuid__" in params:
@@ -148,6 +240,8 @@ def execute(
             skip=skip,
         )
         if job:
+            if tool_request:
+                job.tool_request = tool_request
             log.debug(job_timer.to_str(tool_id=tool.id, job_id=job.id))
             execution_tracker.record_success(execution_slice, job, result)
             # associate dataset instances with the job that creates them
@@ -188,7 +282,11 @@ def execute(
             has_remaining_jobs = True
             break
         else:
-            skip = execution_slice.param_combination.pop("__when_value__", None) is False
+            slice_params = execution_slice.param_combination
+            if isinstance(slice_params, JobInternalToolState):
+                slice_params = slice_params.input_state
+
+            skip = slice_params.pop("__when_value__", None) is False
             execute_single_job(execution_slice, completed_jobs[i], skip=skip)
             history = execution_slice.history or history
             jobs_executed += 1

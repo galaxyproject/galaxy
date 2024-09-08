@@ -13,6 +13,7 @@ import urllib.parse
 from collections.abc import MutableMapping
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
@@ -41,6 +42,7 @@ from galaxy.model import (
 )
 from galaxy.model.dataset_collections import builder
 from galaxy.schema.fetch_data import FilesPayload
+from galaxy.tool_util.parameters.factory import get_color_value
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.tool_util.parser.util import (
     boolean_is_checked,
@@ -649,6 +651,7 @@ class BooleanToolParameter(ToolParameter):
         return [self.truevalue, self.falsevalue]
 
 
+# Used only by upload1, deprecated.
 class FileToolParameter(ToolParameter):
     """
     Parameter that takes an uploaded file as a value.
@@ -848,7 +851,7 @@ class ColorToolParameter(ToolParameter):
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
-        self.value = input_source.get("value", "#000000")
+        self.value = get_color_value(input_source)
         self.rgb = input_source.get_bool("rgb", False)
 
     def get_initial_value(self, trans, other_values):
@@ -2483,7 +2486,10 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             rval = value
         elif isinstance(value, MutableMapping) and "src" in value and "id" in value:
             if value["src"] == "hdca":
-                rval = session.get(HistoryDatasetCollectionAssociation, trans.security.decode_id(value["id"]))
+                rval = cast(
+                    HistoryDatasetCollectionAssociation,
+                    src_id_to_item(sa_session=trans.sa_session, value=value, security=trans.security),
+                )
         elif isinstance(value, list):
             if len(value) > 0:
                 value = value[0]

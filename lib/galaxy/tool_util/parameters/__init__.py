@@ -2,6 +2,7 @@ from .case import test_case_state
 from .convert import (
     decode,
     encode,
+    encode_test,
 )
 from .factory import (
     from_input_source,
@@ -26,7 +27,9 @@ from .models import (
     CwlStringParameterModel,
     CwlUnionParameterModel,
     DataCollectionParameterModel,
+    DataCollectionRequest,
     DataParameterModel,
+    DataRequest,
     FloatParameterModel,
     HiddenParameterModel,
     IntegerParameterModel,
@@ -75,6 +78,8 @@ __all__ = (
     "JobInternalToolState",
     "ToolParameterBundle",
     "ToolParameterBundleModel",
+    "DataRequest",
+    "DataCollectionRequest",
     "ToolParameterModel",
     "IntegerParameterModel",
     "BooleanParameterModel",
@@ -120,6 +125,7 @@ __all__ = (
     "VISITOR_NO_REPLACEMENT",
     "decode",
     "encode",
+    "encode_test",
     "WorkflowStepToolState",
     "WorkflowStepLinkedToolState",
 )
