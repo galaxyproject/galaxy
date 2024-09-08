@@ -1017,9 +1017,9 @@ gx_drill_down_exact:
   - parameter: aa
   - parameter: bbb
   - parameter: ba
-  request_invalid:
-  # not multiple so cannot choose a non-leaf
+  # non-leaf nodes seem to be selectable in exact mode
   - parameter: a
+  request_invalid:
   - parameter: c
   - parameter: {}
   # no implicit default currently - see test_drill_down_first_by_default in API test test_tools.py.
@@ -1032,12 +1032,26 @@ gx_drill_down_exact_with_selection:
   - parameter: bbb
   - parameter: ba
   # - {}
-  request_invalid:
-  # not multiple so cannot choose a non-leaf
+  # non-leaf nodes seem to be selectable in exact mode
   - parameter: a
+  request_invalid:
   - parameter: c
   - parameter: {}
   - parameter: null
+
+gx_drill_down_recurse:
+  request_valid:
+  - parameter: bba
+  request_invalid:
+  - parameter: a
+  - parameter: c
+
+gx_drill_down_recurse_multiple:
+  request_valid:
+  - parameter: [bba]
+  - parameter: [a]
+  request_invalid:
+  - parameter: c
 
 gx_data_column:
   request_valid:

@@ -286,11 +286,14 @@ def _select_which_when(
     conditional: ConditionalParameterModel, state: dict, inputs: ToolSourceTestInputs, prefix: str
 ) -> ConditionalWhen:
     test_parameter = conditional.test_parameter
+    is_boolean = test_parameter.parameter_type == "gx_boolean"
     test_parameter_name = test_parameter.name
     test_parameter_flat_path = flat_state_path(test_parameter_name, prefix)
 
     test_input = _input_for(test_parameter_flat_path, inputs)
     explicit_test_value = test_input["value"] if test_input else None
+    if is_boolean and isinstance(explicit_test_value, str):
+        explicit_test_value = asbool(explicit_test_value)
     test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
     for when in conditional.whens:
         if test_value is None and when.is_default_when:

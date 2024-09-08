@@ -49,6 +49,7 @@ from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
     Job,
     StoredWorkflow,
+    ToolRequest,
 )
 from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -71,6 +72,12 @@ from galaxy.tool_util.ontologies.ontology_data import (
     expand_ontology_data,
 )
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
+from galaxy.tool_util.parameters import (
+    input_models_for_pages,
+    JobInternalToolState,
+    RequestInternalToolState,
+    ToolParameterBundle,
+)
 from galaxy.tool_util.parser import (
     get_tool_source,
     get_tool_source_from_representation,
@@ -152,7 +159,10 @@ from galaxy.tools.parameters.grouping import (
     UploadDataset,
 )
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
-from galaxy.tools.parameters.meta import expand_meta_parameters
+from galaxy.tools.parameters.meta import (
+    expand_meta_parameters,
+    expand_meta_parameters_async,
+)
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.util import (
@@ -206,7 +216,8 @@ from .execute import (
     DEFAULT_RERUN_REMAP_JOB_ID,
     DEFAULT_SET_OUTPUT_HID,
     DEFAULT_USE_CACHED_JOB,
-    execute as execute_job,
+    execute as execute_sync,
+    execute_async,
     ExecutionSlice,
     JobCallbackT,
     MappingParameters,
@@ -755,7 +766,7 @@ class _Options(Bunch):
     refresh: str
 
 
-class Tool(UsesDictVisibleKeys):
+class Tool(UsesDictVisibleKeys, ToolParameterBundle):
     """
     Represents a computational tool that can be executed through Galaxy.
     """
@@ -1425,6 +1436,11 @@ class Tool(UsesDictVisibleKeys):
         self.inputs: Dict[str, Union[Group, ToolParameter]] = {}
         pages = tool_source.parse_input_pages()
         enctypes: Set[str] = set()
+        try:
+            parameters = input_models_for_pages(pages)
+            self.parameters = parameters
+        except Exception:
+            pass
         if pages.inputs_defined:
             if hasattr(pages, "input_elem"):
                 input_elem = pages.input_elem
@@ -1816,6 +1832,53 @@ class Tool(UsesDictVisibleKeys):
         if self.check_values:
             visit_input_values(self.inputs, values, callback)
 
+    def expand_incoming_async(
+        self,
+        request_context: WorkRequestContext,
+        tool_request_internal_state: RequestInternalToolState,
+        rerun_remap_job_id: Optional[int],
+    ) -> Tuple[
+        List[ToolStateJobInstancePopulatedT],
+        List[ToolStateJobInstancePopulatedT],
+        Optional[MatchingCollections],
+        List[JobInternalToolState],
+    ]:
+        """The tool request API+tasks version of expand_incoming.
+
+        This is responsible for breaking the map over job requests into individual jobs for execution.
+        """
+        if self.input_translator:
+            raise exceptions.RequestParameterInvalidException(
+                "Failure executing tool request with id '%s' (cannot validate inputs from this type of data source tool - please POST to /api/tools).",
+                self.id,
+            )
+
+        set_dataset_matcher_factory(request_context, self)
+
+        job_tool_states: List[JobInternalToolState]
+        collection_info: Optional[MatchingCollections]
+        job_tool_states, collection_info = expand_meta_parameters_async(
+            request_context.app, self, tool_request_internal_state
+        )
+
+        self._ensure_expansion_is_valid(job_tool_states, rerun_remap_job_id)
+
+        # Process incoming data
+        validation_timer = self.app.execution_timer_factory.get_timer(
+            "internals.galaxy.tools.validation",
+            "Validated and populated state for tool request",
+        )
+        all_errors = []
+        all_params: List[ToolStateJobInstancePopulatedT] = []
+        for expanded_incoming in job_tool_states:
+            params, errors = self._populate(request_context, expanded_incoming.input_state, "21.01")
+            all_errors.append(errors)
+            all_params.append(params)
+        unset_dataset_matcher_factory(request_context)
+
+        log.info(validation_timer)
+        return all_params, all_errors, collection_info, job_tool_states
+
     def expand_incoming(
         self, request_context: WorkRequestContext, incoming: ToolRequestT, input_format: InputFormatT = "legacy"
     ) -> Tuple[
@@ -1853,7 +1916,9 @@ class Tool(UsesDictVisibleKeys):
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
     def _ensure_expansion_is_valid(
-        self, expanded_incomings: List[ToolStateJobInstanceT], rerun_remap_job_id: Optional[int]
+        self,
+        expanded_incomings: Union[List[JobInternalToolState], List[ToolStateJobInstanceT]],
+        rerun_remap_job_id: Optional[int],
     ) -> None:
         """If the request corresponds to multiple jobs but this doesn't work with request configuration - raise an error.
 
@@ -1931,6 +1996,38 @@ class Tool(UsesDictVisibleKeys):
                 completed_jobs[i] = None
         return completed_jobs
 
+    def handle_input_async(
+        self,
+        trans,
+        tool_request: ToolRequest,
+        history: Optional[model.History] = None,
+        use_cached_job: bool = DEFAULT_USE_CACHED_JOB,
+        preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        rerun_remap_job_id: Optional[int] = None,
+        input_format: str = "legacy",
+    ):
+        """The tool request API+tasks version of handle_input."""
+        request_context = proxy_work_context_for_history(trans, history=history)
+        tool_request_state = RequestInternalToolState(tool_request.request)
+        all_params, all_errors, collection_info, job_tool_states = self.expand_incoming_async(
+            request_context, tool_request_state, rerun_remap_job_id
+        )
+        self.handle_incoming_errors(all_errors)
+
+        mapping_params = MappingParameters(tool_request.request, all_params, tool_request_state, job_tool_states)
+        completed_jobs: Dict[int, Optional[model.Job]] = self.completed_jobs(trans, use_cached_job, all_params)
+        execute_async(
+            request_context,
+            self,
+            mapping_params,
+            request_context.history,
+            tool_request,
+            completed_jobs,
+            rerun_remap_job_id=rerun_remap_job_id,
+            preferred_object_store_id=preferred_object_store_id,
+            collection_info=collection_info,
+        )
+
     def handle_input(
         self,
         trans,
@@ -1956,9 +2053,9 @@ class Tool(UsesDictVisibleKeys):
         # If there were errors, we stay on the same page and display them
         self.handle_incoming_errors(all_errors)
 
-        mapping_params = MappingParameters(incoming, all_params)
+        mapping_params = MappingParameters(incoming, all_params, None, None)
         completed_jobs: Dict[int, Optional[model.Job]] = self.completed_jobs(trans, use_cached_job, all_params)
-        execution_tracker = execute_job(
+        execution_tracker = execute_sync(
             trans,
             self,
             mapping_params,

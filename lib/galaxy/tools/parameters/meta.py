@@ -19,6 +19,11 @@ from galaxy.model.dataset_collections import (
     matching,
     subcollections,
 )
+from galaxy.tool_util.parameters import (
+    JobInternalToolState,
+    RequestInternalToolState,
+    ToolParameterBundle,
+)
 from galaxy.util import permutations
 from . import visit_input_values
 from .wrapped import process_key
@@ -229,8 +234,50 @@ def expand_meta_parameters(trans, tool, incoming: ToolRequestT) -> ExpandedT:
     return expanded_incomings, collection_info
 
 
+Expanded2T = Tuple[List[JobInternalToolState], Optional[matching.MatchingCollections]]
+
+
+def expand_meta_parameters_async(app, tool: ToolParameterBundle, incoming: RequestInternalToolState) -> Expanded2T:
+    # TODO: Tool State 2.0 Follow Up: rework this to only test permutation at actual input value roots.
+
+    def classifier(input_key):
+        value = incoming.input_state[input_key]
+        if isinstance(value, dict) and "values" in value:
+            # Explicit meta wrapper for inputs...
+            is_batch = value.get("__class__", "Batch")
+            is_linked = value.get("linked", True)
+            if is_batch and is_linked:
+                classification = permutations.input_classification.MATCHED
+            elif is_batch:
+                classification = permutations.input_classification.MULTIPLIED
+            else:
+                classification = permutations.input_classification.SINGLE
+            if __collection_multirun_parameter(value):
+                collection_value = value["values"][0]
+                values = __expand_collection_parameter_async(
+                    app, input_key, collection_value, collections_to_match, linked=is_linked
+                )
+            else:
+                values = value["values"]
+        else:
+            classification = permutations.input_classification.SINGLE
+            values = value
+        return classification, values
+
+    collections_to_match = matching.CollectionsToMatch()
+    expanded_incoming_dicts = permutations.expand_multi_inputs(incoming.input_state, classifier)
+    if collections_to_match.has_collections():
+        collection_info = app.dataset_collection_manager.match_collections(collections_to_match)
+    else:
+        collection_info = None
+    expanded_incomings = [JobInternalToolState(d) for d in expanded_incoming_dicts]
+    for expanded_state in expanded_incomings:
+        expanded_state.validate(tool)
+    return expanded_incomings, collection_info
+
+
 def __expand_collection_parameter(trans, input_key, incoming_val, collections_to_match, linked=False):
-    # If subcollectin multirun of data_collection param - value will
+    # If subcollection multirun of data_collection param - value will
     # be "hdca_id|subcollection_type" else it will just be hdca_id
     if "|" in incoming_val:
         encoded_hdc_id, subcollection_type = incoming_val.split("|", 1)
@@ -261,8 +308,34 @@ def __expand_collection_parameter(trans, input_key, incoming_val, collections_to
         return hdas
 
 
+def __expand_collection_parameter_async(app, input_key, incoming_val, collections_to_match, linked=False):
+    # If subcollection multirun of data_collection param - value will
+    # be "hdca_id|subcollection_type" else it will just be hdca_id
+    try:
+        src = incoming_val["src"]
+        if src != "hdca":
+            raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
+        hdc_id = incoming_val["id"]
+        subcollection_type = incoming_val.get("map_over_type", None)
+    except TypeError:
+        hdc_id = incoming_val
+        subcollection_type = None
+    hdc = app.model.context.get(HistoryDatasetCollectionAssociation, hdc_id)
+    collections_to_match.add(input_key, hdc, subcollection_type=subcollection_type, linked=linked)
+    if subcollection_type is not None:
+        subcollection_elements = subcollections.split_dataset_collection_instance(hdc, subcollection_type)
+        return subcollection_elements
+    else:
+        hdas = []
+        for element in hdc.collection.dataset_elements:
+            hda = element.dataset_instance
+            hda.element_identifier = element.element_identifier
+            hdas.append(hda)
+        return hdas
+
+
 def __collection_multirun_parameter(value):
-    is_batch = value.get("batch", False)
+    is_batch = value.get("batch", False) or value.get("__class__", None) == "Batch"
     if not is_batch:
         return False
 
