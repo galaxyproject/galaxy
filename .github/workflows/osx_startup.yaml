@@ -40,7 +40,6 @@ jobs:
         run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
       - name: Cache pip dir
         uses: actions/cache@v4
-        id: pip-cache
         with:
           path: ~/Library/Caches/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
