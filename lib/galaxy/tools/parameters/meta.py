@@ -21,7 +21,7 @@ from galaxy.model.dataset_collections import (
 )
 from galaxy.tool_util.parameters import (
     JobInternalToolState,
-    RequestInternalToolState,
+    RequestInternalDereferencedToolState,
     ToolParameterBundle,
 )
 from galaxy.util import permutations
@@ -237,7 +237,9 @@ def expand_meta_parameters(trans, tool, incoming: ToolRequestT) -> ExpandedT:
 Expanded2T = Tuple[List[JobInternalToolState], Optional[matching.MatchingCollections]]
 
 
-def expand_meta_parameters_async(app, tool: ToolParameterBundle, incoming: RequestInternalToolState) -> Expanded2T:
+def expand_meta_parameters_async(
+    app, tool: ToolParameterBundle, incoming: RequestInternalDereferencedToolState
+) -> Expanded2T:
     # TODO: Tool State 2.0 Follow Up: rework this to only test permutation at actual input value roots.
 
     def classifier(input_key):

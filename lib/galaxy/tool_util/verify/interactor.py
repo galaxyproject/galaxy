@@ -37,7 +37,7 @@ from typing_extensions import (
 from galaxy import util
 from galaxy.tool_util.parameters import (
     DataCollectionRequest,
-    DataRequest,
+    DataRequestHda,
     encode_test,
     input_models_from_json,
     TestCaseToolState,
@@ -669,8 +669,8 @@ class GalaxyInteractorApi:
             assert request_schema is not None, "Request schema not set"
             parameters = request_schema["parameters"]
 
-            def adapt_datasets(test_input: JsonTestDatasetDefDict) -> DataRequest:
-                return DataRequest(**self.uploads[test_input["path"]])
+            def adapt_datasets(test_input: JsonTestDatasetDefDict) -> DataRequestHda:
+                return DataRequestHda(**self.uploads[test_input["path"]])
 
             def adapt_collections(test_input: JsonTestCollectionDefDict) -> DataCollectionRequest:
                 test_collection_def = TestCollectionDef.from_dict(test_input)

@@ -16,12 +16,15 @@ from galaxy.tool_util.parser.interface import (
 from .models import (
     DataCollectionRequest,
     DataParameterModel,
-    DataRequest,
+    DataRequestHda,
+    DataRequestInternalHda,
+    DataRequestUri,
     SelectParameterModel,
     ToolParameterBundle,
     ToolParameterT,
 )
 from .state import (
+    RequestInternalDereferencedToolState,
     RequestInternalToolState,
     RequestToolState,
     TestCaseToolState,
@@ -42,10 +45,12 @@ def decode(
     external_state.validate(input_models)
 
     def decode_src_dict(src_dict: dict):
-        assert "id" in src_dict
-        decoded_dict = src_dict.copy()
-        decoded_dict["id"] = decode_id(src_dict["id"])
-        return decoded_dict
+        if "id" in src_dict:
+            decoded_dict = src_dict.copy()
+            decoded_dict["id"] = decode_id(src_dict["id"])
+            return decoded_dict
+        else:
+            return src_dict
 
     def decode_callback(parameter: ToolParameterT, value: Any):
         if parameter.parameter_type == "gx_data":
@@ -79,10 +84,12 @@ def encode(
     """Prepare an external representation of tool state (request) for storing in the database (request_internal)."""
 
     def encode_src_dict(src_dict: dict):
-        assert "id" in src_dict
-        encoded_dict = src_dict.copy()
-        encoded_dict["id"] = encode_id(src_dict["id"])
-        return encoded_dict
+        if "id" in src_dict:
+            encoded_dict = src_dict.copy()
+            encoded_dict["id"] = encode_id(src_dict["id"])
+            return encoded_dict
+        else:
+            return src_dict
 
     def encode_callback(parameter: ToolParameterT, value: Any):
         if parameter.parameter_type == "gx_data":
@@ -109,9 +116,47 @@ def encode(
     return request_state
 
 
+DereferenceCallable = Callable[[DataRequestUri], DataRequestInternalHda]
+
+
+def dereference(
+    internal_state: RequestInternalToolState, input_models: ToolParameterBundle, dereference: DereferenceCallable
+) -> RequestInternalDereferencedToolState:
+
+    def derefrence_dict(src_dict: dict):
+        src = src_dict.get("src")
+        if src == "url":
+            data_request_uri: DataRequestUri = DataRequestUri.model_validate(src_dict)
+            data_request_hda: DataRequestInternalHda = dereference(data_request_uri)
+            return data_request_hda.model_dump()
+        else:
+            return src_dict
+
+    def dereference_callback(parameter: ToolParameterT, value: Any):
+        if parameter.parameter_type == "gx_data":
+            data_parameter = cast(DataParameterModel, parameter)
+            if data_parameter.multiple:
+                assert isinstance(value, list), str(value)
+                return list(map(derefrence_dict, value))
+            else:
+                assert isinstance(value, dict), str(value)
+                return derefrence_dict(value)
+        else:
+            return VISITOR_NO_REPLACEMENT
+
+    request_state_dict = visit_input_values(
+        input_models,
+        internal_state,
+        dereference_callback,
+    )
+    request_state = RequestInternalDereferencedToolState(request_state_dict)
+    request_state.validate(input_models)
+    return request_state
+
+
 # interfaces for adapting test data dictionaries to tool request dictionaries
 # e.g. {class: File, path: foo.bed} => {src: hda, id: ab1235cdfea3}
-AdaptDatasets = Callable[[JsonTestDatasetDefDict], DataRequest]
+AdaptDatasets = Callable[[JsonTestDatasetDefDict], DataRequestHda]
 AdaptCollections = Callable[[JsonTestCollectionDefDict], DataCollectionRequest]
 
 

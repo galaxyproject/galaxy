@@ -118,17 +118,25 @@ gx_int_required_via_empty_string:
   <<: *gx_int_required
 
 gx_text:
-  request_valid:
+  request_valid: &gx_text_request_valid
     - parameter: moocow
     - parameter: 'some spaces'
     - parameter: ''
     - {}
-  request_invalid:
+  request_invalid: &gx_text_request_invalid
     - parameter: 5
     - parameter: null
     - parameter: {}
     - parameter: { "moo": "cow" }
     - parameter: {__class__: 'ConnectedValue'}
+  request_internal_valid:
+    *gx_text_request_valid
+  request_internal_invalid:
+    *gx_text_request_invalid
+  request_internal_dereferenced_valid:
+    *gx_text_request_valid
+  request_internal_dereferenced_invalid:
+    *gx_text_request_invalid
   workflow_step_valid:
     - parameter: moocow
     - parameter: 'some spaces'
@@ -199,11 +207,15 @@ gx_select:
   - parameter: null
   - parameter: {}
   - parameter: 5
-  request_internal_valid:
+  request_internal_valid: &gx_select_request_valid
   - parameter: "--ex1"
   - parameter: "ex2"
-  request_internal_invalid:
+  request_internal_invalid: &gx_select_request_invalid
   - parameter: {}
+  request_internal_dereferenced_valid:
+   *gx_select_request_valid
+  request_internal_dereferenced_invalid:
+   *gx_select_request_invalid
   test_case_xml_valid:
   - parameter: 'ex2'
   - parameter: '--ex1'
@@ -501,6 +513,7 @@ gx_color:
 gx_data:
   request_valid:
    - parameter: {src: hda, id: abcdabcd}
+   - parameter: {src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", "ext": "txt"}
    - parameter: {__class__: "Batch", values: [{src: hdca, id: abcdabcd}]}
   request_invalid:
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
@@ -518,6 +531,7 @@ gx_data:
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    - parameter: {src: hda, id: 5}
    - parameter: {src: hda, id: 0}
+   - parameter: {src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", ext: "txt"}
   request_internal_invalid:
    - parameter: {__class__: "Batch", values: [{src: hdca, id: abcdabcd}]}
    - parameter: {src: hda, id: abcdabcd}
@@ -526,6 +540,14 @@ gx_data:
    - parameter: true
    - parameter: 5
    - parameter: "5"
+  request_internal_dereferenced_valid:
+   - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
+   - parameter: {src: hda, id: 5}
+   - parameter: {src: hda, id: 0}
+  request_internal_dereferenced_invalid:
+   # the difference between request internal and request internal dereferenced is that these have been converted
+   # to datasets.
+   - parameter: {src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", ext: "txt"}
   job_internal_valid:
    - parameter: {src: hda, id: 7}
   job_internal_invalid:
@@ -533,6 +555,8 @@ gx_data:
    # expanded out.
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    - parameter: {src: hda, id: abcdabcd}
+   # url parameters should be dereferrenced into datasets by this point...
+   - parameter: {src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", "ext": "txt"}
   test_case_xml_valid:
    - parameter: {class: File, path: foo.bed}
    - parameter: {class: File, location: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"}
@@ -627,6 +651,8 @@ gx_data_multiple:
    - parameter: [{src: hda, id: 5}]
    - parameter: [{src: hdca, id: 5}]
    - parameter: [{src: hdca, id: 5}, {src: hda, id: 5}]
+   - parameter: [{src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", ext: "txt"}]
+   - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
   request_internal_invalid:
    - parameter: {src: hda, id: abcdabcd}
    - parameter: [{src: hdca, id: abcdabcd}, {src: hda, id: abcdabcd}]
@@ -636,6 +662,14 @@ gx_data_multiple:
    - parameter: true
    - parameter: 5
    - parameter: "5"
+  request_internal_dereferenced_valid:
+   - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
+   - parameter: [{src: hda, id: 5}]
+   - parameter: [{src: hda, id: 0}]
+  request_internal_dereferenced_invalid:
+   # the difference between request internal and request internal dereferenced is that these have been converted
+   # to datasets.
+   - parameter: [{src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", ext: "txt"}]
 
 gx_data_multiple_optional:
   request_valid:
@@ -646,6 +680,8 @@ gx_data_multiple_optional:
    - parameter: [{src: hdca, id: abcdabcd}, {src: hda, id: abcdabcd}]
    - parameter: null
    - {}
+   - parameter: {src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", ext: "txt"}
+   - parameter: [{src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", ext: "txt"}]
   request_invalid:
    - parameter: {src: hda, id: 5}
    - parameter: {}
@@ -660,12 +696,19 @@ gx_data_multiple_optional:
    - parameter: [{src: hdca, id: 5}, {src: hda, id: 5}]
    - parameter: null
    - {}
+   - parameter: [{src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", ext: "txt"}]
   request_internal_invalid:
    - parameter: {src: hda, id: abcdabcd}
    - parameter: {}
    - parameter: true
    - parameter: 5
    - parameter: "5"
+  request_internal_dereferenced_valid:
+   - parameter: {src: hda, id: 5}
+  request_internal_dereferenced_invalid:
+   - parameter: {src: hda, id: abcdabcd}
+   - parameter: [{src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", ext: "txt"}]
+   - parameter: {src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", ext: "txt"}
 
 gx_data_collection:
   request_valid:
@@ -692,6 +735,10 @@ gx_data_collection:
    - parameter: true
    - parameter: 5
    - parameter: "5"
+  request_internal_dereferenced_valid:
+   - parameter: {src: hdca, id: 5}
+  request_internal_dereferenced_invalid:
+   - parameter: {src: hdca, id: abcdabcd}
   workflow_step_valid:
   - {}
   workflow_step_invalid:

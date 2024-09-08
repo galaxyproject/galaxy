@@ -61,7 +61,13 @@ from ._types import (
 # + request_internal: This is a pydantic model to validate what Galaxy expects to find in the database,
 # in particular dataset and collection references should be decoded integers.
 StateRepresentationT = Literal[
-    "request", "request_internal", "job_internal", "test_case_xml", "workflow_step", "workflow_step_linked"
+    "request",
+    "request_internal",
+    "request_internal_dereferenced",
+    "job_internal",
+    "test_case_xml",
+    "workflow_step",
+    "workflow_step_linked",
 ]
 
 
@@ -239,9 +245,33 @@ CollectionStrT = Literal["hdca"]
 TestCaseDataSrcT = Literal["File"]
 
 
-class DataRequest(StrictModel):
-    src: DataSrcT
+class DataRequestHda(StrictModel):
+    src: Literal["hda"] = "hda"
     id: StrictStr
+
+
+class DataRequestLdda(StrictModel):
+    src: Literal["ldda"] = "ldda"
+    id: StrictStr
+
+
+class DataRequestHdca(StrictModel):
+    src: Literal["hdca"] = "hdca"
+    id: StrictStr
+
+
+class DataRequestUri(StrictModel):
+    # calling it url instead of uri to match data fetch schema...
+    src: Literal["url"] = "url"
+    url: StrictStr
+    ext: StrictStr
+    dbkey: StrictStr = "?"
+    deferred: StrictBool = False
+
+
+DataRequest: Type = cast(
+    Type, Annotated[union_type([DataRequestHda, DataRequestLdda, DataRequestUri]), Field(discriminator="src")]
+)
 
 
 class BatchDataInstance(StrictModel):
@@ -249,17 +279,37 @@ class BatchDataInstance(StrictModel):
     id: StrictStr
 
 
-class MultiDataInstance(StrictModel):
-    src: MultiDataSrcT
-    id: StrictStr
+MultiDataInstance: Type = cast(
+    Type,
+    Annotated[
+        union_type([DataRequestHda, DataRequestLdda, DataRequestHdca, DataRequestUri]), Field(discriminator="src")
+    ],
+)
+MultiDataRequest: Type = cast(Type, union_type([MultiDataInstance, list_type(MultiDataInstance)]))
 
 
-MultiDataRequest: Type = union_type([MultiDataInstance, List[MultiDataInstance]])
-
-
-class DataRequestInternal(StrictModel):
-    src: DataSrcT
+class DataRequestInternalHda(StrictModel):
+    src: Literal["hda"] = "hda"
     id: StrictInt
+
+
+class DataRequestInternalLdda(StrictModel):
+    src: Literal["ldda"] = "ldda"
+    id: StrictInt
+
+
+class DataRequestInternalHdca(StrictModel):
+    src: Literal["hdca"] = "hdca"
+    id: StrictInt
+
+
+DataRequestInternal: Type = cast(
+    Type, Annotated[Union[DataRequestInternalHda, DataRequestInternalLdda, DataRequestUri], Field(discriminator="src")]
+)
+DataRequestInternalDereferenced: Type = cast(
+    Type, Annotated[Union[DataRequestInternalHda, DataRequestInternalLdda], Field(discriminator="src")]
+)
+DataJobInternal = DataRequestInternalDereferenced
 
 
 class BatchDataInstanceInternal(StrictModel):
@@ -267,12 +317,24 @@ class BatchDataInstanceInternal(StrictModel):
     id: StrictInt
 
 
-class MultiDataInstanceInternal(StrictModel):
-    src: MultiDataSrcT
-    id: StrictInt
+MultiDataInstanceInternal: Type = cast(
+    Type,
+    Annotated[
+        Union[DataRequestInternalHda, DataRequestInternalLdda, DataRequestInternalHdca, DataRequestUri],
+        Field(discriminator="src"),
+    ],
+)
+MultiDataInstanceInternalDereferenced: Type = cast(
+    Type,
+    Annotated[
+        Union[DataRequestInternalHda, DataRequestInternalLdda, DataRequestInternalHdca], Field(discriminator="src")
+    ],
+)
 
-
-MultiDataRequestInternal: Type = union_type([MultiDataInstanceInternal, List[MultiDataInstanceInternal]])
+MultiDataRequestInternal: Type = union_type([MultiDataInstanceInternal, list_type(MultiDataInstanceInternal)])
+MultiDataRequestInternalDereferenced: Type = union_type(
+    [MultiDataInstanceInternalDereferenced, list_type(MultiDataInstanceInternalDereferenced)]
+)
 
 
 class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
@@ -301,6 +363,15 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
         return optional_if_needed(base_model, self.optional)
 
     @property
+    def py_type_internal_dereferenced(self) -> Type:
+        base_model: Type
+        if self.multiple:
+            base_model = MultiDataRequestInternalDereferenced
+        else:
+            base_model = DataRequestInternalDereferenced
+        return optional_if_needed(base_model, self.optional)
+
+    @property
     def py_type_test_case(self) -> Type:
         base_model: Type
         if self.multiple:
@@ -316,8 +387,13 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
             return allow_batching(
                 dynamic_model_information_from_py_type(self, self.py_type_internal), BatchDataInstanceInternal
             )
+        elif state_representation == "request_internal_dereferenced":
+            return allow_batching(
+                dynamic_model_information_from_py_type(self, self.py_type_internal_dereferenced),
+                BatchDataInstanceInternal,
+            )
         elif state_representation == "job_internal":
-            return dynamic_model_information_from_py_type(self, self.py_type_internal)
+            return dynamic_model_information_from_py_type(self, self.py_type_internal_dereferenced)
         elif state_representation == "test_case_xml":
             return dynamic_model_information_from_py_type(self, self.py_type_test_case)
         elif state_representation == "workflow_step":
@@ -357,7 +433,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         if state_representation == "request":
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type))
-        elif state_representation == "request_internal":
+        elif state_representation in ["request_internal", "request_internal_dereferenced"]:
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type_internal))
         elif state_representation == "job_internal":
             return dynamic_model_information_from_py_type(self, self.py_type_internal)
@@ -1177,9 +1253,7 @@ def to_simple_model(input_parameter: Union[ToolParameterModel, ToolParameterT]) 
         return cast(ToolParameterT, input_parameter)
 
 
-def simple_input_models(
-    parameters: Union[List[ToolParameterModel], List[ToolParameterT]]
-) -> Iterable[ToolParameterT]:
+def simple_input_models(parameters: Union[List[ToolParameterModel], List[ToolParameterT]]) -> Iterable[ToolParameterT]:
     return [to_simple_model(m) for m in parameters]
 
 
@@ -1196,6 +1270,12 @@ def create_request_model(tool: ToolParameterBundle, name: str = "DynamicModelFor
 
 def create_request_internal_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
     return create_field_model(tool.parameters, name, "request_internal")
+
+
+def create_request_internal_dereferenced_model(
+    tool: ToolParameterBundle, name: str = "DynamicModelForTool"
+) -> Type[BaseModel]:
+    return create_field_model(tool.parameters, name, "request_internal_dereferenced")
 
 
 def create_job_internal_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
@@ -1255,6 +1335,11 @@ def validate_request(tool: ToolParameterBundle, request: Dict[str, Any]) -> None
 
 def validate_internal_request(tool: ToolParameterBundle, request: Dict[str, Any]) -> None:
     pydantic_model = create_request_internal_model(tool)
+    validate_against_model(pydantic_model, request)
+
+
+def validate_internal_request_dereferenced(tool: ToolParameterBundle, request: Dict[str, Any]) -> None:
+    pydantic_model = create_request_internal_dereferenced_model(tool)
     validate_against_model(pydantic_model, request)
 
 

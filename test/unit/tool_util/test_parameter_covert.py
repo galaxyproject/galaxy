@@ -1,9 +1,17 @@
-from typing import Dict
+from typing import (
+    Dict,
+    Optional,
+)
 
 from galaxy.tool_util.parameters import (
+    DataRequestInternalHda,
+    DataRequestUri,
     decode,
+    dereference,
     encode,
     input_models_for_tool_source,
+    RequestInternalDereferencedToolState,
+    RequestInternalToolState,
     RequestToolState,
 )
 from .test_parameter_test_cases import tool_source_for
@@ -89,6 +97,31 @@ def test_multi_data():
     assert encoded_state.input_state["parameter"][0]["id"] == EXAMPLE_ID_1_ENCODED
     assert encoded_state.input_state["parameter"][1]["src"] == "hda"
     assert encoded_state.input_state["parameter"][1]["id"] == EXAMPLE_ID_2_ENCODED
+
+
+def test_dereference():
+    tool_source = tool_source_for("parameters/gx_data")
+    bundle = input_models_for_tool_source(tool_source)
+    raw_request_state = {"parameter": {"src": "url", "url": "gxfiles://mystorage/1.bed", "ext": "bed"}}
+    request_state = RequestInternalToolState(raw_request_state)
+    request_state.validate(bundle)
+
+    exception: Optional[Exception] = None
+    try:
+        # quickly verify this request needs to be dereferenced
+        bad_state = RequestInternalDereferencedToolState(raw_request_state)
+        bad_state.validate(bundle)
+    except Exception as e:
+        exception = e
+    assert exception is not None
+
+    dereferenced_state = dereference(request_state, bundle, _fake_dereference)
+    assert isinstance(dereferenced_state, RequestInternalDereferencedToolState)
+    dereferenced_state.validate(bundle)
+
+
+def _fake_dereference(input: DataRequestUri) -> DataRequestInternalHda:
+    return DataRequestInternalHda(id=EXAMPLE_ID_1)
 
 
 def _fake_decode(input: str) -> int:

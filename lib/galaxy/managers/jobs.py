@@ -1,5 +1,6 @@
 import json
 import logging
+from dataclasses import dataclass
 from datetime import (
     date,
     datetime,
@@ -10,6 +11,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
 )
 
@@ -65,6 +67,7 @@ from galaxy.model import (
     YIELD_PER_ROWS,
 )
 from galaxy.model.base import transaction
+from galaxy.model.dereference import dereference_to_model
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
@@ -74,11 +77,21 @@ from galaxy.schema.schema import (
     JobIndexQueryPayload,
     JobIndexSortByEnum,
 )
-from galaxy.schema.tasks import QueueJobs
+from galaxy.schema.tasks import (
+    MaterializeDatasetInstanceTaskRequest,
+    QueueJobs,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
+)
+from galaxy.tool_util.parameters import (
+    DataRequestInternalHda,
+    DataRequestUri,
+    dereference,
+    RequestInternalDereferencedToolState,
+    RequestInternalToolState,
 )
 from galaxy.tools import Tool
 from galaxy.tools._types import (
@@ -1170,35 +1183,75 @@ def get_job(session, *where_clauses):
     return session.scalars(stmt).first()
 
 
+@dataclass
+class DereferencedDatasetPair:
+    hda: model.HistoryDatasetAssociation
+    request: DataRequestUri
+
+
 class JobSubmitter:
     def __init__(
         self,
         history_manager: HistoryManager,
         user_manager: UserManager,
+        hda_manager: HDAManager,
         app: MinimalManagerApp,
     ):
         self.history_manager = history_manager
         self.user_manager = user_manager
+        self.hda_manager = hda_manager
         self.app = app
 
+    def materialize_request_for(
+        self, trans: WorkRequestContext, hda: model.HistoryDatasetAssociation
+    ) -> MaterializeDatasetInstanceTaskRequest:
+        return MaterializeDatasetInstanceTaskRequest(
+            user=trans.async_request_user,
+            history_id=trans.history.id,
+            source="hda",
+            content=hda.id,
+        )
+
+    def dereference(
+        self, trans: WorkRequestContext, tool: Tool, request: QueueJobs, tool_request: ToolRequest
+    ) -> Tuple[RequestInternalDereferencedToolState, List[DereferencedDatasetPair]]:
+        new_hdas: List[DereferencedDatasetPair] = []
+
+        def dereference_callback(data_request: DataRequestUri) -> DataRequestInternalHda:
+            # a deferred dataset corresponding to request
+            hda = dereference_to_model(trans.sa_session, trans.user, trans.history, data_request)
+            new_hdas.append(DereferencedDatasetPair(hda, data_request))
+            permissions = trans.app.security_agent.history_get_default_permissions(trans.history)
+            trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
+            return DataRequestInternalHda(id=hda.id)
+
+        tool_state = RequestInternalToolState(tool_request.request)
+        return dereference(tool_state, tool, dereference_callback), new_hdas
+
     def queue_jobs(self, tool: Tool, request: QueueJobs) -> None:
-        user = self.user_manager.by_id(request.user.user_id)
+        tool_request: ToolRequest = self._tool_request(request.tool_request_id)
         sa_session = self.app.model.context
-        tool_request: ToolRequest = cast(ToolRequest, sa_session.query(ToolRequest).get(request.tool_request_id))
-        if tool_request is None:
-            raise Exception(f"Problem fetching request with ID {request.tool_request_id}")
         try:
-            target_history = tool_request.history
+            request_context = self._context(tool_request, request)
+            target_history = request_context.history
             use_cached_jobs = request.use_cached_jobs
             rerun_remap_job_id = request.rerun_remap_job_id
-            trans = WorkRequestContext(
-                self.app,
-                user,
-                history=target_history,
-            )
+            tool_state: RequestInternalDereferencedToolState
+            new_hdas: List[DereferencedDatasetPair]
+            tool_state, new_hdas = self.dereference(request_context, tool, request, tool_request)
+            to_materialize_list: List[DereferencedDatasetPair] = [p for p in new_hdas if not p.request.deferred]
+            for to_materialize in to_materialize_list:
+                materialize_request = self.materialize_request_for(request_context, to_materialize.hda)
+                # API dataset materialization is immutable and produces new datasets
+                # here we just created the datasets - lets just materialize them in place
+                # and avoid extra and confusing input copies
+                self.hda_manager.materialize(materialize_request, in_place=True)
             tool.handle_input_async(
-                trans,
+                request_context,
                 tool_request,
+                tool_state,
                 history=target_history,
                 use_cached_job=use_cached_jobs,
                 rerun_remap_job_id=rerun_remap_job_id,
@@ -1208,8 +1261,26 @@ class JobSubmitter:
             with transaction(sa_session):
                 sa_session.commit()
         except Exception as e:
+            log.exception("Problem here....")
             tool_request.state = ToolRequest.states.FAILED
             tool_request.state_message = str(e)
             sa_session.add(tool_request)
             with transaction(sa_session):
                 sa_session.commit()
+
+    def _context(self, tool_request: ToolRequest, request: QueueJobs) -> WorkRequestContext:
+        user = self.user_manager.by_id(request.user.user_id)
+        target_history = tool_request.history
+        trans = WorkRequestContext(
+            self.app,
+            user,
+            history=target_history,
+        )
+        return trans
+
+    def _tool_request(self, tool_request_id: int) -> ToolRequest:
+        sa_session = self.app.model.context
+        tool_request: ToolRequest = cast(ToolRequest, sa_session.query(ToolRequest).get(tool_request_id))
+        if tool_request is None:
+            raise Exception(f"Problem fetching request with ID {tool_request_id}")
+        return tool_request

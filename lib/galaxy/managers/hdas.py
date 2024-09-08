@@ -173,7 +173,7 @@ class HDAManager(
                 session.commit()
         return hda
 
-    def materialize(self, request: MaterializeDatasetInstanceTaskRequest) -> None:
+    def materialize(self, request: MaterializeDatasetInstanceTaskRequest, in_place: bool = False) -> None:
         request_user: RequestUser = request.user
         materializer = materializer_factory(
             True,  # attached...
@@ -187,8 +187,9 @@ class HDAManager(
         else:
             dataset_instance = self.ldda_manager.get_accessible(request.content, user)
         history = self.app.history_manager.by_id(request.history_id)
-        new_hda = materializer.ensure_materialized(dataset_instance, target_history=history)
-        history.add_dataset(new_hda, set_hid=True)
+        new_hda = materializer.ensure_materialized(dataset_instance, target_history=history, in_place=in_place)
+        if not in_place:
+            history.add_dataset(new_hda, set_hid=True)
         session = self.session()
         with transaction(session):
             session.commit()

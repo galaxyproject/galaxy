@@ -75,7 +75,7 @@ from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.tool_util.parameters import (
     input_models_for_pages,
     JobInternalToolState,
-    RequestInternalToolState,
+    RequestInternalDereferencedToolState,
     ToolParameterBundle,
 )
 from galaxy.tool_util.parser import (
@@ -1835,7 +1835,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
     def expand_incoming_async(
         self,
         request_context: WorkRequestContext,
-        tool_request_internal_state: RequestInternalToolState,
+        tool_request_internal_state: RequestInternalDereferencedToolState,
         rerun_remap_job_id: Optional[int],
     ) -> Tuple[
         List[ToolStateJobInstancePopulatedT],
@@ -1998,8 +1998,9 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
 
     def handle_input_async(
         self,
-        trans,
+        request_context: WorkRequestContext,
         tool_request: ToolRequest,
+        tool_state: RequestInternalDereferencedToolState,
         history: Optional[model.History] = None,
         use_cached_job: bool = DEFAULT_USE_CACHED_JOB,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
@@ -2007,15 +2008,15 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         input_format: str = "legacy",
     ):
         """The tool request API+tasks version of handle_input."""
-        request_context = proxy_work_context_for_history(trans, history=history)
-        tool_request_state = RequestInternalToolState(tool_request.request)
         all_params, all_errors, collection_info, job_tool_states = self.expand_incoming_async(
-            request_context, tool_request_state, rerun_remap_job_id
+            request_context, tool_state, rerun_remap_job_id
         )
         self.handle_incoming_errors(all_errors)
 
-        mapping_params = MappingParameters(tool_request.request, all_params, tool_request_state, job_tool_states)
-        completed_jobs: Dict[int, Optional[model.Job]] = self.completed_jobs(trans, use_cached_job, all_params)
+        mapping_params = MappingParameters(tool_request.request, all_params, tool_state, job_tool_states)
+        completed_jobs: Dict[int, Optional[model.Job]] = self.completed_jobs(
+            request_context, use_cached_job, all_params
+        )
         execute_async(
             request_context,
             self,

@@ -33,7 +33,7 @@ from galaxy.model.dataset_collections.structure import (
 )
 from galaxy.tool_util.parameters.state import (
     JobInternalToolState,
-    RequestInternalToolState,
+    RequestInternalDereferencedToolState,
 )
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.execution_helpers import (
@@ -80,7 +80,7 @@ class MappingParameters(NamedTuple):
     param_combinations: List[ToolStateJobInstancePopulatedT]
     # schema driven parameters
     # model validated tool request - might correspond to multiple jobs
-    validated_param_template: Optional[RequestInternalToolState] = None
+    validated_param_template: Optional[RequestInternalDereferencedToolState] = None
     # validated job parameters for individual jobs
     validated_param_combinations: Optional[List[JobInternalToolState]] = None
 

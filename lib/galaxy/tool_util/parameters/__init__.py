@@ -1,6 +1,7 @@
 from .case import test_case_state
 from .convert import (
     decode,
+    dereference,
     encode,
     encode_test,
 )
@@ -30,6 +31,9 @@ from .models import (
     DataCollectionRequest,
     DataParameterModel,
     DataRequest,
+    DataRequestHda,
+    DataRequestInternalHda,
+    DataRequestUri,
     FloatParameterModel,
     HiddenParameterModel,
     IntegerParameterModel,
@@ -45,6 +49,7 @@ from .models import (
     validate_against_model,
     validate_internal_job,
     validate_internal_request,
+    validate_internal_request_dereferenced,
     validate_request,
     validate_test_case,
     validate_workflow_step,
@@ -52,6 +57,7 @@ from .models import (
 )
 from .state import (
     JobInternalToolState,
+    RequestInternalDereferencedToolState,
     RequestInternalToolState,
     RequestToolState,
     TestCaseToolState,
@@ -79,6 +85,9 @@ __all__ = (
     "ToolParameterBundle",
     "ToolParameterBundleModel",
     "DataRequest",
+    "DataRequestInternalHda",
+    "DataRequestHda",
+    "DataRequestUri",
     "DataCollectionRequest",
     "ToolParameterModel",
     "IntegerParameterModel",
@@ -106,6 +115,7 @@ __all__ = (
     "validate_against_model",
     "validate_internal_job",
     "validate_internal_request",
+    "validate_internal_request_dereferenced",
     "validate_request",
     "validate_test_case",
     "validate_workflow_step",
@@ -118,6 +128,7 @@ __all__ = (
     "test_case_state",
     "RequestToolState",
     "RequestInternalToolState",
+    "RequestInternalDereferencedToolState",
     "flat_state_path",
     "keys_starting_with",
     "visit_input_values",
@@ -126,6 +137,7 @@ __all__ = (
     "decode",
     "encode",
     "encode_test",
+    "dereference",
     "WorkflowStepToolState",
     "WorkflowStepLinkedToolState",
 )

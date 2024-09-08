@@ -1451,7 +1451,7 @@ class BaseDatasetPopulator(BasePopulator):
         return state() == "submitted"
 
     def get_tool_request(self, tool_request_id: str) -> Dict[str, Any]:
-        response = self._get(f"tool_requests/{tool_request_id}/state")
+        response = self._get(f"tool_requests/{tool_request_id}")
         api_asserts.assert_status_code_is_ok(response)
         return response.json()
 
