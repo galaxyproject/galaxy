@@ -15,6 +15,7 @@ from typing_extensions import Literal
 
 from .models import (
     create_job_internal_model,
+    create_request_internal_dereferenced_model,
     create_request_internal_model,
     create_request_model,
     create_test_case_model,
@@ -81,6 +82,14 @@ class RequestInternalToolState(ToolState):
     @classmethod
     def _parameter_model_for(cls, parameters: ToolParameterBundle) -> Type[BaseModel]:
         return create_request_internal_model(parameters)
+
+
+class RequestInternalDereferencedToolState(ToolState):
+    state_representation: Literal["request_internal_dereferenced"] = "request_internal_dereferenced"
+
+    @classmethod
+    def _parameter_model_for(cls, parameters: ToolParameterBundle) -> Type[BaseModel]:
+        return create_request_internal_dereferenced_model(parameters)
 
 
 class JobInternalToolState(ToolState):

@@ -478,6 +478,12 @@ class InputSource(metaclass=ABCMeta):
         keys to be supported depend on the parameter type.
         """
 
+    @abstractmethod
+    def get_bool_or_none(self, key, default):
+        """Return simple named properties as boolean or none for this input source.
+        keys to be supported depend on the parameter type.
+        """
+
     def parse_label(self):
         return self.get("label")
 
@@ -655,12 +661,14 @@ JsonTestCollectionDefDict = TypedDict(
 )
 
 
-def xml_data_input_to_json(xml_input: ToolSourceTestInput) -> "JsonTestDatasetDefDict":
+def xml_data_input_to_json(xml_input: ToolSourceTestInput) -> Optional["JsonTestDatasetDefDict"]:
     attributes = xml_input["attributes"]
+    value = xml_input["value"]
+    if value is None and attributes.get("location") is None:
+        return None
     as_dict: JsonTestDatasetDefDict = {
         "class": "File",
     }
-    value = xml_input["value"]
     if value:
         as_dict["path"] = value
     _copy_if_exists(attributes, as_dict, "location")
@@ -705,10 +713,16 @@ class TestCollectionDef:
                     identifier=identifier, **element_object._test_format_to_dict()
                 )
             else:
-                as_dict = JsonTestCollectionDefDatasetElementDict(
-                    identifier=identifier,
-                    **xml_data_input_to_json(cast(ToolSourceTestInput, element_object)),
+                input_as_dict: Optional[JsonTestDatasetDefDict] = xml_data_input_to_json(
+                    cast(ToolSourceTestInput, element_object)
                 )
+                if input_as_dict is not None:
+                    as_dict = JsonTestCollectionDefDatasetElementDict(
+                        identifier=identifier,
+                        **input_as_dict,
+                    )
+                else:
+                    raise Exception("Invalid empty test element...")
             return as_dict
 
         test_format_dict = BaseJsonTestCollectionDefCollectionElementDict(

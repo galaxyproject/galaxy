@@ -19,7 +19,7 @@ def dict_verify_each(target_dict: dict, expectations: List[Any]):
         dict_verify(target_dict, path, expectation)
 
 
-def dict_verify(target_dict: dict, expectation_path: List[str], expectation: Any):
+def dict_verify(target_dict: dict, expectation_path: List[Any], expectation: Any):
     rest = target_dict
     for path_part in expectation_path:
         rest = rest[path_part]

@@ -1,9 +1,9 @@
-<tool id="gx_boolean" name="gx_boolean" version="1.0.0">
+<tool id="gx_boolean_checked" name="gx_boolean_checked" version="1.0.0">
     <command><![CDATA[
 echo '$parameter' >> '$output'
     ]]></command>
     <inputs>
-        <param name="parameter" type="boolean" truevalue="mytrue" falsevalue="myfalse" />
+        <param name="parameter" type="boolean" truevalue="mytrue" falsevalue="myfalse" checked="true" />
     </inputs>
     <outputs>
         <data name="output" format="txt" />
@@ -12,7 +12,7 @@ echo '$parameter' >> '$output'
         <test>
             <output name="output">
                 <assert_contents>
-                    <has_line line="myfalse" />
+                    <has_line line="mytrue" />
                 </assert_contents>
             </output>
         </test>

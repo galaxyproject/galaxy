@@ -1,10 +1,10 @@
-<tool id="gx_boolean_optional" name="gx_boolean_optional" version="1.0.0">
+<tool id="gx_boolean_optional_checked" name="gx_boolean_optional_checked" version="1.0.0">
     <command><![CDATA[
 echo '$parameter' >> '$output';
 cat '$inputs' >> $inputs_json;
     ]]></command>
     <inputs>
-        <param name="parameter" type="boolean" optional="true" />
+        <param name="parameter" type="boolean" optional="true" checked="true" />
     </inputs>
     <configfiles>
         <inputs name="inputs" filename="inputs.json" />
@@ -17,13 +17,13 @@ cat '$inputs' >> $inputs_json;
         <test>
             <output name="output">
                 <assert_contents>
-                    <has_line line="false" />
+                    <has_line line="true" />
                 </assert_contents>
             </output>
             <!-- I wish this were null? It is somehow in expression_null_handling_boolean -->
             <output name="inputs_json">
                 <assert_contents>
-                    <has_text text="&quot;parameter&quot;: false" />
+                    <has_text text="&quot;parameter&quot;: true" />
                 </assert_contents>
             </output>
         </test>
@@ -34,6 +34,7 @@ cat '$inputs' >> $inputs_json;
                     <has_line line="false" />
                 </assert_contents>
             </output>
+            <!-- I wish this were null? It is somehow in expression_null_handling_boolean -->
             <output name="inputs_json">
                 <assert_contents>
                     <has_text text="&quot;parameter&quot;: null" />
@@ -50,30 +51,6 @@ cat '$inputs' >> $inputs_json;
             <output name="inputs_json">
                 <assert_contents>
                     <has_text text="&quot;parameter&quot;: false" />
-                </assert_contents>
-            </output>
-        </test>
-        <test>
-            <param name="parameter" value_json="true" />
-            <output name="output">
-                <assert_contents>
-                    <has_line line="true" />
-                </assert_contents>
-            </output>
-        </test>
-        <test>
-            <param name="parameter" value="true" />
-            <output name="output">
-                <assert_contents>
-                    <has_line line="true" />
-                </assert_contents>
-            </output>
-        </test>
-        <test>
-            <param name="parameter" value="false" />
-            <output name="output">
-                <assert_contents>
-                    <has_line line="false" />
                 </assert_contents>
             </output>
         </test>
