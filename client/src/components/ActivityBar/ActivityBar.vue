@@ -168,8 +168,13 @@ function onActivityClicked(activity: Activity) {
     }
 }
 
+function setActiveSideBar(key: string) {
+    activityStore.toggledSideBar = key;
+}
+
 defineExpose({
     isActiveSideBar,
+    setActiveSideBar,
 });
 </script>
 

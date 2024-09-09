@@ -1,10 +1,10 @@
 import {
+    faEdit,
     faHistory,
     faMagic,
     faPencilAlt,
     faSave,
     faSitemap,
-    faTools,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -30,21 +30,21 @@ export const workflowEditorActivities = [
         visible: true,
     },
     {
-        title: "Workflow Tools",
-        id: "workflow-editor-utility-tools",
-        description: "Browse and insert tools specific to workflows.",
-        tooltip: "Workflow specific tools",
-        icon: faTools,
-        panel: true,
-        optional: true,
-        visible: false,
-    },
-    {
         title: "Workflows",
         id: "workflow-editor-workflows",
         description: "Browse other workflows and add them as sub-workflows.",
         tooltip: "Search workflows to use in your workflow",
         icon: faSitemap,
+        panel: true,
+        visible: true,
+        optional: true,
+    },
+    {
+        title: "Report",
+        id: "workflow-editor-report",
+        description: "Edit the report for this workflow.",
+        tooltip: "Edit workflow report",
+        icon: faEdit,
         panel: true,
         visible: true,
         optional: true,
