@@ -16857,7 +16857,7 @@ export interface components {
              * @description The name of the visualization.
              * @default Untitled Visualization
              */
-            title: string;
+            title: string | null;
             /**
              * Type
              * @description The type of the visualization.

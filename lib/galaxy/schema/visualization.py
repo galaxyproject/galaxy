@@ -303,7 +303,7 @@ class VisualizationCreatePayload(Model):
         title="Type",
         description="The type of the visualization.",
     )
-    title: SanitizedString = Field(
+    title: Optional[SanitizedString] = Field(
         SanitizedString("Untitled Visualization"),
         title="Title",
         description="The name of the visualization.",
