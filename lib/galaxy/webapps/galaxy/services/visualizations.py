@@ -169,20 +169,18 @@ class VisualizationsService(ServiceBase):
             dbkey = payload.dbkey
             annotation = payload.annotation
             config = payload.config
-            save = payload.save
 
             # generate defaults - this will err if given a weird key?
-            visualization = self._create_visualization(trans, type, title, dbkey, slug, annotation, save)
+            visualization = self._create_visualization(trans, type, title, dbkey, slug, annotation)
 
             # Create and save first visualization revision
             revision = VisualizationRevision(visualization=visualization, title=title, config=config, dbkey=dbkey)
             visualization.latest_revision = revision
 
-            if save:
-                session = trans.sa_session
-                session.add(revision)
-                with transaction(session):
-                    session.commit()
+            session = trans.sa_session
+            session.add(revision)
+            with transaction(session):
+                session.commit()
 
         return VisualizationCreateResponse(id=str(visualization.id))
 
@@ -298,7 +296,6 @@ class VisualizationsService(ServiceBase):
         dbkey: Optional[SanitizedString] = None,
         slug: Optional[SanitizedString] = None,
         annotation: Optional[SanitizedString] = None,
-        save: Optional[bool] = True,
     ) -> Visualization:
         """Create visualization but not first revision. Returns Visualization object."""
         user = trans.get_user()
@@ -328,11 +325,10 @@ class VisualizationsService(ServiceBase):
             #   right now this is depending on the classes that include this mixin to have UsesAnnotations
             add_item_annotation(trans.sa_session, trans.user, visualization, annotation)
 
-        if save:
-            session = trans.sa_session
-            session.add(visualization)
-            with transaction(session):
-                session.commit()
+        session = trans.sa_session
+        session.add(visualization)
+        with transaction(session):
+            session.commit()
 
         return visualization
 

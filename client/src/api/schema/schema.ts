@@ -16848,12 +16848,6 @@ export interface components {
              */
             dbkey?: string | null;
             /**
-             * Save
-             * @description Whether to save the visualization.
-             * @default true
-             */
-            save: boolean | null;
-            /**
              * Slug
              * @description The slug of the visualization.
              */
@@ -16875,8 +16869,9 @@ export interface components {
             /**
              * ID
              * @description Encoded ID of the Visualization.
+             * @example 0123456789ABCDEF
              */
-            id?: string | null;
+            id: string;
         };
         /** VisualizationPluginResponse */
         VisualizationPluginResponse: {

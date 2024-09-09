@@ -277,8 +277,8 @@ class VisualizationShowResponse(Model, WithModelClass):
 
 
 class VisualizationCreateResponse(Model):
-    id: Optional[EncodedDatabaseIdField] = Field(
-        None,
+    id: EncodedDatabaseIdField = Field(
+        ...,
         title="ID",
         description="Encoded ID of the Visualization.",
     )
@@ -327,11 +327,6 @@ class VisualizationCreatePayload(Model):
         {},
         title="Config",
         description="The config of the visualization.",
-    )
-    save: Optional[bool] = Field(
-        True,
-        title="Save",
-        description="Whether to save the visualization.",
     )
 
 
