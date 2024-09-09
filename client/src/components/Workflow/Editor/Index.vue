@@ -223,13 +223,13 @@ import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/se
 import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
 
-import WorkflowAttributes from "./Attributes.vue";
 import WorkflowLint from "./Lint.vue";
 import MessagesModal from "./MessagesModal.vue";
 import WorkflowOptions from "./Options.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 import SaveChangesModal from "./SaveChangesModal.vue";
 import StateUpgradeModal from "./StateUpgradeModal.vue";
+import WorkflowAttributes from "./WorkflowAttributes.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
