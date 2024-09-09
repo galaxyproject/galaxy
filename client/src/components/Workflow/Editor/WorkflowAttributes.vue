@@ -56,20 +56,16 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
 import LicenseSelector from "components/License/LicenseSelector";
 import CreatorEditor from "components/SchemaOrg/CreatorEditor";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { Services } from "components/Workflow/services";
 import { format, parseISO } from "date-fns";
-import Vue from "vue";
 
 import { UntypedParameters } from "./modules/parameters";
 
-Vue.use(BootstrapVue);
-
 export default {
-    name: "Attributes",
+    name: "WorkflowAttributes",
     components: {
         StatelessTags,
         LicenseSelector,
