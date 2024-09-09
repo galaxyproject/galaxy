@@ -292,7 +292,7 @@ class VisualizationsService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         type: SanitizedString,
-        title: SanitizedString,
+        title: Optional[SanitizedString] = SanitizedString("Untitled Visualization"),
         dbkey: Optional[SanitizedString] = None,
         slug: Optional[SanitizedString] = None,
         annotation: Optional[SanitizedString] = None,
