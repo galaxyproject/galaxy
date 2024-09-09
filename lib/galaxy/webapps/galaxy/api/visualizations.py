@@ -256,11 +256,8 @@ class FastAPIVisualizations:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> VisualizationCreateResponse:
         """
-        POST /api/visualizations
-        creates a new visualization using the given payload and does not require the import_id field
-
-        POST /api/visualizations?import_id={encoded_visualization_id}
-        imports a copy of an existing visualization into the user's workspace and does not require the rest of the payload
+        Creates a new visualization using the given payload and does not require the import_id field.
+        If import_id given, it imports a copy of an existing visualization into the user's workspace and does not require the rest of the payload.
         """
         return self.service.create(trans, import_id, payload)
 

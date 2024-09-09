@@ -277,8 +277,8 @@ class VisualizationShowResponse(Model, WithModelClass):
 
 
 class VisualizationCreateResponse(Model):
-    id: EncodedDatabaseIdField = Field(
-        ...,
+    id: Optional[EncodedDatabaseIdField] = Field(
+        None,
         title="ID",
         description="Encoded ID of the Visualization.",
     )
@@ -298,12 +298,12 @@ class VisualizationUpdateResponse(Model):
 
 
 class VisualizationCreatePayload(Model):
-    type: Optional[SanitizedString] = Field(
-        None,
+    type: SanitizedString = Field(
+        ...,
         title="Type",
         description="The type of the visualization.",
     )
-    title: Optional[SanitizedString] = Field(
+    title: SanitizedString = Field(
         SanitizedString("Untitled Visualization"),
         title="Title",
         description="The name of the visualization.",
