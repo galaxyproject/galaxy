@@ -3857,7 +3857,12 @@ bootstrap-vue@^2.23.0:
     portal-vue "^2.1.7"
     vue-functional-data-merge "^3.1.0"
 
-bootstrap@4.6, bootstrap@^4.6.1:
+bootstrap@5.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/bootstrap/-/bootstrap-5.0.0.tgz#97635ac0e0d6cb466700ebf0fd266bfabf352ed2"
+  integrity sha512-tmhPET9B9qCl8dCofvHeiIhi49iBt0EehmIsziZib65k1erBW1rHhj2s/2JsuQh5Pq+xz2E9bEbzp9B7xHG+VA==
+
+bootstrap@^4.6.1:
   version "4.6.2"
   resolved "https://registry.npmjs.org/bootstrap/-/bootstrap-4.6.2.tgz"
   integrity sha512-51Bbp/Uxr9aTuy6ca/8FbFloBUJZLHwnhTcnjIeRn2suQWsWzcuJhGjKDB5eppVte/8oCdOL3VuwxvZDUggwGQ==

@@ -49,7 +49,7 @@
     "axios": "^1.6.2",
     "babel-runtime": "^6.26.0",
     "backbone": "1.5.0",
-    "bootstrap": "4.6",
+    "bootstrap": "5.0",
     "bootstrap-vue": "^2.23.0",
     "core-js": "^3.33.1",
     "csv-parse": "^5.5.2",
