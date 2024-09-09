@@ -1,5 +1,5 @@
 <template>
-    <div id="edit-attributes" class="right-content p-2" itemscope itemtype="http://schema.org/CreativeWork">
+    <ActivityPanel id="edit-attributes" title="Attributes" itemscope itemtype="http://schema.org/CreativeWork">
         <b-alert :variant="messageVariant" :show="!!message">
             {{ message }}
         </b-alert>
@@ -52,17 +52,20 @@
                 Apply tags to make it easy to search for and find items with the same tag.
             </div>
         </div>
-    </div>
+    </ActivityPanel>
 </template>
 
 <script>
-import LicenseSelector from "components/License/LicenseSelector";
-import CreatorEditor from "components/SchemaOrg/CreatorEditor";
-import StatelessTags from "components/TagsMultiselect/StatelessTags";
-import { Services } from "components/Workflow/services";
 import { format, parseISO } from "date-fns";
 
+import { Services } from "@/components/Workflow/services";
+
 import { UntypedParameters } from "./modules/parameters";
+
+import LicenseSelector from "@/components/License/LicenseSelector.vue";
+import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
+import CreatorEditor from "@/components/SchemaOrg/CreatorEditor.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 export default {
     name: "WorkflowAttributes",
@@ -70,6 +73,7 @@ export default {
         StatelessTags,
         LicenseSelector,
         CreatorEditor,
+        ActivityPanel,
     },
     props: {
         id: {
@@ -182,16 +186,16 @@ export default {
     methods: {
         onTags(tags) {
             this.onAttributes({ tags });
-            this.$emit("onTags", tags);
+            this.$emit("tags", tags);
         },
         onVersion() {
-            this.$emit("onVersion", this.versionCurrent);
+            this.$emit("version", this.versionCurrent);
         },
         onLicense(license) {
-            this.$emit("onLicense", license);
+            this.$emit("license", license);
         },
         onCreator(creator) {
-            this.$emit("onCreator", creator);
+            this.$emit("creator", creator);
         },
         onError(error) {
             this.message = error;

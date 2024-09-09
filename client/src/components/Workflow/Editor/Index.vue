@@ -62,6 +62,23 @@
                     v-else-if="isActiveSideBar('workflow-editor-workflows')"
                     @insertWorkflow="onInsertWorkflow"
                     @insertWorkflowSteps="onInsertWorkflowSteps" />
+                <WorkflowAttributes
+                    v-else-if="isActiveSideBar('workflow-editor-attributes')"
+                    :id="id"
+                    :tags="tags"
+                    :parameters="parameters"
+                    :annotation="annotation"
+                    :name="name"
+                    :version="version"
+                    :versions="versions"
+                    :license="license"
+                    :creator="creator"
+                    @version="onVersion"
+                    @tags="setTags"
+                    @license="onLicense"
+                    @creator="onCreator"
+                    @update:nameCurrent="setName"
+                    @update:annotationCurrent="setAnnotation" />
             </template>
         </ActivityBar>
         <div id="center" class="workflow-center">
@@ -148,23 +165,6 @@
                             @onAttemptRefactor="onAttemptRefactor"
                             @onSetData="onSetData"
                             @onUpdateStep="updateStep" />
-                        <WorkflowAttributes
-                            v-else-if="showInPanel === 'attributes'"
-                            :id="id"
-                            :tags="tags"
-                            :parameters="parameters"
-                            :annotation="annotation"
-                            :name="name"
-                            :version="version"
-                            :versions="versions"
-                            :license="license"
-                            :creator="creator"
-                            @onVersion="onVersion"
-                            @onTags="setTags"
-                            @onLicense="onLicense"
-                            @onCreator="onCreator"
-                            @update:nameCurrent="setName"
-                            @update:annotationCurrent="setAnnotation" />
                     </div>
                 </div>
             </div>
