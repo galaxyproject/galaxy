@@ -589,7 +589,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["POST"]),
     )
 
-    webapp.mapper.resource("visualization", "visualizations", path_prefix="/api")
     webapp.mapper.resource("plugins", "plugins", path_prefix="/api")
     webapp.mapper.connect("/api/workflows/build_module", action="build_module", controller="workflows")
     webapp.mapper.connect(

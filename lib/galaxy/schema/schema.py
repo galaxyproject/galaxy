@@ -28,6 +28,7 @@ from pydantic import (
     RootModel,
     UUID4,
 )
+from pydantic_core import core_schema
 from typing_extensions import (
     Annotated,
     Literal,
@@ -48,6 +49,7 @@ from galaxy.schema.types import (
     OffsetNaiveDatetime,
     RelativeUrl,
 )
+from galaxy.util.sanitize_html import sanitize_html
 
 USER_MODEL_CLASS = Literal["User"]
 GROUP_MODEL_CLASS = Literal["Group"]
@@ -3814,3 +3816,23 @@ class PageSummaryList(RootModel):
 class MessageExceptionModel(BaseModel):
     err_msg: str
     err_code: int
+
+
+class SanitizedString(str):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value):
+        if isinstance(value, str):
+            return cls(sanitize_html(value))
+        raise TypeError("string required")
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        return core_schema.no_info_after_validator_function(
+            cls.validate,
+            core_schema.str_schema(),
+            serialization=core_schema.to_string_ser_schema(),
+        )

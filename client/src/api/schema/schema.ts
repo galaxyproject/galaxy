@@ -4687,6 +4687,35 @@ export interface paths {
         /** Returns visualizations for the current user. */
         get: operations["index_api_visualizations_get"];
         put?: never;
+        /**
+         * Create a new visualization.
+         * @description POST /api/visualizations
+         *     creates a new visualization using the given payload and does not require the import_id field
+         *
+         *     POST /api/visualizations?import_id={encoded_visualization_id}
+         *     imports a copy of an existing visualization into the user's workspace and does not require the rest of the payload
+         */
+        post: operations["create_api_visualizations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visualizations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a visualization by ID.
+         * @description Return the visualization.
+         */
+        get: operations["show_api_visualizations__id__get"];
+        /** Update a visualization. */
+        put: operations["update_api_visualizations__id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -16803,6 +16832,238 @@ export interface components {
         };
         /** Visualization */
         Visualization: Record<string, never>;
+        /** VisualizationCreatePayload */
+        VisualizationCreatePayload: {
+            /**
+             * Annotation
+             * @description The annotation of the visualization.
+             */
+            annotation?: string | null;
+            /**
+             * Config
+             * @description The config of the visualization.
+             * @default {}
+             */
+            config: Record<string, never> | null;
+            /**
+             * DbKey
+             * @description The database key of the visualization.
+             */
+            dbkey?: string | null;
+            /**
+             * Save
+             * @description Whether to save the visualization.
+             * @default true
+             */
+            save: boolean | null;
+            /**
+             * Slug
+             * @description The slug of the visualization.
+             */
+            slug?: string | null;
+            /**
+             * Title
+             * @description The name of the visualization.
+             * @default Untitled Visualization
+             */
+            title: string | null;
+            /**
+             * Type
+             * @description The type of the visualization.
+             */
+            type?: string | null;
+        };
+        /** VisualizationCreateResponse */
+        VisualizationCreateResponse: {
+            /**
+             * ID
+             * @description Encoded ID of the Visualization.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+        };
+        /** VisualizationPluginResponse */
+        VisualizationPluginResponse: {
+            /**
+             * Description
+             * @description The description of the plugin.
+             */
+            description: string;
+            /**
+             * Embeddable
+             * @description Whether the plugin is embeddable.
+             */
+            embeddable: boolean;
+            /**
+             * Entry Point
+             * @description The entry point of the plugin.
+             */
+            entry_point: Record<string, never>;
+            /**
+             * Groups
+             * @description The groups of the plugin.
+             */
+            groups?: Record<string, never>[] | null;
+            /**
+             * Href
+             * @description The href of the plugin.
+             */
+            href: string;
+            /**
+             * HTML
+             * @description The HTML of the plugin.
+             */
+            html: string;
+            /**
+             * Logo
+             * @description The logo of the plugin.
+             */
+            logo?: string | null;
+            /**
+             * Name
+             * @description The name of the plugin.
+             */
+            name: string;
+            /**
+             * Settings
+             * @description The settings of the plugin.
+             */
+            settings: Record<string, never>[];
+            /**
+             * Specs
+             * @description The specs of the plugin.
+             */
+            specs?: Record<string, never> | null;
+            /**
+             * Target
+             * @description The target of the plugin.
+             */
+            target: string;
+            /**
+             * Title
+             * @description The title of the plugin.
+             */
+            title?: string | null;
+        };
+        /** VisualizationRevisionResponse */
+        VisualizationRevisionResponse: {
+            /**
+             * Config
+             * @description The config of the visualization revision.
+             */
+            config: Record<string, never>;
+            /**
+             * DbKey
+             * @description The database key of the visualization.
+             */
+            dbkey?: string | null;
+            /**
+             * ID
+             * @description Encoded ID of the Visualization Revision.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             * @enum {string}
+             */
+            model_class: "VisualizationRevision";
+            /**
+             * Title
+             * @description The name of the visualization revision.
+             */
+            title: string;
+            /**
+             * Visualization ID
+             * @description Encoded ID of the Visualization.
+             * @example 0123456789ABCDEF
+             */
+            visualization_id: string;
+        };
+        /** VisualizationShowResponse */
+        VisualizationShowResponse: {
+            /**
+             * Annotation
+             * @description The annotation of this Visualization.
+             */
+            annotation?: string | null;
+            /**
+             * DbKey
+             * @description The database key of the visualization.
+             */
+            dbkey?: string | null;
+            /**
+             * Email Hash
+             * @description The hash of the email of the user owning this Visualization.
+             */
+            email_hash: string;
+            /**
+             * ID
+             * @description Encoded ID of the Visualization.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Latest Revision
+             * @description The latest revision of this Visualization.
+             */
+            latest_revision: components["schemas"]["VisualizationRevisionResponse"];
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             * @enum {string}
+             */
+            model_class: "Visualization";
+            /**
+             * Plugin
+             * @description The plugin of this Visualization.
+             */
+            plugin?: components["schemas"]["VisualizationPluginResponse"] | null;
+            /**
+             * Revisions
+             * @description A list of encoded IDs of the revisions of this Visualization.
+             */
+            revisions: string[];
+            /**
+             * Slug
+             * @description The slug of the visualization.
+             */
+            slug?: string | null;
+            /**
+             * Tags
+             * @description A list of tags to add to this item.
+             */
+            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Title
+             * @description The name of the visualization.
+             */
+            title: string;
+            /**
+             * Type
+             * @description The type of the visualization.
+             */
+            type: string;
+            /**
+             * URL
+             * @description The URL of the visualization.
+             */
+            url: string;
+            /**
+             * User ID
+             * @description The ID of the user owning this Visualization.
+             * @example 0123456789ABCDEF
+             */
+            user_id: string;
+            /**
+             * Username
+             * @description The name of the user owning this Visualization.
+             */
+            username: string;
+        };
         /** VisualizationSummary */
         VisualizationSummary: {
             /**
@@ -16874,6 +17135,46 @@ export interface components {
          * @default []
          */
         VisualizationSummaryList: components["schemas"]["VisualizationSummary"][];
+        /** VisualizationUpdatePayload */
+        VisualizationUpdatePayload: {
+            /**
+             * Config
+             * @description The config of the visualization.
+             * @default {}
+             */
+            config: Record<string, never> | string | null;
+            /**
+             * DbKey
+             * @description The database key of the visualization.
+             */
+            dbkey?: string | null;
+            /**
+             * Deleted
+             * @description Whether this Visualization has been deleted.
+             * @default false
+             */
+            deleted: boolean | null;
+            /**
+             * Title
+             * @description The name of the visualization.
+             */
+            title?: string | null;
+        };
+        /** VisualizationUpdateResponse */
+        VisualizationUpdateResponse: {
+            /**
+             * ID
+             * @description Encoded ID of the Visualization.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Revision
+             * @description Encoded ID of the Visualization Revision.
+             * @example 0123456789ABCDEF
+             */
+            revision: string;
+        };
         /** WorkflowInput */
         WorkflowInput: {
             /**
@@ -32269,6 +32570,146 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VisualizationSummaryList"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_api_visualizations_post: {
+        parameters: {
+            query?: {
+                /** @description The encoded database identifier of the Visualization to import. */
+                import_id?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisualizationCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualizationCreateResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    show_api_visualizations__id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Visualization. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualizationShowResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_api_visualizations__id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Visualization. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisualizationUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualizationUpdateResponse"] | null;
                 };
             };
             /** @description Request Error */
