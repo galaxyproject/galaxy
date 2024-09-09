@@ -298,7 +298,7 @@ class VisualizationUpdateResponse(Model):
 
 
 class VisualizationCreatePayload(Model):
-    type: SanitizedString = Field(
+    type: str = Field(
         ...,
         title="Type",
         description="The type of the visualization.",
