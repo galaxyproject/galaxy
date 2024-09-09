@@ -37,11 +37,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Cache pip dir
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
       - uses: nanasess/setup-chromedriver@v2
       - name: Run tests
         run: bash ./test/deployment/usegalaxystar.bash
