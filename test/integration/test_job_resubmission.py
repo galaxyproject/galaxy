@@ -2,8 +2,8 @@
 
 import os
 
-from galaxy_test.driver import integration_util
 from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 JOB_RESUBMISSION_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_job_conf.yml")

@@ -689,16 +689,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
             ) as exit_code_file:
                 exit_code_file.write(str(exit_code))
             self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
+        job_metrics_directory = os.path.join(job_wrapper.working_directory, "metadata")
         # Finish the job
         try:
-            job_metrics_directory = os.path.join(job_wrapper.working_directory, "metadata")
-            # Following check is a hack for jobs started during 19.01 or earlier release
-            # and finishing with a 19.05 code base. Eliminate the hack in 19.09 or later
-            # along with hacks for legacy metadata compute strategy.
-            if not os.path.exists(job_metrics_directory) or not any(
-                "__instrument" in f for f in os.listdir(job_metrics_directory)
-            ):
-                job_metrics_directory = job_wrapper.working_directory
             job_wrapper.finish(
                 tool_stdout,
                 tool_stderr,
@@ -710,7 +703,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             )
         except Exception:
             log.exception("Job wrapper finish method failed")
-            job_wrapper.fail("Unable to finish job", exception=True)
+            job_wrapper.fail("Unable to finish job", exception=True, job_metrics_directory=job_metrics_directory)
 
     def check_pid(self, pid):
         try:
