@@ -91,7 +91,7 @@ const dropdownOpen = ref(false);
                 <div class="workflow-count-actions">
                     <WorkflowInvocationsCount
                         v-if="!props.hideRuns && !isAnonymous && !shared"
-                        class="mx-1"
+                        class="invocations-count mx-1"
                         :workflow="workflow" />
 
                     <WorkflowActions
@@ -199,11 +199,13 @@ const dropdownOpen = ref(false);
                 "n n"
                 "s s";
 
-            @container workflow-card (max-width: #{$breakpoint-xs}) {
-                grid-template-areas:
-                    "i b"
-                    "n b"
-                    "s s";
+            &:has(.invocations-count) {
+                @container workflow-card (max-width: #{$breakpoint-xs}) {
+                    grid-template-areas:
+                        "i b"
+                        "n b"
+                        "s s";
+                }
             }
 
             .workflow-card-indicators {
