@@ -31,7 +31,6 @@ from galaxy.model.item_attrs import (
     get_item_annotation_str,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import SanitizedString
 from galaxy.schema.visualization import (
     VisualizationCreatePayload,
     VisualizationCreateResponse,
@@ -291,11 +290,11 @@ class VisualizationsService(ServiceBase):
     def _create_visualization(
         self,
         trans: ProvidesUserContext,
-        type: SanitizedString,
-        title: Optional[SanitizedString] = SanitizedString("Untitled Visualization"),
-        dbkey: Optional[SanitizedString] = None,
-        slug: Optional[SanitizedString] = None,
-        annotation: Optional[SanitizedString] = None,
+        type: str,
+        title: Optional[str] = "Untitled Visualization",
+        dbkey: Optional[str] = None,
+        slug: Optional[str] = None,
+        annotation: Optional[str] = None,
     ) -> Visualization:
         """Create visualization but not first revision. Returns Visualization object."""
         user = trans.get_user()
