@@ -3738,6 +3738,21 @@ mapping:
           Optional configuration file similar to `job_config_file` to specify
           which Galaxy processes should schedule workflows.
 
+      workflow_scheduling_separate_materialization_iteration:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Workflows launched with URI/URL inputs that are not marked as 'deferred'
+          are "materialized" (or undeferred) by the workflow scheduler. This might be
+          a lengthy process. Setting this to 'True' will place the invocation back in
+          the queue after materialization before scheduling the workflow so it is less 
+          likely to starve other workflow scheduling. Ideally, Galaxy would allow more
+          fine grain control of handlers but until then, this provides a way to tip the
+          balance between "doing more work" and "being more fair". The default here is
+          pretty arbitrary - it has been to False to optimize Galaxy for automated,
+          single user applications where "fairness" is mostly irrelevant.
+
       cache_user_job_count:
         type: bool
         default: false

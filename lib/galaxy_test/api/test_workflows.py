@@ -1496,11 +1496,27 @@ steps:
     def test_run_workflow(self):
         self.__run_cat_workflow(inputs_by="step_id")
 
-    def __run_cat_workflow(self, inputs_by):
+    @skip_without_tool("cat1")
+    def test_run_workflow_by_deferred_url(self):
+        with self.dataset_populator.test_history() as history_id:
+            self.__run_cat_workflow(inputs_by="deferred_url", history_id=history_id)
+            input_dataset_details = self.dataset_populator.get_history_dataset_details(history_id, hid=1)
+            assert input_dataset_details["state"] == "deferred"
+
+    @skip_without_tool("cat1")
+    def test_run_workflow_by_url(self):
+        with self.dataset_populator.test_history() as history_id:
+            self.__run_cat_workflow(inputs_by="url", history_id=history_id)
+            input_dataset_details = self.dataset_populator.get_history_dataset_details(history_id, hid=1)
+            assert input_dataset_details["state"] == "ok"
+
+    def __run_cat_workflow(self, inputs_by, history_id: Optional[str] = None):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")
         workflow["steps"]["0"]["uuid"] = str(uuid4())
         workflow["steps"]["1"]["uuid"] = str(uuid4())
-        workflow_request, _, workflow_id = self._setup_workflow_run(workflow, inputs_by=inputs_by)
+        workflow_request, _, workflow_id = self._setup_workflow_run(
+            workflow, inputs_by=inputs_by, history_id=history_id
+        )
         invocation_id = self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request).json()[
             "id"
         ]

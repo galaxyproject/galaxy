@@ -2182,23 +2182,33 @@ class BaseWorkflowPopulator(BasePopulator):
             workflow_id = self.create_workflow(workflow)
         if not history_id:
             history_id = self.dataset_populator.new_history()
-        hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
-        hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6", wait=True)
+        hda1: Optional[Dict[str, Any]] = None
+        hda2: Optional[Dict[str, Any]] = None
+        label_map: Optional[Dict[str, Any]] = None
+        if inputs_by != "url":
+            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
+            hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6", wait=True)
+            label_map = {"WorkflowInput1": ds_entry(hda1), "WorkflowInput2": ds_entry(hda2)}
         workflow_request = dict(
             history=f"hist_id={history_id}",
         )
-        label_map = {"WorkflowInput1": ds_entry(hda1), "WorkflowInput2": ds_entry(hda2)}
         if inputs_by == "step_id":
+            assert label_map
             ds_map = self.build_ds_map(workflow_id, label_map)
             workflow_request["ds_map"] = ds_map
         elif inputs_by == "step_index":
+            assert hda1
+            assert hda2
             index_map = {"0": ds_entry(hda1), "1": ds_entry(hda2)}
             workflow_request["inputs"] = json.dumps(index_map)
             workflow_request["inputs_by"] = "step_index"
         elif inputs_by == "name":
+            assert label_map
             workflow_request["inputs"] = json.dumps(label_map)
             workflow_request["inputs_by"] = "name"
         elif inputs_by in ["step_uuid", "uuid_implicitly"]:
+            assert hda1
+            assert hda2
             assert workflow, f"Must specify workflow for this inputs_by {inputs_by} parameter value"
             uuid_map = {
                 workflow["steps"]["0"]["uuid"]: ds_entry(hda1),
@@ -2207,6 +2217,16 @@ class BaseWorkflowPopulator(BasePopulator):
             workflow_request["inputs"] = json.dumps(uuid_map)
             if inputs_by == "step_uuid":
                 workflow_request["inputs_by"] = "step_uuid"
+        elif inputs_by in ["url", "deferred_url"]:
+            input_b64_1 = base64.b64encode(b"1 2 3").decode("utf-8")
+            input_b64_2 = base64.b64encode(b"4 5 6").decode("utf-8")
+            deferred = inputs_by == "deferred_url"
+            inputs = {
+                "WorkflowInput1": {"src": "url", "url": f"base64://{input_b64_1}", "ext": "txt", "deferred": deferred},
+                "WorkflowInput2": {"src": "url", "url": f"base64://{input_b64_2}", "ext": "txt", "deferred": deferred},
+            }
+            workflow_request["inputs"] = json.dumps(inputs)
+            workflow_request["inputs_by"] = "name"
 
         return workflow_request, history_id, workflow_id
 
@@ -3262,6 +3282,7 @@ def wait_on_state(
             "queued",
             "new",
             "ready",
+            "requires_materialization",
             "stop",
             "stopped",
             "setting_metadata",

@@ -50,7 +50,10 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.datasets import DatasetManager
-from galaxy.managers.hdas import HDAManager
+from galaxy.managers.hdas import (
+    dereference_input,
+    HDAManager,
+)
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.users import UserManager
@@ -67,7 +70,6 @@ from galaxy.model import (
     YIELD_PER_ROWS,
 )
 from galaxy.model.base import transaction
-from galaxy.model.dereference import dereference_to_model
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
@@ -1219,12 +1221,8 @@ class JobSubmitter:
 
         def dereference_callback(data_request: DataRequestUri) -> DataRequestInternalHda:
             # a deferred dataset corresponding to request
-            hda = dereference_to_model(trans.sa_session, trans.user, trans.history, data_request)
+            hda = dereference_input(trans, data_request)
             new_hdas.append(DereferencedDatasetPair(hda, data_request))
-            permissions = trans.app.security_agent.history_get_default_permissions(trans.history)
-            trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
             return DataRequestInternalHda(id=hda.id)
 
         tool_state = RequestInternalToolState(tool_request.request)
