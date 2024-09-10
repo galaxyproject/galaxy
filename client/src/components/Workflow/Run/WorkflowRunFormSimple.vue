@@ -1,55 +1,67 @@
 <template>
     <div>
-        <div v-if="isConfigLoaded" class="h4 clearfix mb-3">
+        <div v-if="isConfigLoaded">
             <BAlert v-if="!canRunOnHistory" variant="warning" show>
                 <span v-localize>
                     The workflow cannot run because the current history is immutable. Please select a different history
                     or send the results to a new one using the run settings ⚙️
                 </span>
             </BAlert>
-            <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
-            <ButtonSpinner
-                id="run-workflow"
-                :wait="waitingForRequest"
-                :disabled="hasValidationErrors || !canRunOnHistory"
-                class="float-right"
-                title="Run Workflow"
-                @onClick="onExecute" />
-            <b-dropdown
-                v-if="showRuntimeSettings(currentUser)"
-                id="dropdown-form"
-                ref="dropdown"
-                class="workflow-run-settings float-right"
-                style="margin-right: 10px"
-                title="Workflow Run Settings"
-                no-caret>
-                <template v-slot:button-content>
-                    <span class="fa fa-cog" />
-                </template>
-                <b-dropdown-form>
-                    <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target">
-                        Send results to a new history
-                    </b-form-checkbox>
-                    <b-form-checkbox
-                        v-if="reuseAllowed(currentUser)"
-                        v-model="useCachedJobs"
-                        title="This may skip executing jobs that you have already run.">
-                        Attempt to re-use jobs with identical parameters?
-                    </b-form-checkbox>
-                    <b-form-checkbox
-                        v-if="isConfigLoaded && config.object_store_allows_id_selection"
-                        v-model="splitObjectStore">
-                        Send outputs and intermediate to different storage locations?
-                    </b-form-checkbox>
-                    <WorkflowStorageConfiguration
-                        v-if="isConfigLoaded && config.object_store_allows_id_selection"
-                        :split-object-store="splitObjectStore"
-                        :invocation-preferred-object-store-id="preferredObjectStoreId"
-                        :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
-                        @updated="onStorageUpdate">
-                    </WorkflowStorageConfiguration>
-                </b-dropdown-form>
-            </b-dropdown>
+            <div class="ui-portlet-section">
+                <div class="d-flex portlet-header">
+                    <div class="flex-grow-1">
+                        <div class="px-1">
+                            <span class="fa fa-sitemap" />
+                            <b class="mx-1">Workflow: {{ model.name }}</b>
+                            <i>(version: {{ model.runData.version + 1 }})</i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-end flex-nowrap">
+                        <b-dropdown
+                            v-if="showRuntimeSettings(currentUser)"
+                            id="dropdown-form"
+                            ref="dropdown"
+                            class="workflow-run-settings"
+                            style="margin-right: 10px;"
+                            title="Workflow Run Settings"
+                            variant="link"
+                            no-caret>
+                            <template v-slot:button-content>
+                                <span class="fa fa-cog" />
+                            </template>
+                            <b-dropdown-form>
+                                <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target">
+                                    Send results to a new history
+                                </b-form-checkbox>
+                                <b-form-checkbox
+                                    v-if="reuseAllowed(currentUser)"
+                                    v-model="useCachedJobs"
+                                    title="This may skip executing jobs that you have already run.">
+                                    Attempt to re-use jobs with identical parameters?
+                                </b-form-checkbox>
+                                <b-form-checkbox
+                                    v-if="isConfigLoaded && config.object_store_allows_id_selection"
+                                    v-model="splitObjectStore">
+                                    Send outputs and intermediate to different storage locations?
+                                </b-form-checkbox>
+                                <WorkflowStorageConfiguration
+                                    v-if="isConfigLoaded && config.object_store_allows_id_selection"
+                                    :split-object-store="splitObjectStore"
+                                    :invocation-preferred-object-store-id="preferredObjectStoreId"
+                                    :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
+                                    @updated="onStorageUpdate">
+                                </WorkflowStorageConfiguration>
+                            </b-dropdown-form>
+                        </b-dropdown>
+                        <ButtonSpinner
+                            id="run-workflow"
+                            :wait="waitingForRequest"
+                            :disabled="hasValidationErrors || !canRunOnHistory"
+                            title="Run Workflow"
+                            @onClick="onExecute" />
+                    </div>
+                </div>
+            </div>
         </div>
         <WorkflowRunName v-if="isConfigLoaded" :model="this.model" :embedded="false" />
         <FormDisplay
