@@ -1519,18 +1519,18 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         else:
             delete_stmt = delete_stmt.where(UserRoleAssociation.role_id != private_role.id)
         role_ids = self._filter_private_roles(role_ids)
+        # breakpoint()
+
         insert_values = [{"user_id": user.id, "role_id": role_id} for role_id in role_ids]
         self._set_associations(user, UserRoleAssociation, delete_stmt, insert_values)
 
     def _filter_private_roles(self, role_ids):
         """Filter out IDs of private roles: those should not be assignable via UI"""
-        filtered = []
-        for role_id in role_ids:
-            stmt = select(Role.id).where(Role.id == role_id).where(Role.type == Role.types.PRIVATE)
-            is_private = bool(self.sa_session.scalars(stmt).all())
-            if not is_private:
-                filtered.append(role_id)
-        return filtered
+        stmt = select(Role.id).where(Role.id.in_(role_ids)).where(Role.type == Role.types.PRIVATE)
+        private_role_ids = self.sa_session.scalars(stmt).all()
+        # We could simply select only private roles; however, that would get rid of potential duplicates
+        # and invalid role_ids; which would hide any bugs that should be caught in the _set_associations() method.
+        return [role_id for role_id in role_ids if role_id not in private_role_ids]
 
     def _set_group_users(self, group, user_ids):
         delete_stmt = delete(UserGroupAssociation).where(UserGroupAssociation.group_id == group.id)
