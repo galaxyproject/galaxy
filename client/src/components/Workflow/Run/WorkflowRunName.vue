@@ -1,85 +1,71 @@
+<script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { type AxiosError } from "axios";
+import { BAlert } from "bootstrap-vue";
+import { onMounted, ref } from "vue";
+
+import { getWorkflowInfo } from "@/components/Workflow/workflows.services";
+
+import WorkflowInformation from "@/components/Workflow/Published/WorkflowInformation.vue";
+
+const props = defineProps({
+    model: {
+        type: Object,
+        required: true,
+    },
+});
+
+const loading = ref(true);
+const messageText = ref<string | null>(null);
+const messageVariant = ref<string | null>(null);
+const expandAnnotations = ref(true);
+const workflowInfoData = ref(null);
+
+onMounted(() => {
+    loadAnnotation();
+});
+
+async function loadAnnotation() {
+    loading.value = true;
+
+    try {
+        const workflowInfoDataPromise = getWorkflowInfo(props.model.runData.id);
+        workflowInfoData.value = await workflowInfoDataPromise;
+    } catch (e) {
+        const error = e as AxiosError<{ err_msg?: string }>;
+        messageVariant.value = "danger";
+        const message = error.response?.data && error.response.data.err_msg;
+        messageText.value = message || "Failed to fetch Workflow Annotation.";
+    } finally {
+        loading.value = false;
+    }
+}
+</script>
+
 <template>
-    <div>
-        <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
-        <div v-if="this.workflowInfoData" class="ui-portlet-section w-100">
-            <div
-                class="portlet-header portlet-operations"
-                role="button"
-                tabindex="0"
-                @keyup.enter="expandAnnotations = !expandAnnotations"
-                @click="expandAnnotations = !expandAnnotations">
-                <span class="portlet-title-text">
-                    <u v-localize class="step-title ml-2">About This Workflow</u>
-                </span>
-                <FontAwesomeIcon class="float-right" :icon="expandAnnotations ? 'chevron-up' : 'chevron-down'" />
-            </div>
-            <div class="portlet-content" :style="expandAnnotations ? 'display: none;' : ''">
-                <WorkflowInformation
-                    v-if="this.workflowInfoData"
-                    class="workflow-information-container"
-                    :workflow-info="this.workflowInfoData"
-                    :embedded="false" />
-            </div>
+    <div class="ui-portlet-section w-100">
+        <div
+            class="portlet-header cursor-pointer"
+            role="button"
+            :tabindex="0"
+            @keyup.enter="expandAnnotations = !expandAnnotations"
+            @click="expandAnnotations = !expandAnnotations">
+            <b class="portlet-operations portlet-title-text">
+                <span v-localize class="font-weight-bold">About This Workflow</span>
+            </b>
+            <span v-b-tooltip.hover.bottom title="Collapse/Expand" variant="link" size="sm" class="float-right">
+                <FontAwesomeIcon :icon="expandAnnotations ? 'chevron-up' : 'chevron-down'" class="fa-fw" />
+            </span>
+        </div>
+        <div class="portlet-content" :style="expandAnnotations ? 'display: none;' : ''">
+            <WorkflowInformation
+                v-if="workflowInfoData"
+                class="workflow-information-container"
+                :workflow-info="workflowInfoData"
+                :embedded="false" />
+            <BAlert v-else :show="messageText" :variant="messageVariant">
+                {{ messageText }}
+            </BAlert>
         </div>
     </div>
 </template>
-
-<script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getWorkflowFull, getWorkflowInfo } from "@/components/Workflow/workflows.services";
-import WorkflowInformation from "@/components/Workflow/Published/WorkflowInformation.vue";
-
-export default {
-    components: {
-        WorkflowInformation,
-        FontAwesomeIcon,
-    },
-    props: {
-        model: {
-            type: Object,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            expandAnnotations: true,
-            workflowInfoData: {},
-            fullWorkflow: {},
-        };
-    },
-    computed: {
-        workflowInfo() {
-            return this.model.runData;
-        },
-    },
-    mounted() {
-        this.loadAnnotation();
-    },
-    methods: {
-        async loadAnnotation() { //TODO code cleanup
-            // errorMessage.value = "";
-
-            try {
-                const workflowInfoDataPromise = getWorkflowInfo(this.model.runData.id);
-                const fullWorkflowPromise = getWorkflowFull(this.model.runData.id);
-                this.workflowInfoData = await workflowInfoDataPromise;
-                this.fullWorkflow = await fullWorkflowPromise;
-
-                // assertDefined(workflowInfoData.name);
-                // this.workflowInfo = workflowInfoData;
-                // this.workflow = fullWorkflow;
-
-                // fromSimple(model.runData.id, fullWorkflow);
-            } catch (e) {
-                const error = e;
-
-                // if (error.response?.data.err_msg) {
-                //     this.errorMessage.value = error.response.data.err_msg ?? "Unknown Error";
-                // }
-            } finally {
-                // this.loading.value = false;
-            }
-        },
-    },
-};
-</script>

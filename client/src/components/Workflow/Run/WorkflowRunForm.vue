@@ -7,11 +7,7 @@
             </span>
         </BAlert>
         <div class="h4 clearfix mb-3">
-            <WorkflowRunName
-                v-if="true"
-                class="workflow-information-container"
-                :model="this.model"
-                :embedded="false" />
+            <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
             <ButtonSpinner
                 id="run-workflow"
                 class="float-right"
@@ -20,6 +16,7 @@
                 :wait="showExecuting"
                 @onClick="onExecute" />
         </div>
+        <WorkflowRunName v-if="currentUser && currentHistoryId" :model="this.model" :embedded="false" />
         <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
             <template v-slot:body>
                 <FormDisplay :inputs="wpInputs" @onChange="onWpInputs" />
