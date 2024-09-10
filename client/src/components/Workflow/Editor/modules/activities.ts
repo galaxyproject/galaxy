@@ -1,12 +1,19 @@
+import { faSave as farSave } from "@fortawesome/free-regular-svg-icons";
 import {
+    faAlignLeft,
+    faDownload,
     faEdit,
     faHistory,
     faMagic,
     faPencilAlt,
+    faPlay,
+    faRecycle,
     faSave,
+    faSignOutAlt,
     faSitemap,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
+import { ref } from "vue";
 
 import type { Activity } from "@/stores/activityStore";
 
@@ -69,20 +76,92 @@ export const workflowEditorActivities = [
         visible: true,
         optional: true,
     },
-] as const satisfies Readonly<Activity[]>;
-
-export const specialWorkflowActivities = [
+    {
+        title: "Run",
+        id: "workflow-run",
+        description: "Run this workflow with specific parameters.",
+        tooltip: "Run workflow",
+        icon: faPlay,
+        visible: true,
+        panel: true,
+        optional: true,
+    },
+    {
+        description: "Save this workflow with a different name and annotation",
+        icon: farSave,
+        id: "save-workflow-as",
+        title: "Save as",
+        tooltip: "Save a copy of this workflow",
+        visible: false,
+        click: true,
+        optional: true,
+    },
+    {
+        title: "Auto Layout",
+        id: "workflow-auto-layout",
+        description: "Automatically align the nodes in this workflow.",
+        tooltip: "Automatically align nodes",
+        icon: faAlignLeft,
+        visible: false,
+        click: true,
+        optional: true,
+    },
+    {
+        title: "Upgrade",
+        id: "workflow-upgrade",
+        description: "Update all tools used in this workflow.",
+        tooltip: "Update all tools",
+        icon: faRecycle,
+        visible: false,
+        click: true,
+        optional: true,
+    },
+    {
+        title: "Download",
+        id: "workflow-download",
+        description: "Download this workflow in '.ga' format.",
+        tooltip: "Download workflow",
+        icon: faDownload,
+        visible: false,
+        click: true,
+        optional: true,
+    },
     {
         description: "Save this workflow, then exit the workflow editor.",
         icon: faSave,
         id: "save-and-exit",
         title: "Save + Exit",
-        to: null,
         tooltip: "Save and Exit",
-        mutable: false,
-        optional: false,
-        panel: false,
-        visible: true,
+        visible: false,
         click: true,
+        optional: true,
+    },
+    {
+        description: "Exit the workflow editor and return to the start screen.",
+        icon: faSignOutAlt,
+        id: "exit",
+        title: "Exit",
+        tooltip: "Exit workflow editor",
+        visible: false,
+        click: true,
+        optional: true,
     },
 ] as const satisfies Readonly<Activity[]>;
+
+export function useSpecialWorkflowActivities() {
+    const specialWorkflowActivities = ref<Activity[]>([
+        {
+            title: "Save",
+            tooltip: "Save workflow",
+            description: "Save changes made to this workflow.",
+            icon: faSave,
+            id: "save-workflow",
+            click: true,
+            mutable: false,
+        },
+    ]);
+
+    return {
+        specialWorkflowActivities,
+    };
+}

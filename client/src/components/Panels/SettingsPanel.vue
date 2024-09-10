@@ -12,6 +12,8 @@ import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
 const props = defineProps<{
     activityBarId: string;
+    heading: string;
+    searchPlaceholder: string;
 }>();
 
 const activityStore = useActivityStore(props.activityBarId);
@@ -25,9 +27,9 @@ function onQuery(newQuery: string) {
 </script>
 
 <template>
-    <ActivityPanel title="Additional Activities">
+    <ActivityPanel :title="props.heading">
         <template v-slot:header>
-            <DelayedInput :delay="100" placeholder="Search activities" @change="onQuery" />
+            <DelayedInput :delay="100" :placeholder="props.searchPlaceholder" @change="onQuery" />
         </template>
         <template v-slot:header-buttons>
             <BButton
