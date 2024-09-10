@@ -6,15 +6,25 @@
                 send the results to a new one.
             </span>
         </BAlert>
-        <div class="h4 clearfix mb-3">
-            <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
-            <ButtonSpinner
-                id="run-workflow"
-                class="float-right"
-                title="Run Workflow"
-                :disabled="!canRunOnHistory"
-                :wait="showExecuting"
-                @onClick="onExecute" />
+        <div class="ui-portlet-section">
+            <div class="d-flex portlet-header">
+                <div class="flex-grow-1">
+                    <div class="px-1">
+                        <span class="fa fa-sitemap" />
+                        <b class="mx-1">Workflow: {{ model.name }}</b>
+                        <i>(version: {{ model.runData.version + 1 }})</i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-end flex-nowrap">
+                    <ButtonSpinner
+                        id="run-workflow"
+                        class="float-right"
+                        title="Run Workflow"
+                        :disabled="!canRunOnHistory"
+                        :wait="showExecuting"
+                        @onClick="onExecute" />
+                </div>
+            </div>
         </div>
         <WorkflowRunName v-if="currentUser && currentHistoryId" :model="this.model" :embedded="false" />
         <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
