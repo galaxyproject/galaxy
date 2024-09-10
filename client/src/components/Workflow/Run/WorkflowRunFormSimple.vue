@@ -7,11 +7,7 @@
                     or send the results to a new one using the run settings ⚙️
                 </span>
             </BAlert>
-            <WorkflowRunName
-                v-if="true"
-                class="workflow-information-container"
-                :model="this.model"
-                :embedded="false" />
+            <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
             <ButtonSpinner
                 id="run-workflow"
                 :wait="waitingForRequest"
@@ -55,6 +51,7 @@
                 </b-dropdown-form>
             </b-dropdown>
         </div>
+        <WorkflowRunName v-if="isConfigLoaded" :model="this.model" :embedded="false" />
         <FormDisplay
             :inputs="formInputs"
             :allow-empty-value-on-required-input="true"
@@ -78,8 +75,8 @@ import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import { invokeWorkflow } from "./services";
-import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
 import WorkflowRunName from "./WorkflowRunName";
+import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
 
 export default {
     components: {
