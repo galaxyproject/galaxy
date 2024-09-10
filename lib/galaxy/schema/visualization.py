@@ -307,6 +307,7 @@ class VisualizationCreatePayload(Model):
         SanitizedString("Untitled Visualization"),
         title="Title",
         description="The name of the visualization.",
+        min_length=3,
     )
     dbkey: Optional[SanitizedString] = Field(
         None,
