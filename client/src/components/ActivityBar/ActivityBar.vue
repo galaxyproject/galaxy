@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faEllipsisH, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { watchImmediate } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref } from "vue";
@@ -30,12 +31,22 @@ const props = withDefaults(
         activityBarId?: string;
         specialActivities?: Activity[];
         showAdmin?: boolean;
+        optionsTitle?: string;
+        optionsTooltip?: string;
+        optionsHeading?: string;
+        optionsIcon?: IconDefinition;
+        optionsSearchPlaceholder?: string;
     }>(),
     {
         defaultActivities: undefined,
         activityBarId: "default",
         specialActivities: () => [],
         showAdmin: true,
+        optionsTitle: "More",
+        optionsHeading: "Additional Activities",
+        optionsIcon: () => faEllipsisH,
+        optionsSearchPlaceholder: "Search Activities",
+        optionsTooltip: "View additional activities",
     }
 );
 
@@ -180,6 +191,8 @@ defineExpose({
 
 <template>
     <div class="d-flex">
+        <!-- while this warning is correct, it is hiding too many other errors -->
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
             class="activity-bar d-flex flex-column no-highlight"
             data-description="activity bar"
@@ -250,10 +263,10 @@ defineExpose({
                     @click="toggleSidebar('notifications')" />
                 <ActivityItem
                     id="activity-settings"
-                    icon="ellipsis-h"
+                    :icon="props.optionsIcon"
                     :is-active="isActiveSideBar('settings')"
-                    title="More"
-                    tooltip="View additional activities"
+                    :title="props.optionsTitle"
+                    :tooltip="props.optionsTooltip"
                     @click="toggleSidebar('settings')" />
                 <ActivityItem
                     v-if="isAdmin && showAdmin"
@@ -294,7 +307,11 @@ defineExpose({
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
-            <SettingsPanel v-else-if="isActiveSideBar('settings')" :activity-bar-id="props.activityBarId" />
+            <SettingsPanel
+                v-else-if="isActiveSideBar('settings')"
+                :activity-bar-id="props.activityBarId"
+                :heading="props.optionsHeading"
+                :search-placeholder="props.optionsSearchPlaceholder" />
             <AdminPanel v-else-if="isActiveSideBar('admin')" />
             <slot name="side-panel" :is-active-side-bar="isActiveSideBar"></slot>
         </FlexPanel>

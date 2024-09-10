@@ -33,6 +33,11 @@
             :special-activities="specialWorkflowActivities"
             activity-bar-id="workflow-editor"
             :show-admin="false"
+            options-title="Options"
+            options-heading="Workflow Options"
+            options-tooltip="View additional workflow options"
+            options-search-placeholder="Search options"
+            :options-icon="faCog"
             @activityClicked="onActivityClicked">
             <template v-slot:side-panel="{ isActiveSideBar }">
                 <ToolPanel
@@ -198,7 +203,7 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowLeft, faArrowRight, faHistory, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faArrowRight, faCog, faHistory, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
@@ -221,7 +226,7 @@ import { Services } from "../services";
 import { InsertStepAction, useStepActions } from "./Actions/stepActions";
 import { CopyIntoWorkflowAction, SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
-import { specialWorkflowActivities, workflowEditorActivities } from "./modules/activities";
+import { useSpecialWorkflowActivities, workflowEditorActivities } from "./modules/activities";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
@@ -467,6 +472,8 @@ export default {
             markdownEditor.value?.insertMarkdown(markdown);
         }
 
+        const { specialWorkflowActivities } = useSpecialWorkflowActivities();
+
         return {
             id,
             name,
@@ -506,6 +513,7 @@ export default {
             reportActive,
             markdownEditor,
             insertMarkdown,
+            specialWorkflowActivities,
         };
     },
     data() {
@@ -531,8 +539,8 @@ export default {
             showSaveChangesModal: false,
             navUrl: "",
             workflowEditorActivities,
-            specialWorkflowActivities,
             faTimes,
+            faCog,
         };
     },
     computed: {
