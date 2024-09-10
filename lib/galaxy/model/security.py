@@ -1453,7 +1453,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         If the provided list is empty, existing associations will be removed.
         If the provided value is None, existing associations will not be updated.
         """
-        self._ensure_model_instance_has_id(user)
+        self._persist_new_model(user)
         if group_ids is not None:
             self._set_user_groups(user, group_ids)
         if role_ids is not None:
@@ -1475,7 +1475,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         If the provided list is empty, existing associations will be removed.
         If the provided value is None, existing associations will not be updated.
         """
-        self._ensure_model_instance_has_id(group)
+        self._persist_new_model(group)
         if user_ids is not None:
             self._set_group_users(group, user_ids)
         if role_ids is not None:
@@ -1497,7 +1497,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         If the provided list is empty, existing associations will be removed.
         If the provided value is None, existing associations will not be updated.
         """
-        self._ensure_model_instance_has_id(role)
+        self._persist_new_model(role)
         if user_ids is not None:
             self._set_role_users(role, user_ids)
         if group_ids is not None:
@@ -1574,7 +1574,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         insert_values = [{"role_id": role.id, "group_id": group_id} for group_id in group_ids]
         self._set_associations(role, GroupRoleAssociation, delete_stmt, insert_values)
 
-    def _ensure_model_instance_has_id(self, model_instance):
+    def _persist_new_model(self, model_instance):
         # If model_instance is new, it may have not been assigned a database id yet, which is required
         # for creating association records. Flush if that's the case.
         if model_instance.id is None:
