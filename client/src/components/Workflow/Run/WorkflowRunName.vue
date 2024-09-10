@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { type AxiosError } from "axios";
 import { BAlert } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
 
 import { getWorkflowInfo } from "@/components/Workflow/workflows.services";
+
+import { errorMessageAsString } from "../../../utils/simple-error";
 
 import WorkflowInformation from "@/components/Workflow/Published/WorkflowInformation.vue";
 
@@ -32,10 +33,8 @@ async function loadAnnotation() {
         const workflowInfoDataPromise = getWorkflowInfo(props.model.runData.id);
         workflowInfoData.value = await workflowInfoDataPromise;
     } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
         messageVariant.value = "danger";
-        const message = error.response?.data && error.response.data.err_msg;
-        messageText.value = message || "Failed to fetch Workflow Annotation.";
+        messageText.value = errorMessageAsString(e, "Failed to fetch Workflow Annotation.");
     } finally {
         loading.value = false;
     }
