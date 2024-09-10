@@ -5273,6 +5273,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         if include_tags and self.history:
             self.copy_tags_from(self.user, other_hda)
         self.dataset = new_dataset or other_hda.dataset
+        self.copied_from_history_dataset_association_id = other_hda.id
         if old_dataset:
             old_dataset.full_delete()
 

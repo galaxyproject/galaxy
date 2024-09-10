@@ -902,6 +902,9 @@ class HDADetailed(HDASummary, WithModelClass):
             description="The list of sources associated with this dataset.",
         ),
     ]
+    copied_from_history_dataset_association_id: Annotated[
+        Optional[EncodedDatabaseIdField], Field(None, description="ID of HDA this HDA was copied from.")
+    ]
 
 
 class HDAExtended(HDADetailed):
