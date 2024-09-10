@@ -2917,8 +2917,7 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
     @property
     def active(self):
         if self.configured and not self.deleted:
-            # FIXME: don't included queued?
-            return not self.job.finished
+            return self.job.running
         return False
 
     @property
