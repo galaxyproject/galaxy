@@ -214,6 +214,7 @@ from .execute import (
 
 if TYPE_CHECKING:
     from galaxy.app import UniverseApplication
+    from galaxy.managers.context import ProvidesUserContext
     from galaxy.managers.jobs import JobSearch
     from galaxy.tools.actions.metadata import SetMetadataToolAction
 
@@ -3402,7 +3403,7 @@ class DatabaseOperationTool(Tool):
                 element_object.visible = datasets_visible
                 history.stage_addition(element_object)
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         return self._outputs_dict()
 
     def _outputs_dict(self):
@@ -3579,7 +3580,7 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None, **kwds):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         has_collection = incoming["input"]
         if hasattr(has_collection, "element_type"):
             # It is a DCE
@@ -3992,7 +3993,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
 class ApplyRulesTool(DatabaseOperationTool):
     tool_type = "apply_rules"
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tag_handler, **kwds):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         rule_set = RuleSet(incoming["rules"])
         copied_datasets = []
@@ -4000,7 +4001,7 @@ class ApplyRulesTool(DatabaseOperationTool):
         def copy_dataset(dataset, tags):
             copied_dataset = dataset.copy(copy_tags=dataset.tags, flush=False)
             if tags is not None:
-                tag_handler.set_tags_from_list(
+                trans.tag_handler.set_tags_from_list(
                     trans.get_user(),
                     copied_dataset,
                     tags,
@@ -4029,7 +4030,7 @@ class TagFromFileTool(DatabaseOperationTool):
     # require_terminal_states = True
     # require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tag_handler, **kwds):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         how = incoming["how"]
         new_tags_dataset_assoc = incoming["tags"]
@@ -4037,6 +4038,7 @@ class TagFromFileTool(DatabaseOperationTool):
         new_datasets = []
 
         def add_copied_value_to_new_elements(new_tags_dict, dce):
+            tag_handler = trans.tag_handler
             if getattr(dce.element_object, "history_content_type", None) == "dataset":
                 copied_value = dce.element_object.copy(copy_tags=dce.element_object.tags, flush=False)
                 # copy should never be visible, since part of a collection
