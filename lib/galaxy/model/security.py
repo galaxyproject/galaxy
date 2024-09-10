@@ -1455,7 +1455,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         """
         self._ensure_model_instance_has_id(user)
         if group_ids is not None:
-            self._set_user_groups(user, group_ids or [])
+            self._set_user_groups(user, group_ids)
         if role_ids is not None:
             self._set_user_roles(user, role_ids or [])
         # Commit only if both user groups and user roles have been set.
