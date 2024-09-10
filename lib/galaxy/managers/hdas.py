@@ -613,14 +613,14 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         }
         self.serializers.update(serializers)
 
-    def serialize(self, hda, keys, user=None, **context):
+    def serialize(self, item, keys, user=None, **context):
         """
         Override to hide information to users not able to access.
         """
         # TODO: to DatasetAssociationSerializer
-        if not self.manager.is_accessible(hda, user, **context):
+        if not self.manager.is_accessible(item, user, **context):
             keys = self._view_to_keys("inaccessible")
-        return super().serialize(hda, keys, user=user, **context)
+        return super().serialize(item, keys, user=user, **context)
 
     def serialize_display_apps(self, item, key, trans=None, **context):
         """
