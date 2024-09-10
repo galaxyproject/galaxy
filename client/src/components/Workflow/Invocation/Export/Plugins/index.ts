@@ -6,11 +6,21 @@ import { BIO_COMPUTE_OBJ_EXPORT_PLUGIN } from "./BioComputeObject/BioComputeObje
 import { DEFAULT_FILE_EXPORT_PLUGIN } from "./DefaultFileExportPlugin";
 import { RO_CRATE_EXPORT_PLUGIN } from "./ROCrateExportPlugin";
 
-const AVAILABLE_INVOCATION_EXPORT_PLUGINS = [
-    RO_CRATE_EXPORT_PLUGIN,
-    BIO_COMPUTE_OBJ_EXPORT_PLUGIN,
-    DEFAULT_FILE_EXPORT_PLUGIN,
-];
+export type InvocationExportPluginType = "ro-crate" | "bco" | "default-file";
+
+export const AVAILABLE_INVOCATION_EXPORT_PLUGINS = new Map<InvocationExportPluginType, InvocationExportPlugin>([
+    ["ro-crate", RO_CRATE_EXPORT_PLUGIN],
+    ["bco", BIO_COMPUTE_OBJ_EXPORT_PLUGIN],
+    ["default-file", DEFAULT_FILE_EXPORT_PLUGIN],
+]);
+
+export function getInvocationExportPluginByType(pluginType: InvocationExportPluginType): InvocationExportPlugin {
+    const plugin = AVAILABLE_INVOCATION_EXPORT_PLUGINS.get(pluginType);
+    if (!plugin) {
+        throw new Error("Unregistered Invocation Export Plugin. Please register it first.");
+    }
+    return plugin;
+}
 
 /**
  * Defines a UI plugin that can export a workflow invocation to a particular format.
