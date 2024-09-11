@@ -298,8 +298,8 @@ class VisualizationUpdateResponse(Model):
 
 
 class VisualizationCreatePayload(Model):
-    type: Optional[SanitizedString] = Field(
-        None,
+    type: str = Field(
+        ...,
         title="Type",
         description="The type of the visualization.",
     )
@@ -307,6 +307,7 @@ class VisualizationCreatePayload(Model):
         SanitizedString("Untitled Visualization"),
         title="Title",
         description="The name of the visualization.",
+        min_length=3,
     )
     dbkey: Optional[SanitizedString] = Field(
         None,
@@ -327,11 +328,6 @@ class VisualizationCreatePayload(Model):
         {},
         title="Config",
         description="The config of the visualization.",
-    )
-    save: Optional[bool] = Field(
-        True,
-        title="Save",
-        description="Whether to save the visualization.",
     )
 
 

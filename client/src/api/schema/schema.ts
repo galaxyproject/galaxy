@@ -4689,11 +4689,8 @@ export interface paths {
         put?: never;
         /**
          * Create a new visualization.
-         * @description POST /api/visualizations
-         *     creates a new visualization using the given payload and does not require the import_id field
-         *
-         *     POST /api/visualizations?import_id={encoded_visualization_id}
-         *     imports a copy of an existing visualization into the user's workspace and does not require the rest of the payload
+         * @description Creates a new visualization using the given payload and does not require the import_id field.
+         *     If import_id given, it imports a copy of an existing visualization into the user's workspace and does not require the rest of the payload.
          */
         post: operations["create_api_visualizations_post"];
         delete?: never;
@@ -16851,12 +16848,6 @@ export interface components {
              */
             dbkey?: string | null;
             /**
-             * Save
-             * @description Whether to save the visualization.
-             * @default true
-             */
-            save: boolean | null;
-            /**
              * Slug
              * @description The slug of the visualization.
              */
@@ -16871,7 +16862,7 @@ export interface components {
              * Type
              * @description The type of the visualization.
              */
-            type?: string | null;
+            type: string;
         };
         /** VisualizationCreateResponse */
         VisualizationCreateResponse: {
