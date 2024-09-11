@@ -20,6 +20,7 @@ from pydantic import (
 from typing_extensions import (
     Annotated,
     Literal,
+    TypeAliasType,
 )
 
 from galaxy.schema import schema
@@ -76,6 +77,21 @@ class FailureReason(str, Enum):
     expression_evaluation_failed = "expression_evaluation_failed"
     when_not_boolean = "when_not_boolean"
     unexpected_failure = "unexpected_failure"
+
+
+# The reasons below are attached to the invocation and user-actionable.
+# Not included are `unexpected_failure` and `expression_evaluation_failed`.
+# If expression evaluation fails we're not attaching the templated
+# expression to the invocation, as it could contain secrets.
+# If the failure reason is not in `FAILURE_REASONS_EXPECTED` we should
+# log an exception so admins can debug and/or submit bug reports.
+FAILURE_REASONS_EXPECTED = (
+    FailureReason.dataset_failed,
+    FailureReason.collection_failed,
+    FailureReason.job_failed,
+    FailureReason.output_not_found,
+    FailureReason.when_not_boolean,
+)
 
 
 class CancelReason(str, Enum):
@@ -238,7 +254,7 @@ InvocationWarningWorkflowOutputNotFoundResponseModel = GenericInvocationEvaluati
     EncodedDatabaseIdField
 ]
 
-InvocationMessageResponseUnion = Annotated[
+_InvocationMessageResponseUnion = Annotated[
     Union[
         InvocationCancellationReviewFailedResponseModel,
         InvocationCancellationHistoryDeletedResponseModel,
@@ -254,6 +270,8 @@ InvocationMessageResponseUnion = Annotated[
     ],
     Field(discriminator="reason"),
 ]
+
+InvocationMessageResponseUnion = TypeAliasType("InvocationMessageResponseUnion", _InvocationMessageResponseUnion)
 
 
 class InvocationMessageResponseModel(RootModel):

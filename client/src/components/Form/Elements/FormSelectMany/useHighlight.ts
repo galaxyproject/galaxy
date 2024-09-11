@@ -2,7 +2,7 @@ import { type Ref, ref, watch } from "vue";
 
 import { assertDefined } from "@/utils/assertions";
 
-import type { SelectOption } from "./worker/selectMany";
+import { type SelectOption } from "./worker/selectMany";
 
 /**
  * Handles logic required for highlighting options

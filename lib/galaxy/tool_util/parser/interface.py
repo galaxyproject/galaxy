@@ -17,8 +17,14 @@ from typing import (
 )
 
 import packaging.version
-from typing_extensions import TypedDict
+from pydantic import BaseModel
+from typing_extensions import (
+    Literal,
+    NotRequired,
+    TypedDict,
+)
 
+from galaxy.util import Element
 from galaxy.util.path import safe_walk
 from .util import _parse_name
 
@@ -42,10 +48,54 @@ AssertionList = Optional[List[AssertionDict]]
 XmlInt = Union[str, int]
 
 
+class ToolSourceTestOutputAttributes(TypedDict):
+    object: NotRequired[Optional[Any]]
+    compare: str
+    lines_diff: int
+    delta: int
+    delta_frac: Optional[float]
+    sort: bool
+    decompress: bool
+    location: NotRequired[Optional[str]]
+    ftype: NotRequired[Optional[str]]
+    eps: float
+    metric: str
+    pin_labels: Optional[Any]
+    count: Optional[int]
+    metadata: Dict[str, Any]
+    md5: Optional[str]
+    checksum: Optional[str]
+    primary_datasets: Dict[str, Any]
+    elements: Dict[str, Any]
+    assert_list: AssertionList
+    extra_files: List[Dict[str, Any]]
+
+
+class ToolSourceTestOutput(TypedDict):
+    name: str
+    value: Optional[str]
+    attributes: ToolSourceTestOutputAttributes
+
+
+# The unfortunate 'attrib = dict(param_elem.attrib)' makes this difficult to type.
+ToolSourceTestInputAttributes = Dict[str, Any]
+
+
+class ToolSourceTestInput(TypedDict):
+    name: str
+    value: Optional[Any]
+    attributes: ToolSourceTestInputAttributes
+
+
+ToolSourceTestInputs = List[ToolSourceTestInput]
+ToolSourceTestOutputs = List[ToolSourceTestOutput]
+TestSourceTestOutputColllection = Any
+
+
 class ToolSourceTest(TypedDict):
-    inputs: Any
-    outputs: Any
-    output_collections: List[Any]
+    inputs: ToolSourceTestInputs
+    outputs: ToolSourceTestOutputs
+    output_collections: List[TestSourceTestOutputColllection]
     stdout: AssertionList
     stderr: AssertionList
     expect_exit_code: Optional[XmlInt]
@@ -59,6 +109,21 @@ class ToolSourceTest(TypedDict):
 
 class ToolSourceTests(TypedDict):
     tests: List[ToolSourceTest]
+
+
+class XrefDict(TypedDict):
+    value: str
+    reftype: str
+
+
+class Citation(BaseModel):
+    type: str
+    content: str
+
+
+class HelpContent(BaseModel):
+    format: Literal["restructuredtext", "plain_text", "markdown"]
+    content: str
 
 
 class ToolSource(metaclass=ABCMeta):
@@ -76,7 +141,7 @@ class ToolSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_version(self):
+    def parse_version(self) -> Optional[str]:
         """Parse a version describing the abstract tool."""
 
     def parse_tool_module(self):
@@ -98,12 +163,15 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_name(self):
+    def parse_name(self) -> str:
         """Parse a short name for tool (required)."""
 
     @abstractmethod
-    def parse_description(self):
-        """Parse a description for tool. Longer than name, shorted than help."""
+    def parse_description(self) -> str:
+        """Parse a description for tool. Longer than name, shorted than help.
+
+        We parse this out as "" if it isn't explicitly declared.
+        """
 
     def parse_edam_operations(self) -> List[str]:
         """Parse list of edam operation codes."""
@@ -114,7 +182,7 @@ class ToolSource(metaclass=ABCMeta):
         return []
 
     @abstractmethod
-    def parse_xrefs(self) -> List[Dict[str, str]]:
+    def parse_xrefs(self) -> List[XrefDict]:
         """Parse list of external resource URIs and types."""
 
     def parse_display_interface(self, default):
@@ -231,7 +299,7 @@ class ToolSource(metaclass=ABCMeta):
         """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
 
     @abstractmethod
-    def parse_input_pages(self):
+    def parse_input_pages(self) -> "PagesSource":
         """Return a PagesSource representing inputs by page for tool."""
 
     def parse_provided_metadata_style(self):
@@ -270,18 +338,24 @@ class ToolSource(metaclass=ABCMeta):
         return [], []
 
     @abstractmethod
-    def parse_help(self) -> Optional[str]:
-        """Return RST definition of help text for tool or None if the tool
-        doesn't define help text.
+    def parse_help(self) -> Optional[HelpContent]:
+        """Return help text for tool or None if the tool doesn't define help text.
+
+        The returned object contains the help text and an indication if it is reStructuredText
+        (``restructuredtext``), Markdown (``markdown``), or plain text (``plain_text``).
         """
 
     @abstractmethod
-    def parse_profile(self):
+    def parse_profile(self) -> str:
         """Return tool profile version as Galaxy major e.g. 16.01 or 16.04."""
 
     @abstractmethod
-    def parse_license(self):
+    def parse_license(self) -> Optional[str]:
         """Return license corresponding to tool wrapper."""
+
+    def parse_citations(self) -> List[Citation]:
+        """Return a list of citations."""
+        return []
 
     @abstractmethod
     def parse_python_template_version(self) -> Optional[packaging.version.Version]:
@@ -339,6 +413,37 @@ class PagesSource:
     @property
     def inputs_defined(self):
         return True
+
+
+class DynamicOptions(metaclass=ABCMeta):
+
+    def elem(self) -> Element:
+        # For things in transition that still depend on XML - provide a way
+        # to grab it and just throw an error if feature is attempted to be
+        # used with other tool sources.
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abstractmethod
+    def get_data_table_name(self) -> Optional[str]:
+        """If dynamic options are loaded from a data table, return the name."""
+
+    @abstractmethod
+    def get_index_file_name(self) -> Optional[str]:
+        """If dynamic options are loaded from an index file, return the name."""
+
+
+DrillDownDynamicFilters = Dict[str, Dict[str, dict]]  # {input key: {metadata_key: metadata values}}
+
+
+class DrillDownDynamicOptions(metaclass=ABCMeta):
+
+    @abstractmethod
+    def from_code_block(self) -> Optional[str]:
+        """Get a code block to do an eval on."""
+
+    @abstractmethod
+    def from_filters(self) -> Optional[DrillDownDynamicFilters]:
+        """Get filters to apply to target datasets."""
 
 
 class InputSource(metaclass=ABCMeta):
@@ -400,8 +505,17 @@ class InputSource(metaclass=ABCMeta):
             default = self.default_optional
         return self.get_bool("optional", default)
 
-    def parse_dynamic_options_elem(self):
-        """Return an XML element describing dynamic options."""
+    def parse_dynamic_options(self) -> Optional[DynamicOptions]:
+        """Return an optional element describing dynamic options.
+
+        These options are still very XML based but as they are adapted to the infrastructure, the return
+        type here will evolve.
+        """
+        return None
+
+    def parse_drill_down_dynamic_options(
+        self, tool_data_path: Optional[str] = None
+    ) -> Optional["DrillDownDynamicOptions"]:
         return None
 
     def parse_static_options(self) -> List[Tuple[str, str, bool]]:
@@ -409,6 +523,11 @@ class InputSource(metaclass=ABCMeta):
         defining a dynamic options.
         """
         return []
+
+    def parse_drill_down_static_options(
+        self, tool_data_path: Optional[str] = None
+    ) -> Optional[List["DrillDownOptionsDict"]]:
+        return None
 
     def parse_conversion_tuples(self):
         """Return list of (name, extension) to describe explicit conversions."""
@@ -438,6 +557,24 @@ class PageSource(metaclass=ABCMeta):
         """Return a list of InputSource objects."""
 
 
+TestCollectionDefElementObject = Union["TestCollectionDefDict", "ToolSourceTestInput"]
+TestCollectionAttributeDict = Dict[str, Any]
+CollectionType = str
+
+
+class TestCollectionDefElementDict(TypedDict):
+    element_identifier: str
+    element_definition: TestCollectionDefElementObject
+
+
+class TestCollectionDefDict(TypedDict):
+    model_class: Literal["TestCollectionDef"]
+    attributes: TestCollectionAttributeDict
+    collection_type: CollectionType
+    elements: List[TestCollectionDefElementDict]
+    name: str
+
+
 class TestCollectionDef:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
@@ -447,30 +584,7 @@ class TestCollectionDef:
         self.elements = elements
         self.name = name
 
-    @staticmethod
-    def from_xml(elem, parse_param_elem):
-        elements = []
-        attrib = dict(elem.attrib)
-        collection_type = attrib["type"]
-        name = attrib.get("name", "Unnamed Collection")
-        for element in elem.findall("element"):
-            element_attrib = dict(element.attrib)
-            element_identifier = element_attrib["name"]
-            nested_collection_elem = element.find("collection")
-            if nested_collection_elem is not None:
-                element_definition = TestCollectionDef.from_xml(nested_collection_elem, parse_param_elem)
-            else:
-                element_definition = parse_param_elem(element)
-            elements.append({"element_identifier": element_identifier, "element_definition": element_definition})
-
-        return TestCollectionDef(
-            attrib=attrib,
-            collection_type=collection_type,
-            elements=elements,
-            name=name,
-        )
-
-    def to_dict(self):
+    def to_dict(self) -> TestCollectionDefDict:
         def element_to_dict(element_dict):
             element_identifier, element_def = element_dict["element_identifier"], element_dict["element_definition"]
             if isinstance(element_def, TestCollectionDef):
@@ -489,7 +603,7 @@ class TestCollectionDef:
         }
 
     @staticmethod
-    def from_dict(as_dict):
+    def from_dict(as_dict: TestCollectionDefDict):
         assert as_dict["model_class"] == "TestCollectionDef"
 
         def element_from_dict(element_dict):
@@ -586,3 +700,10 @@ class TestCollectionOutputDef:
 
     def to_dict(self):
         return dict(name=self.name, attributes=self.attrib, element_tests=self.element_tests)
+
+
+class DrillDownOptionsDict(TypedDict):
+    name: Optional[str]
+    value: str
+    options: List["DrillDownOptionsDict"]
+    selected: bool

@@ -16,6 +16,8 @@ from typing import (
 )
 from uuid import uuid4
 
+from pydantic import UUID4
+
 from galaxy.exceptions import (
     ItemOwnershipException,
     RequestParameterInvalidException,
@@ -73,7 +75,7 @@ log = logging.getLogger(__name__)
 
 
 class UserConcreteObjectStoreModel(ConcreteObjectStoreModel):
-    uuid: str
+    uuid: UUID4
     type: ObjectStoreTemplateType
     template_id: str
     template_version: int
@@ -106,7 +108,7 @@ class ObjectStoreInstancesManager:
         return self._catalog.summaries
 
     def modify_instance(
-        self, trans: ProvidesUserContext, id: str, payload: ModifyInstancePayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: ModifyInstancePayload
     ) -> UserConcreteObjectStoreModel:
         if isinstance(payload, UpgradeInstancePayload):
             return self._upgrade_instance(trans, id, payload)
@@ -116,12 +118,12 @@ class ObjectStoreInstancesManager:
             assert isinstance(payload, UpdateInstancePayload)
             return self._update_instance(trans, id, payload)
 
-    def purge_instance(self, trans: ProvidesUserContext, id: str) -> None:
+    def purge_instance(self, trans: ProvidesUserContext, id: UUID4) -> None:
         persisted_object_store = self._get(trans, id)
         purge_template_instance(trans, persisted_object_store, self._app_config)
 
     def _upgrade_instance(
-        self, trans: ProvidesUserContext, id: str, payload: UpgradeInstancePayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: UpgradeInstancePayload
     ) -> UserConcreteObjectStoreModel:
         persisted_object_store = self._get(trans, id)
         template = self._get_template(persisted_object_store, payload.template_version)
@@ -140,7 +142,7 @@ class ObjectStoreInstancesManager:
         return self._to_model(trans, persisted_object_store)
 
     def _update_instance(
-        self, trans: ProvidesUserContext, id: str, payload: UpdateInstancePayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: UpdateInstancePayload
     ) -> UserConcreteObjectStoreModel:
         persisted_object_store = self._get(trans, id)
         template = self._get_template(persisted_object_store)
@@ -148,7 +150,7 @@ class ObjectStoreInstancesManager:
         return self._to_model(trans, persisted_object_store)
 
     def _update_instance_secret(
-        self, trans: ProvidesUserContext, id: str, payload: UpdateInstanceSecretPayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: UpdateInstanceSecretPayload
     ) -> UserConcreteObjectStoreModel:
         persisted_object_store = self._get(trans, id)
         template = self._get_template(persisted_object_store)
@@ -200,14 +202,14 @@ class ObjectStoreInstancesManager:
         stores = self._sa_session.query(UserObjectStore).filter(UserObjectStore.user_id == trans.user.id).all()
         return [self._to_model(trans, s) for s in stores]
 
-    def show(self, trans: ProvidesUserContext, id: str) -> UserConcreteObjectStoreModel:
+    def show(self, trans: ProvidesUserContext, id: UUID4) -> UserConcreteObjectStoreModel:
         user_object_store = self._get(trans, id)
         return self._to_model(trans, user_object_store)
 
     def _save(self, persisted_object_store: UserObjectStore) -> None:
         save_template_instance(self._sa_session, persisted_object_store)
 
-    def _get(self, trans: ProvidesUserContext, id: str) -> UserObjectStore:
+    def _get(self, trans: ProvidesUserContext, id: UUID4) -> UserObjectStore:
         filter = self._index_filter(id)
         user_object_store = self._sa_session.query(UserObjectStore).filter(filter).one_or_none()
         if user_object_store is None:
@@ -274,7 +276,7 @@ class ObjectStoreInstancesManager:
             exception = e
         return object_store, connection_exception_to_status("storage location", exception)
 
-    def _index_filter(self, uuid: str):
+    def _index_filter(self, uuid: UUID4):
         return UserObjectStore.__table__.c.uuid == uuid
 
     def _get_template(

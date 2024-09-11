@@ -5,15 +5,15 @@ import Vue, { computed, onMounted, ref } from "vue";
 import {
     browseRemoteFiles,
     fetchFileSources,
-    FileSourceBrowsingMode,
-    FilterFileSourcesOptions,
-    RemoteEntry,
+    type FileSourceBrowsingMode,
+    type FilterFileSourcesOptions,
+    type RemoteEntry,
 } from "@/api/remoteFiles";
 import { UrlTracker } from "@/components/DataDialog/utilities";
 import { fileSourcePluginToItem, isSubPath } from "@/components/FilesDialog/utilities";
 import {
-    ItemsProvider,
-    ItemsProviderContext,
+    type ItemsProvider,
+    type ItemsProviderContext,
     SELECTION_STATES,
     type SelectionItem,
 } from "@/components/SelectionDialog/selectionTypes";

@@ -229,7 +229,7 @@ class JobParameter(Model):
         title="Depth",
         description="The depth of the job parameter.",
     )
-    value: Optional[Union[List[EncodedJobParameterHistoryItem], float, int, bool, str]] = Field(
+    value: Optional[Union[List[Optional[EncodedJobParameterHistoryItem]], float, int, bool, str]] = Field(
         default=None, title="Value", description="The values of the job parameter", union_mode="left_to_right"
     )
     notes: Optional[str] = Field(default=None, title="Notes", description="Notes associated with the job parameter.")

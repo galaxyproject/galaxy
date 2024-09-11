@@ -1,8 +1,10 @@
 import { readonly, ref, watch } from "vue";
 
-import { fetcher } from "@/api/schema";
-import { ExportParams, StoreExportPayload } from "@/components/Common/models/exportRecordModel";
+import { type StoreExportPayload } from "@/api";
+import { GalaxyApi } from "@/api";
+import { type ExportParams } from "@/components/Common/models/exportRecordModel";
 import { withPrefix } from "@/utils/redirect";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import { useShortTermStorageMonitor } from "./shortTermStorageMonitor";
 
@@ -27,15 +29,6 @@ type StartPreparingDownloadCallback = (objectId: string, params: StoreExportPayl
 const DEFAULT_POLL_DELAY = 3000;
 const DEFAULT_OPTIONS: Options = { exportParams: DEFAULT_EXPORT_PARAMS, pollDelayInMs: DEFAULT_POLL_DELAY };
 
-const startPreparingHistoryDownload = fetcher
-    .path("/api/histories/{history_id}/prepare_store_download")
-    .method("post")
-    .create();
-const startPreparingInvocationDownload = fetcher
-    .path("/api/invocations/{invocation_id}/prepare_store_download")
-    .method("post")
-    .create();
-
 /**
  * Composable to simplify and reuse the logic for downloading objects using Galaxy's Short Term Storage system.
  */
@@ -51,12 +44,30 @@ export function useShortTermStorage() {
     });
 
     const forHistory: StartPreparingDownloadCallback = async (id: string, params: StoreExportPayload) => {
-        const { data } = await startPreparingHistoryDownload({ history_id: id, ...params });
+        const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/prepare_store_download", {
+            params: { path: { history_id: id } },
+            body: params,
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
         return data;
     };
 
     const forInvocation: StartPreparingDownloadCallback = async (id: string, params: StoreExportPayload) => {
-        const { data } = await startPreparingInvocationDownload({ invocation_id: id, ...params });
+        const { data, error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/prepare_store_download", {
+            params: { path: { invocation_id: id } },
+            body: {
+                ...params,
+                bco_merge_history_metadata: false,
+            },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
         return data;
     };
 

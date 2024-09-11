@@ -37,9 +37,6 @@
             <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
                 <span v-localize>Build Dataset List</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="showBuildOptions" data-description="build pair" @click="buildDatasetPair">
-                <span v-localize>Build Dataset Pair</span>
-            </b-dropdown-item>
             <b-dropdown-item v-if="showBuildOptions" data-description="build list of pairs" @click="buildListOfPairs">
                 <span v-localize>Build List of Dataset Pairs</span>
             </b-dropdown-item>
@@ -158,12 +155,14 @@ import {
     undeleteSelectedContent,
     unhideSelectedContent,
 } from "components/History/model/crud";
-import { createDatasetCollection, getHistoryContent } from "components/History/model/queries";
 import { DatatypesProvider, DbKeyProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 
+import { GalaxyApi } from "@/api";
+import { createDatasetCollection, filtersToQueryValues } from "@/components/History/model/queries";
 import { useConfig } from "@/composables/config";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export default {
     components: {
@@ -368,13 +367,20 @@ export default {
         async buildDatasetListAll() {
             let allContents = [];
             const filters = HistoryFilters.getQueryDict(this.filterText);
+            const filterQuery = filtersToQueryValues(filters);
+            const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents/{type}s", {
+                params: {
+                    path: { history_id: this.history.id, type: "dataset" },
+                    query: { ...filterQuery, v: "dev" },
+                },
+            });
+            if (error) {
+                rethrowSimple(error);
+            }
 
-            allContents = await getHistoryContent(this.history.id, filters, "dataset");
+            allContents = data;
 
             this.buildNewCollection("list", allContents);
-        },
-        async buildDatasetPair() {
-            await this.buildNewCollection("paired");
         },
         async buildListOfPairs() {
             await this.buildNewCollection("list:paired");

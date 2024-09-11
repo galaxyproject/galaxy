@@ -1,15 +1,13 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
-import type { HistorySummary } from "@/api";
+import { type HistorySummary } from "@/api";
+import { useServerMock } from "@/api/client/__mocks__";
 import { fetchHistoryExportRecords } from "@/api/histories.export";
-import type { FilesSourcePlugin } from "@/api/remoteFiles";
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { type FilesSourcePlugin } from "@/api/remoteFiles";
 import {
     EXPIRED_STS_DOWNLOAD_RECORD,
     FILE_SOURCE_STORE_RECORD,
@@ -20,7 +18,6 @@ import HistoryExport from "./HistoryExport.vue";
 
 const localVue = getLocalVue(true);
 
-jest.mock("@/api/schema");
 jest.mock("@/api/histories.export");
 const mockFetchExportRecords = fetchHistoryExportRecords as jest.MockedFunction<typeof fetchHistoryExportRecords>;
 mockFetchExportRecords.mockResolvedValue([]);
@@ -42,8 +39,6 @@ const FAKE_HISTORY: HistorySummary = {
     url: FAKE_HISTORY_URL,
 };
 
-const REMOTE_FILES_API_ENDPOINT = new RegExp("/api/remote_files/plugins");
-
 const REMOTE_FILES_API_RESPONSE: FilesSourcePlugin[] = [
     {
         id: "test-posix-source",
@@ -54,6 +49,11 @@ const REMOTE_FILES_API_RESPONSE: FilesSourcePlugin[] = [
         browsable: true,
         requires_roles: undefined,
         requires_groups: undefined,
+        supports: {
+            pagination: false,
+            search: false,
+            sorting: false,
+        },
     },
 ];
 
@@ -70,13 +70,22 @@ async function mountHistoryExport() {
     return wrapper;
 }
 
-describe("HistoryExport.vue", () => {
-    let axiosMock: MockAdapter;
+const { server, http } = useServerMock();
 
+describe("HistoryExport.vue", () => {
     beforeEach(async () => {
-        mockFetcher.path(REMOTE_FILES_API_ENDPOINT).method("get").mock({ data: [] });
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(FAKE_HISTORY_URL).reply(200, FAKE_HISTORY);
+        server.use(
+            http.get("/api/histories/{history_id}", ({ response, params }) => {
+                const historyId = params.history_id;
+                if (historyId === FAKE_HISTORY_ID) {
+                    return response(200).json(FAKE_HISTORY);
+                }
+            }),
+
+            http.get("/api/remote_files/plugins", ({ response }) => {
+                return response(200).json([]);
+            })
+        );
     });
 
     it("should render the history name", async () => {
@@ -116,7 +125,10 @@ describe("HistoryExport.vue", () => {
     });
 
     it("should display file sources tab if there are available", async () => {
-        mockFetcher.path(REMOTE_FILES_API_ENDPOINT).method("get").mock({ data: REMOTE_FILES_API_RESPONSE });
+        server.use(
+            http.get("/api/remote_files/plugins", ({ response }) => response(200).json(REMOTE_FILES_API_RESPONSE))
+        );
+
         const wrapper = await mountHistoryExport();
 
         expect(wrapper.find("#direct-download-tab").exists()).toBe(true);
@@ -138,11 +150,14 @@ describe("HistoryExport.vue", () => {
             doc: "For testing",
             writable: true,
             browsable: true,
+            supports: {
+                pagination: false,
+                search: false,
+                sorting: false,
+            },
         };
-        mockFetcher
-            .path(REMOTE_FILES_API_ENDPOINT)
-            .method("get")
-            .mock({ data: [zenodoPlugin] });
+        server.use(http.get("/api/remote_files/plugins", ({ response }) => response(200).json([zenodoPlugin])));
+
         const wrapper = await mountHistoryExport();
 
         expect(wrapper.find("#zenodo-file-source-tab").exists()).toBe(true);
@@ -159,7 +174,18 @@ describe("HistoryExport.vue", () => {
     });
 
     it("should not render the UI and display a fatal error message if the history cannot be found or loaded", async () => {
-        axiosMock.onGet(FAKE_HISTORY_URL).reply(404);
+        server.use(
+            http.get("/api/histories/{history_id}", ({ response }) =>
+                response("4XX").json(
+                    {
+                        err_code: 404,
+                        err_msg: "History not found",
+                    },
+                    { status: 404 }
+                )
+            )
+        );
+
         const wrapper = await mountHistoryExport();
 
         expect(wrapper.find("#fatal-error-alert").exists()).toBe(true);

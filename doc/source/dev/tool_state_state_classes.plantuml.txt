@@ -1,0 +1,41 @@
+@startuml
+!include plantuml_options.txt
+
+package galaxy.tool_util.parameters.state {
+
+class ToolState {
+state_representation: str
+input_state: Dict[str, Any]
++ validate(input_models: ToolParameterBundle)
++ {abstract} _to_base_model(input_models: ToolParameterBundle): Optional[Type[BaseModel]]
+}
+
+class RequestToolState {
+state_representation = "request"
++ _to_base_model(input_models: ToolParameterBundle): Type[BaseModel]
+}
+note bottom: Object references of the form \n{src: "hda", id: <encoded_id>}.\n Allow mapping/reduce constructs.
+
+class RequestInternalToolState {
+state_representation = "request_internal"
++ _to_base_model(input_models: ToolParameterBundle): Type[BaseModel]
+}
+note bottom: Object references of the form \n{src: "hda", id: <decoded_id>}.\n Allow mapping/reduce constructs.
+
+class JobInternalToolState {
+state_representation = "job_internal"
++ _to_base_model(input_models: ToolParameterBundle): Type[BaseModel]
+
+}
+note bottom: Object references of the form \n{src: "hda", id: <decoded_id>}.\n Mapping constructs expanded out.\n (Defaults are inserted?)
+
+ToolState <|-- RequestToolState
+ToolState <|-- RequestInternalToolState
+ToolState <|-- JobInternalToolState
+
+RequestToolState - RequestInternalToolState : decode >
+
+RequestInternalToolState o-- JobInternalToolState : expand >
+
+}
+@enduml

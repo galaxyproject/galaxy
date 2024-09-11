@@ -1,4 +1,4 @@
-import { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
+import { type BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 
 export const ftpId = "_ftp";
 export const rootId = "pdb-gzip";
@@ -35,6 +35,11 @@ export const rootResponse: BrowsableFilesSourcePlugin[] = [
         doc: "Galaxy User's FTP Directory",
         writable: true,
         browsable: true,
+        supports: {
+            pagination: false,
+            search: false,
+            sorting: false,
+        },
     },
     {
         id: "pdb-gzip",
@@ -44,6 +49,11 @@ export const rootResponse: BrowsableFilesSourcePlugin[] = [
         doc: "Protein Data Bank (PDB)",
         writable: true,
         browsable: true,
+        supports: {
+            pagination: false,
+            search: false,
+            sorting: false,
+        },
     },
     {
         id: "empty-dir",
@@ -53,6 +63,11 @@ export const rootResponse: BrowsableFilesSourcePlugin[] = [
         doc: "Empty Directory",
         writable: true,
         browsable: true,
+        supports: {
+            pagination: false,
+            search: false,
+            sorting: false,
+        },
     },
 ];
 

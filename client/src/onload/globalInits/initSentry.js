@@ -19,9 +19,7 @@ export const initSentry = (galaxy, config) => {
         Sentry.init({
             Vue,
             dsn: sentry_dsn_public,
-            integrations: [Sentry.browserTracingIntegration({ router }), Sentry.replayIntegration()],
-            replaysSessionSampleRate: 0,
-            replaysOnErrorSampleRate: 1.0,
+            integrations: [Sentry.browserTracingIntegration({ router })],
             release: release,
             beforeSend(event, hint) {
                 const error = hint.originalException;

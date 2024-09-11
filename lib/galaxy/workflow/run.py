@@ -10,6 +10,7 @@ from typing import (
     Union,
 )
 
+from boltons.iterutils import get_path
 from typing_extensions import Protocol
 
 from galaxy import model
@@ -24,6 +25,7 @@ from galaxy.model.base import (
 )
 from galaxy.schema.invocation import (
     CancelReason,
+    FAILURE_REASONS_EXPECTED,
     FailureReason,
     InvocationCancellationHistoryDeleted,
     InvocationFailureCollectionFailed,
@@ -35,6 +37,7 @@ from galaxy.schema.invocation import (
     WarningReason,
 )
 from galaxy.tools.parameters.basic import raw_to_galaxy
+from galaxy.tools.parameters.wrapped import nested_key_to_path
 from galaxy.util import ExecutionTimer
 from galaxy.workflow import modules
 from galaxy.workflow.run_request import (
@@ -249,8 +252,12 @@ class WorkflowInvoker:
                 step_delayed = delayed_steps = True
                 self.progress.mark_step_outputs_delayed(step, why=de.why)
             except Exception as e:
-                log.exception(
-                    "Failed to schedule %s, problem occurred on %s.",
+                log_function = log.exception
+                if isinstance(e, modules.FailWorkflowEvaluation) and e.why.reason in FAILURE_REASONS_EXPECTED:
+                    log_function = log.info
+                log_function(
+                    "Failed to schedule %s for %s, problem occurred on %s.",
+                    self.workflow_invocation.log_str(),
                     self.workflow_invocation.workflow.log_str(),
                     step.log_str(),
                 )
@@ -444,6 +451,10 @@ class WorkflowProgress:
                     replacement = temp
             else:
                 replacement = self.replacement_for_connection(connection[0], is_data=is_data)
+        elif step.state and (state_input := get_path(step.state.inputs, nested_key_to_path(prefixed_name), None)):
+            # workflow submitted with step parameters populates state directly
+            # via populate_module_and_state
+            replacement = state_input
         else:
             for step_input in step.inputs:
                 if step_input.name == prefixed_name and step_input.default_value_set:

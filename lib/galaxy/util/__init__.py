@@ -996,7 +996,7 @@ class Params:
         self.__dict__.update(values)
 
 
-def xml_text(root, name=None):
+def xml_text(root, name=None, default=""):
     """Returns the text inside an element"""
     if name is not None:
         # Try attribute first
@@ -1011,7 +1011,7 @@ def xml_text(root, name=None):
         text = "".join(elem.text.splitlines())
         return text.strip()
     # No luck, return empty string
-    return ""
+    return default
 
 
 def parse_resource_parameters(resource_param_file):
@@ -1134,7 +1134,7 @@ def commaify(amount):
 
 
 @overload
-def unicodify(  # type: ignore[overload-overlap]
+def unicodify(  # type: ignore[overload-overlap]  # ignore can be removed in mypy >=1.11.0
     value: Literal[None],
     encoding: str = DEFAULT_ENCODING,
     error: str = "replace",
@@ -1738,12 +1738,20 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 
+# never load packages this way (won't work for installed packages),
+# but while we're working on packaging everything this can be a way to point
+# an installed Galaxy at a Galaxy root for things like tools. Ultimately
+# this all needs to be packaged, but we have some very old PRs working on this
+# that are pretty tricky and shouldn't slow current development.
+GALAXY_INCLUDES_ROOT = os.environ.get("GALAXY_INCLUDES_ROOT")
+
+
 #  Don't use this directly, prefer method version that "works" with packaged Galaxy.
-galaxy_root_path = Path(__file__).parent.parent.parent.parent
+galaxy_root_path = Path(GALAXY_INCLUDES_ROOT) if GALAXY_INCLUDES_ROOT else Path(__file__).parent.parent.parent.parent
 
 
 def galaxy_directory() -> str:
-    if in_packages():
+    if in_packages() and not GALAXY_INCLUDES_ROOT:
         # This will work only when running pytest from <galaxy_root>/packages/<package_name>/
         cwd = Path.cwd()
         path = cwd.parent.parent

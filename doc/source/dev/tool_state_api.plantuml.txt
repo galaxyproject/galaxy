@@ -1,0 +1,17 @@
+@startuml
+'!include plantuml_options.txt
+participant "API Request" as apireq
+boundary    "Jobs API"    as api
+participant     "Job Service" as service
+database    Database    as database
+queue       TaskQueue   as queue
+apireq -> api : HTTP JSON
+api -> service : To boundary
+service -> service : Build RequestToolState
+service -> service : Validate RequestToolState (pydantic)
+service -> service : decode() RequestToolState \ninto RequestInternalToolState
+service -> database : Serialize RequestInternalToolState
+service -> queue : Queue QueueJobs with reference to\npersisted RequestInternalToolState
+service -> api : JobCreateResponse\n (pydantic model)
+api -> apireq : JobCreateResponse\n (as json)
+@enduml

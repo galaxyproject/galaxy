@@ -18,7 +18,7 @@ class TestMetadata(TestCase, tools_support.UsesTools):
     def setUp(self):
         super().setUp()
         self.setup_app()
-        model.Dataset.object_store = self.app.object_store  # type: ignore[assignment]
+        model.Dataset.object_store = self.app.object_store
         job = model.Job()
         sa_session = self.app.model.session
         sa_session.add(job)

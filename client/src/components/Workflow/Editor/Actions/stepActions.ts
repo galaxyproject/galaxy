@@ -1,10 +1,10 @@
 import { replaceLabel } from "@/components/Markdown/parse";
 import { useToast } from "@/composables/toast";
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
-import { LazyUndoRedoAction, UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
-import { Connection, WorkflowConnectionStore } from "@/stores/workflowConnectionStore";
-import { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import type { NewStep, Step, WorkflowStepStore } from "@/stores/workflowStepStore";
+import { LazyUndoRedoAction, UndoRedoAction, type UndoRedoStore } from "@/stores/undoRedoStore";
+import { type Connection, type WorkflowConnectionStore } from "@/stores/workflowConnectionStore";
+import { type WorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { type NewStep, type Step, type WorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { cloneStepWithUniqueLabel, getLabelSet } from "./cloneStep";
@@ -15,10 +15,11 @@ export class LazyMutateStepAction<K extends keyof Step> extends LazyUndoRedoActi
     toValue: Step[K];
     stepId;
     stepStore;
+    stepLabel;
     onUndoRedo?: () => void;
 
     get name() {
-        return this.internalName ?? "modify step";
+        return this.internalName ?? `modify step ${this.stepLabel}`;
     }
 
     set name(name: string | undefined) {
@@ -32,6 +33,13 @@ export class LazyMutateStepAction<K extends keyof Step> extends LazyUndoRedoActi
         this.key = key;
         this.fromValue = fromValue;
         this.toValue = toValue;
+
+        this.stepLabel = `${stepId + 1}`;
+        const step = this.stepStore.getStep(stepId);
+
+        if (step) {
+            this.stepLabel = `"${stepId + 1}: ${step.label ?? step.name}"`;
+        }
     }
 
     queued() {
@@ -160,10 +168,11 @@ export class UpdateStepAction extends UndoRedoAction {
     stepId;
     fromPartial;
     toPartial;
+    stepLabel;
     onUndoRedo?: () => void;
 
     get name() {
-        return this.internalName ?? "modify step";
+        return this.internalName ?? `modify step ${this.stepLabel}`;
     }
 
     set name(name: string | undefined) {
@@ -183,6 +192,13 @@ export class UpdateStepAction extends UndoRedoAction {
         this.stepId = stepId;
         this.fromPartial = fromPartial;
         this.toPartial = toPartial;
+
+        this.stepLabel = `${stepId + 1}`;
+        const step = this.stepStore.getStep(stepId);
+
+        if (step) {
+            this.stepLabel = `"${stepId + 1}: ${step.label ?? step.name}"`;
+        }
     }
 
     isEmpty() {
@@ -310,7 +326,7 @@ export class RemoveStepAction extends UndoRedoAction {
     }
 
     get name() {
-        return `remove ${this.step.label ?? this.step.name}`;
+        return `remove step "${this.step.id} ${this.step.label ?? this.step.name}"`;
     }
 
     run() {
@@ -331,6 +347,7 @@ export class CopyStepAction extends UndoRedoAction {
     stepStore;
     stateStore;
     step: NewStep;
+    stepLabel;
     stepId?: number;
     onUndoRedo?: () => void;
 
@@ -340,12 +357,13 @@ export class CopyStepAction extends UndoRedoAction {
         this.stateStore = stateStore;
 
         const labelSet = getLabelSet(stepStore);
+        this.stepLabel = `${step.id + 1}: ${step.label ?? step.name}`;
         this.step = cloneStepWithUniqueLabel(step, labelSet);
         delete this.step.id;
     }
 
     get name() {
-        return `duplicate step ${this.step.label ?? this.step.name}`;
+        return `duplicate step "${this.stepLabel}"`;
     }
 
     run() {
@@ -366,6 +384,7 @@ export class ToggleStepSelectedAction extends UndoRedoAction {
     stepStore;
     stepId;
     toggleTo: boolean;
+    stepLabel;
 
     constructor(stateStore: WorkflowStateStore, stepStore: WorkflowStepStore, stepId: number) {
         super();
@@ -374,11 +393,9 @@ export class ToggleStepSelectedAction extends UndoRedoAction {
         this.stepStore = stepStore;
         this.stepId = stepId;
         this.toggleTo = !this.stateStore.getStepMultiSelected(stepId);
-    }
 
-    get stepLabel() {
         const label = this.stepStore.getStep(this.stepId)?.label;
-        return label ?? `${this.stepId + 1}`;
+        this.stepLabel = label ?? `${this.stepId + 1}`;
     }
 
     get name() {
@@ -445,6 +462,10 @@ export function useStepActions(
                 undoRedoStore.setLazyActionTimeout(timeout);
             }
 
+            if (name) {
+                actionForKey.name = name;
+            }
+
             return actionForKey;
         } else {
             const actionConstructor =
@@ -469,11 +490,21 @@ export function useStepActions(
     }
 
     function setPosition(step: Step, position: NonNullable<Step["position"]>) {
-        changeValueOrCreateAction({ step, key: "position", value: position, name: "change step position" });
+        changeValueOrCreateAction({
+            step,
+            key: "position",
+            value: position,
+            name: `move step "${step.id + 1}: ${step.label ?? step.name}"`,
+        });
     }
 
     function setAnnotation(step: Step, annotation: Step["annotation"]) {
-        changeValueOrCreateAction({ step, key: "annotation", value: annotation, name: "modify step annotation" });
+        changeValueOrCreateAction({
+            step,
+            key: "annotation",
+            value: annotation,
+            name: `edit annotation of step "${step.id + 1}: ${step.label ?? step.name}"`,
+        });
     }
 
     function setOutputLabel(
@@ -489,7 +520,7 @@ export function useStepActions(
             step,
             key: "workflow_outputs",
             value: workflowOutputs,
-            name: "modify step output label",
+            name: `edit output label of step "${step.id + 1}: ${step.label ?? step.name}"`,
             actionConstructor,
             keepActionAlive: true,
             timeout: 2000,
@@ -502,7 +533,7 @@ export function useStepActions(
             step,
             key: "label",
             value: label,
-            name: "modify step label",
+            name: `change label of step ${step.id + 1} to "${label}"`,
             actionConstructor,
             keepActionAlive: true,
             timeout: 2000,

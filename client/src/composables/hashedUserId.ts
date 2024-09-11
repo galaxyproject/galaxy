@@ -2,7 +2,7 @@ import { useLocalStorage } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
 
-import type { GenericUser } from "@/api";
+import { type AnyUser } from "@/api";
 import { useUserStore } from "@/stores/userStore";
 
 async function hash32(value: string): Promise<string> {
@@ -32,8 +32,8 @@ let unhashedId: string | null = null;
 /**
  * One way hashed ID of the current User
  */
-export function useHashedUserId(user?: Ref<GenericUser | null>) {
-    let currentUser: Ref<GenericUser | null>;
+export function useHashedUserId(user?: Ref<AnyUser>) {
+    let currentUser: Ref<AnyUser>;
 
     if (user) {
         currentUser = user;

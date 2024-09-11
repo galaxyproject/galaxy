@@ -1,21 +1,43 @@
 import { computed, ref } from "vue";
 
+import { useClamp, useStep } from "@/composables/math";
+import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { defineScopedStore } from "@/stores/scopedStore";
 
-import { LazyUndoRedoAction, UndoRedoAction } from "./undoRedoAction";
+import { type LazyUndoRedoAction, UndoRedoAction } from "./undoRedoAction";
 
 export { LazyUndoRedoAction, UndoRedoAction } from "./undoRedoAction";
 
 export type UndoRedoStore = ReturnType<typeof useUndoRedoStore>;
 
+export class ActionOutOfBoundsError extends Error {
+    public action: UndoRedoAction;
+
+    constructor(action: UndoRedoAction, bounds: "undo" | "redo") {
+        super(`The action "${action.name}" is not in the ${bounds} stack`);
+        this.action = action;
+    }
+}
+
 export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     const undoActionStack = ref<UndoRedoAction[]>([]);
     const redoActionStack = ref<UndoRedoAction[]>([]);
-    const maxUndoActions = ref(100);
+
+    const minUndoActions = ref(10);
+    const maxUndoActions = ref(10000);
+
+    const savedUndoActionsValue = useUserLocalStorage(`undoRedoStore-savedUndoActions`, 100);
+    const savedUndoActions = useClamp(useStep(savedUndoActionsValue), minUndoActions, maxUndoActions);
+
+    /** names of actions which were deleted due to savedUndoActions being exceeded */
+    const deletedActions = ref<string[]>([]);
 
     function $reset() {
         undoActionStack.value.forEach((action) => action.destroy());
         undoActionStack.value = [];
+        deletedActions.value = [];
+        minUndoActions.value = 10;
+        maxUndoActions.value = 10000;
         clearRedoStack();
     }
 
@@ -44,8 +66,9 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         clearRedoStack();
         undoActionStack.value.push(action);
 
-        while (undoActionStack.value.length > maxUndoActions.value && undoActionStack.value.length > 0) {
+        while (undoActionStack.value.length > savedUndoActions.value && undoActionStack.value.length > 0) {
             const action = undoActionStack.value.shift();
+            deletedActions.value.push(action?.name ?? "unnamed action");
             action?.destroy();
         }
     }
@@ -141,10 +164,39 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         }
     });
 
+    function rollBackTo(action: UndoRedoAction) {
+        flushLazyAction();
+        const undoSet = new Set(undoActionStack.value);
+
+        if (!undoSet.has(action)) {
+            throw new ActionOutOfBoundsError(action, "undo");
+        }
+
+        while (nextRedoAction.value !== action) {
+            undo();
+        }
+    }
+
+    function rollForwardTo(action: UndoRedoAction) {
+        flushLazyAction();
+        const redoSet = new Set(redoActionStack.value);
+
+        if (!redoSet.has(action)) {
+            throw new ActionOutOfBoundsError(action, "redo");
+        }
+
+        while (nextUndoAction.value !== action) {
+            redo();
+        }
+    }
+
     return {
         undoActionStack,
         redoActionStack,
+        minUndoActions,
         maxUndoActions,
+        savedUndoActions,
+        deletedActions,
         undo,
         redo,
         applyAction,
@@ -162,6 +214,8 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         hasUndo,
         hasRedo,
         $reset,
+        rollBackTo,
+        rollForwardTo,
     };
 });
 

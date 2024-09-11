@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { BAlert, BLink } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router/composables";
@@ -22,7 +21,7 @@ import WorkflowRunSuccess from "@/components/Workflow/Run/WorkflowRunSuccess.vue
 
 const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
-const { currentUser } = storeToRefs(useUserStore());
+const userStore = useUserStore();
 const router = useRouter();
 
 interface Props {
@@ -55,7 +54,7 @@ const editorLink = computed(
     () => `/workflows/edit?id=${props.workflowId}${props.version ? `&version=${props.version}` : ""}`
 );
 const historyStatusKey = computed(() => `${currentHistoryId.value}_${lastUpdateTime.value}`);
-const isOwner = computed(() => currentUser.value?.username === workflowModel.value.runData.owner);
+const isOwner = computed(() => userStore.matchesCurrentUsername(workflowModel.value.runData.owner));
 const lastUpdateTime = computed(() => historyItemsStore.lastUpdateTime);
 const canRunOnHistory = computed(() => {
     if (!currentHistoryId.value) {
@@ -77,46 +76,46 @@ function handleSubmissionError(error: string) {
     submissionError.value = errorMessageAsString(error);
 }
 
-function loadRun() {
-    getRunData(props.workflowId, props.version || undefined)
-        .then((runData) => {
-            const incomingModel = new WorkflowRunModel(runData);
-            simpleForm.value = props.preferSimpleForm;
-            if (simpleForm.value) {
-                // These only work with PJA - the API doesn't evaluate them at
-                // all outside that context currently. The main workflow form renders
-                // these dynamically and takes care of all the validation and setup details
-                // on the frontend. If these are implemented on the backend at some
-                // point this restriction can be lifted.
-                if (incomingModel.hasReplacementParametersInToolForm) {
-                    console.log("cannot render simple workflow form - has ${} values in tool steps");
-                    simpleForm.value = false;
-                }
-                // If there are required parameters in a tool form (a disconnected runtime
-                // input), we have to render the tool form steps and cannot use the
-                // simplified tool form.
-                if (incomingModel.hasOpenToolSteps) {
-                    console.log(
-                        "cannot render simple workflow form - one or more tools have disconnected runtime inputs"
-                    );
-                    simpleForm.value = false;
-                }
-                // Just render the whole form for resource request parameters (kind of
-                // niche - I'm not sure anyone is using these currently anyway).
-                if (incomingModel.hasWorkflowResourceParameters) {
-                    console.log(`Cannot render simple workflow form - workflow resource parameters are configured`);
-                    simpleForm.value = false;
-                }
+async function loadRun() {
+    try {
+        const runData = await getRunData(props.workflowId, props.version || undefined);
+        const incomingModel = new WorkflowRunModel(runData);
+
+        simpleForm.value = props.preferSimpleForm;
+
+        if (simpleForm.value) {
+            // These only work with PJA - the API doesn't evaluate them at
+            // all outside that context currently. The main workflow form renders
+            // these dynamically and takes care of all the validation and setup details
+            // on the frontend. If these are implemented on the backend at some
+            // point this restriction can be lifted.
+            if (incomingModel.hasReplacementParametersInToolForm) {
+                console.log("cannot render simple workflow form - has ${} values in tool steps");
+                simpleForm.value = false;
             }
-            hasUpgradeMessages.value = incomingModel.hasUpgradeMessages;
-            hasStepVersionChanges.value = incomingModel.hasStepVersionChanges;
-            workflowName.value = incomingModel.name;
-            workflowModel.value = incomingModel;
-            loading.value = false;
-        })
-        .catch((response) => {
-            workflowError.value = errorMessageAsString(response);
-        });
+            // If there are required parameters in a tool form (a disconnected runtime
+            // input), we have to render the tool form steps and cannot use the
+            // simplified tool form.
+            if (incomingModel.hasOpenToolSteps) {
+                console.log("cannot render simple workflow form - one or more tools have disconnected runtime inputs");
+                simpleForm.value = false;
+            }
+            // Just render the whole form for resource request parameters (kind of
+            // niche - I'm not sure anyone is using these currently anyway).
+            if (incomingModel.hasWorkflowResourceParameters) {
+                console.log(`Cannot render simple workflow form - workflow resource parameters are configured`);
+                simpleForm.value = false;
+            }
+        }
+
+        hasUpgradeMessages.value = incomingModel.hasUpgradeMessages;
+        hasStepVersionChanges.value = incomingModel.hasStepVersionChanges;
+        workflowName.value = incomingModel.name;
+        workflowModel.value = incomingModel;
+        loading.value = false;
+    } catch (e) {
+        workflowError.value = errorMessageAsString(e);
+    }
 }
 
 async function onImport() {
@@ -124,8 +123,19 @@ async function onImport() {
     router.push(`/workflows/edit?id=${response.id}`);
 }
 
+const advancedForm = ref(false);
+const fromVariant = computed<"simple" | "advanced">(() => {
+    if (advancedForm.value) {
+        return "advanced";
+    } else if (simpleForm.value) {
+        return "simple";
+    } else {
+        return "advanced";
+    }
+});
+
 function showAdvanced() {
-    simpleForm.value = false;
+    advancedForm.value = true;
 }
 
 onMounted(() => {
@@ -185,7 +195,7 @@ defineExpose({
                         Workflow submission failed: {{ submissionError }}
                     </BAlert>
                     <WorkflowRunFormSimple
-                        v-else-if="simpleForm"
+                        v-else-if="fromVariant === 'simple'"
                         :model="workflowModel"
                         :target-history="simpleFormTargetHistory"
                         :use-job-cache="simpleFormUseJobCache"

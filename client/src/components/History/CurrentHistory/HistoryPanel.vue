@@ -84,7 +84,7 @@ const contentItemRefs = computed(() => {
 const currItemFocused = useActiveElement();
 const lastItemId = ref<string | null>(null);
 
-const { currentFilterText, currentHistoryId } = storeToRefs(useHistoryStore());
+const { currentFilterText, currentHistoryId, pinnedHistories, storedHistories } = storeToRefs(useHistoryStore());
 const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistoryItemsStore());
 
 const historyStore = useHistoryStore();
@@ -141,6 +141,47 @@ const formattedSearchError = computed(() => {
         msg: err_msg,
         typeError: ValueError,
     };
+});
+
+/** Returns a string that indicates whether all the pinned histories have annotations,
+ * tags, both, or none of them.
+ * This is used to format the `DetailsLayout` header uniformly for multi-view histories.
+ */
+const detailsSummarized = computed(() => {
+    if (!props.isMultiViewItem) {
+        return undefined;
+    }
+    if (pinnedHistories.value.length === 0) {
+        return "hidden";
+    }
+
+    let annotation = false;
+    let tags = false;
+    let loaded = true;
+
+    for (const h of pinnedHistories.value) {
+        const history = storedHistories.value[h.id];
+        if (!history) {
+            loaded = false;
+            break;
+        }
+        if (history.annotation) {
+            annotation = true;
+        }
+        if (history.tags.length > 0) {
+            tags = true;
+        }
+    }
+
+    if (!loaded || (annotation && tags)) {
+        return "both";
+    } else if (annotation) {
+        return "annotation";
+    } else if (tags) {
+        return "tags";
+    } else {
+        return "none";
+    }
 });
 
 const storeFilterText = computed(() => {
@@ -523,10 +564,10 @@ function setItemDragstart(
                     <HistoryDetails
                         :history="history"
                         :writeable="canEditHistory"
-                        :summarized="isMultiViewItem"
+                        :summarized="detailsSummarized"
                         @update:history="historyStore.updateHistory($event)" />
 
-                    <HistoryMessages :history="history" :current-user="currentUser" />
+                    <HistoryMessages v-if="!isMultiViewItem" :history="history" :current-user="currentUser" />
 
                     <HistoryCounter
                         :history="history"
@@ -539,8 +580,8 @@ function setItemDragstart(
                         @reloadContents="reloadContents" />
 
                     <HistoryOperations
-                        v-if="canEditHistory"
                         :history="history"
+                        :editable="canEditHistory"
                         :is-multi-view-item="isMultiViewItem"
                         :show-selection="showSelection"
                         :expanded-count="expandedCount"
@@ -650,7 +691,22 @@ function setItemDragstart(
                                     @view-collection="$emit('view-collection', item, currentOffset)"
                                     @delete="onDelete"
                                     @undelete="onUndelete(item)"
-                                    @unhide="onUnhide(item)" />
+                                    @unhide="onUnhide(item)">
+                                    <template v-slot:sub_items="slotProps">
+                                        <div v-if="slotProps.subItemsVisible" class="pl-2 sub-items-content">
+                                            <ContentItem
+                                                v-for="subItem in item.sub_items"
+                                                :id="subItem.hid"
+                                                :key="subItem.id"
+                                                :item="subItem"
+                                                :name="subItem.name"
+                                                :expand-dataset="isExpanded(subItem)"
+                                                :is-dataset="isDataset(subItem)"
+                                                :is-sub-item="true"
+                                                @update:expand-dataset="setExpanded(subItem, $event)" />
+                                        </div>
+                                    </template>
+                                </ContentItem>
                             </template>
                         </ListingLayout>
                     </div>
@@ -659,3 +715,11 @@ function setItemDragstart(
         </SelectedItems>
     </ExpandedItems>
 </template>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.sub-items-content {
+    background: $body-bg;
+}
+</style>

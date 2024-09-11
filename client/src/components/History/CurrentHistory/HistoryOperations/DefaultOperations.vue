@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BDropdownText, BModal } from "bootstrap-vue";
 import { toRef } from "vue";
 
-import type { HistorySummary, HistorySummaryExtended } from "@/api";
+import { type HistorySummaryExtended } from "@/api";
 import {
     deleteAllHiddenContent,
     purgeAllDeletedContent,
@@ -42,7 +42,7 @@ function purgeAllDeleted() {
     runOperation(() => purgeAllDeletedContent(props.history));
 }
 
-async function runOperation(operation: () => Promise<HistorySummary>) {
+async function runOperation(operation: () => Promise<unknown>) {
     emit("update:operation-running", props.history.update_time);
     await operation();
     emit("update:operation-running", props.history.update_time);

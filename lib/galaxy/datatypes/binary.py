@@ -1505,7 +1505,7 @@ class Anndata(H5):
                     count = len(tmp.dtype)
                     size = int(tmp.size)
                 else:
-                    layers = list(tmp.attrs)
+                    layers = list(tmp.keys())
                     count = len(layers)
                     size = lennames
                 return (layers, count, size)

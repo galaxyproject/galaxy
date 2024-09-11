@@ -15,7 +15,10 @@ try:
 except ImportError:
     OnedataFileRESTClient = None
 
-from galaxy.util import string_as_bool
+from galaxy.util import (
+    mapped_chars,
+    string_as_bool,
+)
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
     enable_cache_monitor,
@@ -44,7 +47,7 @@ def _parse_config_xml(config_xml):
 
         space_xml = _get_config_xml_elements(config_xml, "space")[0]
         space_name = space_xml.get("name")
-        galaxy_root_dir = space_xml.get("path", "")
+        galaxy_root_dir = space_xml.get("galaxy_root_dir", "")
 
         cache_dict = parse_caching_config_dict_from_xml(config_xml)
 
@@ -107,8 +110,8 @@ class OnedataObjectStore(CachingConcreteObjectStore):
 
         cache_dict = config_dict.get("cache") or {}
         self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
-        self.cache_size = cache_dict["size"] or self.config.object_store_cache_size
-        self.staging_path = cache_dict["path"] or self.config.object_store_cache_path
+        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
+        self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
@@ -125,8 +128,14 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             f"(disable_tls_certificate_validation={self.disable_tls_certificate_validation})"
         )
 
+        alt_space_fqn_separators = [mapped_chars["@"]] if "@" in mapped_chars else None
         verify_ssl = not self.disable_tls_certificate_validation
-        self._client = OnedataFileRESTClient(self.onezone_domain, self.access_token, verify_ssl=verify_ssl)
+        self._client = OnedataFileRESTClient(
+            self.onezone_domain,
+            self.access_token,
+            alt_space_fqn_separators=alt_space_fqn_separators,
+            verify_ssl=verify_ssl,
+        )
 
         self._ensure_staging_path_writable()
         self._start_cache_monitor_if_needed()

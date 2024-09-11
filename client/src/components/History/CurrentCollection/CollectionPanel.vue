@@ -8,10 +8,12 @@ import { canMutateHistory, isCollectionElement, isHDCA } from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import CollectionDetails from "./CollectionDetails.vue";
 import CollectionNavigation from "./CollectionNavigation.vue";
 import CollectionOperations from "./CollectionOperations.vue";
+import Alert from "@/components/Alert.vue";
 import ContentItem from "@/components/History/Content/ContentItem.vue";
 import ListingLayout from "@/components/History/Layout/ListingLayout.vue";
 
@@ -54,6 +56,7 @@ watch(
 
 const collectionElements = computed(() => collectionElementsStore.getCollectionElements(dsc.value) ?? []);
 const loading = computed(() => collectionElementsStore.isLoadingCollectionElements(dsc.value));
+const error = computed(() => collectionElementsStore.hasLoadingCollectionElementsError(dsc.value));
 const jobState = computed(() => ("job_state_summary" in dsc.value ? dsc.value.job_state_summary : undefined));
 const populatedStateMsg = computed(() =>
     "populated_state_message" in dsc.value ? dsc.value.populated_state_message : undefined
@@ -68,12 +71,14 @@ const rootCollection = computed(() => {
 const isRoot = computed(() => dsc.value == rootCollection.value);
 const canEdit = computed(() => isRoot.value && canMutateHistory(props.history));
 
-function updateDsc(collection: any, fields: Object | undefined) {
-    updateContentFields(collection, fields).then((response) => {
-        Object.keys(response).forEach((key) => {
-            collection[key] = response[key];
-        });
-    });
+async function updateDsc(collection: CollectionEntry, fields: Object | undefined) {
+    if (!isHDCA(collection)) {
+        return;
+    }
+    const updatedCollection = await updateContentFields(collection, fields);
+    // Update only editable fields
+    collection.name = updatedCollection.name || collection.name;
+    collection.tags = updatedCollection.tags || collection.tags;
 }
 
 function getItemKey(item: DCESummary) {
@@ -118,7 +123,10 @@ watch(
 </script>
 
 <template>
-    <ExpandedItems v-slot="{ isExpanded, setExpanded }" :scope-key="dsc.id" :get-item-key="getItemKey">
+    <Alert v-if="error" variant="error">
+        {{ errorMessageAsString(error) }}
+    </Alert>
+    <ExpandedItems v-else v-slot="{ isExpanded, setExpanded }" :scope-key="dsc.id" :get-item-key="getItemKey">
         <section class="dataset-collection-panel w-100 d-flex flex-column">
             <section>
                 <CollectionNavigation

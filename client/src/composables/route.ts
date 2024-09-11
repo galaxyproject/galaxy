@@ -1,4 +1,4 @@
-import { MaybeRefOrGetter, toValue } from "@vueuse/core";
+import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
 import { computed } from "vue";
 import { useRoute } from "vue-router/composables";
 

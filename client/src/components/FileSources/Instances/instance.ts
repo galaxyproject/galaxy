@@ -1,6 +1,6 @@
 import { computed, type Ref } from "vue";
 
-import type { FileSourceTemplateSummary, UserFileSourceModel } from "@/api/fileSources";
+import { type FileSourceTemplateSummary, type UserFileSourceModel } from "@/api/fileSources";
 import { useFileSourceInstancesStore } from "@/stores/fileSourceInstancesStore";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 

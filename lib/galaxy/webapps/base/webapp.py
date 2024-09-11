@@ -119,7 +119,7 @@ class WebApplication(base.WebApplication):
 
         # We need this to set the REQUEST_ID contextvar in model.base *BEFORE* a GalaxyWebTransaction is created.
         # This will ensure a SQLAlchemy session is request-scoped for legacy (non-fastapi) endpoints.
-        self._model = galaxy_app.model
+        self.session_factories.append(galaxy_app.model)
 
     def build_apispec(self):
         """

@@ -343,7 +343,7 @@ class OIDCAuthnzBase(IdentityProvider):
             trans.sa_session.commit()
         return login_redirect_url, user
 
-    def disconnect(self, provider, trans, email=None, disconnect_redirect_url=None):
+    def disconnect(self, provider, trans, disconnect_redirect_url=None, email=None, association_id=None):
         try:
             user = trans.user
             index = 0

@@ -58,9 +58,11 @@ import Modal from "mvc/ui/ui-modal";
 import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
+import { useRoute } from "vue-router/composables";
 
 import short from "@/components/plugins/short";
 import { useRouteQueryBool } from "@/composables/route";
+import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useUserStore } from "@/stores/userStore";
@@ -112,7 +114,21 @@ export default {
             { immediate: true }
         );
 
+        const confirmation = ref(null);
+        const route = useRoute();
+        watch(
+            () => route.fullPath,
+            (newVal, oldVal) => {
+                // sometimes, the confirmation is not cleared when the route changes
+                // and the confirmation alert is shown needlessly
+                if (confirmation.value) {
+                    confirmation.value = null;
+                }
+            }
+        );
+
         return {
+            confirmation,
             toastRef,
             confirmDialogRef,
             uploadModal,
@@ -124,7 +140,6 @@ export default {
     data() {
         return {
             config: getGalaxyInstance().config,
-            confirmation: null,
             resendUrl: `${getAppRoot()}user/resend_verification`,
             windowManager: null,
         };
@@ -171,6 +186,9 @@ export default {
             this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
             this.Galaxy.modal = new Modal.View();
             this.Galaxy.frame = this.windowManager;
+            if (this.Galaxy.config.interactivetools_enable) {
+                this.startWatchingEntryPoints();
+            }
             if (this.Galaxy.config.enable_notification_system) {
                 this.startWatchingNotifications();
             }
@@ -188,6 +206,10 @@ export default {
         }
     },
     methods: {
+        startWatchingEntryPoints() {
+            const entryPointStore = useEntryPointStore();
+            entryPointStore.startWatchingEntryPoints();
+        },
         startWatchingNotifications() {
             const notificationsStore = useNotificationsStore();
             notificationsStore.startWatchingNotifications();

@@ -38,7 +38,10 @@ from galaxy import util
 from galaxy.tool_util.parser.interface import (
     AssertionList,
     TestCollectionDef,
+    TestCollectionDefDict,
     TestCollectionOutputDef,
+    TestSourceTestOutputColllection,
+    ToolSourceTestOutputs,
 )
 from galaxy.util import requests
 from galaxy.util.bunch import Bunch
@@ -47,6 +50,14 @@ from galaxy.util.hash_util import (
     parse_checksum_hash,
 )
 from . import verify
+from ._types import (
+    ExpandedToolInputs,
+    ExpandedToolInputsJsonified,
+    RequiredDataTablesT,
+    RequiredFilesT,
+    RequiredLocFileT,
+    ToolTestDescriptionDict,
+)
 from .asserts import verify_assertions
 from .wait import wait_on
 
@@ -58,7 +69,7 @@ log = getLogger(__name__)
 VERBOSE_ERRORS = util.asbool(os.environ.get("GALAXY_TEST_VERBOSE_ERRORS", False))
 UPLOAD_ASYNC = util.asbool(os.environ.get("GALAXY_TEST_UPLOAD_ASYNC", True))
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
-DEFAULT_TOOL_TEST_WAIT = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400))
+DEFAULT_TOOL_TEST_WAIT: int = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400))
 CLEANUP_TEST_HISTORIES = "GALAXY_TEST_NO_CLEANUP" not in os.environ
 DEFAULT_TARGET_HISTORY = os.environ.get("GALAXY_TEST_HISTORY_ID", None)
 
@@ -90,21 +101,21 @@ JobDataCallbackT = Callable[[JobDataT], None]
 
 
 class ValidToolTestDict(TypedDict):
-    inputs: Any
-    outputs: Any
-    output_collections: List[Dict[str, Any]]
+    inputs: ExpandedToolInputs
+    outputs: ToolSourceTestOutputs
+    output_collections: List[TestSourceTestOutputColllection]
     stdout: NotRequired[AssertionList]
     stderr: NotRequired[AssertionList]
-    expect_exit_code: NotRequired[int]
+    expect_exit_code: NotRequired[Optional[Union[str, int]]]
     expect_failure: NotRequired[bool]
     expect_test_failure: NotRequired[bool]
-    maxseconds: NotRequired[int]
-    num_outputs: NotRequired[int]
+    maxseconds: NotRequired[Optional[int]]
+    num_outputs: NotRequired[Optional[Union[str, int]]]
     command_line: NotRequired[AssertionList]
     command_version: NotRequired[AssertionList]
-    required_files: NotRequired[List[Any]]
-    required_data_tables: NotRequired[List[Any]]
-    required_loc_files: NotRequired[List[str]]
+    required_files: NotRequired[RequiredFilesT]
+    required_data_tables: NotRequired[RequiredDataTablesT]
+    required_loc_files: NotRequired[RequiredLocFileT]
     error: Literal[False]
     tool_id: str
     tool_version: str
@@ -225,7 +236,7 @@ class GalaxyInteractorApi:
         assert response.status_code == 200, f"Non 200 response from tool tests available API. [{response.content}]"
         return response.json()
 
-    def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> ToolTestDictsT:
+    def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> List[ToolTestDescriptionDict]:
         url = f"tools/{tool_id}/test_data"
         params = {"tool_version": tool_version} if tool_version else None
         response = self._get(url, data=params)
@@ -337,18 +348,7 @@ class GalaxyInteractorApi:
         `dbkey` and `tags` all map to the API description directly. Other metadata attributes
         are assumed to be datatype-specific and mapped with a prefix of `metadata_`.
         """
-        metadata = attributes.get("metadata", {}).copy()
-        for key in metadata.copy().keys():
-            if key not in ["name", "info", "tags", "created_from_basename"]:
-                new_key = f"metadata_{key}"
-                metadata[new_key] = metadata[key]
-                del metadata[key]
-            elif key == "info":
-                metadata["misc_info"] = metadata["info"]
-                del metadata["info"]
-        expected_file_type = attributes.get("ftype", None)
-        if expected_file_type:
-            metadata["file_ext"] = expected_file_type
+        metadata = get_metadata_to_test(attributes)
 
         if metadata:
 
@@ -361,29 +361,7 @@ class GalaxyInteractorApi:
                     return None
 
             dataset = wait_on(wait_for_content, desc="dataset metadata", timeout=10)
-
-            for key, value in metadata.items():
-                try:
-                    dataset_value = dataset.get(key, None)
-
-                    def compare(val, expected):
-                        if str(val) != str(expected):
-                            raise Exception(
-                                f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}]. Dataset API value was [{dataset}]."  # noqa: B023
-                            )
-
-                    if isinstance(dataset_value, list):
-                        value = str(value).split(",")
-                        if len(value) != len(dataset_value):
-                            raise Exception(
-                                f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}], lists differ in length. Dataset API value was [{dataset}]."
-                            )
-                        for val, expected in zip(dataset_value, value):
-                            compare(val, expected)
-                    else:
-                        compare(dataset_value, value)
-                except KeyError:
-                    raise Exception(f"Failed to verify dataset metadata, metadata key [{key}] was not found.")
+            compare_expected_metadata_to_api_response(metadata, dataset)
 
     def wait_for_job(self, job_id: str, history_id: Optional[str] = None, maxseconds=DEFAULT_TOOL_TEST_WAIT) -> None:
         self.wait_for(lambda: self.__job_ready(job_id, history_id), maxseconds=maxseconds)
@@ -528,10 +506,14 @@ class GalaxyInteractorApi:
         tool_version: Optional[str] = None,
     ) -> Callable[[], None]:
         fname = test_data["fname"]
+        tags = test_data.get("tags")
         tool_input = {
             "file_type": test_data["ftype"],
             "dbkey": test_data["dbkey"],
         }
+        if tags:
+            tool_input["tags"] = tags
+
         metadata = test_data.get("metadata", {})
         if not hasattr(metadata, "items"):
             raise Exception(f"Invalid metadata description found for input [{fname}] - [{metadata}]")
@@ -1338,7 +1320,7 @@ def verify_tool(
     client_test_config: Optional[TestConfig] = None,
     skip_with_reference_data: bool = False,
     skip_on_dynamic_param_errors: bool = False,
-    _tool_test_dicts: Optional[ToolTestDictsT] = None,  # extension point only for tests
+    _tool_test_dicts: Optional[List[ToolTestDescriptionDict]] = None,  # extension point only for tests
 ):
     if resource_parameters is None:
         resource_parameters = {}
@@ -1379,7 +1361,7 @@ def verify_tool(
         return
 
     tool_test_dict.setdefault("maxseconds", maxseconds)
-    testdef = ToolTestDescription(cast(ToolTestDict, tool_test_dict))
+    testdef = ToolTestDescription(tool_test_dict)
     _handle_def_errors(testdef)
 
     created_history = False
@@ -1657,27 +1639,136 @@ class JobOutputsError(AssertionError):
         self.output_exceptions = output_exceptions
 
 
-class ToolTestDescriptionDict(TypedDict):
-    name: str
-    inputs: Any
-    outputs: Any
-    output_collections: List[Dict[str, Any]]
-    stdout: Optional[AssertionList]
-    stderr: Optional[AssertionList]
-    expect_exit_code: Optional[int]
-    expect_failure: bool
-    expect_test_failure: bool
-    num_outputs: Optional[int]
-    command_line: Optional[AssertionList]
-    command_version: Optional[AssertionList]
-    required_files: List[Any]
-    required_data_tables: List[Any]
-    required_loc_files: List[str]
-    error: bool
-    tool_id: str
-    tool_version: Optional[str]
-    test_index: int
-    exception: Optional[str]
+DEFAULT_NUM_OUTPUTS: Optional[int] = None
+DEFAULT_OUTPUT_COLLECTIONS: List[TestSourceTestOutputColllection] = []
+DEFAULT_REQUIRED_FILES: RequiredFilesT = []
+DEFAULT_REQUIRED_DATA_TABLES: RequiredDataTablesT = []
+DEFAULT_REQUIRED_LOC_FILES: RequiredLocFileT = []
+DEFAULT_COMMAND_LINE: Optional[AssertionList] = []
+DEFAULT_COMMAND_VERSION: Optional[AssertionList] = []
+DEFAULT_STDOUT: Optional[AssertionList] = []
+DEFAULT_STDERR: Optional[AssertionList] = []
+DEFAULT_OUTPUTS: ToolSourceTestOutputs = []
+DEFAULT_EXPECT_EXIT_CODE: Optional[int] = None
+DEFAULT_EXPECT_FAILURE: bool = False
+DEFAULT_EXPECT_TEST_FAILURE: bool = False
+DEFAULT_EXCEPTION: Optional[str] = None
+
+
+def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionDict:
+    """Convert the dictionaries parsed from tool sources (ToolTestDict) to a ToolTestDescriptionDict.
+
+    ToolTestDescription is used inside and outside of Galaxy, so convert the dictionaries to the format
+    produced by ToolTestDescription.to_dict() and then construct a ToolTestDescription from that.
+    """
+    test_index: int = _get_test_index(processed_dict)
+    name = _get_test_name(processed_dict, test_index)
+    error_in_test_definition = processed_dict["error"]
+
+    exception: Optional[str] = DEFAULT_EXCEPTION
+    output_collections: List[TestSourceTestOutputColllection] = []
+    num_outputs: Optional[int] = DEFAULT_NUM_OUTPUTS
+    required_files: RequiredFilesT = DEFAULT_REQUIRED_FILES
+    required_data_tables: RequiredDataTablesT = DEFAULT_REQUIRED_DATA_TABLES
+    required_loc_files: RequiredLocFileT = DEFAULT_REQUIRED_LOC_FILES
+    command_line: Optional[AssertionList] = DEFAULT_COMMAND_LINE
+    command_version: Optional[AssertionList] = DEFAULT_COMMAND_VERSION
+    stdout: Optional[AssertionList] = DEFAULT_STDERR
+    stderr: Optional[AssertionList] = DEFAULT_STDERR
+    outputs: ToolSourceTestOutputs = DEFAULT_OUTPUTS
+    expect_exit_code: Optional[int] = DEFAULT_EXPECT_EXIT_CODE
+    expect_failure: bool = DEFAULT_EXPECT_FAILURE
+    expect_test_failure: bool = DEFAULT_EXPECT_TEST_FAILURE
+    inputs: ExpandedToolInputsJsonified = {}
+    maxseconds: Optional[int] = None
+
+    if not error_in_test_definition:
+        processed_test_dict = cast(ValidToolTestDict, processed_dict)
+        maxseconds = _get_maxseconds(processed_test_dict)
+        output_collections = processed_test_dict.get("output_collections", [])
+        if "num_outputs" in processed_test_dict and processed_test_dict["num_outputs"]:
+            num_outputs = int(processed_test_dict["num_outputs"])
+
+        required_files = processed_test_dict.get("required_files", DEFAULT_REQUIRED_FILES)
+        required_data_tables = processed_test_dict.get("required_data_tables", DEFAULT_REQUIRED_DATA_TABLES)
+        required_loc_files = processed_test_dict.get("required_loc_files", DEFAULT_REQUIRED_LOC_FILES)
+        command_line = processed_test_dict.get("command_line", DEFAULT_COMMAND_LINE)
+        command_version = processed_test_dict.get("command_version", DEFAULT_COMMAND_VERSION)
+        stdout = processed_test_dict.get("stdout", DEFAULT_STDOUT)
+        stderr = processed_test_dict.get("stderr", DEFAULT_STDERR)
+        outputs = processed_test_dict.get("outputs", DEFAULT_OUTPUTS)
+        raw_expect_exit_code: Optional[Union[str, int]] = processed_test_dict.get(
+            "expect_exit_code", DEFAULT_EXPECT_EXIT_CODE
+        )
+        if raw_expect_exit_code is not None:
+            expect_exit_code = int(raw_expect_exit_code)
+
+        expect_failure = processed_test_dict.get("expect_failure", DEFAULT_EXPECT_FAILURE)
+        expect_test_failure = processed_test_dict.get("expect_test_failure", DEFAULT_EXPECT_TEST_FAILURE)
+        inputs = processed_test_dict.get("inputs", {})
+    else:
+        invalid_test_dict = cast(InvalidToolTestDict, processed_dict)
+        maxseconds = DEFAULT_TOOL_TEST_WAIT
+        exception = invalid_test_dict.get("exception", DEFAULT_EXCEPTION)
+
+    return ToolTestDescriptionDict(
+        test_index=test_index,
+        name=name,
+        error=error_in_test_definition,
+        maxseconds=maxseconds,
+        tool_id=processed_dict["tool_id"],
+        tool_version=processed_dict.get("tool_version"),
+        exception=exception,
+        num_outputs=num_outputs,
+        required_files=required_files,
+        required_data_tables=required_data_tables,
+        required_loc_files=required_loc_files,
+        command_line=command_line,
+        command_version=command_version,
+        stdout=stdout,
+        stderr=stderr,
+        outputs=outputs,
+        output_collections=output_collections,
+        expect_exit_code=expect_exit_code,
+        expect_failure=expect_failure,
+        expect_test_failure=expect_test_failure,
+        inputs=inputs,
+    )
+
+
+def _get_test_index(test_dict: Union[ToolTestDict, ToolTestDescriptionDict]) -> int:
+    assert "test_index" in test_dict, "Invalid processed test description, must have a 'test_index' for naming, etc.."
+    return test_dict["test_index"]
+
+
+def _get_test_name(test_dict: Union[ToolTestDict, ToolTestDescriptionDict], test_index: int) -> str:
+    name = cast(str, test_dict.get("name", f"Test-{test_index + 1}"))
+    return name
+
+
+def _get_maxseconds(test_dict: Union[ToolTestDict, ToolTestDescriptionDict]) -> int:
+    return int(cast(Union[str, int], test_dict.get("maxseconds") or DEFAULT_TOOL_TEST_WAIT or 86400))
+
+
+def expanded_inputs_from_json(expanded_inputs_json: ExpandedToolInputsJsonified) -> ExpandedToolInputs:
+    loaded_inputs: ExpandedToolInputs = {}
+    for key, value in expanded_inputs_json.items():
+        if isinstance(value, dict) and value.get("model_class"):
+            collection_def_dict = cast(TestCollectionDefDict, value)
+            loaded_inputs[key] = TestCollectionDef.from_dict(collection_def_dict)
+        else:
+            loaded_inputs[key] = value
+    return loaded_inputs
+
+
+def expanded_inputs_to_json(expanded_inputs: ExpandedToolInputs) -> ExpandedToolInputsJsonified:
+    inputs_dict: ExpandedToolInputsJsonified = {}
+    for key, value in expanded_inputs.items():
+        if hasattr(value, "to_dict"):
+            inputs_dict[key] = value.to_dict()
+        else:
+            inputs_dict[key] = value
+    return inputs_dict
 
 
 class ToolTestDescription:
@@ -1688,70 +1779,53 @@ class ToolTestDescription:
     """
 
     name: str
+    tool_id: str
+    tool_version: Optional[str]
+    test_index: int
     num_outputs: Optional[int]
     stdout: Optional[AssertionList]
     stderr: Optional[AssertionList]
     command_line: Optional[AssertionList]
     command_version: Optional[AssertionList]
-    required_files: List[Any]
-    required_data_tables: List[Any]
-    required_loc_files: List[str]
+    required_files: RequiredFilesT
+    required_data_tables: RequiredDataTablesT
+    required_loc_files: RequiredLocFileT
     expect_exit_code: Optional[int]
     expect_failure: bool
     expect_test_failure: bool
     exception: Optional[str]
+    inputs: ExpandedToolInputs
+    outputs: ToolSourceTestOutputs
+    output_collections: List[TestCollectionOutputDef]
+    maxseconds: Optional[int]
 
-    def __init__(self, processed_test_dict: ToolTestDict):
-        assert (
-            "test_index" in processed_test_dict
-        ), "Invalid processed test description, must have a 'test_index' for naming, etc.."
-        test_index = processed_test_dict["test_index"]
-        name = cast(str, processed_test_dict.get("name", f"Test-{test_index + 1}"))
-        error_in_test_definition = processed_test_dict["error"]
-        if not error_in_test_definition:
-            processed_test_dict = cast(ValidToolTestDict, processed_test_dict)
-            maxseconds = int(processed_test_dict.get("maxseconds") or DEFAULT_TOOL_TEST_WAIT or 86400)
-            output_collections = processed_test_dict.get("output_collections", [])
-        else:
-            processed_test_dict = cast(InvalidToolTestDict, processed_test_dict)
-            maxseconds = DEFAULT_TOOL_TEST_WAIT
-            output_collections = []
+    @staticmethod
+    def from_tool_source_dict(processed_test_dict: ToolTestDict) -> "ToolTestDescription":
+        return ToolTestDescription(adapt_tool_source_dict(processed_test_dict))
 
-        self.test_index = test_index
-        assert (
-            "tool_id" in processed_test_dict
-        ), "Invalid processed test description, must have a 'tool_id' for naming, etc.."
-        self.tool_id = processed_test_dict["tool_id"]
-        self.tool_version = processed_test_dict.get("tool_version")
-        self.name = name
-        self.maxseconds = maxseconds
-        self.required_files = cast(List[Any], processed_test_dict.get("required_files", []))
-        self.required_data_tables = cast(List[Any], processed_test_dict.get("required_data_tables", []))
-        self.required_loc_files = cast(List[str], processed_test_dict.get("required_loc_files", []))
-
-        inputs = processed_test_dict.get("inputs", {})
-        loaded_inputs = {}
-        for key, value in inputs.items():
-            if isinstance(value, dict) and value.get("model_class"):
-                loaded_inputs[key] = TestCollectionDef.from_dict(value)
-            else:
-                loaded_inputs[key] = value
-
-        self.inputs = loaded_inputs
-        self.outputs = processed_test_dict.get("outputs", [])
-        self.num_outputs = cast(Optional[int], processed_test_dict.get("num_outputs", None))
-
-        self.error = processed_test_dict.get("error", False)
-        self.exception = cast(Optional[str], processed_test_dict.get("exception", None))
-
+    def __init__(self, json_dict: ToolTestDescriptionDict):
+        self.test_index = _get_test_index(json_dict)
+        self.name = _get_test_name(json_dict, self.test_index)
+        self.error = json_dict["error"]
+        self.exception = json_dict.get("exception", DEFAULT_EXCEPTION)
+        output_collections = json_dict.get("output_collections", DEFAULT_OUTPUT_COLLECTIONS)
         self.output_collections = [TestCollectionOutputDef.from_dict(d) for d in output_collections]
-        self.command_line = cast(Optional[AssertionList], processed_test_dict.get("command_line", None))
-        self.command_version = cast(Optional[AssertionList], processed_test_dict.get("command_version", None))
-        self.stdout = cast(Optional[AssertionList], processed_test_dict.get("stdout", None))
-        self.stderr = cast(Optional[AssertionList], processed_test_dict.get("stderr", None))
-        self.expect_exit_code = cast(Optional[int], processed_test_dict.get("expect_exit_code", None))
-        self.expect_failure = cast(bool, processed_test_dict.get("expect_failure", False))
-        self.expect_test_failure = cast(bool, processed_test_dict.get("expect_test_failure", False))
+        self.num_outputs = json_dict.get("num_outputs", DEFAULT_NUM_OUTPUTS)
+        self.required_files = json_dict.get("required_files", DEFAULT_REQUIRED_FILES)
+        self.required_data_tables = json_dict.get("required_data_tables", DEFAULT_REQUIRED_DATA_TABLES)
+        self.required_loc_files = json_dict.get("required_loc_files", DEFAULT_REQUIRED_LOC_FILES)
+        self.command_line = json_dict.get("command_line", DEFAULT_COMMAND_LINE)
+        self.command_version = json_dict.get("command_version", DEFAULT_COMMAND_VERSION)
+        self.stdout = json_dict.get("stdout", DEFAULT_STDOUT)
+        self.stderr = json_dict.get("stderr", DEFAULT_STDERR)
+        self.outputs = json_dict.get("outputs", DEFAULT_OUTPUTS)
+        self.expect_exit_code = json_dict.get("expect_exit_code", DEFAULT_EXPECT_EXIT_CODE)
+        self.expect_failure = json_dict.get("expect_failure", DEFAULT_EXPECT_FAILURE)
+        self.expect_test_failure = json_dict.get("expect_test_failure", DEFAULT_EXPECT_TEST_FAILURE)
+        self.inputs = expanded_inputs_from_json(json_dict.get("inputs", {}))
+        self.tool_id = json_dict["tool_id"]
+        self.tool_version = json_dict.get("tool_version")
+        self.maxseconds = _get_maxseconds(json_dict)
 
     def test_data(self):
         """
@@ -1760,35 +1834,32 @@ class ToolTestDescription:
         return test_data_iter(self.required_files)
 
     def to_dict(self) -> ToolTestDescriptionDict:
-        inputs_dict = {}
-        for key, value in self.inputs.items():
-            if hasattr(value, "to_dict"):
-                inputs_dict[key] = value.to_dict()
-            else:
-                inputs_dict[key] = value
-
-        return {
-            "inputs": inputs_dict,
-            "outputs": self.outputs,
-            "output_collections": [_.to_dict() for _ in self.output_collections],
-            "num_outputs": self.num_outputs,
-            "command_line": self.command_line,
-            "command_version": self.command_version,
-            "stdout": self.stdout,
-            "stderr": self.stderr,
-            "expect_exit_code": self.expect_exit_code,
-            "expect_failure": self.expect_failure,
-            "expect_test_failure": self.expect_test_failure,
-            "name": self.name,
-            "test_index": self.test_index,
-            "tool_id": self.tool_id,
-            "tool_version": self.tool_version,
-            "required_files": self.required_files,
-            "required_data_tables": self.required_data_tables,
-            "required_loc_files": self.required_loc_files,
-            "error": self.error,
-            "exception": self.exception,
-        }
+        inputs = expanded_inputs_to_json(self.inputs)
+        return ToolTestDescriptionDict(
+            {
+                "inputs": inputs,
+                "outputs": self.outputs,
+                "output_collections": [_.to_dict() for _ in self.output_collections],
+                "num_outputs": self.num_outputs,
+                "command_line": self.command_line,
+                "command_version": self.command_version,
+                "stdout": self.stdout,
+                "stderr": self.stderr,
+                "expect_exit_code": self.expect_exit_code,
+                "expect_failure": self.expect_failure,
+                "expect_test_failure": self.expect_test_failure,
+                "name": self.name,
+                "test_index": self.test_index,
+                "tool_id": self.tool_id,
+                "tool_version": self.tool_version,
+                "required_files": self.required_files,
+                "required_data_tables": self.required_data_tables,
+                "required_loc_files": self.required_loc_files,
+                "error": self.error,
+                "exception": self.exception,
+                "maxseconds": self.maxseconds,
+            }
+        )
 
 
 def test_data_iter(required_files):
@@ -1800,6 +1871,7 @@ def test_data_iter(required_files):
             ftype=extra.get("ftype", DEFAULT_FTYPE),
             dbkey=extra.get("dbkey", DEFAULT_DBKEY),
             location=extra.get("location", None),
+            tags=extra.get("tags", []),
         )
         edit_attributes = extra.get("edit_attributes", [])
 
@@ -1813,3 +1885,45 @@ def test_data_iter(required_files):
                 raise Exception(f"edit_attributes type ({edit_att.get('type', None)}) is unimplemented")
 
         yield data_dict
+
+
+def compare_expected_metadata_to_api_response(metadata: dict, dataset: dict) -> None:
+    for key, value in metadata.items():
+        try:
+            dataset_value = dataset.get(key, None)
+
+            def compare(val, expected):
+                if str(val) != str(expected):
+                    raise Exception(
+                        f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}]. Dataset API value was [{dataset}]."  # noqa: B023
+                    )
+
+            if isinstance(dataset_value, list):
+                value = str(value).split(",")
+                if len(value) != len(dataset_value):
+                    raise Exception(
+                        f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}], lists differ in length. Dataset API value was [{dataset}]."
+                    )
+                for val, expected in zip(dataset_value, value):
+                    compare(val, expected)
+            else:
+                compare(dataset_value, value)
+        except KeyError:
+            raise Exception(f"Failed to verify dataset metadata, metadata key [{key}] was not found.")
+
+
+def get_metadata_to_test(test_properties: dict) -> dict:
+    """Fetch out metadata to test from test property dict and adapt it to keys the API produces."""
+    metadata = test_properties.get("metadata", {}).copy()
+    for key in metadata.copy().keys():
+        if key not in ["name", "info", "tags", "created_from_basename"]:
+            new_key = f"metadata_{key}"
+            metadata[new_key] = metadata[key]
+            del metadata[key]
+        elif key == "info":
+            metadata["misc_info"] = metadata["info"]
+            del metadata["info"]
+    expected_file_type = test_properties.get("ftype", None)
+    if expected_file_type:
+        metadata["file_ext"] = expected_file_type
+    return metadata

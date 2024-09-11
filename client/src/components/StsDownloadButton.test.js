@@ -7,11 +7,9 @@ import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
 
-import StsDownloadButton from "./StsDownloadButton";
-
-jest.mock("@/api/schema");
+import StsDownloadButton from "./StsDownloadButton.vue";
 
 const localVue = getLocalVue();
 const NO_TASKS_CONFIG = {
@@ -24,8 +22,15 @@ const FALLBACK_URL = "http://cow.com/direct_download";
 const DOWNLOAD_ENDPOINT = "http://cow.com/prepare_download";
 const STORAGE_REQUEST_ID = "moocow1235";
 
+const { server, http } = useServerMock();
+
 async function mountStsDownloadButtonWrapper(config) {
-    mockFetcher.path("/api/configuration").method("get").mock({ data: config });
+    server.use(
+        http.get("/api/configuration", ({ response }) => {
+            return response(200).json(config);
+        })
+    );
+
     const pinia = createPinia();
     const wrapper = mount(StsDownloadButton, {
         propsData: {
@@ -57,7 +62,7 @@ describe("StsDownloadButton", () => {
         const wrapper = await mountStsDownloadButtonWrapper(NO_TASKS_CONFIG);
         wrapper.vm.onDownload(NO_TASKS_CONFIG);
         await flushPromises();
-        expect(window.open).toBeCalled();
+        expect(window.open).toHaveBeenCalled();
     });
 
     it("should poll until ready", async () => {

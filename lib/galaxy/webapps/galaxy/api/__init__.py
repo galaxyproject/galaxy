@@ -68,6 +68,7 @@ from galaxy import (
 from galaxy.exceptions import (
     AdminRequiredException,
     UserCannotRunAsException,
+    UserRequiredException,
 )
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
@@ -98,10 +99,12 @@ async def get_app_with_request_session() -> AsyncGenerator[StructuredApp, None]:
     app = get_app()
     request_id = request_context.data["X-Request-ID"]
     app.model.set_request_id(request_id)
+    app.install_model.set_request_id(request_id)
     try:
         yield app
     finally:
         app.model.unset_request_id(request_id)
+        app.install_model.unset_request_id(request_id)
 
 
 DependsOnApp = cast(StructuredApp, Depends(get_app_with_request_session))
@@ -118,9 +121,10 @@ class GalaxyTypeDepends(Depends):
         self.galaxy_type_depends = dep_type
 
 
-def depends(dep_type: Type[T], get_app=get_app) -> T:
-    def _do_resolve(request: Request):
-        return get_app().resolve(dep_type)
+def depends(dep_type: Type[T], app=get_app_with_request_session) -> T:
+    async def _do_resolve(request: Request):
+        async for _dep in app():
+            yield _dep.resolve(dep_type)
 
     return cast(T, GalaxyTypeDepends(_do_resolve, dep_type))
 
@@ -178,6 +182,17 @@ def get_user(
     if galaxy_session:
         return galaxy_session.user
     return api_user
+
+
+def get_required_user(
+    galaxy_session=cast(Optional[model.GalaxySession], Depends(get_session)),
+    api_user=cast(Optional[User], Depends(get_api_user)),
+) -> User:
+    if galaxy_session and (user := galaxy_session.user):
+        return user
+    if api_user:
+        return api_user
+    raise UserRequiredException
 
 
 class UrlBuilder:
@@ -307,7 +322,7 @@ class GalaxyASGIResponse(GalaxyAbstractResponse):
         )
 
 
-DependsOnUser = cast(Optional[User], Depends(get_user))
+DependsOnUser = cast(User, Depends(get_required_user))
 
 
 def get_current_history_from_session(galaxy_session: Optional[model.GalaxySession]) -> Optional[model.History]:
@@ -482,6 +497,7 @@ class FrameworkRouter(APIRouter):
 
 class Router(FrameworkRouter):
     admin_user_dependency = AdminUserRequired
+    user_dependency = DependsOnUser
 
 
 class APIContentTypeRoute(APIRoute):

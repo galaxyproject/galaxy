@@ -1,41 +1,24 @@
 <script setup lang="ts">
-import { computed } from "vue";
-
-import { hasHelp as hasHelpText, help as helpText } from "./terms";
-
-import ConfigurationMarkdown from "@/components/ObjectStore/ConfigurationMarkdown.vue";
+import HelpPopover from "./HelpPopover.vue";
 
 interface Props {
     uri: string;
     text: string;
 }
 
-const props = defineProps<Props>();
-
-const hasHelp = computed<boolean>(() => {
-    return hasHelpText(props.uri);
-});
-
-const help = computed<string>(() => {
-    return helpText(props.uri) as string;
-});
+defineProps<Props>();
 </script>
 
 <template>
     <span>
-        <b-popover
-            v-if="hasHelp"
+        <HelpPopover
             :target="
                 () => {
                     return $refs.helpTarget;
                 }
             "
-            triggers="hover"
-            placement="bottom">
-            <ConfigurationMarkdown :markdown="help" :admin="true" />
-        </b-popover>
-        <span v-if="hasHelp" ref="helpTarget" class="help-text">{{ text }}</span>
-        <span v-else>{{ text }}</span>
+            :term="uri" />
+        <span ref="helpTarget" class="help-text">{{ text }}</span>
     </span>
 </template>
 

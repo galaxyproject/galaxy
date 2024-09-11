@@ -199,7 +199,7 @@
     "content_id": null,
     "name": "Input parameter",
     "tool_state": {
-      "parameter_definition": "{\"__current_case__\": 1, \"optional\": {\"__current_case__\": 1, \"optional\": \"false\"}, \"parameter_type\": \"integer\"}",
+      "parameter_definition": "{\"__current_case__\": 1, \"optional\": {\"__current_case__\": 1, \"optional\": \"false\"}, \"parameter_type\": \"integer\", \"multiple\": \"false\",}",
       "__page__": null,
       "__rerun_remap_job_id__": null
     },
@@ -211,7 +211,8 @@
         "label": "integer parameter input",
         "type": "integer",
         "optional": false,
-        "parameter": true
+        "parameter": true,
+        "multiple": false
       }
     ],
     "annotation": "",
@@ -427,7 +428,7 @@
     "content_id": null,
     "name": "Input parameter",
     "tool_state": {
-      "parameter_definition": "{\"__current_case__\": 0, \"optional\": {\"__current_case__\": 1, \"optional\": \"false\"}, \"parameter_type\": \"text\", \"restrictions\": {\"__current_case__\": 0, \"how\": \"none\"}}",
+      "parameter_definition": "{\"__current_case__\": 0, \"optional\": {\"__current_case__\": 1, \"optional\": \"false\"}, \"parameter_type\": \"text\", \"multiple\": \"false\", \"restrictions\": {\"__current_case__\": 0, \"how\": \"none\"}}",
       "__page__": null,
       "__rerun_remap_job_id__": null
     },
@@ -439,7 +440,8 @@
         "label": "text parameter input",
         "type": "text",
         "optional": false,
-        "parameter": true
+        "parameter": true,
+        "multiple": false
       }
     ],
     "annotation": "",
@@ -746,7 +748,8 @@
           "txt"
         ],
         "type": "data",
-        "optional": false
+        "optional": false,
+        "multiple": false
       },
       {
         "name": "out2",
@@ -754,7 +757,8 @@
           "txt"
         ],
         "type": "data",
-        "optional": false
+        "optional": false,
+        "multiple": false
       }
     ],
     "annotation": "",

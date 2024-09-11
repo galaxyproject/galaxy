@@ -1,6 +1,9 @@
 /** Contains type alias and definitions related to Galaxy API models. */
 
-import { components } from "@/api/schema";
+import { GalaxyApi } from "@/api/client";
+import { type components, type GalaxyApiPaths } from "@/api/schema";
+
+export { type components, GalaxyApi, type GalaxyApiPaths };
 
 /**
  * Contains minimal information about a History.
@@ -215,36 +218,31 @@ export function isHistoryItem(item: object): item is HistoryItemSummary {
     return item && "history_content_type" in item;
 }
 
-type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
+type RegisteredUserModel = components["schemas"]["DetailedUserModel"];
+type AnonymousUserModel = components["schemas"]["AnonUserModel"];
+type UserModel = RegisteredUserModel | AnonymousUserModel;
 
-/** Represents a registered user.**/
-export interface User extends QuotaUsageResponse {
-    id: string;
-    email: string;
-    tags_used: string[];
+export interface RegisteredUser extends RegisteredUserModel {
     isAnonymous: false;
-    is_admin?: boolean;
-    username?: string;
 }
 
-export interface AnonymousUser extends QuotaUsageResponse {
-    id?: string;
+export interface AnonymousUser extends AnonymousUserModel {
     isAnonymous: true;
-    is_admin?: false;
-    username?: string;
 }
-
-export type GenericUser = User | AnonymousUser;
 
 /** Represents any user, including anonymous users or session-less (null) users.**/
-export type AnyUser = GenericUser | null;
+export type AnyUser = RegisteredUser | AnonymousUser | null;
 
-export function isRegisteredUser(user: AnyUser): user is User {
-    return user !== null && !user?.isAnonymous;
+export function isRegisteredUser(user: AnyUser | UserModel): user is RegisteredUser {
+    return user !== null && "email" in user;
 }
 
-export function isAnonymousUser(user: AnyUser): user is AnonymousUser {
-    return user !== null && user.isAnonymous;
+export function isAnonymousUser(user: AnyUser | UserModel): user is AnonymousUser {
+    return user !== null && !isRegisteredUser(user);
+}
+
+export function isAdminUser(user: AnyUser | UserModel): user is RegisteredUser {
+    return isRegisteredUser(user) && user.is_admin;
 }
 
 export function userOwnsHistory(user: AnyUser, history: AnyHistory) {
@@ -274,3 +272,16 @@ export type DatasetTransform = {
     action: "to_posix_lines" | "spaces_to_tabs" | "datatype_groom";
     datatype_ext: "bam" | "qname_sorted.bam" | "qname_input_sorted.bam" | "isa-tab" | "isa-json";
 };
+
+/**
+ * Base type for all exceptions returned by the API.
+ */
+export type MessageException = components["schemas"]["MessageExceptionModel"];
+
+export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
+export type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
+export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
+export type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
+export type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
+
+export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];

@@ -359,7 +359,7 @@ mapping:
 
       conda_ensure_channels:
         type: str
-        default: conda-forge,bioconda,defaults
+        default: conda-forge,bioconda
         required: false
         desc: |
           conda channels to enable by default
@@ -1520,7 +1520,21 @@ mapping:
         default: interactivetools_map.sqlite
         path_resolves_to: data_dir
         desc: |
-          Map for interactivetool proxy.
+          Map for the interactivetool proxy. Mappings are stored in a SQLite database file
+          located on this path. As an alternative, you may also store them in any other RDBMS
+          supported by SQLAlchemy using the option ``interactivetoolsproxy_map``, which
+          overrides this one.
+
+      interactivetoolsproxy_map:
+        type: str
+        required: false
+        desc: |
+          Use a database supported by SQLAlchemy as map for the interactivetool proxy.
+          When this option is set, the value of ``interactivetools_map`` is ignored. The
+          value of this option must be a
+          `SQLAlchemy database URL <https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls>`_.
+          Mappings are written to the table "gxitproxy" within the database. This value cannot match
+          ``database_connection`` nor ``install_database_connection``.
 
       interactivetools_prefix:
         type: str

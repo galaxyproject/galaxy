@@ -1,10 +1,10 @@
 import { computed, type Ref } from "vue";
 
-import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
+import { type ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 import { useObjectStoreInstancesStore } from "@/stores/objectStoreInstancesStore";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 
-import type { UserConcreteObjectStore } from "./types";
+import { type UserConcreteObjectStore } from "./types";
 
 export function useInstanceAndTemplate(instanceIdRef: Ref<string>) {
     const objectStoreTemplatesStore = useObjectStoreTemplatesStore();

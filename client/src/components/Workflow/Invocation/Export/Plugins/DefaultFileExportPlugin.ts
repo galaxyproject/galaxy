@@ -1,4 +1,4 @@
-import { InvocationExportPlugin } from "../model";
+import { type InvocationExportPlugin } from "../model";
 
 export const DEFAULT_FILE_EXPORT_PLUGIN: InvocationExportPlugin = {
     id: "default-file",

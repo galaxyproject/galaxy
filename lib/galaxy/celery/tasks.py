@@ -185,14 +185,19 @@ def set_metadata(
     dataset_id: int,
     model_class: str = "HistoryDatasetAssociation",
     overwrite: bool = True,
+    ensure_can_set_metadata: bool = True,
     task_user_id: Optional[int] = None,
 ):
+    """
+    ensure_can_set_metadata can be bypassed for new outputs.
+    """
     manager = _get_dataset_manager(hda_manager, ldda_manager, model_class)
     dataset_instance = manager.by_id(dataset_id)
-    can_set_metadata = manager.ensure_can_set_metadata(dataset_instance, raiseException=False)
-    if not can_set_metadata:
-        log.info(f"Setting metadata is not allowed for {model_class} {dataset_instance.id}")
-        return
+    if ensure_can_set_metadata:
+        can_set_metadata = manager.ensure_can_set_metadata(dataset_instance, raiseException=False)
+        if not can_set_metadata:
+            log.info(f"Setting metadata is not allowed for {model_class} {dataset_instance.id}")
+            return
     try:
         if overwrite:
             hda_manager.overwrite_metadata(dataset_instance)

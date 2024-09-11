@@ -89,5 +89,5 @@ class CWLHelpTODO(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         help = tool_source.parse_help()
-        if help and "TODO" in help:
+        if help and "TODO" in help.content:
             lint_ctx.warn("Help contains TODO text.")

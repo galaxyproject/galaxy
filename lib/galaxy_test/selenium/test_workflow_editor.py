@@ -1481,12 +1481,6 @@ steps:
         self.workflow_index_search_for(name)
         self.components.workflows.edit_button.wait_for_and_click()
 
-    def workflow_upload_yaml_with_random_name(self, content):
-        workflow_populator = self.workflow_populator
-        name = self._get_random_name()
-        workflow_populator.upload_yaml_workflow(content, name=name)
-        return name
-
     @retry_assertion_during_transitions
     def assert_wf_name_is(self, expected_name):
         edit_name_element = self.components.workflow_editor.edit_name.wait_for_visible()

@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import type { AnonymousUser, User } from "@/api";
+import { type AnyUser, isAdminUser, isAnonymousUser, isRegisteredUser, type RegisteredUser } from "@/api";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useHistoryStore } from "@/stores/historyStore";
 import {
@@ -11,15 +11,20 @@ import {
     setCurrentThemeQuery,
 } from "@/stores/users/queries";
 
+interface FavoriteTools {
+    tools: string[];
+}
+
 interface Preferences {
-    theme: string;
-    favorites: { tools: string[] };
+    theme?: string;
+    favorites: FavoriteTools;
+    [key: string]: unknown;
 }
 
 type ListViewMode = "grid" | "list";
 
 export const useUserStore = defineStore("userStore", () => {
-    const currentUser = ref<User | AnonymousUser | null>(null);
+    const currentUser = ref<AnyUser>(null);
     const currentPreferences = ref<Preferences | null>(null);
 
     // explicitly pass current User, because userStore might not exist yet
@@ -35,11 +40,11 @@ export const useUserStore = defineStore("userStore", () => {
     }
 
     const isAdmin = computed(() => {
-        return currentUser.value?.is_admin ?? false;
+        return isAdminUser(currentUser.value);
     });
 
     const isAnonymous = computed(() => {
-        return !("email" in (currentUser.value || []));
+        return isAnonymousUser(currentUser.value);
     });
 
     const currentTheme = computed(() => {
@@ -54,7 +59,13 @@ export const useUserStore = defineStore("userStore", () => {
         }
     });
 
-    function setCurrentUser(user: User) {
+    const matchesCurrentUsername = computed(() => {
+        return (username?: string) => {
+            return isRegisteredUser(currentUser.value) && currentUser.value.username === username;
+        };
+    });
+
+    function setCurrentUser(user: RegisteredUser) {
         currentUser.value = user;
     }
 
@@ -62,12 +73,15 @@ export const useUserStore = defineStore("userStore", () => {
         if (!loadPromise) {
             loadPromise = getCurrentUser()
                 .then(async (user) => {
-                    currentUser.value = { ...user, isAnonymous: !user.email };
-                    currentPreferences.value = user?.preferences ?? null;
-                    // TODO: This is a hack to get around the fact that the API returns a string
-                    if (currentPreferences.value?.favorites) {
-                        currentPreferences.value.favorites = JSON.parse(user?.preferences?.favorites ?? { tools: [] });
+                    if (isRegisteredUser(user)) {
+                        currentUser.value = user;
+                        currentPreferences.value = processUserPreferences(user);
+                    } else if (isAnonymousUser(user)) {
+                        currentUser.value = user;
+                    } else if (user === null) {
+                        currentUser.value = null;
                     }
+
                     if (includeHistories) {
                         const historyStore = useHistoryStore();
                         // load first few histories for user to start pagination
@@ -110,7 +124,7 @@ export const useUserStore = defineStore("userStore", () => {
 
     function setFavoriteTools(tools: string[]) {
         if (currentPreferences.value) {
-            currentPreferences.value.favorites.tools = tools ?? { tools: [] };
+            currentPreferences.value.favorites.tools = tools;
         }
     }
 
@@ -120,6 +134,16 @@ export const useUserStore = defineStore("userStore", () => {
 
     function toggleSideBar(currentOpen = "") {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
+    }
+
+    function processUserPreferences(user: RegisteredUser): Preferences {
+        // Favorites are returned as a JSON string by the API
+        const favorites =
+            typeof user.preferences.favorites === "string" ? JSON.parse(user.preferences.favorites) : { tools: [] };
+        return {
+            ...user.preferences,
+            favorites,
+        };
     }
 
     return {
@@ -132,6 +156,7 @@ export const useUserStore = defineStore("userStore", () => {
         toggledSideBar,
         preferredListViewMode,
         loadUser,
+        matchesCurrentUsername,
         setCurrentUser,
         setCurrentTheme,
         setPreferredListViewMode,

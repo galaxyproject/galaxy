@@ -51,6 +51,7 @@ from galaxy.model import (
     StoredWorkflow,
 )
 from galaxy.model.base import transaction
+from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
 from galaxy.tool_util.deps import (
@@ -77,9 +78,14 @@ from galaxy.tool_util.parser import (
     ToolOutputCollectionPart,
 )
 from galaxy.tool_util.parser.interface import (
+    HelpContent,
     InputSource,
     PageSource,
     ToolSource,
+)
+from galaxy.tool_util.parser.util import (
+    parse_profile_version,
+    parse_tool_version_with_defaults,
 )
 from galaxy.tool_util.parser.xml import (
     XmlPageSource,
@@ -93,6 +99,7 @@ from galaxy.tool_util.toolbox import (
 )
 from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
 from galaxy.tool_util.verify.interactor import ToolTestDescription
+from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
 from galaxy.tool_util.verify.test_data import TestDataNotFoundError
 from galaxy.tool_util.version import (
     LegacyVersion,
@@ -108,11 +115,14 @@ from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.cache import ToolDocumentCache
 from galaxy.tools.evaluation import global_tool_errors
+from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
     params_to_incoming,
+    params_to_json,
+    params_to_json_internal,
     params_to_strings,
     populate_state,
     visit_input_values,
@@ -145,7 +155,6 @@ from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.tools.parameters.wrapped_json import json_wrap
-from galaxy.tools.test import parse_tests
 from galaxy.util import (
     in_directory,
     listify,
@@ -160,7 +169,7 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import get_fileobj_raw
-from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.form_builder import SelectField
 from galaxy.util.json import (
@@ -177,9 +186,29 @@ from galaxy.util.tool_shed.common_util import (
     get_tool_shed_url_from_tool_shed_registry,
 )
 from galaxy.version import VERSION_MAJOR
-from galaxy.work.context import proxy_work_context_for_history
+from galaxy.work.context import (
+    proxy_work_context_for_history,
+    WorkRequestContext,
+)
+from ._types import (
+    InputFormatT,
+    ParameterValidationErrorsT,
+    ToolRequestT,
+    ToolStateDumpedToJsonInternalT,
+    ToolStateDumpedToJsonT,
+    ToolStateJobInstancePopulatedT,
+    ToolStateJobInstanceT,
+)
 from .execute import (
+    DatasetCollectionElementsSliceT,
+    DEFAULT_JOB_CALLBACK,
+    DEFAULT_PREFERRED_OBJECT_STORE_ID,
+    DEFAULT_RERUN_REMAP_JOB_ID,
+    DEFAULT_SET_OUTPUT_HID,
+    DEFAULT_USE_CACHED_JOB,
     execute as execute_job,
+    ExecutionSlice,
+    JobCallbackT,
     MappingParameters,
 )
 
@@ -379,7 +408,7 @@ class PersistentToolTagManager(AbstractToolTagManager):
 
     def reset_tags(self):
         log.info(
-            f"removing all tool tag associations ({str(self.sa_session.scalar(select(func.count(self.app.model.ToolTagAssociation))))})"
+            f"removing all tool tag associations ({str(self.sa_session.scalar(select(func.count(self.app.model.ToolTagAssociation.id))))})"
         )
         self.sa_session.execute(delete(self.app.model.ToolTagAssociation))
         with transaction(self.sa_session):
@@ -566,6 +595,8 @@ class ToolBox(AbstractToolBox):
     def create_dynamic_tool(self, dynamic_tool, **kwds):
         tool_format = dynamic_tool.tool_format
         tool_representation = dynamic_tool.value
+        if "name" not in tool_representation:
+            tool_representation["name"] = f"dynamic tool {dynamic_tool.uuid}"
         tool_source = get_tool_source_from_representation(
             tool_format=tool_format,
             tool_representation=tool_representation,
@@ -694,7 +725,7 @@ class DefaultToolState:
         """
         Convert the data to a string
         """
-        value = params_to_strings(tool.inputs, self.inputs, app, nested=nested)
+        value = cast(Dict[str, Any], params_to_strings(tool.inputs, self.inputs, app, nested=nested))
         value["__page__"] = self.page
         value["__rerun_remap_job_id__"] = self.rerun_remap_job_id
         return value
@@ -724,7 +755,7 @@ class _Options(Bunch):
     refresh: str
 
 
-class Tool(Dictifiable):
+class Tool(UsesDictVisibleKeys):
     """
     Represents a computational tool that can be executed through Galaxy.
     """
@@ -1004,7 +1035,7 @@ class Tool(Dictifiable):
         """
         Read tool configuration from the element `root` and fill in `self`.
         """
-        self.profile = float(tool_source.parse_profile())
+        self.profile = parse_profile_version(tool_source)
         # Get the UNIQUE id for the tool
         self.old_id = tool_source.parse_id()
         if guid is None:
@@ -1030,18 +1061,13 @@ class Tool(Dictifiable):
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
-        if not self.name and dynamic:
+        if not self.name and dynamic and self.id:
             self.name = self.id
         if not dynamic and not self.name:
             raise Exception(f"Missing tool 'name' for tool with id '{self.id}' at '{tool_source}'")
 
-        self.version = tool_source.parse_version()
-        if not self.version:
-            if profile < Version("16.04"):
-                # For backward compatibility, some tools may not have versions yet.
-                self.version = "1.0.0"
-            else:
-                raise Exception(f"Missing tool 'version' for tool with id '{self.id}' at '{tool_source}'")
+        version = parse_tool_version_with_defaults(self.id, tool_source, profile)
+        self.version = version
 
         # Legacy feature, ignored by UI.
         self.force_history_refresh = False
@@ -1305,9 +1331,10 @@ class Tool(Dictifiable):
             self.trackster_conf = TracksterConfig.parse(trackster_conf)
 
     def parse_tests(self):
-        if tests_source := self.tool_source:
+        if self.tool_source:
+            test_descriptions = parse_tool_test_descriptions(self.tool_source, self.id)
             try:
-                self.__tests = json.dumps([t.to_dict() for t in parse_tests(self, tests_source)], indent=None)
+                self.__tests = json.dumps([t.to_dict() for t in test_descriptions], indent=None)
             except Exception:
                 self.__tests = None
                 log.exception("Failed to parse tool tests for tool '%s'", self.id)
@@ -1476,22 +1503,12 @@ class Tool(Dictifiable):
         self.stdio_regexes = regexes
 
     def _parse_citations(self, tool_source):
-        # TODO: Move following logic into ToolSource abstraction.
-        if not hasattr(tool_source, "root"):
-            return []
-
-        root = tool_source.root
-        citations: List[str] = []
-        citations_elem = root.find("citations")
-        if citations_elem is None:
-            return citations
-
-        for citation_elem in citations_elem:
-            if citation_elem.tag != "citation":
-                pass
-            citations_manager = getattr(self.app, "citations_manager", None)
-            if citations_manager is not None:
-                citation = citations_manager.parse_citation(citation_elem)
+        citation_models = tool_source.parse_citations()
+        citations_manager = getattr(self.app, "citations_manager", None)
+        citations = []
+        if citations_manager is not None:
+            for citation_model in citation_models:
+                citation = citations_manager.parse_citation(citation_model)
                 if citation:
                     citations.append(citation)
         return citations
@@ -1510,8 +1527,8 @@ class Tool(Dictifiable):
             # Repeat group
             input_type = input_source.parse_input_type()
             if input_type == "repeat":
-                group_r = Repeat()
-                group_r.name = input_source.get("name")
+                repeat_name = input_source.get("name")
+                group_r = Repeat(repeat_name)
                 group_r.title = input_source.get("title")
                 group_r.help = input_source.get("help", None)
                 page_source = input_source.parse_nested_inputs_source()
@@ -1527,15 +1544,17 @@ class Tool(Dictifiable):
                 group_r.default = cast(int, min(max(group_r.default, group_r.min), group_r.max))
                 rval[group_r.name] = group_r
             elif input_type == "conditional":
-                group_c = Conditional()
-                group_c.name = input_source.get("name")
-                group_c.value_ref = input_source.get("value_ref", None)
+                cond_name = input_source.get("name")
+                group_c = Conditional(cond_name)
+                value_ref = input_source.get("value_ref", None)
+                group_c.value_ref = value_ref
                 group_c.value_ref_in_group = input_source.get_bool("value_ref_in_group", True)
                 value_from = input_source.get("value_from", None)
                 if value_from:
                     value_from = value_from.split(":")
                     temp_value_from = locals().get(value_from[0])
-                    group_c.test_param = rval[group_c.value_ref]
+                    assert value_ref
+                    group_c.test_param = rval[value_ref]
                     assert isinstance(group_c.test_param, ToolParameter)
                     group_c.test_param.refresh_on_change = True
                     for attr in value_from[1].split("."):
@@ -1596,8 +1615,8 @@ class Tool(Dictifiable):
                         group_c.cases.append(case)
                 rval[group_c.name] = group_c
             elif input_type == "section":
-                group_s = Section()
-                group_s.name = input_source.get("name")
+                section_name = input_source.get("name")
+                group_s = Section(section_name)
                 group_s.title = input_source.get("title")
                 group_s.help = input_source.get("help", None)
                 group_s.expanded = input_source.get_bool("expanded", False)
@@ -1606,8 +1625,8 @@ class Tool(Dictifiable):
                 rval[group_s.name] = group_s
             elif input_type == "upload_dataset":
                 elem = input_source.elem()
-                group_u = UploadDataset()
-                group_u.name = elem.get("name")
+                upload_name = elem.get("name")
+                group_u = UploadDataset(upload_name)
                 group_u.title = elem.get("title")
                 group_u.file_type_name = elem.get("file_type_name", group_u.file_type_name)
                 group_u.default_file_type = elem.get("default_file_type", group_u.default_file_type)
@@ -1674,9 +1693,12 @@ class Tool(Dictifiable):
 
     @property
     def help(self) -> Template:
+        help_content = self.raw_help
+        assert help_content
+        assert help_content.format == "restructuredtext"
         try:
             return Template(
-                rst_to_html(self.raw_help),
+                rst_to_html(help_content.content),
                 input_encoding="utf-8",
                 default_filters=["decode.utf8"],
                 encoding_errors="replace",
@@ -1693,23 +1715,25 @@ class Tool(Dictifiable):
         """
         return biotools_reference(self.xrefs)
 
-    def __get_help_with_images(self, raw_help: Optional[str]):
-        help_text = raw_help or ""
-        try:
-            if help_text.find(".. image:: ") >= 0 and (self.tool_shed_repository or self.repository_id):
-                return set_image_paths(
-                    self.app,
-                    help_text,
-                    encoded_repository_id=self.repository_id,
-                    tool_shed_repository=self.tool_shed_repository,
-                    tool_id=self.old_id,
-                    tool_version=self.version,
+    def __get_help_with_images(self, help_content: Optional[HelpContent]) -> Optional[HelpContent]:
+        if help_content and help_content.format == "restructuredtext":
+            help_text = help_content.content or ""
+            try:
+                if help_text.find(".. image:: ") >= 0 and (self.tool_shed_repository or self.repository_id):
+                    help_text = set_image_paths(
+                        self.app,
+                        help_text,
+                        encoded_repository_id=self.repository_id,
+                        tool_shed_repository=self.tool_shed_repository,
+                        tool_id=self.old_id,
+                        tool_version=self.version,
+                    )
+            except Exception:
+                log.exception(
+                    "Exception in parse_help, so images may not be properly displayed for tool with id '%s'", self.id
                 )
-        except Exception:
-            log.exception(
-                "Exception in parse_help, so images may not be properly displayed for tool with id '%s'", self.id
-            )
-        return help_text
+            help_content = HelpContent(format="restructuredtext", content=help_text)
+        return help_content
 
     def find_output_def(self, name):
         # name is JobToOutputDatasetAssociation name.
@@ -1792,25 +1816,50 @@ class Tool(Dictifiable):
         if self.check_values:
             visit_input_values(self.inputs, values, callback)
 
-    def expand_incoming(self, trans, incoming, request_context, input_format="legacy"):
-        rerun_remap_job_id = None
-        if "rerun_remap_job_id" in incoming:
-            try:
-                rerun_remap_job_id = trans.app.security.decode_id(incoming["rerun_remap_job_id"])
-            except Exception as exception:
-                log.error(str(exception))
-                raise exceptions.MessageException(
-                    "Failure executing tool with id '%s' (attempting to rerun invalid job).", self.id
-                )
-
+    def expand_incoming(
+        self, request_context: WorkRequestContext, incoming: ToolRequestT, input_format: InputFormatT = "legacy"
+    ) -> Tuple[
+        List[ToolStateJobInstancePopulatedT],
+        List[ToolStateJobInstancePopulatedT],
+        Optional[int],
+        Optional[MatchingCollections],
+    ]:
+        rerun_remap_job_id = _rerun_remap_job_id(request_context, incoming, self.id)
         set_dataset_matcher_factory(request_context, self)
 
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool executions).
-        expanded_incomings, collection_info = expand_meta_parameters(trans, self, incoming)
+        expanded_incomings: List[ToolStateJobInstanceT]
+        collection_info: Optional[MatchingCollections]
+        expanded_incomings, collection_info = expand_meta_parameters(request_context, self, incoming)
 
-        # Remapping a single job to many jobs doesn't make sense, so disable
-        # remap if multi-runs of tools are being used.
+        self._ensure_expansion_is_valid(expanded_incomings, rerun_remap_job_id)
+
+        # Process incoming data
+        validation_timer = self.app.execution_timer_factory.get_timer(
+            "internals.galaxy.tools.validation",
+            "Validated and populated state for tool request",
+        )
+        all_errors: List[ParameterValidationErrorsT] = []
+        all_params: List[ToolStateJobInstancePopulatedT] = []
+
+        for expanded_incoming in expanded_incomings:
+            params, errors = self._populate(request_context, expanded_incoming, input_format)
+            all_errors.append(errors)
+            all_params.append(params)
+        unset_dataset_matcher_factory(request_context)
+
+        log.info(validation_timer)
+        return all_params, all_errors, rerun_remap_job_id, collection_info
+
+    def _ensure_expansion_is_valid(
+        self, expanded_incomings: List[ToolStateJobInstanceT], rerun_remap_job_id: Optional[int]
+    ) -> None:
+        """If the request corresponds to multiple jobs but this doesn't work with request configuration - raise an error.
+
+        In particular check if this is a data source job or if we're remapping a single job - in either case we should
+        not have any expansion occuring.
+        """
         produces_multiple_jobs = len(expanded_incomings) > 1
         if rerun_remap_job_id and produces_multiple_jobs:
             raise exceptions.RequestParameterInvalidException(
@@ -1822,59 +1871,74 @@ class Tool(Dictifiable):
                 f"Failure executing tool with id '{self.id}' (cannot create multiple jobs with this type of data source tool)."
             )
 
-        # Process incoming data
-        validation_timer = self.app.execution_timer_factory.get_timer(
-            "internals.galaxy.tools.validation",
-            "Validated and populated state for tool request",
-        )
-        all_errors = []
-        all_params = []
-        for expanded_incoming in expanded_incomings:
-            params = {}
-            errors: Dict[str, str] = {}
-            if self.input_translator:
-                self.input_translator.translate(expanded_incoming)
-            if not self.check_values:
-                # If `self.check_values` is false we don't do any checking or
-                # processing on input  This is used to pass raw values
-                # through to/from external sites.
-                params = expanded_incoming
-            else:
-                # Update state for all inputs on the current page taking new
-                # values from `incoming`.
-                populate_state(
-                    request_context,
-                    self.inputs,
-                    expanded_incoming,
-                    params,
-                    errors,
-                    simple_errors=False,
-                    input_format=input_format,
-                )
-                # If the tool provides a `validate_input` hook, call it.
-                validate_input = self.get_hook("validate_input")
-                if validate_input:
-                    # hooks are so terrible ... this is specifically for https://github.com/galaxyproject/tools-devteam/blob/main/tool_collections/gops/basecoverage/operation_filter.py
-                    legacy_non_dce_params = {
-                        k: v.hda if isinstance(v, model.DatasetCollectionElement) and v.hda else v
-                        for k, v in params.items()
-                    }
-                    validate_input(request_context, errors, legacy_non_dce_params, self.inputs)
-            all_errors.append(errors)
-            all_params.append(params)
-        unset_dataset_matcher_factory(request_context)
+    def _populate(
+        self, request_context, expanded_incoming: ToolStateJobInstanceT, input_format: InputFormatT
+    ) -> Tuple[ToolStateJobInstancePopulatedT, ParameterValidationErrorsT]:
+        """Validate expanded parameters for a job to replace references with model objects.
 
-        log.info(validation_timer)
-        return all_params, all_errors, rerun_remap_job_id, collection_info
+        So convert a ToolStateJobInstanceT to a ToolStateJobInstancePopulatedT.
+        """
+        params: ToolStateJobInstancePopulatedT = {}
+        errors: ParameterValidationErrorsT = {}
+        if self.input_translator:
+            self.input_translator.translate(expanded_incoming)
+        if not self.check_values:
+            # If `self.check_values` is false we don't do any checking or
+            # processing on input  This is used to pass raw values
+            # through to/from external sites.
+            params = cast(ToolStateJobInstancePopulatedT, expanded_incoming)
+        else:
+            # Update state for all inputs on the current page taking new
+            # values from `incoming`.
+            populate_state(
+                request_context,
+                self.inputs,
+                expanded_incoming,
+                params,
+                errors,
+                simple_errors=False,
+                input_format=input_format,
+            )
+            # If the tool provides a `validate_input` hook, call it.
+            validate_input = self.get_hook("validate_input")
+            if validate_input:
+                # hooks are so terrible ... this is specifically for https://github.com/galaxyproject/tools-devteam/blob/main/tool_collections/gops/basecoverage/operation_filter.py
+                legacy_non_dce_params = {
+                    k: v.hda if isinstance(v, model.DatasetCollectionElement) and v.hda else v
+                    for k, v in params.items()
+                }
+                validate_input(request_context, errors, legacy_non_dce_params, self.inputs)
+        return params, errors
+
+    def completed_jobs(
+        self, trans, use_cached_job: bool, all_params: List[ToolStateJobInstancePopulatedT]
+    ) -> Dict[int, Optional[model.Job]]:
+        completed_jobs: Dict[int, Optional[model.Job]] = {}
+        for i, param in enumerate(all_params):
+            if use_cached_job:
+                tool_id = self.id
+                assert tool_id
+                param_dump: ToolStateDumpedToJsonInternalT = params_to_json_internal(self.inputs, param, self.app)
+                completed_jobs[i] = self.job_search.by_tool_input(
+                    trans=trans,
+                    tool_id=tool_id,
+                    tool_version=self.version,
+                    param=param,
+                    param_dump=param_dump,
+                    job_state=None,
+                )
+            else:
+                completed_jobs[i] = None
+        return completed_jobs
 
     def handle_input(
         self,
         trans,
-        incoming,
-        history=None,
-        use_cached_job=False,
-        preferred_object_store_id: Optional[str] = None,
-        input_format="legacy",
+        incoming: ToolRequestT,
+        history: Optional[model.History] = None,
+        use_cached_job: bool = DEFAULT_USE_CACHED_JOB,
+        preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        input_format: InputFormatT = "legacy",
     ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
@@ -1883,26 +1947,17 @@ class Tool(Dictifiable):
         there were no errors).
         """
         request_context = proxy_work_context_for_history(trans, history=history)
-        all_params, all_errors, rerun_remap_job_id, collection_info = self.expand_incoming(
-            trans=trans, incoming=incoming, request_context=request_context, input_format=input_format
-        )
+        expanded = self.expand_incoming(request_context, incoming=incoming, input_format=input_format)
+        all_params: List[ToolStateJobInstancePopulatedT] = expanded[0]
+        all_errors: List[ParameterValidationErrorsT] = expanded[1]
+        rerun_remap_job_id: Optional[int] = expanded[2]
+        collection_info: Optional[MatchingCollections] = expanded[3]
+
         # If there were errors, we stay on the same page and display them
         self.handle_incoming_errors(all_errors)
 
         mapping_params = MappingParameters(incoming, all_params)
-        completed_jobs: Dict[int, Optional[model.Job]] = {}
-        for i, param in enumerate(all_params):
-            if use_cached_job:
-                completed_jobs[i] = self.job_search.by_tool_input(
-                    trans=trans,
-                    tool_id=self.id,
-                    tool_version=self.version,
-                    param=param,
-                    param_dump=self.params_to_strings(param, self.app, nested=True),
-                    job_state=None,
-                )
-            else:
-                completed_jobs[i] = None
+        completed_jobs: Dict[int, Optional[model.Job]] = self.completed_jobs(trans, use_cached_job, all_params)
         execution_tracker = execute_job(
             trans,
             self,
@@ -1920,7 +1975,9 @@ class Tool(Dictifiable):
         raise_execution_exception = not execution_tracker.successful_jobs and len(all_params) > 0
 
         if raise_execution_exception:
-            raise exceptions.MessageException(execution_tracker.execution_errors[0])
+            example_error = execution_tracker.execution_errors[0]
+            assert example_error
+            raise exceptions.MessageException(str(example_error))
 
         return dict(
             out_data=execution_tracker.output_datasets,
@@ -1931,7 +1988,7 @@ class Tool(Dictifiable):
             implicit_collections=execution_tracker.implicit_collections,
         )
 
-    def handle_incoming_errors(self, all_errors):
+    def handle_incoming_errors(self, all_errors: List[ParameterValidationErrorsT]) -> None:
         if any(all_errors):
             # simple param_key -> message string for tool form.
             err_data = {key: unicodify(value) for d in all_errors for (key, value) in d.items()}
@@ -1950,23 +2007,23 @@ class Tool(Dictifiable):
     def handle_single_execution(
         self,
         trans,
-        rerun_remap_job_id,
-        execution_slice,
-        history,
-        execution_cache=None,
-        completed_job=None,
-        collection_info=None,
-        job_callback=None,
-        preferred_object_store_id=None,
-        flush_job=True,
-        skip=False,
+        rerun_remap_job_id: Optional[int],
+        execution_slice: ExecutionSlice,
+        history: model.History,
+        execution_cache: ToolExecutionCache,
+        completed_job: Optional[model.Job],
+        collection_info: Optional[MatchingCollections],
+        job_callback: Optional[JobCallbackT],
+        preferred_object_store_id: Optional[str],
+        flush_job: bool,
+        skip: bool,
     ):
         """
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
         """
         try:
-            rval = self.execute(
+            rval = self._execute(
                 trans,
                 incoming=execution_slice.param_combination,
                 history=history,
@@ -2053,18 +2110,67 @@ class Tool(Dictifiable):
                 args[key] = param.get_initial_value(trans, None)
         return args
 
-    def execute(self, trans, incoming=None, set_output_hid=True, history=None, **kwargs):
+    def execute(
+        self,
+        trans,
+        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
+        history: Optional[model.History] = None,
+        set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
+        flush_job: bool = True,
+    ):
         """
         Execute the tool using parameter values in `incoming`. This just
         dispatches to the `ToolAction` instance specified by
         `self.tool_action`. In general this will create a `Job` that
         when run will build the tool's outputs, e.g. `DefaultToolAction`.
+
+        _execute has many more options but should be accessed through
+        handle_single_execution. The public interface to execute should be
+        rarely used and in more specific ways.
         """
+        return self._execute(
+            trans,
+            incoming=incoming,
+            history=history,
+            set_output_hid=set_output_hid,
+            flush_job=flush_job,
+        )
+
+    def _execute(
+        self,
+        trans,
+        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
+        history: Optional[model.History] = None,
+        rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
+        execution_cache: Optional[ToolExecutionCache] = None,
+        dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = None,
+        completed_job: Optional[model.Job] = None,
+        collection_info: Optional[MatchingCollections] = None,
+        job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
+        preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
+        flush_job: bool = True,
+        skip: bool = False,
+    ):
         if incoming is None:
             incoming = {}
         try:
             return self.tool_action.execute(
-                self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs
+                self,
+                trans,
+                incoming=incoming,
+                history=history,
+                job_params=None,
+                rerun_remap_job_id=rerun_remap_job_id,
+                execution_cache=execution_cache,
+                dataset_collection_elements=dataset_collection_elements,
+                completed_job=completed_job,
+                collection_info=collection_info,
+                job_callback=job_callback,
+                preferred_object_store_id=preferred_object_store_id,
+                set_output_hid=set_output_hid,
+                flush_job=flush_job,
+                skip=skip,
             )
         except exceptions.ToolExecutionError as exc:
             job = exc.job
@@ -2075,7 +2181,7 @@ class Tool(Dictifiable):
             log.error("Tool execution failed for job: %s", job_id)
             raise
 
-    def params_to_strings(self, params, app, nested=False):
+    def params_to_strings(self, params: ToolStateJobInstancePopulatedT, app, nested=False):
         return params_to_strings(self.inputs, params, app, nested)
 
     def params_from_strings(self, params, app, ignore_errors=False):
@@ -2405,7 +2511,7 @@ class Tool(Dictifiable):
         """Returns dict of tool."""
 
         # Basic information
-        tool_dict = super().to_dict()
+        tool_dict = self._dictify_view_keys()
 
         tool_dict["edam_operations"] = self.edam_operations
         tool_dict["edam_topics"] = self.edam_topics
@@ -2452,12 +2558,18 @@ class Tool(Dictifiable):
         if tool_help:
             # create tool help
             help_txt = ""
-            if self.help:
-                help_txt = self.help.render(
-                    static_path=self.app.url_for("/static"), host_url=self.app.url_for("/", qualified=True)
-                )
-                help_txt = unicodify(help_txt)
+            help_format = "restructuredtext"
+            help_content = self.raw_help
+            if help_content:
+                help_format = help_content.format
+                if help_format == "restructuredtext":
+                    help_txt = self.help.render(
+                        static_path=self.app.url_for("/static"), host_url=self.app.url_for("/", qualified=True)
+                    )
+                    help_txt = unicodify(help_txt)
+
             tool_dict["help"] = help_txt
+            tool_dict["help_format"] = help_format
 
         return tool_dict
 
@@ -2506,7 +2618,7 @@ class Tool(Dictifiable):
         set_dataset_matcher_factory(request_context, self)
         # create tool state
         state_inputs: Dict[str, str] = {}
-        state_errors: Dict[str, str] = {}
+        state_errors: ParameterValidationErrorsT = {}
         populate_state(request_context, self.inputs, params.__dict__, state_inputs, state_errors)
 
         # create tool model
@@ -2517,22 +2629,29 @@ class Tool(Dictifiable):
 
         # create tool help
         tool_help = ""
-        if self.help:
+        tool_help_format = "restructuredtext"
+        if self.raw_help and self.raw_help.format == "restructuredtext":
             tool_help = self.help.render(
                 static_path=self.app.url_for("/static"), host_url=self.app.url_for("/", qualified=True)
             )
             tool_help = unicodify(tool_help, "utf-8")
+        elif self.raw_help:
+            tool_help = self.raw_help.content
+            tool_help_format = self.raw_help.format
 
         if isinstance(self.action, tuple):
             action = self.action[0] + self.app.url_for(self.action[1])
         else:
             action = self.app.url_for(self.action)
 
+        state_inputs_json: ToolStateDumpedToJsonT = params_to_json(self.inputs, state_inputs, self.app)
+
         # update tool model
         tool_model.update(
             {
                 "id": self.id,
                 "help": tool_help,
+                "help_format": tool_help_format,
                 "citations": bool(self.citations),
                 "sharable_url": self.sharable_url,
                 "message": tool_message,
@@ -2541,7 +2660,7 @@ class Tool(Dictifiable):
                 "requirements": [{"name": r.name, "version": r.version} for r in self.requirements],
                 "errors": state_errors,
                 "tool_errors": self.tool_errors,
-                "state_inputs": params_to_strings(self.inputs, state_inputs, self.app, use_security=True, nested=True),
+                "state_inputs": state_inputs_json,
                 "job_id": trans.security.encode_id(job.id) if job else None,
                 "job_remap": job.remappable() if job else None,
                 "history_id": trans.security.encode_id(history.id) if history else None,
@@ -2876,7 +2995,27 @@ class ExpressionTool(Tool):
                         break
                 if copy_object is None:
                     raise exceptions.MessageException("Failed to find dataset output.")
-                out_data[key].copy_from(copy_object, include_metadata=True)
+                output = out_data[key]
+                # if change_datatype PJA is associated with expression tool output the new output already has
+                # the desired datatype, so we use it. If the extension is "data" there's no change_dataset PJA and
+                # we want to use the existing extension.
+                new_ext = output.extension if output.extension != "data" else copy_object.extension
+                require_metadata_regeneration = copy_object.extension != new_ext
+                output.copy_from(copy_object, include_metadata=not require_metadata_regeneration)
+                output.extension = new_ext
+                if require_metadata_regeneration:
+                    if app.config.enable_celery_tasks:
+                        from galaxy.celery.tasks import set_metadata
+
+                        output._state = model.Dataset.states.SETTING_METADATA
+                        return set_metadata.si(
+                            dataset_id=output.id, task_user_id=output.history.user_id, ensure_can_set_metadata=False
+                        )
+                    else:
+                        # TODO: move exec_after_process into metadata script so this doesn't run on the headnode ?
+                        output.init_meta()
+                        output.set_meta()
+                        output.set_metadata_success_state()
 
     def parse_environment_variables(self, tool_source):
         """Setup environment variable for inputs file."""
@@ -2996,7 +3135,9 @@ class SetMetadataTool(Tool):
     requires_setting_metadata = False
     tool_action: "SetMetadataToolAction"
 
-    def regenerate_imported_metadata_if_needed(self, hda, history, user, session_id):
+    def regenerate_imported_metadata_if_needed(
+        self, hda: model.HistoryDatasetAssociation, history: model.History, user: model.User, session_id: int
+    ):
         if hda.has_metadata_files:
             job, *_ = self.tool_action.execute_via_app(
                 self,
@@ -3812,8 +3953,14 @@ class RelabelFromFileTool(DatabaseOperationTool):
         if how_type == "tabular":
             # We have a tabular file, where the first column is an existing element identifier,
             # and the second column is the new element identifier.
+            new_labels_dict = {}
             source_new_label = (line.strip().split("\t") for line in new_labels)
-            new_labels_dict = dict(source_new_label)
+            for i, label_pair in enumerate(source_new_label):
+                if not len(label_pair) == 2:
+                    raise exceptions.MessageException(
+                        f"Relabel mapping file line {i + 1} contains {len(label_pair)} columns, but 2 are required"
+                    )
+                new_labels_dict[label_pair[0]] = label_pair[1]
             for dce in hdca.collection.elements:
                 dce_object = dce.element_object
                 element_identifier = dce.element_identifier
@@ -4029,6 +4176,21 @@ for tool_class in TOOL_CLASSES:
 
 
 # ---- Utility classes to be factored out -----------------------------------
+
+
+def _rerun_remap_job_id(trans, incoming, tool_id: Optional[str]) -> Optional[int]:
+    rerun_remap_job_id = None
+    if "rerun_remap_job_id" in incoming:
+        try:
+            rerun_remap_job_id = trans.app.security.decode_id(incoming["rerun_remap_job_id"])
+        except Exception as exception:
+            log.error(str(exception))
+            raise exceptions.MessageException(
+                "Failure executing tool with id '%s' (attempting to rerun invalid job).", tool_id
+            )
+    return rerun_remap_job_id
+
+
 class TracksterConfig:
     """Trackster configuration encapsulation."""
 

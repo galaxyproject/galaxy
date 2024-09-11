@@ -110,6 +110,8 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
             raise exceptions.ItemOwnershipException(
                 f"{item.__class__.__name__} is not owned by the current user", type="error"
             )
+        # no need to check accessibility if we're the owner
+        return item
 
     # Verify accessible:
     #   if it's part of a lib - can they access via security
@@ -501,18 +503,18 @@ class ModelManager(Generic[U]):
         """
         raise exceptions.NotImplemented("Abstract method")
 
-    def update(self, item, new_values, flush=True, **kwargs) -> U:
+    def update(self, item: U, new_values: Dict[str, Any], flush: bool = True, **kwargs) -> U:
         """
         Given a dictionary of new values, update `item` and return it.
 
         ..note: NO validation or deserialization occurs here.
         """
-        self.session().add(item)
         for key, value in new_values.items():
             if hasattr(item, key):
                 setattr(item, key, value)
+        session = self.session()
+        session.add(item)
         if flush:
-            session = self.session()
             with transaction(session):
                 session.commit()
         return item
@@ -697,7 +699,7 @@ class ModelSerializer(HasAModelManager[T]):
                 try:
                     returned[key] = self.serializers[key](item, key, **context)
                 except SkipAttribute:
-                    # dont add this key if the deserializer threw this
+                    # don't add this key if the serializer threw this
                     pass
             elif key in self.serializable_keyset:
                 returned[key] = self.default_serializer(item, key, **context)

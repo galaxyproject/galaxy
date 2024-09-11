@@ -33,6 +33,7 @@ from galaxy.security import idencoding
 from galaxy.structured_app import BasicSharedApp
 from galaxy.web_stack import application_stack_instance
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
+from tool_shed.managers.model_cache import ModelCache
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util.hgweb_config import hgweb_config_manager
 from tool_shed.webapp.model.migrations import verify_database
@@ -83,6 +84,7 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
         self._register_singleton(SharedModelMapping, model)
         self._register_singleton(mapping.ToolShedModelMapping, model)
         self._register_singleton(scoped_session, self.model.context)
+        self.model_cache = ModelCache(self.config.model_cache_dir)
         self.user_manager = self._register_singleton(UserManager, UserManager(self, app_type="tool_shed"))
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
         # initialize the Tool Shed tag handler.
@@ -106,7 +108,10 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
         self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
         self.hgweb_config_manager.hgweb_repo_prefix = self.config.hgweb_repo_prefix
         # Initialize the repository registry.
-        self.repository_registry = tool_shed.repository_registry.Registry(self)
+        if config.SHED_API_VERSION != "v2":
+            self.repository_registry = tool_shed.repository_registry.Registry(self)
+        else:
+            self.repository_registry = tool_shed.repository_registry.NullRepositoryRegistry(self)
         # Configure Sentry client if configured
         self.configure_sentry_client()
         #  used for cachebusting -- refactor this into a *SINGLE* UniverseApplication base.

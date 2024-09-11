@@ -10,7 +10,7 @@
  */
 
 import { isEqual, omit } from "lodash";
-import type { DefineComponent } from "vue";
+import { type DefineComponent } from "vue";
 
 export type Converter<T> = (value: T) => T;
 type Handler<T> = (v: T, q: T) => boolean;

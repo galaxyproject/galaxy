@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, type Ref, ref } from "vue";
 
-import { ApiResponse } from "@/api/schema";
 import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -9,7 +8,7 @@ import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 interface Props {
     detailsKey?: string;
-    getData: () => Promise<ApiResponse<Array<object>>>;
+    getData: () => Promise<object[]>;
     isEncoded?: boolean;
     labelKey?: string;
     leafIcon?: string;
@@ -51,8 +50,9 @@ const fields = computed(() => {
 async function load() {
     optionsShow.value = false;
     try {
-        const response = await props.getData();
-        const incoming = response.data;
+        // TODO: Consider supporting pagination here
+        // this could potentially load quite a lot of items
+        const incoming = await props.getData();
         items.value = incoming.map((item: any) => {
             const timeStamp = item[props.timeKey];
             showTime.value = !!timeStamp;

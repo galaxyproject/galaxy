@@ -135,7 +135,8 @@ class TabularData(Text):
     def displayable(self, dataset: DatasetProtocol) -> bool:
         try:
             return (
-                not dataset.dataset.purged
+                not dataset.deleted
+                and not dataset.dataset.purged
                 and dataset.has_data()
                 and dataset.state == dataset.states.OK
                 and dataset.metadata.columns > 0
@@ -1814,7 +1815,7 @@ class CMAP(TabularData):
             with open(dataset.get_file_name()) as dataset_fh:
                 comment_lines = 0
                 column_headers = None
-                cleaned_column_types = None
+                cleaned_column_types = []
                 number_of_columns = 0
                 for i, line in enumerate(dataset_fh):
                     line = line.strip("\n")
@@ -1822,7 +1823,6 @@ class CMAP(TabularData):
                         if line.startswith("#h"):
                             column_headers = line.split("\t")[1:]
                         elif line.startswith("#f"):
-                            cleaned_column_types = []
                             for column_type in line.split("\t")[1:]:
                                 if column_type == "Hex":
                                     cleaned_column_types.append("str")

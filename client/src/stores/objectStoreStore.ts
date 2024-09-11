@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import { ConcreteObjectStoreModel } from "@/api";
+import { type ConcreteObjectStoreModel } from "@/api";
 import { getSelectableObjectStores } from "@/api/objectStores";
 import { errorMessageAsString } from "@/utils/simple-error";
 

@@ -1,14 +1,12 @@
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, Wrapper } from "@vue/test-utils";
+import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
-import { type BrowsableFilesSourcePlugin, CreatedEntry } from "@/api/remoteFiles";
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
+import { type BrowsableFilesSourcePlugin, type CreatedEntry } from "@/api/remoteFiles";
 
 import ExportRDMForm from "./ExportRDMForm.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
-
-jest.mock("@/api/schema");
 
 const localVue = getLocalVue(true);
 
@@ -25,8 +23,14 @@ const FAKE_ENTRY: CreatedEntry = {
     external_link: "http://example.com",
 };
 
+const { server, http } = useServerMock();
+
 async function initWrapper(fileSource?: BrowsableFilesSourcePlugin) {
-    mockFetcher.path("/api/remote_files").method("post").mock({ data: FAKE_ENTRY });
+    server.use(
+        http.post("/api/remote_files", ({ response }) => {
+            return response(200).json(FAKE_ENTRY);
+        })
+    );
 
     const wrapper = mount(ExportRDMForm as object, {
         propsData: {
@@ -112,6 +116,11 @@ describe("ExportRDMForm", () => {
                 writable: true,
                 browsable: true,
                 type: "rdm",
+                supports: {
+                    pagination: false,
+                    search: false,
+                    sorting: false,
+                },
             };
             wrapper = await initWrapper(specificFileSource);
         });

@@ -8,16 +8,17 @@
     ],
     "license": "AFL-3.0",
     "dependencies": {
-        "@h5web/app": "^8.0.0",
+        "@h5web/app": "^12.0.1",
         "buffer": "^6.0.3",
         "normalize.css": "^8.0.1",
-        "react": "18.2.0",
-        "react-dom": "18.2.0"
+        "react": "18.3.1",
+        "react-dom": "18.3.1"
     },
     "scripts": {
         "build": "parcel build src/script.js --dist-dir static"
     },
     "devDependencies": {
-        "parcel": "^2.12.0"
+        "parcel": "^2.12.0",
+        "process": "^0.11.10"
     }
 }

@@ -30,8 +30,10 @@ from galaxy.exceptions import (
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
+    Job,
     PostJobAction,
     Workflow,
+    WorkflowInvocationStep,
     WorkflowStep,
     WorkflowStepConnection,
 )
@@ -43,6 +45,7 @@ from galaxy.schema.invocation import (
     InvocationCancellationReviewFailed,
     InvocationFailureDatasetFailed,
     InvocationFailureExpressionEvaluationFailed,
+    InvocationFailureOutputNotFound,
     InvocationFailureWhenNotBoolean,
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
@@ -52,12 +55,12 @@ from galaxy.tools import (
     DefaultToolState,
     get_safe_version,
 )
-from galaxy.tools.actions import filter_output
 from galaxy.tools.execute import (
     execute,
     MappingParameters,
     PartialJobExecution,
 )
+from galaxy.tools.execution_helpers import filter_output
 from galaxy.tools.expressions import do_eval
 from galaxy.tools.parameters import (
     check_param,
@@ -762,7 +765,7 @@ class SubWorkflowModule(WorkflowModule):
         return self.trans.security.encode_id(self.subworkflow.id)
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self, trans, progress: "WorkflowProgress", invocation_step: WorkflowInvocationStep, use_cached_job: bool = False
     ) -> Optional[bool]:
         """Execute the given workflow step in the given workflow invocation.
         Use the supplied workflow progress object to track outputs, find
@@ -822,7 +825,17 @@ class SubWorkflowModule(WorkflowModule):
             workflow_output_label = (
                 workflow_output.label or f"{workflow_output.workflow_step.order_index}:{workflow_output.output_name}"
             )
-            replacement = subworkflow_progress.get_replacement_workflow_output(workflow_output)
+            try:
+                replacement = subworkflow_progress.get_replacement_workflow_output(workflow_output)
+            except KeyError:
+                raise FailWorkflowEvaluation(
+                    why=InvocationFailureOutputNotFound(
+                        reason=FailureReason.output_not_found,
+                        workflow_step_id=workflow_output.workflow_step_id,
+                        output_name=workflow_output.output_name,
+                        dependent_workflow_step_id=step.id,
+                    )
+                )
             outputs[workflow_output_label] = replacement
         progress.set_step_outputs(invocation_step, outputs)
         return None
@@ -974,8 +987,11 @@ class InputModule(WorkflowModule):
         progress.set_outputs_for_input(invocation_step, step_outputs)
         return None
 
-    def recover_mapping(self, invocation_step, progress):
-        progress.set_outputs_for_input(invocation_step, already_persisted=True)
+    def recover_mapping(self, invocation_step: WorkflowInvocationStep, progress: "WorkflowProgress"):
+        super().recover_mapping(invocation_step, progress)
+        progress.set_outputs_for_input(
+            invocation_step, progress.outputs.get(invocation_step.workflow_step_id), already_persisted=True
+        )
 
     def get_export_state(self):
         return self._parse_state_into_dict()
@@ -1194,8 +1210,7 @@ class InputParameterModule(WorkflowModule):
                 option[2] = True
                 input_parameter_type.static_options[i] = tuple(option)
 
-        parameter_type_cond = Conditional()
-        parameter_type_cond.name = "parameter_definition"
+        parameter_type_cond = Conditional("parameter_definition")
         parameter_type_cond.test_param = input_parameter_type
         cases = []
 
@@ -1247,8 +1262,7 @@ class InputParameterModule(WorkflowModule):
                 input_default_value = ColorToolParameter(None, default_source)
 
             optional_value = optional_param(optional)
-            optional_cond = Conditional()
-            optional_cond.name = "optional"
+            optional_cond = Conditional("optional")
             optional_cond.test_param = optional_value
 
             when_this_type = ConditionalWhen()
@@ -1261,8 +1275,7 @@ class InputParameterModule(WorkflowModule):
                 name="specify_default", label="Specify a default value", type="boolean", checked=specify_default_checked
             )
             specify_default = BooleanToolParameter(None, specify_default_source)
-            specify_default_cond = Conditional()
-            specify_default_cond.name = "specify_default"
+            specify_default_cond = Conditional("specify_default")
             specify_default_cond.test_param = specify_default
 
             when_specify_default_true = ConditionalWhen()
@@ -1290,6 +1303,18 @@ class InputParameterModule(WorkflowModule):
             optional_cond.cases = optional_cases
 
             if param_type == "text":
+
+                specify_multiple_source = dict(
+                    name="multiple",
+                    label="Allow multiple selection",
+                    help="Only applies when connected to multi-select parameter(s)",
+                    type="boolean",
+                    checked=parameter_def.get("multiple", False),
+                )
+                specify_multiple = BooleanToolParameter(None, specify_multiple_source)
+                # Insert multiple option as first option, which is determined by dictionary insert order
+                when_this_type.inputs = {"multiple": specify_multiple, **when_this_type.inputs}
+
                 restrict_how_source: Dict[str, Union[str, List[Dict[str, Union[str, bool]]]]] = dict(
                     name="how", label="Restrict Text Values?", type="select"
                 )
@@ -1323,9 +1348,8 @@ class InputParameterModule(WorkflowModule):
                         "selected": restrict_how_value == "staticSuggestions",
                     },
                 ]
-                restrictions_cond = Conditional()
+                restrictions_cond = Conditional("restrictions")
                 restrictions_how = SelectToolParameter(None, restrict_how_source)
-                restrictions_cond.name = "restrictions"
                 restrictions_cond.test_param = restrictions_how
 
                 when_restrict_none = ConditionalWhen()
@@ -1449,6 +1473,8 @@ class InputParameterModule(WorkflowModule):
 
         # Optional parameters for tool input source definition.
         parameter_kwds: Dict[str, Union[str, List[Dict[str, Any]]]] = {}
+        if "multiple" in parameter_def:
+            parameter_kwds["multiple"] = parameter_def["multiple"]
 
         is_text = parameter_type == "text"
         restricted_inputs = False
@@ -1499,9 +1525,6 @@ class InputParameterModule(WorkflowModule):
             if parameter_type == "boolean":
                 parameter_kwds["checked"] = default_value
 
-        if "value" not in parameter_kwds and parameter_type in ["integer", "float"]:
-            parameter_kwds["value"] = str(0)
-
         if is_text and parameter_def.get("suggestions") is not None:
             suggestion_values = parameter_def.get("suggestions")
             parameter_kwds["options"] = _parameter_def_list_to_options(suggestion_values)
@@ -1528,6 +1551,7 @@ class InputParameterModule(WorkflowModule):
                 label=self.label,
                 type=parameter_def.get("parameter_type"),
                 optional=parameter_def["optional"],
+                multiple=parameter_def.get("multiple", False),
                 parameter=True,
             )
         ]
@@ -1556,6 +1580,7 @@ class InputParameterModule(WorkflowModule):
             default_set = True
             default_value = state["default"]
             state["optional"] = True
+        multiple = state.get("multiple")
         restrictions = state.get("restrictions")
         restrictOnConnections = state.get("restrictOnConnections")
         suggestions = state.get("suggestions")
@@ -1573,6 +1598,8 @@ class InputParameterModule(WorkflowModule):
                 "optional": {"optional": str(state.get("optional", False))},
             }
         }
+        if multiple is not None:
+            state["parameter_definition"]["multiple"] = multiple
         state["parameter_definition"]["restrictions"] = {}
         state["parameter_definition"]["restrictions"]["how"] = restrictions_how
 
@@ -1614,6 +1641,8 @@ class InputParameterModule(WorkflowModule):
                     rval["default"] = optional_state["specify_default"]["default"]
             else:
                 optional = False
+            if "multiple" in parameters_def:
+                rval["multiple"] = parameters_def["multiple"]
             restrictions_cond_values = parameters_def.get("restrictions")
             if restrictions_cond_values:
 
@@ -1854,7 +1883,7 @@ class ToolModule(WorkflowModule):
         return self.tool.version if self.tool else self.tool_version
 
     def get_tooltip(self, static_path=None):
-        if self.tool and self.tool.help:
+        if self.tool and self.tool.raw_help and self.tool.raw_help.format == "restructuredtext":
             host_url = self.trans.url_builder("/")
             static_path = self.trans.url_builder(static_path) if static_path else ""
             return self.tool.help.render(host_url=host_url, static_path=static_path)
@@ -2258,19 +2287,7 @@ class ToolModule(WorkflowModule):
             param_combinations.append(execution_state.inputs)
 
         complete = False
-        completed_jobs = {}
-        for i, param in enumerate(param_combinations):
-            if use_cached_job:
-                completed_jobs[i] = tool.job_search.by_tool_input(
-                    trans=trans,
-                    tool_id=tool.id,
-                    tool_version=tool.version,
-                    param=param,
-                    param_dump=tool.params_to_strings(param, trans.app, nested=True),
-                    job_state=None,
-                )
-            else:
-                completed_jobs[i] = None
+        completed_jobs: Dict[int, Optional[Job]] = tool.completed_jobs(trans, use_cached_job, param_combinations)
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)
             max_num_jobs = progress.maximum_jobs_to_schedule_or_none
@@ -2305,10 +2322,11 @@ class ToolModule(WorkflowModule):
             raise DelayedWorkflowEvaluation(why=delayed_why)
 
         progress.record_executed_job_count(len(execution_tracker.successful_jobs))
+        step_outputs: Dict[str, Union[model.HistoryDatasetCollectionAssociation, model.HistoryDatasetAssociation]] = {}
         if collection_info:
-            step_outputs = dict(execution_tracker.implicit_collections)
+            step_outputs.update(execution_tracker.implicit_collections)
         else:
-            step_outputs = dict(execution_tracker.output_datasets)
+            step_outputs.update(execution_tracker.output_datasets)
             step_outputs.update(execution_tracker.output_collections)
         progress.set_step_outputs(invocation_step, step_outputs, already_persisted=not invocation_step.is_new)
 

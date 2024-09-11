@@ -237,12 +237,6 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             stmt = stmt.offset(payload.offset)
         return trans.sa_session.scalars(stmt), total_matches  # type:ignore[return-value]
 
-    def copy(self, history, user, **kwargs):
-        """
-        Copy and return the given `history`.
-        """
-        return history.copy(target_user=user, **kwargs)
-
     # .... sharable
     # overriding to handle anonymous users' current histories in both cases
     def by_user(
@@ -289,19 +283,19 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         return self.session().scalars(stmt).first()
 
     # .... purgable
-    def purge(self, history, flush=True, **kwargs):
+    def purge(self, item, flush=True, **kwargs):
         """
         Purge this history and all HDAs, Collections, and Datasets inside this history.
         """
-        self.error_unless_mutable(history)
+        self.error_unless_mutable(item)
         self.hda_manager.dataset_manager.error_unless_dataset_purge_allowed()
         # First purge all the datasets
-        for hda in history.datasets:
+        for hda in item.datasets:
             if not hda.purged:
                 self.hda_manager.purge(hda, flush=True, **kwargs)
 
         # Now mark the history as purged
-        super().purge(history, flush=flush, **kwargs)
+        super().purge(item, flush=flush, **kwargs)
 
     # .... current
     # TODO: make something to bypass the anon user + current history permissions issue
@@ -424,7 +418,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
         # Run job to do export.
         history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
-        job, *_ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        job, *_ = history_exp_tool.execute(trans, incoming=params, history=history)
         trans.app.job_manager.enqueue(job, tool=history_exp_tool)
         return job
 

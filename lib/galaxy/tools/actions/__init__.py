@@ -9,7 +9,9 @@ from typing import (
     cast,
     Dict,
     List,
+    Optional,
     Set,
+    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -24,6 +26,7 @@ from galaxy.exceptions import (
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model import (
+    History,
     HistoryDatasetAssociation,
     Job,
     LibraryDatasetDatasetAssociation,
@@ -31,8 +34,24 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.builder import CollectionBuilder
+from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.none_like import NoneDataset
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.tools._types import ToolStateJobInstancePopulatedT
+from galaxy.tools.execute import (
+    DatasetCollectionElementsSliceT,
+    DEFAULT_DATASET_COLLECTION_ELEMENTS,
+    DEFAULT_JOB_CALLBACK,
+    DEFAULT_PREFERRED_OBJECT_STORE_ID,
+    DEFAULT_RERUN_REMAP_JOB_ID,
+    DEFAULT_SET_OUTPUT_HID,
+    JobCallbackT,
+)
+from galaxy.tools.execution_helpers import (
+    filter_output,
+    on_text_for_names,
+    ToolExecutionCache,
+)
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
@@ -54,32 +73,8 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class ToolExecutionCache:
-    """An object mean to cache calculation caused by repeatedly evaluting
-    the same tool by the same user with slightly different parameters.
-    """
-
-    def __init__(self, trans):
-        self.trans = trans
-        self.current_user_roles = trans.get_current_user_roles()
-        self.chrom_info = {}
-        self.cached_collection_elements = {}
-
-    def get_chrom_info(self, tool_id, input_dbkey):
-        genome_builds = self.trans.app.genome_builds
-        custom_build_hack_get_len_from_fasta_conversion = tool_id != "CONVERTER_fasta_to_len"
-        if custom_build_hack_get_len_from_fasta_conversion and input_dbkey in self.chrom_info:
-            return self.chrom_info[input_dbkey]
-
-        chrom_info_pair = genome_builds.get_chrom_info(
-            input_dbkey,
-            trans=self.trans,
-            custom_build_hack_get_len_from_fasta_conversion=custom_build_hack_get_len_from_fasta_conversion,
-        )
-        if custom_build_hack_get_len_from_fasta_conversion:
-            self.chrom_info[input_dbkey] = chrom_info_pair
-
-        return chrom_info_pair
+OutputDatasetsT = Dict[str, "DatasetInstance"]
+ToolActionExecuteResult = Union[Tuple[Job, OutputDatasetsT, Optional[History]], Tuple[Job, OutputDatasetsT]]
 
 
 class ToolAction:
@@ -89,14 +84,46 @@ class ToolAction:
     """
 
     @abstractmethod
-    def execute(self, tool, trans, incoming=None, set_output_hid=True, **kwargs):
-        pass
+    def execute(
+        self,
+        tool,
+        trans,
+        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
+        history: Optional[History] = None,
+        job_params=None,
+        rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
+        execution_cache: Optional[ToolExecutionCache] = None,
+        dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = DEFAULT_DATASET_COLLECTION_ELEMENTS,
+        completed_job: Optional[Job] = None,
+        collection_info: Optional[MatchingCollections] = None,
+        job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
+        preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
+        flush_job: bool = True,
+        skip: bool = False,
+    ) -> ToolActionExecuteResult:
+        """Perform target tool action."""
+
+    @abstractmethod
+    def get_output_name(
+        self,
+        output,
+        dataset=None,
+        tool=None,
+        on_text=None,
+        trans=None,
+        incoming=None,
+        history=None,
+        params=None,
+        job_params=None,
+    ) -> str:
+        """Get name to assign a tool output."""
 
 
 class DefaultToolAction(ToolAction):
     """Default tool action is to run an external command"""
 
-    produces_real_jobs = True
+    produces_real_jobs: bool = True
 
     def _collect_input_datasets(
         self,
@@ -389,21 +416,20 @@ class DefaultToolAction(ToolAction):
         self,
         tool,
         trans,
-        incoming=None,
-        return_job=False,
-        set_output_hid=True,
-        history=None,
+        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
+        history: Optional[History] = None,
         job_params=None,
-        rerun_remap_job_id=None,
-        execution_cache=None,
+        rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
+        execution_cache: Optional[ToolExecutionCache] = None,
         dataset_collection_elements=None,
-        completed_job=None,
-        collection_info=None,
-        job_callback=None,
-        preferred_object_store_id=None,
-        flush_job=True,
-        skip=False,
-    ):
+        completed_job: Optional[Job] = None,
+        collection_info: Optional[MatchingCollections] = None,
+        job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
+        preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
+        flush_job: bool = True,
+        skip: bool = False,
+    ) -> ToolActionExecuteResult:
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
@@ -424,6 +450,7 @@ class DefaultToolAction(ToolAction):
             preserved_hdca_tags,
             all_permissions,
         ) = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
+        assert history  # tell type system we've set history and it is no longer optional
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
 
@@ -681,6 +708,7 @@ class DefaultToolAction(ToolAction):
                 output_collection.mark_as_populated()
             for hdca in output_collections.out_collection_instances.values():
                 hdca.visible = False
+                hdca.collection.mark_as_populated()
             object_store_populator = ObjectStorePopulator(trans.app, trans.user)
             for data in out_data.values():
                 data.set_skipped(object_store_populator)
@@ -846,7 +874,7 @@ class DefaultToolAction(ToolAction):
 
         return on_text_for_names(input_names)
 
-    def _new_job_for_session(self, trans, tool, history):
+    def _new_job_for_session(self, trans, tool, history) -> Tuple[model.Job, Optional[model.GalaxySession]]:
         job = trans.app.model.Job()
         job.galaxy_version = trans.app.config.version_major
         galaxy_session = None
@@ -938,7 +966,7 @@ class DefaultToolAction(ToolAction):
         history=None,
         params=None,
         job_params=None,
-    ):
+    ) -> str:
         if output.label:
             params["tool"] = tool
             params["on_string"] = on_text
@@ -1095,40 +1123,6 @@ class OutputCollections:
             # of the hdca.
             self.history.stage_addition(hdca)
             self.out_collection_instances[name] = hdca
-
-
-def on_text_for_names(input_names):
-    # input_names may contain duplicates... this is because the first value in
-    # multiple input dataset parameters will appear twice once as param_name
-    # and once as param_name1.
-    unique_names = []
-    for name in input_names:
-        if name not in unique_names:
-            unique_names.append(name)
-    input_names = unique_names
-
-    # Build name for output datasets based on tool name and input names
-    if len(input_names) == 0:
-        on_text = ""
-    elif len(input_names) == 1:
-        on_text = input_names[0]
-    elif len(input_names) == 2:
-        on_text = "{} and {}".format(*input_names)
-    elif len(input_names) == 3:
-        on_text = "{}, {}, and {}".format(*input_names)
-    else:
-        on_text = "{}, {}, and others".format(*input_names[:2])
-    return on_text
-
-
-def filter_output(tool, output, incoming):
-    for filter in output.filters:
-        try:
-            if not eval(filter.text.strip(), globals(), incoming):
-                return True  # do not create this dataset
-        except Exception as e:
-            log.debug(f"Tool {tool.id} output {output.name}: dataset output filter ({filter.text}) failed: {e}")
-    return False
 
 
 def get_ext_or_implicit_ext(hda):

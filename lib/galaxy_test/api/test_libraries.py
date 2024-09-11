@@ -447,10 +447,11 @@ class TestLibrariesApi(ApiTestCase):
             "name": "updated_name",
             "file_ext": "fasta",
             "misc_info": "updated_info",
-            "genome_build": "updated_genome_build",
+            "message": "update message",
         }
         ld_updated = self._patch_library_dataset(ld["id"], data)
-        self._assert_has_keys(ld_updated, "name", "file_ext", "misc_info", "genome_build")
+        for key, value in data.items():
+            assert ld_updated[key] == value
 
     @requires_new_library
     def test_update_dataset_tags(self):

@@ -21,6 +21,7 @@ import { BoxSelect } from "lucide-vue";
 import { storeToRefs } from "pinia";
 import { computed, toRefs, watch } from "vue";
 
+import { RemoveAllFreehandCommentsAction } from "@/components/Workflow/Editor/Actions/commentActions";
 import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import { type CommentTool } from "@/stores/workflowEditorToolbarStore";
@@ -45,7 +46,7 @@ library.add(
     faTrash
 );
 
-const { toolbarStore, commentStore } = useWorkflowStores();
+const { toolbarStore, undoRedoStore, commentStore } = useWorkflowStores();
 const { snapActive, currentTool } = toRefs(toolbarStore);
 
 const { commentOptions } = toolbarStore;
@@ -122,7 +123,7 @@ const thicknessId = useUid("thickness-");
 const smoothingId = useUid("smoothing-");
 
 function onRemoveAllFreehand() {
-    commentStore.deleteFreehandComments();
+    undoRedoStore.applyAction(new RemoveAllFreehandCommentsAction(commentStore));
 }
 
 useToolLogic();

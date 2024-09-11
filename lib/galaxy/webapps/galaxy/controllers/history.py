@@ -237,21 +237,17 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             )
         return trans.show_error_message("Cannot purge deleted datasets from this session.")
 
-    @web.expose
+    @web.expose_api_anonymous
     def resume_paused_jobs(self, trans, current=False, ids=None, **kwargs):
-        """Resume paused jobs the active history -- this does not require a logged in user."""
+        """Resume paused jobs for the active history -- this does not require a logged in user."""
         if not ids and string_as_bool(current):
-            histories = [trans.get_history()]
-            refresh_frames = ["history"]
-        else:
-            raise NotImplementedError("You can currently only resume all the datasets of the current history.")
-        for history in histories:
-            history.resume_paused_jobs()
-            trans.sa_session.add(history)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return trans.show_ok_message("Your jobs have been resumed.", refresh_frames=refresh_frames)
-        # TODO: used in index.mako
+            history = trans.get_history()
+            if history:
+                history.resume_paused_jobs()
+                return {"message": "Your jobs have been resumed.", "status": "success"}
+        raise exceptions.RequestParameterInvalidException(
+            "You can currently only resume all the datasets of the current history."
+        )
 
     @web.expose_api
     @web.require_login("rename histories")

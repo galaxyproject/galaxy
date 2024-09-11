@@ -1,6 +1,6 @@
-import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
-import type { ExportParams } from "@/components/Common/models/exportRecordModel";
+import { type ExportParams } from "@/components/Common/models/exportRecordModel";
 /**
  * Defines a UI plugin that can export a workflow invocation to a particular format.
  */

@@ -1,10 +1,11 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
+
 import {
     type AnonymousUser,
     type AnyHistory,
     type HistorySummary,
     type HistorySummaryExtended,
     isRegisteredUser,
-    type User,
     userOwnsHistory,
 } from ".";
 
@@ -12,17 +13,12 @@ const REGISTERED_USER_ID = "fake-user-id";
 const ANOTHER_USER_ID = "another-fake-user-id";
 const ANONYMOUS_USER_ID = null;
 
-const REGISTERED_USER: User = {
-    id: REGISTERED_USER_ID,
-    email: "test@mail.test",
-    tags_used: [],
-    isAnonymous: false,
-    total_disk_usage: 0,
-};
+const REGISTERED_USER = getFakeRegisteredUser({ id: REGISTERED_USER_ID });
 
 const ANONYMOUS_USER: AnonymousUser = {
     isAnonymous: true,
     total_disk_usage: 0,
+    nice_total_disk_usage: "0.0 bytes",
 };
 
 const SESSIONLESS_USER = null;

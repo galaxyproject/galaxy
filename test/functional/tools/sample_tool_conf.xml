@@ -24,6 +24,8 @@
   <tool file="multi_repeats.xml" />
   <tool file="remove_value.xml" />
   <tool file="bibtex.xml" />
+  <tool file="help_features_rst.xml" />
+  <tool file="help_features_markdown.xml" />
   <tool file="select_from_url.xml" />
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
@@ -176,6 +178,7 @@
   <tool file="identifier_in_actions.xml" />
   <tool file="fail_identifier.xml" />
   <tool file="fail_writing_work_dir_file.xml" />
+  <tool file="legacy_interpreter.xml" />
   <tool file="tool_directory.xml" />
   <tool file="tool_directory_docker.xml" />
   <tool file="output_action_change_format.xml" />
@@ -265,6 +268,8 @@
   <tool file="for_workflows/count_multi_file.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
   <tool file="for_workflows/randomlines.xml" />
+
+  <tool_dir dir="parameters/" />
 
   <section id="filter" name="For Tours">
     <tool file="for_tours/filtering.xml" />

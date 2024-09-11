@@ -1,7 +1,7 @@
-import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
-import type { GalaxyConfiguration } from "@/stores/configurationStore";
-import Filtering from "@/utils/filtering";
+import { type GalaxyConfiguration } from "@/stores/configurationStore";
+import type Filtering from "@/utils/filtering";
 
 export interface Action {
     title: string;

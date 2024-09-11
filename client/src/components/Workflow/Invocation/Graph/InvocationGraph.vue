@@ -226,6 +226,7 @@ function toggleActiveStep(stepId: number) {
                 <div v-if="!hideGraph" class="position-relative w-100">
                     <BCard no-body>
                         <WorkflowGraph
+                            class="invocation-graph"
                             :steps="steps"
                             :datatypes-mapper="datatypesMapper"
                             :initial-position="initialPosition"
@@ -341,9 +342,15 @@ function toggleActiveStep(stepId: number) {
 
 .graph-steps-aside {
     overflow-y: scroll;
-    scroll-behavior: smooth;
     &.steps-fixed-height {
         max-height: 60vh;
+    }
+}
+
+.invocation-graph {
+    &:deep(.workflow-overview),
+    &:deep(.zoom-control) {
+        z-index: 100;
     }
 }
 </style>

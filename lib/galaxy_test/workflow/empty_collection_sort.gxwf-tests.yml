@@ -1,0 +1,16 @@
+- doc: | 
+    Test to verify collection operations like the sort tool work fine with empty collections.
+  job:
+    input:
+      collection_type: list
+      elements:
+      - identifier: i1
+        content: "0"
+    filter_file: i1
+  outputs:
+    output:
+      elements:
+        i1:
+          asserts:
+          - that: has_text
+            text: "0"

@@ -29,19 +29,17 @@ const router = useRouter();
 const userStore = useUserStore();
 
 const publishedTitle = computed(() => {
-    if (userStore.currentUser?.username === props.workflow.owner) {
+    if (userStore.matchesCurrentUsername(props.workflow.owner)) {
         return "Published by you. Click to view all published workflows by you";
     } else {
         return `Published by '${props.workflow.owner}'. Click to view all published workflows by '${props.workflow.owner}'`;
     }
 });
+
 const shared = computed(() => {
-    if (userStore.currentUser) {
-        return userStore.currentUser.username !== props.workflow.owner;
-    } else {
-        return false;
-    }
+    return !userStore.matchesCurrentUsername(props.workflow.owner);
 });
+
 const sourceType = computed(() => {
     if (props.workflow.source_metadata?.url) {
         return "url";
@@ -51,6 +49,7 @@ const sourceType = computed(() => {
         return "";
     }
 });
+
 const sourceTitle = computed(() => {
     if (sourceType.value.includes("trs")) {
         return `Imported from TRS ID (version: ${props.workflow.source_metadata.trs_version_id}). Click to copy ID`;

@@ -668,9 +668,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                 assert file_source_root
                                 dataset_extra_files_path = os.path.join(file_source_root, dataset_extra_files_path)
                                 persist_extra_files(self.object_store, dataset_extra_files_path, dataset_instance)
-                            # Don't trust serialized file size
-                        dataset_instance.dataset.file_size = None
-                        dataset_instance.dataset.set_total_size()  # update the filesize record in the database
+                            # Only trust file size if the dataset is purged. If we keep the data we should check the file size.
+                            dataset_instance.dataset.file_size = None
+                            dataset_instance.dataset.set_total_size()  # update the filesize record in the database
 
                     if dataset_instance.deleted:
                         dataset_instance.dataset.deleted = True

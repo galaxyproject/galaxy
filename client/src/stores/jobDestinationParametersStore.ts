@@ -1,12 +1,24 @@
 import { defineStore } from "pinia";
 
-import { fetchJobDestinationParams, type JobDestinationParams } from "@/api/jobs";
-import { useKeyedCache } from "@/composables/keyedCache";
+import { GalaxyApi } from "@/api";
+import { type JobDestinationParams } from "@/api/jobs";
+import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export const useJobDestinationParametersStore = defineStore("jobDestinationParametersStore", () => {
-    const { storedItems, getItemById, isLoadingItem } = useKeyedCache<JobDestinationParams>((params) =>
-        fetchJobDestinationParams({ job_id: params.id })
-    );
+    async function fetchJobDestinationParams(params: FetchParams): Promise<JobDestinationParams> {
+        const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}/destination_params", {
+            params: {
+                path: { job_id: params.id },
+            },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+        return data;
+    }
+
+    const { storedItems, getItemById, isLoadingItem } = useKeyedCache<JobDestinationParams>(fetchJobDestinationParams);
 
     return {
         storedJobDestinationParameters: storedItems,

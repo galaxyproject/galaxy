@@ -5,9 +5,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BLink } from "bootstrap-vue";
 import { computed, watch } from "vue";
 
-import { TaskMonitor } from "@/composables/genericTaskMonitor";
-import { MonitoringRequest, usePersistentProgressTaskMonitor } from "@/composables/persistentProgressMonitor";
+import { type TaskMonitor } from "@/composables/genericTaskMonitor";
+import { type MonitoringRequest, usePersistentProgressTaskMonitor } from "@/composables/persistentProgressMonitor";
 import { useShortTermStorage } from "@/composables/shortTermStorage";
+
+import UtcDate from "@/components/UtcDate.vue";
 
 library.add(faSpinner);
 
@@ -46,8 +48,19 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { getDownloadObjectUrl } = useShortTermStorage();
 
-const { hasMonitoringData, isRunning, isCompleted, hasFailed, requestHasFailed, storedTaskId, status, start, reset } =
-    usePersistentProgressTaskMonitor(props.monitorRequest, props.useMonitor);
+const {
+    hasMonitoringData,
+    isRunning,
+    isCompleted,
+    hasFailed,
+    requestHasFailed,
+    storedTaskId,
+    status,
+    hasExpired,
+    expirationDate,
+    start,
+    reset,
+} = usePersistentProgressTaskMonitor(props.monitorRequest, props.useMonitor);
 
 const downloadUrl = computed(() => {
     // We can only download the result if the task is completed and the task type is short_term_storage.
@@ -66,7 +79,12 @@ watch(
     () => props.taskId,
     (newTaskId, oldTaskId) => {
         if (newTaskId && newTaskId !== oldTaskId) {
-            start({ taskId: newTaskId, taskType: props.monitorRequest.taskType, request: props.monitorRequest });
+            start({
+                taskId: newTaskId,
+                taskType: props.monitorRequest.taskType,
+                request: props.monitorRequest,
+                startedAt: new Date(),
+            });
         }
     }
 );
@@ -89,7 +107,10 @@ function dismissAlert() {
 
 <template>
     <div v-if="hasMonitoringData" class="d-flex justify-content-end">
-        <BAlert v-if="isRunning" variant="info" show>
+        <BAlert v-if="hasExpired" variant="warning" show dismissible @dismissed="dismissAlert">
+            The {{ monitorRequest.action }} task has <b>expired</b> and the result is no longer available.
+        </BAlert>
+        <BAlert v-else-if="isRunning" variant="info" show>
             <b>{{ inProgressMessage }}</b>
             <FontAwesomeIcon :icon="faSpinner" class="mr-2" spin />
         </BAlert>
@@ -98,6 +119,10 @@ function dismissAlert() {
             <BLink v-if="downloadUrl" class="download-link" :href="downloadUrl">
                 <b>Download here</b>
             </BLink>
+            <br />
+            <span v-if="expirationDate">
+                This result will <b>expire <UtcDate :date="expirationDate.toISOString()" mode="elapsed" /></b>
+            </span>
         </BAlert>
         <BAlert v-else-if="hasFailed" variant="danger" show dismissible @dismissed="dismissAlert">
             <span>{{ failedMessage }}</span>

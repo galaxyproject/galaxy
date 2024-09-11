@@ -31,7 +31,7 @@ from galaxy.model import (
     MetadataFile,
 )
 from galaxy.util import safe_makedirs
-from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.dictifiable import UsesDictVisibleKeys
 
 TOOL_PROVIDED_JOB_METADATA_FILE = "galaxy.json"
 TOOL_PROVIDED_JOB_METADATA_KEYS = ["name", "info", "dbkey", "created_from_basename"]
@@ -62,7 +62,7 @@ class JobOutputs(threading.local):
         self.output_hdas_and_paths = {t.output_name: (t.dataset, t.dataset_path) for t in job_outputs}
 
 
-class JobIO(Dictifiable):
+class JobIO(UsesDictVisibleKeys):
     dict_collection_visible_keys = (
         "job_id",
         "working_directory",
@@ -168,7 +168,7 @@ class JobIO(Dictifiable):
         return cls(sa_session=sa_session, **io_dict)
 
     def to_dict(self):
-        io_dict = super().to_dict()
+        io_dict = super()._dictify_view_keys()
         # dict_for will always add `model_class`, we don't need or want it
         io_dict.pop("model_class")
         io_dict["user_context"] = self.user_context.to_dict()

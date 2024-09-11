@@ -6,7 +6,7 @@ import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { HistorySummary } from "@/api";
+import { type HistorySummary } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
