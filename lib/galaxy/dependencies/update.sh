@@ -93,3 +93,4 @@ split_requirement contourpy
 split_requirement matplotlib
 split_requirement numpy
 split_requirement scipy
+split_requirement astropy
