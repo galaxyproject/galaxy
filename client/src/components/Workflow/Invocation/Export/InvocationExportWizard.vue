@@ -347,7 +347,7 @@ const stepsGridColumnsTemplate = computed(() => {
                                 <BCard
                                     v-for="plugin in exportPlugins"
                                     :key="plugin.id"
-                                    class="text-center"
+                                    class="wizard-selection-card"
                                     :border-variant="
                                         exportData.exportPluginFormat === plugin.id ? 'primary' : 'default'
                                     "
@@ -376,7 +376,7 @@ const stepsGridColumnsTemplate = computed(() => {
                                         exportData.destination === target.destination ? 'white' : 'default'
                                     "
                                     :header="target.label"
-                                    class="destination-card"
+                                    class="wizard-selection-card"
                                     @click="exportData.destination = target.destination">
                                     <div v-html="renderMarkdown(target.markdownDescription)" />
                                 </BCard>
@@ -548,6 +548,15 @@ const stepsGridColumnsTemplate = computed(() => {
 
         .go-next-btn {
             float: right;
+        }
+    }
+
+    .wizard-selection-card {
+        border-width: 3px;
+        text-align: center;
+
+        .card-header {
+            border-radius: 0;
         }
     }
 }
