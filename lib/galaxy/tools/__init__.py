@@ -2346,7 +2346,7 @@ class Tool(UsesDictVisibleKeys):
     def exec_before_job(self, app, inp_data, out_data, param_dict=None):
         pass
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state: Optional[str] = None):
         pass
 
     def job_failed(self, job_wrapper, message, exception=False):
@@ -2977,7 +2977,7 @@ class ExpressionTool(Tool):
         with open(expression_inputs_path, "w") as f:
             json.dump(expression_inputs, f)
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None):
         for key, val in self.outputs.items():
             if key not in out_data:
                 # Skip filtered outputs
@@ -3157,7 +3157,7 @@ class SetMetadataTool(Tool):
             )
             self.app.job_manager.enqueue(job=job, tool=self)
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None):
         working_directory = app.object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
         for name, dataset in inp_data.items():
             external_metadata = get_metadata_compute_strategy(app.config, job.id, tool_id=self.id)
@@ -3215,8 +3215,8 @@ class ExportHistoryTool(Tool):
 class ImportHistoryTool(Tool):
     tool_type = "import_history"
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None, **kwds):
-        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None):
+        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
         if final_job_state != DETECTED_JOB_STATE.OK:
             return
         JobImportHistoryArchiveWrapper(self.app, job.id).cleanup_after_job()
@@ -3240,9 +3240,8 @@ class InteractiveTool(Tool):
         else:
             log.warning("Could not determine job to stop InteractiveTool: %s", job)
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
-        # run original exec_after_process
-        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None):
+        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
         self.__remove_interactivetool_by_job(job)
 
     def job_failed(self, job_wrapper, message, exception=False):
@@ -3261,12 +3260,11 @@ class DataManagerTool(OutputParameterJSONTool):
         if self.data_manager_id is None:
             self.data_manager_id = self.id
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, final_job_state=None, **kwds):
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None):
         assert self.allow_user_access(job.user), "You must be an admin to access this tool."
         if final_job_state != DETECTED_JOB_STATE.OK:
             return
-        # run original exec_after_process
-        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
         # process results of tool
         data_manager_id = job.data_manager_association.data_manager_id
         data_manager = self.app.data_managers.get_manager(data_manager_id)
