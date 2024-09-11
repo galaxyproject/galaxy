@@ -3,10 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faHdd } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref, set } from "vue";
 
-import { type HDASummary, type HistorySummary } from "@/api";
-import { getDatasets } from "@/api/datasets";
-import { postFolderContent } from "@/api/folders";
-import { historiesFetcher } from "@/api/histories";
+import { GalaxyApi, type HDASummary, type HistorySummary } from "@/api";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
 import {
     type ItemsProvider,
@@ -163,22 +160,31 @@ async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promi
         const sortBy = ctx.sortBy === "label" ? "name" : ctx.sortBy || "update_time";
         const queryDict = HistoriesFilters.getQueryDict(ctx.filter);
 
-        const { data, headers } = await historiesFetcher({
-            search: filter,
-            view: "summary",
-            keys: "create_time",
-            show_own: true,
-            offset: offset,
-            limit: limit,
-            q: Object.keys(queryDict),
-            qv: Object.values(queryDict),
-            sort_by: sortBy as HistorySortKeys,
-            sort_desc: sortDesc,
+        const { response, data, error } = await GalaxyApi().GET("/api/histories", {
+            params: {
+                query: {
+                    search: filter,
+                    view: "summary",
+                    keys: "create_time",
+                    show_own: true,
+                    offset: offset,
+                    limit: limit,
+                    q: Object.keys(queryDict),
+                    qv: Object.values(queryDict),
+                    sort_by: sortBy as HistorySortKeys,
+                    sort_desc: sortDesc,
+                },
+            },
         });
 
-        totalItems.value = parseInt(headers.get("total_matches") ?? "0");
+        if (error) {
+            errorMessage.value = errorMessageAsString(error);
+            return [];
+        }
 
-        items.value = data.map(historyEntryToRecord as any);
+        totalItems.value = parseInt(response.headers.get("total_matches") ?? "0");
+
+        items.value = (data as HistorySummary[]).map(historyEntryToRecord);
 
         formatRows();
 
@@ -199,16 +205,25 @@ async function datasetsProvider(ctx: ItemsProviderContext, selectedHistory: Hist
         const offset = (ctx.currentPage - 1) * ctx.perPage;
         const query = ctx.filter;
 
-        const { data, total_matches } = await getDatasets({
-            history_id: selectedHistory.id,
-            query: query,
-            sortBy: ctx.sortBy === "time" ? "update_time" : "name",
-            sortDesc: ctx.sortDesc,
-            offset: offset,
-            limit: limit,
+        const { response, data, error } = await GalaxyApi().GET("/api/datasets", {
+            params: {
+                query: {
+                    history_id: selectedHistory.id,
+                    query: query,
+                    sortBy: ctx.sortBy === "time" ? "update_time" : "name",
+                    sortDesc: ctx.sortDesc,
+                    offset: offset,
+                    limit: limit,
+                },
+            },
         });
 
-        totalItems.value = total_matches;
+        if (error) {
+            errorMessage.value = errorMessageAsString(error);
+            return [];
+        }
+
+        totalItems.value = parseInt(response.headers.get("total_matches") ?? "0");
 
         items.value = (data as HDASummary[]).map(datasetEntryToRecord);
 
@@ -272,7 +287,15 @@ async function onOk() {
         submitting.value = true;
 
         for (const item of selected.value) {
-            await postFolderContent({ folder_id: props.folderId, from_hda_id: item.id });
+            await GalaxyApi().POST("/api/folders/{folder_id}/contents", {
+                params: {
+                    path: { folder_id: props.folderId },
+                },
+                body: {
+                    ldda_message: null,
+                    from_hda_id: item.id,
+                },
+            });
         }
 
         Toast.success(`Added ${selected.value.length} dataset${selected.value.length > 1 ? "s" : ""} to the folder`);
