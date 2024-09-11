@@ -22,7 +22,7 @@
                             id="dropdown-form"
                             ref="dropdown"
                             class="workflow-run-settings"
-                            style="margin-right: 10px;"
+                            style="margin-right: 10px"
                             title="Workflow Run Settings"
                             variant="link"
                             no-caret>
@@ -48,7 +48,9 @@
                                     v-if="isConfigLoaded && config.object_store_allows_id_selection"
                                     :split-object-store="splitObjectStore"
                                     :invocation-preferred-object-store-id="preferredObjectStoreId"
-                                    :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
+                                    :invocation-intermediate-preferred-object-store-id="
+                                        preferredIntermediateObjectStoreId
+                                    "
                                     @updated="onStorageUpdate">
                                 </WorkflowStorageConfiguration>
                             </b-dropdown-form>
