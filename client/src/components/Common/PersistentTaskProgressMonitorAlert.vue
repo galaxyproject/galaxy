@@ -111,7 +111,7 @@ function dismissAlert() {
 </script>
 
 <template>
-    <div v-if="hasMonitoringData">
+    <div v-if="hasMonitoringData" class="progress-monitor-alert">
         <BAlert v-if="hasExpired" variant="warning" show dismissible @dismissed="dismissAlert">
             The {{ monitorRequest.action }} task has <b>expired</b> and the result is no longer available.
         </BAlert>
