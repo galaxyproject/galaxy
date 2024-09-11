@@ -648,7 +648,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             "file_size": lambda item, key, **context: self.serializers["size"](item, key, **context),
             "nice_size": lambda item, key, **context: item.get_size(nice_size=True, calculate_size=False),
             # common to lddas and hdas - from mapping.py
-            "copied_from_history_dataset_association_id": self.serialize_id,
+            "copied_from_history_dataset_association_id": lambda item, key, **context: item.id,
             "copied_from_library_dataset_dataset_association_id": self.serialize_id,
             "info": lambda item, key, **context: item.info.strip() if isinstance(item.info, str) else item.info,
             "blurb": lambda item, key, **context: item.blurb,

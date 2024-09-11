@@ -69,6 +69,56 @@ class TestWorkflowInvocation(integration_util.IntegrationTestCase, UsesShedApi):
                 if step["workflow_step_label"] == "cat1":
                     assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 1
 
+    def test_pick_value_preserves_datatype_and_inheritance_chain(self):
+        self.install_repository("iuc", "pick_value", "b19e21af9c52")
+        with self.dataset_populator.test_history() as history_id:
+            summary = self.workflow_populator.run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_dataset: data
+outputs:
+  the_output:
+    outputSource: pick_value/data_param
+steps:
+  skip_step:
+    tool_id: job_properties
+    when: $(false)
+  pick_value:
+    tool_id: toolshed.g2.bx.psu.edu/repos/iuc/pick_value/pick_value/0.2.0
+    in:
+      style_cond|type_cond|pick_from_0|value:
+        source: skip_step/out_file1
+      style_cond|type_cond|pick_from_1|value:
+        source: input_dataset
+    tool_state:
+      style_cond:
+        pick_style: first
+        type_cond:
+          param_type: data
+          pick_from:
+          - value:
+            __class__: RuntimeValue
+          - value:
+            __class__: RuntimeValue
+test_data:
+  input_dataset:
+      value: 1.txt
+      type: File
+""",
+                history_id=history_id,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+            output = self.dataset_populator.get_history_dataset_details(
+                history_id,
+                content_id=invocation["outputs"]["the_output"]["id"],
+                # copied_from_history_dataset_association_id is not in any of the default serializers
+                keys="state,extension,copied_from_history_dataset_association_id",
+            )
+            assert output["state"] == "ok"
+            assert output["extension"] == "txt"
+            assert output["copied_from_history_dataset_association_id"]
+
     def test_run_workflow_optional_data_provided_runs_step(self) -> None:
         self.install_repository("iuc", "map_param_value", "5ac8a4bf7a8d")
         with self.dataset_populator.test_history() as history_id:
