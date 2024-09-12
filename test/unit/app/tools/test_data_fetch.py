@@ -1,12 +1,16 @@
 import json
 import os
 import tempfile
+from base64 import b64encode
 from contextlib import contextmanager
 from shutil import rmtree
 from tempfile import mkdtemp
 
 from galaxy.tools.data_fetch import main
 from galaxy.util.unittest_utils import skip_if_github_down
+
+B64_FOR_1_2_3 = b64encode(b"1 2 3").decode("utf-8")
+URI_FOR_1_2_3 = f"base64://{B64_FOR_1_2_3}"
 
 
 def test_simple_path_get():
@@ -53,6 +57,134 @@ def test_simple_uri_get():
         hda_result = output["elements"][0]
         assert hda_result["state"] == "ok"
         assert hda_result["ext"] == "bed"
+
+
+def test_correct_md5():
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": URI_FOR_1_2_3,
+                            "hashes": [
+                                {
+                                    "hash_function": "MD5",
+                                    "hash_value": "5ba48b6e5a7c4d4930fda256f411e55b",
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "validate_hashes": True,
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        hda_result = output["elements"][0]
+        assert hda_result["state"] == "ok"
+        assert hda_result["ext"] == "txt"
+
+
+def test_incorrect_md5():
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": URI_FOR_1_2_3,
+                            "hashes": [
+                                {
+                                    "hash_function": "MD5",
+                                    "hash_value": "thisisbad",
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "validate_hashes": True,
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        hda_result = output["elements"][0]
+        assert (
+            hda_result["error_message"]
+            == "Failed to validate upload with [MD5] - expected [thisisbad] got [5ba48b6e5a7c4d4930fda256f411e55b]"
+        )
+
+
+def test_correct_sha1():
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": URI_FOR_1_2_3,
+                            "hashes": [
+                                {
+                                    "hash_function": "SHA-1",
+                                    "hash_value": "65e9d53484d28eef5447bc06fe2d754d1090975a",
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "validate_hashes": True,
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        hda_result = output["elements"][0]
+        assert hda_result["state"] == "ok"
+        assert hda_result["ext"] == "txt"
+
+
+def test_incorrect_sha1():
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": URI_FOR_1_2_3,
+                            "hashes": [
+                                {
+                                    "hash_function": "SHA-1",
+                                    "hash_value": "thisisbad",
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "validate_hashes": True,
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        hda_result = output["elements"][0]
+        assert (
+            hda_result["error_message"]
+            == "Failed to validate upload with [SHA-1] - expected [thisisbad] got [65e9d53484d28eef5447bc06fe2d754d1090975a]"
+        )
 
 
 @skip_if_github_down
