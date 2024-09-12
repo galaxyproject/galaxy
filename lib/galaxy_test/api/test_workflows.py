@@ -887,6 +887,43 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         workflow_dict = self.workflow_populator.download_workflow(workflow_id)
         assert workflow_dict["license"] == "AAL"
 
+    def test_update_name_for_workflow_with_subworkflows(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+label: old name
+inputs:
+  dataset: data
+steps:
+  subworkflow:
+    in:
+      dataset: dataset
+    outputs:
+      output:
+        outputSource: cat1/out_file1
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        dataset:
+          type: data
+      steps:
+        cat1:
+          tool_id: cat1
+          in:
+            input1: dataset
+  cat1:
+    tool_id: cat1
+    in:
+      input1: subworkflow/output
+"""
+        )
+        self.workflow_populator.download_workflow(workflow_id)
+        new_name = "my cool new name"
+        data = {"name": new_name}
+        self._update_workflow(workflow_id, data).raise_for_status()
+        post_update_workflow = self.workflow_populator.download_workflow(workflow_id)
+        assert post_update_workflow["name"] == new_name
+
     def test_update_name_empty(self):
         # Update doesn't allow empty names.
 
