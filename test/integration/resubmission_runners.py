@@ -1,3 +1,4 @@
+import subprocess
 import time
 from typing import List
 
@@ -13,7 +14,8 @@ class FailsJobRunner(LocalJobRunner):
     def queue_job(self, job_wrapper):
         if not self._prepare_job_local(job_wrapper):
             return
-
+        command_line, _ = self._command_line(job_wrapper)
+        subprocess.run([command_line])
         resource_parameters = job_wrapper.get_resource_parameters()
         failure_state = resource_parameters.get("failure_state", None)
 
