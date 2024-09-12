@@ -250,6 +250,10 @@ def _fetch_target(upload_config: "UploadConfig", target):
         if url:
             sources.append(source_dict)
         hashes = item.get("hashes", [])
+        for hash_function in HASH_NAMES:
+            hash_value = item.get(hash_function)
+            if hash_value:
+                hashes.append({"hash_function": hash_function, "hash_value": hash_value})
         for hash_dict in hashes:
             hash_function = hash_dict.get("hash_function")
             hash_value = hash_dict.get("hash_value")

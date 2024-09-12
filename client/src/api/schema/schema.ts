@@ -6330,6 +6330,12 @@ export interface components {
         CompositeDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -6360,6 +6366,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -8668,10 +8676,26 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** FetchDatasetHash */
+        FetchDatasetHash: {
+            /**
+             * Hash Function
+             * @enum {string}
+             */
+            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+            /** Hash Value */
+            hash_value: string;
+        };
         /** FileDataElement */
         FileDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -8701,6 +8725,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -8966,6 +8992,12 @@ export interface components {
         FtpImportElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -8997,6 +9029,8 @@ export interface components {
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Ftp Path */
             ftp_path: string;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -13374,6 +13408,12 @@ export interface components {
         NestedElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -13416,6 +13456,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -14018,6 +14060,12 @@ export interface components {
         PastedDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -14047,6 +14095,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -14078,6 +14128,12 @@ export interface components {
         PathDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -14107,6 +14163,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Link Data Only */
@@ -14799,6 +14857,12 @@ export interface components {
         ServerDirElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -14828,6 +14892,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Link Data Only */
@@ -16443,6 +16509,12 @@ export interface components {
         UrlDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -16472,6 +16544,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
