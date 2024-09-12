@@ -53,7 +53,7 @@ async function loadAnnotation() {
                 <span v-localize class="font-weight-bold">About This Workflow</span>
             </b>
             <span v-b-tooltip.hover.bottom title="Collapse/Expand" variant="link" size="sm" class="float-right">
-                <FontAwesomeIcon :icon="expandAnnotations ? 'chevron-up' : 'chevron-down'" class="fa-fw" />
+                <FontAwesomeIcon :icon="expandAnnotations ? faChevronUp : faChevronDown" fixed-width />
             </span>
         </div>
         <div class="portlet-content" :style="expandAnnotations ? 'display: none;' : ''">
