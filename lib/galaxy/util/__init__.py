@@ -1656,35 +1656,33 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
         s = smtplib.SMTP_SSL(config.smtp_server)
     else:
         s = smtplib.SMTP(config.smtp_server)
-    if not smtp_ssl:
-        try:
-            s.starttls()
-            log.debug("Initiated SSL/TLS connection to SMTP server: %s", config.smtp_server)
-        except RuntimeError as e:
-            log.warning("SSL/TLS support is not available to your Python interpreter: %s", unicodify(e))
-        except smtplib.SMTPHeloError as e:
-            log.error("The server didn't reply properly to the HELO greeting: %s", unicodify(e))
-            s.close()
-            raise
-        except smtplib.SMTPException as e:
-            log.warning("The server does not support the STARTTLS extension: %s", unicodify(e))
-    if config.smtp_username and config.smtp_password:
-        try:
-            s.login(config.smtp_username, config.smtp_password)
-        except smtplib.SMTPHeloError as e:
-            log.error("The server didn't reply properly to the HELO greeting: %s", unicodify(e))
-            s.close()
-            raise
-        except smtplib.SMTPAuthenticationError as e:
-            log.error("The server didn't accept the username/password combination: %s", unicodify(e))
-            s.close()
-            raise
-        except smtplib.SMTPException as e:
-            log.error("No suitable authentication method was found: %s", unicodify(e))
-            s.close()
-            raise
-    s.send_message(msg)
-    s.quit()
+    try:
+        if not smtp_ssl:
+            try:
+                s.starttls()
+                log.debug("Initiated SSL/TLS connection to SMTP server: %s", config.smtp_server)
+            except RuntimeError as e:
+                log.warning("SSL/TLS support is not available to your Python interpreter: %s", e)
+            except smtplib.SMTPHeloError as e:
+                log.error("The server didn't reply properly to the HELO greeting: %s", e)
+                raise
+            except smtplib.SMTPException as e:
+                log.warning("The server does not support the STARTTLS extension: %s", e)
+        if config.smtp_username and config.smtp_password:
+            try:
+                s.login(config.smtp_username, config.smtp_password)
+            except smtplib.SMTPHeloError as e:
+                log.error("The server didn't reply properly to the HELO greeting: %s", e)
+                raise
+            except smtplib.SMTPAuthenticationError as e:
+                log.error("The server didn't accept the username/password combination: %s", e)
+                raise
+            except smtplib.SMTPException as e:
+                log.error("No suitable authentication method was found: %s", e)
+                raise
+        s.send_message(msg)
+    finally:
+        s.quit()
 
 
 def force_symlink(source, link_name):
