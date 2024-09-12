@@ -30,8 +30,7 @@ from datetime import (
     timezone,
 )
 from decimal import Decimal
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from email.message import EmailMessage
 from hashlib import md5
 from os.path import relpath
 from pathlib import Path
@@ -1634,10 +1633,8 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
         return
 
     to = listify(to)
-    if html:
-        msg = MIMEMultipart("alternative")
-    else:
-        msg = MIMEText(body, "plain", "utf-8")
+    msg = EmailMessage()
+    msg.set_content(body)
 
     msg["To"] = ", ".join(to)
     msg["From"] = frm
@@ -1652,10 +1649,7 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
         return
 
     if html:
-        mp_text = MIMEText(body, "plain", "utf-8")
-        mp_html = MIMEText(html, "html", "utf-8")
-        msg.attach(mp_text)
-        msg.attach(mp_html)
+        msg.add_alternative(html, subtype="html")
 
     smtp_ssl = asbool(getattr(config, "smtp_ssl", False))
     if smtp_ssl:
@@ -1689,7 +1683,7 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
             log.error("No suitable authentication method was found: %s", unicodify(e))
             s.close()
             raise
-    s.sendmail(frm, to, msg.as_string())
+    s.send_message(msg)
     s.quit()
 
 
