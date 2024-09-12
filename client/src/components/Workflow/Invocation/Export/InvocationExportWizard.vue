@@ -89,9 +89,29 @@ const exportButtonLabel = computed(() => {
     }
 });
 
+const exportDestinationSummary = computed(() => {
+    switch (exportData.destination) {
+        case "download":
+            return "Temporary Direct Download Link";
+        case "remote-source":
+            return `Remote File Source ➡️ ${exportData.remoteUri}`;
+        case "rdm-repository":
+            return `RDM Repository ➡️ ${exportData.remoteUri}`;
+        default:
+            return "Unknown Destination";
+    }
+});
+
 const exportDestinationTargets = computed(initializeExportDestinations);
 
 const exportPlugins = computed(() => Array.from(AVAILABLE_INVOCATION_EXPORT_PLUGINS.values()));
+
+const selectedExportPlugin = computed(() => getInvocationExportPluginByType(exportData.exportPluginFormat));
+
+const exportDestinationUri = computed(() => {
+    const uri = `${exportData.remoteUri}/${exportData.outputFileName}.${selectedExportPlugin.value.exportParams.modelStoreFormat}`;
+    return uri;
+});
 
 const exportPluginTitle = computed(() => {
     const plugin = getInvocationExportPluginByType(exportData.exportPluginFormat);
@@ -186,14 +206,12 @@ async function exportInvocation() {
 }
 
 async function exportToSts() {
-    const exportPlugin = getInvocationExportPluginByType(exportData.exportPluginFormat);
-
     const { data, error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/prepare_store_download", {
         params: { path: { invocation_id: props.invocationId } },
         body: {
-            model_store_format: exportPlugin.exportParams.modelStoreFormat,
-            include_deleted: exportPlugin.exportParams.includeDeleted,
-            include_hidden: exportPlugin.exportParams.includeHidden,
+            model_store_format: selectedExportPlugin.value.exportParams.modelStoreFormat,
+            include_deleted: selectedExportPlugin.value.exportParams.includeDeleted,
+            include_hidden: selectedExportPlugin.value.exportParams.includeHidden,
             include_files: exportData.includeData,
             bco_merge_history_metadata: false,
         },
@@ -208,18 +226,15 @@ async function exportToSts() {
 }
 
 async function exportToFileSource() {
-    const exportPlugin = getInvocationExportPluginByType(exportData.exportPluginFormat);
-    const exportDirectoryUri = `${exportData.remoteUri}/${exportData.outputFileName}.${exportPlugin.exportParams.modelStoreFormat}`;
-
     const { data, error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/write_store", {
         params: {
             path: { invocation_id: props.invocationId },
         },
         body: {
-            target_uri: exportDirectoryUri,
-            model_store_format: exportPlugin.exportParams.modelStoreFormat,
-            include_deleted: exportPlugin.exportParams.includeDeleted,
-            include_hidden: exportPlugin.exportParams.includeHidden,
+            target_uri: exportDestinationUri.value,
+            model_store_format: selectedExportPlugin.value.exportParams.modelStoreFormat,
+            include_deleted: selectedExportPlugin.value.exportParams.includeDeleted,
+            include_hidden: selectedExportPlugin.value.exportParams.includeHidden,
             include_files: exportData.includeData,
             bco_merge_history_metadata: false,
         },
@@ -333,7 +348,6 @@ const stepsGridColumnsTemplate = computed(() => {
                             </button>
                             <div class="step-label" v-text="step.label" />
                             <div class="step-line" :class="{ fill: stepper.isAfter(id) }"></div>
-                            <!-- <hr v-if="stepper.isAfter(id)" class="step-line" /> -->
                         </div>
                     </BCardBody>
                 </BCard>
@@ -405,25 +419,30 @@ const stepsGridColumnsTemplate = computed(() => {
                         </div>
 
                         <div v-if="stepper.isCurrent('export-summary')">
-                            <div>
-                                <p>Export Format: {{ exportPluginTitle }}</p>
-                                <p>Export Destination: {{ exportData.destination }}</p>
-                                <BFormGroup
-                                    v-if="exportData.destination !== 'download'"
-                                    id="fieldset-name"
-                                    label-for="name"
-                                    :description="`Give the exported file a name.`"
-                                    class="mt-3">
-                                    <BFormInput
-                                        id="name"
-                                        v-model="exportData.outputFileName"
-                                        placeholder="enter file name"
-                                        required />
-                                </BFormGroup>
+                            <BFormGroup
+                                v-if="exportData.destination !== 'download'"
+                                label-for="exported-file-name"
+                                :description="`Give the exported file a name.`"
+                                class="mt-3">
+                                <BFormInput
+                                    id="exported-file-name"
+                                    v-model="exportData.outputFileName"
+                                    placeholder="enter file name"
+                                    required />
+                            </BFormGroup>
 
-                                <BFormCheckbox id="include-data" v-model="exportData.includeData" switch>
-                                    Include data files in the export package.
-                                </BFormCheckbox>
+                            <BFormCheckbox id="include-data" v-model="exportData.includeData" switch>
+                                Include data files in the export package.
+                            </BFormCheckbox>
+
+                            <br />
+
+                            <div>
+                                Export Format: <span class="font-weight-bold">{{ exportPluginTitle }}</span>
+                            </div>
+
+                            <div>
+                                Export Destination: <span class="font-weight-bold">{{ exportDestinationSummary }}</span>
                             </div>
                         </div>
                     </div>
