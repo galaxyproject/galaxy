@@ -41,7 +41,7 @@ def test_private_user_role_assoc_not_affected_by_setting_user_roles(session, mak
     assert user.email != private_role.name
 
     # Delete user roles
-    GalaxyRBACAgent(session).set_user_group_and_role_associations(user, group_ids=[], role_ids=[])
+    GalaxyRBACAgent(session).set_user_group_and_role_associations(user, role_ids=[])
     # association with private role is preserved
     verify_user_associations(user, [], [private_role])
 
@@ -59,7 +59,7 @@ def test_private_user_role_assoc_not_affected_by_setting_role_users(session, mak
     assert user.email != private_role.name
 
     # Update role users
-    GalaxyRBACAgent(session).set_role_user_and_group_associations(private_role, user_ids=[], group_ids=[])
+    GalaxyRBACAgent(session).set_role_user_and_group_associations(private_role, user_ids=[])
     # association of private role with user is preserved
     verify_role_associations(private_role, [user], [])
 
@@ -71,9 +71,7 @@ def test_cannot_assign_private_roles(session, make_user_and_role, make_role):
     verify_user_associations(user, [], [private_role1])  # the only existing association is with the private role
 
     # Try to assign 2 more roles: regular role + another private role
-    GalaxyRBACAgent(session).set_user_group_and_role_associations(
-        user, group_ids=[], role_ids=[new_role.id, private_role2.id]
-    )
+    GalaxyRBACAgent(session).set_user_group_and_role_associations(user, role_ids=[new_role.id, private_role2.id])
     # Only regular role has been added: other private role ignored; original private role still assigned
     verify_user_associations(user, [], [private_role1, new_role])
 
@@ -219,7 +217,7 @@ class TestSetGroupUserAndRoleAssociations:
 
         # try to set associations
         with pytest.raises(RequestParameterInvalidException):
-            GalaxyRBACAgent(session).set_group_user_and_role_associations(group, user_ids=user_ids, role_ids=[])
+            GalaxyRBACAgent(session).set_group_user_and_role_associations(group, user_ids=user_ids)
 
         # verify no change
         assert len(group.users) == 0
@@ -241,7 +239,7 @@ class TestSetGroupUserAndRoleAssociations:
 
         # try to set associations
         with pytest.raises(RequestParameterInvalidException):
-            GalaxyRBACAgent(session).set_group_user_and_role_associations(group, user_ids=[], role_ids=role_ids)
+            GalaxyRBACAgent(session).set_group_user_and_role_associations(group, role_ids=role_ids)
 
         # verify no change
         assert len(group.roles) == 0
@@ -483,7 +481,7 @@ class TestSetUserGroupAndRoleAssociations:
 
         # try to set associations
         with pytest.raises(RequestParameterInvalidException):
-            GalaxyRBACAgent(session).set_user_group_and_role_associations(user, group_ids=group_ids, role_ids=[])
+            GalaxyRBACAgent(session).set_user_group_and_role_associations(user, group_ids=group_ids)
 
         # verify no change
         assert len(user.groups) == 0
@@ -505,7 +503,7 @@ class TestSetUserGroupAndRoleAssociations:
 
         # try to set associations
         with pytest.raises(RequestParameterInvalidException):
-            GalaxyRBACAgent(session).set_user_group_and_role_associations(user, group_ids=[], role_ids=role_ids)
+            GalaxyRBACAgent(session).set_user_group_and_role_associations(user, role_ids=role_ids)
 
         # verify no change
         assert len(user.roles) == 1  # one is the private role association
@@ -743,7 +741,7 @@ class TestSetRoleUserAndGroupAssociations:
 
         # try to set associations
         with pytest.raises(RequestParameterInvalidException):
-            GalaxyRBACAgent(session).set_role_user_and_group_associations(role, user_ids=user_ids, group_ids=[])
+            GalaxyRBACAgent(session).set_role_user_and_group_associations(role, user_ids=user_ids)
 
         # verify no change
         assert len(role.users) == 0
@@ -765,7 +763,7 @@ class TestSetRoleUserAndGroupAssociations:
 
         # try to set associations
         with pytest.raises(RequestParameterInvalidException):
-            GalaxyRBACAgent(session).set_role_user_and_group_associations(role, user_ids=[], group_ids=group_ids)
+            GalaxyRBACAgent(session).set_role_user_and_group_associations(role, group_ids=group_ids)
 
         # verify no change
         assert len(role.groups) == 0
@@ -907,7 +905,7 @@ class TestSetRoleUserAndGroupAssociations:
         assert have_same_elements(history3.default_permissions, [dhp3])
 
         # now update role users
-        GalaxyRBACAgent(session).set_role_user_and_group_associations(role, user_ids=user_ids, group_ids=[])
+        GalaxyRBACAgent(session).set_role_user_and_group_associations(role, user_ids=user_ids)
 
         # verify user role associations
         verify_role_associations(role, new_users_to_add, [])
