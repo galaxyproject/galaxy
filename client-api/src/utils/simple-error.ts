@@ -1,0 +1,1 @@
+../../../client/src/utils/simple-error.ts

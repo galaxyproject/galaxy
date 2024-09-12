@@ -1,0 +1,15 @@
+{
+  "name": "@galaxyproject/client-api",
+  "version": "1.0.0",
+  "description": "A client library for the Galaxy API",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Galaxy Community",
+  "license": "MIT",
+  "dependencies": {
+    "openapi-fetch": "^0.12.0"
+  }
+}
