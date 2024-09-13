@@ -10,7 +10,6 @@ import {
     SELECTION_STATES,
     type SelectionItem,
 } from "@/components/SelectionDialog/selectionTypes";
-import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
@@ -28,6 +27,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
     (e: "reload"): void;
     (e: "onClose"): void;
+    (e: "onSelect", datasets: SelectionItem[]): void;
 }>();
 
 const selectionDialog = ref();
@@ -280,31 +280,9 @@ async function onUndo() {
     itemsProvider.value = historiesProvider;
 }
 
-async function onOk() {
-    try {
-        submitting.value = true;
-
-        for (const item of selected.value) {
-            await GalaxyApi().POST("/api/folders/{folder_id}/contents", {
-                params: {
-                    path: { folder_id: props.folderId },
-                },
-                body: {
-                    ldda_message: null,
-                    from_hda_id: item.id,
-                },
-            });
-        }
-
-        Toast.success(`Added ${selected.value.length} dataset${selected.value.length > 1 ? "s" : ""} to the folder`);
-
-        emit("reload");
-        emit("onClose");
-    } catch (error) {
-        errorMessage.value = errorMessageAsString(error);
-    } finally {
-        submitting.value = false;
-    }
+function onOk() {
+    emit("onSelect", selected.value);
+    emit("onClose");
 }
 
 function onCancel() {

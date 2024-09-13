@@ -2,16 +2,26 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BDropdown, BDropdownDivider, BDropdownGroup, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
+import {
+    BAlert,
+    BButton,
+    BDropdown,
+    BDropdownDivider,
+    BDropdownGroup,
+    BDropdownItem,
+    BFormCheckbox,
+} from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 
+import { GalaxyApi } from "@/api";
 import { Services } from "@/components/Libraries/LibraryFolder/services";
 import mod_add_datasets from "@/components/Libraries/LibraryFolder/TopToolbar/add-datasets";
 import { deleteSelectedItems } from "@/components/Libraries/LibraryFolder/TopToolbar/delete-selected";
 import download from "@/components/Libraries/LibraryFolder/TopToolbar/download";
 import mod_import_collection from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-collection";
 import mod_import_dataset from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
+import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
 import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { Toast } from "@/composables/toast";
@@ -22,6 +32,7 @@ import FolderDetails from "@/components/Libraries/LibraryFolder/FolderDetails/Fo
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
 import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
 import HistoryDatasetPicker from "@/components/Libraries/LibraryFolder/TopToolbar/HistoryDatasetPicker.vue";
+import ProgressBar from "@/components/ProgressBar.vue";
 
 library.add(faBook, faCaretDown, faDownload, faHome, faPlus, faTrash);
 
@@ -64,6 +75,14 @@ const dbKeyStore = useDbKeyStore();
 const modalShow = ref("");
 const genomesList = ref<GenomesList>([]);
 const extensionsList = ref<DetailedDatatypes[]>([]);
+const progress = ref(false);
+const progressNote = ref("");
+const progressStatus = reactive({
+    total: 0,
+    okCount: 0,
+    errorCount: 0,
+    runningCount: 0,
+});
 const auto = ref({
     id: "auto",
     extension: "auto",
@@ -246,6 +265,64 @@ async function fetchExtAndGenomes() {
         console.error(err);
     }
 }
+
+function resetProgress() {
+    progressStatus.total = 0;
+    progressStatus.okCount = 0;
+    progressStatus.errorCount = 0;
+    progressStatus.runningCount = 0;
+}
+
+async function onAddDatasetsFromHistory(selectedDatasets: SelectionItem[]) {
+    resetProgress();
+
+    progress.value = true;
+    progressStatus.total = selectedDatasets.length;
+    progressNote.value = "Adding datasets to the folder";
+
+    emit("setBusy", true);
+
+    for (const dataset of selectedDatasets) {
+        try {
+            progressStatus.runningCount++;
+
+            const { error } = await GalaxyApi().POST("/api/folders/{folder_id}/contents", {
+                params: {
+                    path: { folder_id: props.folderId },
+                },
+                body: {
+                    ldda_message: null,
+                    from_hda_id: dataset.id,
+                },
+            });
+
+            if (error) {
+                throw new Error(error.err_msg);
+            }
+
+            progressStatus.okCount++;
+        } catch (err) {
+            progressStatus.errorCount++;
+        } finally {
+            progressStatus.runningCount--;
+        }
+    }
+
+    if (progressStatus.errorCount > 0) {
+        progressNote.value = `Added ${progressStatus.okCount} dataset${
+            progressStatus.okCount > 1 ? "s" : ""
+        }, but failed to add ${progressStatus.errorCount} dataset${
+            progressStatus.errorCount > 1 ? "s" : ""
+        } to the folder`;
+    } else {
+        progressNote.value = `Added ${progressStatus.okCount} dataset${
+            progressStatus.okCount > 1 ? "s" : ""
+        } to the folder`;
+    }
+
+    emit("setBusy", false);
+    emit("fetchFolderContents");
+}
 </script>
 
 <template>
@@ -352,6 +429,16 @@ async function fetchExtAndGenomes() {
             </div>
         </div>
 
+        <BAlert v-model="progress" dismissible variant="info" class="mb-1">
+            <ProgressBar
+                :loading="progressStatus.runningCount > 0"
+                :note="progressNote"
+                :total="progressStatus.total"
+                :ok-count="progressStatus.okCount"
+                :error-count="progressStatus.errorCount"
+                :running-count="progressStatus.runningCount" />
+        </BAlert>
+
         <LibraryBreadcrumb
             v-if="props.metadata && props.metadata.full_path"
             :full_path="props.metadata.full_path"
@@ -360,7 +447,7 @@ async function fetchExtAndGenomes() {
         <HistoryDatasetPicker
             v-if="modalShow === 'history'"
             :folder-id="props.folderId"
-            @onClose="onAddDatasets"
-            @reload="emit('fetchFolderContents')" />
+            @onSelect="onAddDatasetsFromHistory"
+            @onClose="onAddDatasets" />
     </div>
 </template>
