@@ -31,8 +31,8 @@ import { useUserStore } from "@/stores/userStore";
 import FolderDetails from "@/components/Libraries/LibraryFolder/FolderDetails/FolderDetails.vue";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
 import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
-import HistoryDatasetPicker from "@/components/Libraries/LibraryFolder/TopToolbar/HistoryDatasetPicker.vue";
 import ProgressBar from "@/components/ProgressBar.vue";
+import HistoryDatasetPicker from "@/components/SelectionDialog/HistoryDatasetPicker.vue";
 
 library.add(faBook, faCaretDown, faDownload, faHome, faPlus, faTrash);
 
