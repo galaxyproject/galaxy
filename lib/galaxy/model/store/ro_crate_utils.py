@@ -222,6 +222,46 @@ class WorkflowRunCrateProfileBuilder:
             crate.mainEntity["name"] = self.workflow.name
             crate.mainEntity["subjectOf"] = cwl_wf
 
+        # Add tools used in the workflow
+        self._add_tools(crate)
+
+    def _add_tools(self, crate: ROCrate):
+        tool_entities = []
+
+        # Iterate over each step in the workflow
+        for step in self.workflow.steps:
+            # Check if the step corresponds to a tool
+            if step.type == "tool":
+                tool_id = step.tool_id
+                tool_version = step.tool_version
+                tool_name = step.label or tool_id  # use label if available, fallback to tool_id
+                
+                # Description can be part of the step inputs or other properties
+                tool_description = step.tool_inputs.get("description", "") if step.tool_inputs else ""
+
+                # Add tool entity to the RO-Crate
+                tool_entity = crate.add(
+                    ContextEntity(
+                        crate,
+                        tool_id,
+                        properties={
+                            "@type": "SoftwareApplication",
+                            "name": tool_name,
+                            "version": tool_version,
+                            "description": tool_description,
+                            "url": f"https://toolshed.g2.bx.psu.edu/view/{tool_id}",  # URL if relevant
+                        },
+                    )
+                )
+                tool_entities.append(tool_entity)
+
+                # Link tool entity with the workflow
+                crate.mainEntity.append_to("instrument", tool_entity)
+
+        return tool_entities
+
+
+
     def _add_create_action(self, crate: ROCrate):
         self.create_action = crate.add(
             ContextEntity(
@@ -235,6 +275,12 @@ class WorkflowRunCrateProfileBuilder:
                 },
             )
         )
+
+        # Append tools to the create action
+        tools = self._add_tools(crate)
+        for tool in tools:
+            self.create_action.append_to("instrument", tool)
+
         crate.root_dataset.append_to("mentions", self.create_action)
 
     def _add_engine_run(self, crate: ROCrate):
