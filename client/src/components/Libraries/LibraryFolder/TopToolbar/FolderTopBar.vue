@@ -429,7 +429,7 @@ async function onAddDatasetsFromHistory(selectedDatasets: SelectionItem[]) {
             </div>
         </div>
 
-        <BAlert v-model="progress" dismissible variant="info" class="mb-1">
+        <BAlert v-model="progress" :dismissible="progressStatus.runningCount === 0" variant="info" class="mb-1">
             <ProgressBar
                 :loading="progressStatus.runningCount > 0"
                 :note="progressNote"
