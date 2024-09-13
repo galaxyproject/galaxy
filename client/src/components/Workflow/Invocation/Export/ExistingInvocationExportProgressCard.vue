@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BCard } from "bootstrap-vue";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 
 import type { TaskMonitor } from "@/composables/genericTaskMonitor";
 import { getStoredProgressData, type MonitoringRequest } from "@/composables/persistentProgressMonitor";
@@ -69,9 +69,7 @@ function dismissRemoteExport() {
     hasExistingRemoteExportData.value = false;
 }
 
-onMounted(() => {
-    updateExistingExportProgress();
-});
+updateExistingExportProgress();
 
 defineExpose({
     updateExistingExportProgress,
