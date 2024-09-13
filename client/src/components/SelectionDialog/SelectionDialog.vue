@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { type IconDefinition, library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -33,7 +33,7 @@ interface Props {
     providerUrl?: string;
     totalItems?: number;
     leafIcon?: string;
-    folderIcon?: string | object;
+    folderIcon?: IconDefinition;
     modalShow?: boolean;
     modalStatic?: boolean;
     multiple?: boolean;
