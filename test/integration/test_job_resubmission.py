@@ -2,6 +2,7 @@
 
 import os
 
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -27,15 +28,15 @@ JOB_RESUBMISSION_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubm
 class _BaseResubmissionIntegrationTestCase(integration_util.IntegrationTestCase):
     framework_tool_and_types = True
 
-    def _assert_job_passes(self, tool_id="exit_code_oom", resource_parameters=None):
+    def _assert_job_passes(self, tool_id="exit_code_oom", resource_parameters=None, history_id=None):
         resource_parameters = resource_parameters or {}
-        self._run_tool_test(tool_id, resource_parameters=resource_parameters)
+        self._run_tool_test(tool_id, resource_parameters=resource_parameters, test_history=history_id)
 
-    def _assert_job_fails(self, tool_id="exit_code_oom", resource_parameters=None):
+    def _assert_job_fails(self, tool_id="exit_code_oom", resource_parameters=None, history_id=None):
         resource_parameters = resource_parameters or {}
         exception_thrown = False
         try:
-            self._run_tool_test(tool_id, resource_parameters=resource_parameters)
+            self._run_tool_test(tool_id, resource_parameters=resource_parameters, test_history=history_id)
         except Exception:
             exception_thrown = True
 
@@ -44,6 +45,11 @@ class _BaseResubmissionIntegrationTestCase(integration_util.IntegrationTestCase)
 
 class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
     framework_tool_and_types = True
+    dataset_populator: DatasetPopulator
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -52,6 +58,9 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
         config["job_resource_params_file"] = JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE
         config["job_runner_monitor_sleep"] = 1
         config["job_handler_monitor_sleep"] = 1
+        config["job_metrics"] = [{"type": "core"}]
+        # Can't set job_metrics_config_file to None as default location will be used otherwise
+        config["job_metrics_config_file"] = "xxx.xml"
 
     def test_retry_tools_have_resource_params(self):
         tool_show = self._get("tools/simple_constructs", data=dict(io_details=True)).json()
@@ -73,6 +82,20 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
                 "initial_target_environment": "fails_without_resubmission",
             }
         )
+
+    def test_failure_runner_job_metrics_collected(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._assert_job_fails(
+                resource_parameters={
+                    "test_name": "test_failure_runner",
+                    "initial_target_environment": "fails_without_resubmission",
+                },
+                history_id=history_id,
+            )
+            jobs = self.dataset_populator.history_jobs(history_id=history_id)
+            assert len(jobs) == 1
+            job_metrics = self.dataset_populator._get(f"/api/jobs/{jobs[0]['id']}/metrics").json()
+            assert job_metrics
 
     def test_walltime_resubmission(self):
         self._assert_job_passes(
