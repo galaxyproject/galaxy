@@ -9212,6 +9212,11 @@ export interface components {
              * @description TODO
              */
             api_type?: "file" | null;
+            /**
+             * Copied From History Dataset Association Id
+             * @description ID of HDA this HDA was copied from.
+             */
+            copied_from_history_dataset_association_id?: string | null;
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**
@@ -9457,6 +9462,11 @@ export interface components {
              * @enum {string}
              */
             api_type: "file";
+            /**
+             * Copied From History Dataset Association Id
+             * @description ID of HDA this HDA was copied from.
+             */
+            copied_from_history_dataset_association_id?: string | null;
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**

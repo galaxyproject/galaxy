@@ -96,6 +96,9 @@ class AuthnzManager:
     def _get_idp_icon(self, idp):
         return self.oidc_backends_config[idp].get("icon") or DEFAULT_OIDC_IDP_ICONS.get(idp)
 
+    def _get_idp_button_text(self, idp):
+        return self.oidc_backends_config[idp].get("custom_button_text")
+
     def _parse_oidc_backends_config(self, config_file):
         self.oidc_backends_config = {}
         self.oidc_backends_implementation = {}
@@ -122,7 +125,10 @@ class AuthnzManager:
                 if idp in BACKENDS_NAME:
                     self.oidc_backends_config[idp] = self._parse_idp_config(child)
                     self.oidc_backends_implementation[idp] = "psa"
-                    self.app.config.oidc[idp] = {"icon": self._get_idp_icon(idp)}
+                    self.app.config.oidc[idp] = {
+                        "icon": self._get_idp_icon(idp),
+                        "custom_button_text": self._get_idp_button_text(idp),
+                    }
                 elif idp in KEYCLOAK_BACKENDS:
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = "custos"
@@ -159,6 +165,10 @@ class AuthnzManager:
             rtv["extra_scopes"] = listify(config_xml.find("extra_scopes").text)
         if config_xml.find("tenant_id") is not None:
             rtv["tenant_id"] = config_xml.find("tenant_id").text
+        if config_xml.find("oidc_endpoint") is not None:
+            rtv["oidc_endpoint"] = config_xml.find("oidc_endpoint").text
+        if config_xml.find("custom_button_text") is not None:
+            rtv["custom_button_text"] = config_xml.find("custom_button_text").text
         if config_xml.find("pkce_support") is not None:
             rtv["pkce_support"] = asbool(config_xml.find("pkce_support").text)
         if config_xml.find("accepted_audiences") is not None:

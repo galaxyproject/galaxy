@@ -412,7 +412,7 @@ class TestHDASerializer(HDATestCase):
         assert isinstance(serialized["file_size"], int)
         assert isinstance(serialized["nice_size"], str)
         # TODO: these should be tested w/copy
-        self.assertNullableEncodedId(serialized["copied_from_history_dataset_association_id"])
+        assert isinstance(serialized["copied_from_history_dataset_association_id"], int)
         self.assertNullableEncodedId(serialized["copied_from_library_dataset_dataset_association_id"])
         self.assertNullableBasestring(serialized["info"])
         self.assertNullableBasestring(serialized["blurb"])

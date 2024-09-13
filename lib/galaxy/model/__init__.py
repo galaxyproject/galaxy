@@ -5277,6 +5277,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         if include_tags and self.history:
             self.copy_tags_from(self.user, other_hda)
         self.dataset = new_dataset or other_hda.dataset
+        self.copied_from_history_dataset_association_id = other_hda.id
         if old_dataset:
             old_dataset.full_delete()
 
@@ -8223,6 +8224,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
             if stored_subworkflow and stored_subworkflow.user == user:
                 # This should be fine and reduces the number of stored subworkflows
                 copied_step.subworkflow = subworkflow
+                copied_subworkflow = subworkflow
             else:
                 # Can this even happen, building a workflow with a subworkflow you don't own ?
                 copied_subworkflow = subworkflow.copy()
@@ -8231,8 +8233,8 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
                 )
                 copied_subworkflow.stored_workflow = stored_workflow
                 copied_step.subworkflow = copied_subworkflow
-                for subworkflow_step, copied_subworkflow_step in zip(subworkflow.steps, copied_subworkflow.steps):
-                    subworkflow_step_mapping[subworkflow_step.id] = copied_subworkflow_step
+            for subworkflow_step, copied_subworkflow_step in zip(subworkflow.steps, copied_subworkflow.steps):
+                subworkflow_step_mapping[subworkflow_step.id] = copied_subworkflow_step
 
         for old_conn, new_conn in zip(self.input_connections, copied_step.input_connections):
             new_conn.input_step_input = copied_step.get_or_add_input(old_conn.input_name)

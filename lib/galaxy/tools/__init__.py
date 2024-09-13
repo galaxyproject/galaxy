@@ -2999,7 +2999,9 @@ class ExpressionTool(Tool):
                 # if change_datatype PJA is associated with expression tool output the new output already has
                 # the desired datatype, so we use it. If the extension is "data" there's no change_dataset PJA and
                 # we want to use the existing extension.
-                new_ext = output.extension if output.extension != "data" else copy_object.extension
+                new_ext = (
+                    output.extension if output.extension not in ("data", "expression.json") else copy_object.extension
+                )
                 require_metadata_regeneration = copy_object.extension != new_ext
                 output.copy_from(copy_object, include_metadata=not require_metadata_regeneration)
                 output.extension = new_ext
@@ -3014,8 +3016,12 @@ class ExpressionTool(Tool):
                     else:
                         # TODO: move exec_after_process into metadata script so this doesn't run on the headnode ?
                         output.init_meta()
-                        output.set_meta()
-                        output.set_metadata_success_state()
+                        try:
+                            output.set_meta()
+                            output.set_metadata_success_state()
+                        except Exception:
+                            output.state = model.HistoryDatasetAssociation.states.FAILED_METADATA
+                            log.exception("Exception occured while setting metdata")
 
     def parse_environment_variables(self, tool_source):
         """Setup environment variable for inputs file."""
