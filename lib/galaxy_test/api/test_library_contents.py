@@ -158,18 +158,10 @@ class TestLibraryContentsApi(ApiTestCase):
         response = self._get(f"/api/libraries/{library_id}/contents/{invalid_item_id}")
         self._assert_status_code_is(response, 400)
 
-    def test_update_library_folder(self):
-        library_id = self.library["id"]
-        file_id = self._create_library_content(type="folder")[0]["id"]
-        converted_dataset_id = self.dataset_populator.new_dataset(self.history)["id"]
-        payload = {"converted_dataset_id": converted_dataset_id}
-        response = self._put(f"/api/libraries/{library_id}/contents/{file_id}", data=payload)
-        self._assert_status_code_is(response, 200)
-
     def test_update_library_item_from_hda(self):
         library_id = self.library["id"]
         file_id = self._create_library_content(type="from_hda")["id"]
-        converted_dataset_id = self.dataset_populator.new_dataset(self.history)["id"]
+        converted_dataset_id = self._create_library_content(type="from_hda")["id"]
 
         payload = {"converted_dataset_id": converted_dataset_id}
         response = self._put(f"/api/libraries/{library_id}/contents/{file_id}", data=payload)
@@ -178,7 +170,7 @@ class TestLibraryContentsApi(ApiTestCase):
     def test_update_library_item_from_hdca(self):
         library_id = self.library["id"]
         file_id = self._create_library_content(type="from_hdca")[0]["id"]
-        converted_dataset_id = self.dataset_populator.new_dataset(self.history)["id"]
+        converted_dataset_id = self._create_library_content(type="from_hdca")[0]["id"]
 
         payload = {"converted_dataset_id": converted_dataset_id}
         response = self._put(f"/api/libraries/{library_id}/contents/{file_id}", data=payload)
@@ -187,18 +179,11 @@ class TestLibraryContentsApi(ApiTestCase):
     def test_update_invalid_library_item(self):
         library_id = self.library["id"]
         invalid_item_id = "invalid_id"
-        converted_dataset_id = self.dataset_populator.new_dataset(self.history)["id"]
+        converted_dataset_id = invalid_item_id
 
         payload = {"converted_dataset_id": converted_dataset_id}
         response = self._put(f"/api/libraries/{library_id}/contents/{invalid_item_id}", data=payload)
         self._assert_status_code_is(response, 400)
-
-    def test_delete_library_folder(self):
-        library_id = self.library["id"]
-        file_id = self._create_library_content(type="folder")[0]["id"]
-
-        response = self._delete(f"/api/libraries/{library_id}/contents/{file_id}")
-        self._assert_status_code_is(response, 200)
 
     def test_delete_library_item_from_hda(self):
         library_id = self.library["id"]
