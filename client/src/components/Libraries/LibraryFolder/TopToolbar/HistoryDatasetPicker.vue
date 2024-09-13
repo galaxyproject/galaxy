@@ -202,15 +202,17 @@ async function datasetsProvider(ctx: ItemsProviderContext, selectedHistory: Hist
     try {
         const limit = ctx.perPage;
         const offset = (ctx.currentPage - 1) * ctx.perPage;
-        const query = ctx.filter;
+        const query = ctx.filter || "";
+        const querySortBy = ctx.sortBy === "time" ? "update_time" : "name";
+        const sortPrefix = ctx.sortDesc ? "-dsc" : "-asc";
 
         const { response, data, error } = await GalaxyApi().GET("/api/datasets", {
             params: {
                 query: {
                     history_id: selectedHistory.id,
-                    query: query,
-                    sortBy: ctx.sortBy === "time" ? "update_time" : "name",
-                    sortDesc: ctx.sortDesc,
+                    q: ["name-contains"],
+                    qv: [query],
+                    order: `${querySortBy}${sortPrefix}`,
                     offset: offset,
                     limit: limit,
                 },
