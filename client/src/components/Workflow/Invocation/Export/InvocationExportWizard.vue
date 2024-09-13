@@ -30,6 +30,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import RDMCredentialsInfo from "@/components/Common/RDMCredentialsInfo.vue";
 import RDMDestinationSelector from "@/components/Common/RDMDestinationSelector.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
+import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
 import ExistingInvocationExportProgressCard from "@/components/Workflow/Invocation/Export/ExistingInvocationExportProgressCard.vue";
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
@@ -90,16 +91,10 @@ const exportButtonLabel = computed(() => {
 });
 
 const exportDestinationSummary = computed(() => {
-    switch (exportData.destination) {
-        case "download":
-            return "Temporary Direct Download Link";
-        case "remote-source":
-            return `Remote File Source ➡️ ${exportData.remoteUri}`;
-        case "rdm-repository":
-            return `RDM Repository ➡️ ${exportData.remoteUri}`;
-        default:
-            return "Unknown Destination";
-    }
+    const exportDestination = exportDestinationTargets.value.find(
+        (target) => target.destination === exportData.destination
+    );
+    return exportDestination?.label ?? "Unknown Destination";
 });
 
 const exportDestinationTargets = computed(initializeExportDestinations);
@@ -439,11 +434,15 @@ const stepsGridColumnsTemplate = computed(() => {
                             <br />
 
                             <div>
-                                Export Format: <span class="font-weight-bold">{{ exportPluginTitle }}</span>
+                                Format <b>{{ exportPluginTitle }}</b>
                             </div>
 
                             <div>
-                                Export Destination: <span class="font-weight-bold">{{ exportDestinationSummary }}</span>
+                                Destination
+                                <b>{{ exportDestinationSummary }}</b>
+                                <b v-if="exportData.destination !== 'download' && exportData.remoteUri">
+                                    <FileSourceNameSpan :uri="exportData.remoteUri" class="text-primary" />
+                                </b>
                             </div>
                         </div>
                     </div>
