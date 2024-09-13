@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BLink } from "bootstrap-vue";
@@ -9,9 +8,8 @@ import { type TaskMonitor } from "@/composables/genericTaskMonitor";
 import { type MonitoringRequest, usePersistentProgressTaskMonitor } from "@/composables/persistentProgressMonitor";
 import { useShortTermStorage } from "@/composables/shortTermStorage";
 
+import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
-
-library.add(faSpinner);
 
 interface Props {
     monitorRequest: MonitoringRequest;
@@ -62,6 +60,7 @@ const {
     status,
     hasExpired,
     expirationDate,
+    monitoringData,
     start,
     reset,
 } = usePersistentProgressTaskMonitor(props.monitorRequest, props.useMonitor);
@@ -73,6 +72,10 @@ const downloadUrl = computed(() => {
         return getDownloadObjectUrl(requestId);
     }
     return undefined;
+});
+
+const remoteUri = computed(() => {
+    return monitoringData.value?.request.remoteUri;
 });
 
 if (hasMonitoringData.value) {
@@ -121,10 +124,18 @@ function dismissAlert() {
         </BAlert>
         <BAlert v-else-if="isCompleted" variant="success" show dismissible @dismissed="dismissAlert">
             <span>{{ completedMessage }}</span>
+
             <BLink v-if="downloadUrl" class="download-link" :href="downloadUrl">
                 <b>Download here</b>
             </BLink>
+
+            <span v-if="remoteUri">
+                The result should be available at
+                <b><FileSourceNameSpan :uri="remoteUri" :show-full-uri="true" /></b>
+            </span>
+
             <br />
+
             <span v-if="expirationDate">
                 This result will <b>expire <UtcDate :date="expirationDate.toISOString()" mode="elapsed" /></b>
             </span>

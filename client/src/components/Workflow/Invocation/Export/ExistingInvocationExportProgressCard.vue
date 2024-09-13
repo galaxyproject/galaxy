@@ -14,6 +14,7 @@ interface Props {
     useStsMonitor: TaskMonitor;
     useRemoteMonitor: TaskMonitor;
     exportToRemoteTaskId?: string;
+    exportToRemoteTargetUri?: string;
     exportToStsRequestId?: string;
 }
 
@@ -47,6 +48,7 @@ const exportToRemoteRequest = computed<MonitoringRequest>(() => ({
         type: "invocation",
     },
     description: `Exporting invocation ${props.invocationId} to remote source`,
+    remoteUri: props.exportToRemoteTargetUri,
 }));
 
 function updateExistingExportProgress() {

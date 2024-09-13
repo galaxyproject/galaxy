@@ -1,5 +1,5 @@
 import { StorageSerializers, useLocalStorage } from "@vueuse/core";
-import { computed, watch } from "vue";
+import { computed, readonly, watch } from "vue";
 
 import { type TaskMonitor } from "./genericTaskMonitor";
 
@@ -62,6 +62,13 @@ export interface MonitoringRequest {
      * when displaying the progress.
      */
     description?: string;
+
+    /**
+     * The remote URI associated with the task.
+     *
+     * This is optional and indicates the task is associated with a remote resource.
+     */
+    remoteUri?: string;
 }
 
 export interface MonitoringData {
@@ -258,6 +265,11 @@ export function usePersistentProgressTaskMonitor(
          * After this date, the monitoring data is considered expired and should not be used.
          */
         expirationDate,
+
+        /**
+         * The monitoring data stored in the local storage.
+         */
+        monitoringData: readonly(currentMonitoringData),
     };
 }
 

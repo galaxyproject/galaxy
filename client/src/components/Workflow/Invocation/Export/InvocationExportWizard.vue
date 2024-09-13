@@ -320,6 +320,7 @@ const stepsGridColumnsTemplate = computed(() => {
             ref="existingProgress"
             :invocation-id="invocationId"
             :export-to-remote-task-id="exportToRemoteTaskId"
+            :export-to-remote-target-uri="exportData.remoteUri"
             :export-to-sts-request-id="exportToStsRequestId"
             :use-sts-monitor="stsMonitor"
             :use-remote-monitor="taskMonitor"
