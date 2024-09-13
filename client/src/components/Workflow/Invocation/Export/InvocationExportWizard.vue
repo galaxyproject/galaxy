@@ -113,7 +113,7 @@ const exportPluginTitle = computed(() => {
     return plugin ? plugin.title : "";
 });
 
-const isExportRunning = computed(() => stsMonitor.isRunning.value || taskMonitor.isRunning.value);
+const isWizardBusy = computed(() => stsMonitor.isRunning.value || taskMonitor.isRunning.value);
 
 const stepper = useStepper({
     "select-format": {
@@ -336,10 +336,10 @@ const stepsGridColumnsTemplate = computed(() => {
                             <button
                                 class="step-number"
                                 :class="{ active: stepper.isCurrent(id), done: isStepDone(i) }"
-                                :disabled="!allStepsBeforeAreValid(i) && stepper.isBefore(id)"
+                                :disabled="(!allStepsBeforeAreValid(i) && stepper.isBefore(id)) || isWizardBusy"
                                 @click="stepper.goTo(id)">
                                 <FontAwesomeIcon v-if="isStepDone(i)" :icon="faCheck" />
-                                <FontAwesomeIcon v-else-if="stepper.isLast && isExportRunning" :icon="faSpinner" spin />
+                                <FontAwesomeIcon v-else-if="stepper.isLast && isWizardBusy" :icon="faSpinner" spin />
                                 <span v-else>{{ determineDisplayStepIndex(i) }}</span>
                             </button>
                             <div class="step-label" v-text="step.label" />
@@ -448,10 +448,13 @@ const stepsGridColumnsTemplate = computed(() => {
                     </div>
                 </div>
                 <div class="wizard-actions">
-                    <button v-if="!stepper.isFirst.value" class="go-back-btn" @click="goBack">Back</button>
+                    <button v-if="!stepper.isFirst.value" class="go-back-btn" :disabled="isWizardBusy" @click="goBack">
+                        Back
+                    </button>
+
                     <button
                         class="go-next-btn"
-                        :disabled="!stepper.current.value.isValid() || isExportRunning"
+                        :disabled="!stepper.current.value.isValid() || isWizardBusy"
                         :class="stepper.isLast.value ? 'btn-primary' : ''"
                         @click="goNext">
                         {{ stepper.isLast.value ? exportButtonLabel : "Next" }}
