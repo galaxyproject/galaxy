@@ -20,7 +20,6 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "editor",
     "example",
     "fits_image_viewer",
-    "h5web",
     "heatmap/heatmap_default",
     "hyphyvision",
     "jqplot/jqplot_bar",
@@ -39,7 +38,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "ts_visjs",
     "venn",
 ];
-const INSTALL_PLUGIN_BUILD_IDS = ["msa"]; // todo: derive from XML
+const INSTALL_PLUGIN_BUILD_IDS = ["msa", "h5web"]; // todo: derive from XML
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
 
