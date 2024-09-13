@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faHdd } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref, set } from "vue";
 
-import { GalaxyApi, type HDASummary, type HistorySummary } from "@/api";
+import { GalaxyApi, type HDASummary, type HistorySortByLiteral, type HistorySummary } from "@/api";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
 import {
     type ItemsProvider,
@@ -17,8 +17,6 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 library.add(faHdd);
-
-type HistorySortKeys = "create_time" | "name" | "update_time" | undefined;
 
 interface HistoryRecord extends SelectionItem {
     size: number;
@@ -157,7 +155,8 @@ async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promi
         const limit = ctx.perPage;
         const offset = (ctx.currentPage - 1) * ctx.perPage;
         const sortDesc = ctx.sortDesc;
-        const sortBy = ctx.sortBy === "label" ? "name" : ctx.sortBy || "update_time";
+        const sortBy: HistorySortByLiteral =
+            ctx.sortBy === "label" ? "name" : (ctx.sortBy as HistorySortByLiteral) || "update_time";
         const queryDict = HistoriesFilters.getQueryDict(ctx.filter);
 
         const { response, data, error } = await GalaxyApi().GET("/api/histories", {
@@ -171,7 +170,7 @@ async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promi
                     limit: limit,
                     q: Object.keys(queryDict),
                     qv: Object.values(queryDict),
-                    sort_by: sortBy as HistorySortKeys,
+                    sort_by: sortBy,
                     sort_desc: sortDesc,
                 },
             },
