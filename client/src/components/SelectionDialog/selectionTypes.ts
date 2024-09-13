@@ -1,8 +1,8 @@
 export const SELECTION_STATES = {
-    SELECTED: "success" as const,
-    UNSELECTED: "default" as const,
-    MIXED: "secondary" as const,
-};
+    SELECTED: "success",
+    UNSELECTED: "default",
+    MIXED: "secondary",
+} as const;
 
 export type SelectionState = (typeof SELECTION_STATES)[keyof typeof SELECTION_STATES];
 
