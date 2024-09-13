@@ -261,7 +261,7 @@ watch(
                     <BSpinner small type="grow" />
                     <BSpinner small type="grow" />
                 </div>
-                <div v-if="totalItems === 0">
+                <div v-else-if="totalItems === 0">
                     <div v-if="filter">
                         No search results found for: <b>{{ filter }}</b
                         >.
