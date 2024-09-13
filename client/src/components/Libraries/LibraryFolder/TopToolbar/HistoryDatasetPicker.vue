@@ -20,9 +20,14 @@ interface HistoryRecord extends SelectionItem {
 
 interface Props {
     folderId: string;
+    title?: string;
+    actionButtonText?: string;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    title: "Select datasets from your histories",
+    actionButtonText: "Select",
+});
 
 const emit = defineEmits<{
     (e: "reload"): void;
@@ -55,11 +60,9 @@ const searchTitle = computed(() => {
 });
 const okButtonText = computed(() => {
     if (selected.value.length === 0) {
-        return "Add";
-    } else if (submitting.value) {
-        return "Adding...";
+        return props.actionButtonText;
     } else {
-        return `Add ${selected.value.length} dataset${selected.value.length > 1 ? "s" : ""}`;
+        return `${props.actionButtonText} ${selected.value.length} dataset${selected.value.length > 1 ? "s" : ""}`;
     }
 });
 const fields = computed(() => {
@@ -311,7 +314,7 @@ function onCancel() {
         :folder-icon="faHdd"
         :is-busy="loading"
         :search-title="searchTitle"
-        title="Add datasets from your histories"
+        :title="title"
         :filter-class="datasetsVisible ? undefined : HistoriesFilters"
         @onOk="onOk"
         @onUndo="onUndo"
