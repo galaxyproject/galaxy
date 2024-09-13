@@ -139,14 +139,7 @@ export function usePersistentProgressTaskMonitor(
     });
 
     const hasExpired = computed(() => {
-        if (!currentMonitoringData.value || !expirationTime) {
-            return false;
-        }
-
-        const now = new Date();
-        const startedAt = new Date(currentMonitoringData.value.startedAt);
-        const elapsedTimeInMs = now.getTime() - startedAt.getTime();
-        return elapsedTimeInMs > expirationTime!;
+        return isDataExpired(currentMonitoringData.value, expirationTime);
     });
 
     const expirationDate = computed(() => {
@@ -290,4 +283,21 @@ export function getStoredProgressData(request: MonitoringRequest): MonitoringDat
 
 function getPersistentKey(request: MonitoringRequest) {
     return `persistent-progress-${request.taskType}-${request.source}-${request.action}-${request.object.type}-${request.object.id}`;
+}
+
+/**
+ * Checks if the monitoring data has expired.
+ * @param monitoringData The monitoring data to check for expiration.
+ * @param expirationTime The expiration time in milliseconds.
+ * @returns True if the monitoring data has expired, false otherwise.
+ */
+export function isDataExpired(monitoringData: MonitoringData | null, expirationTime?: number): boolean {
+    if (!monitoringData || !expirationTime) {
+        return false;
+    }
+
+    const now = new Date();
+    const startedAt = new Date(monitoringData.startedAt);
+    const elapsedTimeInMs = now.getTime() - startedAt.getTime();
+    return elapsedTimeInMs > expirationTime;
 }
