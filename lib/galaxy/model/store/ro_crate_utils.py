@@ -214,13 +214,19 @@ class WorkflowRunCrateProfileBuilder:
                     cls=workflow_cls,
                     lang=lang,
                 )
+
                 self.workflow_entities[wf.id] = wf
                 if lang == "cwl":
                     cwl_wf = wf
 
+            # Add license if available
             crate.license = self.workflow.license or ""
+
+            # Add main entity information
             crate.mainEntity["name"] = self.workflow.name
-            crate.mainEntity["subjectOf"] = cwl_wf
+
+            # Add CWL workflow entity if exists
+            crate.mainEntity["subjectOf"] = cwl_wf if cwl_wf else ""
 
         # Add tools used in the workflow
         self._add_tools(crate)
@@ -235,9 +241,6 @@ class WorkflowRunCrateProfileBuilder:
                 tool_id = step.tool_id
                 tool_version = step.tool_version
                 tool_name = step.label or tool_id  # use label if available, fallback to tool_id
-                
-                # Description can be part of the step inputs or other properties
-                tool_description = step.tool_inputs.get("description", "") if step.tool_inputs else ""
 
                 # Add tool entity to the RO-Crate
                 tool_entity = crate.add(
@@ -248,8 +251,7 @@ class WorkflowRunCrateProfileBuilder:
                             "@type": "SoftwareApplication",
                             "name": tool_name,
                             "version": tool_version,
-                            "description": tool_description,
-                            "url": f"https://toolshed.g2.bx.psu.edu/view/{tool_id}",  # URL if relevant
+                            "url": "https://toolshed.g2.bx.psu.edu",  # URL if relevant
                         },
                     )
                 )
