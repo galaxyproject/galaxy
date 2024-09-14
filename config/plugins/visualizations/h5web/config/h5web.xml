@@ -3,7 +3,7 @@
 <visualization name="H5Web" embeddable="false">
     <description>HDF5 data visualization and exploration</description>
     <requirements>
-        <requirement type="npm" version="0.3.0" package="@galaxyproject/h5web"/>h
+        <requirement type="npm" version="0.3.0" package="@galaxyproject/h5web"/>
     </requirements>
     <data_sources>
         <data_source>
