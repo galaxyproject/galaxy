@@ -286,7 +286,7 @@ class WorkflowModule:
 
     # ---- Saving in various forms ------------------------------------------
 
-    def save_to_step(self, step, detached=False):
+    def save_to_step(self, step, detached: bool = False) -> None:
         step.type = self.type
         step.tool_inputs = self.get_state()
 
@@ -647,7 +647,7 @@ class SubWorkflowModule(WorkflowModule):
         module.subworkflow = step.subworkflow
         return module
 
-    def save_to_step(self, step, **kwd):
+    def save_to_step(self, step, detached=False):
         step.type = self.type
         step.subworkflow = self.subworkflow
         ensure_object_added_to_session(step, object_in_session=self.subworkflow)
@@ -1027,7 +1027,7 @@ class InputModule(WorkflowModule):
         state = json.dumps(state)
         return state
 
-    def save_to_step(self, step, **kwd):
+    def save_to_step(self, step, detached=False):
         step.type = self.type
         step.tool_inputs = self._parse_state_into_dict()
 
@@ -1677,7 +1677,7 @@ class InputParameterModule(WorkflowModule):
             rval.update({"parameter_type": self.default_parameter_type, "optional": self.default_optional})
         return rval
 
-    def save_to_step(self, step, **kwd):
+    def save_to_step(self, step, detached=False):
         step.type = self.type
         step.tool_inputs = self._parse_state_into_dict()
 

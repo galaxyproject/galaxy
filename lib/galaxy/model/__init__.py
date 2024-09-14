@@ -5980,11 +5980,8 @@ class LibraryDataset(Base, Serializable):
 
 
 class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
-    message: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
-    tags: Mapped[List["LibraryDatasetDatasetAssociationTagAssociation"]] = relationship(
-        order_by=lambda: LibraryDatasetDatasetAssociationTagAssociation.id,
-        back_populates="library_dataset_dataset_association",
-    )
+    message: Mapped[Optional[str]]
+    tags: Mapped[List["LibraryDatasetDatasetAssociationTagAssociation"]]
 
     def __init__(
         self,
