@@ -30,8 +30,10 @@ export interface InvocationExportPlugin {
     id: InvocationExportPluginType;
     /** The title of the plugin. */
     title: string;
-    /** The image URL to display for the plugin. */
+    /** The image URL to display for the plugin. Usually a logo. */
     img?: string;
+    /** The URL to link to additional information about the plugin. */
+    url?: string;
     /** A markdown description of the plugin. */
     markdownDescription: string;
     /** The parameters to use when exporting the invocation. */

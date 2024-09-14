@@ -29,6 +29,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import RDMCredentialsInfo from "@/components/Common/RDMCredentialsInfo.vue";
 import RDMDestinationSelector from "@/components/Common/RDMDestinationSelector.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
 import ExistingInvocationExportProgressCard from "@/components/Workflow/Invocation/Export/ExistingInvocationExportProgressCard.vue";
@@ -365,7 +366,13 @@ const stepsGridColumnsTemplate = computed(() => {
                                     <BCardTitle>
                                         <b>{{ plugin.title }}</b>
                                     </BCardTitle>
-                                    <BCardImg v-if="plugin.img" :src="plugin.img" :alt="plugin.title" />
+                                    <div v-if="plugin.img">
+                                        <BCardImg :src="plugin.img" :alt="plugin.title" />
+                                        <br />
+                                        <ExternalLink v-if="plugin.url" :href="plugin.url">
+                                            <b>Learn more</b>
+                                        </ExternalLink>
+                                    </div>
                                     <div v-else v-html="renderMarkdown(plugin.markdownDescription)" />
                                 </BCard>
                             </BCardGroup>
