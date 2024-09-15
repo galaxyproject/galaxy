@@ -91,6 +91,12 @@ const exportButtonLabel = computed(() => {
     }
 });
 
+const needsFileName = computed(
+    () => exportData.destination === "remote-source" || exportData.destination === "rdm-repository"
+);
+
+const canIncludeData = computed(() => exportData.exportPluginFormat !== "bco");
+
 const exportDestinationSummary = computed(() => {
     const exportDestination = exportDestinationTargets.value.find(
         (target) => target.destination === exportData.destination
@@ -423,7 +429,7 @@ const stepsGridColumnsTemplate = computed(() => {
 
                         <div v-if="stepper.isCurrent('export-summary')">
                             <BFormGroup
-                                v-if="exportData.destination !== 'download'"
+                                v-if="needsFileName"
                                 label-for="exported-file-name"
                                 :description="`Give the exported file a name.`"
                                 class="mt-3">
@@ -434,7 +440,11 @@ const stepsGridColumnsTemplate = computed(() => {
                                     required />
                             </BFormGroup>
 
-                            <BFormCheckbox id="include-data" v-model="exportData.includeData" switch>
+                            <BFormCheckbox
+                                v-if="canIncludeData"
+                                id="include-data"
+                                v-model="exportData.includeData"
+                                switch>
                                 Include data files in the export package.
                             </BFormCheckbox>
 
