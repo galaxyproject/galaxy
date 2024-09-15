@@ -15,5 +15,4 @@ Learn more about [RO Crate](https://www.researchobject.org/ro-crate/).`,
         includeDeleted: false,
         includeHidden: false,
     },
-    additionalActions: [],
 };

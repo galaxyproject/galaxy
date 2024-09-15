@@ -38,8 +38,6 @@ export interface InvocationExportPlugin {
     markdownDescription: string;
     /** The parameters to use when exporting the invocation. */
     exportParams: ExportParams;
-    /** Any additional actions that can be taken in addition to the main export action. */
-    additionalActions: InvocationExportPluginAction[];
 }
 
 /**

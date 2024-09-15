@@ -1,11 +1,4 @@
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faDatabase } from "@fortawesome/free-solid-svg-icons";
-
 import { type InvocationExportPlugin } from "@/components/Workflow/Invocation/Export/Plugins";
-
-import SendForm from "./SendForm.vue";
-
-library.add(faDatabase);
 
 export const BIO_COMPUTE_OBJ_EXPORT_PLUGIN: InvocationExportPlugin = {
     id: "bco",
@@ -25,15 +18,4 @@ Instructions for [creating a BCO using Galaxy](https://w3id.org/biocompute/tutor
         includeDeleted: false,
         includeHidden: false,
     },
-    additionalActions: [
-        {
-            id: "send-to-bco-db",
-            title: "Send to BCODB",
-            icon: faDatabase,
-            run: (modal) => {
-                modal.showModal();
-            },
-            modal: SendForm,
-        },
-    ],
 };

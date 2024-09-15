@@ -10,5 +10,4 @@ export const DEFAULT_FILE_EXPORT_PLUGIN: InvocationExportPlugin = {
         includeDeleted: false,
         includeHidden: false,
     },
-    additionalActions: [],
 };
