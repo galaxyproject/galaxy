@@ -96,9 +96,13 @@ export const useHistoryStore = defineStore("historyStore", () => {
     });
 
     async function setCurrentHistory(historyId: string) {
-        const currentHistory = (await setCurrentHistoryOnServer(historyId)) as HistoryDevDetailed;
-        selectHistory(currentHistory);
-        setFilterText(historyId, "");
+        try {
+            const currentHistory = (await setCurrentHistoryOnServer(historyId)) as HistoryDevDetailed;
+            selectHistory(currentHistory);
+            setFilterText(historyId, "");
+        } catch (error) {
+            rethrowSimple(error);
+        }
     }
 
     function setCurrentHistoryId(historyId: string) {

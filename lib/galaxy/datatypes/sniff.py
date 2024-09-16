@@ -37,7 +37,11 @@ from galaxy.util.checkers import (
 )
 from galaxy.util.path import StrPath
 
-import pylibmagic  # noqa: F401  # isort:skip
+try:
+    import pylibmagic  # noqa: F401  # isort:skip
+except ImportError:
+    # Not available in conda, but docker image contains libmagic
+    pass
 import magic  # isort:skip
 
 
