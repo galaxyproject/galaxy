@@ -21,6 +21,10 @@ import {
     getInvocationExportPluginByType,
     type InvocationExportPluginType,
 } from "@/components/Workflow/Invocation/Export/Plugins";
+import {
+    type BcoDatabaseExportData,
+    saveInvocationBCOToDatabase,
+} from "@/components/Workflow/Invocation/Export/Plugins/BioComputeObject/service";
 import { useFileSources } from "@/composables/fileSources";
 import { useMarkdown } from "@/composables/markdown";
 import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonitor";
@@ -44,20 +48,21 @@ const { hasWritable: hasWritableRDMFileSources } = useFileSources({ include: ["r
 
 const resource = "workflow invocation";
 
-type ExportDestination = "download" | "remote-source" | "rdm-repository";
+type InvocationExportDestination = "download" | "remote-source" | "rdm-repository" | "bco-database";
 
 interface ExportDestinationInfo {
-    destination: ExportDestination;
+    destination: InvocationExportDestination;
     label: string;
     markdownDescription: string;
 }
 
-interface ExportData {
+interface InvocationExportData {
     exportPluginFormat: InvocationExportPluginType;
-    destination: ExportDestination;
+    destination: InvocationExportDestination;
     remoteUri: string;
     outputFileName: string;
     includeData: boolean;
+    bcoDatabase: BcoDatabaseExportData;
 }
 
 interface Props {
@@ -70,12 +75,20 @@ const exportToRemoteTaskId = ref();
 const exportToStsRequestId = ref();
 const errorMessage = ref<string>();
 
-const exportData: ExportData = reactive({
+const existingProgress = ref<InstanceType<typeof ExistingInvocationExportProgressCard>>();
+
+const exportData: InvocationExportData = reactive({
     exportPluginFormat: "ro-crate",
     destination: "download",
     remoteUri: "",
     outputFileName: "",
     includeData: true,
+    bcoDatabase: {
+        serverBaseUrl: "https://biocomputeobject.org",
+        table: "GALXY",
+        ownerGroup: "",
+        authorization: "",
+    },
 });
 
 const exportButtonLabel = computed(() => {
@@ -86,6 +99,8 @@ const exportButtonLabel = computed(() => {
             return "Export to Remote Source";
         case "rdm-repository":
             return "Export to RDM Repository";
+        case "bco-database":
+            return "Export to BCODB";
         default:
             return "Export";
     }
@@ -151,10 +166,25 @@ const stepper = useStepper({
         isValid: () => Boolean(exportData.remoteUri),
         isSkippable: () => exportData.destination !== "rdm-repository",
     },
+    "setup-bcodb": {
+        label: "Select BCODB Server",
+        instructions: "Provide BCODB server and authentication details",
+        isValid: () =>
+            Boolean(
+                exportData.bcoDatabase.serverBaseUrl &&
+                    exportData.bcoDatabase.authorization &&
+                    exportData.bcoDatabase.table &&
+                    exportData.bcoDatabase.ownerGroup
+            ),
+        isSkippable: () => exportData.destination !== "bco-database",
+    },
     "export-summary": {
         label: "Export",
         instructions: "Summary",
-        isValid: () => Boolean(exportData.outputFileName) || exportData.destination === "download",
+        isValid: () =>
+            Boolean(exportData.outputFileName) ||
+            exportData.destination === "download" ||
+            exportData.destination === "bco-database",
         isSkippable: () => false,
     },
 });
@@ -198,10 +228,17 @@ function onRecordSelected(recordUri: string) {
 }
 
 async function exportInvocation() {
-    if (exportData.destination === "download") {
-        await exportToSts();
-    } else {
-        await exportToFileSource();
+    switch (exportData.destination) {
+        case "download":
+            await exportToSts();
+            break;
+        case "remote-source":
+        case "rdm-repository":
+            await exportToFileSource();
+            break;
+        case "bco-database":
+            await saveInvocationBCOToDatabase(props.invocationId, exportData.bcoDatabase);
+            break;
     }
     //@ts-ignore incorrect property does not exist on type error
     existingProgress.value?.updateExistingExportProgress();
@@ -275,6 +312,17 @@ function initializeExportDestinations(): ExportDestinationInfo[] {
         },
     ];
 
+    if (exportData.exportPluginFormat === "bco") {
+        destinations.push({
+            destination: "bco-database",
+            label: "BCO Database",
+            markdownDescription: `You can upload your ${resource} to a **BCODB** server here.
+
+Submission to the BCODB **requires that a user already has an authenticated account** at the server they wish to submit to.
+More information about how to set up an account and submit data to a BCODB server can be found [here](https://w3id.org/biocompute/tutorials/galaxy_quick_start).`,
+        });
+    }
+
     if (hasWritableFileSources.value) {
         destinations.push({
             destination: "remote-source",
@@ -296,12 +344,8 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
         });
     }
 
-    //TODO: Add BCO-database as a destination if BCO selected as export format
-
     return destinations;
 }
-
-const existingProgress = ref<InstanceType<typeof ExistingInvocationExportProgressCard>>();
 
 /**
  * This is a workaround to make the grid columns template dynamic based on the number of visible steps.
@@ -427,6 +471,57 @@ const stepsGridColumnsTemplate = computed(() => {
                             <RDMDestinationSelector :what="resource" @onRecordSelected="onRecordSelected" />
                         </div>
 
+                        <div v-if="stepper.isCurrent('setup-bcodb')">
+                            <p>
+                                To submit to a BCODB you need to already have an authenticated account. Instructions on
+                                submitting a BCO from Galaxy are available
+                                <ExternalLink
+                                    href="https://w3id.org/biocompute/tutorials/galaxy_quick_start/"
+                                    target="_blank">
+                                    here
+                                </ExternalLink>
+                            </p>
+                            <BFormGroup
+                                label-for="bcodb-server"
+                                description="BCO DB URL (example: https://biocomputeobject.org)">
+                                <BFormInput
+                                    id="bcodb-server"
+                                    v-model="exportData.bcoDatabase.serverBaseUrl"
+                                    type="text"
+                                    placeholder="https://biocomputeobject.org"
+                                    autocomplete="off"
+                                    required />
+                            </BFormGroup>
+
+                            <BFormGroup label-for="bcodb-table" description="Prefix">
+                                <BFormInput
+                                    id="bcodb-table"
+                                    v-model="exportData.bcoDatabase.table"
+                                    type="text"
+                                    placeholder="GALXY"
+                                    autocomplete="off"
+                                    required />
+                            </BFormGroup>
+
+                            <BFormGroup label-for="bcodb-owner" description="User Name">
+                                <BFormInput
+                                    id="bcodb-owner"
+                                    v-model="exportData.bcoDatabase.ownerGroup"
+                                    type="text"
+                                    autocomplete="off"
+                                    required />
+                            </BFormGroup>
+
+                            <BFormGroup label-for="bcodb-authorization" description="User API Key">
+                                <BFormInput
+                                    id="bcodb-authorization"
+                                    v-model="exportData.bcoDatabase.authorization"
+                                    type="password"
+                                    autocomplete="off"
+                                    required />
+                            </BFormGroup>
+                        </div>
+
                         <div v-if="stepper.isCurrent('export-summary')">
                             <BFormGroup
                                 v-if="needsFileName"
@@ -459,6 +554,12 @@ const stepsGridColumnsTemplate = computed(() => {
                                 <b>{{ exportDestinationSummary }}</b>
                                 <b v-if="exportData.destination !== 'download' && exportData.remoteUri">
                                     <FileSourceNameSpan :uri="exportData.remoteUri" class="text-primary" />
+                                </b>
+                                <b v-if="exportData.destination === 'bco-database'">
+                                    <span class="text-primary">{{ exportData.bcoDatabase.table }}</span>
+                                    <ExternalLink :href="exportData.bcoDatabase.serverBaseUrl">
+                                        {{ exportData.bcoDatabase.serverBaseUrl }}
+                                    </ExternalLink>
                                 </b>
                             </div>
                         </div>
