@@ -88,6 +88,13 @@ const importDisable = computed(() => {
 
     return currentValue.value?.length === 0;
 });
+const okButtonText = computed(() => {
+    if (currentValue.value.length === 0) {
+        return "Import";
+    } else {
+        return `Import ${currentValue.value.length} dataset${currentValue.value.length > 1 ? "s" : ""}`;
+    }
+});
 
 async function fetchOptions() {
     optionsLoading.value = true;
@@ -250,7 +257,7 @@ watch(
 </script>
 
 <template>
-    <BModal :title="title" visible @hide="emit('onClose')">
+    <BModal :title="title" visible scrollable content-class="directory-dataset-picker" @hide="emit('onClose')">
         <BTabs v-if="!pathMode" v-model="activeTab" fill pills>
             <BTab title="Choose Files" />
 
@@ -327,6 +334,7 @@ watch(
             v-else
             :id="filesMode ? 'files' : 'folders'"
             v-model="currentValue"
+            class="items-list"
             show-icons
             :options="options"
             multiple />
@@ -334,9 +342,20 @@ watch(
         <template v-slot:modal-footer>
             <BButton size="sm" variant="secondary" :disabled="importing" @click="emit('onClose')">Close</BButton>
             <BButton size="sm" variant="primary" :disabled="importDisable" @click="onImport">
-                <LoadingSpan v-if="importing" message="Importing" />
-                <span v-else>Import</span>
+                {{ okButtonText }}
             </BButton>
         </template>
     </BModal>
 </template>
+
+<style scoped lang="scss">
+.directory-dataset-picker {
+    display: grid;
+    grid-template-rows: max-content 1fr;
+
+    .items-list {
+        max-height: 100%;
+        overflow-y: auto;
+    }
+}
+</style>
