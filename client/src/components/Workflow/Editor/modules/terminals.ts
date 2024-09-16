@@ -540,6 +540,9 @@ export class InputParameterTerminal extends BaseInputTerminal {
         const effectiveThisType = this.effectiveType(this.type);
         const otherType = ("type" in other && other.type) || "data";
         const effectiveOtherType = this.effectiveType(otherType);
+        if (!this.optional && other.optional) {
+            return new ConnectionAcceptable(false, `Cannot attach an optional output to a required parameter`);
+        }
         const canAccept = effectiveThisType === effectiveOtherType;
         return new ConnectionAcceptable(
             canAccept,
