@@ -211,7 +211,10 @@ function resetProgress() {
     progressStatus.runningCount = 0;
 }
 
-async function onAddDatasetsFromHistory(selectedDatasets: SelectionItem[]) {
+async function addDatasets(
+    selectedDatasets: SelectionItem[] | Record<string, string | boolean>[],
+    datasetApiCall: Function
+) {
     resetProgress();
 
     progress.value = true;
@@ -224,58 +227,7 @@ async function onAddDatasetsFromHistory(selectedDatasets: SelectionItem[]) {
         try {
             progressStatus.runningCount++;
 
-            const { error } = await GalaxyApi().POST("/api/folders/{folder_id}/contents", {
-                params: {
-                    path: { folder_id: props.folderId },
-                },
-                body: {
-                    ldda_message: null,
-                    from_hda_id: dataset.id,
-                },
-            });
-
-            if (error) {
-                throw new Error(error.err_msg);
-            }
-
-            progressStatus.okCount++;
-        } catch (err) {
-            progressStatus.errorCount++;
-        } finally {
-            progressStatus.runningCount--;
-        }
-    }
-
-    if (progressStatus.errorCount > 0) {
-        progressNote.value = `Added ${progressStatus.okCount} dataset${
-            progressStatus.okCount > 1 ? "s" : ""
-        }, but failed to add ${progressStatus.errorCount} dataset${
-            progressStatus.errorCount > 1 ? "s" : ""
-        } to the folder`;
-    } else {
-        progressNote.value = `Added ${progressStatus.okCount} dataset${
-            progressStatus.okCount > 1 ? "s" : ""
-        } to the folder`;
-    }
-
-    emit("setBusy", false);
-    emit("fetchFolderContents");
-}
-
-async function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolean>[]) {
-    resetProgress();
-
-    progress.value = true;
-    progressStatus.total = selectedDatasets.length;
-    progressNote.value = "Adding datasets to the folder";
-
-    emit("setBusy", true);
-
-    for (const dataset of selectedDatasets) {
-        try {
-            progressStatus.runningCount++;
-
-            await axios.post(`${getAppRoot()}api/libraries/datasets`, dataset);
+            await datasetApiCall(dataset);
 
             progressStatus.okCount++;
         } catch (e) {
@@ -299,6 +251,34 @@ async function onAddDatasetsDirectory(selectedDatasets: Record<string, string | 
 
     emit("setBusy", false);
     emit("fetchFolderContents");
+}
+
+function onAddDatasetsFromHistory(selectedDatasets: SelectionItem[]) {
+    const datasetApiCall = async (dataset: SelectionItem) => {
+        const { error } = await GalaxyApi().POST("/api/folders/{folder_id}/contents", {
+            params: {
+                path: { folder_id: props.folderId },
+            },
+            body: {
+                ldda_message: null,
+                from_hda_id: dataset.id,
+            },
+        });
+
+        if (error) {
+            throw new Error(error.err_msg);
+        }
+    };
+
+    addDatasets(selectedDatasets, datasetApiCall);
+}
+
+function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolean>[]) {
+    const datasetApiCall = async (dataset: Record<string, string | boolean>) => {
+        await axios.post(`${getAppRoot()}api/libraries/datasets`, dataset);
+    };
+
+    addDatasets(selectedDatasets, datasetApiCall);
 }
 </script>
 
