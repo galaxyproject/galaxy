@@ -135,7 +135,9 @@ const exportPluginTitle = computed(() => {
     return plugin ? plugin.title : "";
 });
 
-const isWizardBusy = computed(() => stsMonitor.isRunning.value || taskMonitor.isRunning.value);
+const isBusy = ref(false);
+
+const isWizardBusy = computed(() => stsMonitor.isRunning.value || taskMonitor.isRunning.value || isBusy.value);
 
 const stepper = useStepper({
     "select-format": {
@@ -237,7 +239,9 @@ async function exportInvocation() {
             await exportToFileSource();
             break;
         case "bco-database":
+            isBusy.value = true;
             await saveInvocationBCOToDatabase(props.invocationId, exportData.bcoDatabase);
+            isBusy.value = false;
             break;
     }
     //@ts-ignore incorrect property does not exist on type error
