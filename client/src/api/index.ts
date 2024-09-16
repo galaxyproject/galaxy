@@ -11,6 +11,13 @@ export { type components, GalaxyApi, type GalaxyApiPaths };
 export type HistorySummary = components["schemas"]["HistorySummary"];
 
 /**
+ * Represents the possible values for the `sort_by` parameter when querying histories.
+ * We can not extract this from the schema for an unknown reason.
+ * The desired solution would be: `GalaxyApiPaths["/api/histories"]["get"]["parameters"]["query"]["sort_by"]`.
+ */
+export type HistorySortByLiteral = "create_time" | "name" | "update_time" | "username" | undefined;
+
+/**
  * Contains minimal information about a History with additional content stats.
  * This is a subset of information that can be relatively frequently updated after
  * certain actions are performed on the history.

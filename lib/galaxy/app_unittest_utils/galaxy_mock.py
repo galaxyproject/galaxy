@@ -430,8 +430,17 @@ class MockDir:
 
 
 class MockTemplateHelpers:
+    def css(*css_files):
+        pass
+
+    def dumps(*kwargs):
+        return {}
+
     def js(*js_files):
         pass
 
-    def css(*css_files):
-        pass
+    def is_url(*kwargs):
+        return True
+
+    def url_for(*kwargs):
+        return "/"

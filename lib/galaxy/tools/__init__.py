@@ -214,6 +214,7 @@ from .execute import (
 
 if TYPE_CHECKING:
     from galaxy.app import UniverseApplication
+    from galaxy.managers.context import ProvidesUserContext
     from galaxy.managers.jobs import JobSearch
     from galaxy.tools.actions.metadata import SetMetadataToolAction
 
@@ -2345,7 +2346,7 @@ class Tool(UsesDictVisibleKeys):
     def exec_before_job(self, app, inp_data, out_data, param_dict=None):
         pass
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state: Optional[str] = None):
         pass
 
     def job_failed(self, job_wrapper, message, exception=False):
@@ -2976,7 +2977,7 @@ class ExpressionTool(Tool):
         with open(expression_inputs_path, "w") as f:
             json.dump(expression_inputs, f)
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None):
         for key, val in self.outputs.items():
             if key not in out_data:
                 # Skip filtered outputs
@@ -2999,7 +3000,9 @@ class ExpressionTool(Tool):
                 # if change_datatype PJA is associated with expression tool output the new output already has
                 # the desired datatype, so we use it. If the extension is "data" there's no change_dataset PJA and
                 # we want to use the existing extension.
-                new_ext = output.extension if output.extension != "data" else copy_object.extension
+                new_ext = (
+                    output.extension if output.extension not in ("data", "expression.json") else copy_object.extension
+                )
                 require_metadata_regeneration = copy_object.extension != new_ext
                 output.copy_from(copy_object, include_metadata=not require_metadata_regeneration)
                 output.extension = new_ext
@@ -3014,8 +3017,12 @@ class ExpressionTool(Tool):
                     else:
                         # TODO: move exec_after_process into metadata script so this doesn't run on the headnode ?
                         output.init_meta()
-                        output.set_meta()
-                        output.set_metadata_success_state()
+                        try:
+                            output.set_meta()
+                            output.set_metadata_success_state()
+                        except Exception:
+                            output.state = model.HistoryDatasetAssociation.states.FAILED_METADATA
+                            log.exception("Exception occured while setting metdata")
 
     def parse_environment_variables(self, tool_source):
         """Setup environment variable for inputs file."""
@@ -3150,7 +3157,7 @@ class SetMetadataTool(Tool):
             )
             self.app.job_manager.enqueue(job=job, tool=self)
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None):
         working_directory = app.object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
         for name, dataset in inp_data.items():
             external_metadata = get_metadata_compute_strategy(app.config, job.id, tool_id=self.id)
@@ -3208,8 +3215,8 @@ class ExportHistoryTool(Tool):
 class ImportHistoryTool(Tool):
     tool_type = "import_history"
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None, **kwds):
-        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None):
+        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
         if final_job_state != DETECTED_JOB_STATE.OK:
             return
         JobImportHistoryArchiveWrapper(self.app, job.id).cleanup_after_job()
@@ -3233,9 +3240,8 @@ class InteractiveTool(Tool):
         else:
             log.warning("Could not determine job to stop InteractiveTool: %s", job)
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
-        # run original exec_after_process
-        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None):
+        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
         self.__remove_interactivetool_by_job(job)
 
     def job_failed(self, job_wrapper, message, exception=False):
@@ -3254,12 +3260,11 @@ class DataManagerTool(OutputParameterJSONTool):
         if self.data_manager_id is None:
             self.data_manager_id = self.id
 
-    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, final_job_state=None, **kwds):
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None):
         assert self.allow_user_access(job.user), "You must be an admin to access this tool."
         if final_job_state != DETECTED_JOB_STATE.OK:
             return
-        # run original exec_after_process
-        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
         # process results of tool
         data_manager_id = job.data_manager_association.data_manager_id
         data_manager = self.app.data_managers.get_manager(data_manager_id)
@@ -3396,7 +3401,7 @@ class DatabaseOperationTool(Tool):
                 element_object.visible = datasets_visible
                 history.stage_addition(element_object)
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         return self._outputs_dict()
 
     def _outputs_dict(self):
@@ -3573,7 +3578,7 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None, **kwds):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         has_collection = incoming["input"]
         if hasattr(has_collection, "element_type"):
             # It is a DCE
@@ -3986,7 +3991,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
 class ApplyRulesTool(DatabaseOperationTool):
     tool_type = "apply_rules"
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tag_handler, **kwds):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         rule_set = RuleSet(incoming["rules"])
         copied_datasets = []
@@ -3994,7 +3999,7 @@ class ApplyRulesTool(DatabaseOperationTool):
         def copy_dataset(dataset, tags):
             copied_dataset = dataset.copy(copy_tags=dataset.tags, flush=False)
             if tags is not None:
-                tag_handler.set_tags_from_list(
+                trans.tag_handler.set_tags_from_list(
                     trans.get_user(),
                     copied_dataset,
                     tags,
@@ -4023,7 +4028,7 @@ class TagFromFileTool(DatabaseOperationTool):
     # require_terminal_states = True
     # require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tag_handler, **kwds):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         how = incoming["how"]
         new_tags_dataset_assoc = incoming["tags"]
@@ -4031,6 +4036,7 @@ class TagFromFileTool(DatabaseOperationTool):
         new_datasets = []
 
         def add_copied_value_to_new_elements(new_tags_dict, dce):
+            tag_handler = trans.tag_handler
             if getattr(dce.element_object, "history_content_type", None) == "dataset":
                 copied_value = dce.element_object.copy(copy_tags=dce.element_object.tags, flush=False)
                 # copy should never be visible, since part of a collection

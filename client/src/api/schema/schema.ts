@@ -4689,11 +4689,8 @@ export interface paths {
         put?: never;
         /**
          * Create a new visualization.
-         * @description POST /api/visualizations
-         *     creates a new visualization using the given payload and does not require the import_id field
-         *
-         *     POST /api/visualizations?import_id={encoded_visualization_id}
-         *     imports a copy of an existing visualization into the user's workspace and does not require the rest of the payload
+         * @description Creates a new visualization using the given payload and does not require the import_id field.
+         *     If import_id given, it imports a copy of an existing visualization into the user's workspace and does not require the rest of the payload.
          */
         post: operations["create_api_visualizations_post"];
         delete?: never;
@@ -9215,6 +9212,11 @@ export interface components {
              * @description TODO
              */
             api_type?: "file" | null;
+            /**
+             * Copied From History Dataset Association Id
+             * @description ID of HDA this HDA was copied from.
+             */
+            copied_from_history_dataset_association_id?: string | null;
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**
@@ -9460,6 +9462,11 @@ export interface components {
              * @enum {string}
              */
             api_type: "file";
+            /**
+             * Copied From History Dataset Association Id
+             * @description ID of HDA this HDA was copied from.
+             */
+            copied_from_history_dataset_association_id?: string | null;
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**
@@ -16851,12 +16858,6 @@ export interface components {
              */
             dbkey?: string | null;
             /**
-             * Save
-             * @description Whether to save the visualization.
-             * @default true
-             */
-            save: boolean | null;
-            /**
              * Slug
              * @description The slug of the visualization.
              */
@@ -16871,7 +16872,7 @@ export interface components {
              * Type
              * @description The type of the visualization.
              */
-            type?: string | null;
+            type: string;
         };
         /** VisualizationCreateResponse */
         VisualizationCreateResponse: {

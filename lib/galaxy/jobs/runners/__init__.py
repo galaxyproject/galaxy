@@ -502,6 +502,7 @@ class BaseJobRunner:
             env_setup_commands.append(env_to_statement(env))
         command_line = job_wrapper.runner_command_line
         tmp_dir_creation_statement = job_wrapper.tmp_dir_creation_statement
+        assert job_wrapper.tool
         options = dict(
             tmp_dir_creation_statement=tmp_dir_creation_statement,
             job_instrumenter=job_instrumenter,
@@ -538,13 +539,14 @@ class BaseJobRunner:
         if not compute_job_directory:
             compute_job_directory = job_wrapper.working_directory
 
+        tool = job_wrapper.tool
+        assert tool
         if not compute_tool_directory:
-            compute_tool_directory = job_wrapper.tool.tool_dir
+            compute_tool_directory = tool.tool_dir
 
         if not compute_tmp_directory:
             compute_tmp_directory = job_wrapper.tmp_directory()
 
-        tool = job_wrapper.tool
         guest_ports = job_wrapper.guest_ports
         tool_info = ToolInfo(
             tool.containers,

@@ -139,7 +139,6 @@ class ModelOperationToolAction(DefaultToolAction):
     def _produce_outputs(
         self, trans: "ProvidesUserContext", tool, out_data, output_collections, incoming, history, tags, hdca_tags, skip
     ):
-        tag_handler = trans.tag_handler
         tool.produce_outputs(
             trans,
             out_data,
@@ -148,7 +147,6 @@ class ModelOperationToolAction(DefaultToolAction):
             history=history,
             tags=tags,
             hdca_tags=hdca_tags,
-            tag_handler=tag_handler,
         )
         if mapped_over_elements := output_collections.dataset_collection_elements:
             for name, value in out_data.items():

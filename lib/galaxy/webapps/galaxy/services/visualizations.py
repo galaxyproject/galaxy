@@ -44,7 +44,6 @@ from galaxy.schema.visualization import (
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.util.hash_util import md5_hash_str
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.plugins.plugin import VisualizationPlugin
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.web import url_for
@@ -163,29 +162,24 @@ class VisualizationsService(ServiceBase):
         if import_id:
             visualization = self._import_visualization(trans, import_id)
         else:
-            # must have a type (I've taken this to be the visualization name)
-            if not payload.type:
-                raise exceptions.RequestParameterMissingException("key/value 'type' is required")
             type = payload.type
             title = payload.title
             slug = payload.slug
             dbkey = payload.dbkey
             annotation = payload.annotation
             config = payload.config
-            save = payload.save
 
             # generate defaults - this will err if given a weird key?
-            visualization = self._create_visualization(trans, type, title, dbkey, slug, annotation, save)
+            visualization = self._create_visualization(trans, type, title, dbkey, slug, annotation)
 
             # Create and save first visualization revision
             revision = VisualizationRevision(visualization=visualization, title=title, config=config, dbkey=dbkey)
             visualization.latest_revision = revision
 
-            if save:
-                session = trans.sa_session
-                session.add(revision)
-                with transaction(session):
-                    session.commit()
+            session = trans.sa_session
+            session.add(revision)
+            with transaction(session):
+                session.commit()
 
         return VisualizationCreateResponse(id=str(visualization.id))
 
@@ -245,10 +239,7 @@ class VisualizationsService(ServiceBase):
         """
         Get a Visualization from the database by id, verifying ownership.
         """
-        try:
-            visualization = trans.sa_session.get(Visualization, visualization_id)
-        except TypeError:
-            visualization = None
+        visualization = trans.sa_session.get(Visualization, visualization_id)
         if not visualization:
             raise exceptions.ObjectNotFound("Visualization not found")
         else:
@@ -300,28 +291,26 @@ class VisualizationsService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         type: str,
-        title: Optional[str] = None,
+        title: Optional[str] = "Untitled Visualization",
         dbkey: Optional[str] = None,
         slug: Optional[str] = None,
         annotation: Optional[str] = None,
-        save: Optional[bool] = True,
     ) -> Visualization:
         """Create visualization but not first revision. Returns Visualization object."""
         user = trans.get_user()
 
         # Error checking.
-        title_err = slug_err = ""
-        if not title:
-            title_err = "visualization name is required"
-        elif slug and not is_valid_slug(slug):
-            slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
-        elif slug and slug_exists(trans.sa_session, Visualization, user, slug, ignore_deleted=True):
-            slug_err = "visualization identifier must be unique"
-
-        if title_err or slug_err:
-            # TODO: handle this error structure better
-            val_err = str(title_err or slug_err)
-            raise exceptions.RequestParameterMissingException(val_err)
+        if slug:
+            slug_err = ""
+            if not is_valid_slug(slug):
+                slug_err = (
+                    "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
+                )
+            elif slug_exists(trans.sa_session, Visualization, user, slug, ignore_deleted=True):
+                slug_err = "visualization identifier must be unique"
+            if slug_err:
+                # TODO: handle this error structure better
+                raise exceptions.RequestParameterMissingException(slug_err)
 
         # Create visualization
         visualization = Visualization(user=user, title=title, dbkey=dbkey, type=type)
@@ -331,16 +320,14 @@ class VisualizationsService(ServiceBase):
             slug_builder = SlugBuilder()
             slug_builder.create_item_slug(trans.sa_session, visualization)
         if annotation:
-            annotation = sanitize_html(annotation)
             # TODO: if this is to stay in the mixin, UsesAnnotations should be added to the superclasses
             #   right now this is depending on the classes that include this mixin to have UsesAnnotations
             add_item_annotation(trans.sa_session, trans.user, visualization, annotation)
 
-        if save:
-            session = trans.sa_session
-            session.add(visualization)
-            with transaction(session):
-                session.commit()
+        session = trans.sa_session
+        session.add(visualization)
+        with transaction(session):
+            session.commit()
 
         return visualization
 
