@@ -1,21 +1,9 @@
 <script setup lang="ts">
-import { faCheck, faSpinner } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useStepper } from "@vueuse/core";
-import {
-    BAlert,
-    BCard,
-    BCardBody,
-    BCardGroup,
-    BCardImg,
-    BCardTitle,
-    BFormCheckbox,
-    BFormGroup,
-    BFormInput,
-} from "bootstrap-vue";
+import { BAlert, BCard, BCardGroup, BCardImg, BCardTitle, BFormCheckbox, BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { useWizard } from "@/components/Common/Wizard/useWizard";
 import {
     AVAILABLE_INVOCATION_EXPORT_PLUGINS,
     getInvocationExportPluginByType,
@@ -33,6 +21,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import RDMCredentialsInfo from "@/components/Common/RDMCredentialsInfo.vue";
 import RDMDestinationSelector from "@/components/Common/RDMDestinationSelector.vue";
+import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
@@ -139,7 +128,7 @@ const isBusy = ref(false);
 
 const isWizardBusy = computed(() => stsMonitor.isRunning.value || taskMonitor.isRunning.value || isBusy.value);
 
-const stepper = useStepper({
+const wizard = useWizard({
     "select-format": {
         label: "Select output format",
         instructions: computed(() => {
@@ -190,40 +179,6 @@ const stepper = useStepper({
         isSkippable: () => false,
     },
 });
-
-function goNext() {
-    if (stepper.current.value.isValid()) {
-        if (stepper.isLast.value) {
-            return exportInvocation();
-        }
-
-        let nextStepIndex = stepper.index.value + 1;
-        let nextStepName = stepper.stepNames.value.at(nextStepIndex);
-
-        while (nextStepName && stepper.steps.value[nextStepName].isSkippable()) {
-            nextStepIndex++;
-            nextStepName = stepper.stepNames.value.at(nextStepIndex);
-        }
-
-        if (nextStepName) {
-            stepper.goTo(nextStepName);
-        }
-    }
-}
-
-function goBack() {
-    let previousStepIndex = stepper.index.value - 1;
-    let previousStepName = stepper.stepNames.value.at(previousStepIndex);
-
-    while (previousStepName && stepper.steps.value[previousStepName].isSkippable()) {
-        previousStepIndex--;
-        previousStepName = stepper.stepNames.value.at(previousStepIndex);
-    }
-
-    if (previousStepName) {
-        stepper.goTo(previousStepName);
-    }
-}
 
 function onRecordSelected(recordUri: string) {
     exportData.remoteUri = recordUri;
@@ -291,20 +246,6 @@ async function exportToFileSource() {
     exportToRemoteTaskId.value = data.id;
 }
 
-function determineDisplayStepIndex(index: number): number {
-    const steps = Array.from(Object.values(stepper.steps.value));
-    return steps.slice(0, index).filter((step) => !step.isSkippable()).length + 1;
-}
-
-function allStepsBeforeAreValid(index: number): boolean {
-    const steps = Array.from(Object.values(stepper.steps.value));
-    return steps.slice(0, index).every((step) => step.isValid() || step.isSkippable());
-}
-
-function isStepDone(currentIndex: number): boolean {
-    return currentIndex < stepper.index.value;
-}
-
 function initializeExportDestinations(): ExportDestinationInfo[] {
     const destinations: ExportDestinationInfo[] = [
         {
@@ -350,18 +291,6 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
 
     return destinations;
 }
-
-/**
- * This is a workaround to make the grid columns template dynamic based on the number of visible steps.
- */
-const stepsGridColumnsTemplate = computed(() => {
-    const numVisibleSteps = Array.from(Object.values(stepper.steps.value)).filter((step) => !step.isSkippable()).length;
-    return (
-        Array(numVisibleSteps - 1)
-            .fill("auto")
-            .join(" ") + " max-content"
-    );
-});
 </script>
 
 <template>
@@ -376,214 +305,158 @@ const stepsGridColumnsTemplate = computed(() => {
             :use-remote-monitor="taskMonitor"
             @onDismissSts="exportToStsRequestId = undefined"
             @onDismissRemote="exportToRemoteTaskId = undefined" />
-        <BCard class="invocation-export-wizard">
-            <BCardTitle>
-                <h2>Export Workflow Invocation Wizard</h2>
-            </BCardTitle>
-            <BCardBody class="wizard">
-                <BCard>
-                    <BCardBody class="wizard-steps">
-                        <div
-                            v-for="(step, id, i) in stepper.steps.value"
-                            :key="id"
-                            class="wizard-step"
-                            :class="step.isSkippable() ? 'skipped ' : ''">
-                            <button
-                                class="step-number"
-                                :class="{ active: stepper.isCurrent(id), done: isStepDone(i) }"
-                                :disabled="(!allStepsBeforeAreValid(i) && stepper.isBefore(id)) || isWizardBusy"
-                                @click="stepper.goTo(id)">
-                                <FontAwesomeIcon v-if="isStepDone(i)" :icon="faCheck" />
-                                <FontAwesomeIcon v-else-if="stepper.isLast && isWizardBusy" :icon="faSpinner" spin />
-                                <span v-else>{{ determineDisplayStepIndex(i) }}</span>
-                            </button>
-                            <div class="step-label" v-text="step.label" />
-                            <div class="step-line" :class="{ fill: stepper.isAfter(id) }"></div>
-                        </div>
-                    </BCardBody>
-                </BCard>
-
-                <div class="step-content">
-                    <span class="h-md step-instructions" v-text="stepper.current.value.instructions" />
-
-                    <div class="step-body">
-                        <div v-if="stepper.isCurrent('select-format')">
-                            <BCardGroup deck>
-                                <BCard
-                                    v-for="plugin in exportPlugins"
-                                    :key="plugin.id"
-                                    class="wizard-selection-card"
-                                    :border-variant="
-                                        exportData.exportPluginFormat === plugin.id ? 'primary' : 'default'
-                                    "
-                                    @click="exportData.exportPluginFormat = plugin.id">
-                                    <BCardTitle>
-                                        <b>{{ plugin.title }}</b>
-                                    </BCardTitle>
-                                    <div v-if="plugin.img">
-                                        <BCardImg :src="plugin.img" :alt="plugin.title" />
-                                        <br />
-                                        <ExternalLink v-if="plugin.url" :href="plugin.url">
-                                            <b>Learn more</b>
-                                        </ExternalLink>
-                                    </div>
-                                    <div v-else v-html="renderMarkdown(plugin.markdownDescription)" />
-                                </BCard>
-                            </BCardGroup>
-                        </div>
-
-                        <div v-if="stepper.isCurrent('select-destination')">
-                            <BCardGroup deck>
-                                <BCard
-                                    v-for="target in exportDestinationTargets"
-                                    :key="target.destination"
-                                    :border-variant="
-                                        exportData.destination === target.destination ? 'primary' : 'default'
-                                    "
-                                    :header-bg-variant="
-                                        exportData.destination === target.destination ? 'primary' : 'default'
-                                    "
-                                    :header-text-variant="
-                                        exportData.destination === target.destination ? 'white' : 'default'
-                                    "
-                                    :header="target.label"
-                                    class="wizard-selection-card"
-                                    @click="exportData.destination = target.destination">
-                                    <div v-html="renderMarkdown(target.markdownDescription)" />
-                                </BCard>
-                            </BCardGroup>
-                        </div>
-
-                        <div v-if="stepper.isCurrent('setup-remote')">
-                            <BFormGroup
-                                id="fieldset-directory"
-                                label-for="directory"
-                                :description="`Select a 'remote files' directory to export ${resource} to.`"
-                                class="mt-3">
-                                <FilesInput
-                                    id="directory"
-                                    v-model="exportData.remoteUri"
-                                    mode="directory"
-                                    :require-writable="true"
-                                    :filter-options="{ exclude: ['rdm'] }" />
-                            </BFormGroup>
-                        </div>
-
-                        <div v-if="stepper.isCurrent('setup-rdm')">
-                            <RDMCredentialsInfo />
-
-                            <RDMDestinationSelector :what="resource" @onRecordSelected="onRecordSelected" />
-                        </div>
-
-                        <div v-if="stepper.isCurrent('setup-bcodb')">
-                            <p>
-                                To submit to a BCODB you need to already have an authenticated account. Instructions on
-                                submitting a BCO from Galaxy are available
-                                <ExternalLink
-                                    href="https://w3id.org/biocompute/tutorials/galaxy_quick_start/"
-                                    target="_blank">
-                                    here
-                                </ExternalLink>
-                            </p>
-                            <BFormGroup
-                                label-for="bcodb-server"
-                                description="BCO DB URL (example: https://biocomputeobject.org)">
-                                <BFormInput
-                                    id="bcodb-server"
-                                    v-model="exportData.bcoDatabase.serverBaseUrl"
-                                    type="text"
-                                    placeholder="https://biocomputeobject.org"
-                                    autocomplete="off"
-                                    required />
-                            </BFormGroup>
-
-                            <BFormGroup label-for="bcodb-table" description="Prefix">
-                                <BFormInput
-                                    id="bcodb-table"
-                                    v-model="exportData.bcoDatabase.table"
-                                    type="text"
-                                    placeholder="GALXY"
-                                    autocomplete="off"
-                                    required />
-                            </BFormGroup>
-
-                            <BFormGroup label-for="bcodb-owner" description="User Name">
-                                <BFormInput
-                                    id="bcodb-owner"
-                                    v-model="exportData.bcoDatabase.ownerGroup"
-                                    type="text"
-                                    autocomplete="off"
-                                    required />
-                            </BFormGroup>
-
-                            <BFormGroup label-for="bcodb-authorization" description="User API Key">
-                                <BFormInput
-                                    id="bcodb-authorization"
-                                    v-model="exportData.bcoDatabase.authorization"
-                                    type="password"
-                                    autocomplete="off"
-                                    required />
-                            </BFormGroup>
-                        </div>
-
-                        <div v-if="stepper.isCurrent('export-summary')">
-                            <BFormGroup
-                                v-if="needsFileName"
-                                label-for="exported-file-name"
-                                :description="`Give the exported file a name.`"
-                                class="mt-3">
-                                <BFormInput
-                                    id="exported-file-name"
-                                    v-model="exportData.outputFileName"
-                                    placeholder="enter file name"
-                                    required />
-                            </BFormGroup>
-
-                            <BFormCheckbox
-                                v-if="canIncludeData"
-                                id="include-data"
-                                v-model="exportData.includeData"
-                                switch>
-                                Include data files in the export package.
-                            </BFormCheckbox>
-
+        <GenericWizard
+            class="invocation-export-wizard"
+            title="Invocation Export Wizard"
+            :use="wizard"
+            :submit-button-label="exportButtonLabel"
+            :is-busy="isWizardBusy"
+            @submit="exportInvocation">
+            <div v-if="wizard.isCurrent('select-format')">
+                <BCardGroup deck>
+                    <BCard
+                        v-for="plugin in exportPlugins"
+                        :key="plugin.id"
+                        class="wizard-selection-card"
+                        :border-variant="exportData.exportPluginFormat === plugin.id ? 'primary' : 'default'"
+                        @click="exportData.exportPluginFormat = plugin.id">
+                        <BCardTitle>
+                            <b>{{ plugin.title }}</b>
+                        </BCardTitle>
+                        <div v-if="plugin.img">
+                            <BCardImg :src="plugin.img" :alt="plugin.title" />
                             <br />
-
-                            <div>
-                                Format <b>{{ exportPluginTitle }}</b>
-                            </div>
-
-                            <div>
-                                Destination
-                                <b>{{ exportDestinationSummary }}</b>
-                                <b v-if="exportData.destination !== 'download' && exportData.remoteUri">
-                                    <FileSourceNameSpan :uri="exportData.remoteUri" class="text-primary" />
-                                </b>
-                                <b v-if="exportData.destination === 'bco-database'">
-                                    <span class="text-primary">{{ exportData.bcoDatabase.table }}</span>
-                                    <ExternalLink :href="exportData.bcoDatabase.serverBaseUrl">
-                                        {{ exportData.bcoDatabase.serverBaseUrl }}
-                                    </ExternalLink>
-                                </b>
-                            </div>
+                            <ExternalLink v-if="plugin.url" :href="plugin.url">
+                                <b>Learn more</b>
+                            </ExternalLink>
                         </div>
-                    </div>
-                </div>
-                <div class="wizard-actions">
-                    <button v-if="!stepper.isFirst.value" class="go-back-btn" :disabled="isWizardBusy" @click="goBack">
-                        Back
-                    </button>
+                        <div v-else v-html="renderMarkdown(plugin.markdownDescription)" />
+                    </BCard>
+                </BCardGroup>
+            </div>
 
-                    <button
-                        class="go-next-btn"
-                        :disabled="!stepper.current.value.isValid() || isWizardBusy"
-                        :class="stepper.isLast.value ? 'btn-primary' : ''"
-                        @click="goNext">
-                        {{ stepper.isLast.value ? exportButtonLabel : "Next" }}
-                    </button>
+            <div v-if="wizard.isCurrent('select-destination')">
+                <BCardGroup deck>
+                    <BCard
+                        v-for="target in exportDestinationTargets"
+                        :key="target.destination"
+                        :border-variant="exportData.destination === target.destination ? 'primary' : 'default'"
+                        :header-bg-variant="exportData.destination === target.destination ? 'primary' : 'default'"
+                        :header-text-variant="exportData.destination === target.destination ? 'white' : 'default'"
+                        :header="target.label"
+                        class="wizard-selection-card"
+                        @click="exportData.destination = target.destination">
+                        <div v-html="renderMarkdown(target.markdownDescription)" />
+                    </BCard>
+                </BCardGroup>
+            </div>
+
+            <div v-if="wizard.isCurrent('setup-remote')">
+                <BFormGroup
+                    id="fieldset-directory"
+                    label-for="directory"
+                    :description="`Select a 'remote files' directory to export ${resource} to.`"
+                    class="mt-3">
+                    <FilesInput
+                        id="directory"
+                        v-model="exportData.remoteUri"
+                        mode="directory"
+                        :require-writable="true"
+                        :filter-options="{ exclude: ['rdm'] }" />
+                </BFormGroup>
+            </div>
+
+            <div v-if="wizard.isCurrent('setup-rdm')">
+                <RDMCredentialsInfo />
+
+                <RDMDestinationSelector :what="resource" @onRecordSelected="onRecordSelected" />
+            </div>
+
+            <div v-if="wizard.isCurrent('setup-bcodb')">
+                <p>
+                    To submit to a BCODB you need to already have an authenticated account. Instructions on submitting a
+                    BCO from Galaxy are available
+                    <ExternalLink href="https://w3id.org/biocompute/tutorials/galaxy_quick_start/" target="_blank">
+                        here
+                    </ExternalLink>
+                </p>
+                <BFormGroup label-for="bcodb-server" description="BCO DB URL (example: https://biocomputeobject.org)">
+                    <BFormInput
+                        id="bcodb-server"
+                        v-model="exportData.bcoDatabase.serverBaseUrl"
+                        type="text"
+                        placeholder="https://biocomputeobject.org"
+                        autocomplete="off"
+                        required />
+                </BFormGroup>
+
+                <BFormGroup label-for="bcodb-table" description="Prefix">
+                    <BFormInput
+                        id="bcodb-table"
+                        v-model="exportData.bcoDatabase.table"
+                        type="text"
+                        placeholder="GALXY"
+                        autocomplete="off"
+                        required />
+                </BFormGroup>
+
+                <BFormGroup label-for="bcodb-owner" description="User Name">
+                    <BFormInput
+                        id="bcodb-owner"
+                        v-model="exportData.bcoDatabase.ownerGroup"
+                        type="text"
+                        autocomplete="off"
+                        required />
+                </BFormGroup>
+
+                <BFormGroup label-for="bcodb-authorization" description="User API Key">
+                    <BFormInput
+                        id="bcodb-authorization"
+                        v-model="exportData.bcoDatabase.authorization"
+                        type="password"
+                        autocomplete="off"
+                        required />
+                </BFormGroup>
+            </div>
+
+            <div v-if="wizard.isCurrent('export-summary')">
+                <BFormGroup
+                    v-if="needsFileName"
+                    label-for="exported-file-name"
+                    :description="`Give the exported file a name.`"
+                    class="mt-3">
+                    <BFormInput
+                        id="exported-file-name"
+                        v-model="exportData.outputFileName"
+                        placeholder="enter file name"
+                        required />
+                </BFormGroup>
+
+                <BFormCheckbox v-if="canIncludeData" id="include-data" v-model="exportData.includeData" switch>
+                    Include data files in the export package.
+                </BFormCheckbox>
+
+                <br />
+
+                <div>
+                    Format <b>{{ exportPluginTitle }}</b>
                 </div>
-            </BCardBody>
-        </BCard>
+
+                <div>
+                    Destination
+                    <b>{{ exportDestinationSummary }}</b>
+                    <b v-if="exportData.destination !== 'download' && exportData.remoteUri">
+                        <FileSourceNameSpan :uri="exportData.remoteUri" class="text-primary" />
+                    </b>
+                    <b v-if="exportData.destination === 'bco-database'">
+                        <span class="text-primary">{{ exportData.bcoDatabase.table }}</span>
+                        <ExternalLink :href="exportData.bcoDatabase.serverBaseUrl">
+                            {{ exportData.bcoDatabase.serverBaseUrl }}
+                        </ExternalLink>
+                    </b>
+                </div>
+            </div>
+        </GenericWizard>
         <BAlert v-if="errorMessage" show dismissible fade variant="danger" @dismissed="errorMessage = undefined">
             {{ errorMessage }}
         </BAlert>
@@ -591,120 +464,6 @@ const stepsGridColumnsTemplate = computed(() => {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
-
-.wizard {
-    padding: 0;
-
-    .wizard-steps {
-        padding: 0;
-        margin: 0;
-        display: grid;
-        grid-auto-flow: column;
-        grid-template-columns: v-bind(stepsGridColumnsTemplate);
-    }
-
-    .wizard-step {
-        padding: 0;
-        margin: 0;
-        display: grid;
-        grid-template-columns: 50px max-content auto;
-        grid-template-rows: auto;
-        grid-template-areas: "number label line";
-        justify-items: center;
-
-        .step-number {
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            background-color: $brand-secondary;
-            justify-content: center;
-            align-items: center;
-            font-size: 1rem;
-            grid-area: number;
-
-            &.active {
-                background-color: $brand-primary;
-                color: white;
-            }
-
-            &.done {
-                background-color: $brand-success;
-                color: white;
-            }
-        }
-
-        .step-label {
-            align-self: center;
-            grid-area: label;
-            text-align: center;
-            text-wrap: nowrap;
-        }
-
-        .step-line {
-            margin-left: 5px;
-            align-self: center;
-            grid-area: line;
-            width: 0;
-            height: 4px;
-            background-color: $brand-primary;
-
-            &.fill {
-                width: 100%;
-                transform-origin: left;
-                transition: width 0.2s;
-            }
-        }
-
-        &.skipped {
-            display: none;
-        }
-
-        &:last-child {
-            justify-self: end;
-        }
-    }
-
-    .step-content {
-        padding: 1rem 1rem 0rem 1rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-
-        .step-instructions {
-            margin-top: 0rem;
-            margin-bottom: 1rem;
-        }
-
-        .step-body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-    }
-
-    .wizard-actions {
-        padding: 1rem 1rem 0rem 1rem;
-
-        .go-back-btn {
-            float: left;
-        }
-
-        .go-next-btn {
-            float: right;
-        }
-    }
-
-    .wizard-selection-card {
-        border-width: 3px;
-        text-align: center;
-
-        .card-header {
-            border-radius: 0;
-        }
-    }
-}
-
 .card-img {
     height: auto;
     width: auto;
