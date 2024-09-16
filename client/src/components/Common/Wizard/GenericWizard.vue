@@ -143,7 +143,11 @@ const stepsGridColumnsTemplate = computed(() => {
                 <span class="h-md step-instructions" v-text="props.use.current.value.instructions" />
 
                 <div class="step-body">
-                    <slot>No steps defined</slot>
+                    <slot>
+                        <p>
+                            Missing body for step <b>{{ props.use.current.value.label }}</b>
+                        </p>
+                    </slot>
                 </div>
             </div>
             <div class="wizard-actions">
