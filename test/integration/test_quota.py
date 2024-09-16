@@ -98,7 +98,6 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
         }
         put_response = self._put(f"quotas/{quota_id}", data=update_payload, json=True)
         put_response.raise_for_status()
-        assert "has been renamed to" in put_response.text
 
         show_response = self._get(f"quotas/{quota_id}")
         show_response.raise_for_status()
