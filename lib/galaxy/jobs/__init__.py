@@ -1387,7 +1387,15 @@ class MinimalJobWrapper(HasResourceParameters):
                 util.umask_fix_perms(path, self.app.config.umask, 0o666, self.app.config.gid)
 
     def fail(
-        self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None
+        self,
+        message,
+        exception=False,
+        tool_stdout="",
+        tool_stderr="",
+        exit_code=None,
+        job_stdout=None,
+        job_stderr=None,
+        job_metrics_directory=None,
     ):
         """
         Indicate job failure by setting state and message on all output
@@ -1413,6 +1421,10 @@ class MinimalJobWrapper(HasResourceParameters):
         # Might be AssertionError or other exception
         message = str(message)
         working_directory_exists = self.working_directory_exists()
+
+        if not job.tasks:
+            # If job was composed of tasks, don't attempt to recollect statistics
+            self._collect_metrics(job, job_metrics_directory)
 
         # if the job was deleted, don't fail it
         if not job.state == job.states.DELETED:
@@ -1489,6 +1501,7 @@ class MinimalJobWrapper(HasResourceParameters):
             pjaa.post_job_action for pjaa in job.post_job_actions if pjaa.post_job_action.action_type == "EmailAction"
         ]:
             ActionBox.execute(self.app, self.sa_session, pja, job)
+
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
             try:
@@ -1849,6 +1862,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 job_stdout=job_stdout,
                 job_stderr=job_stderr,
                 exception=exception,
+                job_metrics_directory=job_metrics_directory,
             )
 
         # TODO: After failing here, consider returning from the function.
@@ -2149,7 +2163,13 @@ class MinimalJobWrapper(HasResourceParameters):
 
     def _collect_metrics(self, has_metrics, job_metrics_directory=None):
         job = has_metrics.get_job()
-        job_metrics_directory = job_metrics_directory or self.working_directory
+        if job_metrics_directory is None:
+            try:
+                # working directory might have been purged already
+                job_metrics_directory = self.working_directory
+            except Exception:
+                log.exception("Could not recover job metrics")
+                return
         per_plugin_properties = self.app.job_metrics.collect_properties(
             job.destination_id, self.job_id, job_metrics_directory
         )
