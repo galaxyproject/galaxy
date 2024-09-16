@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
 import {
     BAlert,
     BButton,
@@ -22,6 +23,7 @@ import mod_import_dataset from "@/components/Libraries/LibraryFolder/TopToolbar/
 import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
 import { Toast } from "@/composables/toast";
+import { getAppRoot } from "@/onload";
 import { useUserStore } from "@/stores/userStore";
 
 import FolderDetails from "@/components/Libraries/LibraryFolder/FolderDetails/FolderDetails.vue";
@@ -259,6 +261,45 @@ async function onAddDatasetsFromHistory(selectedDatasets: SelectionItem[]) {
     emit("setBusy", false);
     emit("fetchFolderContents");
 }
+
+async function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolean>[]) {
+    resetProgress();
+
+    progress.value = true;
+    progressStatus.total = selectedDatasets.length;
+    progressNote.value = "Adding datasets to the folder";
+
+    emit("setBusy", true);
+
+    for (const dataset of selectedDatasets) {
+        try {
+            progressStatus.runningCount++;
+
+            await axios.post(`${getAppRoot()}api/libraries/datasets`, dataset);
+
+            progressStatus.okCount++;
+        } catch (e) {
+            progressStatus.errorCount++;
+        } finally {
+            progressStatus.runningCount--;
+        }
+    }
+
+    if (progressStatus.errorCount > 0) {
+        progressNote.value = `Added ${progressStatus.okCount} dataset${
+            progressStatus.okCount > 1 ? "s" : ""
+        }, but failed to add ${progressStatus.errorCount} dataset${
+            progressStatus.errorCount > 1 ? "s" : ""
+        } to the folder`;
+    } else {
+        progressNote.value = `Added ${progressStatus.okCount} dataset${
+            progressStatus.okCount > 1 ? "s" : ""
+        } to the folder`;
+    }
+
+    emit("setBusy", false);
+    emit("fetchFolderContents");
+}
 </script>
 
 <template>
@@ -389,7 +430,7 @@ async function onAddDatasetsFromHistory(selectedDatasets: SelectionItem[]) {
             v-else-if="modalShow"
             :target="modalShow"
             :folder-id="props.folderId"
-            @onClose="onAddDatasets"
-            @reload="emit('fetchFolderContents')" />
+            @onSelect="onAddDatasetsDirectory"
+            @onClose="onAddDatasets" />
     </div>
 </template>

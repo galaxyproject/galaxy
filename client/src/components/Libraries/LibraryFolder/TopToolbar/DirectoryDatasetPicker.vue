@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import axios from "axios";
 import {
     BAlert,
     BButton,
@@ -18,7 +17,6 @@ import { GalaxyApi } from "@/api";
 import { type Option } from "@/components/Form/Elements/FormDrilldown/utilities";
 import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { Toast } from "@/composables/toast";
-import { getAppRoot } from "@/onload/loadConfig";
 import { useDbKeyStore } from "@/stores/dbKeyStore";
 
 import FormDrilldown from "@/components/Form/Elements/FormDrilldown/FormDrilldown.vue";
@@ -39,6 +37,8 @@ const auto = {
 
 type GenomesList = { id: string; text: string }[];
 
+type RequestData = Record<string, string | boolean>;
+
 interface Props {
     folderId: string;
     target: "userdir" | "importdir" | "path";
@@ -49,6 +49,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
     (e: "reload"): void;
     (e: "onClose"): void;
+    (e: "onSelect", items: RequestData[]): void;
 }>();
 
 const dbKeyStore = useDbKeyStore();
@@ -199,39 +200,33 @@ async function onImport() {
 }
 
 async function importFileOrFolder(validPaths: string[], source: string) {
-    try {
-        importing.value = true;
+    const items: RequestData[] = [];
 
-        for (const path of validPaths) {
-            const reqData: Record<string, any> = {
-                path: path,
-                source: source,
-                dbkey: selectedGenome.value,
-                encoded_folder_id: props.folderId,
-                link_data: preserveOptions.value.includes("link_files"),
-                space_to_tab: preserveOptions.value.includes("space_to_tab"),
-                to_posix_lines: preserveOptions.value.includes("to_posix_lines"),
-                tag_using_filenames: preserveOptions.value.includes("tags_from_filenames"),
-            };
+    for (const path of validPaths) {
+        const reqData: RequestData = {
+            path: path,
+            source: source,
+            dbkey: selectedGenome.value,
+            encoded_folder_id: props.folderId,
+            link_data: preserveOptions.value.includes("link_files"),
+            space_to_tab: preserveOptions.value.includes("space_to_tab"),
+            to_posix_lines: preserveOptions.value.includes("to_posix_lines"),
+            tag_using_filenames: preserveOptions.value.includes("tags_from_filenames"),
+        };
 
-            if (!pathMode.value) {
-                reqData.file_type = selectedExtension.value;
-            }
-
-            if (!filesMode.value) {
-                reqData.preserve_dirs = preserveOptions.value.includes("preserve_directory_structure");
-            }
-
-            await axios.post(`${getAppRoot()}api/libraries/datasets`, reqData);
+        if (!pathMode.value) {
+            reqData.file_type = selectedExtension.value.extension;
         }
 
-        emit("reload");
-        emit("onClose");
-    } catch (err) {
-        console.error(err);
-    } finally {
-        importing.value = false;
+        if (!filesMode.value) {
+            reqData.preserve_dirs = preserveOptions.value.includes("preserve_directory_structure");
+        }
+
+        items.push(reqData);
     }
+
+    emit("onSelect", items);
+    emit("onClose");
 }
 
 watch(
