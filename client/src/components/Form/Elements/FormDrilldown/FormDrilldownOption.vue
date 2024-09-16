@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretRight, faFile, faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox, BFormRadio } from "bootstrap-vue";
@@ -8,8 +7,6 @@ import { computed, type ComputedRef, onMounted, ref } from "vue";
 import { getAllValues, type Option } from "./utilities";
 
 import FormDrilldownList from "./FormDrilldownList.vue";
-
-library.add(faCaretDown, faCaretRight, faFile, faFolder);
 
 interface Props {
     currentValue: string[];

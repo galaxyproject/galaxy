@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
@@ -31,8 +30,6 @@ import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
 import DirectoryDatasetPicker from "@/components/Libraries/LibraryFolder/TopToolbar/DirectoryDatasetPicker.vue";
 import ProgressBar from "@/components/ProgressBar.vue";
 import HistoryDatasetPicker from "@/components/SelectionDialog/HistoryDatasetPicker.vue";
-
-library.add(faBook, faCaretDown, faDownload, faHome, faPlus, faTrash);
 
 interface Props {
     metadata: any;
