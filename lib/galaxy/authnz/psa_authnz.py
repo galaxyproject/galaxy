@@ -135,9 +135,10 @@ class PSAAuthnz(IdentityProvider):
         self.config["KEY"] = oidc_backend_config.get("client_id")
         self.config["SECRET"] = oidc_backend_config.get("client_secret")
         self.config["TENANT_ID"] = oidc_backend_config.get("tenant_id")
-        self.config["OIDC_ENDPOINT"] = oidc_backend_config.get("oidc_endpoint")
         self.config["redirect_uri"] = oidc_backend_config.get("redirect_uri")
         self.config["EXTRA_SCOPES"] = oidc_backend_config.get("extra_scopes")
+        if oidc_backend_config.get("oidc_endpoint"):
+            self.config["OIDC_ENDPOINT"] = oidc_backend_config["oidc_endpoint"]
         if oidc_backend_config.get("prompt") is not None:
             self.config[setting_name("AUTH_EXTRA_ARGUMENTS")]["prompt"] = oidc_backend_config.get("prompt")
         if oidc_backend_config.get("api_url") is not None:
