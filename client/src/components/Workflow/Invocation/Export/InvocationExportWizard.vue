@@ -167,7 +167,7 @@ const wizard = useWizard({
                     exportData.bcoDatabase.table &&
                     exportData.bcoDatabase.ownerGroup
             ),
-        isSkippable: () => exportData.destination !== "bco-database",
+        isSkippable: () => exportData.destination !== "bco-database" || exportData.exportPluginFormat !== "bco",
     },
     "export-summary": {
         label: "Export",
