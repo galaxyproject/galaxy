@@ -1,6 +1,5 @@
 import logging
 import os
-import json
 from typing import (
     Any,
     Dict,
@@ -243,8 +242,6 @@ class WorkflowRunCrateProfileBuilder:
             # Add CWL workflow entity if exists
             crate.mainEntity["subjectOf"] = cwl_wf if cwl_wf else ""
 
-        workflow_dict = vars(self.workflow)  # or self.workflow.__dict__ if vars() does not work
-        print(f"lol {workflow_dict}")
         # Add tools used in the workflow
         self._add_tools(crate)
 
@@ -259,9 +256,6 @@ class WorkflowRunCrateProfileBuilder:
                 tool_id = step.tool_id
                 tool_version = step.tool_version
                 tool_name = step.label or tool_id  # use label if available, fallback to tool_id
-
-                step_dict = vars(step)  # or self.workflow.__dict__ if vars() does not work
-                print(f"TOOOOOOOOL {step_dict}")
 
                 # Initialize tool description for each tool
                 tool_description = ""
