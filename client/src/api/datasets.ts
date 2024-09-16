@@ -95,3 +95,6 @@ export async function fetchDatasetAttributes(datasetId: string) {
 
     return data;
 }
+
+export type HistoryContentType = components["schemas"]["HistoryContentType"];
+export type HistoryContentSource = components["schemas"]["HistoryContentSource"];

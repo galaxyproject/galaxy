@@ -129,6 +129,14 @@ export interface DCECollection extends DCESummary {
 }
 
 /**
+ * DatasetCollectionElement specific type for datasets.
+ */
+export interface DCEDataset extends DCESummary {
+    element_type: "hda";
+    object: HDAObject;
+}
+
+/**
  * Contains summary information about a HDCA (HistoryDatasetCollectionAssociation).
  *
  * HDCAs are (top level only) history items that contains information about the association
@@ -147,6 +155,8 @@ export type HDCADetailed = components["schemas"]["HDCADetailed"];
  * DatasetCollections are immutable and contain one or more DCEs.
  */
 export type DCObject = components["schemas"]["DCObject"];
+
+export type HDAObject = components["schemas"]["HDAObject"];
 
 export type DatasetCollectionAttributes = components["schemas"]["DatasetCollectionAttributesResult"];
 
@@ -188,6 +198,13 @@ export function isCollectionElement(element: DCESummary): element is DCECollecti
 }
 
 /**
+ * Returns true if the given element of a collection is a Dataset.
+ */
+export function isDatasetElement(element: DCESummary): element is DCEDataset {
+    return element.element_type === "hda";
+}
+
+/**
  * Returns true if the given dataset entry is an instance of DatasetDetails.
  */
 export function hasDetails(entry: DatasetEntry): entry is HDADetailed {
@@ -213,6 +230,10 @@ export function isHistorySummaryExtended(history: AnyHistory): history is Histor
 
 export function isHistoryItem(item: object): item is HistoryItemSummary {
     return item && "history_content_type" in item;
+}
+
+export function isDCE(item: object): item is DCESummary {
+    return item && "element_type" in item;
 }
 
 type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
