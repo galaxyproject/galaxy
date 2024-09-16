@@ -1,5 +1,6 @@
 import logging
 import os
+import json
 from typing import (
     Any,
     Dict,
@@ -214,22 +215,39 @@ class WorkflowRunCrateProfileBuilder:
                     cls=workflow_cls,
                     lang=lang,
                 )
-
                 self.workflow_entities[wf.id] = wf
                 if lang == "cwl":
                     cwl_wf = wf
 
-            # Add license if available
             crate.license = self.workflow.license or ""
-
-            # Add main entity information
             crate.mainEntity["name"] = self.workflow.name
 
+            # Adding the creator information
+            if hasattr(self.workflow, 'creator_metadata') and self.workflow.creator_metadata:
+                creators = self.workflow.creator_metadata
+                if creators and isinstance(creators, list) and len(creators) > 0:
+                    first_creator = creators[0]
+                    creator_entity = crate.add(
+                        ContextEntity(
+                            crate,
+                            first_creator.get('identifier', ''),  # Default to empty string if identifier is missing
+                            properties={
+                                "@type": "Person",
+                                "name": first_creator.get('name', ''),  # Default to empty string if name is missing
+                                "orcid": first_creator.get('identifier', ''),  # Assuming identifier as orcid, or adjust accordingly
+                            },
+                        )
+                    )
+                    crate.mainEntity.append_to("creator", creator_entity)
+            
             # Add CWL workflow entity if exists
             crate.mainEntity["subjectOf"] = cwl_wf if cwl_wf else ""
 
+        workflow_dict = vars(self.workflow)  # or self.workflow.__dict__ if vars() does not work
+        print(f"lol {workflow_dict}")
         # Add tools used in the workflow
         self._add_tools(crate)
+
 
     def _add_tools(self, crate: ROCrate):
         tool_entities = []
@@ -242,6 +260,25 @@ class WorkflowRunCrateProfileBuilder:
                 tool_version = step.tool_version
                 tool_name = step.label or tool_id  # use label if available, fallback to tool_id
 
+                step_dict = vars(step)  # or self.workflow.__dict__ if vars() does not work
+                print(f"TOOOOOOOOL {step_dict}")
+
+                # Initialize tool description for each tool
+                tool_description = ""
+
+                # Check if the tool step has annotations
+                if hasattr(step, 'annotations') and step.annotations:
+                    # Assuming each annotation object has an 'annotation' attribute
+                    annotations_list = []
+                    for annotation_obj in step.annotations:
+                        annotation_text = getattr(annotation_obj, 'annotation', None)
+                        if annotation_text:  # Check if annotation_text is not None
+                            annotations_list.append(annotation_text)
+
+                    # Join annotations into a single string or handle them individually, depending on your requirement
+                    tool_description = " ".join(annotations_list) if annotations_list else ""
+
+
                 # Add tool entity to the RO-Crate
                 tool_entity = crate.add(
                     ContextEntity(
@@ -251,6 +288,7 @@ class WorkflowRunCrateProfileBuilder:
                             "@type": "SoftwareApplication",
                             "name": tool_name,
                             "version": tool_version,
+                            "description": tool_description,
                             "url": "https://toolshed.g2.bx.psu.edu",  # URL if relevant
                         },
                     )
@@ -261,8 +299,6 @@ class WorkflowRunCrateProfileBuilder:
                 crate.mainEntity.append_to("instrument", tool_entity)
 
         return tool_entities
-
-
 
     def _add_create_action(self, crate: ROCrate):
         self.create_action = crate.add(
@@ -277,12 +313,6 @@ class WorkflowRunCrateProfileBuilder:
                 },
             )
         )
-
-        # Append tools to the create action
-        tools = self._add_tools(crate)
-        for tool in tools:
-            self.create_action.append_to("instrument", tool)
-
         crate.root_dataset.append_to("mentions", self.create_action)
 
     def _add_engine_run(self, crate: ROCrate):
