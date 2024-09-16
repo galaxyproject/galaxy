@@ -14,7 +14,7 @@ import {
 import { computed, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
-import { remoteFilesFetcher } from "@/api/remoteFiles";
+import { GalaxyApi } from "@/api";
 import { type Option } from "@/components/Form/Elements/FormDrilldown/utilities";
 import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { Toast } from "@/composables/toast";
@@ -61,6 +61,7 @@ const paths = ref<string>("");
 const selectedExtension = ref();
 const options = ref<Option[]>([]);
 const optionsLoading = ref(false);
+const errorMessage = ref<string>("");
 const currentValue = ref<string[]>([]);
 const genomesList = ref<GenomesList>([]);
 const preserveOptions = ref<string[]>([]);
@@ -88,21 +89,27 @@ const importDisable = computed(() => {
 });
 
 async function fetchOptions() {
-    try {
-        optionsLoading.value = true;
+    optionsLoading.value = true;
 
-        const { data } = await remoteFilesFetcher({
-            format: "jstree",
-            target: props.target,
-            disable: filesMode.value ? "folders" : "files",
-        });
+    const { data, error } = await GalaxyApi().GET("/api/remote_files", {
+        params: {
+            query: {
+                format: "jstree",
+                target: props.target,
+                disable: filesMode.value ? "folders" : "files",
+            },
+        },
+    });
 
-        options.value = mapDataToOptions(data);
-    } catch (err) {
-        console.error(err);
-    } finally {
-        optionsLoading.value = false;
+    options.value = mapDataToOptions(data);
+
+    if (error) {
+        console.error(error);
+
+        errorMessage.value = "Failed to load directories";
     }
+
+    optionsLoading.value = false;
 }
 
 function mapDataToOptions(data: any): Option[] {
@@ -314,8 +321,12 @@ watch(
             v-model="paths"
             placeholder="Absolute paths (or paths relative to Galaxy root) separated by newline"
             rows="5" />
+
         <BAlert v-if="optionsLoading" variant="info" show>
             <LoadingSpan message="Loading directories" />
+        </BAlert>
+        <BAlert v-else-if="errorMessage" variant="danger" show>
+            {{ errorMessage }}
         </BAlert>
         <FormDrilldown
             v-else
