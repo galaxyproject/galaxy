@@ -1,13 +1,11 @@
 """Constructors for concrete tool and input source objects."""
 
 import logging
-from pathlib import PurePath
 from typing import (
     Callable,
     Dict,
     List,
     Optional,
-    Union,
 )
 
 from yaml import safe_load
@@ -17,6 +15,7 @@ from galaxy.util import (
     ElementTree,
     parse_xml_string_to_etree,
 )
+from galaxy.util.path import StrPath
 from galaxy.util.yaml_util import ordered_load
 from .cwl import (
     CwlToolSource,
@@ -61,7 +60,7 @@ TOOL_SOURCE_FACTORIES: Dict[str, Callable[[str], ToolSource]] = {
 
 
 def get_tool_source(
-    config_file: Optional[Union[str, PurePath]] = None,
+    config_file: Optional[StrPath] = None,
     xml_tree: Optional[ElementTree] = None,
     enable_beta_formats: bool = True,
     tool_location_fetcher: Optional[ToolLocationFetcher] = None,
@@ -87,8 +86,7 @@ def get_tool_source(
         tool_location_fetcher = ToolLocationFetcher()
 
     assert config_file
-    if isinstance(config_file, PurePath):
-        config_file = str(config_file)
+    config_file = str(config_file)
 
     config_file = tool_location_fetcher.to_tool_path(config_file)
     if not enable_beta_formats:

@@ -34,6 +34,7 @@ from galaxy.celery.base_task import (
     GalaxyTaskBeforeStartUserRateLimitPostgres,
     GalaxyTaskBeforeStartUserRateLimitStandard,
 )
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.datatypes.registry import Registry
 from galaxy.files import (
@@ -206,7 +207,7 @@ class HaltableContainer(Container):
 
 
 class SentryClientMixin:
-    config: config.GalaxyAppConfiguration
+    config: GalaxyAppConfiguration
     application_stack: ApplicationStack
 
     def configure_sentry_client(self):
@@ -263,7 +264,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     """Encapsulates the state of a minimal Galaxy application"""
 
     model: GalaxyModelMapping
-    config: config.GalaxyAppConfiguration
+    config: GalaxyAppConfiguration
     tool_cache: ToolCache
     job_config: jobs.JobConfiguration
     toolbox_search: ToolBoxSearch
@@ -287,7 +288,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.name = "galaxy"
         self.is_webapp = False
         # Read config file and check for errors
-        self.config = self._register_singleton(config.GalaxyAppConfiguration, config.GalaxyAppConfiguration(**kwargs))
+        self.config = self._register_singleton(GalaxyAppConfiguration, GalaxyAppConfiguration(**kwargs))
         self.config.check()
         config_file = kwargs.get("global_conf", {}).get("__file__", None)
         if config_file:

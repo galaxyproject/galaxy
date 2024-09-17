@@ -155,7 +155,7 @@ class ToolSource(metaclass=ABCMeta):
     def parse_version(self) -> Optional[str]:
         """Parse a version describing the abstract tool."""
 
-    def parse_tool_module(self):
+    def parse_tool_module(self) -> Optional[Tuple[str, str]]:
         """Load Tool class from a custom module. (Optional).
 
         If not None, return pair containing module and class (as strings).
@@ -169,7 +169,7 @@ class ToolSource(metaclass=ABCMeta):
         """
         return None
 
-    def parse_tool_type(self):
+    def parse_tool_type(self) -> Optional[str]:
         """Load simple tool type string (e.g. 'data_source', 'default')."""
         return None
 
