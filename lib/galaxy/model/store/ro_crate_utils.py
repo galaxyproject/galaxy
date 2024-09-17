@@ -238,13 +238,12 @@ class WorkflowRunCrateProfileBuilder:
                         )
                     )
                     crate.mainEntity.append_to("creator", creator_entity)
-            
+
             # Add CWL workflow entity if exists
             crate.mainEntity["subjectOf"] = cwl_wf if cwl_wf else ""
 
         # Add tools used in the workflow
         self._add_tools(crate)
-
 
     def _add_tools(self, crate: ROCrate):
         tool_entities = []
@@ -271,7 +270,6 @@ class WorkflowRunCrateProfileBuilder:
 
                     # Join annotations into a single string or handle them individually, depending on your requirement
                     tool_description = " ".join(annotations_list) if annotations_list else ""
-
 
                 # Add tool entity to the RO-Crate
                 tool_entity = crate.add(
