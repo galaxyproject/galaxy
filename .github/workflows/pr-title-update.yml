@@ -1,0 +1,25 @@
+name: Update PR Title If Target Branch Is A Version Branch
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  update-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update PR title
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          TARGET_BRANCH=$(gh pr view $PR_NUMBER --json baseRefName -q .baseRefName)
+          PR_TITLE=$(gh pr view $PR_NUMBER --json title -q .title)
+          
+          if [[ "$TARGET_BRANCH" != "dev" ]]; then
+            VERSION=$(echo $TARGET_BRANCH | grep -oP '\d+\.\d+')
+            if [[ -n "$VERSION" && ! "$PR_TITLE" =~ ^\[$VERSION\] ]]; then
+              NEW_TITLE="[$VERSION] $PR_TITLE"
+              gh pr edit $PR_NUMBER --title "$NEW_TITLE"
+            fi
+          fi
