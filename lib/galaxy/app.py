@@ -814,20 +814,20 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             )
             self.application_stack.register_postfork_function(self.prune_history_audit_task.start)
             self.haltables.append(("HistoryAuditTablePruneTask", self.prune_history_audit_task.shutdown))
-        # Start the job manager
-        self.application_stack.register_postfork_function(self.job_manager.start)
         self.proxy_manager = ProxyManager(self.config)
 
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
 
         self.trs_proxy = self._register_singleton(TrsProxy, TrsProxy(self.config))
+        # We need InteractiveToolManager before the job handler starts
+        self.interactivetool_manager = InteractiveToolManager(self)
+        # Start the job manager
+        self.application_stack.register_postfork_function(self.job_manager.start)
         # Must be initialized after any component that might make use of stack messaging is configured. Alternatively if
         # it becomes more commonly needed we could create a prefork function registration method like we do with
         # postfork functions.
         self.application_stack.init_late_prefork()
-
-        self.interactivetool_manager = InteractiveToolManager(self)
 
         # Configure handling of signals
         handlers = {}
