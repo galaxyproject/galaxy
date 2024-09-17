@@ -186,6 +186,9 @@ else
 	$(IN_VENV) cd client && yarn install $(YARN_INSTALL_OPTS)
 endif
 
+format-xsd:
+	xmllint --format --output galaxy-tmp.xsd lib/galaxy/tool_util/xsd/galaxy.xsd
+	mv galaxy-tmp.xsd lib/galaxy/tool_util/xsd/galaxy.xsd
 
 build-api-schema:
 	$(IN_VENV) python scripts/dump_openapi_schema.py _schema.yaml

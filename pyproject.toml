@@ -217,6 +217,10 @@ allow-dict-calls-with-keyword-arguments = true
 combine-as-imports = true
 relative-imports-order = "closest-to-furthest"
 
+[tool.ruff.lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+keep-runtime-typing = true
+
 [tool.ruff.lint.per-file-ignores]
 # Don't check pyupgrade rules on tool scripts, which may use different Python versions
 "test/functional/tools/*" = ["UP"]
