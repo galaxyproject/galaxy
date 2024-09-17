@@ -1119,7 +1119,7 @@ def get_jobs_to_check_at_startup(session: galaxy_scoped_session, track_jobs_in_d
         # Filter out the jobs of inactive users.
         stmt = stmt.outerjoin(User).filter(or_((Job.user_id == null()), (User.active == true())))
 
-    return session.scalars(stmt)
+    return session.scalars(stmt).all()
 
 
 def get_job(session, *where_clauses):
