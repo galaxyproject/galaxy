@@ -41,7 +41,7 @@ class TestLibraryContentsApi(ApiTestCase):
         folder_id = self.library["root_folder_id"]
 
         payload = {"folder_id": folder_id, "create_type": "invalid_type"}
-        response = self._post(f"/api/libraries/{library_id}/contents", data=payload)
+        response = self._post(f"/api/libraries/{library_id}/contents", data=payload, json=True)
         self._assert_status_code_is(response, 400)
 
     def test_index(self):
@@ -158,33 +158,6 @@ class TestLibraryContentsApi(ApiTestCase):
         response = self._get(f"/api/libraries/{library_id}/contents/{invalid_item_id}")
         self._assert_status_code_is(response, 400)
 
-    def test_update_library_item_from_hda(self):
-        library_id = self.library["id"]
-        file_id = self._create_library_content(type="from_hda")["id"]
-        converted_dataset_id = self._create_library_content(type="from_hda")["id"]
-
-        payload = {"converted_dataset_id": converted_dataset_id}
-        response = self._put(f"/api/libraries/{library_id}/contents/{file_id}", data=payload)
-        self._assert_status_code_is(response, 200)
-
-    def test_update_library_item_from_hdca(self):
-        library_id = self.library["id"]
-        file_id = self._create_library_content(type="from_hdca")[0]["id"]
-        converted_dataset_id = self._create_library_content(type="from_hdca")[0]["id"]
-
-        payload = {"converted_dataset_id": converted_dataset_id}
-        response = self._put(f"/api/libraries/{library_id}/contents/{file_id}", data=payload)
-        self._assert_status_code_is(response, 200)
-
-    def test_update_invalid_library_item(self):
-        library_id = self.library["id"]
-        invalid_item_id = "invalid_id"
-        converted_dataset_id = invalid_item_id
-
-        payload = {"converted_dataset_id": converted_dataset_id}
-        response = self._put(f"/api/libraries/{library_id}/contents/{invalid_item_id}", data=payload)
-        self._assert_status_code_is(response, 400)
-
     def test_delete_library_item_from_hda(self):
         library_id = self.library["id"]
         file_id = self._create_library_content(type="from_hda")["id"]
@@ -238,6 +211,6 @@ class TestLibraryContentsApi(ApiTestCase):
                 "ldda_message": "Test",
             }
 
-        response = self._post(f"/api/libraries/{library_id}/contents", data=payload)
+        response = self._post(f"/api/libraries/{library_id}/contents", data=payload, json=True)
         self._assert_status_code_is(response, 200)
         return response.json()

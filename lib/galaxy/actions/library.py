@@ -10,7 +10,6 @@ from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
     RequestParameterInvalidException,
-    RequestParameterMissingException,
 )
 from galaxy.model.base import transaction
 from galaxy.tools.actions import upload_common
