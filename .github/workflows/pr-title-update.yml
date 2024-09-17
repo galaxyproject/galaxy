@@ -2,7 +2,7 @@ name: Update PR Title If Target Branch Is A Version Branch
 
 on:
   pull_request_target:
-    types: [opened]
+    types: [opened, edited]
     branches:
       - 'release_**'
 
