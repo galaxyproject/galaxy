@@ -99,7 +99,7 @@ class OIDCAuthnzBase(IdentityProvider):
                 )
             ),
             extra_params={},
-            extra_scopes=oidc_backend_config.get("extra_scopes",[]),
+            extra_scopes=oidc_backend_config.get("extra_scopes", []),
             authorization_endpoint=None,
             token_endpoint=None,
             end_session_endpoint=None,
