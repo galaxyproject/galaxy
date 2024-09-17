@@ -77,7 +77,7 @@ defineExpose({
 </script>
 
 <template>
-    <BCard v-show="hasExistingStsExportData || hasExistingRemoteExportData">
+    <BCard v-show="hasExistingStsExportData || hasExistingRemoteExportData" class="mb-2">
         <h2>Here is your latest export request:</h2>
         <PersistentTaskProgressMonitorAlert
             class="sts-export-monitor"
