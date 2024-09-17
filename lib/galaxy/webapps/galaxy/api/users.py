@@ -8,7 +8,6 @@ import logging
 import re
 from typing import (
     Any,
-    Dict,
     List,
     Optional,
     Union,
@@ -61,6 +60,7 @@ from galaxy.schema.schema import (
     UserBeaconSetting,
     UserCreationPayload,
     UserDeletionPayload,
+    UserUpdatePayload,
 )
 from galaxy.security.validate_user_input import (
     validate_email,
@@ -674,13 +674,14 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-        payload: Dict[Any, Any] = UserUpdateBody,
+        payload: UserUpdatePayload = UserUpdateBody,
         deleted: Optional[bool] = UserDeletedQueryParam,
     ) -> DetailedUserModel:
         deleted = deleted or False
         current_user = trans.user
         user_to_update = self.service.get_non_anonymous_user_full(trans, user_id, deleted=deleted)
-        self.service.user_deserializer.deserialize(user_to_update, payload, user=current_user, trans=trans)
+        data = payload.model_dump(exclude_unset=True)
+        self.service.user_deserializer.deserialize(user_to_update, data, user=current_user, trans=trans)
         return self.service.user_to_detailed_model(user_to_update)
 
     @router.delete(

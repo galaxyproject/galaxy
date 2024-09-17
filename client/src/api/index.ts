@@ -1,11 +1,21 @@
 /** Contains type alias and definitions related to Galaxy API models. */
 
-import { components } from "@/api/schema";
+import { GalaxyApi } from "@/api/client";
+import { type components, type GalaxyApiPaths } from "@/api/schema";
+
+export { type components, GalaxyApi, type GalaxyApiPaths };
 
 /**
  * Contains minimal information about a History.
  */
 export type HistorySummary = components["schemas"]["HistorySummary"];
+
+/**
+ * Represents the possible values for the `sort_by` parameter when querying histories.
+ * We can not extract this from the schema for an unknown reason.
+ * The desired solution would be: `GalaxyApiPaths["/api/histories"]["get"]["parameters"]["query"]["sort_by"]`.
+ */
+export type HistorySortByLiteral = "create_time" | "name" | "update_time" | "username" | undefined;
 
 /**
  * Contains minimal information about a History with additional content stats.
@@ -129,6 +139,14 @@ export interface DCECollection extends DCESummary {
 }
 
 /**
+ * DatasetCollectionElement specific type for datasets.
+ */
+export interface DCEDataset extends DCESummary {
+    element_type: "hda";
+    object: HDAObject;
+}
+
+/**
  * Contains summary information about a HDCA (HistoryDatasetCollectionAssociation).
  *
  * HDCAs are (top level only) history items that contains information about the association
@@ -147,6 +165,8 @@ export type HDCADetailed = components["schemas"]["HDCADetailed"];
  * DatasetCollections are immutable and contain one or more DCEs.
  */
 export type DCObject = components["schemas"]["DCObject"];
+
+export type HDAObject = components["schemas"]["HDAObject"];
 
 export type DatasetCollectionAttributes = components["schemas"]["DatasetCollectionAttributesResult"];
 
@@ -180,11 +200,22 @@ export function isHDCA(entry?: CollectionEntry): entry is HDCASummary {
     );
 }
 
+export function isDCE(item: object): item is DCESummary {
+    return item && "element_type" in item;
+}
+
 /**
  * Returns true if the given element of a collection is a DatasetCollection.
  */
 export function isCollectionElement(element: DCESummary): element is DCECollection {
     return element.element_type === "dataset_collection";
+}
+
+/**
+ * Returns true if the given element of a collection is a Dataset.
+ */
+export function isDatasetElement(element: DCESummary): element is DCEDataset {
+    return element.element_type === "hda";
 }
 
 /**
@@ -215,36 +246,31 @@ export function isHistoryItem(item: object): item is HistoryItemSummary {
     return item && "history_content_type" in item;
 }
 
-type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
+type RegisteredUserModel = components["schemas"]["DetailedUserModel"];
+type AnonymousUserModel = components["schemas"]["AnonUserModel"];
+type UserModel = RegisteredUserModel | AnonymousUserModel;
 
-/** Represents a registered user.**/
-export interface User extends QuotaUsageResponse {
-    id: string;
-    email: string;
-    tags_used: string[];
+export interface RegisteredUser extends RegisteredUserModel {
     isAnonymous: false;
-    is_admin?: boolean;
-    username?: string;
 }
 
-export interface AnonymousUser extends QuotaUsageResponse {
-    id?: string;
+export interface AnonymousUser extends AnonymousUserModel {
     isAnonymous: true;
-    is_admin?: false;
-    username?: string;
 }
-
-export type GenericUser = User | AnonymousUser;
 
 /** Represents any user, including anonymous users or session-less (null) users.**/
-export type AnyUser = GenericUser | null;
+export type AnyUser = RegisteredUser | AnonymousUser | null;
 
-export function isRegisteredUser(user: AnyUser): user is User {
-    return user !== null && !user?.isAnonymous;
+export function isRegisteredUser(user: AnyUser | UserModel): user is RegisteredUser {
+    return user !== null && "email" in user;
 }
 
-export function isAnonymousUser(user: AnyUser): user is AnonymousUser {
-    return user !== null && user.isAnonymous;
+export function isAnonymousUser(user: AnyUser | UserModel): user is AnonymousUser {
+    return user !== null && !isRegisteredUser(user);
+}
+
+export function isAdminUser(user: AnyUser | UserModel): user is RegisteredUser {
+    return isRegisteredUser(user) && user.is_admin;
 }
 
 export function userOwnsHistory(user: AnyUser, history: AnyHistory) {
@@ -274,3 +300,16 @@ export type DatasetTransform = {
     action: "to_posix_lines" | "spaces_to_tabs" | "datatype_groom";
     datatype_ext: "bam" | "qname_sorted.bam" | "qname_input_sorted.bam" | "isa-tab" | "isa-json";
 };
+
+/**
+ * Base type for all exceptions returned by the API.
+ */
+export type MessageException = components["schemas"]["MessageExceptionModel"];
+
+export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
+export type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
+export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
+export type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
+export type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
+
+export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];

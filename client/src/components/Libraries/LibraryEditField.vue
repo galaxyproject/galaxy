@@ -6,7 +6,7 @@
                 <b-form-textarea class="form-control" :value="text" rows="3" no-resize @change="updateValue" />
             </div>
             <!-- shrink long text -->
-            <div v-else-if="text.length > maxDescriptionLength && !isExpanded">
+            <div v-else-if="text && text.length > maxDescriptionLength && !isExpanded">
                 <!-- eslint-disable vue/no-v-html -->
                 <span
                     class="shrinked-description"
@@ -20,10 +20,10 @@
             <!-- Regular -->
             <div v-else>
                 <!-- eslint-disable-next-line vue/no-v-html -->
-                <div v-html="linkify(sanitize(text))"></div>
+                <div v-html="linkify(sanitize(text ?? ''))"></div>
                 <!-- hide toggle expand if text is too short -->
                 <a
-                    v-if="text.length > maxDescriptionLength"
+                    v-if="text && text.length > maxDescriptionLength"
                     class="more-text-btn"
                     href="javascript:void(0)"
                     @click="toggleDescriptionExpand"
@@ -47,6 +47,7 @@ export default {
     props: {
         text: {
             type: String,
+            required: false,
         },
         changedValue: {
             type: String,

@@ -124,7 +124,7 @@ onMounted(() => {
                 title="Login"
                 @click="openUrl('/login/start')" />
             <MastheadDropdown
-                v-if="!isAnonymous && !config.single_user"
+                v-if="currentUser && !isAnonymous && !config.single_user"
                 id="user"
                 class="loggedin-only"
                 icon="fa-user"

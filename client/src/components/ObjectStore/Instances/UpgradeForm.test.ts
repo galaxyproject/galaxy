@@ -2,14 +2,14 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
-import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
+import { useServerMock } from "@/api/client/__mocks__";
+import { type ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
-import type { UserConcreteObjectStore } from "./types";
+import { type UserConcreteObjectStore } from "./types";
 
 import UpgradeForm from "./UpgradeForm.vue";
 
-jest.mock("@/api/schema");
+const { server, http } = useServerMock();
 
 const localVue = getLocalVue(true);
 const router = injectTestRouter(localVue);
@@ -23,11 +23,13 @@ const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
             name: "oldvar",
             type: "string",
             help: "old var help",
+            default: "old default",
         },
         {
             name: "newvar",
             type: "string",
             help: "new var help",
+            default: "",
         },
     ],
     secrets: [
@@ -43,6 +45,7 @@ const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
     id: "moo",
     version: 2,
     badges: [],
+    hidden: false,
 };
 
 const INSTANCE: UserConcreteObjectStore = {
@@ -109,7 +112,12 @@ describe("UpgradeForm", () => {
             localVue,
             router,
         });
-        mockFetcher.path("/api/object_store_instances/{user_object_store_id}").method("put").mock({ data: INSTANCE });
+        server.use(
+            http.put("/api/object_store_instances/{user_object_store_id}", ({ response }) => {
+                return response(200).json(INSTANCE);
+            })
+        );
+
         await flushPromises();
         const submitElement = wrapper.find("#submit");
         submitElement.trigger("click");
@@ -128,12 +136,12 @@ describe("UpgradeForm", () => {
             localVue,
             router,
         });
-        mockFetcher
-            .path("/api/object_store_instances/{user_object_store_id}")
-            .method("put")
-            .mock(() => {
-                throw Error("problem upgrading");
-            });
+        server.use(
+            http.put("/api/object_store_instances/{user_object_store_id}", ({ response }) => {
+                return response("4XX").json({ err_msg: "problem upgrading", err_code: 400 }, { status: 400 });
+            })
+        );
+
         await flushPromises();
         const submitElement = wrapper.find("#submit");
         expect(wrapper.find(".object-store-instance-upgrade-error").exists()).toBe(false);

@@ -1,5 +1,5 @@
-import type { MaybeRefOrGetter } from "@vueuse/core";
-import type { Ref } from "vue";
+import { type MaybeRefOrGetter } from "@vueuse/core";
+import { type Ref } from "vue";
 
 /**
  * Reactively filter an array of objects, by comparing `filter` to all `fields`.

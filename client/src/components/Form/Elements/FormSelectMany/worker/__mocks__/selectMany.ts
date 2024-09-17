@@ -1,6 +1,6 @@
 import { reactive, ref, watch } from "vue";
 
-import type { SelectOption, useSelectMany as UseSelectMany } from "../selectMany";
+import { type SelectOption, type useSelectMany as UseSelectMany } from "../selectMany";
 import { main } from "../selectManyMain";
 
 jest.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany", () => ({

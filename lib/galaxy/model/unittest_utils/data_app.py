@@ -61,6 +61,7 @@ class GalaxyDataTestConfig(Bunch):
         self.object_store = "disk"
         self.object_store_check_old_style = False
         self.object_store_cache_path = "/tmp/cache"
+        self.object_store_cache_size = -1
         self.object_store_store_by = "uuid"
 
         self.umask = os.umask(0o77)

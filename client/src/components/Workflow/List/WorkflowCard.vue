@@ -48,13 +48,11 @@ const showRename = ref(false);
 const showPreview = ref(false);
 
 const workflow = computed(() => props.workflow);
+
 const shared = computed(() => {
-    if (userStore.currentUser) {
-        return userStore.currentUser.username !== workflow.value.owner;
-    } else {
-        return false;
-    }
+    return !userStore.matchesCurrentUsername(workflow.value.owner);
 });
+
 const description = computed(() => {
     if (workflow.value.annotations && workflow.value.annotations.length > 0) {
         return workflow.value.annotations[0].trim();

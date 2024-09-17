@@ -17,6 +17,7 @@ A multi-hour long video playlist covering these slides can be found at
   build_a_job_runner
   finding_and_improving_slow_code
   data_managers
+  data_source
   data_types
   faq
   writing_tests

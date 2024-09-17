@@ -7,6 +7,7 @@ from fastapi import (
     Response,
     status,
 )
+from pydantic import UUID4
 
 from galaxy.files.templates import FileSourceTemplateSummaries
 from galaxy.managers.context import ProvidesUserContext
@@ -16,10 +17,12 @@ from galaxy.managers.file_source_instances import (
     ModifyInstancePayload,
     UserFileSourceModel,
 )
+from galaxy.model import User
 from galaxy.util.config_templates import PluginStatus
 from . import (
     depends,
     DependsOnTrans,
+    DependsOnUser,
     Router,
 )
 
@@ -28,7 +31,7 @@ log = logging.getLogger(__name__)
 router = Router(tags=["file_sources"])
 
 
-UserFileSourceIdPathParam: str = Path(
+UserFileSourceIdPathParam: UUID4 = Path(
     ..., title="User File Source UUID", description="The UUID index for a persisted UserFileSourceStore object."
 )
 
@@ -36,6 +39,7 @@ UserFileSourceIdPathParam: str = Path(
 @router.cbv
 class FastAPIFileSources:
     file_source_instances_manager: FileSourceInstancesManager = depends(FileSourceInstancesManager)
+    user: User = DependsOnUser
 
     @router.get(
         "/api/file_source_templates",
@@ -92,7 +96,7 @@ class FastAPIFileSources:
     def instances_show(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_file_source_id: str = UserFileSourceIdPathParam,
+        user_file_source_id: UUID4 = UserFileSourceIdPathParam,
     ) -> UserFileSourceModel:
         return self.file_source_instances_manager.show(trans, user_file_source_id)
 
@@ -104,7 +108,7 @@ class FastAPIFileSources:
     def update_instance(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_file_source_id: str = UserFileSourceIdPathParam,
+        user_file_source_id: UUID4 = UserFileSourceIdPathParam,
         payload: ModifyInstancePayload = Body(...),
     ) -> UserFileSourceModel:
         return self.file_source_instances_manager.modify_instance(trans, user_file_source_id, payload)
@@ -118,7 +122,7 @@ class FastAPIFileSources:
     def purge_instance(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_file_source_id: str = UserFileSourceIdPathParam,
+        user_file_source_id: UUID4 = UserFileSourceIdPathParam,
     ):
         self.file_source_instances_manager.purge_instance(trans, user_file_source_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)

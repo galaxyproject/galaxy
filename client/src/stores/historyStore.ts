@@ -1,24 +1,22 @@
 import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
-import type {
-    AnyHistory,
-    HistoryContentsStats,
-    HistoryDevDetailed,
-    HistorySummary,
-    HistorySummaryExtended,
+import {
+    type AnyHistory,
+    GalaxyApi,
+    type HistoryContentsStats,
+    type HistoryDetailed,
+    type HistoryDevDetailed,
+    type HistorySummary,
+    type HistorySummaryExtended,
 } from "@/api";
-import { historyFetcher } from "@/api/histories";
-import { archiveHistory, unarchiveHistory } from "@/api/histories.archived";
+import { type ArchivedHistoryDetailed } from "@/api/histories.archived";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import {
-    cloneHistory,
     createAndSelectNewHistory,
-    deleteHistoryById,
     getCurrentHistoryFromServer,
     getHistoryByIdFromServer,
-    getHistoryCount,
     getHistoryList,
     secureHistoryOnServer,
     setCurrentHistoryOnServer,
@@ -98,9 +96,13 @@ export const useHistoryStore = defineStore("historyStore", () => {
     });
 
     async function setCurrentHistory(historyId: string) {
-        const currentHistory = (await setCurrentHistoryOnServer(historyId)) as HistoryDevDetailed;
-        selectHistory(currentHistory);
-        setFilterText(historyId, "");
+        try {
+            const currentHistory = (await setCurrentHistoryOnServer(historyId)) as HistoryDevDetailed;
+            selectHistory(currentHistory);
+            setFilterText(historyId, "");
+        } catch (error) {
+            rethrowSimple(error);
+        }
     }
 
     function setCurrentHistoryId(historyId: string) {
@@ -173,7 +175,21 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function copyHistory(history: HistorySummary, name: string, copyAll: boolean) {
-        const newHistory = (await cloneHistory(history, name, copyAll)) as HistorySummary;
+        const { data, error } = await GalaxyApi().POST("/api/histories", {
+            params: { query: { view: "detailed" } },
+            body: {
+                name,
+                all_datasets: copyAll,
+                history_id: history.id,
+                archive_type: undefined,
+            },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        const newHistory = data as HistoryDetailed;
         await handleTotalCountChange(1);
         return setCurrentHistory(newHistory.id);
     }
@@ -190,17 +206,76 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return filteredHistoryIds[0];
     }
 
-    async function deleteHistory(historyId: string, purge: boolean) {
-        const deletedHistory = (await deleteHistoryById(historyId, purge)) as HistorySummary;
-        const nextAvailableHistoryId = getNextAvailableHistoryId([deletedHistory.id]);
-        if (nextAvailableHistoryId) {
-            await setCurrentHistory(nextAvailableHistoryId);
-        } else {
-            await createNewHistory();
+    async function setNextAvailableHistoryId(excludedIds: string[]) {
+        if (currentHistoryId.value && excludedIds.includes(currentHistoryId.value)) {
+            const nextAvailableHistoryId = getNextAvailableHistoryId(excludedIds);
+            if (nextAvailableHistoryId) {
+                await setCurrentHistory(nextAvailableHistoryId);
+            } else {
+                await createNewHistory();
+            }
         }
+    }
+
+    async function deleteHistory(historyId: string, purge = false) {
+        const { data, error } = await GalaxyApi().DELETE("/api/histories/{history_id}", {
+            params: { path: { history_id: historyId }, query: { purge } },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        const deletedHistory = data as AnyHistory;
+        await setNextAvailableHistoryId([deletedHistory.id]);
         del(storedHistories.value, deletedHistory.id);
-        unpinHistories([deletedHistory.id]);
         await handleTotalCountChange(1, true);
+    }
+
+    async function deleteHistories(ids: string[], purge = false) {
+        const { data, error } = await GalaxyApi().PUT("/api/histories/batch/delete", {
+            body: { ids, purge },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        const deletedHistories = data as AnyHistory[];
+        const historyIds = deletedHistories.map((history) => history.id);
+        await setNextAvailableHistoryId(historyIds);
+        deletedHistories.forEach((history) => {
+            del(storedHistories.value, history.id);
+        });
+        await handleTotalCountChange(deletedHistories.length, true);
+    }
+
+    async function restoreHistory(historyId: string) {
+        const { data, error } = await GalaxyApi().POST("/api/histories/deleted/{history_id}/undelete", {
+            params: { path: { history_id: historyId } },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        const restoredHistory = data as AnyHistory;
+        await handleTotalCountChange(1);
+        setHistory(restoredHistory);
+    }
+
+    async function restoreHistories(ids: string[]) {
+        const { data, error } = await GalaxyApi().PUT("/api/histories/batch/undelete", {
+            body: { ids },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        const restoredHistories = data as AnyHistory[];
+        await handleTotalCountChange(restoredHistories.length);
+        setHistories(restoredHistories);
     }
 
     async function loadCurrentHistory(since?: string): Promise<HistoryDevDetailed | undefined> {
@@ -229,7 +304,13 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function loadTotalHistoryCount() {
-        totalHistoryCount.value = await getHistoryCount();
+        const { data, error } = await GalaxyApi().GET("/api/histories/count");
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        totalHistoryCount.value = data;
     }
 
     /** TODO:
@@ -288,11 +369,26 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function archiveHistoryById(historyId: string, archiveExportId?: string, purgeHistory = false) {
-        const history = await archiveHistory(historyId, archiveExportId, purgeHistory);
+        const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/archive", {
+            params: {
+                path: { history_id: historyId },
+            },
+            body: {
+                archive_export_id: archiveExportId,
+                purge_history: purgeHistory,
+            },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        const history = data as ArchivedHistoryDetailed;
         setHistory(history);
         if (!history.archived) {
             return;
         }
+
         // If the current history is archived, we need to switch to another one as it is
         // no longer part of the active histories.
         const nextHistoryId = getNextAvailableHistoryId([historyId]);
@@ -304,7 +400,18 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function unarchiveHistoryById(historyId: string, force?: boolean) {
-        const history = await unarchiveHistory(historyId, force);
+        const { data, error } = await GalaxyApi().PUT("/api/histories/{history_id}/archive/restore", {
+            params: {
+                path: { history_id: historyId },
+                query: { force },
+            },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        const history = data as ArchivedHistoryDetailed;
         setHistory(history);
         return history;
     }
@@ -315,17 +422,20 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function updateContentStats(historyId: string) {
-        try {
-            const { data } = await historyFetcher({
-                history_id: historyId,
-                keys: CONTENT_STATS_KEYS.join(","),
-            });
-            const contentStats = { id: historyId, ...data } as HistoryContentsStats;
-            setHistory(contentStats);
-            return contentStats;
-        } catch (error) {
+        const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
+            params: {
+                path: { history_id: historyId },
+                query: { keys: CONTENT_STATS_KEYS.join(",") },
+            },
+        });
+
+        if (error) {
             rethrowSimple(error);
         }
+
+        const contentStats = { id: historyId, ...data } as HistoryContentsStats;
+        setHistory(contentStats);
+        return contentStats;
     }
 
     return {
@@ -334,6 +444,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         currentHistoryId,
         currentFilterText,
         pinnedHistories,
+        storedHistories,
         getHistoryById,
         getHistoryNameById,
         setCurrentHistory,
@@ -348,6 +459,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
         copyHistory,
         createNewHistory,
         deleteHistory,
+        deleteHistories,
+        restoreHistory,
+        restoreHistories,
+        handleTotalCountChange,
         loadCurrentHistory,
         loadHistories,
         loadHistoryById,

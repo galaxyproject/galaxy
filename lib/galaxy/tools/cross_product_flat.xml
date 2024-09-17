@@ -72,12 +72,66 @@
 Synopsis
 ========
 
+@CROSS_PRODUCT_INTRO@
 
+====================
+How to use this tool
+====================
 
-===========
-Description
-===========
+@GALAXY_DOT_PRODUCT_SEMANTICS@
 
+Running input lists through this tool produces new dataset lists (described in detail below) that when using
+the same natural element-wise matching "map over" semantics described above produce every combination of the
+elements of the two lists compared against each other. Running a tool with these two outputs instead of the inital
+two input produces a list of the comparison of each combination of pairs from the respective inputs.
+
+.. image:: ${static_path}/images/tools/collection_ops/flat_crossproduct_output.png
+  :alt: The Flat Cartesian Product of Two Collections
+  :width: 500
+
+The result of running a subsequent tool with the outputs produced by this tool will be a much larger list
+whose element identifiers are the concatenation of the combinations of the elements identifiers from the
+two input lists.
+
+.. image:: ${static_path}/images/tools/collection_ops/flat_crossproduct_separator.png
+  :alt: Flat Cross Product Identifier Separator
+  :width: 500
+
+============================================
+What this tool does (technical details)
+============================================
+
+This tool consumes two lists - we will call them ``input_a`` and ``input_b``. If ``input_a``
+has length ``n`` and dataset elements identified as ``a1``, ``a2``, ... ``an`` and ``input_b``
+has length ``m`` and dataset elements identified as ``b1``, ``b2``, ... ``bm``, then this tool
+produces a pair of larger lists - each of size ``n*m``.
+
+Both output lists will be the same length and contain the same set of element identifiers in the
+same order. If the kth input can be described as ``(i-1)*n + (j-1)`` where ``1 <= i <= m`` and ``1 <= j <= n`` 
+then the element identifier for this kth element is the concatenation of the element identifier for
+the ith item of ``input_a`` and the jth item of ``input_b``.
+
+In the first output list, this kth element will be the ith element of ``input_a``. In the second
+output list, the kth element will be the jth element of ``input_b``.
+
+.. image:: ${static_path}/images/tools/collection_ops/flat_cross_product_outputs.png
+  :alt: Flat Cross Product Outputs
+  :width: 500
+
+These list structures might appear to be a little odd, but they have the very useful property
+that if you match up corresponding elements of the lists the result is each combination of
+elements in ``input_a`` and ``input_b`` are matched up once.
+
+.. image:: ${static_path}/images/tools/collection_ops/flat_cross_product_matched.png
+  :alt: Flat Cross Product Matching Datasets
+  :width: 500
+
+Running a downstream comparison tool that compares two datasets with these two lists produces a
+new list with every combination of comparisons.
+
+.. image:: ${static_path}/images/tools/collection_ops/flat_cross_product_downstream.png
+  :alt: Flat Cross Product All-vs-All Result
+  :width: 500
 
 ----
 

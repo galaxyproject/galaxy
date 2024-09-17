@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { WorkflowLabel } from "./labels";
+import { type WorkflowLabel } from "./labels";
 
 interface LabelSelectorProps {
     hasLabels: boolean;

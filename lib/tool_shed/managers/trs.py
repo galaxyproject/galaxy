@@ -74,10 +74,14 @@ def tool_classes() -> List[ToolClass]:
     return [ToolClass(id="galaxy_tool", name="Galaxy Tool", description="Galaxy XML Tools")]
 
 
-def trs_tool_id_to_repository(trans: ProvidesRepositoriesContext, trs_tool_id: str) -> Repository:
+def trs_tool_id_to_guid(trans: ProvidesRepositoriesContext, trs_tool_id: str) -> str:
     guid = decode_identifier(trans.repositories_hostname, trs_tool_id)
     guid = remove_protocol_and_user_from_clone_url(guid)
-    return guid_to_repository(trans.app, guid)
+    return guid
+
+
+def trs_tool_id_to_repository(trans: ProvidesRepositoriesContext, trs_tool_id: str) -> Repository:
+    return guid_to_repository(trans.app, trs_tool_id_to_guid(trans, trs_tool_id))
 
 
 def get_repository_metadata_by_tool_version(
@@ -104,7 +108,7 @@ def get_tools_for(repository_metadata: RepositoryMetadata) -> List[Dict[str, Any
 
 def trs_tool_id_to_repository_metadata(
     trans: ProvidesRepositoriesContext, trs_tool_id: str
-) -> Optional[Tuple[Repository, Dict[str, RepositoryMetadata]]]:
+) -> Tuple[Repository, Dict[str, RepositoryMetadata]]:
     tool_guid = decode_identifier(trans.repositories_hostname, trs_tool_id)
     tool_guid = remove_protocol_and_user_from_clone_url(tool_guid)
     _, tool_id = tool_guid.rsplit("/", 1)
@@ -112,7 +116,7 @@ def trs_tool_id_to_repository_metadata(
     app = trans.app
     versions: Dict[str, RepositoryMetadata] = get_repository_metadata_by_tool_version(app, repository, tool_id)
     if not versions:
-        return None
+        raise ObjectNotFound()
 
     return repository, versions
 
@@ -121,8 +125,6 @@ def get_tool(trans: ProvidesRepositoriesContext, trs_tool_id: str) -> Tool:
     guid = decode_identifier(trans.repositories_hostname, trs_tool_id)
     guid = remove_protocol_and_user_from_clone_url(guid)
     repo_metadata = trs_tool_id_to_repository_metadata(trans, trs_tool_id)
-    if not repo_metadata:
-        raise ObjectNotFound()
     repository, metadata_by_version = repo_metadata
 
     repo_owner = repository.user.username

@@ -7,7 +7,7 @@ import { BAlert, BButton, BSpinner, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { copyCollection } from "@/api/datasetCollections";
+import { GalaxyApi } from "@/api";
 import { updateContentFields } from "@/components/History/model/queries";
 import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "@/components/providers";
 import { useConfig } from "@/composables/config";
@@ -17,8 +17,6 @@ import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
-
-import { HistoryContentBulkOperationPayload, updateHistoryItemsBulk } from "./services";
 
 import ChangeDatatypeTab from "@/components/Collections/common/ChangeDatatypeTab.vue";
 import DatabaseEditTab from "@/components/Collections/common/DatabaseEditTab.vue";
@@ -55,8 +53,25 @@ const collectionChangeKey = ref(0);
 const attributesData = computed(() => {
     return collectionAttributesStore.getAttributes(props.collectionId);
 });
+const attributesLoadError = computed(() =>
+    errorMessageAsString(collectionAttributesStore.hasItemLoadError(props.collectionId))
+);
+
 const collection = computed(() => {
     return collectionStore.getCollectionById(props.collectionId);
+});
+const collectionLoadError = computed(() => {
+    if (collection.value) {
+        return errorMessageAsString(collectionStore.hasLoadingCollectionElementsError(collection.value));
+    }
+    return "";
+});
+watch([attributesLoadError, collectionLoadError], () => {
+    if (attributesLoadError.value) {
+        errorMessage.value = attributesLoadError.value;
+    } else if (collectionLoadError.value) {
+        errorMessage.value = collectionLoadError.value;
+    }
 });
 const databaseKeyFromElements = computed(() => {
     return attributesData.value?.dbkey;
@@ -96,12 +111,14 @@ async function clickedSave(attribute: string, newValue: any) {
         return;
     }
 
-    const dbKey = newValue.id;
+    const dbKey = newValue.id as string;
 
-    try {
-        await copyCollection(props.collectionId, dbKey);
-    } catch (err) {
-        errorMessage.value = errorMessageAsString(err, "History import failed.");
+    const { error } = await GalaxyApi().POST("/api/dataset_collections/{id}/copy", {
+        params: { path: { id: props.collectionId } },
+        body: { dbkey: dbKey },
+    });
+    if (error) {
+        errorMessage.value = errorMessageAsString(error, `Changing ${attribute} failed.`);
     }
 }
 
@@ -119,36 +136,43 @@ async function clickedConvert(selectedConverter: any) {
         await axios.post(url, data).catch(handleError);
         successMessage.value = "Conversion started successfully.";
     } catch (err) {
-        errorMessage.value = errorMessageAsString(err, "History import failed.");
+        errorMessage.value = errorMessageAsString(err, "Conversion failed.");
     }
 }
 
 // TODO: Replace with actual datatype type
 async function clickedDatatypeChange(selectedDatatype: any) {
-    const data: HistoryContentBulkOperationPayload = {
-        items: [
-            {
-                history_content_type: "dataset_collection",
-                id: props.collectionId,
-            },
-        ],
-        operation: "change_datatype",
-        params: {
-            type: "change_datatype",
-            datatype: selectedDatatype.id,
-        },
-    };
-
-    try {
-        await updateHistoryItemsBulk(currentHistoryId.value ?? "", data);
-        successMessage.value = "Datatype changed successfully.";
-    } catch (err) {
-        errorMessage.value = errorMessageAsString(err, "History import failed.");
+    if (!currentHistoryId.value) {
+        errorMessage.value = "No current history selected.";
+        return;
     }
+
+    const { error } = await GalaxyApi().PUT("/api/histories/{history_id}/contents/bulk", {
+        params: { path: { history_id: currentHistoryId.value } },
+        body: {
+            items: [
+                {
+                    history_content_type: "dataset_collection",
+                    id: props.collectionId,
+                },
+            ],
+            operation: "change_datatype",
+            params: {
+                type: "change_datatype",
+                datatype: selectedDatatype.id,
+            },
+        },
+    });
+
+    if (error) {
+        errorMessage.value = errorMessageAsString(error, "Datatype change failed.");
+        return;
+    }
+    successMessage.value = "Datatype changed successfully.";
 }
 
 function handleError(err: any) {
-    errorMessage.value = errorMessageAsString(err, "History import failed.");
+    errorMessage.value = errorMessageAsString(err, "Datatype conversion failed.");
 
     if (err?.data?.stderr) {
         jobError.value = err.data;
@@ -191,14 +215,14 @@ async function saveAttrs() {
             {{ localize(infoMessage) }}
         </BAlert>
 
-        <BAlert v-if="jobError" show variant="danger" dismissible>
+        <BAlert v-if="errorMessage" show variant="danger">
             {{ localize(errorMessage) }}
         </BAlert>
 
         <BAlert v-if="successMessage" show variant="success" dismissible>
             {{ localize(successMessage) }}
         </BAlert>
-        <BTabs class="mt-3">
+        <BTabs v-if="!errorMessage" class="mt-3">
             <BTab title-link-class="collection-edit-attributes-nav" @click="updateInfoMessage('')">
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faBars" class="mr-1" />

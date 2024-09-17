@@ -106,9 +106,13 @@ class UsesTools(UsesApp):
         self.app.config.tool_secret = "testsecret"
         self.app.config.track_jobs_in_database = False
 
-    def __setup_tool(self):
+    @property
+    def tool_source(self):
         tool_source = get_tool_source(self.tool_file)
-        self.tool = create_tool_from_source(self.app, tool_source, config_file=self.tool_file)
+        return tool_source
+
+    def __setup_tool(self):
+        self.tool = create_tool_from_source(self.app, self.tool_source, config_file=self.tool_file)
         if getattr(self, "tool_action", None):
             self.tool.tool_action = self.tool_action
         return self.tool

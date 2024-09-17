@@ -41,7 +41,8 @@ class ZipstreamWrapper:
     def get_headers(self) -> Dict[str, str]:
         headers = {}
         if self.archive_name:
-            headers["Content-Disposition"] = f'attachment; filename="{self.archive_name}.zip"'
+            archive_name = self.archive_name.encode("latin-1", "replace").decode("latin-1")
+            headers["Content-Disposition"] = f'attachment; filename="{archive_name}.zip"'
         if self.upstream_mod_zip:
             headers["X-Archive-Files"] = "zip"
         else:

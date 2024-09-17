@@ -122,12 +122,15 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             sort_by=invocation_payload.sort_by,
             sort_desc=invocation_payload.sort_desc,
             include_nested_invocations=invocation_payload.include_nested_invocations,
+            check_ownership=False,
         )
         invocation_dict = self.serialize_workflow_invocations(invocations, serialization_params)
         return invocation_dict, total_matches
 
     def show(self, trans, invocation_id, serialization_params, eager=False):
-        wfi = self._workflows_manager.get_invocation(trans, invocation_id, eager)
+        wfi = self._workflows_manager.get_invocation(
+            trans, invocation_id, eager, check_ownership=False, check_accessible=True
+        )
         return self.serialize_workflow_invocation(wfi, serialization_params)
 
     def cancel(self, trans, invocation_id, serialization_params):
@@ -139,7 +142,9 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         return wfi_report
 
     def show_invocation_step(self, trans, step_id) -> InvocationStep:
-        wfi_step = self._workflows_manager.get_invocation_step(trans, step_id)
+        wfi_step = self._workflows_manager.get_invocation_step(
+            trans, step_id, check_ownership=False, check_accessible=True
+        )
         return self.serialize_workflow_invocation_step(wfi_step)
 
     def update_invocation_step(self, trans, step_id, action):
@@ -164,7 +169,9 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
     ) -> AsyncFile:
         ensure_celery_tasks_enabled(trans.app.config)
         model_store_format = payload.model_store_format
-        workflow_invocation = self._workflows_manager.get_invocation(trans, invocation_id, eager=True)
+        workflow_invocation = self._workflows_manager.get_invocation(
+            trans, invocation_id, eager=True, check_ownership=False, check_accessible=True
+        )
         if not workflow_invocation:
             raise ObjectNotFound()
         try:
@@ -190,7 +197,9 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         self, trans, invocation_id: DecodedDatabaseIdField, payload: WriteInvocationStoreToPayload
     ) -> AsyncTaskResultSummary:
         ensure_celery_tasks_enabled(trans.app.config)
-        workflow_invocation = self._workflows_manager.get_invocation(trans, invocation_id, eager=True)
+        workflow_invocation = self._workflows_manager.get_invocation(
+            trans, invocation_id, eager=True, check_ownership=False, check_accessible=True
+        )
         if not workflow_invocation:
             raise ObjectNotFound()
         request = WriteInvocationTo(

@@ -7,10 +7,11 @@ import { filter } from "underscore";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GalaxyApi } from "@/api";
 import { helpHtml, WorkflowFilters } from "@/components/Workflow/List/WorkflowFilters";
-import { loadWorkflows } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -130,22 +131,30 @@ async function load(overlayLoading = false, silent = false) {
     }
 
     try {
-        const { data, headers } = await loadWorkflows({
-            sortBy: sortBy.value,
-            sortDesc: sortDesc.value,
-            limit: limit.value,
-            offset: offset.value,
-            filterText: search?.trim(),
-            showPublished: published.value,
-            skipStepCounts: true,
+        const { response, data, error } = await GalaxyApi().GET("/api/workflows", {
+            params: {
+                query: {
+                    sort_by: sortBy.value,
+                    sort_desc: sortDesc.value,
+                    limit: limit.value,
+                    offset: offset.value,
+                    search: search?.trim(),
+                    show_published: published.value,
+                    skip_step_counts: true,
+                },
+            },
         });
+
+        if (error) {
+            rethrowSimple(error);
+        }
 
         let filteredWorkflows = showBookmarked.value
             ? filter(data, (workflow: any) => workflow.show_in_tool_panel)
             : data;
 
         if (props.activeList === "my") {
-            filteredWorkflows = filter(filteredWorkflows, (w: any) => w.owner === userStore.currentUser?.username);
+            filteredWorkflows = filter(filteredWorkflows, (w: any) => userStore.matchesCurrentUsername(w.owner));
         }
 
         workflowsLoaded.value = filteredWorkflows;
@@ -153,7 +162,7 @@ async function load(overlayLoading = false, silent = false) {
         if (showBookmarked.value) {
             totalWorkflows.value = filteredWorkflows.length;
         } else {
-            totalWorkflows.value = parseInt(headers.get("Total_matches") || "0", 10) || 0;
+            totalWorkflows.value = parseInt(response.headers.get("Total_matches") || "0", 10) || 0;
         }
     } catch (e) {
         Toast.error(`Failed to load workflows: ${e}`);

@@ -2,12 +2,8 @@
 import { BButton, BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import {
-    BrowsableFilesSourcePlugin,
-    CreatedEntry,
-    createRemoteEntry,
-    FilterFileSourcesOptions,
-} from "@/api/remoteFiles";
+import { GalaxyApi } from "@/api";
+import { type BrowsableFilesSourcePlugin, type CreatedEntry, type FilterFileSourcesOptions } from "@/api/remoteFiles";
 import { useToast } from "@/composables/toast";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -78,12 +74,20 @@ function doExport() {
 }
 
 async function doCreateRecord() {
-    try {
-        newEntry.value = await createRemoteEntry(sourceUri.value, recordName.value);
-        recordUri.value = newEntry.value.uri;
-    } catch (e) {
-        toast.error(errorMessageAsString(e));
+    const { data, error } = await GalaxyApi().POST("/api/remote_files", {
+        body: {
+            target: sourceUri.value,
+            name: recordName.value,
+        },
+    });
+
+    if (error) {
+        toast.error(errorMessageAsString(error));
+        return;
     }
+
+    newEntry.value = data;
+    recordUri.value = newEntry.value.uri;
 }
 
 function clearInputs() {

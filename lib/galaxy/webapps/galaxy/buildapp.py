@@ -7,6 +7,7 @@ import logging
 import sys
 import threading
 import traceback
+from typing import Optional
 from urllib.parse import urljoin
 
 from paste import httpexceptions
@@ -20,6 +21,7 @@ import galaxy.web.framework
 import galaxy.webapps.base.webapp
 from galaxy import util
 from galaxy.security.validate_user_input import VALID_PUBLICNAME_RE
+from galaxy.structured_app import MinimalApp
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 from galaxy.web.framework.middleware.error import ErrorMiddleware
@@ -33,6 +35,12 @@ log = logging.getLogger(__name__)
 
 class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
     injection_aware = True
+
+    def __init__(
+        self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: Optional[str] = None
+    ) -> None:
+        super().__init__(galaxy_app, session_cookie, name)
+        self.session_factories.append(galaxy_app.install_model)
 
 
 def app_factory(*args, **kwargs):
@@ -81,17 +89,18 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_route("/activate", controller="user", action="activate")
 
     # Authentication endpoints.
-    webapp.add_route("/authnz/", controller="authnz", action="index", provider=None)
-    webapp.add_route("/authnz/{provider}/login", controller="authnz", action="login", provider=None)
-    webapp.add_route("/authnz/{provider}/callback", controller="authnz", action="callback", provider=None)
-    webapp.add_route(
-        "/authnz/{provider}/disconnect/{email}", controller="authnz", action="disconnect", provider=None, email=None
-    )
-    webapp.add_route("/authnz/{provider}/logout", controller="authnz", action="logout", provider=None)
-    webapp.add_route("/authnz/{provider}/create_user", controller="authnz", action="create_user")
-    # Returns the provider specific logout url for currently logged in provider
-    webapp.add_route("/authnz/logout", controller="authnz", action="get_logout_url")
-    webapp.add_route("/authnz/get_cilogon_idps", controller="authnz", action="get_cilogon_idps")
+    if app.config.enable_oidc:
+        webapp.add_route("/authnz/", controller="authnz", action="index", provider=None)
+        webapp.add_route("/authnz/{provider}/login", controller="authnz", action="login", provider=None)
+        webapp.add_route("/authnz/{provider}/callback", controller="authnz", action="callback", provider=None)
+        webapp.add_route(
+            "/authnz/{provider}/disconnect/{email}", controller="authnz", action="disconnect", provider=None, email=None
+        )
+        webapp.add_route("/authnz/{provider}/logout", controller="authnz", action="logout", provider=None)
+        webapp.add_route("/authnz/{provider}/create_user", controller="authnz", action="create_user")
+        # Returns the provider specific logout url for currently logged in provider
+        webapp.add_route("/authnz/logout", controller="authnz", action="get_logout_url")
+        webapp.add_route("/authnz/get_cilogon_idps", controller="authnz", action="get_cilogon_idps")
 
     # These two routes handle our simple needs at the moment
     webapp.add_route(
@@ -213,6 +222,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/form/{form_id}")
     webapp.add_client_route("/admin/api_keys")
     webapp.add_client_route("/carbon_emissions_calculations")
+    webapp.add_client_route("/help/terms/{term_id}")
     webapp.add_client_route("/datatypes")
     webapp.add_client_route("/login/start")
     webapp.add_client_route("/tools/list")
@@ -579,7 +589,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["POST"]),
     )
 
-    webapp.mapper.resource("visualization", "visualizations", path_prefix="/api")
     webapp.mapper.resource("plugins", "plugins", path_prefix="/api")
     webapp.mapper.connect("/api/workflows/build_module", action="build_module", controller="workflows")
     webapp.mapper.connect(

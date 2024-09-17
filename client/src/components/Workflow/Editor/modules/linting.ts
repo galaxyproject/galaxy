@@ -1,7 +1,7 @@
-import type { DatatypesMapperModel } from "@/components/Datatypes/model";
-import type { UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
-import type { useWorkflowStores } from "@/composables/workflowStores";
-import type { Step, Steps } from "@/stores/workflowStepStore";
+import { type DatatypesMapperModel } from "@/components/Datatypes/model";
+import { type UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
+import { type useWorkflowStores } from "@/composables/workflowStores";
+import { type Step, type Steps } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { terminalFactory } from "./terminals";

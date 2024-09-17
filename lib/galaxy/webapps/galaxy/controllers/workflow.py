@@ -320,6 +320,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # Optionally target a different history than the current one.
             history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=history)
         if not user:
+            trans.response.status = 403
             return trans.show_error_message("Must be logged in to create workflows")
         if (job_ids is None and dataset_ids is None) or workflow_name is None:
             jobs, warnings = summarize(trans, history)

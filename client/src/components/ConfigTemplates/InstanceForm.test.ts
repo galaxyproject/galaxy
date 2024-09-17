@@ -1,7 +1,7 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { FormEntry } from "./formUtil";
+import { type FormEntry } from "./formUtil";
 
 import InstanceForm from "./InstanceForm.vue";
 

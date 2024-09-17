@@ -1,6 +1,6 @@
-import type { FileSourceTemplateSummary } from "@/api/fileSources";
-import type { UserConcreteObjectStore } from "@/components/ObjectStore/Instances/types";
-import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
+import { type FileSourceTemplateSummary } from "@/api/fileSources";
+import { type UserConcreteObjectStore } from "@/components/ObjectStore/Instances/types";
+import { type ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
 export const STANDARD_OBJECT_STORE_TEMPLATE: ObjectStoreTemplateSummary = {
     type: "aws_s3",
@@ -11,11 +11,13 @@ export const STANDARD_OBJECT_STORE_TEMPLATE: ObjectStoreTemplateSummary = {
             name: "oldvar",
             type: "string",
             help: "old var help",
+            default: "old default",
         },
         {
             name: "newvar",
             type: "string",
             help: "new var help",
+            default: "new default",
         },
     ],
     secrets: [
@@ -31,6 +33,7 @@ export const STANDARD_OBJECT_STORE_TEMPLATE: ObjectStoreTemplateSummary = {
     id: "moo",
     version: 2,
     badges: [],
+    hidden: false,
 };
 
 export const STANDARD_FILE_SOURCE_TEMPLATE: FileSourceTemplateSummary = {
@@ -42,11 +45,13 @@ export const STANDARD_FILE_SOURCE_TEMPLATE: FileSourceTemplateSummary = {
             name: "oldvar",
             type: "string",
             help: "old var help",
+            default: "old default",
         },
         {
             name: "newvar",
             type: "string",
             help: "new var help",
+            default: "new default",
         },
     ],
     secrets: [
@@ -61,6 +66,7 @@ export const STANDARD_FILE_SOURCE_TEMPLATE: FileSourceTemplateSummary = {
     ],
     id: "moo",
     version: 2,
+    hidden: false,
 };
 
 export const GENERIC_FTP_FILE_SOURCE_TEMPLATE: FileSourceTemplateSummary = {
@@ -69,12 +75,19 @@ export const GENERIC_FTP_FILE_SOURCE_TEMPLATE: FileSourceTemplateSummary = {
     name: "Generic FTP Server",
     description: "Generic FTP configuration with all configuration options exposed.",
     variables: [
-        { name: "host", label: "FTP Host", type: "string", help: "Host of FTP Server to connect to." },
+        {
+            name: "host",
+            label: "FTP Host",
+            type: "string",
+            help: "Host of FTP Server to connect to.",
+            default: "ftp.example.com",
+        },
         {
             name: "user",
             label: "FTP User",
             type: "string",
             help: "Username to login to target FTP server with.",
+            default: "anonymous",
         },
         {
             name: "writable",
@@ -98,6 +111,8 @@ export const GENERIC_FTP_FILE_SOURCE_TEMPLATE: FileSourceTemplateSummary = {
             help: "Password to connect to FTP server with.",
         },
     ],
+    hidden: false,
+    version: 1,
 };
 
 export const OBJECT_STORE_INSTANCE: UserConcreteObjectStore = {

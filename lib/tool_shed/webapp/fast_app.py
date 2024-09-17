@@ -166,7 +166,7 @@ def initialize_fast_app(gx_webapp, tool_shed_app):
     app = get_fastapi_instance()
     add_exception_handler(app)
     add_request_id_middleware(app)
-    from .buildapp import SHED_API_VERSION
+    from .config import SHED_API_VERSION
 
     def mount_static(directory: Path):
         name = directory.name

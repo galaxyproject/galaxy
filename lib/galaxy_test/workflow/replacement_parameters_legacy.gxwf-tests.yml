@@ -1,0 +1,12 @@
+- doc: |
+    Test to verify legacy behavior of implicit runtime parameters continues to function correctly.
+  job:
+    replacement_parameters:
+      replaceme: moocow
+  outputs:
+    out1:
+      metadata:
+        name: 'moocow name'
+    out2:
+      metadata:
+        name: 'moocow name 2'

@@ -1,24 +1,49 @@
 import { defineStore } from "pinia";
 
-import {
-    fetchInvocationDetails,
-    fetchInvocationJobsSummary,
-    fetchInvocationStep,
-    type WorkflowInvocation,
-    type WorkflowInvocationJobsSummary,
-    type WorkflowInvocationStep,
-} from "@/api/invocations";
-import { useKeyedCache } from "@/composables/keyedCache";
+import { GalaxyApi } from "@/api";
+import { type InvocationJobsSummary, type InvocationStep, type WorkflowInvocation } from "@/api/invocations";
+import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export const useInvocationStore = defineStore("invocationStore", () => {
+    async function fetchInvocationDetails(params: FetchParams): Promise<WorkflowInvocation> {
+        const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}", {
+            params: { path: { invocation_id: params.id } },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+        return data;
+    }
+
+    async function fetchInvocationJobsSummary(params: FetchParams): Promise<InvocationJobsSummary> {
+        const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}/jobs_summary", {
+            params: { path: { invocation_id: params.id } },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+        return data;
+    }
+
+    async function fetchInvocationStep(params: FetchParams): Promise<InvocationStep> {
+        const { data, error } = await GalaxyApi().GET("/api/invocations/steps/{step_id}", {
+            params: { path: { step_id: params.id } },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+        return data;
+    }
+
     const { getItemById: getInvocationById, fetchItemById: fetchInvocationForId } =
         useKeyedCache<WorkflowInvocation>(fetchInvocationDetails);
 
     const { getItemById: getInvocationJobsSummaryById, fetchItemById: fetchInvocationJobsSummaryForId } =
-        useKeyedCache<WorkflowInvocationJobsSummary>(fetchInvocationJobsSummary);
+        useKeyedCache<InvocationJobsSummary>(fetchInvocationJobsSummary);
 
     const { getItemById: getInvocationStepById, fetchItemById: fetchInvocationStepById } =
-        useKeyedCache<WorkflowInvocationStep>(fetchInvocationStep);
+        useKeyedCache<InvocationStep>(fetchInvocationStep);
 
     return {
         getInvocationById,

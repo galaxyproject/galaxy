@@ -177,6 +177,7 @@ describe("UploadQueue", () => {
                     spaceToTab: true,
                     status: "queued",
                     toPosixLines: false,
+                    targetHistoryId: "historyId",
                 };
             },
             get: (index) => fileEntries[index],

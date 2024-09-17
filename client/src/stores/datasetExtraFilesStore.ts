@@ -1,12 +1,23 @@
 import { defineStore } from "pinia";
 
-import { DatasetExtraFiles, fetchDatasetExtraFiles } from "@/api/datasets";
-import { useKeyedCache } from "@/composables/keyedCache";
+import { GalaxyApi } from "@/api";
+import { type DatasetExtraFiles } from "@/api/datasets";
+import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export const useDatasetExtraFilesStore = defineStore("datasetExtraFilesStore", () => {
-    const { storedItems, getItemById, isLoadingItem, fetchItemById } = useKeyedCache<DatasetExtraFiles>((params) =>
-        fetchDatasetExtraFiles({ dataset_id: params.id })
-    );
+    async function fetchDatasetExtraFiles(params: FetchParams): Promise<DatasetExtraFiles> {
+        const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}/extra_files", {
+            params: { path: { dataset_id: params.id } },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+        return data;
+    }
+
+    const { storedItems, getItemById, isLoadingItem, fetchItemById } =
+        useKeyedCache<DatasetExtraFiles>(fetchDatasetExtraFiles);
 
     return {
         storedDatasetExtraFiles: storedItems,

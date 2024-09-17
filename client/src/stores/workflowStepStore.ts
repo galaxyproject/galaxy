@@ -1,6 +1,6 @@
 import { computed, del, ref, set } from "vue";
 
-import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
+import { type CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
 import { type Connection, getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { assertDefined } from "@/utils/assertions";
 
@@ -50,6 +50,7 @@ export declare const ParameterTypes: "text" | "integer" | "float" | "boolean" | 
 export interface ParameterOutput extends Omit<DataOutput, "type" | "extensions"> {
     type: typeof ParameterTypes;
     parameter: true;
+    multiple: boolean;
 }
 
 interface BaseStepInput {

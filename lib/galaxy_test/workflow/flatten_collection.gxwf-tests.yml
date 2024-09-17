@@ -1,0 +1,18 @@
+- doc: | 
+    Test to verify collection flatten collection operation in the context of a workflow.
+  job: {}
+  outputs:
+    out:
+      elements:
+        'oe1-ie1':
+          asserts:
+          - that: has_text
+            text: "A"
+        'oe1-ie2':
+          asserts:
+          - that: has_text
+            text: "B"
+        'oe2-ie1':
+          asserts:
+          - that: has_text
+            text: "C"

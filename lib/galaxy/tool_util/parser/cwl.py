@@ -11,6 +11,7 @@ from galaxy.tool_util.cwl.parser import (
 )
 from galaxy.tool_util.deps import requirements
 from .interface import (
+    HelpContent,
     PageSource,
     PagesSource,
     ToolSource,
@@ -80,7 +81,11 @@ class CwlToolSource(ToolSource):
         return []
 
     def parse_help(self):
-        return self.tool_proxy.doc()
+        doc = self.tool_proxy.doc()
+        if doc:
+            return HelpContent(format="plain_text", content=doc)
+        else:
+            return None
 
     def parse_sanitize(self):
         return False
@@ -113,7 +118,7 @@ class CwlToolSource(ToolSource):
     def parse_interactivetool(self):
         return []
 
-    def parse_input_pages(self):
+    def parse_input_pages(self) -> PagesSource:
         page_source = CwlPageSource(self.tool_proxy)
         return PagesSource([page_source])
 
@@ -179,17 +184,40 @@ class CwlToolSource(ToolSource):
         return json.dumps(self.tool_proxy.to_persistent_representation())
 
 
+class CwlInputSource(YamlInputSource):
+    def __init__(self, as_dict, as_field):
+        super().__init__(as_dict)
+        self._field = as_field
+
+    @property
+    def field(self):
+        return self._field
+
+
 class CwlPageSource(PageSource):
     def __init__(self, tool_proxy):
         cwl_instances = tool_proxy.input_instances()
-        self._input_list = list(map(self._to_input_source, cwl_instances))
+        input_fields = tool_proxy.input_fields()
+        input_list = []
+        for cwl_instance in cwl_instances:
+            name = cwl_instance.name
+            input_field = None
+            for field in input_fields:
+                if field["name"] == name:
+                    input_field = field
+            input_list.append(CwlInputSource(cwl_instance.to_dict(), input_field))
+
+        self._input_list = input_list
 
     def _to_input_source(self, input_instance):
         as_dict = input_instance.to_dict()
-        return YamlInputSource(as_dict)
+        return CwlInputSource(as_dict)
 
     def parse_input_sources(self):
         return self._input_list
+
+    def input_fields(self):
+        return self._input_fields
 
 
 __all__ = (

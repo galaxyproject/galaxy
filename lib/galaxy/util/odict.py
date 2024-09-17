@@ -71,10 +71,6 @@ class odict(UserDict):
             self._keys.append(key)
         return UserDict.setdefault(self, key, failobj)
 
-    def update(self, dict):
-        for key, val in dict.items():
-            self.__setitem__(key, val)
-
     def values(self):
         return map(self.get, self._keys)
 

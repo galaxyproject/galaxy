@@ -1,15 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from "vue"
 import PageContainer from "@/components/PageContainer.vue"
-import { fetcher } from "@/schema"
-import { notify, copyAndNotify, notifyOnCatch } from "@/util"
+import { ToolShedApi } from "@/schema"
+import { notify, copyAndNotify, notifyOnCatch, errorMessageAsString } from "@/util"
 import ConfigFileContents from "@/components/ConfigFileContents.vue"
 
-const apiKeyFetcher = fetcher.path("/api/users/{encoded_user_id}/api_key").method("get").create()
-const deleteKeyFetcher = fetcher.path("/api/users/{encoded_user_id}/api_key").method("delete").create()
-const recreateKeyFetcher = fetcher.path("/api/users/{encoded_user_id}/api_key").method("post").create()
-
-const apiKey = ref(null as string | null)
+const apiKey = ref<string | null>(null)
 const planemoConfig = computed(
     () =>
         `sheds:
@@ -26,29 +22,48 @@ async function copyKey() {
 const params = { encoded_user_id: "current" }
 
 async function init() {
-    apiKeyFetcher(params)
-        .then(({ data }) => {
-            apiKey.value = data
+    try {
+        const { data } = await ToolShedApi().GET("/api/users/{encoded_user_id}/api_key", {
+            params: {
+                path: params,
+            },
         })
-        .catch(notifyOnCatch)
+        apiKey.value = data ?? null
+    } catch (e) {
+        notifyOnCatch(new Error(`Error fetching API key: ${errorMessageAsString(e)}`))
+    }
 }
 
 async function deleteKey() {
-    deleteKeyFetcher(params)
-        .then(() => {
-            apiKey.value = null
-            notify("API key deactivated")
+    try {
+        await ToolShedApi().DELETE("/api/users/{encoded_user_id}/api_key", {
+            params: {
+                path: params,
+            },
         })
-        .catch(notifyOnCatch)
+
+        apiKey.value = null
+        notify("API key deactivated")
+    } catch (e) {
+        notifyOnCatch(new Error(`Error deactivating API key: ${errorMessageAsString(e)}`))
+    }
 }
 
 async function recreateKey() {
-    recreateKeyFetcher(params)
-        .then(({ data }) => {
+    try {
+        const { data } = await ToolShedApi().POST("/api/users/{encoded_user_id}/api_key", {
+            params: {
+                path: params,
+            },
+        })
+
+        if (data) {
             apiKey.value = data
             notify("Re-generated API key")
-        })
-        .catch(notifyOnCatch)
+        }
+    } catch (e) {
+        notifyOnCatch(new Error(`Error re-generating API key: ${errorMessageAsString(e)}`))
+    }
 }
 
 void init()
@@ -76,7 +91,7 @@ void init()
             alternate means to access your account and should be treated with the same care as your login password.
         </p>
         <p>
-            Add the following block to your Planemo configuration file (typically found in
+            Add the following block to your Planemo configuration file (typically) found in
             <code>~/.planemo.yml</code> in your
         </p>
         <config-file-contents name=".planemo.yml" :contents="planemoConfig" what="Planemo configuration" />

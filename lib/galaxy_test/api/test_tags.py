@@ -112,6 +112,11 @@ class TestLibraryDatasetTags(TagsApiTests):
         item = item_response.json()
         return item
 
+    def test_upload_file_contents_with_tags(self):
+        initial_tags = ["name:foobar", "barfoo"]
+        ld = self.library_populator.new_library_dataset(name=f"test-library-dataset-{uuid4()}", tags=initial_tags)
+        assert ld["tags"] == initial_tags
+
 
 class TestPageTags(TagsApiTests):
     api_name = "pages"
@@ -150,12 +155,10 @@ class TestVisualizationTags(TagsApiTests):
 
         title = f"Test Visualization {uuid_str}"
         slug = f"test-visualization-{uuid_str}"
-        config = json.dumps(
-            {
-                "x": 10,
-                "y": 12,
-            }
-        )
+        config = {
+            "x": 10,
+            "y": 12,
+        }
         create_payload = {
             "title": title,
             "slug": slug,
@@ -164,7 +167,7 @@ class TestVisualizationTags(TagsApiTests):
             "annotation": "this is a test visualization for tags",
             "config": config,
         }
-        response = self._post("visualizations", data=create_payload)
+        response = self._post("visualizations", data=create_payload, json=True)
         self._assert_status_code_is(response, 200)
         viz = response.json()
         return viz["id"]

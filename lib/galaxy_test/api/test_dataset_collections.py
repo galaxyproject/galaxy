@@ -182,6 +182,14 @@ class TestDatasetCollectionsApi(ApiTestCase):
             namelist = archive.namelist()
             assert len(namelist) == 3, f"Expected 3 elements in [{namelist}]"
 
+    def test_download_non_english_characters(self):
+        with self.dataset_populator.test_history() as history_id:
+            name = "دیتاست"
+            payload = self.dataset_collection_populator.create_list_payload(history_id, name=name)
+            hdca_id = self.dataset_populator.fetch(payload, wait=True).json()["outputs"][0]["id"]
+            create_response = self._download_dataset_collection(history_id=history_id, hdca_id=hdca_id)
+            self._assert_status_code_is(create_response, 200)
+
     @requires_new_user
     def test_hda_security(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:

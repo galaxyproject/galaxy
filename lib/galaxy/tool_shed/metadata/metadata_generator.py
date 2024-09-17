@@ -12,7 +12,10 @@ from typing import (
     Union,
 )
 
-from typing_extensions import Protocol
+from typing_extensions import (
+    Protocol,
+    TypedDict,
+)
 
 from galaxy import util
 from galaxy.model.tool_shed_install import ToolShedRepository
@@ -62,6 +65,21 @@ NOT_TOOL_CONFIGS = [
     TOOL_DEPENDENCY_DEFINITION_FILENAME,
     suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME,
 ]
+
+
+class RepositoryMetadataToolDict(TypedDict):
+    id: str
+    guid: str
+    name: str
+    version: str
+    profile: str
+    description: Optional[str]
+    version_string_cmd: Optional[str]
+    tool_config: str
+    tool_type: str
+    requirements: Optional[Any]
+    tests: Optional[Any]
+    add_to_tool_panel: bool
 
 
 class RepositoryProtocol(Protocol):
@@ -597,7 +615,7 @@ class BaseMetadataGenerator:
         # should not be displayed in the tool panel are datatypes converters and DataManager tools
         # (which are of type 'manage_data').
         add_to_tool_panel_attribute = self._set_add_to_tool_panel_attribute_for_tool(tool)
-        tool_dict = dict(
+        tool_dict = RepositoryMetadataToolDict(
             id=tool.id,
             guid=guid,
             name=tool.name,

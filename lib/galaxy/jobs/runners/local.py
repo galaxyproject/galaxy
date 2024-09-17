@@ -57,7 +57,7 @@ class LocalJobRunner(BaseJobRunner):
 
         super().__init__(app, nworkers)
 
-    def __command_line(self, job_wrapper: "MinimalJobWrapper") -> Tuple[str, str]:
+    def _command_line(self, job_wrapper: "MinimalJobWrapper") -> Tuple[str, str]:
         """ """
         command_line = job_wrapper.runner_command_line
 
@@ -90,7 +90,7 @@ class LocalJobRunner(BaseJobRunner):
         stderr = stdout = ""
 
         # command line has been added to the wrapper by prepare_job()
-        job_file, exit_code_path = self.__command_line(job_wrapper)
+        job_file, exit_code_path = self._command_line(job_wrapper)
         job_id = job_wrapper.get_id_tag()
 
         try:

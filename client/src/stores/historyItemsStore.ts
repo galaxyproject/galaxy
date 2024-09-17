@@ -8,11 +8,13 @@ import { reverse } from "lodash";
 import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
-import type { HistoryItemSummary } from "@/api";
+import { type HistoryItemSummary } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { mergeArray } from "@/store/historyStore/model/utilities";
 import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";
 import { urlData } from "@/utils/url";
+
+type ExtendedHistoryItem = HistoryItemSummary & { sub_items?: HistoryItemSummary[] };
 
 const limit = 100;
 
@@ -20,7 +22,7 @@ type ExpectedReturn = { stats: { total_matches: number }; contents: HistoryItemS
 const queue = new LastQueue<typeof urlData>(1000, true);
 
 export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
-    const items = ref<Record<string, HistoryItemSummary[]>>({});
+    const items = ref<Record<string, ExtendedHistoryItem[]>>({});
     const itemKey = ref("hid");
     const totalMatchesCount = ref<number | undefined>(undefined);
     const lastCheckedTime = ref(new Date());
@@ -35,12 +37,18 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
                 (filter: [string, string]) => !filter[0].includes("related")
             );
             const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
-            const filtered = itemArray.filter((item: HistoryItemSummary) => {
+            const filtered = itemArray.filter((item: ExtendedHistoryItem) => {
                 if (!item) {
                     return false;
                 }
                 if (!HistoryFilters.testFilters(filters, item)) {
-                    return false;
+                    // filters don't pass on the item, but they might pass on any of its sub_items
+                    if (
+                        !item.sub_items ||
+                        !item.sub_items.some((subItem) => HistoryFilters.testFilters(filters, subItem))
+                    ) {
+                        return false;
+                    }
                 }
                 const relationKey = `${historyId}-${relatedHid}-${item.hid}`;
                 if (relatedHid && !relatedItems.value[relationKey]) {

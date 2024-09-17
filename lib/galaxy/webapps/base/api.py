@@ -37,6 +37,7 @@ if typing.TYPE_CHECKING:
         Send,
     )
 
+from galaxy.schema.schema import MessageExceptionModel
 
 log = getLogger(__name__)
 
@@ -236,7 +237,17 @@ def add_request_id_middleware(app: FastAPI):
 
 
 def include_all_package_routers(app: FastAPI, package_name: str):
+    responses: typing.Dict[typing.Union[int, str], typing.Dict[str, typing.Any]] = {
+        "4XX": {
+            "description": "Request Error",
+            "model": MessageExceptionModel,
+        },
+        "5XX": {
+            "description": "Server Error",
+            "model": MessageExceptionModel,
+        },
+    }
     for _, module in walk_controller_modules(package_name):
         router = getattr(module, "router", None)
         if router:
-            app.include_router(router)
+            app.include_router(router, responses=responses)

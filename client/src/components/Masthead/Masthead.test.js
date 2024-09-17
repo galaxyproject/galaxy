@@ -1,10 +1,13 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { WindowManager } from "layout/window-manager";
 import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
+import { useUserStore } from "@/stores/userStore";
 
 import { loadWebhookMenuItems } from "./_webhooks";
 
@@ -16,7 +19,10 @@ jest.mock("vue-router/composables", () => ({
     useRoute: jest.fn(() => ({ name: "Home" })),
     useRouter: jest.fn(),
 }));
-jest.mock("@/api/schema");
+
+const { server, http } = useServerMock();
+
+const currentUser = getFakeRegisteredUser();
 
 describe("Masthead.vue", () => {
     let wrapper;
@@ -34,14 +40,23 @@ describe("Masthead.vue", () => {
 
     loadWebhookMenuItems.mockImplementation(stubLoadWebhooks);
 
-    beforeEach(() => {
+    beforeEach(async () => {
         localVue = getLocalVue();
         localVue.use(PiniaVuePlugin);
         testPinia = createTestingPinia();
-        mockFetcher.path("/api/configuration").method("get").mock({ data: {} });
+
+        server.use(
+            http.get("/api/configuration", ({ response }) => {
+                return response(200).json({});
+            })
+        );
 
         windowManager = new WindowManager({});
         const windowTab = windowManager.getTab();
+
+        const userStore = useUserStore();
+        userStore.currentUser = currentUser;
+
         wrapper = mount(Masthead, {
             propsData: {
                 windowTab,
@@ -49,6 +64,7 @@ describe("Masthead.vue", () => {
             localVue,
             pinia: testPinia,
         });
+        await flushPromises();
     });
 
     it("should render simple tab item links", () => {

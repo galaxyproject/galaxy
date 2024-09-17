@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { GalaxyApi } from "@/api";
 import type { UserFileSourceModel } from "@/api/fileSources";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
-
-import { hide } from "./services";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import InstanceDropdown from "@/components/ConfigTemplates/InstanceDropdown.vue";
 
@@ -22,7 +22,17 @@ const isUpgradable = computed(() =>
 );
 
 async function onRemove() {
-    await hide(props.fileSource);
+    const { error } = await GalaxyApi().PUT("/api/file_source_instances/{user_file_source_id}", {
+        params: { path: { user_file_source_id: props.fileSource.uuid } },
+        body: {
+            hidden: true,
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
     emit("entryRemoved");
 }
 

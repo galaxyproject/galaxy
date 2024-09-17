@@ -83,6 +83,7 @@ from galaxy.schema.workflows import (
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
+from galaxy.tools._types import ParameterValidationErrorsT
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.web import (
@@ -537,7 +538,7 @@ class WorkflowsAPIController(
         module = module_factory.from_dict(trans, payload, from_tool_form=True)
         if "tool_state" not in payload:
             module_state: Dict[str, Any] = {}
-            errors: Dict[str, str] = {}
+            errors: ParameterValidationErrorsT = {}
             populate_state(trans, module.get_inputs(), inputs, module_state, errors=errors, check=True)
             module.recover_state(module_state, from_tool_form=True)
             module.check_and_update_state()

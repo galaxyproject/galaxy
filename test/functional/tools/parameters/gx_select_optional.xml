@@ -1,0 +1,27 @@
+<tool id="gx_select_optional" name="gx_select_optional" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="parameter" type="select" optional="true">
+            <option value="--ex1">Ex1</option>
+            <option value="ex2">Ex2</option>
+            <option value="--ex3">Ex3</option>
+            <option value="--ex4">Ex4</option>
+            <option value="ex5">Ex5</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="parameter" value="ex2" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="ex2" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

@@ -228,14 +228,14 @@ class HDAManager(
         return copy
 
     # .... deletion and purging
-    def purge(self, hda, flush=True, **kwargs):
+    def purge(self, item, flush=True, **kwargs):
         if self.app.config.enable_celery_tasks:
             from galaxy.celery.tasks import purge_hda
 
             user = kwargs.get("user")
-            return purge_hda.delay(hda_id=hda.id, task_user_id=getattr(user, "id", None))
+            return purge_hda.delay(hda_id=item.id, task_user_id=getattr(user, "id", None))
         else:
-            self._purge(hda, flush=flush)
+            self._purge(item, flush=flush)
 
     def _purge(self, hda, flush=True):
         """
@@ -613,14 +613,14 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         }
         self.serializers.update(serializers)
 
-    def serialize(self, hda, keys, user=None, **context):
+    def serialize(self, item, keys, user=None, **context):
         """
         Override to hide information to users not able to access.
         """
         # TODO: to DatasetAssociationSerializer
-        if not self.manager.is_accessible(hda, user, **context):
+        if not self.manager.is_accessible(item, user, **context):
             keys = self._view_to_keys("inaccessible")
-        return super().serialize(hda, keys, user=user, **context)
+        return super().serialize(item, keys, user=user, **context)
 
     def serialize_display_apps(self, item, key, trans=None, **context):
         """

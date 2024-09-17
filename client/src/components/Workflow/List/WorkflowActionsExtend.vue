@@ -36,12 +36,9 @@ const { isAnonymous } = storeToRefs(useUserStore());
 const downloadUrl = computed(() => {
     return withPrefix(`/api/workflows/${props.workflow.id}/download?format=json-download`);
 });
+
 const shared = computed(() => {
-    if (userStore.currentUser) {
-        return userStore.currentUser.username !== props.workflow.owner;
-    } else {
-        return false;
-    }
+    return !userStore.matchesCurrentUsername(props.workflow.owner);
 });
 
 async function onCopy() {

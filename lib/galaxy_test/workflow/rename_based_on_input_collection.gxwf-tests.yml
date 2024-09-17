@@ -1,0 +1,22 @@
+- doc: | 
+    Test output dataset renaming when the target basename is based on an input collection.
+  job:
+    fasta_input:
+      value: 1.fasta
+      type: File
+      name: fasta1
+      file_type: fasta
+    fastq_inputs:
+      collection_type: list
+      name: the_dataset_pair
+      elements:
+        - identifier: forward
+          value: 1.fastq
+          type: File
+        - identifier: reverse
+          value: 1.fastq
+          type: File
+  outputs:
+    output:
+      metadata:
+        name: 'the_dataset_pair suffix'

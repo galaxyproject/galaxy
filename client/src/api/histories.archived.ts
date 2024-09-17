@@ -1,13 +1,13 @@
-import type { FetchArgType } from "openapi-typescript-fetch";
-
-import { type components, fetcher } from "@/api/schema";
+import { type components, GalaxyApi, type GalaxyApiPaths } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export type ArchivedHistorySummary = components["schemas"]["ArchivedHistorySummary"];
 export type ArchivedHistoryDetailed = components["schemas"]["ArchivedHistoryDetailed"];
-export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];
+export type AnyArchivedHistory = ArchivedHistorySummary | ArchivedHistoryDetailed;
 
-type GetArchivedHistoriesParams = FetchArgType<typeof getArchivedHistories>;
-type SerializationOptions = Pick<GetArchivedHistoriesParams, "view" | "keys">;
+type MaybeArchivedHistoriesQueryParams = GalaxyApiPaths["/api/histories/archived"]["get"]["parameters"]["query"];
+type ArchivedHistoriesQueryParams = Exclude<MaybeArchivedHistoriesQueryParams, undefined>;
+type SerializationOptions = Pick<ArchivedHistoriesQueryParams, "view" | "keys">;
 
 interface FilterOptions {
     query?: string;
@@ -26,97 +26,44 @@ interface SortingOptions {
 interface GetArchivedHistoriesOptions extends FilterOptions, PaginationOptions, SortingOptions, SerializationOptions {}
 
 interface ArchivedHistoriesResult {
-    histories: ArchivedHistorySummary[] | ArchivedHistoryDetailed[];
+    histories: AnyArchivedHistory[];
     totalMatches: number;
 }
 
 const DEFAULT_PAGE_SIZE = 10;
 
-const getArchivedHistories = fetcher.path("/api/histories/archived").method("get").create();
-
 /**
  * Get a list of archived histories.
  */
-export async function fetchArchivedHistories(
-    options: GetArchivedHistoriesOptions = {}
-): Promise<ArchivedHistoriesResult> {
+export async function fetchArchivedHistories(options: GetArchivedHistoriesOptions): Promise<ArchivedHistoriesResult> {
     const params = optionsToApiParams(options);
-    const { data, headers } = await getArchivedHistories(params);
-    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
+
+    const { response, data, error } = await GalaxyApi().GET("/api/histories/archived", {
+        params: {
+            query: params,
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0");
     if (params.view === "detailed") {
         return {
             histories: data as ArchivedHistoryDetailed[],
             totalMatches,
         };
     }
+
     return {
         histories: data as ArchivedHistorySummary[],
         totalMatches,
     };
 }
 
-const postArchiveHistory = fetcher.path("/api/histories/{history_id}/archive").method("post").create();
-
-/**
- * Archive a history.
- * @param historyId The history to archive
- * @param archiveExportId The optional archive export record to associate. This can be used to restore a snapshot copy of the history in the future.
- * @param purgeHistory Whether to purge the history after archiving. Can only be used in combination with an archive export record.
- * @returns The archived history summary.
- */
-export async function archiveHistory(
-    historyId: string,
-    archiveExportId?: string,
-    purgeHistory?: boolean
-): Promise<ArchivedHistorySummary> {
-    const { data } = await postArchiveHistory({
-        history_id: historyId,
-        archive_export_id: archiveExportId,
-        purge_history: purgeHistory,
-    });
-    return data as ArchivedHistorySummary;
-}
-
-const putUnarchiveHistory = fetcher
-    .path("/api/histories/{history_id}/archive/restore")
-    .method("put")
-    // @ts-ignore: workaround for optional query parameters in PUT. More info here https://github.com/ajaishankar/openapi-typescript-fetch/pull/55
-    .create({ force: undefined });
-
-/**
- * Unarchive/restore a history.
- * @param historyId The history to unarchive.
- * @param force Whether to force un-archiving for purged histories.
- * @returns The restored history summary.
- */
-export async function unarchiveHistory(historyId: string, force?: boolean): Promise<ArchivedHistorySummary> {
-    const { data } = await putUnarchiveHistory({ history_id: historyId, force });
-    return data as ArchivedHistorySummary;
-}
-
-const reimportHistoryFromStore = fetcher.path("/api/histories/from_store_async").method("post").create();
-
-/**
- * Reimport an archived history as a new copy from the associated export record.
- *
- * @param archivedHistory The archived history to reimport. It must have an associated export record.
- * @returns The async task result summary to track the reimport progress.
- */
-export async function reimportArchivedHistoryFromExportRecord(
-    archivedHistory: ArchivedHistorySummary
-): Promise<AsyncTaskResultSummary> {
-    if (!archivedHistory.export_record_data) {
-        throw new Error("The archived history does not have an associated export record.");
-    }
-    const { data } = await reimportHistoryFromStore({
-        model_store_format: archivedHistory.export_record_data.model_store_format,
-        store_content_uri: archivedHistory.export_record_data.target_uri,
-    });
-    return data as AsyncTaskResultSummary;
-}
-
-function optionsToApiParams(options: GetArchivedHistoriesOptions): GetArchivedHistoriesParams {
-    const params: GetArchivedHistoriesParams = {};
+function optionsToApiParams(options: GetArchivedHistoriesOptions): ArchivedHistoriesQueryParams {
+    const params: ArchivedHistoriesQueryParams = {};
     if (options.query) {
         params.q = ["name-contains"];
         params.qv = [options.query];

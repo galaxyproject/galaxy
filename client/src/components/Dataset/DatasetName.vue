@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { HDASummary } from "@/api";
+import { type HDASummary } from "@/api";
 
 library.add(faCaretDown, faCopy, faEye, faTimesCircle, faPause);
 

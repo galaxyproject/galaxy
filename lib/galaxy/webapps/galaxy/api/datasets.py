@@ -9,9 +9,7 @@ from io import (
     StringIO,
 )
 from typing import (
-    Any,
     cast,
-    Dict,
     List,
     Optional,
 )
@@ -40,7 +38,6 @@ from galaxy.schema.schema import (
     AsyncTaskResultSummary,
     DatasetAssociationRoles,
     DatasetSourceType,
-    UpdateDatasetPermissionsPayload,
 )
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.webapps.base.api import GalaxyFileResponse
@@ -52,10 +49,11 @@ from galaxy.webapps.galaxy.api import (
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
     get_query_parameters_from_request_excluding,
-    get_update_permission_payload,
     HistoryDatasetIDPathParam,
     HistoryIDPathParam,
+    normalize_permission_payload,
     query_serialization_params,
+    UpdateDatasetPermissionsBody,
 )
 from galaxy.webapps.galaxy.services.datasets import (
     ComputeDatasetHashPayload,
@@ -145,6 +143,7 @@ class FastAPIDatasets:
     )
     def index(
         self,
+        response: Response,
         trans=DependsOnTrans,
         history_id: Optional[DecodedDatabaseIdField] = Query(
             default=None,
@@ -153,7 +152,9 @@ class FastAPIDatasets:
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
     ) -> List[AnyHistoryContentItem]:
-        return self.service.index(trans, history_id, serialization_params, filter_query_params)
+        entries, total_matches = self.service.index(trans, history_id, serialization_params, filter_query_params)
+        response.headers["total_matches"] = str(total_matches)
+        return entries
 
     @router.get(
         "/api/datasets/{dataset_id}/storage",
@@ -235,15 +236,11 @@ class FastAPIDatasets:
     def update_permissions(
         self,
         dataset_id: HistoryDatasetIDPathParam,
+        payload: UpdateDatasetPermissionsBody,
         trans=DependsOnTrans,
-        # Using a generic Dict here as an attempt on supporting multiple aliases for the permissions params.
-        payload: Dict[str, Any] = Body(
-            default=...,
-            examples=[UpdateDatasetPermissionsPayload()],
-        ),
     ) -> DatasetAssociationRoles:
         """Set permissions of the given history dataset to the given role ids."""
-        update_payload = get_update_permission_payload(payload)
+        update_payload = normalize_permission_payload(payload)
         return self.service.update_permissions(trans, dataset_id, update_payload)
 
     @router.get(

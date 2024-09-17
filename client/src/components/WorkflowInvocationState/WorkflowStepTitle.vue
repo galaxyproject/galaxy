@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed, ref, watch } from "vue";
 
 import { useToolStore } from "@/stores/toolStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 interface WorkflowInvocationStepTitleProps {
     stepIndex: number;
@@ -54,26 +57,36 @@ const title = computed(() => {
             return `Step ${oneBasedStepIndex}: Unknown step type '${workflowStepType}'`;
     }
 });
+const hoverError = ref("");
 
-function initStores() {
+async function initStores() {
     if (props.stepToolId && !toolStore.getToolForId(props.stepToolId)) {
         toolStore.fetchToolForId(props.stepToolId);
     }
 
     if (props.stepSubworkflowId) {
-        workflowStore.fetchWorkflowForInstanceId(props.stepSubworkflowId);
+        try {
+            await workflowStore.fetchWorkflowForInstanceId(props.stepSubworkflowId);
+        } catch (e) {
+            hoverError.value = errorMessageAsString(e, "Error fetching subworkflow");
+        }
     }
 }
 
 watch(
     props,
-    () => {
-        initStores();
+    async () => {
+        await initStores();
     },
     { immediate: true }
 );
 </script>
 
 <template>
-    <span>{{ title }}</span>
+    <span>
+        {{ title }}
+        <span v-b-tooltip.noninteractive.hover.v-danger :title="hoverError">
+            <FontAwesomeIcon v-if="hoverError" class="text-danger" :icon="faExclamationCircle" />
+        </span>
+    </span>
 </template>

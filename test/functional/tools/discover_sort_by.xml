@@ -71,7 +71,6 @@ done
     </test>
     <!-- same test with wrong order should fail  -->
     <test expect_num_outputs="4" expect_test_failure="true">
-      <param name="input1" value="tinywga.fam" />
       <output_collection name="collection_numeric_name" type="list" count="10">
         <element name="1">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>

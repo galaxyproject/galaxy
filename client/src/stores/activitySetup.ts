@@ -144,7 +144,7 @@ export const Activities = [
         optional: true,
         panel: false,
         title: "Libraries",
-        tooltip: "Access Data Libraries",
+        tooltip: "Access data libraries",
         to: "/libraries",
         visible: true,
     },

@@ -66,7 +66,7 @@ def build_shed_app(simple_kwargs):
 class ToolShedTestDriver(driver_util.TestDriver):
     """Instantiate a Galaxy-style TestDriver for testing the tool shed."""
 
-    def setup(self):
+    def setup(self) -> None:
         """Entry point for test driver script."""
         self.external_shed = bool(os.environ.get("TOOL_SHED_TEST_EXTERNAL", None))
         if not self.external_shed:

@@ -38,6 +38,13 @@ export const useActivityStore = defineStore("activityStore", () => {
     const activities: Ref<Array<Activity>> = useUserLocalStorage("activity-store-activities", []);
 
     /**
+     * Restores the default activity bar items
+     */
+    function restore() {
+        activities.value = Activities.slice();
+    }
+
+    /**
      * The set of built-in activities is defined in activitySetup.js.
      * This helper function applies changes of the built-in activities,
      * to the user stored activities which are persisted in local cache.
@@ -100,6 +107,7 @@ export const useActivityStore = defineStore("activityStore", () => {
         getAll,
         remove,
         setAll,
+        restore,
         sync,
     };
 });

@@ -1,10 +1,10 @@
 import { shallowMount } from "@vue/test-utils";
 import { type PropType, ref } from "vue";
 
-import { TaskMonitor } from "@/composables/genericTaskMonitor";
+import { type TaskMonitor } from "@/composables/genericTaskMonitor";
 import {
     type MonitoringData,
-    MonitoringRequest,
+    type MonitoringRequest,
     usePersistentProgressTaskMonitor,
 } from "@/composables/persistentProgressMonitor";
 
@@ -20,13 +20,18 @@ const FAKE_MONITOR_REQUEST: MonitoringRequest = {
     description: "Test description",
 };
 
+const FAKE_EXPIRATION_TIME = 1000;
+
 const FAKE_MONITOR: TaskMonitor = {
     waitForTask: jest.fn(),
     isRunning: ref(false),
     isCompleted: ref(false),
     hasFailed: ref(false),
     requestHasFailed: ref(false),
-    status: ref(""),
+    status: ref(),
+    expirationTime: FAKE_EXPIRATION_TIME,
+    isFinalState: jest.fn(),
+    loadStatus: jest.fn(),
 };
 
 const mountComponent = (
@@ -61,6 +66,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskId: "1",
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
+            startedAt: new Date(),
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -85,6 +91,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskId: "1",
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
+            startedAt: new Date(),
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -109,6 +116,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskId: "1",
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
+            startedAt: new Date(),
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -138,6 +146,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskId: taskId,
             taskType: "short_term_storage",
             request: monitoringRequest,
+            startedAt: new Date(),
         };
         usePersistentProgressTaskMonitor(monitoringRequest, useMonitor, existingMonitoringData);
 
@@ -166,6 +175,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskId: "1",
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
+            startedAt: new Date(),
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -179,5 +189,30 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
         const completedAlert = wrapper.find('[variant="success"]');
         expect(completedAlert.exists()).toBe(true);
         expect(completedAlert.text()).not.toContain("Download here");
+    });
+
+    it("should render a warning alert when the task has expired even if the status is running", () => {
+        const useMonitor = {
+            ...FAKE_MONITOR,
+            isRunning: ref(true),
+        };
+        const existingMonitoringData: MonitoringData = {
+            taskId: "1",
+            taskType: "task",
+            request: FAKE_MONITOR_REQUEST,
+            startedAt: new Date(Date.now() - FAKE_EXPIRATION_TIME * 2), // Make sure the task has expired
+        };
+        usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
+
+        const wrapper = mountComponent({
+            monitorRequest: FAKE_MONITOR_REQUEST,
+            useMonitor,
+        });
+
+        expect(wrapper.find(".d-flex").exists()).toBe(true);
+
+        const warningAlert = wrapper.find('[variant="warning"]');
+        expect(warningAlert.exists()).toBe(true);
+        expect(warningAlert.text()).toContain("The testing task has expired and the result is no longer available");
     });
 });

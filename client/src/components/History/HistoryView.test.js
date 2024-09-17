@@ -1,18 +1,21 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { useHistoryStore } from "stores/historyStore";
-import { getHistoryByIdFromServer, setCurrentHistoryOnServer } from "stores/services/history.services";
-import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 
-import ContentItem from "./Content/ContentItem";
-import HistoryView from "./HistoryView";
+import { useServerMock } from "@/api/client/__mocks__";
+import { useHistoryStore } from "@/stores/historyStore";
+import { getHistoryByIdFromServer, setCurrentHistoryOnServer } from "@/stores/services/history.services";
+import { useUserStore } from "@/stores/userStore";
+
+import ContentItem from "./Content/ContentItem.vue";
+import HistoryView from "./HistoryView.vue";
 
 const localVue = getLocalVue();
 jest.mock("stores/services/history.services");
+
+const { server, http } = useServerMock();
 
 function create_history(historyId, userId, purged = false, archived = false) {
     const historyName = `${userId}'s History ${historyId}`;
@@ -60,10 +63,18 @@ async function createWrapper(localVue, currentUserId, history) {
     const pinia = createPinia();
     getHistoryByIdFromServer.mockResolvedValue(history);
     setCurrentHistoryOnServer.mockResolvedValue(history);
-    const axiosMock = new MockAdapter(axios);
-    const history_contents_url = `/api/histories/${history.id}/contents?v=dev&order=hid&offset=0&limit=100&q=deleted&qv=false&q=visible&qv=true`;
     const history_contents_result = create_datasets(history.id, history.count);
-    axiosMock.onGet(history_contents_url).reply(200, history_contents_result);
+
+    server.use(
+        http.get("/api/configuration", ({ response }) => {
+            return response(200).json({});
+        }),
+
+        http.get("/api/histories/{history_id}/contents", ({ response }) => {
+            return response(200).json(history_contents_result);
+        })
+    );
+
     const wrapper = mount(HistoryView, {
         propsData: { id: history.id },
         localVue,
@@ -76,10 +87,7 @@ async function createWrapper(localVue, currentUserId, history) {
         pinia,
     });
     const userStore = useUserStore();
-    const userData = {
-        id: currentUserId,
-    };
-    userStore.currentUser = { ...userStore.currentUser, ...userData };
+    userStore.currentUser = getFakeRegisteredUser({ id: currentUserId });
     await flushPromises();
     return wrapper;
 }
@@ -185,7 +193,9 @@ describe("History center panel View", () => {
         expect(storageDashboardButtonDisabled(wrapper)).toBeFalsy();
 
         // instead we have an alert
-        expect(wrapper.find("[data-description='history messages']").text()).toBe("History has been purged");
+        expect(wrapper.find("[data-description='history messages']").text()).toBe(
+            "History has been permanently deleted"
+        );
     });
 
     it("should not display archived message and should be importable when user is not owner and history is archived", async () => {

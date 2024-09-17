@@ -1,0 +1,44 @@
+- id: onedata
+  version: 0
+  name: Onedata Storage
+  description: |
+    If you have an account in Onedata, you can use such a file source to upload
+    your data directly from Onedata to Galaxy. You can also perform
+    an "Export datasets to remote files source" of a dataset from Galaxy to
+    Onedata.
+
+    The minimal supported Onezone version is 21.02.4.
+    More information on Onedata can be found on [Onedata's website](https://onedata.org/#/home).
+  variables:
+    onezone_domain:
+      label: Onezone domain
+      type: string
+      help: Domain of the Onezone service (e.g. datahub.egi.eu) to connect to.
+    disable_tls_certificate_validation:
+      label: Disable tls certificate validation?
+      type: boolean
+      help: |
+        Allows connection to Onedata servers that do not present trusted SSL certificates.
+        SHOULD NOT be used unless you really know what you are doing.
+      default: False
+    writable:
+      label: Writable?
+      type: boolean
+      help: |
+        Allow Galaxy to write data to this Onedata storage.
+        Requires an access token with write data access.
+      default: False
+  secrets:
+    access_token:
+      label: Access Token
+      help: |
+        Your [access token](https://onedata.org/#/home/documentation/topic/stable/tokens),
+        suitable for REST API access in a Oneprovider service. May be confined
+        to read-only data access, unless you wish to use the
+        "Export datasets to remote files source" tool (write permissions are needed then).
+  configuration:
+    type: onedata
+    access_token: "{{ secrets.access_token }}"
+    onezone_domain: "{{ variables.onezone_domain }}"
+    disable_tls_certificate_validation: "{{ variables.disable_tls_certificate_validation }}"
+    writable: "{{ variables.writable }}"

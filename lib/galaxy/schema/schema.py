@@ -28,6 +28,7 @@ from pydantic import (
     RootModel,
     UUID4,
 )
+from pydantic_core import core_schema
 from typing_extensions import (
     Annotated,
     Literal,
@@ -48,6 +49,7 @@ from galaxy.schema.types import (
     OffsetNaiveDatetime,
     RelativeUrl,
 )
+from galaxy.util.sanitize_html import sanitize_html
 
 USER_MODEL_CLASS = Literal["User"]
 GROUP_MODEL_CLASS = Literal["Group"]
@@ -362,7 +364,7 @@ class CreatedUserModel(UserModel, DiskUsageUserModel):
 
 
 class AnonUserModel(DiskUsageUserModel):
-    quota_percent: Any = QuotaPercentField
+    quota_percent: Optional[float] = QuotaPercentField
 
 
 class DetailedUserModel(BaseUserModel, AnonUserModel):
@@ -371,8 +373,16 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
     preferences: Dict[Any, Any] = Field(default=..., title="Preferences", description="Preferences of the user")
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
     quota: str = Field(default=..., title="Quota", description="Quota applicable to the user")
-    quota_bytes: Any = Field(default=..., title="Quota in bytes", description="Quota applicable to the user in bytes.")
+    quota_bytes: Optional[int] = Field(
+        default=None, title="Quota in bytes", description="Quota applicable to the user in bytes."
+    )
     tags_used: List[str] = Field(default=..., title="Tags used", description="Tags used by the user")
+
+
+class UserUpdatePayload(Model):
+    active: Annotated[Optional[bool], Field(None, title="Active", description="User is active")]
+    username: Annotated[Optional[str], Field(None, title="Username", description="The name of the user.")]
+    preferred_object_store_id: Annotated[Optional[str], PreferredObjectStoreIdField]
 
 
 class UserCreationPayload(Model):
@@ -902,6 +912,9 @@ class HDADetailed(HDASummary, WithModelClass):
             description="The list of sources associated with this dataset.",
         ),
     ]
+    copied_from_history_dataset_association_id: Annotated[
+        Optional[EncodedDatabaseIdField], Field(None, description="ID of HDA this HDA was copied from.")
+    ]
 
 
 class HDAExtended(HDADetailed):
@@ -1104,6 +1117,9 @@ class HDCASummary(HDCACommon, WithModelClass):
     populated_state: DatasetCollectionPopulatedState = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
     element_count: ElementCountField
+    elements_datatypes: Set[str] = Field(
+        ..., description="A set containing all the different element datatypes in the collection."
+    )
     job_source_id: Optional[EncodedDatabaseIdField] = Field(
         None,
         title="Job Source ID",
@@ -1128,9 +1144,6 @@ class HDCADetailed(HDCASummary):
 
     populated: PopulatedField
     elements: List[DCESummary] = ElementsField
-    elements_datatypes: Set[str] = Field(
-        ..., description="A set containing all the different element datatypes in the collection."
-    )
     implicit_collection_jobs_id: Optional[EncodedDatabaseIdField] = Field(
         None,
         description="Encoded ID for the ICJ object describing the collection of jobs corresponding to this collection",
@@ -1437,6 +1450,18 @@ AnyHistoryView = Annotated[
     ],
     Field(union_mode="left_to_right"),
 ]
+
+
+class UpdateHistoryPayload(Model):
+    name: Optional[str] = None
+    annotation: Optional[str] = None
+    tags: Optional[TagCollection] = None
+    published: Optional[bool] = None
+    importable: Optional[bool] = None
+    deleted: Optional[bool] = None
+    purged: Optional[bool] = None
+    genome_build: Optional[str] = None
+    preferred_object_store_id: Optional[str] = None
 
 
 class ExportHistoryArchivePayload(Model):
@@ -1890,12 +1915,24 @@ class ArchivedHistoryDetailed(HistoryDetailed, ExportAssociationData):
     pass
 
 
-AnyArchivedHistoryView = Union[
-    ArchivedHistorySummary,
-    ArchivedHistoryDetailed,
-    # Any will cover those cases in which only specific `keys` are requested
-    # otherwise the validation will fail because the required fields are not returned
-    Any,
+@partial_model()
+class CustomArchivedHistoryView(CustomHistoryView, ExportAssociationData):
+    """Archived History Response with all optional fields.
+
+    It is used for serializing only specific attributes using the "keys"
+    query parameter.
+    """
+
+    pass
+
+
+AnyArchivedHistoryView = Annotated[
+    Union[
+        CustomArchivedHistoryView,
+        ArchivedHistoryDetailed,
+        ArchivedHistorySummary,
+    ],
+    Field(union_mode="left_to_right"),
 ]
 
 
@@ -3229,30 +3266,65 @@ class DatasetAssociationRoles(Model):
     )
 
 
-class UpdateDatasetPermissionsPayload(Model):
+class UpdateDatasetPermissionsPayloadBase(Model):
     action: Optional[DatasetPermissionAction] = Field(
         DatasetPermissionAction.set_permissions,
         title="Action",
         description="Indicates what action should be performed on the dataset.",
     )
-    access_ids: Optional[RoleIdList] = Field(
-        [],
-        alias="access_ids[]",  # Added for backward compatibility but it looks really ugly...
+
+
+AccessIdsField = Annotated[
+    Optional[RoleIdList],
+    Field(
+        default=None,
         title="Access IDs",
         description="A list of role encoded IDs defining roles that should have access permission on the dataset.",
-    )
-    manage_ids: Optional[RoleIdList] = Field(
-        [],
-        alias="manage_ids[]",
+    ),
+]
+
+ManageIdsField = Annotated[
+    Optional[RoleIdList],
+    Field(
+        default=None,
         title="Manage IDs",
         description="A list of role encoded IDs defining roles that should have manage permission on the dataset.",
-    )
-    modify_ids: Optional[RoleIdList] = Field(
-        [],
-        alias="modify_ids[]",
+    ),
+]
+
+ModifyIdsField = Annotated[
+    Optional[RoleIdList],
+    Field(
+        default=None,
         title="Modify IDs",
         description="A list of role encoded IDs defining roles that should have modify permission on the dataset.",
-    )
+    ),
+]
+
+
+class UpdateDatasetPermissionsPayload(UpdateDatasetPermissionsPayloadBase):
+    access_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="access_ids[]")] = None
+    manage_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="manage_ids[]")] = None
+    modify_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="modify_ids[]")] = None
+
+
+class UpdateDatasetPermissionsPayloadAliasB(UpdateDatasetPermissionsPayloadBase):
+    access: AccessIdsField = None
+    manage: ManageIdsField = None
+    modify: ModifyIdsField = None
+
+
+class UpdateDatasetPermissionsPayloadAliasC(UpdateDatasetPermissionsPayloadBase):
+    access_ids: AccessIdsField = None
+    manage_ids: ManageIdsField = None
+    modify_ids: ModifyIdsField = None
+
+
+UpdateDatasetPermissionsPayloadAliases = Union[
+    UpdateDatasetPermissionsPayload,
+    UpdateDatasetPermissionsPayloadAliasB,
+    UpdateDatasetPermissionsPayloadAliasC,
+]
 
 
 @partial_model()
@@ -3283,8 +3355,17 @@ class HDACustom(HDADetailed):
     model_config = ConfigDict(extra="allow")
 
 
+@partial_model()
+class HDCACustom(HDCADetailed):
+    """Can contain any serializable property of an HDCA.
+
+    Allows arbitrary custom keys to be specified in the serialization
+    parameters without a particular view (predefined set of keys).
+    """
+
+
 AnyHDA = Union[HDACustom, HDADetailed, HDASummary, HDAInaccessible]
-AnyHDCA = Union[HDCADetailed, HDCASummary]
+AnyHDCA = Union[HDCACustom, HDCADetailed, HDCASummary]
 AnyHistoryContentItem = Annotated[
     Union[
         AnyHDA,
@@ -3733,3 +3814,28 @@ class PageSummaryList(RootModel):
         default=[],
         title="List with summary information of Pages.",
     )
+
+
+class MessageExceptionModel(BaseModel):
+    err_msg: str
+    err_code: int
+
+
+class SanitizedString(str):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value):
+        if isinstance(value, str):
+            return cls(sanitize_html(value))
+        raise TypeError("string required")
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        return core_schema.no_info_after_validator_function(
+            cls.validate,
+            core_schema.str_schema(),
+            serialization=core_schema.to_string_ser_schema(),
+        )

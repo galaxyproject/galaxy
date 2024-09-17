@@ -6,12 +6,12 @@ import { BButtonGroup, BButtonToolbar, BCard, BCardTitle } from "bootstrap-vue";
 import { computed, provide, ref } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
-import { MonitoringRequest } from "@/composables/persistentProgressMonitor";
+import { type MonitoringRequest } from "@/composables/persistentProgressMonitor";
 import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonitor";
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import { Toast } from "@/composables/toast";
 
-import { InvocationExportPlugin } from "./model";
+import { type InvocationExportPlugin } from "./model";
 
 import ActionButton from "./ActionButton.vue";
 import PersistentTaskProgressMonitorAlert from "@/components/Common/PersistentTaskProgressMonitorAlert.vue";

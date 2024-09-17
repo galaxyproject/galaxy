@@ -658,6 +658,19 @@ class TestDatasetsApi(ApiTestCase):
         deleted_job_details = self.dataset_populator.get_job_details(job_id).json()
         assert deleted_job_details["state"] in ("deleting", "deleted"), deleted_job_details
 
+    def test_purge_does_not_reset_file_size(self):
+        with self.dataset_populator.test_history() as history_id:
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content="ABC", wait=True)
+            assert dataset["file_size"]
+            self.dataset_populator.delete_dataset(
+                history_id=history_id, content_id=dataset["id"], purge=True, wait_for_purge=True
+            )
+            purged_dataset = self.dataset_populator.get_history_dataset_details(
+                history_id=history_id, content_id=dataset["id"]
+            )
+            assert purged_dataset["purged"]
+            assert dataset["file_size"] == purged_dataset["file_size"]
+
     def test_delete_batch(self):
         num_datasets = 4
         dataset_map: Dict[int, str] = {}

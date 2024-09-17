@@ -30,32 +30,47 @@ class MulledJobTestCases:
     """
 
     dataset_populator: DatasetPopulator
+    container_type: str
+
+    def _run_and_get_contents(self, tool_id: str, history_id: str):
+        run_response = self.dataset_populator.run_tool(tool_id, {}, history_id)
+        job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id=job_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
+        job_metrics = self.dataset_populator._get(f"/api/jobs/{job_id}/metrics").json()
+        # would be nice if it wasn't just a list of unpredictable order ...
+        container_id = None
+        container_type = None
+        for metric in job_metrics:
+            if metric["name"] == "container_id":
+                container_id = metric["value"]
+            if metric["name"] == "container_type":
+                container_type = metric["value"]
+        assert container_id, "Job metrics did not include container_id"
+        assert container_type, "Job metrics did not include container_type"
+        assert container_type == self.container_type
+        return self.dataset_populator.get_history_dataset_content(
+            history_id, content_id=run_response["outputs"][0]["id"]
+        )
 
     def test_explicit(self, history_id: str) -> None:
         """
         tool having one package + one explicit container requirement
         """
-        self.dataset_populator.run_tool("mulled_example_explicit", {}, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
-        output = self.dataset_populator.get_history_dataset_content(history_id)
+        output = self._run_and_get_contents("mulled_example_explicit", history_id)
         assert "0.7.15-r1140" in output
 
     def test_mulled_simple(self, history_id: str) -> None:
         """
         tool having one package requirement
         """
-        self.dataset_populator.run_tool("mulled_example_simple", {}, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
-        output = self.dataset_populator.get_history_dataset_content(history_id)
+        output = self._run_and_get_contents("mulled_example_simple", history_id)
         assert "0.7.15-r1140" in output
 
     def test_mulled_explicit_invalid_case(self, history_id: str) -> None:
         """
         tool having one package + one (invalid? due to capitalization) explicit container requirement
         """
-        self.dataset_populator.run_tool("mulled_example_invalid_case", {}, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
-        output = self.dataset_populator.get_history_dataset_content(history_id)
+        output = self._run_and_get_contents("mulled_example_invalid_case", history_id)
         assert "0.7.15-r1140" in output
 
 

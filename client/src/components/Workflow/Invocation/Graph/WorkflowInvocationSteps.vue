@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import { isWorkflowInput } from "@/components/Workflow/constants";
@@ -43,28 +43,28 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const stepsDiv = ref<HTMLDivElement>();
-const expandInvocationInputs = ref(false);
 
 const workflowInputSteps = Object.values(props.workflow.steps).filter((step) => isWorkflowInput(step.type));
-const hasSingularInput = computed(() => workflowInputSteps.length === 1);
-const workflowRemainingSteps = hasSingularInput.value
-    ? Object.values(props.workflow.steps)
-    : Object.values(props.workflow.steps).filter((step) => !isWorkflowInput(step.type));
+const oneOrNoInput = computed(() => workflowInputSteps.length <= 1);
+const expandInvocationInputs = ref(oneOrNoInput.value);
 
 watch(
     () => [props.activeNodeId, stepsDiv.value],
     async ([nodeId, card]) => {
-        // if the active node id is an input step, expand the inputs section, else, collapse it
-        const isAnInput = workflowInputSteps.findIndex((step) => step.id === props.activeNodeId) !== -1;
-        expandInvocationInputs.value = isAnInput;
+        // if the active node id is an input step, expand the inputs section if not already expanded
+        if (!expandInvocationInputs.value) {
+            const isAnInput = workflowInputSteps.findIndex((step) => step.id === props.activeNodeId) !== -1;
+            expandInvocationInputs.value = isAnInput;
+        }
+
+        await nextTick();
 
         // on full page view, scroll to the active step card in the steps section
         if (props.isFullPage) {
             if (nodeId !== undefined && card) {
                 // scroll to the active step card
                 const stepCard = stepsDiv.value?.querySelector(`[data-index="${props.activeNodeId}"]`);
-                const portletHeaderDiv = stepCard?.querySelector(".portlet-header");
-                stepsDiv.value?.scrollTo({ top: portletHeaderDiv?.getBoundingClientRect().top });
+                stepCard?.scrollIntoView({ block: "nearest", inline: "start" });
             }
         }
         // clear any job being shown
@@ -81,7 +81,7 @@ function showJob(jobId: string | undefined) {
 <template>
     <div ref="stepsDiv" class="d-flex flex-column w-100">
         <!-- Input Steps grouped in a separate portlet -->
-        <div v-if="workflowInputSteps.length > 1" class="ui-portlet-section w-100">
+        <div v-if="!oneOrNoInput" class="ui-portlet-section w-100">
             <div
                 class="portlet-header portlet-operations"
                 role="button"
@@ -96,36 +96,21 @@ function showJob(jobId: string | undefined) {
                 </span>
                 <FontAwesomeIcon class="float-right" :icon="expandInvocationInputs ? faChevronUp : faChevronDown" />
             </div>
-
-            <div v-if="expandInvocationInputs" class="portlet-content m-1">
-                <WorkflowInvocationStep
-                    v-for="step in workflowInputSteps"
-                    :key="step.id"
-                    :data-index="step.id"
-                    :invocation="props.invocation"
-                    :workflow="props.workflow"
-                    :workflow-step="step"
-                    :in-graph-view="!props.hideGraph"
-                    :graph-step="steps[step.id]"
-                    :expanded="props.hideGraph ? undefined : props.activeNodeId === step.id"
-                    :showing-job-id="props.showingJobId"
-                    @show-job="showJob"
-                    @update:expanded="emit('focus-on-step', step.id)" />
-            </div>
         </div>
-        <!-- Non-Input (Tool/Subworkflow) Steps -->
-        <WorkflowInvocationStep
-            v-for="step in workflowRemainingSteps"
-            :key="step.id"
-            :data-index="step.id"
-            :invocation="props.invocation"
-            :workflow="props.workflow"
-            :workflow-step="step"
-            :in-graph-view="!props.hideGraph"
-            :graph-step="steps[step.id]"
-            :expanded="props.hideGraph ? undefined : props.activeNodeId === step.id"
-            :showing-job-id="props.showingJobId"
-            @show-job="showJob"
-            @update:expanded="emit('focus-on-step', step.id)" />
+        <div v-for="step in props.workflow.steps" :key="step.id">
+            <WorkflowInvocationStep
+                v-if="!isWorkflowInput(step.type) || (isWorkflowInput(step.type) && expandInvocationInputs)"
+                :class="{ 'mx-1': !oneOrNoInput && isWorkflowInput(step.type) }"
+                :data-index="step.id"
+                :invocation="props.invocation"
+                :workflow="props.workflow"
+                :workflow-step="step"
+                :in-graph-view="!props.hideGraph"
+                :graph-step="steps[step.id]"
+                :expanded="props.hideGraph ? undefined : props.activeNodeId === step.id"
+                :showing-job-id="props.showingJobId"
+                @show-job="showJob"
+                @update:expanded="emit('focus-on-step', step.id)" />
+        </div>
     </div>
 </template>

@@ -1,4 +1,4 @@
-import { shallowMount, Wrapper } from "@vue/test-utils";
+import { shallowMount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 

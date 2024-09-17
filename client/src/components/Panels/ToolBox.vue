@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye, faEyeSlash } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, ComputedRef, type PropType, type Ref, ref } from "vue";
+import { computed, type ComputedRef, type PropType, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
@@ -11,7 +11,7 @@ import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { getAppRoot } from "@/onload/loadConfig";
 import { type Tool, type ToolSection as ToolSectionType } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
-import { Workflow, type Workflow as WorkflowType } from "@/stores/workflowStore";
+import { type Workflow, type Workflow as WorkflowType } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
 
 import { filterTools, getValidPanelItems, getValidToolsInCurrentView, getValidToolsInEachSection } from "./utilities";

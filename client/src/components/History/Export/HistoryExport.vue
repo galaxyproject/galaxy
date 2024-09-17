@@ -12,7 +12,7 @@ import {
     reimportHistoryFromRecord,
 } from "@/api/histories.export";
 import type { ColorVariant } from "@/components/Common";
-import { areEqual, ExportParams, ExportRecord } from "@/components/Common/models/exportRecordModel";
+import { areEqual, type ExportParams, type ExportRecord } from "@/components/Common/models/exportRecordModel";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useFileSources } from "@/composables/fileSources";
 import { DEFAULT_EXPORT_PARAMS, useShortTermStorage } from "@/composables/shortTermStorage";

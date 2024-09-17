@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
+import { isDatasetElement, isDCE } from "@/api";
 import { getGalaxyInstance } from "@/app";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
@@ -17,6 +18,7 @@ import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
+import HelpText from "@/components/Help/HelpText.vue";
 
 library.add(faCopy, faFile, faFolder, faCaretDown, faCaretUp, faExclamation, faLink, faUnlink);
 
@@ -35,7 +37,7 @@ const props = withDefaults(
             values: Array<DataOption>;
         };
         extensions?: Array<string>;
-        type?: string;
+        type?: "data" | "data_collection";
         collectionTypes?: Array<string>;
         flavor?: string;
         tag?: string;
@@ -310,15 +312,28 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
         if (!canAcceptDatatype(extensions)) {
             return false;
         }
+        if (values.some((v) => !canAcceptSrc(v.history_content_type, v.collection_type))) {
+            return false;
+        }
         if (values.length > 0) {
             const incomingValues: Array<DataOption> = [];
             values.forEach((v) => {
                 // Map incoming objects to data option values
+                let newSrc;
+                if (isDCE(v)) {
+                    if (isDatasetElement(v)) {
+                        newSrc = SOURCE.DATASET;
+                        v = v.object;
+                    } else {
+                        newSrc = SOURCE.COLLECTION_ELEMENT;
+                    }
+                } else {
+                    newSrc =
+                        v.src || (v.history_content_type === "dataset_collection" ? SOURCE.COLLECTION : SOURCE.DATASET);
+                }
                 const newHid = v.hid;
                 const newId = v.id;
                 const newName = v.name ? v.name : newId;
-                const newSrc =
-                    v.src || (v.history_content_type === "dataset_collection" ? SOURCE.COLLECTION : SOURCE.DATASET);
                 const newValue: DataOption = {
                     id: newId,
                     src: newSrc,
@@ -414,17 +429,67 @@ function canAcceptDatatype(itemDatatypes: string | Array<string>) {
     return true;
 }
 
+function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", collectionType?: string) {
+    if (historyContentType === "dataset") {
+        // HDA can only be fed into data parameters, not collection parameters
+        if (props.type === "data") {
+            return true;
+        } else {
+            $emit("alert", "dataset is not a valid input for dataset collection parameter.");
+            return false;
+        }
+    } else if (historyContentType === "dataset_collection") {
+        if (props.type === "data") {
+            // collection can always be mapped over a data input ... in theory.
+            // One day we should also validate the map over model
+            return true;
+        }
+        if (!collectionType) {
+            // Should always be set if item is dataset collection
+            throw Error("Item is a dataset collection of unknown type.");
+        } else if (!props.collectionTypes) {
+            // if no collection_type is set all collections are valid
+            return true;
+        } else {
+            if (props.collectionTypes.includes(collectionType)) {
+                return true;
+            }
+            if (props.collectionTypes.some((element) => collectionType.endsWith(element))) {
+                return true;
+            } else {
+                $emit(
+                    "alert",
+                    `${collectionType} dataset collection is not a valid input for ${orList(
+                        props.collectionTypes
+                    )} type dataset collection parameter.`
+                );
+                return false;
+            }
+        }
+    } else {
+        throw Error("Unknown history content type.");
+    }
+}
+
 // Drag/Drop event handlers
 function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragData();
     if (eventData) {
         const extensions = (eventData.extension as string) || (eventData.elements_datatypes as Array<string>);
+        let highlightingState = "success";
         if (!canAcceptDatatype(extensions)) {
-            currentHighlighting.value = "warning";
+            highlightingState = "warning";
             $emit("alert", `${extensions} is not an acceptable format for this parameter.`);
-        } else {
-            currentHighlighting.value = "success";
+        } else if (
+            !canAcceptSrc(
+                eventData.history_content_type as "dataset" | "dataset_collection",
+                eventData.collection_type as string
+            )
+        ) {
+            highlightingState = "warning";
+            $emit("alert", `${eventData.history_content_type} is not an acceptable input type for this parameter.`);
         }
+        currentHighlighting.value = highlightingState;
         dragTarget.value = evt.target;
         dragData.value = eventData;
     }
@@ -501,12 +566,14 @@ const formatsButtonId = useUid("form-data-formats-");
 
 const warningListAmount = 4;
 const noOptionsWarningMessage = computed(() => {
-    if (!props.extensions || props.extensions.length === 0) {
-        return "No datasets available";
+    const itemType = props.type === "data" ? "datasets" : "dataset collections";
+    const collectionTypeLabel = props.collectionTypes?.length ? `${orList(props.collectionTypes)} ` : "";
+    if (!props.extensions || props.extensions.length === 0 || props.extensions.includes("data")) {
+        return `No ${collectionTypeLabel}${itemType} available`;
     } else if (props.extensions.length <= warningListAmount) {
-        return `No ${orList(props.extensions)} datasets available`;
+        return `No ${collectionTypeLabel}${itemType} with ${orList(props.extensions)} elements available`;
     } else {
-        return "No compatible datasets available";
+        return `No compatible ${collectionTypeLabel}${itemType} available`;
     }
 });
 </script>
@@ -595,7 +662,11 @@ const noOptionsWarningMessage = computed(() => {
             </BFormCheckbox>
             <div class="info text-info">
                 <FontAwesomeIcon icon="fa-exclamation" />
-                <span v-localize class="ml-1">
+                <span v-if="props.type == 'data' && currentVariant.src == SOURCE.COLLECTION" class="ml-1">
+                    The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
+                    tool.
+                </span>
+                <span v-else v-localize class="ml-1">
                     This is a batch mode input field. Individual jobs will be triggered for each dataset.
                 </span>
             </div>

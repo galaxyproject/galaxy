@@ -30,8 +30,7 @@ from datetime import (
     timezone,
 )
 from decimal import Decimal
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from email.message import EmailMessage
 from hashlib import md5
 from os.path import relpath
 from pathlib import Path
@@ -996,7 +995,7 @@ class Params:
         self.__dict__.update(values)
 
 
-def xml_text(root, name=None):
+def xml_text(root, name=None, default=""):
     """Returns the text inside an element"""
     if name is not None:
         # Try attribute first
@@ -1011,7 +1010,7 @@ def xml_text(root, name=None):
         text = "".join(elem.text.splitlines())
         return text.strip()
     # No luck, return empty string
-    return ""
+    return default
 
 
 def parse_resource_parameters(resource_param_file):
@@ -1134,7 +1133,7 @@ def commaify(amount):
 
 
 @overload
-def unicodify(  # type: ignore[overload-overlap]
+def unicodify(
     value: Literal[None],
     encoding: str = DEFAULT_ENCODING,
     error: str = "replace",
@@ -1634,10 +1633,8 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
         return
 
     to = listify(to)
-    if html:
-        msg = MIMEMultipart("alternative")
-    else:
-        msg = MIMEText(body, "plain", "utf-8")
+    msg = EmailMessage()
+    msg.set_content(body)
 
     msg["To"] = ", ".join(to)
     msg["From"] = frm
@@ -1652,45 +1649,40 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
         return
 
     if html:
-        mp_text = MIMEText(body, "plain", "utf-8")
-        mp_html = MIMEText(html, "html", "utf-8")
-        msg.attach(mp_text)
-        msg.attach(mp_html)
+        msg.add_alternative(html, subtype="html")
 
     smtp_ssl = asbool(getattr(config, "smtp_ssl", False))
     if smtp_ssl:
         s = smtplib.SMTP_SSL(config.smtp_server)
     else:
         s = smtplib.SMTP(config.smtp_server)
-    if not smtp_ssl:
-        try:
-            s.starttls()
-            log.debug("Initiated SSL/TLS connection to SMTP server: %s", config.smtp_server)
-        except RuntimeError as e:
-            log.warning("SSL/TLS support is not available to your Python interpreter: %s", unicodify(e))
-        except smtplib.SMTPHeloError as e:
-            log.error("The server didn't reply properly to the HELO greeting: %s", unicodify(e))
-            s.close()
-            raise
-        except smtplib.SMTPException as e:
-            log.warning("The server does not support the STARTTLS extension: %s", unicodify(e))
-    if config.smtp_username and config.smtp_password:
-        try:
-            s.login(config.smtp_username, config.smtp_password)
-        except smtplib.SMTPHeloError as e:
-            log.error("The server didn't reply properly to the HELO greeting: %s", unicodify(e))
-            s.close()
-            raise
-        except smtplib.SMTPAuthenticationError as e:
-            log.error("The server didn't accept the username/password combination: %s", unicodify(e))
-            s.close()
-            raise
-        except smtplib.SMTPException as e:
-            log.error("No suitable authentication method was found: %s", unicodify(e))
-            s.close()
-            raise
-    s.sendmail(frm, to, msg.as_string())
-    s.quit()
+    try:
+        if not smtp_ssl:
+            try:
+                s.starttls()
+                log.debug("Initiated SSL/TLS connection to SMTP server: %s", config.smtp_server)
+            except RuntimeError as e:
+                log.warning("SSL/TLS support is not available to your Python interpreter: %s", e)
+            except smtplib.SMTPHeloError as e:
+                log.error("The server didn't reply properly to the HELO greeting: %s", e)
+                raise
+            except smtplib.SMTPException as e:
+                log.warning("The server does not support the STARTTLS extension: %s", e)
+        if config.smtp_username and config.smtp_password:
+            try:
+                s.login(config.smtp_username, config.smtp_password)
+            except smtplib.SMTPHeloError as e:
+                log.error("The server didn't reply properly to the HELO greeting: %s", e)
+                raise
+            except smtplib.SMTPAuthenticationError as e:
+                log.error("The server didn't accept the username/password combination: %s", e)
+                raise
+            except smtplib.SMTPException as e:
+                log.error("No suitable authentication method was found: %s", e)
+                raise
+        s.send_message(msg)
+    finally:
+        s.quit()
 
 
 def force_symlink(source, link_name):
@@ -1738,12 +1730,20 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 
+# never load packages this way (won't work for installed packages),
+# but while we're working on packaging everything this can be a way to point
+# an installed Galaxy at a Galaxy root for things like tools. Ultimately
+# this all needs to be packaged, but we have some very old PRs working on this
+# that are pretty tricky and shouldn't slow current development.
+GALAXY_INCLUDES_ROOT = os.environ.get("GALAXY_INCLUDES_ROOT")
+
+
 #  Don't use this directly, prefer method version that "works" with packaged Galaxy.
-galaxy_root_path = Path(__file__).parent.parent.parent.parent
+galaxy_root_path = Path(GALAXY_INCLUDES_ROOT) if GALAXY_INCLUDES_ROOT else Path(__file__).parent.parent.parent.parent
 
 
 def galaxy_directory() -> str:
-    if in_packages():
+    if in_packages() and not GALAXY_INCLUDES_ROOT:
         # This will work only when running pytest from <galaxy_root>/packages/<package_name>/
         cwd = Path.cwd()
         path = cwd.parent.parent

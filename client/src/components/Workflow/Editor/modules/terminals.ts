@@ -1,16 +1,16 @@
 import EventEmitter from "events";
 
-import type { DatatypesMapperModel } from "@/components/Datatypes/model";
-import type { useWorkflowStores } from "@/composables/workflowStores";
+import { type DatatypesMapperModel } from "@/components/Datatypes/model";
+import { type useWorkflowStores } from "@/composables/workflowStores";
 import { type Connection, type ConnectionId, getConnectionId } from "@/stores/workflowConnectionStore";
-import type {
-    CollectionOutput,
-    DataCollectionStepInput,
-    DataOutput,
-    DataStepInput,
-    ParameterOutput,
-    ParameterStepInput,
-    TerminalSource,
+import {
+    type CollectionOutput,
+    type DataCollectionStepInput,
+    type DataOutput,
+    type DataStepInput,
+    type ParameterOutput,
+    type ParameterStepInput,
+    type TerminalSource,
 } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
@@ -534,13 +534,30 @@ export class InputParameterTerminal extends BaseInputTerminal {
     }
 
     effectiveType(parameterType: string) {
-        return parameterType == "select" ? "text" : parameterType;
+        let newType: string;
+        switch (parameterType) {
+            case "select":
+                newType = "text";
+                break;
+            case "data_column":
+                newType = "integer";
+                break;
+            default:
+                newType = parameterType;
+        }
+        return newType;
     }
     attachable(other: BaseOutputTerminal) {
         const effectiveThisType = this.effectiveType(this.type);
         const otherType = ("type" in other && other.type) || "data";
         const effectiveOtherType = this.effectiveType(otherType);
         const canAccept = effectiveThisType === effectiveOtherType;
+        if (!this.multiple && other.multiple) {
+            return new ConnectionAcceptable(
+                false,
+                `This output parameter represents multiple values but input only accepts a single value`
+            );
+        }
         return new ConnectionAcceptable(
             canAccept,
             canAccept ? null : `Cannot attach a ${effectiveOtherType} parameter to a ${effectiveThisType} input`
@@ -801,12 +818,14 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
 
 interface OutputParameterTerminalArgs extends Omit<BaseOutputTerminalArgs, "datatypes"> {
     type: ParameterOutput["type"];
+    multiple: ParameterOutput["multiple"];
 }
 
 export class OutputParameterTerminal extends BaseOutputTerminal {
     constructor(attr: OutputParameterTerminalArgs) {
         super({ ...attr, datatypes: [] });
         this.type = attr.type;
+        this.multiple = attr.multiple;
     }
 }
 
@@ -977,6 +996,7 @@ export function terminalFactory<T extends TerminalSourceAndInvalid>(
         if (isOutputParameterArg(terminalSource)) {
             return new OutputParameterTerminal({
                 ...outputArgs,
+                multiple: terminalSource.multiple,
                 type: terminalSource.type,
             }) as TerminalOf<T>;
         } else if (isOutputCollectionArg(terminalSource)) {
