@@ -1,11 +1,13 @@
 import json
 import logging
 import os
-from typing import Optional
+from typing import (
+    Optional,
+    Union,
+)
 
 from markupsafe import escape
 
-import galaxy.schema.schema
 from galaxy import (
     exceptions,
     util,
@@ -34,6 +36,12 @@ from galaxy.model import (
     tags,
 )
 from galaxy.model.base import transaction
+from galaxy.schema.fields import DecodedDatabaseIdField, LibraryFolderDatabaseIdField
+from galaxy.schema.library_contents import (
+    LibraryContentsDeletePayload,
+    LibraryContentsFileCreatePayload,
+    LibraryContentsFolderCreatePayload,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
@@ -64,12 +72,12 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
     def index(
         self,
         trans: ProvidesUserContext,
-        library_id,
+        library_id: DecodedDatabaseIdField,
     ):
         """Return a list of library files and folders."""
         rval = []
         current_user_roles = trans.get_current_user_roles()
-        library = trans.sa_session.get(Library, self.decode_id(library_id))
+        library = trans.sa_session.get(Library, library_id)
         if not library:
             raise exceptions.RequestParameterInvalidException("No library found with the id provided.")
         if not (trans.user_is_admin or trans.app.security_agent.can_access_library(current_user_roles, library)):
@@ -111,19 +119,18 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
     def show(
         self,
         trans: ProvidesUserContext,
-        id,
+        id: Union[LibraryFolderDatabaseIdField, DecodedDatabaseIdField],
     ):
         """Returns information about library file or folder."""
-        class_name, content_id = self._decode_library_content_id(id)
-        if class_name == "LibraryFolder":
-            content = self.get_library_folder(trans, content_id, check_ownership=False, check_accessible=True)
+        if isinstance(id, LibraryFolderDatabaseIdField):
+            content = self.get_library_folder(trans, id, check_ownership=False, check_accessible=True)
             rval = content.to_dict(view="element", value_mapper={"id": trans.security.encode_id})
             rval["id"] = f"F{str(rval['id'])}"
             if rval["parent_id"] is not None:  # This can happen for root folders.
                 rval["parent_id"] = f"F{str(trans.security.encode_id(rval['parent_id']))}"
             rval["parent_library_id"] = trans.security.encode_id(rval["parent_library_id"])
         else:
-            content = self.get_library_dataset(trans, content_id, check_ownership=False, check_accessible=True)
+            content = self.get_library_dataset(trans, id, check_ownership=False, check_accessible=True)
             rval = content.to_dict(view="element")
             rval["id"] = trans.security.encode_id(rval["id"])
             rval["ldda_id"] = trans.security.encode_id(rval["ldda_id"])
@@ -137,8 +144,8 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
     def create(
         self,
         trans: ProvidesHistoryContext,
-        library_id,
-        payload,
+        library_id: LibraryFolderDatabaseIdField,
+        payload: Union[LibraryContentsFolderCreatePayload, LibraryContentsFileCreatePayload],
     ):
         """Create a new library file or folder."""
         if trans.user_is_bootstrap_admin:
@@ -161,8 +168,6 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
         if not payload.folder_id:
             raise exceptions.RequestParameterMissingException("Missing required 'folder_id' parameter.")
         folder_id = payload.folder_id
-        _, folder_id = self._decode_library_content_id(folder_id)
-        folder_id = trans.security.decode_id(folder_id)
         # security is checked in the downstream controller
         parent = self.get_library_folder(trans, folder_id, check_ownership=False, check_accessible=False)
         # The rest of the security happens in the library_common controller.
@@ -179,13 +184,9 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
         )
         if create_type == "file":
             if from_hda_id:
-                return self._copy_hda_to_library_folder(
-                    trans, self.hda_manager, self.decode_id(from_hda_id), folder_id, ldda_message
-                )
+                return self._copy_hda_to_library_folder(trans, self.hda_manager, from_hda_id, folder_id, ldda_message)
             if from_hdca_id:
-                return self._copy_hdca_to_library_folder(
-                    trans, self.hda_manager, self.decode_id(from_hdca_id), folder_id, ldda_message
-                )
+                return self._copy_hdca_to_library_folder(trans, self.hda_manager, from_hdca_id, folder_id, ldda_message)
 
         # check for extended metadata, store it and pop it out of the param
         # otherwise sanitize_param will have a fit
@@ -245,7 +246,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
     def update(
         self,
         trans: ProvidesUserContext,
-        id,
+        id: DecodedDatabaseIdField,
         payload,
     ):
         """Create an ImplicitlyConvertedDatasetAssociation."""
@@ -266,8 +267,8 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
     def delete(
         self,
         trans: ProvidesHistoryContext,
-        id,
-        payload,
+        id: DecodedDatabaseIdField,
+        payload: LibraryContentsDeletePayload,
     ):
         """Delete the LibraryDataset with the given ``id``."""
         purge = payload.purge or False
@@ -390,19 +391,6 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True
             yield prefix, (f"{meta}").encode()
-
-    def _decode_library_content_id(
-        self,
-        content_id,
-    ):
-        if len(content_id) % 16 == 0:
-            return "LibraryDataset", content_id
-        elif content_id.startswith("F"):
-            return "LibraryFolder", content_id[1:]
-        else:
-            raise exceptions.RequestParameterInvalidException(
-                f"Malformed library content id ( {str(content_id)} ) specified, unable to decode."
-            )
 
     def _traverse(
         self,

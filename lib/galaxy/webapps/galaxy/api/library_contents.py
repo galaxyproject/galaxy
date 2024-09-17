@@ -3,10 +3,17 @@ API operations on the contents of a data library.
 """
 
 import logging
+from typing import Union
 
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
+)
+from galaxy.schema.fields import DecodedDatabaseIdField, LibraryFolderDatabaseIdField
+from galaxy.schema.library_contents import (
+    LibraryContentsDeletePayload,
+    LibraryContentsFileCreatePayload,
+    LibraryContentsFolderCreatePayload,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -30,7 +37,7 @@ class FastAPILibraryContents:
     )
     def index(
         self,
-        library_id,
+        library_id: DecodedDatabaseIdField,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> list:
         return self.service.index(trans, library_id)
@@ -41,8 +48,8 @@ class FastAPILibraryContents:
     )
     def show(
         self,
-        id,
-        library_id,
+        library_id: DecodedDatabaseIdField,
+        id: Union[LibraryFolderDatabaseIdField, DecodedDatabaseIdField],
         trans: ProvidesUserContext = DependsOnTrans,
     ):
         return self.service.show(trans, id)
@@ -53,8 +60,8 @@ class FastAPILibraryContents:
     )
     def create(
         self,
-        library_id,
-        payload,
+        library_id: DecodedDatabaseIdField,
+        payload: Union[LibraryContentsFolderCreatePayload, LibraryContentsFileCreatePayload],
         trans: ProvidesHistoryContext = DependsOnTrans,
     ):
         return self.service.create(trans, library_id, payload)
@@ -66,8 +73,8 @@ class FastAPILibraryContents:
     )
     def update(
         self,
-        id,
-        library_id,
+        library_id: DecodedDatabaseIdField,
+        id: DecodedDatabaseIdField,
         payload,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
@@ -79,9 +86,9 @@ class FastAPILibraryContents:
     )
     def delete(
         self,
-        library_id,
-        id,
-        payload,
+        library_id: DecodedDatabaseIdField,
+        id: DecodedDatabaseIdField,
+        payload: LibraryContentsDeletePayload,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ):
         return self.service.delete(trans, id, payload)
