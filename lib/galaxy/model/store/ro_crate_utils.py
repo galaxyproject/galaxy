@@ -269,7 +269,7 @@ class WorkflowRunCrateProfileBuilder:
                             annotations_list.append(annotation)
 
                     # Join annotations into a single string or handle them individually, depending on your requirement
-                    tool_description = " ".join(annotations_list) if annotations_list else ""
+                    tool_description = " ".join(annotations_list) if annotations_list else None
 
                 # Add tool entity to the RO-Crate
                 tool_entity = crate.add(
