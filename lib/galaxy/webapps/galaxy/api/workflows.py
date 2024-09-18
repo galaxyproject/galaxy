@@ -243,7 +243,9 @@ class WorkflowsAPIController(
                     trs_version_id = None
                     import_source = None
                     if "trs_url" in payload:
-                        parts = self.app.trs_proxy.match_url(payload["trs_url"])
+                        parts = self.app.trs_proxy.match_url(
+                            payload["trs_url"], trans.app.config.fetch_url_allowlist_ips
+                        )
                         if parts:
                             server = self.app.trs_proxy.server_from_url(parts["trs_base_url"])
                             trs_tool_id = parts["tool_id"]
@@ -251,7 +253,7 @@ class WorkflowsAPIController(
                             payload["trs_tool_id"] = trs_tool_id
                             payload["trs_version_id"] = trs_version_id
                         else:
-                            raise exceptions.MessageException("Invalid TRS URL.")
+                            raise exceptions.RequestParameterInvalidException(f"Invalid TRS URL {payload['trs_url']}.")
                     else:
                         trs_server = payload.get("trs_server")
                         server = self.app.trs_proxy.get_server(trs_server)
