@@ -220,27 +220,47 @@ class WorkflowRunCrateProfileBuilder:
 
             crate.license = self.workflow.license or ""
             crate.mainEntity["name"] = self.workflow.name
-
-            # Adding the creator information
+            
+            # Adding multiple creators if available
             if self.workflow.creator_metadata:
-                creators = self.workflow.creator_metadata
-                if creators and isinstance(creators, list) and len(creators) > 0:
-                    first_creator = creators[0]
-                    creator_entity = crate.add(
-                        ContextEntity(
-                            crate,
-                            first_creator.get('identifier', ''),  # Default to empty string if identifier is missing
-                            properties={
-                                "@type": "Person",
-                                "name": first_creator.get('name', ''),  # Default to empty string if name is missing
-                                "orcid": first_creator.get('identifier', ''),  # Assuming identifier as orcid, or adjust accordingly
-                            },
+                for creator_data in self.workflow.creator_metadata:
+                    if creator_data.get('class') == 'Person':
+                        # Create the person entity
+                        creator_entity = crate.add(
+                            ContextEntity(
+                                crate,
+                                creator_data.get('identifier', ''),  # Default to empty string if identifier is missing
+                                properties={
+                                    "@type": "Person",
+                                    "name": creator_data.get('name', ''),  # Default to empty string if name is missing
+                                    "orcid": creator_data.get('identifier', ''),  # Assuming identifier is ORCID, or adjust as needed
+                                    "url": creator_data.get('url', ''),  # Add URL if available, otherwise empty string
+                                    "email": creator_data.get('email', ''),  # Add email if available, otherwise empty string
+                                },
+                            )
                         )
-                    )
-                    crate.mainEntity.append_to("creator", creator_entity)
+                        # Append the person creator entity to the mainEntity
+                        crate.mainEntity.append_to("creator", creator_entity)
+
+                    elif creator_data.get('class') == 'Organization':
+                        # Create the organization entity
+                        organization_entity = crate.add(
+                            ContextEntity(
+                                crate,
+                                creator_data.get('url', ''),  # Use URL as identifier if available, otherwise empty string
+                                properties={
+                                    "@type": "Organization",
+                                    "name": creator_data.get('name', ''),  # Default to empty string if name is missing
+                                    "url": creator_data.get('url', ''),  # Add URL if available, otherwise empty string
+                                },
+                            )
+                        )
+                        # Append the organization entity to the mainEntity
+                        crate.mainEntity.append_to("creator", organization_entity)
+
 
             # Add CWL workflow entity if exists
-            crate.mainEntity["subjectOf"] = cwl_wf if cwl_wf else ""
+            crate.mainEntity["subjectOf"] = cwl_wf
 
         # Add tools used in the workflow
         self._add_tools(crate)
