@@ -263,10 +263,10 @@ class WorkflowRunCrateProfileBuilder:
                 if step.annotations:
                     # Assuming each annotation object has an 'annotation' attribute
                     annotations_list = []
-                    for annotation_obj in step.annotations:
-                        annotation_text = getattr(annotation_obj, 'annotation', None)
-                        if annotation_text:  # Check if annotation_text is not None
-                            annotations_list.append(annotation_text)
+                    for annotation_association in step.annotations:
+                        annotation = annotation_association.annotation
+                        if annotation:  # Check if annotation_text is not None
+                            annotations_list.append(annotation)
 
                     # Join annotations into a single string or handle them individually, depending on your requirement
                     tool_description = " ".join(annotations_list) if annotations_list else ""
