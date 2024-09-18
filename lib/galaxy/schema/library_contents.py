@@ -1,7 +1,10 @@
 from enum import Enum
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
+    Union,
 )
 
 from pydantic import (
@@ -9,7 +12,11 @@ from pydantic import (
     RootModel,
 )
 
-from galaxy.schema.fields import EncodedDatabaseIdField, DecodedDatabaseIdField, LibraryFolderDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+    LibraryFolderDatabaseIdField,
+)
 from galaxy.schema.schema import Model
 
 
@@ -63,14 +70,14 @@ class LibraryContentsCreatePayload(Model):
         "",
         title="the new message attribute of the LDDA created",
     )
-    extended_metadata: Optional[str] = Field(
+    extended_metadata: Optional[Union[Dict[str, Any], List[Any], int, float, str, bool]] = Field(
         None,
         title="sub-dictionary containing any extended metadata to associate with the item",
     )
 
 
 class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
-    dbkey: Optional[str] = Field(
+    dbkey: Optional[Union[str, list]] = Field(
         "?",
         title="database key",
     )
@@ -100,6 +107,10 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
         title="(only when upload_option is 'upload_directory' or 'upload_paths')."
         "Setting to 'link_to_files' symlinks instead of copying the files",
     )
+    uuid: Optional[str] = Field(
+        None,
+        title="UUID of the dataset to upload",
+    )
 
 
 class LibraryContentsFolderCreatePayload(LibraryContentsCreatePayload):
@@ -113,8 +124,31 @@ class LibraryContentsFolderCreatePayload(LibraryContentsCreatePayload):
     )
 
 
+class LibraryContentsUpdatePayload(Model):
+    converted_dataset_id: Optional[DecodedDatabaseIdField] = Field(
+        None,
+        title="the decoded id of the dataset that was created from the file",
+    )
+
+
 class LibraryContentsDeletePayload(Model):
     purge: Optional[bool] = Field(
         False,
         title="if True, purge the library dataset",
     )
+
+
+class LibraryContentsIndexResponse(Model):
+    pass
+
+
+class LibraryContentsShowResponse(Model):
+    pass
+
+
+class LibraryContentsCreateResponse(Model):
+    pass
+
+
+class LibraryContentsDeleteResponse(Model):
+    pass
