@@ -222,7 +222,7 @@ class WorkflowRunCrateProfileBuilder:
             crate.mainEntity["name"] = self.workflow.name
 
             # Adding the creator information
-            if hasattr(self.workflow, 'creator_metadata') and self.workflow.creator_metadata:
+            if self.workflow.creator_metadata:
                 creators = self.workflow.creator_metadata
                 if creators and isinstance(creators, list) and len(creators) > 0:
                     first_creator = creators[0]
