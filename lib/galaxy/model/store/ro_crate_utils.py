@@ -257,7 +257,7 @@ class WorkflowRunCrateProfileBuilder:
                 tool_name = step.label or tool_id  # use label if available, fallback to tool_id
 
                 # Initialize tool description for each tool
-                tool_description = ""
+                tool_description: Optional[str] = None
 
                 # Check if the tool step has annotations
                 if step.annotations:
