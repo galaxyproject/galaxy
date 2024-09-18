@@ -848,28 +848,6 @@ mapping:
           Mako templates are compiled as needed and cached for reuse, this directory is
           used for the cache
 
-      check_job_script_integrity:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          Set to false to disable various checks Galaxy will do to ensure it
-          can run job scripts before attempting to execute or submit them.
-
-      check_job_script_integrity_count:
-        type: int
-        default: 35
-        required: false
-        desc: |
-          Number of checks to execute if check_job_script_integrity is enabled.
-
-      check_job_script_integrity_sleep:
-        type: float
-        default: .25
-        required: false
-        desc: |
-          Time to sleep between checks if check_job_script_integrity is enabled (in seconds).
-
       default_job_shell:
         type: str
         default: /bin/bash

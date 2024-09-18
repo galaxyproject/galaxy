@@ -13,11 +13,7 @@ from typing import Optional
 
 from galaxy import util
 from galaxy.job_execution.output_collect import default_exit_code_file
-from galaxy.jobs.runners.util.job_script import (
-    INTEGRITY_INJECTION,
-    ScriptIntegrityChecks,
-    write_script,
-)
+from galaxy.jobs.runners.util.job_script import write_script
 from galaxy.tool_util.deps.container_classes import (
     Container,
     TRAP_KILL_CONTAINER,
@@ -155,7 +151,7 @@ def build_command(
         relocate_contents = (
             "from galaxy_ext.cwl.handle_outputs import relocate_dynamic_outputs; relocate_dynamic_outputs()"
         )
-        write_script(relocate_script_file, relocate_contents, ScriptIntegrityChecks(check_job_script_integrity=False))
+        write_script(relocate_script_file, relocate_contents)
         commands_builder.append_command(SETUP_GALAXY_FOR_METADATA)
         commands_builder.append_command(f"python '{relocate_script_file}'")
 
@@ -185,8 +181,6 @@ def __externalize_commands(
     # for instance.
     if shell and shell.lower() == "none":
         return tool_commands
-    if job_wrapper.job_io.check_job_script_integrity:
-        integrity_injection = INTEGRITY_INJECTION
     set_e = ""
     if job_wrapper.strict_shell:
         set_e = "set -e\n"
@@ -197,7 +191,6 @@ def __externalize_commands(
     write_script(
         local_container_script,
         script_contents,
-        job_io=job_wrapper.job_io,
     )
     commands = f"{shell} {local_container_script}"
     # TODO: Cleanup for_pulsar hack.
