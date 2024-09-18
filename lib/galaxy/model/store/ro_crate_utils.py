@@ -254,7 +254,7 @@ class WorkflowRunCrateProfileBuilder:
             if step.type == "tool":
                 tool_id = step.tool_id
                 tool_version = step.tool_version
-                tool_name = step.label or tool_id  # use label if available, fallback to tool_id
+                tool_name = tool_id  # label can de irrelevant or descritption better keep the tool id
 
                 # Initialize tool description for each tool
                 tool_description: Optional[str] = None
