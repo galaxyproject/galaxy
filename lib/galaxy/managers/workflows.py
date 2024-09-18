@@ -241,7 +241,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                             stmt = stmt.where(StoredWorkflowUserShareAssociation.user == user)
                         elif q == "bookmarked":
                             stmt = (
-                                stmt.outerjoin(model.StoredWorkflowMenuEntry)
+                                stmt.join(model.StoredWorkflowMenuEntry)
                                 .where(model.StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id)
                                 .where(model.StoredWorkflowMenuEntry.user_id == user.id)
                             )
