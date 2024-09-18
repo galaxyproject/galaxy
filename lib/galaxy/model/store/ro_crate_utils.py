@@ -260,7 +260,7 @@ class WorkflowRunCrateProfileBuilder:
                 tool_description = ""
 
                 # Check if the tool step has annotations
-                if hasattr(step, 'annotations') and step.annotations:
+                if step.annotations:
                     # Assuming each annotation object has an 'annotation' attribute
                     annotations_list = []
                     for annotation_obj in step.annotations:
