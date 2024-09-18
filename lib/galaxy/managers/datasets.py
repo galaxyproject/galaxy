@@ -497,8 +497,8 @@ class DatasetAssociationManager(
             raise exceptions.ItemDeletionException("The dataset you are attempting to view has been deleted.")
         elif dataset.state == Dataset.states.UPLOAD:
             raise exceptions.Conflict("Please wait until this dataset finishes uploading before attempting to view it.")
-        elif dataset.state == Dataset.states.NEW:
-            raise exceptions.Conflict("The dataset you are attempting to view is new and has no data.")
+        elif dataset.state in (Dataset.states.NEW, Dataset.states.QUEUED):
+            raise exceptions.Conflict(f"The dataset you are attempting to view is {dataset.state} and has no data.")
         elif dataset.state == Dataset.states.DISCARDED:
             raise exceptions.ItemDeletionException("The dataset you are attempting to view has been discarded.")
         elif dataset.state == Dataset.states.DEFERRED:
@@ -509,6 +509,14 @@ class DatasetAssociationManager(
             raise exceptions.Conflict(
                 "The dataset you are attempting to view is in paused state. One of the inputs for the job that creates this dataset has failed."
             )
+        elif dataset.state == Dataset.states.RUNNING:
+            if not self.app.object_store.exists(dataset.dataset):
+                raise exceptions.Conflict(
+                    "The dataset you are attempting to view is still being created and has no data yet."
+                )
+        elif dataset.state == Dataset.states.ERROR:
+            if not self.app.object_store.exists(dataset.dataset):
+                raise exceptions.RequestParameterInvalidException("The dataset is in error and has no data.")
 
     def ensure_can_change_datatype(self, dataset: model.DatasetInstance, raiseException: bool = True) -> bool:
         if not dataset.datatype.is_datatype_change_allowed():
