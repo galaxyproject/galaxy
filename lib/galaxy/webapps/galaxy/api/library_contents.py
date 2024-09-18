@@ -9,7 +9,7 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField, LibraryFolderDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.library_contents import (
     LibraryContentsDeletePayload,
     LibraryContentsFileCreatePayload,
@@ -20,7 +20,10 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
 )
-from galaxy.webapps.galaxy.services.library_contents import LibraryContentsService
+from galaxy.webapps.galaxy.services.library_contents import (
+    LibraryContentsService,
+    MaybeLibraryFolderOrDatasetID,
+)
 
 log = logging.getLogger(__name__)
 
@@ -49,7 +52,7 @@ class FastAPILibraryContents:
     def show(
         self,
         library_id: DecodedDatabaseIdField,
-        id: Union[LibraryFolderDatabaseIdField, DecodedDatabaseIdField],
+        id: MaybeLibraryFolderOrDatasetID,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
         return self.service.show(trans, id)
@@ -88,7 +91,7 @@ class FastAPILibraryContents:
         self,
         library_id: DecodedDatabaseIdField,
         id: DecodedDatabaseIdField,
-        payload: LibraryContentsDeletePayload,
+        payload: LibraryContentsDeletePayload = LibraryContentsDeletePayload(),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ):
         return self.service.delete(trans, id, payload)

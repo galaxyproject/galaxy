@@ -172,11 +172,25 @@ class TestLibraryContentsApi(ApiTestCase):
         response = self._delete(f"/api/libraries/{library_id}/contents/{file_id}")
         self._assert_status_code_is(response, 200)
 
+    def test_delete_library_item_from_hda_purged(self):
+        library_id = self.library["id"]
+        file_id = self._create_library_content(type="from_hda")["id"]
+        payload = {"purged": True}
+        response = self._delete(f"/api/libraries/{library_id}/contents/{file_id}", data=payload, json=True)
+        self._assert_status_code_is(response, 200)
+
+    def test_delete_library_item_from_hdca_purged(self):
+        library_id = self.library["id"]
+        file_id = self._create_library_content(type="from_hdca")[0]["id"]
+        payload = {"purged": True}
+        response = self._delete(f"/api/libraries/{library_id}/contents/{file_id}", data=payload, json=True)
+        self._assert_status_code_is(response, 200)
+
     def test_delete_invalid_library_item(self):
         library_id = self.library["id"]
         invalid_item_id = "invalid_id"
-        response = self._delete(f"/api/libraries/{library_id}/contents/{invalid_item_id}")
-        self._assert_status_code_is(response, 500)
+        response_invalid = self._delete(f"/api/libraries/{library_id}/contents/{invalid_item_id}")
+        self._assert_status_code_is(response_invalid, 400)
 
     def _create_library_content(self, type) -> Any:
         folder_id = self.library["root_folder_id"]
