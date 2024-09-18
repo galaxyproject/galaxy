@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BAlert, BCard, BCardGroup, BCardImg, BCardTitle, BFormCheckbox, BFormGroup, BFormInput } from "bootstrap-vue";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
@@ -179,6 +179,16 @@ const wizard = useWizard({
         isSkippable: () => false,
     },
 });
+
+watch(
+    () => exportData.exportPluginFormat,
+    () => {
+        // Only allow BCO format to be exported to BCODB
+        if (exportData.destination === "bco-database" && exportData.exportPluginFormat !== "bco") {
+            exportData.destination = "download";
+        }
+    }
+);
 
 function onRecordSelected(recordUri: string) {
     exportData.remoteUri = recordUri;
