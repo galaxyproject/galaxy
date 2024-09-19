@@ -2056,10 +2056,26 @@ class NavigatesGalaxy(HasDriver):
         )
         return element
 
+    def _clear_tooltip(self, tooltip_component):
+        last_timeout: Optional[SeleniumTimeoutException] = None
+        for _ in range(2):
+            if not tooltip_component.is_absent:
+                move_away_chain = self.action_chains()
+                move_away_chain.move_by_offset(100, 100)
+                move_away_chain.perform()
+            try:
+                tooltip_component.wait_for_absent()
+                return
+            except SeleniumTimeoutException as e:
+                last_timeout = e
+
+        assert last_timeout
+        message = "Failed to force current tool tip off screen, cannot test next tooltip."
+        raise self.prepend_timeout_message(last_timeout, message)
+
     def get_tooltip_text(self, element, sleep=0, click_away=True):
         tooltip_balloon = self.components._.tooltip_balloon
-        tooltip_balloon.wait_for_absent()
-
+        self._clear_tooltip(tooltip_balloon)
         action_chains = self.action_chains()
         action_chains.move_to_element(element)
         action_chains.perform()
