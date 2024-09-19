@@ -8,9 +8,12 @@ import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { isDatasetElement, isDCE } from "@/api";
 import { getGalaxyInstance } from "@/app";
+import { buildCollectionModal } from "@/components/History/adapters/buildCollectionModal";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { orList } from "@/utils/strings";
 
 import type { DataOption } from "./types";
@@ -471,6 +474,21 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
+const historyStore = useHistoryStore();
+const historyItemsStore = useHistoryItemsStore();
+// Build a new collection
+async function buildNewCollection(collectionType: string) {
+    if (!historyStore.currentHistoryId) {
+        return;
+    }
+    const modalResult = await buildCollectionModal(
+        collectionType,
+        historyItemsStore.getHistoryItems(historyStore.currentHistoryId, ""),
+        historyStore.currentHistoryId
+    );
+    // TODO: Implement handling `modalResult` as input for the field
+}
+
 // Drag/Drop event handlers
 function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragData();
@@ -632,7 +650,20 @@ const noOptionsWarningMessage = computed(() => {
             :placeholder="`Select a ${placeholder}`">
             <template v-slot:no-options>
                 <BAlert variant="warning" show>
-                    {{ noOptionsWarningMessage }}
+                    <div>{{ noOptionsWarningMessage }}</div>
+                    <div v-if="props.collectionTypes?.length > 0">
+                        Click here to create/add:
+                        <BButtonGroup size="sm" buttons>
+                            <BButton
+                                v-for="collectionType in props.collectionTypes"
+                                :key="collectionType"
+                                variant="primary"
+                                @click="buildNewCollection(collectionType)">
+                                {{ collectionType }}
+                            </BButton>
+                        </BButtonGroup>
+                        {{ props.type === "data" ? "datasets" : "dataset collections" }}
+                    </div>
                 </BAlert>
             </template>
         </FormSelect>
