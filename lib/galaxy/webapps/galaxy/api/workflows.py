@@ -863,7 +863,7 @@ query_tags = [
         "Include only deleted workflows in the final result.",
     ),
     IndexQueryTag(
-        "is:share_with_me",
+        "is:shared_with_me",
         "Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.",
     ),
     IndexQueryTag(
