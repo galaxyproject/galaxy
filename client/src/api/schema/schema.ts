@@ -24374,7 +24374,7 @@ export interface operations {
              * `is:deleted`
              * : Include only deleted workflows in the final result.
              *
-             * `is:share_with_me`
+             * `is:shared_with_me`
              * : Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.
              *
              * `is:bookmarked`
