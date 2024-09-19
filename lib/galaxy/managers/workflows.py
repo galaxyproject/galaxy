@@ -908,6 +908,23 @@ class WorkflowContentsManager(UsesAnnotations):
 
         return workflow, missing_tool_tups
 
+    def convert_to_dict_from_many(self, obj, depth=0, max_depth=5):
+        if depth > max_depth:
+            return "<max depth reached>"
+
+        if isinstance(obj, list):
+            return [self.convert_to_dict_from_many(item, depth=depth + 1, max_depth=max_depth) for item in obj]
+        elif isinstance(obj, dict) or hasattr(obj, "__dict__"):
+            if isinstance(obj, dict):
+                items = obj.items()  # Dictionary case
+            else:
+                items = obj.__dict__.items()  # Custom object case
+
+            return {key: self.convert_to_dict_from_many(value, depth=depth + 1, max_depth=max_depth)
+                    for key, value in items if not key.startswith('_')}
+        else:
+            return obj
+
     def workflow_to_dict(self, trans, stored, style="export", version=None, history=None):
         """Export the workflow contents to a dictionary ready for JSON-ification and to be
         sent out via API for instance. There are three styles of export allowed 'export', 'instance', and
@@ -1071,6 +1088,11 @@ class WorkflowContentsManager(UsesAnnotations):
                 }
                 for oc in step.output_connections
             ]
+            annotations_dict = {
+                "annotation": stored.annotations[0].annotation,
+                "update_time": (stored.annotations[0].stored_workflow.update_time).isoformat(),
+                "tags": self.convert_to_dict_from_many(stored.annotations[0].stored_workflow.tags),
+            }
             if step.annotations:
                 step_model["annotation"] = step.annotations[0].annotation
             if step.upgrade_messages:
@@ -1078,6 +1100,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_models.append(step_model)
         return {
             "id": trans.app.security.encode_id(stored.id),
+            "annotation": annotations_dict,
             "history_id": trans.app.security.encode_id(history.id) if history else None,
             "name": stored.name,
             "owner": stored.user.username,
