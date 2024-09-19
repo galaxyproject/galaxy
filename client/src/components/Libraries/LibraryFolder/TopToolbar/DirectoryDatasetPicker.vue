@@ -11,7 +11,6 @@ import {
     BTabs,
 } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
-import Multiselect from "vue-multiselect";
 
 import { GalaxyApi } from "@/api";
 import { type Option } from "@/components/Form/Elements/FormDrilldown/utilities";
@@ -21,8 +20,9 @@ import { useDbKeyStore } from "@/stores/dbKeyStore";
 
 import FormDrilldown from "@/components/Form/Elements/FormDrilldown/FormDrilldown.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
-const auto = {
+const autoExtension = {
     id: "auto",
     extension: "auto",
     text: "Auto-detect",
@@ -35,9 +35,21 @@ const auto = {
     descriptionUrl: "",
 };
 
-type GenomesList = { id: string; text: string }[];
+type DbKey = { id: string; text: string };
+type DbKeyList = DbKey[];
 
-type RequestData = Record<string, string | boolean>;
+type RequestData = {
+    path: string;
+    source: string;
+    dbkey: string;
+    encoded_folder_id: string;
+    file_type?: string;
+    preserve_dirs?: boolean;
+    link_data: boolean;
+    space_to_tab: boolean;
+    to_posix_lines: boolean;
+    tag_using_filenames: boolean;
+};
 
 interface Props {
     folderId: string;
@@ -57,16 +69,16 @@ const { datatypes, datatypesLoading } = useDetailedDatatypes();
 
 const activeTab = ref(0);
 const importing = ref(false);
-const selectedGenome = ref();
 const paths = ref<string>("");
-const selectedExtension = ref();
 const options = ref<Option[]>([]);
 const optionsLoading = ref(false);
+const selectedDbKey = ref<DbKey>();
+const dbKeyList = ref<DbKeyList>([]);
 const errorMessage = ref<string>("");
 const currentValue = ref<string[]>([]);
-const genomesList = ref<GenomesList>([]);
 const preserveOptions = ref<string[]>([]);
 const extensionsList = ref<DetailedDatatypes[]>([]);
+const selectedExtension = ref<DetailedDatatypes>(autoExtension);
 
 const pathMode = computed(() => {
     return props.target === "path";
@@ -156,15 +168,15 @@ function getFullPathById(id: string): string {
     return traverse(options.value, id);
 }
 
-async function fetchExtAndGenomes() {
+async function fetchExtAndDbKey() {
     try {
         extensionsList.value = datatypes.value;
 
         extensionsList.value.sort((a, b) => (a.extension > b.extension ? 1 : a.extension < b.extension ? -1 : 0));
 
-        extensionsList.value = [auto, ...extensionsList.value];
+        extensionsList.value = [autoExtension, ...extensionsList.value];
 
-        selectedExtension.value = auto;
+        selectedExtension.value = autoExtension;
     } catch (err) {
         console.error(err);
     }
@@ -172,9 +184,11 @@ async function fetchExtAndGenomes() {
     try {
         await dbKeyStore.fetchUploadDbKeys();
 
-        genomesList.value = dbKeyStore.uploadDbKeys;
+        dbKeyList.value = dbKeyStore.uploadDbKeys as DbKeyList;
 
-        genomesList.value.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
+        selectedDbKey.value = dbKeyStore.uploadDbKeys.find((item: DbKey) => item.id === "?");
+
+        dbKeyList.value.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
     } catch (err) {
         console.error(err);
     }
@@ -213,7 +227,7 @@ async function importFileOrFolder(validPaths: string[], source: string) {
         const reqData: RequestData = {
             path: path,
             source: source,
-            dbkey: selectedGenome.value,
+            dbkey: selectedDbKey.value?.id || "?",
             encoded_folder_id: props.folderId,
             link_data: preserveOptions.value.includes("link_files"),
             space_to_tab: preserveOptions.value.includes("space_to_tab"),
@@ -246,11 +260,19 @@ watch(
     { immediate: true }
 );
 
+function onSelectDbKey(item: DbKey) {
+    selectedDbKey.value = item;
+}
+
+function onSelectExtension(item: DetailedDatatypes) {
+    selectedExtension.value = item;
+}
+
 watch(
     () => datatypesLoading.value,
     () => {
         if (!datatypesLoading.value) {
-            fetchExtAndGenomes();
+            fetchExtAndDbKey();
         }
     }
 );
@@ -274,7 +296,7 @@ watch(
             All files within the given folders and their sub-folders will be imported into the current folder.
         </BAlert>
 
-        <BFormCheckboxGroup v-model="preserveOptions" switches>
+        <BFormCheckboxGroup v-model="preserveOptions" switches class="directory-dataset-picker-options">
             <BFormCheckbox value="link_files">Link files instead of copying </BFormCheckbox>
             <BFormCheckbox value="to_posix_lines">Convert line endings to POSIX</BFormCheckbox>
             <BFormCheckbox value="space_to_tab">Convert spaces to tabs</BFormCheckbox>
@@ -286,33 +308,23 @@ watch(
 
         <hr />
 
-        You can set extension type and genome for all imported datasets at once:
-        <BFormGroup label="Genome">
-            <Multiselect
-                v-model="selectedGenome"
-                :options="genomesList"
-                label="text"
-                track-by="id"
-                placeholder="Select genome"
-                :close-on-select="true"
-                :preserve-search="true"
-                :searchable="true"
-                :allow-empty="true"
-                :max="1" />
+        You can set database/build and extension type for all imported datasets at once:
+        <BFormGroup label="Database/Build">
+            <SingleItemSelector
+                :current-item="selectedDbKey"
+                collection-name="DB Keys"
+                :items="dbKeyList"
+                @update:selected-item="onSelectDbKey" />
         </BFormGroup>
 
         <BFormGroup label="Extension">
-            <Multiselect
-                v-model="selectedExtension"
-                :options="extensionsList"
+            <SingleItemSelector
+                :current-item="selectedExtension"
+                collection-name="Extensions"
+                :items="extensionsList"
+                track-by="extension"
                 label="extension"
-                track-by="id"
-                placeholder="Select extension"
-                :close-on-select="true"
-                :preserve-search="true"
-                :searchable="true"
-                :allow-empty="true"
-                :max="1" />
+                @update:selected-item="onSelectExtension" />
         </BFormGroup>
 
         <hr />
@@ -334,7 +346,7 @@ watch(
             v-else
             :id="filesMode ? 'files' : 'folders'"
             v-model="currentValue"
-            class="items-list"
+            class="directory-dataset-picker-list"
             show-icons
             :options="options"
             multiple />
@@ -353,7 +365,12 @@ watch(
     display: grid;
     grid-template-rows: max-content 1fr;
 
-    .items-list {
+    .directory-dataset-picker-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .directory-dataset-picker-list {
         max-height: 100%;
         overflow-y: auto;
     }
