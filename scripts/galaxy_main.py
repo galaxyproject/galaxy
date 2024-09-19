@@ -87,8 +87,15 @@ def load_galaxy_app(config_builder, config_env=False, log=None, attach_to_pools=
     kwds = config_builder.app_kwds()
     kwds = load_app_properties(**kwds)
     from galaxy.app import UniverseApplication
+    from galaxy.celery import (
+        celery_app,
+        config_celery_app,
+    )
 
     app = UniverseApplication(global_conf=config_builder.global_conf(), attach_to_pools=attach_to_pools, **kwds)
+    # Update celery app, which might not have taken into account the config file if set via the `-c` argument.
+    config_celery_app(app.config, celery_app)
+
     app.database_heartbeat.start()
     app.application_stack.log_startup()
     return app

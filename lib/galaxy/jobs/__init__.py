@@ -1422,7 +1422,7 @@ class MinimalJobWrapper(HasResourceParameters):
         message = str(message)
         working_directory_exists = self.working_directory_exists()
 
-        if not job.tasks:
+        if not job.tasks and working_directory_exists:
             # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
 
