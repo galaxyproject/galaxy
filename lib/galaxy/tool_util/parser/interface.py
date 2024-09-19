@@ -8,6 +8,7 @@ from abc import (
 from os.path import join
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
@@ -557,7 +558,8 @@ class PageSource(metaclass=ABCMeta):
         """Return a list of InputSource objects."""
 
 
-TestCollectionDefElementObject = Union["TestCollectionDefDict", "ToolSourceTestInput"]
+AnyTestCollectionDefDict = Union["JsonTestCollectionDefDict", "XmlTestCollectionDefDict"]
+TestCollectionDefElementObject = Union[AnyTestCollectionDefDict, "ToolSourceTestInput"]
 TestCollectionAttributeDict = Dict[str, Any]
 CollectionType = str
 
@@ -567,7 +569,16 @@ class TestCollectionDefElementDict(TypedDict):
     element_definition: TestCollectionDefElementObject
 
 
-class TestCollectionDefDict(TypedDict):
+class TestCollectionDefElementInternal(TypedDict):
+    element_identifier: str
+    element_definition: Union["TestCollectionDef", "ToolSourceTestInput"]
+
+
+# two versions of collection inputs can be parsed out, XmlTestCollectionDefDict is historically
+# used by tools and Galaxy internals and exposed in the API via the test definition endpoints for
+# tool execution. JsonTestCollectionDefDict is the format consumed by Planemo that mirrors a CWL
+# way of defining inputs.
+class XmlTestCollectionDefDict(TypedDict):
     model_class: Literal["TestCollectionDef"]
     attributes: TestCollectionAttributeDict
     collection_type: CollectionType
@@ -575,8 +586,96 @@ class TestCollectionDefDict(TypedDict):
     name: str
 
 
+JsonTestDatasetDefDict = TypedDict(
+    "JsonTestDatasetDefDict",
+    {
+        "class": Literal["File"],
+        "path": NotRequired[Optional[str]],
+        "location": NotRequired[Optional[str]],
+        "name": NotRequired[Optional[str]],
+        "dbkey": NotRequired[Optional[str]],
+        "filetype": NotRequired[Optional[str]],
+        "composite_data": NotRequired[Optional[List[str]]],
+        "tags": NotRequired[Optional[List[str]]],
+    },
+)
+
+JsonTestCollectionDefElementDict = Union[
+    "JsonTestCollectionDefDatasetElementDict", "JsonTestCollectionDefCollectionElementDict"
+]
+JsonTestCollectionDefDatasetElementDict = TypedDict(
+    "JsonTestCollectionDefDatasetElementDict",
+    {
+        "identifier": str,
+        "class": Literal["File"],
+        "path": NotRequired[Optional[str]],
+        "location": NotRequired[Optional[str]],
+        "name": NotRequired[Optional[str]],
+        "dbkey": NotRequired[Optional[str]],
+        "filetype": NotRequired[Optional[str]],
+        "composite_data": NotRequired[Optional[List[str]]],
+        "tags": NotRequired[Optional[List[str]]],
+    },
+)
+BaseJsonTestCollectionDefCollectionElementDict = TypedDict(
+    "BaseJsonTestCollectionDefCollectionElementDict",
+    {
+        "class": Literal["Collection"],
+        "collection_type": str,
+        "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
+    },
+)
+JsonTestCollectionDefCollectionElementDict = TypedDict(
+    "JsonTestCollectionDefCollectionElementDict",
+    {
+        "identifier": str,
+        "class": Literal["Collection"],
+        "collection_type": str,
+        "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
+    },
+)
+JsonTestCollectionDefDict = TypedDict(
+    "JsonTestCollectionDefDict",
+    {
+        "class": Literal["Collection"],
+        "collection_type": str,
+        "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
+        "name": NotRequired[Optional[str]],
+    },
+)
+
+
+def xml_data_input_to_json(xml_input: ToolSourceTestInput) -> "JsonTestDatasetDefDict":
+    attributes = xml_input["attributes"]
+    as_dict: JsonTestDatasetDefDict = {
+        "class": "File",
+    }
+    value = xml_input["value"]
+    if value:
+        as_dict["path"] = value
+    _copy_if_exists(attributes, as_dict, "location")
+    _copy_if_exists(attributes, as_dict, "dbkey")
+    _copy_if_exists(attributes, as_dict, "ftype", "filetype")
+    _copy_if_exists(attributes, as_dict, "composite_data", only_if_value=True)
+    tags = attributes.get("tags")
+    if tags:
+        as_dict["tags"] = [t.strip() for t in tags.split(",")]
+    return as_dict
+
+
+def _copy_if_exists(attributes, as_dict, name: str, as_name: Optional[str] = None, only_if_value: bool = False):
+    if name in attributes:
+        value = attributes[name]
+        if not value and only_if_value:
+            return
+        if as_name is None:
+            as_name = name
+        as_dict[as_name] = value
+
+
 class TestCollectionDef:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
+    elements: List[TestCollectionDefElementInternal]
 
     def __init__(self, attrib, name, collection_type, elements):
         self.attrib = attrib
@@ -584,7 +683,40 @@ class TestCollectionDef:
         self.elements = elements
         self.name = name
 
-    def to_dict(self) -> TestCollectionDefDict:
+    def _test_format_to_dict(self) -> "BaseJsonTestCollectionDefCollectionElementDict":
+
+        def to_element(xml_element_dict: "TestCollectionDefElementInternal") -> "JsonTestCollectionDefElementDict":
+            identifier = xml_element_dict["element_identifier"]
+            element_object = xml_element_dict["element_definition"]
+            as_dict: JsonTestCollectionDefElementDict
+
+            if isinstance(element_object, TestCollectionDef):
+                as_dict = JsonTestCollectionDefCollectionElementDict(
+                    identifier=identifier, **element_object._test_format_to_dict()
+                )
+            else:
+                as_dict = JsonTestCollectionDefDatasetElementDict(
+                    identifier=identifier,
+                    **xml_data_input_to_json(cast(ToolSourceTestInput, element_object)),
+                )
+            return as_dict
+
+        test_format_dict = BaseJsonTestCollectionDefCollectionElementDict(
+            {
+                "class": "Collection",
+                "elements": list(map(to_element, self.elements)),
+                "collection_type": self.collection_type,
+            }
+        )
+        return test_format_dict
+
+    def test_format_to_dict(self) -> JsonTestCollectionDefDict:
+        test_format_dict = JsonTestCollectionDefDict(**self._test_format_to_dict())
+        if self.name:
+            test_format_dict["name"] = self.name
+        return test_format_dict
+
+    def to_dict(self) -> XmlTestCollectionDefDict:
         def element_to_dict(element_dict):
             element_identifier, element_def = element_dict["element_identifier"], element_dict["element_definition"]
             if isinstance(element_def, TestCollectionDef):
@@ -603,23 +735,53 @@ class TestCollectionDef:
         }
 
     @staticmethod
-    def from_dict(as_dict: TestCollectionDefDict):
-        assert as_dict["model_class"] == "TestCollectionDef"
+    def from_dict(
+        as_dict: Union[AnyTestCollectionDefDict, JsonTestCollectionDefCollectionElementDict]
+    ) -> "TestCollectionDef":
+        if "model_class" in as_dict:
+            xml_as_dict = cast(XmlTestCollectionDefDict, as_dict)
+            assert xml_as_dict["model_class"] == "TestCollectionDef"
 
-        def element_from_dict(element_dict):
-            if "element_definition" not in element_dict:
-                raise Exception(f"Invalid element_dict {element_dict}")
-            element_def = element_dict["element_definition"]
-            if element_def.get("model_class", None) == "TestCollectionDef":
-                element_def = TestCollectionDef.from_dict(element_def)
-            return {"element_identifier": element_dict["element_identifier"], "element_definition": element_def}
+            def element_from_dict(element_dict) -> TestCollectionDefElementInternal:
+                if "element_definition" not in element_dict:
+                    raise Exception(f"Invalid element_dict {element_dict}")
+                element_def = element_dict["element_definition"]
+                if element_def.get("model_class", None) == "TestCollectionDef":
+                    element_def = TestCollectionDef.from_dict(element_def)
+                return {"element_identifier": element_dict["element_identifier"], "element_definition": element_def}
 
-        return TestCollectionDef(
-            attrib=as_dict["attributes"],
-            name=as_dict["name"],
-            elements=list(map(element_from_dict, as_dict["elements"] or [])),
-            collection_type=as_dict["collection_type"],
-        )
+            return TestCollectionDef(
+                attrib=xml_as_dict["attributes"],
+                name=xml_as_dict.get("name", "Unnamed Collection"),
+                elements=list(map(element_from_dict, xml_as_dict["elements"] or [])),
+                collection_type=xml_as_dict["collection_type"],
+            )
+        else:
+            json_as_dict = cast(JsonTestCollectionDefDict, as_dict)
+
+            def element_from_dict_json(
+                element_dict: JsonTestCollectionDefElementDict,
+            ) -> TestCollectionDefElementInternal:
+                element_class = element_dict.get("class")
+                identifier = element_dict["identifier"]
+                element_def: Union[TestCollectionDef, ToolSourceTestInput]
+                if element_class == "Collection":
+                    collection_element_dict = cast(JsonTestCollectionDefCollectionElementDict, element_dict)
+                    element_def = TestCollectionDef.from_dict(collection_element_dict)
+                else:
+                    dataset_element_dict = cast(JsonTestCollectionDefDatasetElementDict, element_dict)
+                    value = dataset_element_dict["path"]  # todo handle location
+                    name = dataset_element_dict.get("name") or "Unnamed Collection"
+                    element_def = {"name": name, "value": value, "attributes": {}}
+                return TestCollectionDefElementInternal(element_identifier=identifier, element_definition=element_def)
+
+            elements = list(map(element_from_dict_json, json_as_dict.get("elements") or []))
+            return TestCollectionDef(
+                attrib={},
+                name=json_as_dict.get("name") or "Unnamed Collection",
+                elements=elements,
+                collection_type=json_as_dict["collection_type"],
+            )
 
     def collect_inputs(self):
         inputs = []

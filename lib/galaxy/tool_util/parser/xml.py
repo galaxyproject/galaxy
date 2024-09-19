@@ -46,7 +46,6 @@ from .interface import (
     PageSource,
     PagesSource,
     RequiredFiles,
-    TestCollectionDefDict,
     TestCollectionDefElementDict,
     TestCollectionDefElementObject,
     TestCollectionOutputDef,
@@ -59,6 +58,7 @@ from .interface import (
     ToolSourceTestOutputAttributes,
     ToolSourceTestOutputs,
     ToolSourceTests,
+    XmlTestCollectionDefDict,
     XrefDict,
 )
 from .output_actions import ToolOutputActionGroup
@@ -1011,7 +1011,7 @@ def __parse_inputs_elems(test_elem, i) -> ToolSourceTestInputs:
     return raw_inputs
 
 
-def _test_collection_def_dict(elem: Element) -> TestCollectionDefDict:
+def _test_collection_def_dict(elem: Element) -> XmlTestCollectionDefDict:
     elements: List[TestCollectionDefElementDict] = []
     attrib: Dict[str, Any] = _element_to_dict(elem)
     collection_type = attrib["type"]
@@ -1027,7 +1027,7 @@ def _test_collection_def_dict(elem: Element) -> TestCollectionDefDict:
             element_definition = __parse_param_elem(element)
         elements.append({"element_identifier": element_identifier, "element_definition": element_definition})
 
-    return TestCollectionDefDict(
+    return XmlTestCollectionDefDict(
         model_class="TestCollectionDef",
         attributes=attrib,
         collection_type=collection_type,

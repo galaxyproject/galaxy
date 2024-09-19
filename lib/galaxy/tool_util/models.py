@@ -48,7 +48,7 @@ def parse_tool(tool_source: ToolSource) -> ParsedTool:
     version = tool_source.parse_version()
     name = tool_source.parse_name()
     description = tool_source.parse_description()
-    inputs = input_models_for_tool_source(tool_source).input_models
+    inputs = input_models_for_tool_source(tool_source).parameters
     outputs = from_tool_source(tool_source)
     citations = tool_source.parse_citations()
     license = tool_source.parse_license()
