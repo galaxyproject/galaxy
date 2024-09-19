@@ -3,10 +3,12 @@ import logging
 import os
 from typing import (
     Annotated,
+    cast,
     Dict,
     List,
     Optional,
     Tuple,
+    Type,
     Union,
 )
 
@@ -22,20 +24,17 @@ from galaxy.actions.library import (
     validate_path_upload,
     validate_server_directory_upload,
 )
-from galaxy.managers.collections_util import (
-    api_payload_to_create_params,
-    dictify_dataset_collection_instance,
-)
+from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
 from galaxy.managers.hdas import HDAManager
 from galaxy.model import (
-    Role,
     Library,
     LibraryDataset,
     LibraryFolder,
+    Role,
     tags,
 )
 from galaxy.model.base import transaction
@@ -44,19 +43,28 @@ from galaxy.schema.fields import (
     LibraryFolderDatabaseIdField,
 )
 from galaxy.schema.library_contents import (
+    LibraryContentsCollectionCreatePayload,
+    LibraryContentsCreateDatasetListResponse,
+    LibraryContentsCreateDatasetResponse,
+    LibraryContentsCreateFolderListResponse,
     LibraryContentsDeletePayload,
-    LibraryContentsFileCreatePayload,
-    LibraryContentsUpdatePayload,
-    LibraryContentsFolderCreatePayload,
-    LibraryContentsIndexResponse,
-    LibraryContentsShowResponse,
-    LibraryContentsCreateResponse,
     LibraryContentsDeleteResponse,
+    LibraryContentsFileCreatePayload,
+    LibraryContentsFolderCreatePayload,
+    LibraryContentsIndexDatasetResponse,
+    LibraryContentsIndexFolderResponse,
+    LibraryContentsIndexListResponse,
+    LibraryContentsShowDatasetResponse,
+    LibraryContentsShowFolderResponse,
+    LibraryContentsUpdatePayload,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
-from galaxy.webapps.base.controller import UsesLibraryMixinItems, UsesExtendedMetadataMixin
+from galaxy.webapps.base.controller import (
+    UsesExtendedMetadataMixin,
+    UsesLibraryMixinItems,
+)
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
@@ -85,163 +93,121 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         self,
         trans: ProvidesUserContext,
         library_id: DecodedDatabaseIdField,
-    ) -> LibraryContentsIndexResponse:
+    ) -> LibraryContentsIndexListResponse:
         """Return a list of library files and folders."""
-        rval = []
+        rval: List[Union[LibraryContentsIndexFolderResponse, LibraryContentsIndexDatasetResponse]] = []
         current_user_roles = trans.get_current_user_roles()
         library = trans.sa_session.get(Library, library_id)
         if not library:
             raise exceptions.RequestParameterInvalidException("No library found with the id provided.")
         if not (trans.user_is_admin or trans.app.security_agent.can_access_library(current_user_roles, library)):
             raise exceptions.RequestParameterInvalidException("No library found with the id provided.")
-        encoded_id = f"F{trans.security.encode_id(library.root_folder.id)}"
         # appending root folder
-        rval.append(
-            dict(
-                id=encoded_id,
-                type="folder",
-                name="/",
-                url=(
-                    trans.url_builder("library_content", library_id=library_id, id=encoded_id)
-                    if trans.url_builder
-                    else None
-                ),
-            )
-        )
+        url = self._url_for(trans, library_id, library.root_folder.id, "folder")
+        rval.append(LibraryContentsIndexFolderResponse(id=library.root_folder.id, type="folder", name="/", url=url))
         library.root_folder.api_path = ""
         # appending all other items in the library recursively
         for content in self._traverse(trans, library.root_folder, current_user_roles):
-            encoded_id = trans.security.encode_id(content.id)
-            if content.api_type == "folder":
-                encoded_id = f"F{encoded_id}"
-            rval.append(
-                dict(
-                    id=encoded_id,
-                    type=content.api_type,
-                    name=content.api_path,
-                    url=(
-                        trans.url_builder("library_content", library_id=library_id, id=encoded_id)
-                        if trans.url_builder
-                        else None
-                    ),
-                )
+            url = self._url_for(trans, library_id, content.id, content.api_type)
+            response_class: Union[
+                Type[LibraryContentsIndexFolderResponse], Type[LibraryContentsIndexDatasetResponse]
+            ] = (
+                LibraryContentsIndexFolderResponse
+                if content.api_type == "folder"
+                else LibraryContentsIndexDatasetResponse
             )
-        return rval
+            rval.append(response_class(id=content.id, type=content.api_type, name=content.api_path, url=url))
+        return LibraryContentsIndexListResponse(root=rval)
 
     def show(
         self,
         trans: ProvidesUserContext,
         id: MaybeLibraryFolderOrDatasetID,
-    ) -> LibraryContentsShowResponse:
+    ) -> Union[LibraryContentsShowFolderResponse, LibraryContentsShowDatasetResponse]:
         """Returns information about library file or folder."""
         class_name, content_id = self._decode_library_content_id(id)
+        rval: Union[LibraryContentsShowFolderResponse, LibraryContentsShowDatasetResponse]
         if class_name == "LibraryFolder":
             content = self.get_library_folder(trans, content_id, check_ownership=False, check_accessible=True)
-            rval = content.to_dict(view="element", value_mapper={"id": trans.security.encode_id})
-            rval["id"] = f"F{str(rval['id'])}"
-            if rval["parent_id"] is not None:  # This can happen for root folders.
-                rval["parent_id"] = f"F{str(trans.security.encode_id(rval['parent_id']))}"
-            rval["parent_library_id"] = trans.security.encode_id(rval["parent_library_id"])
+            rval = LibraryContentsShowFolderResponse(**content.to_dict(view="element"))
         else:
             content = self.get_library_dataset(trans, content_id, check_ownership=False, check_accessible=True)
-            rval = content.to_dict(view="element")
-            rval["id"] = trans.security.encode_id(rval["id"])
-            rval["ldda_id"] = trans.security.encode_id(rval["ldda_id"])
-            rval["folder_id"] = f"F{str(trans.security.encode_id(rval['folder_id']))}"
-            rval["parent_library_id"] = trans.security.encode_id(rval["parent_library_id"])
-
+            rval_dict = content.to_dict(view="element")
             tag_manager = tags.GalaxyTagHandler(trans.sa_session)
-            rval["tags"] = tag_manager.get_tags_list(content.library_dataset_dataset_association.tags)
+            rval_dict["tags"] = tag_manager.get_tags_list(content.library_dataset_dataset_association.tags)
+            rval = LibraryContentsShowDatasetResponse(**rval_dict)
         return rval
 
     def create(
         self,
         trans: ProvidesHistoryContext,
         library_id: LibraryFolderDatabaseIdField,
-        payload: Union[LibraryContentsFolderCreatePayload, LibraryContentsFileCreatePayload],
-    ) -> LibraryContentsCreateResponse:
+        payload: Union[
+            LibraryContentsFolderCreatePayload, LibraryContentsFileCreatePayload, LibraryContentsCollectionCreatePayload
+        ],
+    ) -> Union[
+        LibraryContentsCreateFolderListResponse,
+        LibraryContentsCreateDatasetResponse,
+        LibraryContentsCreateDatasetListResponse,
+    ]:
         """Create a new library file or folder."""
         if trans.user_is_bootstrap_admin:
             raise exceptions.RealUserRequiredException("Only real users can create a new library file or folder.")
-        if not payload.create_type:
-            raise exceptions.RequestParameterMissingException("Missing required 'create_type' parameter.")
-        create_type = payload.create_type
-        if create_type not in ("file", "folder", "collection"):
-            raise exceptions.RequestParameterInvalidException(
-                f"Invalid value for 'create_type' parameter ( {create_type} ) specified."
-            )
-        if payload.upload_option and payload.upload_option not in (
-            "upload_file",
-            "upload_directory",
-            "upload_paths",
-        ):
-            raise exceptions.RequestParameterInvalidException(
-                f"Invalid value for 'upload_option' parameter ( {payload.upload_option} ) specified."
-            )
-        if not payload.folder_id:
-            raise exceptions.RequestParameterMissingException("Missing required 'folder_id' parameter.")
-        folder_id = payload.folder_id
         # security is checked in the downstream controller
-        parent = self.get_library_folder(trans, folder_id, check_ownership=False, check_accessible=False)
+        parent = self.get_library_folder(trans, payload.folder_id, check_ownership=False, check_accessible=False)
         # The rest of the security happens in the library_common controller.
 
         # are we copying an HDA to the library folder?
         #   we'll need the id and any message to attach, then branch to that private function
-        from_hda_id, from_hdca_id, ldda_message = (
-            payload.from_hda_id,
-            payload.from_hdca_id,
-            payload.ldda_message,
-        )
-        if create_type == "file":
-            if from_hda_id:
-                return self._copy_hda_to_library_folder(trans, self.hda_manager, from_hda_id, folder_id, ldda_message)
-            if from_hdca_id:
-                return self._copy_hdca_to_library_folder(trans, self.hda_manager, from_hdca_id, folder_id, ldda_message)
-
-        # check for extended metadata, store it and pop it out of the param
-        # otherwise sanitize_param will have a fit
-        ex_meta_payload = payload.extended_metadata
+        if payload.create_type == "file":
+            if payload.from_hda_id:
+                return self._copy_hda_to_library_folder(
+                    trans, self.hda_manager, payload.from_hda_id, payload.folder_id, payload.ldda_message
+                )
+            elif payload.from_hdca_id:
+                return self._copy_hdca_to_library_folder(
+                    trans, self.hda_manager, payload.from_hdca_id, payload.folder_id, payload.ldda_message
+                )
+            else:
+                raise exceptions.RequestParameterInvalidException("Invalid create request")
 
         # Now create the desired content object, either file or folder.
-        if create_type == "file" and isinstance(payload, LibraryContentsFileCreatePayload):
-            output = self._upload_library_dataset(trans, folder_id, payload)
-        elif create_type == "folder" and isinstance(payload, LibraryContentsFolderCreatePayload):
-            output = self._create_folder(trans, folder_id, payload)
-        elif create_type == "collection":
+        if payload.create_type == "file":
+            output = self._upload_library_dataset(
+                trans, payload.folder_id, cast(LibraryContentsFileCreatePayload, payload)
+            )
+        elif payload.create_type == "folder":
+            output = self._create_folder(trans, payload.folder_id, cast(LibraryContentsFolderCreatePayload, payload))
+        elif payload.create_type == "collection":
             # Not delegating to library_common, so need to check access to parent
             # folder here.
+            payload = cast(LibraryContentsCollectionCreatePayload, payload)
             self.check_user_can_add_to_library_item(trans, parent, check_accessible=True)
-            create_params = api_payload_to_create_params(payload)
-            create_params["parent"] = parent
-            dataset_collection_manager = trans.app.dataset_collection_manager
-            dataset_collection_instance = dataset_collection_manager.create(**create_params)
-            return [
-                dictify_dataset_collection_instance(
-                    dataset_collection_instance, security=trans.security, url_builder=trans.url_builder, parent=parent
-                )
-            ]
+            create_params = dict(
+                collection_type=payload.collection_type,
+                element_identifiers=payload.element_identifiers,
+                name=payload.name or None,
+                hide_source_items=payload.hide_source_items or False,
+                copy_elements=payload.copy_elements or False,
+                parent=parent,
+            )
+            dataset_collection_instance = trans.app.dataset_collection_manager.create(**create_params)
+            dataset_collection = dictify_dataset_collection_instance(
+                dataset_collection_instance, security=trans.security, url_builder=trans.url_builder, parent=parent
+            )
+            return [dataset_collection]
+            # return LibraryContentsCreateListResponse(root=dataset_collection)
         rval = []
         for v in output.values():
-            if ex_meta_payload is not None:
+            if payload.extended_metadata is not None:
                 # If there is extended metadata, store it, attach it to the dataset, and index it
-                self.create_extended_metadata(trans, ex_meta_payload)
+                self.create_extended_metadata(trans, payload.extended_metadata)
             if isinstance(v, trans.app.model.LibraryDatasetDatasetAssociation):
                 v = v.library_dataset
-            encoded_id = trans.security.encode_id(v.id)
-            if create_type == "folder":
-                encoded_id = f"F{encoded_id}"
-            rval.append(
-                dict(
-                    id=encoded_id,
-                    name=v.name,
-                    url=(
-                        trans.url_builder("library_content", library_id=library_id, id=encoded_id)
-                        if trans.url_builder
-                        else None
-                    ),
-                )
-            )
+            url = self._url_for(trans, library_id, v.id, payload.create_type)
+            rval.append(dict(id=v.id, name=v.name, url=url))
         return rval
+        # return LibraryContentsCreateListResponse(root=rval)
 
     def update(
         self,
@@ -251,9 +217,10 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
     ) -> None:
         """Create an ImplicitlyConvertedDatasetAssociation."""
         if payload.converted_dataset_id:
-            converted_id = payload.converted_dataset_id
             content = self.get_library_dataset(trans, id, check_ownership=False, check_accessible=False)
-            content_conv = self.get_library_dataset(trans, converted_id, check_ownership=False, check_accessible=False)
+            content_conv = self.get_library_dataset(
+                trans, payload.converted_dataset_id, check_ownership=False, check_accessible=False
+            )
             assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(
                 parent=content.library_dataset_dataset_association,
                 dataset=content_conv.library_dataset_dataset_association,
@@ -269,10 +236,8 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         trans: ProvidesHistoryContext,
         id: DecodedDatabaseIdField,
         payload: LibraryContentsDeletePayload,
-    ) -> LibraryContentsDeleteResponse:
+    ):
         """Delete the LibraryDataset with the given ``id``."""
-        purge = payload.purge
-
         rval = {"id": id}
         try:
             ld = self.get_library_dataset(trans, id, check_ownership=False, check_accessible=True)
@@ -285,7 +250,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
                 )
 
             ld.deleted = True
-            if purge:
+            if payload.purge:
                 ld.purged = True
                 trans.sa_session.add(ld)
                 with transaction(trans.sa_session):
@@ -328,6 +293,18 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
                 f"Malformed library content id ( {str(content_id)} ) specified, unable to decode."
             )
 
+    def _url_for(
+        self,
+        trans: ProvidesUserContext,
+        library_id: DecodedDatabaseIdField,
+        id: int,
+        type: str,
+    ) -> Optional[str]:
+        encoded_id = trans.security.encode_id(id)
+        if type == "folder":
+            encoded_id = f"F{encoded_id}"
+        return trans.url_builder("library_content", library_id=library_id, id=encoded_id) if trans.url_builder else None
+
     def _upload_library_dataset(
         self,
         trans: ProvidesHistoryContext,
@@ -335,12 +312,6 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         payload: LibraryContentsFileCreatePayload,
     ) -> Dict:
         replace_dataset: Optional[LibraryDataset] = None
-        upload_option = payload.upload_option
-        dbkey = payload.dbkey
-        if isinstance(dbkey, list):
-            last_used_build = dbkey[0]
-        else:
-            last_used_build = dbkey
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         folder = trans.sa_session.get(LibraryFolder, folder_id)
@@ -349,34 +320,25 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         self._check_access(trans, is_admin, folder, current_user_roles)
         self._check_add(trans, is_admin, folder, current_user_roles)
         library = folder.parent_library
-        if folder and last_used_build in ["None", None, "?"]:
-            last_used_build = folder.genome_build
-        error = False
-        if upload_option == "upload_paths":
+        if payload.upload_option == "upload_paths":
             validate_path_upload(trans)  # Duplicate check made in _upload_dataset.
-        elif roles := payload.roles:
+        elif payload.roles:
             # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
             # on the dataset that would cause accessibility issues.
-            vars = dict(DATASET_ACCESS_in=roles)
+            vars = dict(DATASET_ACCESS_in=payload.roles)
             permissions, in_roles, error, message = trans.app.security_agent.derive_roles_from_access(
                 trans, library.id, "api", library=True, **vars
             )
-        if error:
-            raise exceptions.RequestParameterInvalidException(message)
-        else:
-            created_outputs_dict = self._upload_dataset(
-                trans, payload=payload, folder_id=folder.id, replace_dataset=replace_dataset
-            )
-            if not created_outputs_dict:
-                raise exceptions.RequestParameterInvalidException("Upload failed")
-            return created_outputs_dict
+            if error:
+                raise exceptions.RequestParameterInvalidException(message)
+        created_outputs_dict = self._upload_dataset(
+            trans, payload=payload, folder_id=folder.id, replace_dataset=replace_dataset
+        )
+        if not created_outputs_dict:
+            raise exceptions.RequestParameterInvalidException("Upload failed")
+        return created_outputs_dict
 
-    def _traverse(
-        self,
-        trans: ProvidesUserContext,
-        folder: LibraryFolder,
-        current_user_roles: List[Role],
-    ) -> List:
+    def _traverse(self, trans: ProvidesUserContext, folder, current_user_roles):
         admin = trans.user_is_admin
         rval = []
         for subfolder in folder.active_folders:
@@ -410,8 +372,9 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         # Set up the traditional tool state/params
         cntrller = "api"
         tool_id = "upload1"
-        file_type = payload.file_type
-        upload_common.validate_datatype_extension(datatypes_registry=trans.app.datatypes_registry, ext=file_type)
+        upload_common.validate_datatype_extension(
+            datatypes_registry=trans.app.datatypes_registry, ext=payload.file_type
+        )
         tool = trans.app.toolbox.get_tool(tool_id)
         state = tool.new_state(trans)
         populate_state(trans, tool.inputs, payload.model_dump(), state.inputs)
@@ -421,11 +384,9 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
             if input.type == "upload_dataset":
                 dataset_upload_inputs.append(input)
         # Library-specific params
-        server_dir = payload.server_dir
-        upload_option = payload.upload_option
-        if upload_option == "upload_directory":
-            full_dir, import_dir_desc = validate_server_directory_upload(trans, server_dir)
-        elif upload_option == "upload_paths":
+        if payload.upload_option == "upload_directory":
+            full_dir, import_dir_desc = validate_server_directory_upload(trans, payload.server_dir)
+        elif payload.upload_option == "upload_paths":
             # Library API already checked this - following check isn't actually needed.
             validate_path_upload(trans)
         # Some error handling should be added to this method.
@@ -436,20 +397,20 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         except Exception:
             raise exceptions.InvalidFileFormatError("Invalid folder specified")
         # Proceed with (mostly) regular upload processing if we're still errorless
-        if upload_option == "upload_file":
+        if payload.upload_option == "upload_file":
             tool_params = upload_common.persist_uploads(tool_params, trans)
             uploaded_datasets = upload_common.get_uploaded_datasets(
                 trans, cntrller, tool_params, dataset_upload_inputs, library_bunch=library_bunch
             )
-        elif upload_option == "upload_directory":
+        elif payload.upload_option == "upload_directory":
             uploaded_datasets = self._get_server_dir_uploaded_datasets(
                 trans, payload, full_dir, import_dir_desc, library_bunch
             )
-        elif upload_option == "upload_paths":
+        elif payload.upload_option == "upload_paths":
             uploaded_datasets, _, _ = self._get_path_paste_uploaded_datasets(
                 trans, payload.model_dump(), library_bunch, 200, None
             )
-        if upload_option == "upload_file" and not uploaded_datasets:
+        if payload.upload_option == "upload_file" and not uploaded_datasets:
             raise exceptions.RequestParameterInvalidException("Select a file, enter a URL or enter text")
         json_file_path = upload_common.create_paramfile(trans, uploaded_datasets)
         data_list = [ud.data for ud in uploaded_datasets]
@@ -492,8 +453,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
             for entry in os.listdir(full_dir):
                 # Only import regular files
                 path = os.path.join(full_dir, entry)
-                link_data_only = payload.link_data_only
-                if os.path.islink(full_dir) and link_data_only == "link_to_files":
+                if os.path.islink(full_dir) and payload.link_data_only == "link_to_files":
                     # If we're linking instead of copying and the
                     # sub-"directory" in the import dir is actually a symlink,
                     # dereference the symlink, but not any of its contents.
@@ -502,7 +462,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
                         path = os.path.join(link_path, entry)
                     else:
                         path = os.path.abspath(os.path.join(link_path, entry))
-                elif os.path.islink(path) and os.path.isfile(path) and link_data_only == "link_to_files":
+                elif os.path.islink(path) and os.path.isfile(path) and payload.link_data_only == "link_to_files":
                     # If we're linking instead of copying and the "file" in the
                     # sub-directory of the import dir is actually a symlink,
                     # dereference the symlink (one dereference only, Vasili).
@@ -553,7 +513,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         self,
         trans: ProvidesUserContext,
         is_admin: bool,
-        item: LibraryFolder,
+        item,
         current_user_roles: List[Role],
     ) -> None:
         if isinstance(item, trans.model.HistoryDatasetAssociation):
@@ -589,7 +549,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         trans: ProvidesUserContext,
         is_admin: bool,
         item: LibraryFolder,
-        current_user_roles : List[Role],
+        current_user_roles: List[Role],
     ) -> None:
         # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
         if not (is_admin or trans.app.security_agent.can_add_library_item(current_user_roles, item)):

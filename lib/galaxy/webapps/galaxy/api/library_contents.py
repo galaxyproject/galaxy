@@ -11,9 +11,17 @@ from galaxy.managers.context import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.library_contents import (
+    LibraryContentsCollectionCreatePayload,
+    LibraryContentsCreateDatasetListResponse,
+    LibraryContentsCreateDatasetResponse,
+    LibraryContentsCreateFolderListResponse,
     LibraryContentsDeletePayload,
+    LibraryContentsDeleteResponse,
     LibraryContentsFileCreatePayload,
     LibraryContentsFolderCreatePayload,
+    LibraryContentsIndexListResponse,
+    LibraryContentsShowDatasetResponse,
+    LibraryContentsShowFolderResponse,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -42,7 +50,7 @@ class FastAPILibraryContents:
         self,
         library_id: DecodedDatabaseIdField,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> list:
+    ) -> LibraryContentsIndexListResponse:
         return self.service.index(trans, library_id)
 
     @router.get(
@@ -54,7 +62,7 @@ class FastAPILibraryContents:
         library_id: DecodedDatabaseIdField,
         id: MaybeLibraryFolderOrDatasetID,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> Union[LibraryContentsShowFolderResponse, LibraryContentsShowDatasetResponse]:
         return self.service.show(trans, id)
 
     @router.post(
@@ -64,9 +72,13 @@ class FastAPILibraryContents:
     def create(
         self,
         library_id: DecodedDatabaseIdField,
-        payload: Union[LibraryContentsFolderCreatePayload, LibraryContentsFileCreatePayload],
+        payload: Union[LibraryContentsFolderCreatePayload, LibraryContentsFileCreatePayload, LibraryContentsCollectionCreatePayload],
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ):
+    ) -> Union[
+        LibraryContentsCreateFolderListResponse,
+        LibraryContentsCreateDatasetResponse,
+        LibraryContentsCreateDatasetListResponse,
+    ]:
         return self.service.create(trans, library_id, payload)
 
     @router.put(
@@ -80,7 +92,7 @@ class FastAPILibraryContents:
         id: DecodedDatabaseIdField,
         payload,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> None:
         return self.service.update(trans, id, payload)
 
     @router.delete(

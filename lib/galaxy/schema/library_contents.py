@@ -15,9 +15,13 @@ from pydantic import (
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
+    EncodedLibraryFolderDatabaseIdField,
     LibraryFolderDatabaseIdField,
 )
-from galaxy.schema.schema import Model
+from galaxy.schema.schema import (
+    Model,
+    TagCollection,
+)
 
 
 class UploadOption(str, Enum):
@@ -35,6 +39,11 @@ class CreateType(str, Enum):
 class LinkDataOnly(str, Enum):
     copy_files = "copy_files"
     link_to_files = "link_to_files"
+
+
+class ModelClass(str, Enum):
+    LibraryDataset = "LibraryDataset"
+    LibraryFolder = "LibraryFolder"
 
 
 class LibraryContentsCreatePayload(Model):
@@ -85,8 +94,8 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
         "",
         title="user selected roles",
     )
-    file_type: str = Field(
-        ...,
+    file_type: Optional[str] = Field(
+        None,
         title="file type",
     )
     server_dir: Optional[str] = Field(
@@ -124,6 +133,29 @@ class LibraryContentsFolderCreatePayload(LibraryContentsCreatePayload):
     )
 
 
+class LibraryContentsCollectionCreatePayload(LibraryContentsCreatePayload):
+    collection_type: str = Field(
+        ...,
+        title="the type of collection to create",
+    )
+    element_identifiers: List[Dict[str, Any]] = Field(
+        ...,
+        title="list of dictionaries containing the element identifiers for the collection",
+    )
+    name: Optional[str] = Field(
+        None,
+        title="the name of the collection",
+    )
+    hide_source_items: Optional[bool] = Field(
+        False,
+        title="if True, hide the source items in the collection",
+    )
+    copy_elements: Optional[bool] = Field(
+        False,
+        title="if True, copy the elements into the collection",
+    )
+
+
 class LibraryContentsUpdatePayload(Model):
     converted_dataset_id: Optional[DecodedDatabaseIdField] = Field(
         None,
@@ -139,15 +171,103 @@ class LibraryContentsDeletePayload(Model):
 
 
 class LibraryContentsIndexResponse(Model):
-    pass
+    type: str
+    name: str
+    url: str
+
+
+class LibraryContentsIndexFolderResponse(LibraryContentsIndexResponse):
+    id: EncodedLibraryFolderDatabaseIdField
+
+
+class LibraryContentsIndexDatasetResponse(LibraryContentsIndexResponse):
+    id: EncodedDatabaseIdField
+
+
+class LibraryContentsIndexListResponse(RootModel):
+    root: List[Union[LibraryContentsIndexFolderResponse, LibraryContentsIndexDatasetResponse]]
 
 
 class LibraryContentsShowResponse(Model):
-    pass
+    model_class: ModelClass
+    name: str
+    genome_build: Optional[str]
+    update_time: str
+    parent_library_id: EncodedDatabaseIdField
 
 
-class LibraryContentsCreateResponse(Model):
-    pass
+class LibraryContentsShowFolderResponse(LibraryContentsShowResponse):
+    id: EncodedLibraryFolderDatabaseIdField
+    parent_id: Optional[EncodedLibraryFolderDatabaseIdField]
+    description: str
+    item_count: int
+    deleted: bool
+    library_path: List[str]
+
+
+class LibraryContentsShowDatasetResponse(LibraryContentsShowResponse):
+    id: EncodedDatabaseIdField
+    ldda_id: EncodedDatabaseIdField
+    folder_id: EncodedLibraryFolderDatabaseIdField
+    state: str
+    file_name: str
+    created_from_basename: str
+    uploaded_by: str
+    message: Optional[str]
+    date_uploaded: str
+    file_size: int
+    file_ext: str
+    data_type: str
+    misc_info: str
+    misc_blurb: str
+    peek: Optional[str]
+    uuid: str
+    metadata_dbkey: str
+    metadata_data_lines: int
+    tags: TagCollection
+
+
+class LibraryContentsCreateFolderResponse(Model):
+    id: EncodedLibraryFolderDatabaseIdField
+    name: str
+    url: str
+
+
+class LibraryContentsCreateFolderListResponse(RootModel):
+    root: List[LibraryContentsCreateFolderResponse]
+
+
+class LibraryContentsCreateDatasetResponse(Model):
+    id: EncodedDatabaseIdField
+    hda_ldda: str
+    model_class: str
+    name: str
+    deleted: bool
+    visible: bool
+    state: str
+    library_dataset_id: EncodedDatabaseIdField
+    file_size: int
+    file_name: str
+    update_time: str
+    file_ext: str
+    data_type: str
+    genome_build: str
+    misc_info: str
+    misc_blurb: str
+    created_from_basename: str
+    uuid: str
+    parent_library_id: EncodedDatabaseIdField
+    metadata_dbkey: str
+    metadata_data_lines: int
+    metadata_comment_lines: Union[str, int]
+    metadata_columns: int
+    metadata_column_types: List[str]
+    metadata_column_names: List[str]
+    metadata_delimiter: str
+
+
+class LibraryContentsCreateDatasetListResponse(RootModel):
+    root: List[LibraryContentsCreateDatasetResponse]
 
 
 class LibraryContentsDeleteResponse(Model):
