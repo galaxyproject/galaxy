@@ -220,7 +220,7 @@ class WorkflowRunCrateProfileBuilder:
 
             crate.license = self.workflow.license or ""
             crate.mainEntity["name"] = self.workflow.name
-            
+
             # Adding multiple creators if available
             if self.workflow.creator_metadata:
                 for creator_data in self.workflow.creator_metadata:
@@ -268,13 +268,22 @@ class WorkflowRunCrateProfileBuilder:
     def _add_tools(self, crate: ROCrate):
         tool_entities = []
 
-        # Iterate over each step in the workflow
-        for step in self.workflow.steps:
+        # Call a recursive method to add tools for the main workflow and subworkflows
+        self._add_tools_recursive(self.workflow.steps, crate, tool_entities)
+
+        return tool_entities
+
+    def _add_tools_recursive(self, steps, crate: ROCrate, tool_entities):
+        """
+        Recursively add tools from workflow steps and handle subworkflows.
+        """
+        # Iterate over each step in the given workflow steps
+        for step in steps:
             # Check if the step corresponds to a tool
             if step.type == "tool":
                 tool_id = step.tool_id
                 tool_version = step.tool_version
-                tool_name = tool_id  # label can de irrelevant or descritption better keep the tool id
+                tool_name = tool_id  # label can de irrelevant or description better keep the tool id
 
                 # Initialize tool description for each tool
                 tool_description: Optional[str] = None
@@ -310,7 +319,14 @@ class WorkflowRunCrateProfileBuilder:
                 # Link tool entity with the workflow
                 crate.mainEntity.append_to("instrument", tool_entity)
 
-        return tool_entities
+            # Handle subworkflows
+            elif step.type == "subworkflow":
+                subworkflow = step.subworkflow
+                if subworkflow:
+                    # Recursively add tools for the subworkflow steps
+                    self._add_tools_recursive(subworkflow.steps, crate, tool_entities)
+
+
 
     def _add_create_action(self, crate: ROCrate):
         self.create_action = crate.add(
