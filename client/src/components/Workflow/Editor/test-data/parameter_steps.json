@@ -19,7 +19,8 @@
         "extensions": [
           "input"
         ],
-        "optional": false
+        "optional": false,
+        "multiple": false
       }
     ],
     "annotation": "",
@@ -930,7 +931,8 @@
         "label": "optional text parameter input",
         "type": "text",
         "optional": true,
-        "parameter": true
+        "parameter": true,
+        "multiple": false
       }
     ],
     "annotation": "",
@@ -943,8 +945,8 @@
       "top": 867.0427551269531
     }
   },
-  "19": {
-    "id": 19,
+  "20": {
+    "id": 20,
     "type": "parameter_input",
     "label": "optional integer parameter input",
     "content_id": null,
@@ -962,7 +964,8 @@
         "label": "integer parameter input",
         "type": "integer",
         "optional": true,
-        "parameter": true
+        "parameter": true,
+        "multiple": false
       }
     ],
     "annotation": "",
