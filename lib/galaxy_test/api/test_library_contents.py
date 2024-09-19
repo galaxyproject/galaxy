@@ -1,5 +1,3 @@
-from typing import Any
-
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -56,8 +54,8 @@ class TestLibraryContentsApi(ApiTestCase):
             self._assert_has_keys(item, "id", "name", "type", "url")
 
     def test_get_library_contents_invalid_id(self):
-        invalid_item_id = "invalid_id"
-        response = self._get(f"/api/libraries/{invalid_item_id}/contents")
+        invalid_library_id = "invalid_id"
+        response = self._get(f"/api/libraries/{invalid_library_id}/contents")
         self._assert_status_code_is(response, 400)
 
     def test_get_library_folder(self):
@@ -192,7 +190,7 @@ class TestLibraryContentsApi(ApiTestCase):
         response_invalid = self._delete(f"/api/libraries/{library_id}/contents/{invalid_item_id}")
         self._assert_status_code_is(response_invalid, 400)
 
-    def _create_library_content(self, type) -> Any:
+    def _create_library_content(self, type):
         folder_id = self.library["root_folder_id"]
         library_id = self.library["id"]
 
