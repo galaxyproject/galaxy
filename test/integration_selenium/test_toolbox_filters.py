@@ -26,7 +26,6 @@ class TestToolboxFiltersSeleniumIntegration(SeleniumIntegrationTestCase):
         the specified section is no longer displayed in the browser.
         """
         self.register()
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.components.tool_panel.tool_box.wait_for_visible()
         # The tool panel section should be visible and clickable at this stage
         section = self.driver.find_element(By.LINK_TEXT, "Test Section")
