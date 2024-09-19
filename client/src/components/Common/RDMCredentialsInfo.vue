@@ -4,12 +4,10 @@ import { RouterLink } from "vue-router";
 
 interface Props {
     selectedRepository?: string;
-    what?: string;
 }
 
 withDefaults(defineProps<Props>(), {
     selectedRepository: "the selected repository",
-    what: "file",
 });
 </script>
 
