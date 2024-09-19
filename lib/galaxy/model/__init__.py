@@ -4114,7 +4114,9 @@ class Dataset(Base, StorableObject, Serializable):
 
     non_ready_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.SETTING_METADATA)
     ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
-    valid_input_states = tuple(set(states.__members__.values()) - {states.ERROR, states.DISCARDED})
+    valid_input_states = tuple(
+        set(states.__members__.values()) - {states.ERROR, states.DISCARDED, states.FAILED_METADATA}
+    )
     no_data_states = (states.PAUSED, states.DEFERRED, states.DISCARDED, *non_ready_states)
     terminal_states = (
         states.OK,
@@ -4546,6 +4548,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     creating_job_associations: List[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
     copied_from_history_dataset_association: Optional["HistoryDatasetAssociation"]
     copied_from_library_dataset_dataset_association: Optional["LibraryDatasetDatasetAssociation"]
+    implicitly_converted_datasets: List["ImplicitlyConvertedDatasetAssociation"]
 
     validated_states = DatasetValidatedState
 
@@ -4873,9 +4876,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     def get_converted_files_by_type(self, file_type):
         for assoc in self.implicitly_converted_datasets:
             if not assoc.deleted and assoc.type == file_type:
-                if assoc.dataset:
-                    return assoc.dataset
-                return assoc.dataset_ldda
+                item = assoc.dataset or assoc.dataset_ldda
+                if not item.deleted and item.state in Dataset.valid_input_states:
+                    return item
         return None
 
     def get_converted_dataset_deps(self, trans, target_ext):
