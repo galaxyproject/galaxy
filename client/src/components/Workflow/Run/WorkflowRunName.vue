@@ -1,13 +1,12 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
-import { onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 
-import { getWorkflowInfo } from "@/components/Workflow/workflows.services";
+import WorkflowCard from "@/components/Workflow/List/WorkflowCard.vue";
 
-import { errorMessageAsString } from "../../../utils/simple-error";
-
-import WorkflowInformation from "@/components/Workflow/Published/WorkflowInformation.vue";
+library.add(faChevronDown, faChevronUp);
 
 const props = defineProps({
     model: {
@@ -16,29 +15,18 @@ const props = defineProps({
     },
 });
 
-const loading = ref(true);
-const messageText = ref<string | null>(null);
-const messageVariant = ref<string | null>(null);
 const expandAnnotations = ref(true);
-const workflowInfoData = ref(null);
 
-onMounted(() => {
-    loadAnnotation();
+const workflow = computed(() => {
+    return {
+        id: props.model.runData.id,
+        name: props.model.runData.name,
+        owner: props.model.runData.owner,
+        tags: props.model.runData.annotation.tags.map((t: { user_tname: string }) => t.user_tname),
+        annotations: [props.model.runData.annotation.annotation],
+        update_time: props.model.runData.annotation.update_time,
+    };
 });
-
-async function loadAnnotation() {
-    loading.value = true;
-
-    try {
-        const workflowInfoDataPromise = getWorkflowInfo(props.model.runData.id);
-        workflowInfoData.value = await workflowInfoDataPromise;
-    } catch (e) {
-        messageVariant.value = "danger";
-        messageText.value = errorMessageAsString(e, "Failed to fetch Workflow Annotation.");
-    } finally {
-        loading.value = false;
-    }
-}
 </script>
 
 <template>
@@ -57,14 +45,12 @@ async function loadAnnotation() {
             </span>
         </div>
         <div class="portlet-content" :style="expandAnnotations ? 'display: none;' : ''">
-            <WorkflowInformation
-                v-if="workflowInfoData"
-                class="workflow-information-container"
-                :workflow-info="workflowInfoData"
-                :embedded="false" />
-            <BAlert v-else :show="messageText" :variant="messageVariant">
-                {{ messageText }}
-            </BAlert>
+            <WorkflowCard
+                :workflow="workflow"
+                :published-view="true"
+                :grid-view="true"
+                :show-actions="false"
+                :class="'grid-view'" />
         </div>
     </div>
 </template>

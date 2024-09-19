@@ -27,11 +27,13 @@ interface Props {
     workflow: any;
     gridView?: boolean;
     publishedView?: boolean;
+    showActions?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     gridView: false,
     publishedView: false,
+    showActions: true,
 });
 
 const emit = defineEmits<{
@@ -132,6 +134,7 @@ async function onTagClick(tag: string) {
                     <WorkflowInvocationsCount v-if="!isAnonymous && !shared" class="mx-1" :workflow="workflow" />
 
                     <WorkflowActions
+                        v-if="showActions"
                         :workflow="workflow"
                         :published="publishedView"
                         @refreshList="emit('refreshList', true)"
@@ -155,7 +158,7 @@ async function onTagClick(tag: string) {
                         size="sm"
                         title="Rename"
                         @click="showRename = !showRename">
-                        <FontAwesomeIcon :icon="faPen" fixed-width />
+                        <FontAwesomeIcon v-if="showActions" :icon="faPen" fixed-width />
                     </BButton>
                 </span>
 
@@ -169,15 +172,14 @@ async function onTagClick(tag: string) {
             <div class="workflow-card-footer">
                 <div class="workflow-card-tags">
                     <StatelessTags
-                        clickable
                         :value="workflow.tags"
-                        :disabled="isAnonymous || workflow.deleted || shared"
+                        :disabled="!showActions || isAnonymous || workflow.deleted || shared"
                         :max-visible-tags="gridView ? 2 : 8"
                         @input="onTagsUpdate($event)"
                         @tag-click="onTagClick($event)" />
                 </div>
 
-                <div class="workflow-card-actions">
+                <div v-if="showActions" class="workflow-card-actions">
                     <WorkflowActionsExtend
                         :workflow="workflow"
                         :published="publishedView"
