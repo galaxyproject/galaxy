@@ -1,3 +1,7 @@
+from typing import (
+    cast,
+    List,
+)
 from uuid import uuid4
 
 from galaxy.exceptions import (
@@ -19,6 +23,11 @@ from galaxy.schema.schema import (
     ToolLandingRequest,
     WorkflowLandingRequest,
 )
+from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_util.parameters import (
+    DataParameterModel,
+    ToolParameterT,
+)
 from .base import BaseTestCase
 
 TEST_TOOL_ID = "cat1"
@@ -33,11 +42,35 @@ TEST_STATE = {
 CLIENT_SECRET = "mycoolsecret"
 
 
+class MockApp:
+
+    @property
+    def toolbox(self):
+        return MockToolbox()
+
+
+class MockToolbox:
+
+    def get_tool(self, tool_id, tool_uuid, tool_version):
+        return MockTool()
+
+
+class MockTool:
+
+    @property
+    def parameters(self) -> List[ToolParameterT]:
+        return [DataParameterModel(name="input1")]
+
+
 class TestLanding(BaseTestCase):
 
     def setUp(self):
         super().setUp()
-        self.landing_manager = LandingRequestManager(self.trans.sa_session, self.app.security)
+        self.landing_manager = LandingRequestManager(
+            self.trans.sa_session,
+            self.app.security,
+            cast(MinimalManagerApp, MockApp()),
+        )
 
     def test_tool_landing_requests_typical_flow(self):
         landing_request: ToolLandingRequest = self.landing_manager.create_tool_landing_request(self._tool_request)
