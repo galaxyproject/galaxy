@@ -333,15 +333,14 @@ watch(
             v-model="paths"
             placeholder="Absolute paths (or paths relative to Galaxy root) separated by newline"
             rows="5" />
-
-        <BAlert v-if="optionsLoading" variant="info" show>
+        <BAlert v-else-if="optionsLoading" variant="info" show>
             <LoadingSpan message="Loading directories" />
         </BAlert>
         <BAlert v-else-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
         </BAlert>
         <FormDrilldown
-            v-else-if="!optionsLoading"
+            v-else
             :id="filesMode ? 'files' : 'folders'"
             v-model="currentValue"
             class="directory-dataset-picker-list"
