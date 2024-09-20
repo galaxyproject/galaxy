@@ -597,7 +597,7 @@ class CommonConfigurationMixin:
     @admin_users.setter
     def admin_users(self, value):
         self._admin_users = value
-        self.admin_users_list = listify(value)
+        self.admin_users_list = listify(value, do_strip=True)
 
     def is_admin_user(self, user: Optional["User"]) -> bool:
         """Determine if the provided user is listed in `admin_users`."""
