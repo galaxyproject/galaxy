@@ -205,6 +205,7 @@ const jobStatesStr = computed(() => {
                         "
                         :disabled="workflow.deleted"
                         full
+                        force
                         :version="workflow.version" />
                 </BButtonGroup>
             </div>
