@@ -101,11 +101,9 @@ const importDisable = computed(() => {
     return currentValue.value?.length === 0;
 });
 const okButtonText = computed(() => {
-    if (currentValue.value.length === 0) {
-        return "Import";
-    } else {
-        return `Import ${currentValue.value.length} dataset${currentValue.value.length > 1 ? "s" : ""}`;
-    }
+    const length = currentValue.value?.length || 0;
+
+    return length === 0 ? "Import" : `Import ${length} dataset${length > 1 ? "s" : ""}`;
 });
 
 async function fetchOptions() {
@@ -126,14 +124,14 @@ async function fetchOptions() {
     if (error) {
         console.error(error);
 
-        errorMessage.value = "Failed to load directories";
+        errorMessage.value = "Failed to load directories: " + error?.err_msg;
     }
 
     optionsLoading.value = false;
 }
 
 function mapDataToOptions(data: any): Option[] {
-    return data.map((item: any) => {
+    return data?.map((item: any) => {
         const option: Option = {
             name: item.text,
             fullPath: item.li_attr.full_path,
@@ -343,7 +341,7 @@ watch(
             {{ errorMessage }}
         </BAlert>
         <FormDrilldown
-            v-else
+            v-else-if="!optionsLoading"
             :id="filesMode ? 'files' : 'folders'"
             v-model="currentValue"
             class="directory-dataset-picker-list"
