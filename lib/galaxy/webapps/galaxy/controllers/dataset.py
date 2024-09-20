@@ -20,8 +20,8 @@ from galaxy.datatypes.display_applications.util import (
 )
 from galaxy.datatypes.sniff import guess_ext
 from galaxy.exceptions import (
-    MessageException,
     InsufficientPermissionsException,
+    MessageException,
     RequestParameterInvalidException,
 )
 from galaxy.managers.hdas import (
