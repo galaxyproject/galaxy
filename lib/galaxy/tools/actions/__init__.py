@@ -18,6 +18,7 @@ from packaging.version import Version
 
 from galaxy import model
 from galaxy.exceptions import (
+    AuthenticationRequired,
     ItemAccessibilityException,
     RequestParameterInvalidException,
 )
@@ -758,19 +759,22 @@ class DefaultToolAction(ToolAction):
         try:
             old_job = trans.sa_session.get(Job, rerun_remap_job_id)
             assert old_job is not None, f"({rerun_remap_job_id}/{current_job.id}): Old job id is invalid"
-            assert (
-                old_job.tool_id == current_job.tool_id
-            ), f"({old_job.id}/{current_job.id}): Old tool id ({old_job.tool_id}) does not match rerun tool id ({current_job.tool_id})"
+            if old_job.old_id != current_job.old_id:
+                raise RequestParameterInvalidException(
+                    f"Old tool id ({old_job.tool_id}) does not match rerun tool id ({current_job.tool_id})"
+                )
             if trans.user is not None:
-                assert (
-                    old_job.user_id == trans.user.id
-                ), f"({old_job.id}/{current_job.id}): Old user id ({old_job.user_id}) does not match rerun user id ({trans.user.id})"
+                if old_job.user_id != trans.user.id:
+                    raise RequestParameterInvalidException(
+                        "Cannot remap job dependencies for job not created by current user."
+                    )
             elif trans.user is None and isinstance(galaxy_session, trans.model.GalaxySession):
-                assert (
-                    old_job.session_id == galaxy_session.id
-                ), f"({old_job.id}/{current_job.id}): Old session id ({old_job.session_id}) does not match rerun session id ({galaxy_session.id})"
+                if old_job.session_id != galaxy_session.id:
+                    raise RequestParameterInvalidException(
+                        "Cannot remap job dependencies for job not created by current user."
+                    )
             else:
-                raise Exception(f"({old_job.id}/{current_job.id}): Remapping via the API is not (yet) supported")
+                raise AuthenticationRequired("Authentication required to remap job dependencies")
             # Start by hiding current job outputs before taking over the old job's (implicit) outputs.
             current_job.hide_outputs(flush=False)
             # Duplicate PJAs before remap.
