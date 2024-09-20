@@ -117,20 +117,6 @@ watch(
     { immediate: true }
 );
 
-// scroll to the job card when it is loaded (only on invocation route)
-// TODO: Maybe do not do this on first load...
-if (props.isFullPage) {
-    watch(
-        () => loadedJobInfo.value,
-        async (jobInfo) => {
-            if (jobInfo) {
-                scrollStepToView();
-            }
-        },
-        { immediate: true }
-    );
-}
-
 onUnmounted(() => {
     clearTimeout(pollTimeout.value);
 });
