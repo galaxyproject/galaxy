@@ -44,6 +44,7 @@ from galaxy.managers import (
     taggable,
     users,
 )
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model import (
     Job,
     JobStateHistory,
@@ -51,6 +52,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.deferred import materializer_factory
+from galaxy.model.dereference import dereference_to_model
 from galaxy.schema.schema import DatasetSourceType
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
@@ -68,6 +70,7 @@ from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
 )
+from galaxy.tool_util.parameters import DataRequestUri
 from galaxy.util.compression_utils import get_fileobj
 
 log = logging.getLogger(__name__)
@@ -341,6 +344,18 @@ class HDAManager(
             trans.sa_session.refresh(hda.dataset)
             if error:
                 raise exceptions.RequestParameterInvalidException(error)
+
+
+def dereference_input(
+    trans: ProvidesHistoryContext, data_request: DataRequestUri, history: Optional[model.History] = None
+) -> model.HistoryDatasetAssociation:
+    target_history = history or trans.history
+    hda = dereference_to_model(trans.sa_session, trans.user, target_history, data_request)
+    permissions = trans.app.security_agent.history_get_default_permissions(target_history)
+    trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
+    return hda
 
 
 class HDAStorageCleanerManager(base.StorageCleanerManager):

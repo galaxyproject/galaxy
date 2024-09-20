@@ -95,6 +95,7 @@ class DatasetInstanceMaterializer:
         self,
         dataset_instance: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation],
         target_history: Optional[History] = None,
+        in_place: bool = False,
     ) -> HistoryDatasetAssociation:
         """Create a new detached dataset instance from the supplied instance.
 
@@ -148,10 +149,16 @@ class DatasetInstanceMaterializer:
                 history = dataset_instance.history
             except DetachedInstanceError:
                 history = None
-        materialized_dataset_instance = HistoryDatasetAssociation(
-            create_dataset=False,  # is the default but lets make this really clear...
-            history=history,
-        )
+
+        materialized_dataset_instance: HistoryDatasetAssociation
+        if not in_place:
+            materialized_dataset_instance = HistoryDatasetAssociation(
+                create_dataset=False,  # is the default but lets make this really clear...
+                history=history,
+            )
+        else:
+            assert isinstance(dataset_instance, HistoryDatasetAssociation)
+            materialized_dataset_instance = cast(HistoryDatasetAssociation, dataset_instance)
         if attached:
             sa_session = self._sa_session
             if sa_session is None:
