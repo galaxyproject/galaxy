@@ -292,10 +292,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 self._attach_raw_id_if_editing(dataset_instance, dataset_attrs)
 
                 # Older style...
-                if 'uuid' in dataset_attrs:
-                    dataset_instance.dataset.uuid = dataset_attrs["uuid"]
-                if 'dataset_uuid' in dataset_attrs:
-                    dataset_instance.dataset.uuid = dataset_attrs["dataset_uuid"]
+                if self.import_options.allow_edit:
+                    if 'uuid' in dataset_attrs:
+                        dataset_instance.dataset.uuid = dataset_attrs["uuid"]
+                    if 'dataset_uuid' in dataset_attrs:
+                        dataset_instance.dataset.uuid = dataset_attrs["dataset_uuid"]
 
                 self._session_add(dataset_instance)
 
