@@ -125,11 +125,11 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
 class LibraryContentsFolderCreatePayload(LibraryContentsCreatePayload):
     name: Optional[str] = Field(
         "",
-        title="(only if create_type is 'folder') name of the folder to create",
+        title="name of the folder to create",
     )
     description: Optional[str] = Field(
         "",
-        title="(only if create_type is 'folder') description of the folder to create",
+        title="description of the folder to create",
     )
 
 
@@ -211,15 +211,15 @@ class LibraryContentsShowDatasetResponse(LibraryContentsShowResponse):
     folder_id: EncodedLibraryFolderDatabaseIdField
     state: str
     file_name: str
-    created_from_basename: str
+    created_from_basename: Optional[str]
     uploaded_by: str
     message: Optional[str]
     date_uploaded: str
     file_size: int
     file_ext: str
     data_type: str
-    misc_info: str
-    misc_blurb: str
+    misc_info: Optional[str]
+    misc_blurb: Optional[str]
     peek: Optional[str]
     uuid: str
     metadata_dbkey: str
@@ -237,28 +237,34 @@ class LibraryContentsCreateFolderListResponse(RootModel):
     root: List[LibraryContentsCreateFolderResponse]
 
 
-class LibraryContentsCreateDatasetResponse(Model):
-    id: EncodedDatabaseIdField
+class LibraryContentsCreateDatasetResponseBase(Model):
+    id: str  # should change to EncodedDatabaseIdField latter
     hda_ldda: str
     model_class: str
     name: str
     deleted: bool
     visible: bool
     state: str
-    library_dataset_id: EncodedDatabaseIdField
+    library_dataset_id: str  # should change to EncodedDatabaseIdField latter
     file_size: int
     file_name: str
     update_time: str
     file_ext: str
     data_type: str
     genome_build: str
-    misc_info: str
-    misc_blurb: str
-    created_from_basename: str
+    misc_info: Optional[str]
+    misc_blurb: Optional[str]
+    created_from_basename: Optional[str]
     uuid: str
-    parent_library_id: EncodedDatabaseIdField
+    parent_library_id: str  # should change to EncodedDatabaseIdField latter
     metadata_dbkey: str
-    metadata_data_lines: int
+
+
+class LibraryContentsCreateDatasetResponse(LibraryContentsCreateDatasetResponseBase):
+    metadata_data_lines: Optional[int]
+
+
+class LibraryContentsCreateDatasetExtendedResponse(LibraryContentsCreateDatasetResponse):
     metadata_comment_lines: Union[str, int]
     metadata_columns: int
     metadata_column_types: List[str]
@@ -267,8 +273,12 @@ class LibraryContentsCreateDatasetResponse(Model):
 
 
 class LibraryContentsCreateDatasetListResponse(RootModel):
-    root: List[LibraryContentsCreateDatasetResponse]
+    root: List[LibraryContentsCreateDatasetResponseBase]
 
 
 class LibraryContentsDeleteResponse(Model):
-    pass
+    id: EncodedDatabaseIdField
+    deleted: bool
+
+class LibraryContentsPurgedResponse(LibraryContentsDeleteResponse):
+    purged: bool

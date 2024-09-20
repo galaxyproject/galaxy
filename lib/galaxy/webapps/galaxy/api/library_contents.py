@@ -3,7 +3,12 @@ API operations on the contents of a data library.
 """
 
 import logging
-from typing import Union
+from typing import (
+    Optional,
+    Union,
+)
+
+from fastapi import Body
 
 from galaxy.managers.context import (
     ProvidesHistoryContext,
@@ -12,6 +17,7 @@ from galaxy.managers.context import (
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.library_contents import (
     LibraryContentsCollectionCreatePayload,
+    LibraryContentsCreateDatasetExtendedResponse,
     LibraryContentsCreateDatasetListResponse,
     LibraryContentsCreateDatasetResponse,
     LibraryContentsCreateFolderListResponse,
@@ -72,12 +78,15 @@ class FastAPILibraryContents:
     def create(
         self,
         library_id: DecodedDatabaseIdField,
-        payload: Union[LibraryContentsFolderCreatePayload, LibraryContentsFileCreatePayload, LibraryContentsCollectionCreatePayload],
+        payload: Union[
+            LibraryContentsFolderCreatePayload, LibraryContentsFileCreatePayload, LibraryContentsCollectionCreatePayload
+        ],
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> Union[
         LibraryContentsCreateFolderListResponse,
         LibraryContentsCreateDatasetResponse,
         LibraryContentsCreateDatasetListResponse,
+        LibraryContentsCreateDatasetExtendedResponse,
     ]:
         return self.service.create(trans, library_id, payload)
 
@@ -103,7 +112,9 @@ class FastAPILibraryContents:
         self,
         library_id: DecodedDatabaseIdField,
         id: DecodedDatabaseIdField,
-        payload: LibraryContentsDeletePayload = LibraryContentsDeletePayload(),
+        payload: Optional[LibraryContentsDeletePayload] = Body(None),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ):
+        if payload is None:
+            payload = LibraryContentsDeletePayload()
         return self.service.delete(trans, id, payload)
