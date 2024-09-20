@@ -858,8 +858,20 @@ query_tags = [
         "Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.",
     ),
     IndexQueryTag(
-        "is:share_with_me",
+        "is:importable",
+        "Include only importable workflows in the final result.",
+    ),
+    IndexQueryTag(
+        "is:deleted",
+        "Include only deleted workflows in the final result.",
+    ),
+    IndexQueryTag(
+        "is:shared_with_me",
         "Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.",
+    ),
+    IndexQueryTag(
+        "is:bookmarked",
+        "Include only workflows bookmarked by the requesting user.",
     ),
 ]
 

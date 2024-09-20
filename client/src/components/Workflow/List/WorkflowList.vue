@@ -44,7 +44,6 @@ const overlay = ref(false);
 const filterText = ref("");
 const totalWorkflows = ref(0);
 const showAdvanced = ref(false);
-const showBookmarked = ref(false);
 const listHeader = ref<any>(null);
 const workflowsLoaded = ref<WorkflowsList>([]);
 
@@ -65,6 +64,7 @@ const searchPlaceHolder = computed(() => {
 const published = computed(() => props.activeList === "published");
 const sharedWithMe = computed(() => props.activeList === "shared_with_me");
 const showDeleted = computed(() => filterText.value.includes("is:deleted"));
+const showBookmarked = computed(() => filterText.value.includes("is:bookmarked"));
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const view = computed(() => (userStore.preferredListViewMode as ListView) || "grid");
 const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) ?? true);
@@ -91,17 +91,12 @@ function updateFilterValue(filterKey: string, newValue: any) {
     filterText.value = workflowFilters.value.setFilterValue(currentFilterText, filterKey, newValue);
 }
 
-function toggleBookmarked(bookmarked?: boolean) {
-    showBookmarked.value = bookmarked ?? !showBookmarked.value;
-}
-
 function onToggleBookmarked() {
-    toggleBookmarked();
+    updateFilterValue("bookmarked", true);
 }
 
 function onToggleDeleted() {
     updateFilterValue("deleted", true);
-    toggleBookmarked(false);
 }
 
 async function load(overlayLoading = false, silent = false) {
@@ -149,9 +144,7 @@ async function load(overlayLoading = false, silent = false) {
             rethrowSimple(error);
         }
 
-        let filteredWorkflows = showBookmarked.value
-            ? filter(data, (workflow: any) => workflow.show_in_tool_panel)
-            : data;
+        let filteredWorkflows = data;
 
         if (props.activeList === "my") {
             filteredWorkflows = filter(filteredWorkflows, (w: any) => userStore.matchesCurrentUsername(w.owner));
@@ -159,11 +152,7 @@ async function load(overlayLoading = false, silent = false) {
 
         workflowsLoaded.value = filteredWorkflows;
 
-        if (showBookmarked.value) {
-            totalWorkflows.value = filteredWorkflows.length;
-        } else {
-            totalWorkflows.value = parseInt(response.headers.get("Total_matches") || "0", 10) || 0;
-        }
+        totalWorkflows.value = parseInt(response.headers.get("Total_matches") || "0", 10) || 0;
     } catch (e) {
         Toast.error(`Failed to load workflows: ${e}`);
     } finally {
@@ -189,7 +178,7 @@ function validatedFilterText() {
     return workflowFilters.value.getFilterText(validFilters.value, true);
 }
 
-watch([filterText, sortBy, sortDesc, showBookmarked], async () => {
+watch([filterText, sortBy, sortDesc], async () => {
     offset.value = 0;
     await load(true);
 });
@@ -269,7 +258,6 @@ onMounted(() => {
                             size="sm"
                             :title="bookmarkButtonTitle"
                             :pressed="showBookmarked"
-                            :disabled="showDeleted"
                             variant="outline-primary"
                             @click="onToggleBookmarked">
                             <FontAwesomeIcon :icon="faStar" fixed-width />

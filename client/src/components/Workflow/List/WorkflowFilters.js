@@ -116,6 +116,13 @@ export function WorkflowFilters(activeList = "my") {
                     handler: equals("deleted", "deleted", toBool),
                     menuItem: true,
                 },
+                bookmarked: {
+                    placeholder: "Bookmarked",
+                    type: Boolean,
+                    boolType: "is",
+                    handler: equals("bookmarked", "bookmarked", toBool),
+                    menuItem: true,
+                },
             },
             undefined,
             false,
