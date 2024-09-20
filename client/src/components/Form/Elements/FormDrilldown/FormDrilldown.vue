@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BAlert, BFormCheckbox } from "bootstrap-vue";
 import { computed, type ComputedRef } from "vue";
 
 import { findDescendants, flattenValues, getAllValues, type Option, type Value } from "./utilities";
@@ -93,21 +94,27 @@ function setElementValues(oldArray: string[], newArray: string[], value: string)
 </script>
 
 <template>
-    <div v-if="hasOptions">
-        <b-form-checkbox
-            v-if="multiple"
-            v-localize
-            :checked="selectAllChecked"
-            :indeterminate="selectAllIndeterminate"
-            class="d-inline select-all-checkbox"
-            @change="onSelectAll">
-            Select / Deselect All
-        </b-form-checkbox>
-        <FormDrilldownList
-            :show-icons="showIcons"
-            :multiple="multiple"
-            :current-value="currentValue"
-            :options="options"
-            :handle-click="handleClick" />
+    <div>
+        <div v-if="hasOptions">
+            <BFormCheckbox
+                v-if="multiple"
+                v-localize
+                :checked="selectAllChecked"
+                :indeterminate="selectAllIndeterminate"
+                class="d-inline select-all-checkbox"
+                @change="onSelectAll">
+                Select / Deselect All
+            </BFormCheckbox>
+
+            <FormDrilldownList
+                :show-icons="showIcons"
+                :multiple="multiple"
+                :current-value="currentValue"
+                :options="options"
+                :handle-click="handleClick" />
+        </div>
+        <div v-else>
+            <BAlert show variant="info" class="mt-2"> No options available. </BAlert>
+        </div>
     </div>
 </template>
