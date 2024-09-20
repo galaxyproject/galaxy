@@ -19,7 +19,10 @@ from galaxy.datatypes.display_applications.util import (
     encode_dataset_user,
 )
 from galaxy.datatypes.sniff import guess_ext
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    InsufficientPermissionsException,
+    RequestParameterInvalidException,
+)
 from galaxy.managers.hdas import (
     HDADeserializer,
     HDAManager,
@@ -106,7 +109,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if not data:
             raise web.httpexceptions.HTTPNotFound(f"Invalid reference dataset id: {str(hda_id)}.")
         if not self._can_access_dataset(trans, data):
-            return trans.show_error_message("You are not allowed to access this dataset")
+            raise InsufficientPermissionsException("You are not allowed to access this dataset")
         self.app.hda_manager.ensure_dataset_on_disk(trans, data)
         return data
 
