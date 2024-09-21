@@ -276,6 +276,8 @@ leobiscassi, leo.biscassi@gmail.com, 2024-08-12 personal email to michael.crusoe
 ThomasWollmann, thomas.s.wollmann@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2259147420
 fmareuil, fmareuil@pasteur.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2260099669
 FreekDB, freekdb@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2263520321
+arbernard, aurelien.bernard.bioinfo63@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2319692992
+remyd1, remy.d1@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2319836450
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -311,7 +313,6 @@ NA, Galaxy, galaxy-dev@plantandfood.co.nz, address bounced
 # GitHub username or NA, Name, email address, Comment
 arjunnath, Arjun Nath, arjun@bx.psu.edu
 ashvark, Ashok Varadharajan, ashvark@gmail.com
-arbernard, Aurélien Bernard, aurelien.bernard.bioinfo63@gmail.com
 BalthazarPavot, Balthazar Pavot, balthazar.pavot@hotmail.fr, GitHub account deleted
 the-nidhogg, balto, balto_59@hotmail.fr, ¿same as BalthazarPavot (only commits from both are in the same PR)?
 bensellak, Taoufik Bensellak, bensellak@ensat.ac.ma
@@ -335,7 +336,6 @@ nturaga, Nitesh Turaga, nitesh.turaga@gmail.com
 ffinfo, Peter van 't Hof, pjrvanthof@gmail.com
 ramezrawas, Ramez Alrawas, ramezrawas@gmail.com
 NA, Ramkrishna Chakrabarty, rc@bx.psu.edu
-remyd1, Rémy Dernat, remy.d1@gmail.com
 golharam, Ryan Golhar, ngsbioinformatics@gmail.com
 simleo, Simone Leo, simone.leo@gmail.com
 NA, Wen-Yu Chung, wychung@bx.psu.edu,last contribution in 2009
