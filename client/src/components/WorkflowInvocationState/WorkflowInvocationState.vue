@@ -225,12 +225,12 @@ function cancelWorkflowSchedulingLocal() {
                 </BAlert>
             </BTab>
             <template v-slot:tabs-end>
-                <BNavItem v-if="!invocationAndJobTerminal" class="invocation-pdf-link ml-auto alert-info mr-1">
+                <BNavItem v-if="!invocationAndJobTerminal" class="ml-auto alert-info mr-1">
                     <LoadingSpan message="Waiting to complete invocation" />
                     <BButton
                         v-b-tooltip.noninteractive.hover
-                        class="cancel-workflow-scheduling"
                         title="Cancel scheduling of workflow invocation"
+                        data-description="cancel invocation button"
                         size="sm"
                         variant="danger"
                         @click="onCancel">
@@ -240,8 +240,9 @@ function cancelWorkflowSchedulingLocal() {
                 </BNavItem>
                 <li
                     role="presentation"
-                    class="nav-item align-self-center invocation-pdf-link mr-2"
-                    :class="{ 'ml-auto': invocationAndJobTerminal }">
+                    class="nav-item align-self-center mr-2"
+                    :class="{ 'ml-auto': invocationAndJobTerminal }"
+                    data-description="generate pdf report button">
                     <BButton
                         v-b-tooltip.hover.bottom.noninteractive
                         :title="invocationStateSuccess ? generatePdfTooltip : disabledReportTooltip"
