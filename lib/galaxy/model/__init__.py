@@ -4546,6 +4546,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     copied_from_history_dataset_association: Optional["HistoryDatasetAssociation"]
     copied_from_library_dataset_dataset_association: Optional["LibraryDatasetDatasetAssociation"]
     implicitly_converted_datasets: List["ImplicitlyConvertedDatasetAssociation"]
+    implicitly_converted_parent_datasets: List["ImplicitlyConvertedDatasetAssociation"]
 
     validated_states = DatasetValidatedState
 
