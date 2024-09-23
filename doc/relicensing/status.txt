@@ -278,6 +278,7 @@ fmareuil, fmareuil@pasteur.fr, https://github.com/galaxyproject/galaxy/pull/1697
 FreekDB, freekdb@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2263520321
 arbernard, aurelien.bernard.bioinfo63@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2319692992
 remyd1, remy.d1@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2319836450
+npinter, npinter@protonmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2321413840
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -286,7 +287,6 @@ jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
 crashGoBoom, Christopher Mundus, crashGoBoom@users.noreply.github.com
 NA, Ilya ichorny, none@none, currently at Quantum-Si
 jenzopr, Jens Preußner, jenzopr@users.noreply.github.com, Jens.Preussner@mpi-bn.mpg.de ??
-npinter, Niko Pinter, 34959927+npinter@users.noreply.github.com, niko.pinter@protonmail.com ??
 dlal-group, Marie Gramm, mariegramm@192-168-1-109.tpgi.com.au
 carmstrong1gw, Chris Armstrong, carmstrong1gw@github.com, address bounced
 NA, Hiral Vora, hvora1@uncc.edu, address bounced
