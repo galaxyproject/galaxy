@@ -3737,6 +3737,22 @@ class AsyncTaskResultSummary(Model):
     )
 
 
+ToolRequestIdField = Field(title="ID", description="Encoded ID of the role")
+
+
+class ToolRequestState(str, Enum):
+    NEW = "new"
+    SUBMITTED = "submitted"
+    FAILED = "failed"
+
+
+class ToolRequestModel(Model):
+    id: EncodedDatabaseIdField = ToolRequestIdField
+    request: Dict[str, Any]
+    state: ToolRequestState
+    state_message: Optional[str]
+
+
 class AsyncFile(Model):
     storage_request_id: UUID
     task: AsyncTaskResultSummary
