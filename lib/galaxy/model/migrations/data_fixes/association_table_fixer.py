@@ -111,7 +111,7 @@ class AssociationDuplicateFix(ABC):
         """
 
     @abstractmethod
-    def build_duplicate_ids_statement(self, user_id, group_id):
+    def build_duplicate_ids_statement(self, item1_id, item2_id):
         """
         Build select statement returning a list of ids for duplicate records retrieved via build_duplicate_tuples_statement().
         """
