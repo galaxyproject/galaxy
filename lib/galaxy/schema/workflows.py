@@ -1210,7 +1210,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
         description="The version of the workflow format being used.",
     )
     annotation: WorkflowAnnotationField
-    tags: Union[TagCollection, List[Literal[""]]] = Field(
+    tags: TagCollection = Field(
         ...,
         title="Tags",
         description="The tags associated with the workflow.",
