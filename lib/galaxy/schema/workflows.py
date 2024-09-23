@@ -617,23 +617,23 @@ class ToolModuleStepOutput(Model):
         title="Tool module step output type",
     )
     optional: Literal[False] = Field(..., title="Is optional")
-    parameter: Literal[True] = Field(
-        ...,
+    parameter: Optional[Literal[True]] = Field(
+        None,
         title="Is parameter",
     )
-    collection: Literal[True] = Field(
-        ...,
+    collection: Optional[Literal[True]] = Field(
+        None,
         title="Is collection",
     )
-    collection_type: str = Field(
-        ...,
+    collection_type: Optional[str] = Field(
+        None,
         title="Tool module step output collection type",
     )
-    collection_type_source: str = Field(
-        ...,
+    collection_type_source: Optional[str] = Field(
+        None,
     )
-    label: Any = Field(
-        ...,
+    label: Optional[Any] = Field(
+        None,
         title="Tool module step output label",
     )
 
