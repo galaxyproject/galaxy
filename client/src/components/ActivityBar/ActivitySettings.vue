@@ -5,8 +5,8 @@ import { faCheckSquare, faStar, faThumbtack, faTrash } from "@fortawesome/free-s
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, type ComputedRef } from "vue";
+import { useRouter } from "vue-router/composables";
 
-import { useActivityAction } from "@/composables/useActivityAction";
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 
 library.add({
@@ -23,9 +23,12 @@ const props = defineProps<{
     query: string;
 }>();
 
+const emit = defineEmits<{
+    (e: "activityClicked", activityId: string): void;
+}>();
+
 const activityStore = useActivityStore(props.activityBarId);
 const { activities } = storeToRefs(activityStore);
-const activityAction = useActivityAction(props.activityBarId);
 
 const filteredActivities = computed(() => {
     if (props.query?.length > 0) {
@@ -58,6 +61,22 @@ function onFavorite(activity: Activity) {
 function onRemove(activity: Activity) {
     activityStore.remove(activity.id);
 }
+
+const router = useRouter();
+
+function executeActivity(activity: Activity) {
+    if (activity.click) {
+        emit("activityClicked", activity.id);
+    }
+
+    if (activity.panel) {
+        activityStore.toggleSideBar(activity.id);
+    }
+
+    if (activity.to) {
+        router.push(activity.to);
+    }
+}
 </script>
 
 <template>
@@ -67,7 +86,7 @@ function onRemove(activity: Activity) {
                 <button
                     v-if="activity.optional"
                     class="activity-settings-item p-2 cursor-pointer"
-                    @click="activityAction.executeActivity(activity)">
+                    @click="executeActivity(activity)">
                     <div class="d-flex justify-content-between align-items-start">
                         <span class="d-flex justify-content-between w-100">
                             <span>

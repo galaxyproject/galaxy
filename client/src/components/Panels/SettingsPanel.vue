@@ -16,6 +16,10 @@ const props = defineProps<{
     searchPlaceholder: string;
 }>();
 
+const emit = defineEmits<{
+    (e: "activityClicked", activityId: string): void;
+}>();
+
 const activityStore = useActivityStore(props.activityBarId);
 
 const confirmRestore = ref(false);
@@ -43,7 +47,10 @@ function onQuery(newQuery: string) {
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
             </BButton>
         </template>
-        <ActivitySettings :query="query" :activity-bar-id="props.activityBarId" />
+        <ActivitySettings
+            :query="query"
+            :activity-bar-id="props.activityBarId"
+            @activityClicked="(...args) => emit('activityClicked', ...args)" />
         <BModal
             v-model="confirmRestore"
             title="Restore Activity Bar Defaults"
