@@ -77,15 +77,13 @@ function onClick(evt: MouseEvent): void {
                             width: `${Math.round(progressPercentage)}%`,
                         }" />
                 </span>
-                <span class="position-relative">
-                    <div class="nav-icon">
-                        <span v-if="indicator > 0" class="nav-indicator" data-description="activity indicator">
-                            {{ Math.min(indicator, 99) }}
-                        </span>
-                        <FontAwesomeIcon :icon="icon" />
-                    </div>
-                    <TextShort v-if="title" :text="title" class="nav-title" />
-                </span>
+                <div class="nav-icon">
+                    <span v-if="indicator > 0" class="nav-indicator" data-description="activity indicator">
+                        {{ Math.min(indicator, 99) }}
+                    </span>
+                    <FontAwesomeIcon :icon="icon" />
+                </div>
+                <TextShort v-if="title" :text="title" class="nav-title" />
             </b-nav-item>
         </template>
         <div class="text-center px-2 py-1">
@@ -106,6 +104,8 @@ function onClick(evt: MouseEvent): void {
 @import "theme/blue.scss";
 
 .activity-item {
+    display: flex;
+
     &:deep(.variant-danger) {
         color: $brand-danger;
     }
