@@ -85,6 +85,8 @@ class WorkflowRunCrateProfileBuilder:
         self.file_entities: Dict[int, Any] = {}
         self.param_entities: Dict[int, Any] = {}
         self.pv_entities: Dict[str, Any] = {}
+        # Cache for tools to avoid duplicating entities for the same tool
+        self.tool_cache: Dict[str, ContextEntity] = {}
 
     def build_crate(self):
         crate = ROCrate()
@@ -264,71 +266,120 @@ class WorkflowRunCrateProfileBuilder:
 
         # Add tools used in the workflow
         self._add_tools(crate)
+        self._add_steps(crate)
+
+    def _add_steps(self, crate: ROCrate):
+        """
+        Add workflow steps (HowToStep) to the RO-Crate. These are unique for each tool occurrence.
+        """
+        step_entities = []
+        # Initialize the position as a list with a single element to keep it mutable
+        position = [1]
+        self._add_steps_recursive(self.workflow.steps, crate, step_entities, position)
+        return step_entities
+
+    def _add_steps_recursive(self, steps, crate: ROCrate, step_entities, position):
+        """
+        Recursively add HowToStep entities from workflow steps, ensuring that 
+        the position index is maintained across subworkflows.
+        """
+        for step in steps:
+            if step.type == "tool":
+                # Create a unique HowToStep entity for each step
+                step_id = f"step_{position[0]}"
+                step_description = None
+                if step.annotations:
+                    annotations_list = [annotation.annotation for annotation in step.annotations if annotation]
+                    step_description = " ".join(annotations_list) if annotations_list else None
+
+                # Add HowToStep entity to the crate
+                step_entity = crate.add(
+                    ContextEntity(
+                        crate,
+                        step_id,
+                        properties={
+                            "@type": "HowToStep",
+                            "position": position[0],
+                            "name": step.tool_id,
+                            "description": step_description,
+                        },
+                    )
+                )
+
+                # Append the HowToStep entity to the workflow steps list
+                step_entities.append(step_entity)
+                crate.mainEntity.append_to("step", step_entity)
+
+                # Increment the position counter
+                position[0] += 1
+
+            # Handle subworkflows recursively
+            elif step.type == "subworkflow":
+                subworkflow = step.subworkflow
+                if subworkflow:
+                    self._add_steps_recursive(subworkflow.steps, crate, step_entities, position)
 
     def _add_tools(self, crate: ROCrate):
         tool_entities = []
-
-        # Call a recursive method to add tools for the main workflow and subworkflows
         self._add_tools_recursive(self.workflow.steps, crate, tool_entities)
-
         return tool_entities
 
     def _add_tools_recursive(self, steps, crate: ROCrate, tool_entities):
         """
-        Recursively add tools from workflow steps and handle subworkflows.
+        Recursively add SoftwareApplication entities from workflow steps, reusing tools when necessary.
         """
-        # Iterate over each step in the given workflow steps
         for step in steps:
-            # Check if the step corresponds to a tool
             if step.type == "tool":
                 tool_id = step.tool_id
                 tool_version = step.tool_version
-                tool_name = tool_id  # label can de irrelevant or description better keep the tool id
 
-                # Initialize tool description for each tool
-                tool_description: Optional[str] = None
+                # Cache key based on tool ID and version
+                tool_key = f"{tool_id}:{tool_version}"
 
-                # Check if the tool step has annotations
-                if step.annotations:
-                    # Assuming each annotation object has an 'annotation' attribute
-                    annotations_list = []
-                    for annotation_association in step.annotations:
-                        annotation = annotation_association.annotation
-                        if annotation:  # Check if annotation_text is not None
-                            annotations_list.append(annotation)
+                # Check if tool entity is already in cache
+                if tool_key in self.tool_cache:
+                    tool_entity = self.tool_cache[tool_key]
+                else:
+                    # Create a new tool entity
+                    tool_name = tool_id
+                    tool_description = None
+                    if step.annotations:
+                        annotations_list = [annotation.annotation for annotation in step.annotations if annotation]
+                        tool_description = " ".join(annotations_list) if annotations_list else None
 
-                    # Join annotations into a single string or handle them individually, depending on your requirement
-                    tool_description = " ".join(annotations_list) if annotations_list else None
-
-                # Add tool entity to the RO-Crate
-                tool_entity = crate.add(
-                    ContextEntity(
-                        crate,
-                        tool_id,
-                        properties={
-                            "@type": "SoftwareApplication",
-                            "name": tool_name,
-                            "version": tool_version,
-                            "description": tool_description,
-                            "url": "https://toolshed.g2.bx.psu.edu",  # URL if relevant
-                        },
+                    # Add tool entity to the RO-Crate
+                    tool_entity = crate.add(
+                        ContextEntity(
+                            crate,
+                            tool_id,
+                            properties={
+                                "@type": "SoftwareApplication",
+                                "name": tool_name,
+                                "version": tool_version,
+                                "description": tool_description,
+                                "url": "https://toolshed.g2.bx.psu.edu",  # URL if relevant
+                            },
+                        )
                     )
-                )
-                tool_entities.append(tool_entity)
 
-                # Link tool entity with the workflow
+                    # Store the tool entity in the cache
+                    self.tool_cache[tool_key] = tool_entity
+
+                # Append the tool entity to the workflow (instrument) and store it in the list
+                tool_entities.append(tool_entity)
                 crate.mainEntity.append_to("instrument", tool_entity)
 
-            # Handle subworkflows
+            # Handle subworkflows recursively
             elif step.type == "subworkflow":
                 subworkflow = step.subworkflow
                 if subworkflow:
-                    # Recursively add tools for the subworkflow steps
                     self._add_tools_recursive(subworkflow.steps, crate, tool_entities)
 
-
-
     def _add_create_action(self, crate: ROCrate):
+        """
+        Adds the CreateAction indicating the workflow invocation.
+        """
+        # CreateAction for the entire workflow run
         self.create_action = crate.add(
             ContextEntity(
                 crate,
@@ -337,8 +388,8 @@ class WorkflowRunCrateProfileBuilder:
                     "name": self.workflow.name,
                     "startTime": self.invocation.workflow.create_time.isoformat(),
                     "endTime": self.invocation.workflow.update_time.isoformat(),
-                    "instrument": {"@id": crate.mainEntity["@id"]},
-                },
+                    "instrument": {"@id": crate.mainEntity["@id"]}
+                }
             )
         )
         crate.root_dataset.append_to("mentions", self.create_action)
