@@ -153,24 +153,6 @@
             </div>
             <FlexPanel side="right">
                 <div class="unified-panel bg-white">
-                    <div class="unified-panel-header" unselectable="on">
-                        <div class="unified-panel-header-inner">
-                            <WorkflowOptions
-                                :is-new-temp-workflow="isNewTempWorkflow"
-                                :has-changes="hasChanges"
-                                :has-invalid-connections="hasInvalidConnections"
-                                @onSave="onSave"
-                                @onCreate="onCreate"
-                                @onSaveAs="onSaveAs"
-                                @onRun="onRun"
-                                @onDownload="onDownload"
-                                @onReport="onReport"
-                                @onLayout="onLayout"
-                                @onEdit="onEdit"
-                                @onAttributes="showAttributes"
-                                @onUpgrade="onUpgrade" />
-                        </div>
-                    </div>
                     <div ref="rightPanelElement" class="unified-panel-body workflow-right p-2">
                         <div v-if="!initialLoading" class="position-relative h-100">
                             <FormTool
@@ -234,7 +216,6 @@ import reportDefault from "./reportDefault";
 
 import WorkflowLint from "./Lint.vue";
 import MessagesModal from "./MessagesModal.vue";
-import WorkflowOptions from "./Options.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 import SaveChangesModal from "./SaveChangesModal.vue";
 import StateUpgradeModal from "./StateUpgradeModal.vue";
@@ -262,7 +243,6 @@ export default {
         ToolPanel,
         FormDefault,
         FormTool,
-        WorkflowOptions,
         WorkflowAttributes,
         WorkflowLint,
         RefactorConfirmationModal,
@@ -766,6 +746,14 @@ export default {
 
             if (activityId === "workflow-auto-layout") {
                 this.onLayout();
+            }
+
+            if (activityId === "workflow-run") {
+                this.onRun();
+            }
+
+            if (activityId === "save-workflow") {
+                this.onSave();
             }
         },
         onLayout() {
