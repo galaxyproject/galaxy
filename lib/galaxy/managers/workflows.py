@@ -1441,7 +1441,7 @@ class WorkflowContentsManager(UsesAnnotations):
         If `allow_upgrade`, the workflow and sub-workflows might use updated tool versions when refactoring.
         """
         annotation_str = ""
-        tag_str = [""]
+        tags_list = []
         annotation_owner = None
         if stored is not None:
             if stored.id:
