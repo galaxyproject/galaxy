@@ -10,6 +10,8 @@ import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { defaultActivities } from "./activitySetup";
 import { defineScopedStore } from "./scopedStore";
 
+export type ActivityVariant = "primary" | "danger" | "disabled";
+
 export interface Activity {
     // determine wether an anonymous user can access this activity
     anonymous?: boolean;
@@ -35,6 +37,7 @@ export interface Activity {
     visible?: boolean;
     // if activity should cause a click event
     click?: true;
+    variant?: ActivityVariant;
 }
 
 export const useActivityStore = defineScopedStore("activityStore", (scope) => {

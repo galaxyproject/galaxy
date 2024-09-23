@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import type { Placement } from "@popperjs/core";
 import { useRouter } from "vue-router/composables";
+
+import type { ActivityVariant } from "@/stores/activityStore";
+import localize from "@/utils/localization";
 
 import TextShort from "@/components/Common/TextShort.vue";
 import Popper from "@/components/Popper/Popper.vue";
@@ -19,12 +23,12 @@ export interface Props {
     indicator?: number;
     isActive?: boolean;
     tooltip?: string;
-    tooltipPlacement?: string;
+    tooltipPlacement?: Placement;
     progressPercentage?: number;
     progressStatus?: string;
     options?: Option[];
     to?: string;
-    variant?: string;
+    variant?: ActivityVariant;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -56,36 +60,36 @@ function onClick(evt: MouseEvent): void {
 <template>
     <Popper reference-is="span" popper-is="span" :placement="tooltipPlacement">
         <template v-slot:reference>
-            <div :id="id" class="activity-item" @click="onClick">
-                <b-nav-item
-                    class="position-relative my-1 p-2"
-                    :class="{ 'nav-item-active': isActive }"
-                    :aria-label="title | l">
-                    <span v-if="progressStatus" class="progress">
-                        <div
-                            class="progress-bar notransition"
-                            :class="{
-                                'bg-danger': progressStatus === 'danger',
-                                'bg-success': progressStatus === 'success',
-                            }"
-                            :style="{
-                                width: `${Math.round(progressPercentage)}%`,
-                            }" />
-                    </span>
-                    <span class="position-relative" :class="`text-${variant}`">
-                        <div class="nav-icon">
-                            <span v-if="indicator > 0" class="nav-indicator" data-description="activity indicator">
-                                {{ Math.min(indicator, 99) }}
-                            </span>
-                            <FontAwesomeIcon :icon="icon" />
-                        </div>
-                        <TextShort v-if="title" :text="title" class="nav-title" />
-                    </span>
-                </b-nav-item>
-            </div>
+            <b-nav-item
+                class="activity-item position-relative my-1 p-2"
+                :class="{ 'nav-item-active': isActive }"
+                :link-classes="`variant-${props.variant}`"
+                :aria-label="localize(title)"
+                @click="onClick">
+                <span v-if="progressStatus" class="progress">
+                    <div
+                        class="progress-bar notransition"
+                        :class="{
+                            'bg-danger': progressStatus === 'danger',
+                            'bg-success': progressStatus === 'success',
+                        }"
+                        :style="{
+                            width: `${Math.round(progressPercentage)}%`,
+                        }" />
+                </span>
+                <span class="position-relative">
+                    <div class="nav-icon">
+                        <span v-if="indicator > 0" class="nav-indicator" data-description="activity indicator">
+                            {{ Math.min(indicator, 99) }}
+                        </span>
+                        <FontAwesomeIcon :icon="icon" />
+                    </div>
+                    <TextShort v-if="title" :text="title" class="nav-title" />
+                </span>
+            </b-nav-item>
         </template>
         <div class="text-center px-2 py-1">
-            <small v-if="tooltip">{{ tooltip | l }}</small>
+            <small v-if="tooltip">{{ localize(tooltip) }}</small>
             <small v-else>No tooltip available for this item</small>
             <div v-if="options" class="nav-options p-1">
                 <router-link v-for="(option, index) in options" :key="index" :to="option.value">
@@ -101,8 +105,20 @@ function onClick(evt: MouseEvent): void {
 <style scoped lang="scss">
 @import "theme/blue.scss";
 
+.activity-item {
+    &:deep(.variant-danger) {
+        color: $brand-danger;
+    }
+
+    &:deep(.variant-disabled) {
+        color: $text-light;
+    }
+}
+
 .nav-icon {
-    @extend .nav-item;
+    display: flex;
+    justify-content: center;
+    cursor: pointer;
     font-size: 1rem;
 }
 
@@ -121,13 +137,6 @@ function onClick(evt: MouseEvent): void {
     width: 1.2rem;
 }
 
-.nav-item {
-    display: flex;
-    align-items: center;
-    align-content: center;
-    justify-content: center;
-}
-
 .nav-item-active {
     border-radius: $border-radius-extralarge;
     background: $gray-300;
@@ -143,7 +152,8 @@ function onClick(evt: MouseEvent): void {
 }
 
 .nav-title {
-    @extend .nav-item;
+    display: flex;
+    justify-content: center;
     width: 4rem;
     margin-top: 0.5rem;
     font-size: 0.7rem;

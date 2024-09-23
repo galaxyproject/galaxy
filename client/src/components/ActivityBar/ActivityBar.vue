@@ -248,6 +248,7 @@ defineExpose({
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
                                 :to="activity.to ?? undefined"
+                                :variant="activity.variant"
                                 @click="onActivityClicked(activity)" />
                         </div>
                     </div>
@@ -287,6 +288,7 @@ defineExpose({
                         :title="activity.title"
                         :tooltip="activity.tooltip"
                         :to="activity.to || ''"
+                        :variant="activity.variant"
                         @click="toggleSidebar(activity.id, activity.to)" />
                     <ActivityItem
                         v-else
@@ -297,6 +299,7 @@ defineExpose({
                         :title="activity.title"
                         :tooltip="activity.tooltip"
                         :to="activity.to ?? undefined"
+                        :variant="activity.variant"
                         @click="onActivityClicked(activity)" />
                 </template>
             </b-nav>
@@ -311,7 +314,8 @@ defineExpose({
                 v-else-if="isActiveSideBar('settings')"
                 :activity-bar-id="props.activityBarId"
                 :heading="props.optionsHeading"
-                :search-placeholder="props.optionsSearchPlaceholder" />
+                :search-placeholder="props.optionsSearchPlaceholder"
+                @activityClicked="(id) => emit('activityClicked', id)" />
             <AdminPanel v-else-if="isActiveSideBar('admin')" />
             <slot name="side-panel" :is-active-side-bar="isActiveSideBar"></slot>
         </FlexPanel>

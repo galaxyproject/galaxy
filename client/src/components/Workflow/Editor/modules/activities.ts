@@ -13,7 +13,7 @@ import {
     faSitemap,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
-import { ref } from "vue";
+import { computed, type Ref } from "vue";
 
 import type { Activity } from "@/stores/activityStore";
 
@@ -148,16 +148,35 @@ export const workflowEditorActivities = [
     },
 ] as const satisfies Readonly<Activity[]>;
 
-export function useSpecialWorkflowActivities() {
-    const specialWorkflowActivities = ref<Activity[]>([
+interface SpecialActivityOptions {
+    isNewTempWorkflow: boolean;
+    hasChanges: boolean;
+    hasInvalidConnections: boolean;
+}
+
+export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions>) {
+    const saveHover = computed(() => {
+        if (options.value.isNewTempWorkflow) {
+            return "Save Workflow";
+        } else if (!options.value.hasChanges) {
+            return "Workflow has no changes";
+        } else if (options.value.hasInvalidConnections) {
+            return "Workflow has invalid connections, review and remove invalid connections";
+        } else {
+            return "Save Workflow";
+        }
+    });
+
+    const specialWorkflowActivities = computed<Activity[]>(() => [
         {
             title: "Save",
-            tooltip: "Save workflow",
+            tooltip: saveHover.value,
             description: "Save changes made to this workflow.",
             icon: faSave,
             id: "save-workflow",
             click: true,
             mutable: false,
+            variant: options.value.hasChanges ? "primary" : "disabled",
         },
     ]);
 

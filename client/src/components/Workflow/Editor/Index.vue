@@ -473,7 +473,15 @@ export default {
             markdownEditor.value?.insertMarkdown(markdown);
         }
 
-        const { specialWorkflowActivities } = useSpecialWorkflowActivities();
+        const isNewTempWorkflow = computed(() => !props.workflowId);
+
+        const { specialWorkflowActivities } = useSpecialWorkflowActivities(
+            computed(() => ({
+                hasChanges: hasChanges.value,
+                hasInvalidConnections: hasInvalidConnections.value,
+                isNewTempWorkflow: isNewTempWorkflow.value,
+            }))
+        );
 
         return {
             id,
@@ -515,6 +523,7 @@ export default {
             markdownEditor,
             insertMarkdown,
             specialWorkflowActivities,
+            isNewTempWorkflow,
         };
     },
     data() {
@@ -553,9 +562,6 @@ export default {
         },
         hasActiveNodeTool() {
             return this.activeStep?.type == "tool";
-        },
-        isNewTempWorkflow() {
-            return !this.workflowId;
         },
     },
     watch: {
@@ -745,6 +751,22 @@ export default {
                 }
 
                 this.$router.push("/workflows/list");
+            }
+
+            if (activityId === "exit") {
+                this.$router.push("/workflows/list");
+            }
+
+            if (activityId === "workflow-download") {
+                this.onDownload();
+            }
+
+            if (activityId === "workflow-upgrade") {
+                this.onUpgrade();
+            }
+
+            if (activityId === "workflow-auto-layout") {
+                this.onLayout();
             }
         },
         onLayout() {
