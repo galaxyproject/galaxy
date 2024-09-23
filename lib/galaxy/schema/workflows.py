@@ -523,7 +523,7 @@ class RunStepToolOutput(Model):
 # as it is equal to the output of one of the other modules
 
 
-# see lib/galaxy/workflow/modules.py - line 1022
+# see lib/galaxy/workflow/modules.py - class InputDataModule; method get_all_outputs
 class InputDataModuleStepOutput(Model):
     name: Literal["output"] = Field(
         ...,
@@ -539,7 +539,7 @@ class InputDataModuleStepOutput(Model):
     )
 
 
-# see lib/galaxy/workflow/modules.py - line 1136
+# see lib/galaxy/workflow/modules.py - - class InputDataCollectionModule; method get_all_outputs
 class InputDataCollectionModuleStepOutput(Model):
     name: Literal["output"] = Field(
         ...,
@@ -563,7 +563,7 @@ class InputDataCollectionModuleStepOutput(Model):
     )
 
 
-# see lib/galaxy/workflow/modules.py - line 1519
+# see lib/galaxy/workflow/modules.py - - class InputParameterModule; method get_all_outputs
 class InputParameterModuleStepOutput(Model):
     name: Literal["output"] = Field(
         ...,
@@ -587,7 +587,7 @@ class InputParameterModuleStepOutput(Model):
     )
 
 
-# see lib/galaxy/workflow/modules.py - line 1673
+# see lib/galaxy/workflow/modules.py - class PauseModule; method get_all_outputs
 class PauseModuleStepOutput(Model):
     name: Literal["output"] = Field(
         ...,
@@ -602,7 +602,7 @@ class PauseModuleStepOutput(Model):
     )
 
 
-# see lib/galaxy/workflow/modules.py - line 1932
+# see lib/galaxy/workflow/modules.py - class ToolModule; method get_all_outputs
 class ToolModuleStepOutput(Model):
     name: str = Field(
         ...,
