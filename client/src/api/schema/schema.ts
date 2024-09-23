@@ -2770,13 +2770,26 @@ export interface paths {
         trace?: never;
     };
     "/api/jobs/{job_id}/console_output": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns STDOUT and STDERR from the tool running in a specific job.
          * @description Get the stdout and/or stderr from the tool running in a specific job. The position parameters are the index
-         * of where to start reading stdout/stderr. The length parameters control how much
-         * stdout/stderr is read.
+         *     of where to start reading stdout/stderr. The length parameters control how much
+         *     stdout/stderr is read.
          */
         get: operations["get_console_output_api_jobs__job_id__console_output_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/jobs/{job_id}/destination_params": {
         parameters: {
@@ -26632,12 +26645,6 @@ export interface operations {
             };
         };
     };
-    /**
-     * Returns STDOUT and STDERR from the tool running in a specific job.
-     * @description Get the stdout and/or stderr from the tool running in a specific job. The position parameters are the index
-     * of where to start reading stdout/stderr. The length parameters control how much
-     * stdout/stderr is read.
-     */
     get_console_output_api_jobs__job_id__console_output_get: {
         parameters: {
             query: {
@@ -26653,23 +26660,39 @@ export interface operations {
             path: {
                 job_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["JobConsoleOutput"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return destination parameters for specified job. */
     destination_params_job_api_jobs__job_id__destination_params_get: {
         parameters: {
             query?: never;
