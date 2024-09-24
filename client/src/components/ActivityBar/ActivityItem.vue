@@ -105,6 +105,7 @@ function onClick(evt: MouseEvent): void {
 
 .activity-item {
     display: flex;
+    flex-direction: column;
 
     &:deep(.variant-danger) {
         color: $brand-danger;
