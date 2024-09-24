@@ -539,7 +539,9 @@ class TestDefaultContainerResolvers(DockerContainerResolverTestCase, ContainerRe
     }
 
 
-class TestDefaultContainerResolversWithBuildInfo(DockerContainerResolverTestCase, ContainerResolverTestCases, MulledTestCaseWithBuildInfo):
+class TestDefaultContainerResolversWithBuildInfo(
+    DockerContainerResolverTestCase, ContainerResolverTestCases, MulledTestCaseWithBuildInfo
+):
     """
     Same as TestDefaultContainerResolvers but with a tool using build info
     serves to check if the mulled hashes are cumputed correctly
