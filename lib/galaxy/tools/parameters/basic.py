@@ -1529,7 +1529,7 @@ class ColumnListParameter(SelectToolParameter):
                     with open(dataset.get_file_name()) as f:
                         head = f.readline()
                     cnames = head.rstrip("\n\r ").split("\t")
-                    options = [("c%s: %s" % (c, cnames[int(c) - 1]), c, False) for i in column_list]
+                    options = [("c%s: %s" % (c, cnames[int(c) - 1]), c, False) for c in column_list]
                 except Exception:
                     # ignore and rely on fallback
                     pass
