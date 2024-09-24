@@ -127,7 +127,7 @@ export interface paths {
     "/api/datasets/{dataset_id}": {
         /**
          * Displays information about and/or content of a dataset.
-         * @description **Note**: Due to the multipurpose nature of this endpoint, which can receive a wild variety of parameters
+         * @description **Note**: Due to the multipurpose nature of this endpoint, which can receive a wide variety of parameters
          * and return different kinds of responses, the documentation here will be limited.
          * To get more information please check the source code.
          */
@@ -14366,18 +14366,22 @@ export interface operations {
     show_api_datasets__dataset_id__get: {
         /**
          * Displays information about and/or content of a dataset.
-         * @description **Note**: Due to the multipurpose nature of this endpoint, which can receive a wild variety of parameters
+         * @description **Note**: Due to the multipurpose nature of this endpoint, which can receive a wide variety of parameters
          * and return different kinds of responses, the documentation here will be limited.
          * To get more information please check the source code.
          */
         parameters: {
             /** @description The type of information about the dataset to be requested. */
             /** @description The type of information about the dataset to be requested. Each of these values may require additional parameters in the request and may return different responses. */
+            /** @description Maximum number of items to return. Currently only applies to `data_type=raw_data` requests */
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item. Currently only applies to `data_type=raw_data` requests */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 hda_ldda?: components["schemas"]["DatasetSourceType"];
                 data_type?: components["schemas"]["RequestDataType"] | null;
+                limit?: number | null;
+                offset?: number | null;
                 view?: string | null;
                 keys?: string | null;
             };
