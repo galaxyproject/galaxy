@@ -3028,6 +3028,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/libraries/{library_id}/contents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Return a list of library files and folders.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use GET /api/folders/{folder_id}/contents instead.
+         */
+        get: operations["index_api_libraries__library_id__contents_get"];
+        put?: never;
+        /**
+         * Create a new library file or folder.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use POST /api/folders/{folder_id} or POST /api/folders/{folder_id}/contents instead.
+         */
+        post: operations["create_api_libraries__library_id__contents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/libraries/{library_id}/contents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Return a library file or folder.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use GET /api/libraries/datasets/{library_id} instead.
+         */
+        get: operations["show_api_libraries__library_id__contents__id__get"];
+        /**
+         * Update a library file or folder.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{library_id} instead.
+         */
+        put: operations["update_api_libraries__library_id__contents__id__put"];
+        post?: never;
+        /**
+         * Delete a library file or folder.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{library_id} instead.
+         */
+        delete: operations["delete_api_libraries__library_id__contents__id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/licenses": {
         parameters: {
             query?: never;
@@ -6907,6 +6964,11 @@ export interface components {
              */
             url: string;
         };
+        /**
+         * CreateType
+         * @enum {string}
+         */
+        CreateType: "file" | "folder" | "collection";
         /** CreatedEntryResponse */
         CreatedEntryResponse: {
             /**
@@ -12806,6 +12868,368 @@ export interface components {
              */
             total: number;
         };
+        /** LibraryContentsCollectionCreatePayload */
+        LibraryContentsCollectionCreatePayload: {
+            /** the type of collection to create */
+            collection_type: string;
+            /**
+             * if True, copy the elements into the collection
+             * @default false
+             */
+            copy_elements: boolean | null;
+            /** the type of item to create */
+            create_type: components["schemas"]["CreateType"];
+            /** list of dictionaries containing the element identifiers for the collection */
+            element_identifiers: Record<string, never>[];
+            /** sub-dictionary containing any extended metadata to associate with the item */
+            extended_metadata?: Record<string, never> | null;
+            /**
+             * the encoded id of the parent folder of the new item
+             * @example 0123456789ABCDEF
+             */
+            folder_id: string;
+            /** (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library */
+            from_hda_id?: string | null;
+            /** (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library */
+            from_hdca_id?: string | null;
+            /**
+             * if True, hide the source items in the collection
+             * @default false
+             */
+            hide_source_items: boolean | null;
+            /**
+             * the new message attribute of the LDDA created
+             * @default
+             */
+            ldda_message: string | null;
+            /** the name of the collection */
+            name?: string | null;
+            /**
+             * create tags on datasets using the file's original name
+             * @default false
+             */
+            tag_using_filenames: boolean | null;
+            /**
+             * create the given list of tags on datasets
+             * @default []
+             */
+            tags: string[] | null;
+            /**
+             * the method to use for uploading files
+             * @default upload_file
+             */
+            upload_option: components["schemas"]["UploadOption"] | null;
+        };
+        /** LibraryContentsCreateDatasetListResponse */
+        LibraryContentsCreateDatasetListResponse: components["schemas"]["LibraryContentsCreateDatasetResponse"][];
+        /** LibraryContentsCreateDatasetResponse */
+        LibraryContentsCreateDatasetResponse: {
+            /** Created From Basename */
+            created_from_basename: string | null;
+            /** Data Type */
+            data_type: string;
+            /** Deleted */
+            deleted: boolean;
+            /** File Ext */
+            file_ext: string;
+            /** File Name */
+            file_name: string;
+            /** File Size */
+            file_size: number;
+            /** Genome Build */
+            genome_build: string;
+            /** Hda Ldda */
+            hda_ldda: string;
+            /** Id */
+            id: string;
+            /** Library Dataset Id */
+            library_dataset_id: string;
+            /** Misc Blurb */
+            misc_blurb: string | null;
+            /** Misc Info */
+            misc_info: string | null;
+            /** Model Class */
+            model_class: string;
+            /** Name */
+            name: string;
+            /** Parent Library Id */
+            parent_library_id: string;
+            /** State */
+            state: string;
+            /** Update Time */
+            update_time: string;
+            /** Uuid */
+            uuid: string;
+            /** Visible */
+            visible: boolean;
+        } & {
+            [key: string]: unknown;
+        };
+        /** LibraryContentsCreateFolderListResponse */
+        LibraryContentsCreateFolderListResponse: components["schemas"]["LibraryContentsCreateFolderResponse"][];
+        /** LibraryContentsCreateFolderResponse */
+        LibraryContentsCreateFolderResponse: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+        };
+        /** LibraryContentsDeletePayload */
+        LibraryContentsDeletePayload: {
+            /**
+             * if True, purge the library dataset
+             * @default false
+             */
+            purge: boolean | null;
+        };
+        /** LibraryContentsDeleteResponse */
+        LibraryContentsDeleteResponse: {
+            /** Deleted */
+            deleted: boolean;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+        };
+        /** LibraryContentsFileCreatePayload */
+        LibraryContentsFileCreatePayload: {
+            /** the type of item to create */
+            create_type: components["schemas"]["CreateType"];
+            /**
+             * database key
+             * @default ?
+             */
+            dbkey: string | unknown[] | null;
+            /** sub-dictionary containing any extended metadata to associate with the item */
+            extended_metadata?: Record<string, never> | null;
+            /** file type */
+            file_type?: string | null;
+            /**
+             * (only if upload_option is 'upload_paths' and the user is an admin) file paths on the Galaxy server to upload to the library, one file per line
+             * @default
+             */
+            filesystem_paths: string | null;
+            /**
+             * the encoded id of the parent folder of the new item
+             * @example 0123456789ABCDEF
+             */
+            folder_id: string;
+            /** (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library */
+            from_hda_id?: string | null;
+            /** (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library */
+            from_hdca_id?: string | null;
+            /**
+             * the new message attribute of the LDDA created
+             * @default
+             */
+            ldda_message: string | null;
+            /**
+             * (only when upload_option is 'upload_directory' or 'upload_paths').Setting to 'link_to_files' symlinks instead of copying the files
+             * @default copy_files
+             */
+            link_data_only: components["schemas"]["LinkDataOnly"] | null;
+            /**
+             * user selected roles
+             * @default
+             */
+            roles: string | null;
+            /**
+             * (only if upload_option is 'upload_directory') relative path of the subdirectory of Galaxy ``library_import_dir`` (if admin) or ``user_library_import_dir`` (if non-admin) to upload. All and only the files (i.e. no subdirectories) contained in the specified directory will be uploaded.
+             * @default
+             */
+            server_dir: string | null;
+            /**
+             * create tags on datasets using the file's original name
+             * @default false
+             */
+            tag_using_filenames: boolean | null;
+            /**
+             * create the given list of tags on datasets
+             * @default []
+             */
+            tags: string[] | null;
+            /**
+             * the method to use for uploading files
+             * @default upload_file
+             */
+            upload_option: components["schemas"]["UploadOption"] | null;
+            /** UUID of the dataset to upload */
+            uuid?: string | null;
+        };
+        /** LibraryContentsFolderCreatePayload */
+        LibraryContentsFolderCreatePayload: {
+            /** the type of item to create */
+            create_type: components["schemas"]["CreateType"];
+            /**
+             * description of the folder to create
+             * @default
+             */
+            description: string | null;
+            /** sub-dictionary containing any extended metadata to associate with the item */
+            extended_metadata?: Record<string, never> | null;
+            /**
+             * the encoded id of the parent folder of the new item
+             * @example 0123456789ABCDEF
+             */
+            folder_id: string;
+            /** (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library */
+            from_hda_id?: string | null;
+            /** (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library */
+            from_hdca_id?: string | null;
+            /**
+             * the new message attribute of the LDDA created
+             * @default
+             */
+            ldda_message: string | null;
+            /**
+             * name of the folder to create
+             * @default
+             */
+            name: string | null;
+            /**
+             * create tags on datasets using the file's original name
+             * @default false
+             */
+            tag_using_filenames: boolean | null;
+            /**
+             * create the given list of tags on datasets
+             * @default []
+             */
+            tags: string[] | null;
+            /**
+             * the method to use for uploading files
+             * @default upload_file
+             */
+            upload_option: components["schemas"]["UploadOption"] | null;
+        };
+        /** LibraryContentsIndexDatasetResponse */
+        LibraryContentsIndexDatasetResponse: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+            /** Url */
+            url: string;
+        };
+        /** LibraryContentsIndexFolderResponse */
+        LibraryContentsIndexFolderResponse: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+            /** Url */
+            url: string;
+        };
+        /** LibraryContentsIndexListResponse */
+        LibraryContentsIndexListResponse: (
+            | components["schemas"]["LibraryContentsIndexFolderResponse"]
+            | components["schemas"]["LibraryContentsIndexDatasetResponse"]
+        )[];
+        /** LibraryContentsShowDatasetResponse */
+        LibraryContentsShowDatasetResponse: {
+            /** Created From Basename */
+            created_from_basename: string | null;
+            /** Data Type */
+            data_type: string;
+            /** Date Uploaded */
+            date_uploaded: string;
+            /** File Ext */
+            file_ext: string;
+            /** File Name */
+            file_name: string;
+            /** File Size */
+            file_size: number;
+            /**
+             * Folder Id
+             * @example 0123456789ABCDEF
+             */
+            folder_id: string;
+            /** Genome Build */
+            genome_build: string | null;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Ldda Id
+             * @example 0123456789ABCDEF
+             */
+            ldda_id: string;
+            /** Message */
+            message: string | null;
+            /** Misc Blurb */
+            misc_blurb: string | null;
+            /** Misc Info */
+            misc_info: string | null;
+            model_class: components["schemas"]["ModelClass"];
+            /** Name */
+            name: string;
+            /**
+             * Parent Library Id
+             * @example 0123456789ABCDEF
+             */
+            parent_library_id: string;
+            /** Peek */
+            peek: string | null;
+            /** State */
+            state: string;
+            tags: components["schemas"]["TagCollection"];
+            /** Update Time */
+            update_time: string;
+            /** Uploaded By */
+            uploaded_by: string;
+            /** Uuid */
+            uuid: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** LibraryContentsShowFolderResponse */
+        LibraryContentsShowFolderResponse: {
+            /** Deleted */
+            deleted: boolean;
+            /** Description */
+            description: string;
+            /** Genome Build */
+            genome_build: string | null;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Item Count */
+            item_count: number;
+            /** Library Path */
+            library_path: string[];
+            model_class: components["schemas"]["ModelClass"];
+            /** Name */
+            name: string;
+            /** Parent Id */
+            parent_id: string | null;
+            /**
+             * Parent Library Id
+             * @example 0123456789ABCDEF
+             */
+            parent_library_id: string;
+            /** Update Time */
+            update_time: string;
+        };
         /** LibraryCurrentPermissions */
         LibraryCurrentPermissions: {
             /**
@@ -13262,6 +13686,11 @@ export interface components {
             name: string;
         };
         /**
+         * LinkDataOnly
+         * @enum {string}
+         */
+        LinkDataOnly: "copy_files" | "link_to_files";
+        /**
          * ListJstreeResponse
          * @deprecated
          * @description List of files in Jstree format.
@@ -13364,6 +13793,11 @@ export interface components {
              */
             time: string;
         };
+        /**
+         * ModelClass
+         * @enum {string}
+         */
+        ModelClass: "LibraryDataset" | "LibraryFolder";
         /**
          * ModelStoreFormat
          * @description Available types of model stores for export.
@@ -16439,6 +16873,11 @@ export interface components {
             /** Tool Version */
             tool_version?: string | null;
         };
+        /**
+         * UploadOption
+         * @enum {string}
+         */
+        UploadOption: "upload_file" | "upload_paths" | "upload_directory";
         /** UrlDataElement */
         UrlDataElement: {
             /** Md5 */
@@ -27395,6 +27834,243 @@ export interface operations {
                     "application/json":
                         | components["schemas"]["LibraryLegacySummary"]
                         | components["schemas"]["LibraryCurrentPermissions"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_api_libraries__library_id__contents_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryContentsIndexListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_api_libraries__library_id__contents_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json":
+                    | components["schemas"]["LibraryContentsFolderCreatePayload"]
+                    | components["schemas"]["LibraryContentsFileCreatePayload"]
+                    | components["schemas"]["LibraryContentsCollectionCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json":
+                        | components["schemas"]["LibraryContentsCreateFolderListResponse"]
+                        | components["schemas"]["LibraryContentsCreateDatasetListResponse"]
+                        | components["schemas"]["LibraryContentsCreateDatasetResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    show_api_libraries__library_id__contents__id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+                /** @example F0123456789ABCDEF */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json":
+                        | components["schemas"]["LibraryContentsShowFolderResponse"]
+                        | components["schemas"]["LibraryContentsShowDatasetResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_api_libraries__library_id__contents__id__put: {
+        parameters: {
+            query: {
+                payload: unknown;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_api_libraries__library_id__contents__id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LibraryContentsDeletePayload"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryContentsDeleteResponse"];
                 };
             };
             /** @description Request Error */

@@ -36,7 +36,6 @@ from galaxy.managers.context import (
 from galaxy.managers.hdas import HDAManager
 from galaxy.model import (
     Library,
-    LibraryDataset,
     LibraryFolder,
     Role,
     tags,
@@ -48,7 +47,6 @@ from galaxy.schema.fields import (
 )
 from galaxy.schema.library_contents import (
     LibraryContentsCollectionCreatePayload,
-    LibraryContentsCreateDatasetExtendedResponse,
     LibraryContentsCreateDatasetListResponse,
     LibraryContentsCreateDatasetResponse,
     LibraryContentsCreateFolderListResponse,
@@ -136,10 +134,16 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         self,
         trans: ProvidesUserContext,
         id: MaybeLibraryFolderOrDatasetID,
-    ) -> Union[LibraryContentsShowFolderResponse, LibraryContentsShowDatasetResponse]:
+    ) -> Union[
+        LibraryContentsShowFolderResponse,
+        LibraryContentsShowDatasetResponse,
+    ]:
         """Returns information about library file or folder."""
         class_name, content_id = self._decode_library_content_id(id)
-        rval: Union[LibraryContentsShowFolderResponse, LibraryContentsShowDatasetResponse]
+        rval: Union[
+            LibraryContentsShowFolderResponse,
+            LibraryContentsShowDatasetResponse,
+        ]
         if class_name == "LibraryFolder":
             content = self.get_library_folder(trans, content_id, check_ownership=False, check_accessible=True)
             rval = LibraryContentsShowFolderResponse(**content.to_dict(view="element"))
@@ -160,9 +164,8 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         ],
     ) -> Union[
         LibraryContentsCreateFolderListResponse,
-        LibraryContentsCreateDatasetResponse,
         LibraryContentsCreateDatasetListResponse,
-        LibraryContentsCreateDatasetExtendedResponse,
+        LibraryContentsCreateDatasetResponse,
     ]:
         """Create a new library file or folder."""
         if trans.user_is_bootstrap_admin:
@@ -178,10 +181,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
                 rval = self._copy_hda_to_library_folder(
                     trans, self.hda_manager, payload.from_hda_id, payload.folder_id, payload.ldda_message
                 )
-                if "metadata_comment_lines" in rval:
-                    return LibraryContentsCreateDatasetExtendedResponse(**rval)
-                else:
-                    return LibraryContentsCreateDatasetResponse(**rval)
+                return LibraryContentsCreateDatasetResponse(**rval)
             elif payload.from_hdca_id:
                 rval = self._copy_hdca_to_library_folder(
                     trans, self.hda_manager, payload.from_hdca_id, payload.folder_id, payload.ldda_message
@@ -225,7 +225,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         trans: ProvidesHistoryContext,
         id: DecodedDatabaseIdField,
         payload: LibraryContentsDeletePayload,
-    ):
+    ) -> LibraryContentsDeleteResponse:
         """Delete the LibraryDataset with the given ``id``."""
         rval = {"id": id}
         try:
@@ -267,7 +267,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         except Exception as exc:
             log.exception(f"library_contents API, delete: uncaught exception: {id}, {payload}")
             raise exceptions.InternalServerError(util.unicodify(exc))
-        return rval
+        return LibraryContentsDeleteResponse(**rval)
 
     def _decode_library_content_id(
         self,
