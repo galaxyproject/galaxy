@@ -443,18 +443,11 @@ class DynamicOptions(metaclass=ABCMeta):
         """If dynamic options are loaded from an index file, return the name."""
 
 
-DrillDownDynamicFilters = Dict[str, Dict[str, dict]]  # {input key: {metadata_key: metadata values}}
-
-
 class DrillDownDynamicOptions(metaclass=ABCMeta):
 
     @abstractmethod
     def from_code_block(self) -> Optional[str]:
         """Get a code block to do an eval on."""
-
-    @abstractmethod
-    def from_filters(self) -> Optional[DrillDownDynamicFilters]:
-        """Get filters to apply to target datasets."""
 
 
 class InputSource(metaclass=ABCMeta):
