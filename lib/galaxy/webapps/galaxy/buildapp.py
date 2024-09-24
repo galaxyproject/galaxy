@@ -853,19 +853,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["POST", "GET"]),
     )
 
-    # webapp.mapper.resource(
-    #     "content",
-    #     "contents",
-    #     controller="library_contents",
-    #     name_prefix="library_",
-    #     path_prefix="/api/libraries/{library_id}",
-    #     parent_resources=dict(member_name="library", collection_name="libraries"),
-    # )
-
-    # _add_item_extended_metadata_controller(
-    #     webapp, name_prefix="library_dataset_", path_prefix="/api/libraries/{library_id}/contents/{library_content_id}"
-    # )
-
     webapp.mapper.connect(
         "build_for_rerun",
         "/api/jobs/{id}/build_for_rerun",
