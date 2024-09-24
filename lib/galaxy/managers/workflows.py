@@ -920,8 +920,11 @@ class WorkflowContentsManager(UsesAnnotations):
             else:
                 items = obj.__dict__.items()  # Custom object case
 
-            return {key: self.convert_to_dict_from_many(value, depth=depth + 1, max_depth=max_depth)
-                    for key, value in items if not key.startswith('_')}
+            return {
+                key: self.convert_to_dict_from_many(value, depth=depth + 1, max_depth=max_depth)
+                for key, value in items
+                if not key.startswith("_")
+            }
         else:
             return obj
 
