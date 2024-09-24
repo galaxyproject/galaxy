@@ -26,7 +26,6 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "jqplot/jqplot_bar",
     "media_player",
     "mvpapp",
-    "ngl",
     "nora",
     "nvd3/nvd3_bar",
     "openlayers",
