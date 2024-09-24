@@ -19,6 +19,7 @@ from galaxy.schema.library_contents import (
     LibraryContentsCollectionCreatePayload,
     LibraryContentsCreateDatasetListResponse,
     LibraryContentsCreateDatasetResponse,
+    LibraryContentsCreateFileListResponse,
     LibraryContentsCreateFolderListResponse,
     LibraryContentsDeletePayload,
     LibraryContentsDeleteResponse,
@@ -95,6 +96,7 @@ class FastAPILibraryContents:
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> Union[
         LibraryContentsCreateFolderListResponse,
+        LibraryContentsCreateFileListResponse,
         LibraryContentsCreateDatasetListResponse,
         LibraryContentsCreateDatasetResponse,
     ]:

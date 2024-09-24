@@ -229,14 +229,25 @@ class LibraryContentsShowDatasetResponse(LibraryContentsShowResponse):
     model_config = ConfigDict(extra="allow")
 
 
-class LibraryContentsCreateFolderResponse(Model):
-    id: EncodedLibraryFolderDatabaseIdField
+class LibraryContentsCreateResponse(Model):
     name: str
     url: str
 
 
+class LibraryContentsCreateFolderResponse(LibraryContentsCreateResponse):
+    id: EncodedLibraryFolderDatabaseIdField
+
+
+class LibraryContentsCreateFileResponse(LibraryContentsCreateResponse):
+    id: EncodedDatabaseIdField
+
+
 class LibraryContentsCreateFolderListResponse(RootModel):
     root: List[LibraryContentsCreateFolderResponse]
+
+
+class LibraryContentsCreateFileListResponse(RootModel):
+    root: List[LibraryContentsCreateFileResponse]
 
 
 class LibraryContentsCreateDatasetResponse(Model):
