@@ -41,7 +41,8 @@ from typing_extensions import (
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tool_util.parser.interface import (
     DrillDownOptionsDict,
-    TestCollectionDefDict,
+    JsonTestCollectionDefDict,
+    JsonTestDatasetDefDict,
 )
 from ._types import (
     cast_as_type,
@@ -312,9 +313,9 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
     def py_type_test_case(self) -> Type:
         base_model: Type
         if self.multiple:
-            base_model = str
+            base_model = list_type(JsonTestDatasetDefDict)
         else:
-            base_model = str
+            base_model = JsonTestDatasetDefDict
         return optional_if_needed(base_model, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
@@ -372,7 +373,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
         elif state_representation == "workflow_step_linked":
             return dynamic_model_information_from_py_type(self, ConnectedValue)
         elif state_representation == "test_case_xml":
-            return dynamic_model_information_from_py_type(self, TestCollectionDefDict)
+            return dynamic_model_information_from_py_type(self, JsonTestCollectionDefDict)
         else:
             raise NotImplementedError(
                 f"Have not implemented data collection parameter models for state representation {state_representation}"
@@ -1164,12 +1165,11 @@ CwlUnionParameterModel.model_rebuild()
 class ToolParameterBundle(Protocol):
     """An object having a dictionary of input models (i.e. a 'Tool')"""
 
-    # TODO: rename to parameters to align with ConditionalWhen and Repeat.
-    input_models: List[ToolParameterT]
+    parameters: List[ToolParameterT]
 
 
 class ToolParameterBundleModel(BaseModel):
-    input_models: List[ToolParameterT]
+    parameters: List[ToolParameterT]
 
 
 def to_simple_model(input_parameter: Union[ToolParameterModel, ToolParameterT]) -> ToolParameterT:
@@ -1180,10 +1180,8 @@ def to_simple_model(input_parameter: Union[ToolParameterModel, ToolParameterT]) 
         return cast(ToolParameterT, input_parameter)
 
 
-def simple_input_models(
-    input_models: Union[List[ToolParameterModel], List[ToolParameterT]]
-) -> Iterable[ToolParameterT]:
-    return [to_simple_model(m) for m in input_models]
+def simple_input_models(parameters: Union[List[ToolParameterModel], List[ToolParameterT]]) -> Iterable[ToolParameterT]:
+    return [to_simple_model(m) for m in parameters]
 
 
 def create_model_strict(*args, **kwd) -> Type[BaseModel]:
@@ -1194,27 +1192,27 @@ def create_model_strict(*args, **kwd) -> Type[BaseModel]:
 
 
 def create_request_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.input_models, name, "request")
+    return create_field_model(tool.parameters, name, "request")
 
 
 def create_request_internal_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.input_models, name, "request_internal")
+    return create_field_model(tool.parameters, name, "request_internal")
 
 
 def create_job_internal_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.input_models, name, "job_internal")
+    return create_field_model(tool.parameters, name, "job_internal")
 
 
 def create_test_case_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.input_models, name, "test_case_xml")
+    return create_field_model(tool.parameters, name, "test_case_xml")
 
 
 def create_workflow_step_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.input_models, name, "workflow_step")
+    return create_field_model(tool.parameters, name, "workflow_step")
 
 
 def create_workflow_step_linked_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.input_models, name, "workflow_step_linked")
+    return create_field_model(tool.parameters, name, "workflow_step_linked")
 
 
 def create_field_model(

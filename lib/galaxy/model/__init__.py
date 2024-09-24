@@ -4051,6 +4051,7 @@ def setup_global_object_store_for_models(object_store: "BaseObjectStore") -> Non
 
 class Dataset(Base, StorableObject, Serializable):
     __tablename__ = "dataset"
+    __table_args__ = (UniqueConstraint("uuid", name="uq_uuid_column"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
@@ -4066,7 +4067,7 @@ class Dataset(Base, StorableObject, Serializable):
     created_from_basename: Mapped[Optional[str]] = mapped_column(TEXT)
     file_size: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 0))
     total_size: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 0))
-    uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType())
+    uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType(), unique=True)
 
     actions: Mapped[List["DatasetPermissions"]] = relationship(back_populates="dataset")
     job: Mapped[Optional["Job"]] = relationship(primaryjoin=(lambda: Dataset.job_id == Job.id))
@@ -4114,7 +4115,9 @@ class Dataset(Base, StorableObject, Serializable):
 
     non_ready_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.SETTING_METADATA)
     ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
-    valid_input_states = tuple(set(states.__members__.values()) - {states.ERROR, states.DISCARDED})
+    valid_input_states = tuple(
+        set(states.__members__.values()) - {states.ERROR, states.DISCARDED, states.FAILED_METADATA}
+    )
     no_data_states = (states.PAUSED, states.DEFERRED, states.DISCARDED, *non_ready_states)
     terminal_states = (
         states.OK,
@@ -4546,6 +4549,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     creating_job_associations: List[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
     copied_from_history_dataset_association: Optional["HistoryDatasetAssociation"]
     copied_from_library_dataset_dataset_association: Optional["LibraryDatasetDatasetAssociation"]
+    implicitly_converted_datasets: List["ImplicitlyConvertedDatasetAssociation"]
 
     validated_states = DatasetValidatedState
 
@@ -4873,9 +4877,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     def get_converted_files_by_type(self, file_type):
         for assoc in self.implicitly_converted_datasets:
             if not assoc.deleted and assoc.type == file_type:
-                if assoc.dataset:
-                    return assoc.dataset
-                return assoc.dataset_ldda
+                item = assoc.dataset or assoc.dataset_ldda
+                if not item.deleted and item.state in Dataset.valid_input_states:
+                    return item
         return None
 
     def get_converted_dataset_deps(self, trans, target_ext):

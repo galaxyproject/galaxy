@@ -10597,17 +10597,17 @@ export interface components {
              * Avatar Template
              * @description The avatar template of the user.
              */
-            avatar_template: string;
+            avatar_template: string | null;
             /**
              * Blurb
              * @description The blurb of the post.
              */
-            blurb: string;
+            blurb: string | null;
             /**
              * Created At
              * @description The creation date of the post.
              */
-            created_at: string;
+            created_at: string | null;
             /**
              * Id
              * @description The ID of the post.
@@ -10617,27 +10617,27 @@ export interface components {
              * Like Count
              * @description The number of likes of the post.
              */
-            like_count: number;
+            like_count: number | null;
             /**
              * Name
              * @description The name of the post.
              */
-            name: string;
+            name: string | null;
             /**
              * Post Number
              * @description The post number of the post.
              */
-            post_number: number;
+            post_number: number | null;
             /**
              * Topic Id
              * @description The ID of the topic of the post.
              */
-            topic_id: number;
+            topic_id: number | null;
             /**
              * Username
              * @description The username of the post author.
              */
-            username: string;
+            username: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -33811,8 +33811,17 @@ export interface operations {
                  *     `is:published`
                  *     : Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.
                  *
-                 *     `is:share_with_me`
+                 *     `is:importable`
+                 *     : Include only importable workflows in the final result.
+                 *
+                 *     `is:deleted`
+                 *     : Include only deleted workflows in the final result.
+                 *
+                 *     `is:shared_with_me`
                  *     : Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.
+                 *
+                 *     `is:bookmarked`
+                 *     : Include only workflows bookmarked by the requesting user.
                  *
                  *     ## Free Text
                  *

@@ -12,10 +12,13 @@ from typing import (
 from packaging.version import Version
 
 from galaxy.tool_util.parser.interface import (
+    TestCollectionDef,
     ToolSource,
     ToolSourceTest,
     ToolSourceTestInput,
     ToolSourceTestInputs,
+    xml_data_input_to_json,
+    XmlTestCollectionDefDict,
 )
 from galaxy.util import asbool
 from .factory import input_models_for_tool_source
@@ -25,6 +28,7 @@ from .models import (
     ConditionalWhen,
     DataCollectionParameterModel,
     DataColumnParameterModel,
+    DataParameterModel,
     FloatParameterModel,
     IntegerParameterModel,
     RepeatParameterModel,
@@ -249,8 +253,26 @@ def _merge_into_state(
     else:
         test_input = _input_for(state_path, inputs)
         if test_input is not None:
+            input_value: Any
             if isinstance(tool_input, (DataCollectionParameterModel,)):
-                input_value = test_input.get("attributes", {}).get("collection")
+                input_value = TestCollectionDef.from_dict(
+                    cast(XmlTestCollectionDefDict, test_input.get("attributes", {}).get("collection"))
+                ).test_format_to_dict()
+            elif isinstance(tool_input, (DataParameterModel,)):
+                data_tool_input = cast(DataParameterModel, tool_input)
+                if data_tool_input.multiple:
+                    value = test_input["value"]
+                    input_value_list = []
+                    if value:
+                        test_input_values = cast(str, value).split(",")
+                        for test_input_value in test_input_values:
+                            instance_test_input = test_input.copy()
+                            instance_test_input["value"] = test_input_value
+                            input_value = xml_data_input_to_json(test_input)
+                            input_value_list.append(input_value)
+                    input_value = input_value_list
+                else:
+                    input_value = xml_data_input_to_json(test_input)
             else:
                 input_value = test_input["value"]
                 input_value = legacy_from_string(tool_input, input_value, warnings, profile)
@@ -299,6 +321,6 @@ def validate_test_cases_for_tool_source(
     test_cases: List[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
     results_by_test: List[TestCaseStateValidationResult] = []
     for test_case in test_cases:
-        validation_result = test_case_validation(test_case, tool_parameter_bundle.input_models, profile)
+        validation_result = test_case_validation(test_case, tool_parameter_bundle.parameters, profile)
         results_by_test.append(validation_result)
     return results_by_test

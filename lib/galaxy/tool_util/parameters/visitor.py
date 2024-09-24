@@ -34,7 +34,7 @@ def visit_input_values(
     no_replacement_value=VISITOR_NO_REPLACEMENT,
 ) -> Dict[str, Any]:
     return _visit_input_values(
-        simple_input_models(input_models.input_models),
+        simple_input_models(input_models.parameters),
         tool_state.input_state,
         callback=callback,
         no_replacement_value=no_replacement_value,

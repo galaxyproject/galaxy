@@ -38,10 +38,10 @@ from galaxy import util
 from galaxy.tool_util.parser.interface import (
     AssertionList,
     TestCollectionDef,
-    TestCollectionDefDict,
     TestCollectionOutputDef,
     TestSourceTestOutputColllection,
     ToolSourceTestOutputs,
+    XmlTestCollectionDefDict,
 )
 from galaxy.util import requests
 from galaxy.util.bunch import Bunch
@@ -588,7 +588,9 @@ class GalaxyInteractorApi:
             raise ValueError(f"Invalid `location` URL: `{location}`")
         return location
 
-    def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
+    def run_tool(
+        self, testdef: "ToolTestDescription", history_id: str, resource_parameters: Optional[Dict[str, Any]] = None
+    ) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         resource_parameters = resource_parameters or {}
@@ -1754,7 +1756,7 @@ def expanded_inputs_from_json(expanded_inputs_json: ExpandedToolInputsJsonified)
     loaded_inputs: ExpandedToolInputs = {}
     for key, value in expanded_inputs_json.items():
         if isinstance(value, dict) and value.get("model_class"):
-            collection_def_dict = cast(TestCollectionDefDict, value)
+            collection_def_dict = cast(XmlTestCollectionDefDict, value)
             loaded_inputs[key] = TestCollectionDef.from_dict(collection_def_dict)
         else:
             loaded_inputs[key] = value

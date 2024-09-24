@@ -12,6 +12,10 @@ import PersistentTaskProgressMonitorAlert from "@/components/Common/PersistentTa
 
 type ComponentUnderTestProps = Partial<PropType<typeof PersistentTaskProgressMonitorAlert>>;
 
+const selectors = {
+    ProgressAlert: ".progress-monitor-alert",
+} as const;
+
 const FAKE_MONITOR_REQUEST: MonitoringRequest = {
     source: "test",
     action: "testing",
@@ -54,7 +58,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
 
     it("does not render when no monitoring data is available", () => {
         const wrapper = mountComponent();
-        expect(wrapper.find(".d-flex").exists()).toBe(false);
+        expect(wrapper.find(selectors.ProgressAlert).exists()).toBe(false);
     });
 
     it("renders in progress when monitoring data is available and in progress", () => {
@@ -75,7 +79,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             useMonitor,
         });
 
-        expect(wrapper.find(".d-flex").exists()).toBe(true);
+        expect(wrapper.find(selectors.ProgressAlert).exists()).toBe(true);
 
         const inProgressAlert = wrapper.find('[variant="info"]');
         expect(inProgressAlert.exists()).toBe(true);
@@ -100,7 +104,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             useMonitor,
         });
 
-        expect(wrapper.find(".d-flex").exists()).toBe(true);
+        expect(wrapper.find(selectors.ProgressAlert).exists()).toBe(true);
 
         const completedAlert = wrapper.find('[variant="success"]');
         expect(completedAlert.exists()).toBe(true);
@@ -125,7 +129,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             useMonitor,
         });
 
-        expect(wrapper.find(".d-flex").exists()).toBe(true);
+        expect(wrapper.find(selectors.ProgressAlert).exists()).toBe(true);
 
         const failedAlert = wrapper.find('[variant="danger"]');
         expect(failedAlert.exists()).toBe(true);
@@ -155,7 +159,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             useMonitor,
         });
 
-        expect(wrapper.find(".d-flex").exists()).toBe(true);
+        expect(wrapper.find(selectors.ProgressAlert).exists()).toBe(true);
 
         const completedAlert = wrapper.find('[variant="success"]');
         expect(completedAlert.exists()).toBe(true);
@@ -184,7 +188,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             useMonitor,
         });
 
-        expect(wrapper.find(".d-flex").exists()).toBe(true);
+        expect(wrapper.find(selectors.ProgressAlert).exists()).toBe(true);
 
         const completedAlert = wrapper.find('[variant="success"]');
         expect(completedAlert.exists()).toBe(true);
@@ -209,7 +213,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             useMonitor,
         });
 
-        expect(wrapper.find(".d-flex").exists()).toBe(true);
+        expect(wrapper.find(selectors.ProgressAlert).exists()).toBe(true);
 
         const warningAlert = wrapper.find('[variant="warning"]');
         expect(warningAlert.exists()).toBe(true);

@@ -132,11 +132,6 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 )
                 self.persist_object(primary_data)
 
-                if init_from:
-                    self.permission_provider.copy_dataset_permissions(init_from, primary_data)
-                    primary_data.state = init_from.state
-                else:
-                    self.permission_provider.set_default_hda_permissions(primary_data)
             else:
                 ld = galaxy.model.LibraryDataset(folder=library_folder, name=name)
                 ldda = galaxy.model.LibraryDatasetDatasetAssociation(
@@ -208,6 +203,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                     filename=filename,
                     link_data=link_data,
                     output_name=output_name,
+                    init_from=init_from,
                 )
             else:
                 storage_callbacks.append(
@@ -218,11 +214,14 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                         filename=filename,
                         link_data=link_data,
                         output_name=output_name,
+                        init_from=init_from,
                     )
                 )
         return primary_data
 
-    def finalize_storage(self, primary_data, dataset_attributes, extra_files, filename, link_data, output_name):
+    def finalize_storage(
+        self, primary_data, dataset_attributes, extra_files, filename, link_data, output_name, init_from
+    ):
         if primary_data.dataset.purged:
             # metadata won't be set, maybe we should do that, then purge ?
             primary_data.dataset.file_size = 0
@@ -243,6 +242,12 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         else:
             # We are sure there are no extra files, so optimize things that follow by settting total size also.
             primary_data.set_size(no_extra_files=True)
+
+        if init_from:
+            self.permission_provider.copy_dataset_permissions(init_from, primary_data)
+        else:
+            self.permission_provider.set_default_hda_permissions(primary_data)
+
         # TODO: this might run set_meta after copying the file to the object store, which could be inefficient if job working directory is closer to the node.
         self.set_datasets_metadata(datasets=[primary_data], datasets_attributes=[dataset_attributes])
 

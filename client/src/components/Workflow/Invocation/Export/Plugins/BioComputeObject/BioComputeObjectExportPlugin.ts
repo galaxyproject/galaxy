@@ -1,15 +1,10 @@
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faDatabase } from "@fortawesome/free-solid-svg-icons";
-
-import { type InvocationExportPlugin } from "../../model";
-
-import SendForm from "./SendForm.vue";
-
-library.add(faDatabase);
+import { type InvocationExportPlugin } from "@/components/Workflow/Invocation/Export/Plugins";
 
 export const BIO_COMPUTE_OBJ_EXPORT_PLUGIN: InvocationExportPlugin = {
     id: "bco",
     title: "BioCompute Object",
+    img: "https://www.biocomputeobject.org/static/media/logo.c8a91f1656efbad5d745.png",
+    url: "https://biocomputeobject.org/",
     markdownDescription: `
 A BioCompute Object (BCO) is the unofficial name for a JSON object that adheres to the [IEEE-2791-2020 standard](https://standards.ieee.org/ieee/2791/7337/).
 A BCO is designed to communicate High-throughput Sequencing (HTS) analysis results, data set creation, data curation, and bioinformatics verification protocols.
@@ -23,15 +18,4 @@ Instructions for [creating a BCO using Galaxy](https://w3id.org/biocompute/tutor
         includeDeleted: false,
         includeHidden: false,
     },
-    additionalActions: [
-        {
-            id: "send-to-bco-db",
-            title: "Send to BCODB",
-            icon: faDatabase,
-            run: (modal) => {
-                modal.showModal();
-            },
-            modal: SendForm,
-        },
-    ],
 };

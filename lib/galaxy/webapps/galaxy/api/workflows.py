@@ -244,7 +244,9 @@ class WorkflowsAPIController(
                     trs_version_id = None
                     import_source = None
                     if "trs_url" in payload:
-                        parts = self.app.trs_proxy.match_url(payload["trs_url"])
+                        parts = self.app.trs_proxy.match_url(
+                            payload["trs_url"], trans.app.config.fetch_url_allowlist_ips
+                        )
                         if parts:
                             server = self.app.trs_proxy.server_from_url(parts["trs_base_url"])
                             trs_tool_id = parts["tool_id"]
@@ -252,7 +254,7 @@ class WorkflowsAPIController(
                             payload["trs_tool_id"] = trs_tool_id
                             payload["trs_version_id"] = trs_version_id
                         else:
-                            raise exceptions.MessageException("Invalid TRS URL.")
+                            raise exceptions.RequestParameterInvalidException(f"Invalid TRS URL {payload['trs_url']}.")
                     else:
                         trs_server = payload.get("trs_server")
                         server = self.app.trs_proxy.get_server(trs_server)
@@ -856,8 +858,20 @@ query_tags = [
         "Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.",
     ),
     IndexQueryTag(
-        "is:share_with_me",
+        "is:importable",
+        "Include only importable workflows in the final result.",
+    ),
+    IndexQueryTag(
+        "is:deleted",
+        "Include only deleted workflows in the final result.",
+    ),
+    IndexQueryTag(
+        "is:shared_with_me",
         "Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.",
+    ),
+    IndexQueryTag(
+        "is:bookmarked",
+        "Include only workflows bookmarked by the requesting user.",
     ),
 ]
 

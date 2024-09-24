@@ -5,14 +5,12 @@ import flushPromises from "flush-promises";
 import { useServerMock } from "@/api/client/__mocks__";
 import { type BrowsableFilesSourcePlugin, type CreatedEntry } from "@/api/remoteFiles";
 
-import ExportRDMForm from "./ExportRDMForm.vue";
+import RDMDestinationSelector from "./RDMDestinationSelector.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
 const localVue = getLocalVue(true);
 
 const CREATE_RECORD_BTN = "#create-record-button";
-const EXPORT_TO_NEW_RECORD_BTN = "#export-button-new-record";
-const EXPORT_TO_EXISTING_RECORD_BTN = "#export-button-existing-record";
 
 const FAKE_RDM_SOURCE_URI = "gxfiles://test-uri";
 const FAKE_RDM_EXISTING_RECORD_URI = "gxfiles://test-uri/test-record";
@@ -32,7 +30,7 @@ async function initWrapper(fileSource?: BrowsableFilesSourcePlugin) {
         })
     );
 
-    const wrapper = mount(ExportRDMForm as object, {
+    const wrapper = mount(RDMDestinationSelector as object, {
         propsData: {
             fileSource,
         },
@@ -42,14 +40,14 @@ async function initWrapper(fileSource?: BrowsableFilesSourcePlugin) {
     return wrapper;
 }
 
-describe("ExportRDMForm", () => {
+describe("RDMDestinationSelector", () => {
     let wrapper: Wrapper<Vue>;
 
     beforeEach(async () => {
         wrapper = await initWrapper();
     });
 
-    describe("Export to new record", () => {
+    describe("Select new record", () => {
         beforeEach(async () => {
             await selectExportChoice("new");
         });
@@ -63,56 +61,48 @@ describe("ExportRDMForm", () => {
             expect(wrapper.find(CREATE_RECORD_BTN).attributes("disabled")).toBeFalsy();
         });
 
-        it("displays the export to this record button when the create new record button is clicked", async () => {
-            expect(wrapper.find(EXPORT_TO_NEW_RECORD_BTN).exists()).toBeFalsy();
+        it("emits onRecordSelected when the create new record button is clicked", async () => {
+            expect(wrapper.emitted("onRecordSelected")).toBeFalsy();
 
             await setRecordNameInput(FAKE_RECORD_NAME);
             await setRDMSourceInput(FAKE_RDM_SOURCE_URI);
             await clickCreateNewRecordButton();
 
-            expect(wrapper.find(EXPORT_TO_NEW_RECORD_BTN).exists()).toBeTruthy();
-        });
+            const emitted = wrapper.emitted("onRecordSelected");
 
-        it("emits an export event when the export to new record button is clicked", async () => {
-            await setFileNameInput("test file name");
-            await setRecordNameInput(FAKE_RECORD_NAME);
-            await setRDMSourceInput(FAKE_RDM_SOURCE_URI);
-            await clickCreateNewRecordButton();
+            console.log("EMITTED", emitted);
 
-            await wrapper.find(EXPORT_TO_NEW_RECORD_BTN).trigger("click");
-            expect(wrapper.emitted("export")).toBeTruthy();
+            expect(emitted).toBeTruthy();
+            expect(emitted?.at(0)[0]).toEqual(FAKE_ENTRY.uri);
         });
     });
 
-    describe("Export to existing record", () => {
+    describe("Select existing record", () => {
         beforeEach(async () => {
             await selectExportChoice("existing");
         });
 
-        it("enables the export to existing record button when the required fields are filled in", async () => {
-            expect(wrapper.find(EXPORT_TO_EXISTING_RECORD_BTN).attributes("disabled")).toBeTruthy();
+        it("emits onRecordSelected event when the existing record is selected", async () => {
+            expect(wrapper.emitted("onRecordSelected")).toBeFalsy();
 
-            await setFileNameInput("test file name");
             await setRDMDirectoryInput(FAKE_RDM_EXISTING_RECORD_URI);
 
-            expect(wrapper.find(EXPORT_TO_EXISTING_RECORD_BTN).attributes("disabled")).toBeFalsy();
-        });
-
-        it("emits an export event when the export to existing record button is clicked", async () => {
-            await setFileNameInput("test file name");
-            await setRDMDirectoryInput(FAKE_RDM_EXISTING_RECORD_URI);
-            await wrapper.find(EXPORT_TO_EXISTING_RECORD_BTN).trigger("click");
-            expect(wrapper.emitted("export")).toBeTruthy();
+            const emitted = wrapper.emitted("onRecordSelected");
+            expect(emitted).toBeTruthy();
+            expect(emitted?.at(0)[0]).toEqual(FAKE_RDM_EXISTING_RECORD_URI);
         });
     });
 
     describe("Pre-select specific File Source", () => {
+        const PRESELECTED_FILE_SOURCE_ID = "test-file-source";
+        const PRESELECTED_FILE_SOURCE_URI = "gxfiles://preselected-file-source";
+
         beforeEach(async () => {
             const specificFileSource: BrowsableFilesSourcePlugin = {
-                id: "test-file-source",
+                id: PRESELECTED_FILE_SOURCE_ID,
                 label: "Test File Source",
                 doc: "Test File Source Description",
-                uri_root: "gxfiles://test-file-source",
+                uri_root: PRESELECTED_FILE_SOURCE_URI,
                 writable: true,
                 browsable: true,
                 type: "rdm",
@@ -125,33 +115,46 @@ describe("ExportRDMForm", () => {
             wrapper = await initWrapper(specificFileSource);
         });
 
-        it("enables the create new record button only by setting the record name", async () => {
-            await selectExportChoice("new", "test-file-source");
-            expect(wrapper.find(CREATE_RECORD_BTN).attributes("disabled")).toBeTruthy();
+        describe("Select new record", () => {
+            beforeEach(async () => {
+                await selectExportChoice("new", PRESELECTED_FILE_SOURCE_ID);
+            });
 
-            await setRecordNameInput(FAKE_RECORD_NAME);
+            it("enables the create new record button only by setting the record name", async () => {
+                expect(wrapper.find(CREATE_RECORD_BTN).attributes("disabled")).toBeTruthy();
 
-            expect(wrapper.find(CREATE_RECORD_BTN).attributes("disabled")).toBeFalsy();
+                await setRecordNameInput(FAKE_RECORD_NAME);
+
+                expect(wrapper.find(CREATE_RECORD_BTN).attributes("disabled")).toBeFalsy();
+            });
+
+            it("emits onRecordSelected event when the create new record button is clicked", async () => {
+                expect(wrapper.emitted("onRecordSelected")).toBeFalsy();
+
+                await setRecordNameInput(FAKE_RECORD_NAME);
+                await clickCreateNewRecordButton();
+
+                const emitted = wrapper.emitted("onRecordSelected");
+                expect(emitted).toBeTruthy();
+                expect(emitted?.at(0)[0]).toEqual(FAKE_ENTRY.uri);
+            });
         });
 
-        it("displays the export to this record button when the create new record button is clicked", async () => {
-            await selectExportChoice("new", "test-file-source");
-            expect(wrapper.find(EXPORT_TO_NEW_RECORD_BTN).exists()).toBeFalsy();
+        describe("Select existing record", () => {
+            beforeEach(async () => {
+                await selectExportChoice("existing", PRESELECTED_FILE_SOURCE_ID);
+            });
 
-            await setRecordNameInput(FAKE_RECORD_NAME);
-            await clickCreateNewRecordButton();
+            it("emits onRecordSelected event when the existing record is selected", async () => {
+                expect(wrapper.emitted("onRecordSelected")).toBeFalsy();
 
-            expect(wrapper.find(EXPORT_TO_NEW_RECORD_BTN).exists()).toBeTruthy();
-        });
+                const fakeRecordUri = `${PRESELECTED_FILE_SOURCE_URI}/preselected-test-record`;
+                await setRDMDirectoryInput(fakeRecordUri);
 
-        it("emits an export event when the export to new record button is clicked", async () => {
-            await selectExportChoice("new", "test-file-source");
-            await setFileNameInput("test file name");
-            await setRecordNameInput(FAKE_RECORD_NAME);
-            await clickCreateNewRecordButton();
-
-            await wrapper.find(EXPORT_TO_NEW_RECORD_BTN).trigger("click");
-            expect(wrapper.emitted("export")).toBeTruthy();
+                const emitted = wrapper.emitted("onRecordSelected");
+                expect(emitted).toBeTruthy();
+                expect(emitted?.at(0)[0]).toEqual(fakeRecordUri);
+            });
         });
     });
 
@@ -177,11 +180,6 @@ describe("ExportRDMForm", () => {
 
     async function setRecordNameInput(newValue: string) {
         const recordNameInput = wrapper.find("#record-name-input");
-        await recordNameInput.setValue(newValue);
-    }
-
-    async function setFileNameInput(newValue: string) {
-        const recordNameInput = wrapper.find("#file-name-input");
         await recordNameInput.setValue(newValue);
     }
 
