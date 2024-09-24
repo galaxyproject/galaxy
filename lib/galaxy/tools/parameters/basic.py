@@ -1520,7 +1520,7 @@ class ColumnListParameter(SelectToolParameter):
                 and dataset.metadata.element_is_set("column_names")
             ):
                 try:
-                    options = [("c%s: %s" % (c, dataset.metadata.column_names[int(c) - 1]), c, False) for c in column_list]
+                    options = [(f"c{c}: {dataset.metadata.column_names[int(c) - 1]}", c, False) for c in column_list]
                 except IndexError:
                     # ignore and rely on fallback
                     pass
@@ -1529,7 +1529,7 @@ class ColumnListParameter(SelectToolParameter):
                     with open(dataset.get_file_name()) as f:
                         head = f.readline()
                     cnames = head.rstrip("\n\r ").split("\t")
-                    options = [("c%s: %s" % (c, cnames[int(c) - 1]), c, False) for c in column_list]
+                    options = [(f"c{c}: {cnames[int(c) - 1]}", c, False) for c in column_list]
                 except Exception:
                     # ignore and rely on fallback
                     pass
