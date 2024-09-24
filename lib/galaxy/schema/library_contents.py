@@ -8,6 +8,7 @@ from typing import (
 )
 
 from pydantic import (
+    ConfigDict,
     Field,
     RootModel,
 )
@@ -79,7 +80,7 @@ class LibraryContentsCreatePayload(Model):
         "",
         title="the new message attribute of the LDDA created",
     )
-    extended_metadata: Optional[Union[Dict[str, Any], List[Any], int, float, str, bool]] = Field(
+    extended_metadata: Optional[Dict[str, Any]] = Field(
         None,
         title="sub-dictionary containing any extended metadata to associate with the item",
     )
@@ -222,9 +223,10 @@ class LibraryContentsShowDatasetResponse(LibraryContentsShowResponse):
     misc_blurb: Optional[str]
     peek: Optional[str]
     uuid: str
-    metadata_dbkey: str
-    metadata_data_lines: int
     tags: TagCollection
+
+    # metadata fields
+    model_config = ConfigDict(extra="allow")
 
 
 class LibraryContentsCreateFolderResponse(Model):
@@ -237,7 +239,7 @@ class LibraryContentsCreateFolderListResponse(RootModel):
     root: List[LibraryContentsCreateFolderResponse]
 
 
-class LibraryContentsCreateDatasetResponseBase(Model):
+class LibraryContentsCreateDatasetResponse(Model):
     id: str  # should change to EncodedDatabaseIdField latter
     hda_ldda: str
     model_class: str
@@ -257,28 +259,19 @@ class LibraryContentsCreateDatasetResponseBase(Model):
     created_from_basename: Optional[str]
     uuid: str
     parent_library_id: str  # should change to EncodedDatabaseIdField latter
-    metadata_dbkey: str
 
-
-class LibraryContentsCreateDatasetResponse(LibraryContentsCreateDatasetResponseBase):
-    metadata_data_lines: Optional[int]
-
-
-class LibraryContentsCreateDatasetExtendedResponse(LibraryContentsCreateDatasetResponse):
-    metadata_comment_lines: Union[str, int]
-    metadata_columns: int
-    metadata_column_types: List[str]
-    metadata_column_names: List[str]
-    metadata_delimiter: str
+    # metadata fields
+    model_config = ConfigDict(extra="allow")
 
 
 class LibraryContentsCreateDatasetListResponse(RootModel):
-    root: List[LibraryContentsCreateDatasetResponseBase]
+    root: List[LibraryContentsCreateDatasetResponse]
 
 
 class LibraryContentsDeleteResponse(Model):
     id: EncodedDatabaseIdField
     deleted: bool
+
 
 class LibraryContentsPurgedResponse(LibraryContentsDeleteResponse):
     purged: bool

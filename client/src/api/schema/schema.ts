@@ -3028,6 +3028,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/libraries/{library_id}/contents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Return a list of library files and folders.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use GET /api/folders/{folder_id}/contents instead.
+         */
+        get: operations["index_api_libraries__library_id__contents_get"];
+        put?: never;
+        /**
+         * Create a new library file or folder.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use POST /api/folders/{folder_id} or POST /api/folders/{folder_id}/contents instead.
+         */
+        post: operations["create_api_libraries__library_id__contents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/libraries/{library_id}/contents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Return a library file or folder.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use GET /api/libraries/datasets/{library_id} instead.
+         */
+        get: operations["show_api_libraries__library_id__contents__id__get"];
+        /**
+         * Update a library file or folder.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{library_id} instead.
+         */
+        put: operations["update_api_libraries__library_id__contents__id__put"];
+        post?: never;
+        /**
+         * Delete a library file or folder.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{library_id} instead.
+         */
+        delete: operations["delete_api_libraries__library_id__contents__id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/licenses": {
         parameters: {
             query?: never;
@@ -6020,18 +6077,18 @@ export interface components {
             source: "admin" | "galaxy";
             /** Type */
             type:
-                | (
-                      | "faster"
-                      | "slower"
-                      | "short_term"
-                      | "backed_up"
-                      | "not_backed_up"
-                      | "more_secure"
-                      | "less_secure"
-                      | "more_stable"
-                      | "less_stable"
-                  )
-                | ("cloud" | "quota" | "no_quota" | "restricted" | "user_defined");
+            | (
+                | "faster"
+                | "slower"
+                | "short_term"
+                | "backed_up"
+                | "not_backed_up"
+                | "more_secure"
+                | "less_secure"
+                | "more_stable"
+                | "less_stable"
+            )
+            | ("cloud" | "quota" | "no_quota" | "restricted" | "user_defined");
         };
         /** BasicRoleModel */
         BasicRoleModel: {
@@ -6542,8 +6599,8 @@ export interface components {
             input: components["schemas"]["InputReferenceByOrderIndex"] | components["schemas"]["InputReferenceByLabel"];
             /** Output */
             output:
-                | components["schemas"]["OutputReferenceByOrderIndex"]
-                | components["schemas"]["OutputReferenceByLabel"];
+            | components["schemas"]["OutputReferenceByOrderIndex"]
+            | components["schemas"]["OutputReferenceByLabel"];
         };
         /** ContentsObject */
         ContentsObject: {
@@ -6971,20 +7028,11 @@ export interface components {
              */
             url: string;
         };
-        /** CreateWorkflowLandingRequestPayload */
-        CreateWorkflowLandingRequestPayload: {
-            /** Client Secret */
-            client_secret?: string | null;
-            /** Request State */
-            request_state?: Record<string, never> | null;
-            /** Workflow Id */
-            workflow_id: string;
-            /**
-             * Workflow Target Type
-             * @enum {string}
-             */
-            workflow_target_type: "stored_workflow" | "workflow";
-        };
+        /**
+         * CreateType
+         * @enum {string}
+         */
+        CreateType: "file" | "folder" | "collection";
         /** CreatedEntryResponse */
         CreatedEntryResponse: {
             /**
@@ -7470,10 +7518,10 @@ export interface components {
              * @description The element's specific data depending on the value of `element_type`.
              */
             object?:
-                | components["schemas"]["HDAObject"]
-                | components["schemas"]["HDADetailed"]
-                | components["schemas"]["DCObject"]
-                | null;
+            | components["schemas"]["HDAObject"]
+            | components["schemas"]["HDADetailed"]
+            | components["schemas"]["DCObject"]
+            | null;
         };
         /**
          * DCEType
@@ -7532,9 +7580,9 @@ export interface components {
             auto_decompress: boolean;
             /** Destination */
             destination:
-                | components["schemas"]["HdaDestination"]
-                | components["schemas"]["LibraryFolderDestination"]
-                | components["schemas"]["LibraryDestination"];
+            | components["schemas"]["HdaDestination"]
+            | components["schemas"]["LibraryFolderDestination"]
+            | components["schemas"]["LibraryDestination"];
             elements_from: components["schemas"]["ElementsFromType"];
             /** Ftp Path */
             ftp_path?: string | null;
@@ -7556,20 +7604,20 @@ export interface components {
             auto_decompress: boolean;
             /** Destination */
             destination:
-                | components["schemas"]["HdaDestination"]
-                | components["schemas"]["LibraryFolderDestination"]
-                | components["schemas"]["LibraryDestination"];
+            | components["schemas"]["HdaDestination"]
+            | components["schemas"]["LibraryFolderDestination"]
+            | components["schemas"]["LibraryDestination"];
             /** Elements */
             elements: (
                 | (
-                      | components["schemas"]["FileDataElement"]
-                      | components["schemas"]["PastedDataElement"]
-                      | components["schemas"]["UrlDataElement"]
-                      | components["schemas"]["PathDataElement"]
-                      | components["schemas"]["ServerDirElement"]
-                      | components["schemas"]["FtpImportElement"]
-                      | components["schemas"]["CompositeDataElement"]
-                  )
+                    | components["schemas"]["FileDataElement"]
+                    | components["schemas"]["PastedDataElement"]
+                    | components["schemas"]["UrlDataElement"]
+                    | components["schemas"]["PathDataElement"]
+                    | components["schemas"]["ServerDirElement"]
+                    | components["schemas"]["FtpImportElement"]
+                    | components["schemas"]["CompositeDataElement"]
+                )
                 | components["schemas"]["NestedElement"]
             )[];
         };
@@ -7774,18 +7822,18 @@ export interface components {
          * @enum {string}
          */
         DatasetState:
-            | "new"
-            | "upload"
-            | "queued"
-            | "running"
-            | "ok"
-            | "empty"
-            | "error"
-            | "paused"
-            | "setting_metadata"
-            | "failed_metadata"
-            | "deferred"
-            | "discarded";
+        | "new"
+        | "upload"
+        | "queued"
+        | "running"
+        | "ok"
+        | "empty"
+        | "error"
+        | "paused"
+        | "setting_metadata"
+        | "failed_metadata"
+        | "deferred"
+        | "discarded";
         /** DatasetStorageDetails */
         DatasetStorageDetails: {
             /**
@@ -8219,8 +8267,8 @@ export interface components {
             input: components["schemas"]["InputReferenceByOrderIndex"] | components["schemas"]["InputReferenceByLabel"];
             /** Output */
             output:
-                | components["schemas"]["OutputReferenceByOrderIndex"]
-                | components["schemas"]["OutputReferenceByLabel"];
+            | components["schemas"]["OutputReferenceByOrderIndex"]
+            | components["schemas"]["OutputReferenceByLabel"];
         };
         /**
          * DisplayApp
@@ -8599,8 +8647,8 @@ export interface components {
             object_type: components["schemas"]["ExportObjectType"];
             /** Payload */
             payload:
-                | components["schemas"]["WriteStoreToPayload"]
-                | components["schemas"]["ShortTermStoreExportPayload"];
+            | components["schemas"]["WriteStoreToPayload"]
+            | components["schemas"]["ShortTermStoreExportPayload"];
             /** User Id */
             user_id?: string | null;
         };
@@ -8910,13 +8958,13 @@ export interface components {
             type: "ftp" | "posix" | "s3fs" | "azure" | "onedata";
             /** Variables */
             variables?:
-                | (
-                      | components["schemas"]["TemplateVariableString"]
-                      | components["schemas"]["TemplateVariableInteger"]
-                      | components["schemas"]["TemplateVariablePathComponent"]
-                      | components["schemas"]["TemplateVariableBoolean"]
-                  )[]
-                | null;
+            | (
+                | components["schemas"]["TemplateVariableString"]
+                | components["schemas"]["TemplateVariableInteger"]
+                | components["schemas"]["TemplateVariablePathComponent"]
+                | components["schemas"]["TemplateVariableBoolean"]
+            )[]
+            | null;
             /**
              * Version
              * @default 0
@@ -10585,14 +10633,14 @@ export interface components {
             /** Elements */
             elements: (
                 | (
-                      | components["schemas"]["FileDataElement"]
-                      | components["schemas"]["PastedDataElement"]
-                      | components["schemas"]["UrlDataElement"]
-                      | components["schemas"]["PathDataElement"]
-                      | components["schemas"]["ServerDirElement"]
-                      | components["schemas"]["FtpImportElement"]
-                      | components["schemas"]["CompositeDataElement"]
-                  )
+                    | components["schemas"]["FileDataElement"]
+                    | components["schemas"]["PastedDataElement"]
+                    | components["schemas"]["UrlDataElement"]
+                    | components["schemas"]["PathDataElement"]
+                    | components["schemas"]["ServerDirElement"]
+                    | components["schemas"]["FtpImportElement"]
+                    | components["schemas"]["CompositeDataElement"]
+                )
                 | components["schemas"]["NestedElement"]
             )[];
             /** Name */
@@ -10891,10 +10939,10 @@ export interface components {
             operation: components["schemas"]["HistoryContentItemOperation"];
             /** Params */
             params?:
-                | components["schemas"]["ChangeDatatypeOperationParams"]
-                | components["schemas"]["ChangeDbkeyOperationParams"]
-                | components["schemas"]["TagOperationParams"]
-                | null;
+            | components["schemas"]["ChangeDatatypeOperationParams"]
+            | components["schemas"]["ChangeDbkeyOperationParams"]
+            | components["schemas"]["TagOperationParams"]
+            | null;
         };
         /** HistoryContentBulkOperationResult */
         HistoryContentBulkOperationResult: {
@@ -10921,15 +10969,15 @@ export interface components {
          * @enum {string}
          */
         HistoryContentItemOperation:
-            | "hide"
-            | "unhide"
-            | "delete"
-            | "undelete"
-            | "purge"
-            | "change_datatype"
-            | "change_dbkey"
-            | "add_tags"
-            | "remove_tags";
+        | "hide"
+        | "unhide"
+        | "delete"
+        | "undelete"
+        | "purge"
+        | "change_datatype"
+        | "change_dbkey"
+        | "add_tags"
+        | "remove_tags";
         /**
          * HistoryContentSource
          * @enum {string}
@@ -11246,8 +11294,8 @@ export interface components {
         ImportToolDataBundle: {
             /** Source */
             source:
-                | components["schemas"]["ImportToolDataBundleDatasetSource"]
-                | components["schemas"]["ImportToolDataBundleUriSource"];
+            | components["schemas"]["ImportToolDataBundleDatasetSource"]
+            | components["schemas"]["ImportToolDataBundleUriSource"];
         };
         /** ImportToolDataBundleDatasetSource */
         ImportToolDataBundleDatasetSource: {
@@ -11767,17 +11815,17 @@ export interface components {
             };
         };
         InvocationMessageResponseUnion:
-            | components["schemas"]["InvocationCancellationReviewFailedResponse"]
-            | components["schemas"]["InvocationCancellationHistoryDeletedResponse"]
-            | components["schemas"]["InvocationCancellationUserRequestResponse"]
-            | components["schemas"]["InvocationFailureDatasetFailedResponse"]
-            | components["schemas"]["InvocationFailureCollectionFailedResponse"]
-            | components["schemas"]["InvocationFailureJobFailedResponse"]
-            | components["schemas"]["InvocationFailureOutputNotFoundResponse"]
-            | components["schemas"]["InvocationFailureExpressionEvaluationFailedResponse"]
-            | components["schemas"]["InvocationFailureWhenNotBooleanResponse"]
-            | components["schemas"]["InvocationUnexpectedFailureResponse"]
-            | components["schemas"]["InvocationEvaluationWarningWorkflowOutputNotFoundResponse"];
+        | components["schemas"]["InvocationCancellationReviewFailedResponse"]
+        | components["schemas"]["InvocationCancellationHistoryDeletedResponse"]
+        | components["schemas"]["InvocationCancellationUserRequestResponse"]
+        | components["schemas"]["InvocationFailureDatasetFailedResponse"]
+        | components["schemas"]["InvocationFailureCollectionFailedResponse"]
+        | components["schemas"]["InvocationFailureJobFailedResponse"]
+        | components["schemas"]["InvocationFailureOutputNotFoundResponse"]
+        | components["schemas"]["InvocationFailureExpressionEvaluationFailedResponse"]
+        | components["schemas"]["InvocationFailureWhenNotBooleanResponse"]
+        | components["schemas"]["InvocationUnexpectedFailureResponse"]
+        | components["schemas"]["InvocationEvaluationWarningWorkflowOutputNotFoundResponse"];
         /** InvocationOutput */
         InvocationOutput: {
             /**
@@ -11927,13 +11975,13 @@ export interface components {
          * @enum {string}
          */
         InvocationState:
-            | "new"
-            | "requires_materialization"
-            | "ready"
-            | "scheduled"
-            | "cancelled"
-            | "cancelling"
-            | "failed";
+        | "new"
+        | "requires_materialization"
+        | "ready"
+        | "scheduled"
+        | "cancelled"
+        | "cancelling"
+        | "failed";
         /**
          * InvocationStep
          * @description Information about workflow invocation step
@@ -12713,11 +12761,11 @@ export interface components {
              * @description The values of the job parameter
              */
             value?:
-                | (components["schemas"]["EncodedJobParameterHistoryItem"] | null)[]
-                | number
-                | boolean
-                | string
-                | null;
+            | (components["schemas"]["EncodedJobParameterHistoryItem"] | null)[]
+            | number
+            | boolean
+            | string
+            | null;
         };
         /**
          * JobSourceType
@@ -12730,21 +12778,21 @@ export interface components {
          * @enum {string}
          */
         JobState:
-            | "new"
-            | "resubmitted"
-            | "upload"
-            | "waiting"
-            | "queued"
-            | "running"
-            | "ok"
-            | "error"
-            | "failed"
-            | "paused"
-            | "deleting"
-            | "deleted"
-            | "stop"
-            | "stopped"
-            | "skipped";
+        | "new"
+        | "resubmitted"
+        | "upload"
+        | "waiting"
+        | "queued"
+        | "running"
+        | "ok"
+        | "error"
+        | "failed"
+        | "paused"
+        | "deleting"
+        | "deleted"
+        | "stop"
+        | "stopped"
+        | "skipped";
         /** JobStateSummary */
         JobStateSummary: {
             /**
@@ -12921,6 +12969,368 @@ export interface components {
              * @description Total number of items
              */
             total: number;
+        };
+        /** LibraryContentsCollectionCreatePayload */
+        LibraryContentsCollectionCreatePayload: {
+            /** the type of collection to create */
+            collection_type: string;
+            /**
+             * if True, copy the elements into the collection
+             * @default false
+             */
+            copy_elements: boolean | null;
+            /** the type of item to create */
+            create_type: components["schemas"]["CreateType"];
+            /** list of dictionaries containing the element identifiers for the collection */
+            element_identifiers: Record<string, never>[];
+            /** sub-dictionary containing any extended metadata to associate with the item */
+            extended_metadata?: Record<string, never> | null;
+            /**
+             * the encoded id of the parent folder of the new item
+             * @example 0123456789ABCDEF
+             */
+            folder_id: string;
+            /** (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library */
+            from_hda_id?: string | null;
+            /** (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library */
+            from_hdca_id?: string | null;
+            /**
+             * if True, hide the source items in the collection
+             * @default false
+             */
+            hide_source_items: boolean | null;
+            /**
+             * the new message attribute of the LDDA created
+             * @default
+             */
+            ldda_message: string | null;
+            /** the name of the collection */
+            name?: string | null;
+            /**
+             * create tags on datasets using the file's original name
+             * @default false
+             */
+            tag_using_filenames: boolean | null;
+            /**
+             * create the given list of tags on datasets
+             * @default []
+             */
+            tags: string[] | null;
+            /**
+             * the method to use for uploading files
+             * @default upload_file
+             */
+            upload_option: components["schemas"]["UploadOption"] | null;
+        };
+        /** LibraryContentsCreateDatasetListResponse */
+        LibraryContentsCreateDatasetListResponse: components["schemas"]["LibraryContentsCreateDatasetResponse"][];
+        /** LibraryContentsCreateDatasetResponse */
+        LibraryContentsCreateDatasetResponse: {
+            /** Created From Basename */
+            created_from_basename: string | null;
+            /** Data Type */
+            data_type: string;
+            /** Deleted */
+            deleted: boolean;
+            /** File Ext */
+            file_ext: string;
+            /** File Name */
+            file_name: string;
+            /** File Size */
+            file_size: number;
+            /** Genome Build */
+            genome_build: string;
+            /** Hda Ldda */
+            hda_ldda: string;
+            /** Id */
+            id: string;
+            /** Library Dataset Id */
+            library_dataset_id: string;
+            /** Misc Blurb */
+            misc_blurb: string | null;
+            /** Misc Info */
+            misc_info: string | null;
+            /** Model Class */
+            model_class: string;
+            /** Name */
+            name: string;
+            /** Parent Library Id */
+            parent_library_id: string;
+            /** State */
+            state: string;
+            /** Update Time */
+            update_time: string;
+            /** Uuid */
+            uuid: string;
+            /** Visible */
+            visible: boolean;
+        } & {
+            [key: string]: unknown;
+        };
+        /** LibraryContentsCreateFolderListResponse */
+        LibraryContentsCreateFolderListResponse: components["schemas"]["LibraryContentsCreateFolderResponse"][];
+        /** LibraryContentsCreateFolderResponse */
+        LibraryContentsCreateFolderResponse: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+        };
+        /** LibraryContentsDeletePayload */
+        LibraryContentsDeletePayload: {
+            /**
+             * if True, purge the library dataset
+             * @default false
+             */
+            purge: boolean | null;
+        };
+        /** LibraryContentsDeleteResponse */
+        LibraryContentsDeleteResponse: {
+            /** Deleted */
+            deleted: boolean;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+        };
+        /** LibraryContentsFileCreatePayload */
+        LibraryContentsFileCreatePayload: {
+            /** the type of item to create */
+            create_type: components["schemas"]["CreateType"];
+            /**
+             * database key
+             * @default ?
+             */
+            dbkey: string | unknown[] | null;
+            /** sub-dictionary containing any extended metadata to associate with the item */
+            extended_metadata?: Record<string, never> | null;
+            /** file type */
+            file_type?: string | null;
+            /**
+             * (only if upload_option is 'upload_paths' and the user is an admin) file paths on the Galaxy server to upload to the library, one file per line
+             * @default
+             */
+            filesystem_paths: string | null;
+            /**
+             * the encoded id of the parent folder of the new item
+             * @example 0123456789ABCDEF
+             */
+            folder_id: string;
+            /** (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library */
+            from_hda_id?: string | null;
+            /** (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library */
+            from_hdca_id?: string | null;
+            /**
+             * the new message attribute of the LDDA created
+             * @default
+             */
+            ldda_message: string | null;
+            /**
+             * (only when upload_option is 'upload_directory' or 'upload_paths').Setting to 'link_to_files' symlinks instead of copying the files
+             * @default copy_files
+             */
+            link_data_only: components["schemas"]["LinkDataOnly"] | null;
+            /**
+             * user selected roles
+             * @default
+             */
+            roles: string | null;
+            /**
+             * (only if upload_option is 'upload_directory') relative path of the subdirectory of Galaxy ``library_import_dir`` (if admin) or ``user_library_import_dir`` (if non-admin) to upload. All and only the files (i.e. no subdirectories) contained in the specified directory will be uploaded.
+             * @default
+             */
+            server_dir: string | null;
+            /**
+             * create tags on datasets using the file's original name
+             * @default false
+             */
+            tag_using_filenames: boolean | null;
+            /**
+             * create the given list of tags on datasets
+             * @default []
+             */
+            tags: string[] | null;
+            /**
+             * the method to use for uploading files
+             * @default upload_file
+             */
+            upload_option: components["schemas"]["UploadOption"] | null;
+            /** UUID of the dataset to upload */
+            uuid?: string | null;
+        };
+        /** LibraryContentsFolderCreatePayload */
+        LibraryContentsFolderCreatePayload: {
+            /** the type of item to create */
+            create_type: components["schemas"]["CreateType"];
+            /**
+             * description of the folder to create
+             * @default
+             */
+            description: string | null;
+            /** sub-dictionary containing any extended metadata to associate with the item */
+            extended_metadata?: Record<string, never> | null;
+            /**
+             * the encoded id of the parent folder of the new item
+             * @example 0123456789ABCDEF
+             */
+            folder_id: string;
+            /** (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library */
+            from_hda_id?: string | null;
+            /** (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library */
+            from_hdca_id?: string | null;
+            /**
+             * the new message attribute of the LDDA created
+             * @default
+             */
+            ldda_message: string | null;
+            /**
+             * name of the folder to create
+             * @default
+             */
+            name: string | null;
+            /**
+             * create tags on datasets using the file's original name
+             * @default false
+             */
+            tag_using_filenames: boolean | null;
+            /**
+             * create the given list of tags on datasets
+             * @default []
+             */
+            tags: string[] | null;
+            /**
+             * the method to use for uploading files
+             * @default upload_file
+             */
+            upload_option: components["schemas"]["UploadOption"] | null;
+        };
+        /** LibraryContentsIndexDatasetResponse */
+        LibraryContentsIndexDatasetResponse: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+            /** Url */
+            url: string;
+        };
+        /** LibraryContentsIndexFolderResponse */
+        LibraryContentsIndexFolderResponse: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+            /** Url */
+            url: string;
+        };
+        /** LibraryContentsIndexListResponse */
+        LibraryContentsIndexListResponse: (
+            | components["schemas"]["LibraryContentsIndexFolderResponse"]
+            | components["schemas"]["LibraryContentsIndexDatasetResponse"]
+        )[];
+        /** LibraryContentsShowDatasetResponse */
+        LibraryContentsShowDatasetResponse: {
+            /** Created From Basename */
+            created_from_basename: string | null;
+            /** Data Type */
+            data_type: string;
+            /** Date Uploaded */
+            date_uploaded: string;
+            /** File Ext */
+            file_ext: string;
+            /** File Name */
+            file_name: string;
+            /** File Size */
+            file_size: number;
+            /**
+             * Folder Id
+             * @example 0123456789ABCDEF
+             */
+            folder_id: string;
+            /** Genome Build */
+            genome_build: string | null;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Ldda Id
+             * @example 0123456789ABCDEF
+             */
+            ldda_id: string;
+            /** Message */
+            message: string | null;
+            /** Misc Blurb */
+            misc_blurb: string | null;
+            /** Misc Info */
+            misc_info: string | null;
+            model_class: components["schemas"]["ModelClass"];
+            /** Name */
+            name: string;
+            /**
+             * Parent Library Id
+             * @example 0123456789ABCDEF
+             */
+            parent_library_id: string;
+            /** Peek */
+            peek: string | null;
+            /** State */
+            state: string;
+            tags: components["schemas"]["TagCollection"];
+            /** Update Time */
+            update_time: string;
+            /** Uploaded By */
+            uploaded_by: string;
+            /** Uuid */
+            uuid: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** LibraryContentsShowFolderResponse */
+        LibraryContentsShowFolderResponse: {
+            /** Deleted */
+            deleted: boolean;
+            /** Description */
+            description: string;
+            /** Genome Build */
+            genome_build: string | null;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Item Count */
+            item_count: number;
+            /** Library Path */
+            library_path: string[];
+            model_class: components["schemas"]["ModelClass"];
+            /** Name */
+            name: string;
+            /** Parent Id */
+            parent_id: string | null;
+            /**
+             * Parent Library Id
+             * @example 0123456789ABCDEF
+             */
+            parent_library_id: string;
+            /** Update Time */
+            update_time: string;
         };
         /** LibraryCurrentPermissions */
         LibraryCurrentPermissions: {
@@ -13378,6 +13788,11 @@ export interface components {
             name: string;
         };
         /**
+         * LinkDataOnly
+         * @enum {string}
+         */
+        LinkDataOnly: "copy_files" | "link_to_files";
+        /**
          * ListJstreeResponse
          * @deprecated
          * @description List of files in Jstree format.
@@ -13496,6 +13911,11 @@ export interface components {
             time: string;
         };
         /**
+         * ModelClass
+         * @enum {string}
+         */
+        ModelClass: "LibraryDataset" | "LibraryFolder";
+        /**
          * ModelStoreFormat
          * @description Available types of model stores for export.
          * @enum {string}
@@ -13536,14 +13956,14 @@ export interface components {
             /** Elements */
             elements: (
                 | (
-                      | components["schemas"]["FileDataElement"]
-                      | components["schemas"]["PastedDataElement"]
-                      | components["schemas"]["UrlDataElement"]
-                      | components["schemas"]["PathDataElement"]
-                      | components["schemas"]["ServerDirElement"]
-                      | components["schemas"]["FtpImportElement"]
-                      | components["schemas"]["CompositeDataElement"]
-                  )
+                    | components["schemas"]["FileDataElement"]
+                    | components["schemas"]["PastedDataElement"]
+                    | components["schemas"]["UrlDataElement"]
+                    | components["schemas"]["PathDataElement"]
+                    | components["schemas"]["ServerDirElement"]
+                    | components["schemas"]["FtpImportElement"]
+                    | components["schemas"]["CompositeDataElement"]
+                )
                 | components["schemas"]["NestedElement"]
             )[];
             elements_from?: components["schemas"]["ElementsFromType"] | null;
@@ -13681,16 +14101,16 @@ export interface components {
              * @description The category of the notification. Represents the type of the notification. E.g. 'message' or 'new_shared_item'.
              */
             category:
-                | components["schemas"]["MandatoryNotificationCategory"]
-                | components["schemas"]["PersonalNotificationCategory"];
+            | components["schemas"]["MandatoryNotificationCategory"]
+            | components["schemas"]["PersonalNotificationCategory"];
             /**
              * Content
              * @description The content of the notification. The structure depends on the category.
              */
             content:
-                | components["schemas"]["MessageNotificationContent"]
-                | components["schemas"]["NewSharedItemNotificationContent"]
-                | components["schemas"]["BroadcastNotificationContent"];
+            | components["schemas"]["MessageNotificationContent"]
+            | components["schemas"]["NewSharedItemNotificationContent"]
+            | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Expiration time
              * @description The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.
@@ -13769,16 +14189,16 @@ export interface components {
              * @description The category of the notification. Represents the type of the notification. E.g. 'message' or 'new_shared_item'.
              */
             category:
-                | components["schemas"]["MandatoryNotificationCategory"]
-                | components["schemas"]["PersonalNotificationCategory"];
+            | components["schemas"]["MandatoryNotificationCategory"]
+            | components["schemas"]["PersonalNotificationCategory"];
             /**
              * Content
              * @description The content of the notification. The structure depends on the category.
              */
             content:
-                | components["schemas"]["MessageNotificationContent"]
-                | components["schemas"]["NewSharedItemNotificationContent"]
-                | components["schemas"]["BroadcastNotificationContent"];
+            | components["schemas"]["MessageNotificationContent"]
+            | components["schemas"]["NewSharedItemNotificationContent"]
+            | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Create time
              * Format: date-time
@@ -13928,13 +14348,13 @@ export interface components {
             type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3" | "onedata";
             /** Variables */
             variables?:
-                | (
-                      | components["schemas"]["TemplateVariableString"]
-                      | components["schemas"]["TemplateVariableInteger"]
-                      | components["schemas"]["TemplateVariablePathComponent"]
-                      | components["schemas"]["TemplateVariableBoolean"]
-                  )[]
-                | null;
+            | (
+                | components["schemas"]["TemplateVariableString"]
+                | components["schemas"]["TemplateVariableInteger"]
+                | components["schemas"]["TemplateVariablePathComponent"]
+                | components["schemas"]["TemplateVariableBoolean"]
+            )[]
+            | null;
             /**
              * Version
              * @default 0
@@ -14593,26 +15013,26 @@ export interface components {
         RefactorActionExecution: {
             /** Action */
             action:
-                | components["schemas"]["AddInputAction"]
-                | components["schemas"]["AddStepAction"]
-                | components["schemas"]["ConnectAction"]
-                | components["schemas"]["DisconnectAction"]
-                | components["schemas"]["ExtractInputAction"]
-                | components["schemas"]["ExtractUntypedParameter"]
-                | components["schemas"]["FileDefaultsAction"]
-                | components["schemas"]["FillStepDefaultsAction"]
-                | components["schemas"]["UpdateAnnotationAction"]
-                | components["schemas"]["UpdateCreatorAction"]
-                | components["schemas"]["UpdateNameAction"]
-                | components["schemas"]["UpdateLicenseAction"]
-                | components["schemas"]["UpdateOutputLabelAction"]
-                | components["schemas"]["UpdateReportAction"]
-                | components["schemas"]["UpdateStepLabelAction"]
-                | components["schemas"]["UpdateStepPositionAction"]
-                | components["schemas"]["UpgradeSubworkflowAction"]
-                | components["schemas"]["UpgradeToolAction"]
-                | components["schemas"]["UpgradeAllStepsAction"]
-                | components["schemas"]["RemoveUnlabeledWorkflowOutputs"];
+            | components["schemas"]["AddInputAction"]
+            | components["schemas"]["AddStepAction"]
+            | components["schemas"]["ConnectAction"]
+            | components["schemas"]["DisconnectAction"]
+            | components["schemas"]["ExtractInputAction"]
+            | components["schemas"]["ExtractUntypedParameter"]
+            | components["schemas"]["FileDefaultsAction"]
+            | components["schemas"]["FillStepDefaultsAction"]
+            | components["schemas"]["UpdateAnnotationAction"]
+            | components["schemas"]["UpdateCreatorAction"]
+            | components["schemas"]["UpdateNameAction"]
+            | components["schemas"]["UpdateLicenseAction"]
+            | components["schemas"]["UpdateOutputLabelAction"]
+            | components["schemas"]["UpdateReportAction"]
+            | components["schemas"]["UpdateStepLabelAction"]
+            | components["schemas"]["UpdateStepPositionAction"]
+            | components["schemas"]["UpgradeSubworkflowAction"]
+            | components["schemas"]["UpgradeToolAction"]
+            | components["schemas"]["UpgradeAllStepsAction"]
+            | components["schemas"]["RemoveUnlabeledWorkflowOutputs"];
             /** Messages */
             messages: components["schemas"]["RefactorActionExecutionMessage"][];
         };
@@ -14683,10 +15103,10 @@ export interface components {
          * @enum {string}
          */
         RefactorActionExecutionMessageTypeEnum:
-            | "tool_version_change"
-            | "tool_state_adjustment"
-            | "connection_drop_forced"
-            | "workflow_output_drop_forced";
+        | "tool_version_change"
+        | "tool_state_adjustment"
+        | "connection_drop_forced"
+        | "workflow_output_drop_forced";
         /** RefactorRequest */
         RefactorRequest: {
             /** Actions */
@@ -14853,14 +15273,14 @@ export interface components {
          * @enum {string}
          */
         RequestDataType:
-            | "state"
-            | "converted_datasets_state"
-            | "data"
-            | "features"
-            | "raw_data"
-            | "track_config"
-            | "genome_data"
-            | "in_use_state";
+        | "state"
+        | "converted_datasets_state"
+        | "data"
+        | "features"
+        | "raw_data"
+        | "track_config"
+        | "genome_data"
+        | "in_use_state";
         /**
          * Requirement
          * @description Available types of job sources (model classes) that produce dataset collections.
@@ -15621,8 +16041,8 @@ export interface components {
              * @description Additional information about the creator (or multiple creators) of this workflow.
              */
             creator?:
-                | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
-                | null;
+            | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
+            | null;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.
@@ -15715,12 +16135,12 @@ export interface components {
              */
             steps: {
                 [key: string]:
-                    | components["schemas"]["InputDataStep"]
-                    | components["schemas"]["InputDataCollectionStep"]
-                    | components["schemas"]["InputParameterStep"]
-                    | components["schemas"]["PauseStep"]
-                    | components["schemas"]["ToolStep"]
-                    | components["schemas"]["SubworkflowStep"];
+                | components["schemas"]["InputDataStep"]
+                | components["schemas"]["InputDataCollectionStep"]
+                | components["schemas"]["InputParameterStep"]
+                | components["schemas"]["PauseStep"]
+                | components["schemas"]["ToolStep"]
+                | components["schemas"]["SubworkflowStep"];
             };
             tags: components["schemas"]["TagCollection"];
             /**
@@ -15839,13 +16259,13 @@ export interface components {
          * @enum {string}
          */
         TaggableItemClass:
-            | "History"
-            | "HistoryDatasetAssociation"
-            | "HistoryDatasetCollectionAssociation"
-            | "LibraryDatasetDatasetAssociation"
-            | "Page"
-            | "StoredWorkflow"
-            | "Visualization";
+        | "History"
+        | "HistoryDatasetAssociation"
+        | "HistoryDatasetCollectionAssociation"
+        | "LibraryDatasetDatasetAssociation"
+        | "Page"
+        | "StoredWorkflow"
+        | "Visualization";
         /**
          * TaskState
          * @description Enum representing the possible states of a task.
@@ -16453,8 +16873,8 @@ export interface components {
             action_type: "update_output_label";
             /** Output */
             output:
-                | components["schemas"]["OutputReferenceByOrderIndex"]
-                | components["schemas"]["OutputReferenceByLabel"];
+            | components["schemas"]["OutputReferenceByOrderIndex"]
+            | components["schemas"]["OutputReferenceByLabel"];
             /** Output Label */
             output_label: string;
         };
@@ -16602,6 +17022,11 @@ export interface components {
             /** Tool Version */
             tool_version?: string | null;
         };
+        /**
+         * UploadOption
+         * @enum {string}
+         */
+        UploadOption: "upload_file" | "upload_paths" | "upload_directory";
         /** UrlDataElement */
         UrlDataElement: {
             /** Md5 */
@@ -16871,8 +17296,8 @@ export interface components {
              * @description The content of the notification. The structure depends on the category.
              */
             content:
-                | components["schemas"]["MessageNotificationContent"]
-                | components["schemas"]["NewSharedItemNotificationContent"];
+            | components["schemas"]["MessageNotificationContent"]
+            | components["schemas"]["NewSharedItemNotificationContent"];
             /**
              * Create time
              * Format: date-time
@@ -17510,8 +17935,8 @@ export interface components {
         };
         /** WorkflowInvocationResponse */
         WorkflowInvocationResponse:
-            | components["schemas"]["WorkflowInvocationElementView"]
-            | components["schemas"]["WorkflowInvocationCollectionView"];
+        | components["schemas"]["WorkflowInvocationElementView"]
+        | components["schemas"]["WorkflowInvocationCollectionView"];
         /** WorkflowInvocationStateSummary */
         WorkflowInvocationStateSummary: {
             /**
@@ -18202,9 +18627,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["HDCACustom"]
-                        | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"];
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
@@ -18659,13 +19084,13 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["HDACustom"]
-                        | components["schemas"]["HDADetailed"]
-                        | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDAInaccessible"]
-                        | components["schemas"]["HDCACustom"]
-                        | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"];
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"]
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
@@ -18883,10 +19308,10 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["HDACustom"]
-                        | components["schemas"]["HDADetailed"]
-                        | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDAInaccessible"];
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"];
                 };
             };
             /** @description Request Error */
@@ -19253,9 +19678,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json":
-                    | components["schemas"]["UpdateDatasetPermissionsPayload"]
-                    | components["schemas"]["UpdateDatasetPermissionsPayloadAliasB"]
-                    | components["schemas"]["UpdateDatasetPermissionsPayloadAliasC"];
+                | components["schemas"]["UpdateDatasetPermissionsPayload"]
+                | components["schemas"]["UpdateDatasetPermissionsPayloadAliasB"]
+                | components["schemas"]["UpdateDatasetPermissionsPayloadAliasC"];
             };
         };
         responses: {
@@ -20213,9 +20638,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json":
-                    | components["schemas"]["UpdateInstanceSecretPayload"]
-                    | components["schemas"]["UpgradeInstancePayload"]
-                    | components["schemas"]["UpdateInstancePayload"];
+                | components["schemas"]["UpdateInstanceSecretPayload"]
+                | components["schemas"]["UpgradeInstancePayload"]
+                | components["schemas"]["UpdateInstancePayload"];
             };
         };
         responses: {
@@ -20702,8 +21127,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["LibraryFolderCurrentPermissions"]
-                        | components["schemas"]["LibraryAvailablePermissions"];
+                    | components["schemas"]["LibraryFolderCurrentPermissions"]
+                    | components["schemas"]["LibraryAvailablePermissions"];
                 };
             };
             /** @description Request Error */
@@ -20901,8 +21326,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["ListUriResponse"]
-                        | components["schemas"]["ListJstreeResponse"];
+                    | components["schemas"]["ListUriResponse"]
+                    | components["schemas"]["ListJstreeResponse"];
                 };
             };
             /** @description Request Error */
@@ -22119,10 +22544,10 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["JobImportHistoryResponse"]
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["JobImportHistoryResponse"]
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -22444,9 +22869,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -22497,9 +22922,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -22591,9 +23016,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -22763,9 +23188,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -22819,9 +23244,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -22876,9 +23301,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -22927,9 +23352,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomArchivedHistoryView"]
-                        | components["schemas"]["ArchivedHistoryDetailed"]
-                        | components["schemas"]["ArchivedHistorySummary"];
+                    | components["schemas"]["CustomArchivedHistoryView"]
+                    | components["schemas"]["ArchivedHistoryDetailed"]
+                    | components["schemas"]["ArchivedHistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -22977,9 +23402,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -23223,6 +23648,14 @@ export interface operations {
                 };
                 content: {
                     "application/json":
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"]
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"]
+                    | (
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
@@ -23230,15 +23663,7 @@ export interface operations {
                         | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
-                        | (
-                              | components["schemas"]["HDACustom"]
-                              | components["schemas"]["HDADetailed"]
-                              | components["schemas"]["HDASummary"]
-                              | components["schemas"]["HDAInaccessible"]
-                              | components["schemas"]["HDCACustom"]
-                              | components["schemas"]["HDCADetailed"]
-                              | components["schemas"]["HDCASummary"]
-                          )[];
+                    )[];
                 };
             };
             /** @description Request Error */
@@ -23549,9 +23974,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json":
-                    | components["schemas"]["UpdateDatasetPermissionsPayload"]
-                    | components["schemas"]["UpdateDatasetPermissionsPayloadAliasB"]
-                    | components["schemas"]["UpdateDatasetPermissionsPayloadAliasC"];
+                | components["schemas"]["UpdateDatasetPermissionsPayload"]
+                | components["schemas"]["UpdateDatasetPermissionsPayloadAliasB"]
+                | components["schemas"]["UpdateDatasetPermissionsPayloadAliasC"];
             };
         };
         responses: {
@@ -24056,13 +24481,13 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["HDACustom"]
-                        | components["schemas"]["HDADetailed"]
-                        | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDAInaccessible"]
-                        | components["schemas"]["HDCACustom"]
-                        | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"];
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"]
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
@@ -24120,13 +24545,13 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["HDACustom"]
-                        | components["schemas"]["HDADetailed"]
-                        | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDAInaccessible"]
-                        | components["schemas"]["HDCACustom"]
-                        | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"];
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"]
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
@@ -24402,6 +24827,14 @@ export interface operations {
                 };
                 content: {
                     "application/json":
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"]
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"]
+                    | (
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
@@ -24409,15 +24842,7 @@ export interface operations {
                         | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
-                        | (
-                              | components["schemas"]["HDACustom"]
-                              | components["schemas"]["HDADetailed"]
-                              | components["schemas"]["HDASummary"]
-                              | components["schemas"]["HDAInaccessible"]
-                              | components["schemas"]["HDCACustom"]
-                              | components["schemas"]["HDCADetailed"]
-                              | components["schemas"]["HDCASummary"]
-                          )[];
+                    )[];
                 };
             };
             /** @description Request Error */
@@ -24473,13 +24898,13 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["HDACustom"]
-                        | components["schemas"]["HDADetailed"]
-                        | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDAInaccessible"]
-                        | components["schemas"]["HDCACustom"]
-                        | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"];
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"]
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
@@ -24537,13 +24962,13 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["HDACustom"]
-                        | components["schemas"]["HDADetailed"]
-                        | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDAInaccessible"]
-                        | components["schemas"]["HDCACustom"]
-                        | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"];
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"]
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
@@ -24673,9 +25098,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["JobStateSummary"]
-                        | components["schemas"]["ImplicitCollectionJobsStateSummary"]
-                        | components["schemas"]["WorkflowInvocationStateSummary"];
+                    | components["schemas"]["JobStateSummary"]
+                    | components["schemas"]["ImplicitCollectionJobsStateSummary"]
+                    | components["schemas"]["WorkflowInvocationStateSummary"];
                 };
             };
             /** @description Request Error */
@@ -25073,8 +25498,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["JobExportHistoryArchiveModel"]
-                        | components["schemas"]["JobIdResponse"];
+                    | components["schemas"]["JobExportHistoryArchiveModel"]
+                    | components["schemas"]["JobIdResponse"];
                 };
             };
             /** @description The exported archive file is not ready yet. */
@@ -26697,8 +27122,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["ShowFullJobResponse"]
-                        | components["schemas"]["EncodedJobDetails"];
+                    | components["schemas"]["ShowFullJobResponse"]
+                    | components["schemas"]["EncodedJobDetails"];
                 };
             };
             /** @description Request Error */
@@ -27536,8 +27961,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["LibraryCurrentPermissions"]
-                        | components["schemas"]["LibraryAvailablePermissions"];
+                    | components["schemas"]["LibraryCurrentPermissions"]
+                    | components["schemas"]["LibraryAvailablePermissions"];
                 };
             };
             /** @description Request Error */
@@ -27579,8 +28004,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json":
-                    | components["schemas"]["LibraryPermissionsPayload"]
-                    | components["schemas"]["LegacyLibraryPermissionsPayload"];
+                | components["schemas"]["LibraryPermissionsPayload"]
+                | components["schemas"]["LegacyLibraryPermissionsPayload"];
             };
         };
         responses: {
@@ -27591,8 +28016,245 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["LibraryLegacySummary"]
-                        | components["schemas"]["LibraryCurrentPermissions"];
+                    | components["schemas"]["LibraryLegacySummary"]
+                    | components["schemas"]["LibraryCurrentPermissions"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_api_libraries__library_id__contents_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryContentsIndexListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_api_libraries__library_id__contents_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json":
+                | components["schemas"]["LibraryContentsFolderCreatePayload"]
+                | components["schemas"]["LibraryContentsFileCreatePayload"]
+                | components["schemas"]["LibraryContentsCollectionCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json":
+                    | components["schemas"]["LibraryContentsCreateFolderListResponse"]
+                    | components["schemas"]["LibraryContentsCreateDatasetListResponse"]
+                    | components["schemas"]["LibraryContentsCreateDatasetResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    show_api_libraries__library_id__contents__id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+                /** @example F0123456789ABCDEF */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json":
+                    | components["schemas"]["LibraryContentsShowFolderResponse"]
+                    | components["schemas"]["LibraryContentsShowDatasetResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_api_libraries__library_id__contents__id__put: {
+        parameters: {
+            query: {
+                payload: unknown;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_api_libraries__library_id__contents__id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LibraryContentsDeletePayload"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryContentsDeleteResponse"];
                 };
             };
             /** @description Request Error */
@@ -27851,8 +28513,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["NotificationCreatedResponse"]
-                        | components["schemas"]["AsyncTaskResultSummary"];
+                    | components["schemas"]["NotificationCreatedResponse"]
+                    | components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Request Error */
@@ -28548,9 +29210,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json":
-                    | components["schemas"]["UpdateInstanceSecretPayload"]
-                    | components["schemas"]["UpgradeInstancePayload"]
-                    | components["schemas"]["UpdateInstancePayload"];
+                | components["schemas"]["UpdateInstanceSecretPayload"]
+                | components["schemas"]["UpgradeInstancePayload"]
+                | components["schemas"]["UpdateInstancePayload"];
             };
         };
         responses: {
@@ -29874,8 +30536,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["ListUriResponse"]
-                        | components["schemas"]["ListJstreeResponse"];
+                    | components["schemas"]["ListUriResponse"]
+                    | components["schemas"]["ListJstreeResponse"];
                 };
             };
             /** @description Request Error */
@@ -31452,8 +32114,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json":
-                    | components["schemas"]["UserCreationPayload"]
-                    | components["schemas"]["RemoteUserCreationPayload"];
+                | components["schemas"]["UserCreationPayload"]
+                | components["schemas"]["RemoteUserCreationPayload"];
             };
         };
         responses: {
@@ -31607,8 +32269,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["DetailedUserModel"]
-                        | components["schemas"]["AnonUserModel"];
+                    | components["schemas"]["DetailedUserModel"]
+                    | components["schemas"]["AnonUserModel"];
                 };
             };
             /** @description Request Error */
@@ -31748,8 +32410,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["DetailedUserModel"]
-                        | components["schemas"]["AnonUserModel"];
+                    | components["schemas"]["DetailedUserModel"]
+                    | components["schemas"]["AnonUserModel"];
                 };
             };
             /** @description Request Error */
@@ -33902,8 +34564,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["WorkflowInvocationResponse"]
-                        | components["schemas"]["WorkflowInvocationResponse"][];
+                    | components["schemas"]["WorkflowInvocationResponse"]
+                    | components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
             /** @description Request Error */
@@ -34960,8 +35622,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["WorkflowInvocationResponse"]
-                        | components["schemas"]["WorkflowInvocationResponse"][];
+                    | components["schemas"]["WorkflowInvocationResponse"]
+                    | components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
             /** @description Request Error */
