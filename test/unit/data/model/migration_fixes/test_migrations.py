@@ -72,7 +72,7 @@ def test_1cf595475b58(monkeypatch, session, make_user, make_history):
 
     # STEP 2: Run migration
 
-    run_command(f"{COMMAND} upgrade 1cf595475b58")
+    run_command(f"{COMMAND} upgrade")
     session.expire_all()
 
     # STEP 3: Verify deduplicated results
@@ -143,7 +143,7 @@ def test_d619fdfa6168(monkeypatch, session, make_user):
     assert u1.create_time < u2.create_time < u3.create_time  # u3 is newest user
 
     # STEP 2: Run migration
-    run_command(f"{COMMAND} upgrade d619fdfa6168")
+    run_command(f"{COMMAND} upgrade")
     session.expire_all()
 
     # STEP 3: Verify deduplicated results
@@ -186,7 +186,7 @@ def test_349dd9d9aac9(monkeypatch, session, make_user, make_role, make_user_role
     assert len(all_associations) == 5
 
     # Run migration
-    run_command(f"{COMMAND} upgrade 349dd9d9aac9")
+    run_command(f"{COMMAND} upgrade")
     session.expire_all()
 
     # Verify clean data
@@ -222,7 +222,7 @@ def test_56ddf316dbd0(monkeypatch, session, make_user, make_group, make_user_gro
     assert len(all_associations) == 5
 
     # Run migration
-    run_command(f"{COMMAND} upgrade 56ddf316dbd0")
+    run_command(f"{COMMAND} upgrade")
     session.expire_all()
 
     # Verify clean data
@@ -258,7 +258,7 @@ def test_9ef6431f3a4e(monkeypatch, session, make_group, make_role, make_group_ro
     assert len(all_associations) == 5
 
     # Run migration
-    run_command(f"{COMMAND} upgrade 9ef6431f3a4e")
+    run_command(f"{COMMAND} upgrade")
     session.expire_all()
 
     # Verify clean data
@@ -297,7 +297,7 @@ def test_1fdd615f2cdb(monkeypatch, session, make_user, make_role, make_user_role
     assert len(all_associations) == 4
 
     # Run migration
-    run_command(f"{COMMAND} upgrade 1fdd615f2cdb")
+    run_command(f"{COMMAND} upgrade")
     session.expire_all()
 
     # Verify clean data
@@ -334,7 +334,7 @@ def test_13fe10b8e35b(monkeypatch, session, make_user, make_group, make_user_gro
     assert len(all_associations) == 4
 
     # Run migration
-    run_command(f"{COMMAND} upgrade 13fe10b8e35b")
+    run_command(f"{COMMAND} upgrade")
     session.expire_all()
 
     # Verify clean data
@@ -371,7 +371,7 @@ def test_25b092f7938b(monkeypatch, session, make_group, make_role, make_group_ro
     assert len(all_associations) == 4
 
     # Run migration
-    run_command(f"{COMMAND} upgrade 25b092f7938b")
+    run_command(f"{COMMAND} upgrade")
     session.expire_all()
 
     # Verify clean data
