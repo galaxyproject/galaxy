@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from galaxy import model as m
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.model.triggers.update_audit_table import install as install_timestamp_triggers
-from . import MockObjectStore
+from .. import MockObjectStore
 
 if TYPE_CHECKING:
     from sqlalchemy.engine import Engine

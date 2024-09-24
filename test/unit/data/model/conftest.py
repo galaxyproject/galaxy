@@ -1,7 +1,5 @@
 import contextlib
 import os
-import random
-import string
 import tempfile
 import uuid
 
@@ -10,6 +8,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from galaxy import model as m
+from galaxy.model.unittest_utils.utils import (
+    random_email,
+    random_str,
+)
 
 
 @pytest.fixture
@@ -447,17 +449,6 @@ def transaction(session):
             yield
     else:
         yield
-
-
-def random_str() -> str:
-    alphabet = string.ascii_lowercase + string.digits
-    size = random.randint(5, 10)
-    return "".join(random.choices(alphabet, k=size))
-
-
-def random_email() -> str:
-    text = random_str()
-    return f"{text}@galaxy.testing"
 
 
 def write_to_db(session, model) -> None:
