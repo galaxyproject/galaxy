@@ -1,0 +1,18 @@
+class: GalaxyWorkflow
+inputs:
+  text_input1: collection
+outputs:
+  out1:
+    outputSource: consume_expression_parameter/out_file1
+steps:
+  param_out:
+    tool_id: param_value_from_file
+    in:
+      input1: text_input1
+  consume_expression_parameter:
+    tool_id: validation_default
+    in:
+      input1: param_out/text_param
+    outputs:
+      out_file1:
+        rename: "replaced_param_collection"
