@@ -2,7 +2,6 @@ import json
 import logging
 import os
 from typing import (
-    Annotated,
     cast,
     Dict,
     List,
@@ -14,6 +13,7 @@ from typing import (
 
 from fastapi import Path
 from markupsafe import escape
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
