@@ -108,6 +108,11 @@ class MaterializeDatasetInstanceTaskRequest(Model):
             "- The decoded id of the HDA\n"
         ),
     )
+    validate_hashes: bool = Field(
+        False,
+        title="Validate hashes",
+        description="Set to true to enable dataset validation during materialization.",
+    )
 
 
 class ComputeDatasetHashTaskRequest(Model):

@@ -981,7 +981,9 @@ class BaseDatasetPopulator(BasePopulator):
         tool_response = self._post(url, data=payload)
         return tool_response
 
-    def materialize_dataset_instance(self, history_id: str, id: str, source: str = "hda"):
+    def materialize_dataset_instance(
+        self, history_id: str, id: str, source: str = "hda", validate_hashes: bool = False
+    ):
         payload: Dict[str, Any]
         if source == "ldda":
             url = f"histories/{history_id}/materialize"
@@ -992,6 +994,8 @@ class BaseDatasetPopulator(BasePopulator):
         else:
             url = f"histories/{history_id}/contents/datasets/{id}/materialize"
             payload = {}
+        if validate_hashes:
+            payload["validate_hashes"] = True
         create_response = self._post(url, payload, json=True)
         api_asserts.assert_status_code_is_ok(create_response)
         create_response_json = create_response.json()

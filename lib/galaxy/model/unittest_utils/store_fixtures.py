@@ -11,7 +11,7 @@ from galaxy.model.orm.now import now
 TEST_SOURCE_URI = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/2.bed"
 TEST_SOURCE_URI_BAM = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam"
 TEST_HASH_FUNCTION = "MD5"
-TEST_HASH_VALUE = "moocowpretendthisisahas"
+TEST_HASH_VALUE = "f568c29421792b1b1df4474dafae01f1"
 TEST_HISTORY_NAME = "My history in a model store"
 TEST_EXTENSION = "bed"
 TEST_LIBRARY_NAME = "My cool library"

@@ -190,7 +190,9 @@ class HDAManager(
         else:
             dataset_instance = self.ldda_manager.get_accessible(request.content, user)
         history = self.app.history_manager.by_id(request.history_id)
-        new_hda = materializer.ensure_materialized(dataset_instance, target_history=history, in_place=in_place)
+        new_hda = materializer.ensure_materialized(
+            dataset_instance, target_history=history, validate_hashes=request.validate_hashes, in_place=in_place
+        )
         if not in_place:
             history.add_dataset(new_hda, set_hid=True)
         session = self.session()

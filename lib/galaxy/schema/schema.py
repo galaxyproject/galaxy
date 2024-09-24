@@ -3681,7 +3681,15 @@ class PageSummaryBase(Model):
     )
 
 
-class MaterializeDatasetInstanceAPIRequest(Model):
+class MaterializeDatasetOptions(Model):
+    validate_hashes: bool = Field(
+        False,
+        title="Validate hashes",
+        description="Set to true to enable dataset validation during materialization.",
+    )
+
+
+class MaterializeDatasetInstanceAPIRequest(MaterializeDatasetOptions):
     source: DatasetSourceType = Field(
         title="Source",
         description="The source of the content. Can be other history element to be copied or library elements.",

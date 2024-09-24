@@ -153,6 +153,14 @@ def parse_checksum_hash(checksum: str) -> Tuple[HashFunctionNameEnum, str]:
     return HashFunctionNameEnum(hash_name), hash_value
 
 
+def verify_hash(path: str, hash_func_name: HashFunctionNameEnum, hash_value: str, what: str = "path"):
+    calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_func_name, path=path)
+    if calculated_hash_value != hash_value:
+        raise Exception(
+            f"Failed to validate {what} with [{hash_func_name}] - expected [{hash_value}] got [{calculated_hash_value}]"
+        )
+
+
 __all__ = (
     "md5",
     "hashlib",

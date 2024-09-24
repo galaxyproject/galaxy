@@ -34,7 +34,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.hash_util import (
     HASH_NAMES,
-    memory_bound_hexdigest,
+    verify_hash,
 )
 
 DESCRIPTION = """Data Import Script"""
@@ -515,11 +515,7 @@ def _has_src_to_path(upload_config, item, is_dataset=False) -> Tuple[str, str]:
 
 def _handle_hash_validation(upload_config, hash_function, hash_value, path):
     if upload_config.validate_hashes:
-        calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=path)
-        if calculated_hash_value != hash_value:
-            raise Exception(
-                f"Failed to validate upload with [{hash_function}] - expected [{hash_value}] got [{calculated_hash_value}]"
-            )
+        verify_hash(path, hash_func_name=hash_function, hash_value=hash_value, what="upload")
 
 
 def _arg_parser():

@@ -214,6 +214,7 @@ from galaxy.util.form_builder import (
     WorkflowMappingField,
 )
 from galaxy.util.hash_util import (
+    HashFunctionNameEnum,
     md5_hash_str,
     new_insecure_hash,
 )
@@ -4493,7 +4494,17 @@ class DatasetSource(Base, Dictifiable, Serializable):
         return new_source
 
 
-class DatasetSourceHash(Base, Serializable):
+class HasHashFunctionName:
+    hash_function: Mapped[Optional[str]]
+
+    @property
+    def hash_func_name(self) -> HashFunctionNameEnum:
+        as_str = self.hash_function
+        assert as_str
+        return HashFunctionNameEnum(self.hash_function)
+
+
+class DatasetSourceHash(Base, Serializable, HasHashFunctionName):
     __tablename__ = "dataset_source_hash"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -4518,7 +4529,7 @@ class DatasetSourceHash(Base, Serializable):
         return new_hash
 
 
-class DatasetHash(Base, Dictifiable, Serializable):
+class DatasetHash(Base, Dictifiable, Serializable, HasHashFunctionName):
     __tablename__ = "dataset_hash"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -4546,6 +4557,15 @@ class DatasetHash(Base, Dictifiable, Serializable):
         new_hash.hash_value = self.hash_value
         new_hash.extra_files_path = self.extra_files_path
         return new_hash
+
+    @property
+    def hash_func_name(self) -> HashFunctionNameEnum:
+        as_str = self.hash_function
+        assert as_str
+        return HashFunctionNameEnum(self.hash_function)
+
+
+DescribesHash = Union[DatasetSourceHash, DatasetHash]
 
 
 def datatype_for_extension(extension, datatypes_registry=None) -> "Data":
