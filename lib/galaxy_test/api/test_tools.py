@@ -966,6 +966,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("gx_select_optional")
     @skip_without_tool("gx_select_optional_no_options_validation")
+    @skip_without_tool("gx_select_dynamic_empty")
+    @skip_without_tool("gx_select_dynamic_empty_validated")
     def test_select_single_null_handling(self):
         with self.dataset_populator.test_history(require_new=True) as history_id:
             inputs: Dict[str, Any] = {}
@@ -979,6 +981,33 @@ class TestToolsApi(ApiTestCase, TestsTools):
             output = response["outputs"][0]
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
             assert output1_content.strip() == "None"
+
+            response = self._run("gx_select_dynamic_empty", history_id, inputs, assert_ok=False)
+            assert (
+                response.json()["err_msg"]
+                == "parameter 'parameter': an invalid option (None) was selected, please verify"
+            )
+
+            inputs = {"parameter": None}
+            response = self._run("gx_select_dynamic_empty", history_id, inputs, assert_ok=False)
+            assert (
+                response.json()["err_msg"]
+                == "parameter 'parameter': an invalid option (None) was selected, please verify"
+            )
+
+            inputs = {}
+            response = self._run("gx_select_dynamic_empty_validated", history_id, inputs, assert_ok=False)
+            assert (
+                response.json()["err_msg"]
+                == "parameter 'parameter': an invalid option (None) was selected, please verify"
+            )
+
+            inputs = {"parameter": None}
+            response = self._run("gx_select_dynamic_empty_validated", history_id, inputs, assert_ok=False)
+            assert (
+                response.json()["err_msg"]
+                == "parameter 'parameter': an invalid option (None) was selected, please verify"
+            )
 
     @skip_without_tool("gx_select_multiple")
     @skip_without_tool("gx_select_multiple_optional")
