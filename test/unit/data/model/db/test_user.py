@@ -7,7 +7,7 @@ from galaxy.model.db.user import (
     get_users_by_ids,
     get_users_for_index,
 )
-from . import verify_items
+from . import have_same_elements
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ def test_get_users_by_ids(session, make_random_users):
 
     users2 = get_users_by_ids(session, ids)
     expected = [u1, u2, u3]
-    verify_items(users2, expected)
+    have_same_elements(users2, expected)
 
 
 def test_get_users_for_index(session, make_user):
@@ -54,25 +54,25 @@ def test_get_users_for_index(session, make_user):
     u6 = make_user(email="z", username="i")
 
     users = get_users_for_index(session, False, f_email="a", expose_user_email=True)
-    verify_items(users, [u1])
+    have_same_elements(users, [u1])
     users = get_users_for_index(session, False, f_email="c", is_admin=True)
-    verify_items(users, [u2])
+    have_same_elements(users, [u2])
     users = get_users_for_index(session, False, f_name="f", expose_user_name=True)
-    verify_items(users, [u3])
+    have_same_elements(users, [u3])
     users = get_users_for_index(session, False, f_name="h", is_admin=True)
-    verify_items(users, [u4])
+    have_same_elements(users, [u4])
     users = get_users_for_index(session, False, f_any="i", is_admin=True)
-    verify_items(users, [u5, u6])
+    have_same_elements(users, [u5, u6])
     users = get_users_for_index(session, False, f_any="i", expose_user_email=True, expose_user_name=True)
-    verify_items(users, [u5, u6])
+    have_same_elements(users, [u5, u6])
     users = get_users_for_index(session, False, f_any="i", expose_user_email=True)
-    verify_items(users, [u5])
+    have_same_elements(users, [u5])
     users = get_users_for_index(session, False, f_any="i", expose_user_name=True)
-    verify_items(users, [u6])
+    have_same_elements(users, [u6])
 
     u1.deleted = True
     users = get_users_for_index(session, True)
-    verify_items(users, [u1])
+    have_same_elements(users, [u1])
 
 
 def test_username_is_unique(make_user):

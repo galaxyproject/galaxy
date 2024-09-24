@@ -4,7 +4,7 @@ from galaxy.model.db.role import (
     get_private_user_role,
     get_roles_by_ids,
 )
-from . import verify_items
+from . import have_same_elements
 
 
 def test_get_npns_roles(session, make_role):
@@ -18,7 +18,7 @@ def test_get_npns_roles(session, make_role):
     # Expected: r4, r5
     # Not returned: r1: deleted, r2: private, r3: sharing
     expected = [r4, r5]
-    verify_items(roles, expected)
+    have_same_elements(roles, expected)
 
 
 def test_get_private_user_role(session, make_user, make_role, make_user_role_association):
@@ -41,4 +41,4 @@ def test_get_roles_by_ids(session, make_role):
 
     roles2 = get_roles_by_ids(session, ids)
     expected = [r1, r2, r3]
-    verify_items(roles2, expected)
+    have_same_elements(roles2, expected)

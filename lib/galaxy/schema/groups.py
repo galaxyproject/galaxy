@@ -73,5 +73,18 @@ class GroupCreatePayload(Model):
 
 
 @partial_model()
-class GroupUpdatePayload(GroupCreatePayload):
-    pass
+class GroupUpdatePayload(Model):
+    """Payload schema for updating a group."""
+
+    name: str = Field(
+        ...,
+        title="name of the group",
+    )
+    user_ids: Optional[List[DecodedDatabaseIdField]] = Field(
+        None,
+        title="user IDs",
+    )
+    role_ids: Optional[List[DecodedDatabaseIdField]] = Field(
+        None,
+        title="role IDs",
+    )

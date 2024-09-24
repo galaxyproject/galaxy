@@ -655,7 +655,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.model.security.HostAgent(
-            model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions
+            self.security_agent.sa_session, permitted_actions=self.security_agent.permitted_actions
         )
 
         # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
