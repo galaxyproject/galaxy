@@ -13067,6 +13067,20 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** LibraryContentsCreateFileListResponse */
+        LibraryContentsCreateFileListResponse: components["schemas"]["LibraryContentsCreateFileResponse"][];
+        /** LibraryContentsCreateFileResponse */
+        LibraryContentsCreateFileResponse: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+        };
         /** LibraryContentsCreateFolderListResponse */
         LibraryContentsCreateFolderListResponse: components["schemas"]["LibraryContentsCreateFolderResponse"][];
         /** LibraryContentsCreateFolderResponse */
@@ -28112,6 +28126,7 @@ export interface operations {
                 content: {
                     "application/json":
                     | components["schemas"]["LibraryContentsCreateFolderListResponse"]
+                    | components["schemas"]["LibraryContentsCreateFileListResponse"]
                     | components["schemas"]["LibraryContentsCreateDatasetListResponse"]
                     | components["schemas"]["LibraryContentsCreateDatasetResponse"];
                 };
