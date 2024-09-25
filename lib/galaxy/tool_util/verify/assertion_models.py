@@ -1548,6 +1548,22 @@ class base_has_image_channels_model(AssertionModel):
     )
 
 
+class has_image_channels_model(base_has_image_channels_model):
+    r"""Asserts the output is an image and has a specific number of channels.
+
+    The number of channels is plus/minus ``delta`` (e.g., ``<has_image_channels channels="3" />``).
+
+    Alternatively the range of the expected number of channels can be specified by ``min`` and/or ``max``."""
+
+    that: Literal["has_image_channels"] = "has_image_channels"
+
+
+class has_image_channels_model_nested(AssertionModel):
+    r"""Nested version of this assertion model."""
+
+    has_image_channels: base_has_image_channels_model
+
+
 has_image_depth_depth_description = """Expected depth of the image (number of slices)."""
 
 has_image_depth_delta_description = """Maximum allowed difference of the image depth (number of slices, default is 0). The observed depth has to be in the range ``value +- delta``."""
@@ -1559,13 +1575,8 @@ has_image_depth_max_description = """Maximum allowed depth of the image (number 
 has_image_depth_negate_description = """A boolean that can be set to true to negate the outcome of the assertion."""
 
 
-class has_image_depth_model(AssertionModel):
-    r"""Asserts the output is an image and has a specific depth (number of slices).
-
-    The depth is plus/minus ``delta`` (e.g., ``<has_image_depth depth="512" delta="2" />``).
-    Alternatively the range of the expected depth can be specified by ``min`` and/or ``max``."""
-
-    that: Literal["has_image_depth"] = "has_image_depth"
+class base_has_image_depth_model(AssertionModel):
+    """base model for has_image_depth describing attributes."""
 
     depth: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
         None,
@@ -1593,6 +1604,21 @@ class has_image_depth_model(AssertionModel):
     )
 
 
+class has_image_depth_model(base_has_image_depth_model):
+    r"""Asserts the output is an image and has a specific depth (number of slices).
+
+    The depth is plus/minus ``delta`` (e.g., ``<has_image_depth depth="512" delta="2" />``).
+    Alternatively the range of the expected depth can be specified by ``min`` and/or ``max``."""
+
+    that: Literal["has_image_depth"] = "has_image_depth"
+
+
+class has_image_depth_model_nested(AssertionModel):
+    r"""Nested version of this assertion model."""
+
+    has_image_depth: base_has_image_depth_model
+
+
 has_image_frames_frames_description = """Expected number of frames in the image sequence (number of time steps)."""
 
 has_image_frames_delta_description = """Maximum allowed difference of the number of frames in the image sequence (number of time steps, default is 0). The observed number of frames has to be in the range ``value +- delta``."""
@@ -1604,13 +1630,8 @@ has_image_frames_max_description = """Maximum allowed number of frames in the im
 has_image_frames_negate_description = """A boolean that can be set to true to negate the outcome of the assertion."""
 
 
-class has_image_frames_model(AssertionModel):
-    r"""Asserts the output is an image and has a specific number of frames (number of time steps).
-
-    The number of frames is plus/minus ``delta`` (e.g., ``<has_image_frames depth="512" delta="2" />``).
-    Alternatively the range of the expected number of frames can be specified by ``min`` and/or ``max``."""
-
-    that: Literal["has_image_frames"] = "has_image_frames"
+class base_has_image_frames_model(AssertionModel):
+    """base model for has_image_frames describing attributes."""
 
     frames: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
         None,
@@ -1638,20 +1659,19 @@ class has_image_frames_model(AssertionModel):
     )
 
 
-class has_image_channels_model(base_has_image_channels_model):
-    r"""Asserts the output is an image and has a specific number of channels.
+class has_image_frames_model(base_has_image_frames_model):
+    r"""Asserts the output is an image and has a specific number of frames (number of time steps).
 
-    The number of channels is plus/minus ``delta`` (e.g., ``<has_image_channels channels="3" />``).
+    The number of frames is plus/minus ``delta`` (e.g., ``<has_image_frames depth="512" delta="2" />``).
+    Alternatively the range of the expected number of frames can be specified by ``min`` and/or ``max``."""
 
-    Alternatively the range of the expected number of channels can be specified by ``min`` and/or ``max``."""
-
-    that: Literal["has_image_channels"] = "has_image_channels"
+    that: Literal["has_image_frames"] = "has_image_frames"
 
 
-class has_image_channels_model_nested(AssertionModel):
+class has_image_frames_model_nested(AssertionModel):
     r"""Nested version of this assertion model."""
 
-    has_image_channels: base_has_image_channels_model
+    has_image_frames: base_has_image_frames_model
 
 
 has_image_height_height_description = """Expected height of the image (in pixels)."""
@@ -2087,6 +2107,8 @@ any_assertion_model_nested = typing.Union[
     has_size_model_nested,
     has_image_center_of_mass_model_nested,
     has_image_channels_model_nested,
+    has_image_depth_model_nested,
+    has_image_frames_model_nested,
     has_image_height_model_nested,
     has_image_mean_intensity_model_nested,
     has_image_mean_object_size_model_nested,
@@ -2146,6 +2168,10 @@ class assertion_dict(AssertionModel):
     has_image_center_of_mass: typing.Optional[base_has_image_center_of_mass_model] = None
 
     has_image_channels: typing.Optional[base_has_image_channels_model] = None
+
+    has_image_depth: typing.Optional[base_has_image_depth_model] = None
+
+    has_image_frames: typing.Optional[base_has_image_frames_model] = None
 
     has_image_height: typing.Optional[base_has_image_height_model] = None
 
