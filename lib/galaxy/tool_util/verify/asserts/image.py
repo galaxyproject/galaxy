@@ -69,6 +69,15 @@ Channels = Annotated[
         validators=["check_non_negative_if_set"],
     ),
 ]
+Depth = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Expected depth of the image (number of slices).",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
 WidthDelta = Annotated[
     XmlInt,
     AssertionParameter(
@@ -145,6 +154,33 @@ ChannelsMax = Annotated[
     OptionalXmlInt,
     AssertionParameter(
         "Maximum allowed number of channels.",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+DepthDelta = Annotated[
+    XmlInt,
+    AssertionParameter(
+        "Maximum allowed difference of the image depth (number of slices, default is 0). The observed depth has to be in the range ``value +- delta``.",
+        json_type="StrictInt",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+DepthMin = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Minimum allowed depth of the image (number of slices).",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+DepthMax = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Maximum allowed depth of the image (number of slices).",
         json_type="typing.Optional[StrictInt]",
         xml_type="xs:nonNegativeInteger",
         validators=["check_non_negative_if_set"],
@@ -387,6 +423,32 @@ def assert_has_image_channels(
         negate,
         "{expected} image channels {n}+-{delta}",
         "{expected} image channels to be in [{min}:{max}]",
+    )
+
+
+def assert_has_image_depth(
+    output_bytes: OutputBytes,
+    depth: Depth = None,
+    delta: DepthDelta = 0,
+    min: DepthMin = None,
+    max: DepthMax = None,
+    negate: Negate = NEGATE_DEFAULT,
+) -> None:
+    """Asserts the output is an image and has a specific depth (number of slices).
+
+    The depth is plus/minus ``delta`` (e.g., ``<has_image_depth depth="512" delta="2" />``).
+    Alternatively the range of the expected depth can be specified by ``min`` and/or ``max``.
+    """
+    im_arr = _get_image(output_bytes)
+    _assert_number(
+        im_arr.shape[1],  # Image axes are normalized like "TZYXC"
+        depth,
+        delta,
+        min,
+        max,
+        negate,
+        "{expected} depth {n}+-{delta}",
+        "{expected} depth to be in [{min}:{max}]",
     )
 
 

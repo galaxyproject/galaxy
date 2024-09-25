@@ -100,6 +100,7 @@
                     <has_image_width width="16" />
                     <has_image_height height="8" />
                     <has_image_channels channels="2" />
+                    <has_image_depth depth="1" />
                     <has_image_mean_intensity mean_intensity="22.25" />
                     <has_image_mean_intensity mean_intensity="12.68" channel="0" />
                     <has_image_mean_intensity mean_intensity="31.83" channel="1" />
@@ -113,6 +114,7 @@
                     <has_image_width width="16" />
                     <has_image_height height="8" />
                     <has_image_channels channels="1" />
+                    <has_image_depth depth="25" />
                     <has_image_mean_intensity mean_intensity="26.56" />
                 </assert_contents>
             </output>
@@ -124,6 +126,7 @@
                     <has_image_width width="50" />
                     <has_image_height height="50" />
                     <has_image_channels channels="2" />
+                    <has_image_depth depth="25" />
                     <has_image_mean_intensity mean_intensity="14.18" />
                     <has_image_mean_intensity mean_intensity="12.61" channel="0" />
                     <has_image_mean_intensity mean_intensity="15.75" channel="1" />
