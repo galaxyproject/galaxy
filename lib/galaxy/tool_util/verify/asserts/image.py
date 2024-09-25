@@ -554,6 +554,12 @@ def _move_char(s: str, pos_src: int, pos_dst: int) -> str:
     return "".join(s_list)
 
 
+def _swap_char(s: str, pos1: int, pos2: int) -> str:
+    s_list = list(s)
+    s_list[pos1], s_list[pos2] = s_list[pos2], s_list[pos1]
+    return "".join(s_list)
+
+
 def _get_image(
     output_bytes: bytes,
     channel: Optional[Union[int, str]] = None,
@@ -615,7 +621,7 @@ def _get_image(
             xpos = im_axes.find("X")
             if ypos > xpos:
                 im_arr = im_arr.swapaxes(ypos, xpos)
-                im_axes[xpos], im_axes[ypos] = im_axes[ypos], im_axes[xpos]
+                im_axes = _swap_char(im_axes, xpos, ypos)
 
             # (2.2) Normalize the position of the "C" axis (should be last)
             cpos = im_axes.find("C")
