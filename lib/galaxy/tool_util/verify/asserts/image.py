@@ -78,6 +78,15 @@ Depth = Annotated[
         validators=["check_non_negative_if_set"],
     ),
 ]
+Frames = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Expected number of frames in the image sequence (number of time steps).",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
 WidthDelta = Annotated[
     XmlInt,
     AssertionParameter(
@@ -181,6 +190,33 @@ DepthMax = Annotated[
     OptionalXmlInt,
     AssertionParameter(
         "Maximum allowed depth of the image (number of slices).",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+FramesDelta = Annotated[
+    XmlInt,
+    AssertionParameter(
+        "Maximum allowed difference of the number of frames in the image sequence (number of time steps, default is 0). The observed number of frames has to be in the range ``value +- delta``.",
+        json_type="StrictInt",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+FramesMin = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Minimum allowed number of frames in the image sequence (number of time steps).",
+        json_type="typing.Optional[StrictInt]",
+        xml_type="xs:nonNegativeInteger",
+        validators=["check_non_negative_if_set"],
+    ),
+]
+FramesMax = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Maximum allowed number of frames in the image sequence (number of time steps).",
         json_type="typing.Optional[StrictInt]",
         xml_type="xs:nonNegativeInteger",
         validators=["check_non_negative_if_set"],
@@ -449,6 +485,32 @@ def assert_has_image_depth(
         negate,
         "{expected} depth {n}+-{delta}",
         "{expected} depth to be in [{min}:{max}]",
+    )
+
+
+def assert_has_image_frames(
+    output_bytes: OutputBytes,
+    frames: Frames = None,
+    delta: FramesDelta = 0,
+    min: FramesMin = None,
+    max: FramesMax = None,
+    negate: Negate = NEGATE_DEFAULT,
+) -> None:
+    """Asserts the output is an image and has a specific number of frames (number of time steps).
+
+    The number of frames is plus/minus ``delta`` (e.g., ``<has_image_frames depth="512" delta="2" />``).
+    Alternatively the range of the expected number of frames can be specified by ``min`` and/or ``max``.
+    """
+    im_arr = _get_image(output_bytes)
+    _assert_number(
+        im_arr.shape[0],  # Image axes are normalized like "TZYXC"
+        frames,
+        delta,
+        min,
+        max,
+        negate,
+        "{expected} frames {n}+-{delta}",
+        "{expected} frames to be in [{min}:{max}]",
     )
 
 
