@@ -7,6 +7,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Set,
     Union,
 )
 
@@ -335,11 +336,10 @@ def parse_content_types(types: Union[List[str], str]) -> List[HistoryContentType
 def parse_dataset_details(details: Optional[str]):
     """Parses the different values that the `dataset_details` parameter
     can have from a string."""
-    dataset_details = None
     if details is not None and details != "all":
-        dataset_details = set(util.listify(details))
+        dataset_details: Union[None, Set[str], str] = set(util.listify(details))
     else:  # either None or 'all'
-        dataset_details = details  # type: ignore
+        dataset_details = details
     return dataset_details
 
 
