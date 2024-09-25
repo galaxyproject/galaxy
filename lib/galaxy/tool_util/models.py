@@ -5,11 +5,23 @@ for reasoning about tool state externally from Galaxy.
 """
 
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
+    Union,
 )
 
-from pydantic import BaseModel
+from pydantic import (
+    AnyUrl,
+    BaseModel,
+    ConfigDict,
+    RootModel,
+)
+from typing_extensions import (
+    NotRequired,
+    TypedDict,
+)
 
 from .parameters import (
     input_models_for_tool_source,
@@ -18,6 +30,7 @@ from .parameters import (
 from .parser.interface import (
     Citation,
     HelpContent,
+    OutputCompareType,
     ToolSource,
     XrefDict,
 )
@@ -25,6 +38,7 @@ from .parser.output_models import (
     from_tool_source,
     ToolOutput,
 )
+from .verify.assertion_models import assertions
 
 
 class ParsedTool(BaseModel):
@@ -73,3 +87,85 @@ def parse_tool(tool_source: ToolSource) -> ParsedTool:
         xrefs=xrefs,
         help=help,
     )
+
+
+class StrictModel(BaseModel):
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+
+class BaseTestOutputModel(StrictModel):
+    file: Optional[str] = None
+    path: Optional[str] = None
+    location: Optional[AnyUrl] = None
+    ftype: Optional[str] = None
+    sort: Optional[bool] = None
+    compare: Optional[OutputCompareType] = None
+    checksum: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+    asserts: Optional[assertions] = None
+    delta: Optional[int] = None
+    delta_frac: Optional[float] = None
+    lines_diff: Optional[int] = None
+    decompress: Optional[bool] = None
+
+
+class TestDataOutputAssertions(BaseTestOutputModel):
+    pass
+
+
+class TestCollectionCollectionElementAssertions(StrictModel):
+    elements: Optional[Dict[str, "TestCollectionElementAssertion"]] = None
+    element_tests: Optional[Dict[str, "TestCollectionElementAssertion"]] = None
+
+
+class TestCollectionDatasetElementAssertions(BaseTestOutputModel):
+    pass
+
+
+TestCollectionElementAssertion = Union[
+    TestCollectionDatasetElementAssertions, TestCollectionCollectionElementAssertions
+]
+TestCollectionCollectionElementAssertions.model_rebuild()
+
+
+class CollectionAttributes(StrictModel):
+    collection_type: Optional[str] = None
+
+
+class TestCollectionOutputAssertions(StrictModel):
+    elements: Optional[Dict[str, TestCollectionElementAssertion]] = None
+    element_tests: Optional[Dict[str, "TestCollectionElementAssertion"]] = None
+    attributes: Optional[CollectionAttributes] = None
+
+
+TestOutputLiteral = Union[bool, int, float, str]
+
+TestOutputAssertions = Union[TestCollectionOutputAssertions, TestDataOutputAssertions, TestOutputLiteral]
+
+JobDict = Dict[str, Any]
+
+
+class TestJob(StrictModel):
+    doc: Optional[str]
+    job: JobDict
+    outputs: Dict[str, TestOutputAssertions]
+
+
+Tests = RootModel[List[TestJob]]
+
+# TODO: typed dict versions of all thee above for verify code - make this Dict[str, Any] here more
+# specific.
+OutputChecks = Union[TestOutputLiteral, Dict[str, Any]]
+OutputsDict = Dict[str, OutputChecks]
+
+
+class TestJobDict(TypedDict):
+    doc: NotRequired[str]
+    job: NotRequired[JobDict]
+    outputs: OutputsDict
+
+
+TestDicts = List[TestJobDict]

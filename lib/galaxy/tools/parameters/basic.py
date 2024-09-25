@@ -1468,8 +1468,8 @@ class ColumnListParameter(SelectToolParameter):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
-            if isinstance(dataset, DatasetCollectionElement) and dataset.hda:
-                dataset = dataset.hda
+            if isinstance(dataset, DatasetCollectionElement):
+                dataset = dataset.first_dataset_instance()
             if isinstance(dataset, HistoryDatasetAssociation) and self.ref_input and self.ref_input.formats:
                 direct_match, target_ext, converted_dataset = dataset.find_conversion_destination(
                     self.ref_input.formats
@@ -1507,6 +1507,9 @@ class ColumnListParameter(SelectToolParameter):
         Show column labels rather than c1..cn if use_header_names=True
         """
         options: List[Tuple[str, Union[str, Tuple[str, str]], bool]] = []
+        column_list = self.get_column_list(trans, other_values)
+        if not column_list:
+            return options
         # if available use column_names metadata for option names
         # otherwise read first row - assume is a header with tab separated names
         if self.usecolnames:
@@ -1516,29 +1519,23 @@ class ColumnListParameter(SelectToolParameter):
                 and hasattr(dataset.metadata, "column_names")
                 and dataset.metadata.element_is_set("column_names")
             ):
-                column_list = [
-                    ("%d" % (i + 1), "c%d: %s" % (i + 1, x)) for i, x in enumerate(dataset.metadata.column_names)
-                ]
+                try:
+                    options = [(f"c{c}: {dataset.metadata.column_names[int(c) - 1]}", c, False) for c in column_list]
+                except IndexError:
+                    # ignore and rely on fallback
+                    pass
             else:
                 try:
                     with open(dataset.get_file_name()) as f:
                         head = f.readline()
                     cnames = head.rstrip("\n\r ").split("\t")
-                    column_list = [("%d" % (i + 1), "c%d: %s" % (i + 1, x)) for i, x in enumerate(cnames)]
+                    options = [(f"c{c}: {cnames[int(c) - 1]}", c, False) for c in column_list]
                 except Exception:
-                    column_list = self.get_column_list(trans, other_values)
-            if self.numerical:  # If numerical was requested, filter columns based on metadata
-                if hasattr(dataset, "metadata") and getattr(dataset.metadata, "column_types", None) is not None:
-                    if len(dataset.metadata.column_types) >= len(column_list):
-                        numerics = [i for i, x in enumerate(dataset.metadata.column_types) if x in ["int", "float"]]
-                        column_list = [column_list[i] for i in numerics]
-        else:
-            column_list = self.get_column_list(trans, other_values)
-        for col in column_list:
-            if isinstance(col, tuple) and len(col) == 2:
-                options.append((col[1], col[0], False))
-            else:
-                options.append((f"Column: {col}", col, False))
+                    # ignore and rely on fallback
+                    pass
+        if not options:
+            # fallback if no options list could be built so far
+            options = [(f"Column: {col}", col, False) for col in column_list]
         return options
 
     def get_initial_value(self, trans, other_values):
@@ -1564,9 +1561,13 @@ class ColumnListParameter(SelectToolParameter):
         for dataset in util.listify(other_values.get(self.data_ref)):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, HistoryDatasetCollectionAssociation):
-                dataset = dataset.to_hda_representative()
+                if dataset.populated:
+                    dataset = dataset.to_hda_representative()
+                else:
+                    # That's fine, we'll check again on execution
+                    return True
             if isinstance(dataset, DatasetCollectionElement):
-                dataset = dataset.hda
+                dataset = dataset.first_dataset_instance()
             if isinstance(dataset, DatasetInstance):
                 return not dataset.has_data()
             if is_runtime_value(dataset):

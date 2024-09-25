@@ -3,6 +3,7 @@
   job: {}
   outputs:
     out:
+      attributes: {collection_type: 'list'}
       elements:
         'oe1-ie1':
           asserts:

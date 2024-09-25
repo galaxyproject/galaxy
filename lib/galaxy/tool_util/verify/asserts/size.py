@@ -14,9 +14,7 @@ from ._util import _assert_number
 
 def assert_has_size(
     output_bytes: OutputBytes,
-    value: Annotated[
-        OptionalXmlInt, AssertionParameter("Deprecated alias for `size`", xml_type="Bytes", deprecated=True)
-    ] = None,
+    value: Annotated[OptionalXmlInt, AssertionParameter("Deprecated alias for `size`", xml_type="Bytes")] = None,
     size: Annotated[
         OptionalXmlInt,
         AssertionParameter(
