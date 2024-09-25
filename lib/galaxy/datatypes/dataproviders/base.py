@@ -36,6 +36,7 @@ datasets API entry point:
         Building a giant list by sweeping all possible dprov classes doesn't make sense
     For now - I'm burying them in the class __init__s - but I don't like that
 """
+MAX_LIMIT = 10000
 
 
 # ----------------------------------------------------------------------------- base classes
@@ -233,21 +234,20 @@ class LimitedOffsetDataProvider(FilteredDataProvider):
     settings = {"limit": "int", "offset": "int"}
 
     # TODO: may want to squash this into DataProvider
-    def __init__(self, source, offset=0, limit=None, **kwargs):
+    def __init__(self, source, offset=0, limit=MAX_LIMIT, **kwargs):
         """
         :param offset:  the number of data to skip before providing.
         :param limit:   the final number of data to provide.
         """
         super().__init__(source, **kwargs)
 
-        # how many valid data to skip before we start outputing data - must be positive
-        #   (diff to support neg. indeces - must be pos.)
-        self.offset = max(offset, 0)
+        # how many valid data to skip before we start outputting data - must be positive
+        self.offset = offset
 
-        # how many valid data to return - must be positive (None indicates no limit)
+        # how many valid data to return - must be positive
+        if limit is None:
+            limit = MAX_LIMIT
         self.limit = limit
-        if self.limit is not None:
-            self.limit = max(self.limit, 0)
 
     def __iter__(self):
         """

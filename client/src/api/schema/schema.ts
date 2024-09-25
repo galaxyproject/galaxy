@@ -339,7 +339,7 @@ export interface paths {
         };
         /**
          * Displays information about and/or content of a dataset.
-         * @description **Note**: Due to the multipurpose nature of this endpoint, which can receive a wild variety of parameters
+         * @description **Note**: Due to the multipurpose nature of this endpoint, which can receive a wide variety of parameters
          *     and return different kinds of responses, the documentation here will be limited.
          *     To get more information please check the source code.
          */
@@ -18388,6 +18388,10 @@ export interface operations {
                 hda_ldda?: components["schemas"]["DatasetSourceType"];
                 /** @description The type of information about the dataset to be requested. Each of these values may require additional parameters in the request and may return different responses. */
                 data_type?: components["schemas"]["RequestDataType"] | null;
+                /** @description Maximum number of items to return. Currently only applies to `data_type=raw_data` requests */
+                limit?: number | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item. Currently only applies to `data_type=raw_data` requests */
+                offset?: number | null;
                 /** @description View to be passed to the serializer */
                 view?: string | null;
                 /** @description Comma-separated list of keys to be passed to the serializer */
