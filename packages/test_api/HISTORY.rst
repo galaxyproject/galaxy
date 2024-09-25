@@ -3,11 +3,28 @@ History
 
 .. to_doc
 
------------
-24.1.2.dev0
------------
+-------------------
+24.1.2 (2024-09-25)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Prevent job submission if input collection element is deleted by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18517 <https://github.com/galaxyproject/galaxy/pull/18517>`_
+* Fix view parameter type in Job index API by `@davelopez <https://github.com/davelopez>`_ in `#18521 <https://github.com/galaxyproject/galaxy/pull/18521>`_
+* Fix map over calculation for runtime inputs  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18535 <https://github.com/galaxyproject/galaxy/pull/18535>`_
+* Fix Archive header encoding by `@arash77 <https://github.com/arash77>`_ in `#18583 <https://github.com/galaxyproject/galaxy/pull/18583>`_
+* Don't set file size to zero by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18653 <https://github.com/galaxyproject/galaxy/pull/18653>`_
+* Fix extract workflow from history when implicit collection has no jobs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18661 <https://github.com/galaxyproject/galaxy/pull/18661>`_
+* Fix change datatype PJA on expression tool data outputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18691 <https://github.com/galaxyproject/galaxy/pull/18691>`_
+* Fix subworkflow scheduling for delayed subworkflow steps connected to data inputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18731 <https://github.com/galaxyproject/galaxy/pull/18731>`_
+* Catch and display exceptions when importing malformatted yaml workflows by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18734 <https://github.com/galaxyproject/galaxy/pull/18734>`_
+* Fix infinitely delayed workflow scheduling if skipped step creates HDCA by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18751 <https://github.com/galaxyproject/galaxy/pull/18751>`_
+* Fix copying workflow with subworkflow step for step that you own by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18802 <https://github.com/galaxyproject/galaxy/pull/18802>`_
+* Raise MessageException instead of assertions on rerun problems by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18858 <https://github.com/galaxyproject/galaxy/pull/18858>`_
+* Fix data_column ref to nested collection by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18875 <https://github.com/galaxyproject/galaxy/pull/18875>`_
 
 -------------------
 24.1.1 (2024-07-02)
