@@ -870,6 +870,19 @@ class TestCollectionOutputDef:
             element_tests=as_dict["element_tests"],
         )
 
+    @staticmethod
+    def from_yaml_test_format(as_dict):
+        if "attributes" not in as_dict:
+            as_dict["attributes"] = {}
+        attributes = as_dict["attributes"]
+        # setup preferred name "elements" in accordance with work in https://github.com/galaxyproject/planemo/pull/1417
+        # TODO: test this works recursively...
+        if "elements" in as_dict and "element_tests" not in as_dict:
+            as_dict["element_tests"] = as_dict["elements"]
+        if "collection_type" in as_dict:
+            attributes["type"] = as_dict["collection_type"]
+        return TestCollectionOutputDef.from_dict(as_dict)
+
     def to_dict(self):
         return dict(name=self.name, attributes=self.attrib, element_tests=self.element_tests)
 
