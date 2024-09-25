@@ -290,6 +290,13 @@ Channel = Annotated[
         json_type="typing.Optional[StrictInt]",
     ),
 ]
+Frame = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Restricts the assertion to a specific frame of the image sequeqnce (where ``0`` corresponds to the first image frame).",
+        json_type="typing.Optional[StrictInt]",
+    ),
+]
 CenterOfMass = Annotated[
     str,
     AssertionParameter(
@@ -538,8 +545,9 @@ def _move_char(s: str, pos_src: int, pos_dst: int) -> str:
 def _get_image(
     output_bytes: bytes,
     channel: Optional[Union[int, str]] = None,
+    frame: Optional[Union[int, str]] = None,
 ) -> "numpy.typing.NDArray":
-    """Returns the output image with the axes ``TZYXC``, optionally restricted to a specific channel.
+    """Returns the output image with the axes ``TZYXC``, optionally restricted to a specific `channel` and `frame`.
 
     The function tries to read the image using tifffile and Pillow. The image axes are normalized like ``TZYXC``,
     treating sample axis ``S`` as an alias for the channel axis ``C``. For images which cannot be read by tifffile,
@@ -632,6 +640,10 @@ def _get_image(
     if channel is not None:
         im_arr = im_arr[..., [int(channel)]]
 
+    # Select the specified frame (if any).
+    if frame is not None:
+        im_arr = im_arr[[int(frame)], ...]
+
     # Return the image
     return im_arr
 
@@ -639,6 +651,7 @@ def _get_image(
 def assert_has_image_mean_intensity(
     output_bytes: OutputBytes,
     channel: Channel = None,
+    frame: Frame = None,
     mean_intensity: MeanIntensity = None,
     eps: MeanIntensityEps = 0.01,
     min: MeanIntensityMin = None,
@@ -649,7 +662,7 @@ def assert_has_image_mean_intensity(
     The mean intensity value is plus/minus ``eps`` (e.g., ``<has_image_mean_intensity mean_intensity="0.83" />``).
     Alternatively the range of the expected mean intensity value can be specified by ``min`` and/or ``max``.
     """
-    im_arr = _get_image(output_bytes, channel)
+    im_arr = _get_image(output_bytes, channel, frame)
     _assert_float(
         actual=im_arr.mean(),
         label="mean intensity",
@@ -664,6 +677,7 @@ def assert_has_image_center_of_mass(
     output_bytes: OutputBytes,
     center_of_mass: CenterOfMass,
     channel: Channel = None,
+    frame: Frame = None,
     eps: CenterOfMassEps = 0.01,
 ) -> None:
     """Asserts the specified output is an image and has the specified center of mass.
@@ -672,7 +686,7 @@ def assert_has_image_center_of_mass(
     or has an Euclidean distance of ``eps`` or less to that point (e.g.,
     ``<has_image_center_of_mass center_of_mass="511.07, 223.34" />``).
     """
-    im_arr = _get_image(output_bytes, channel)
+    im_arr = _get_image(output_bytes, channel, frame)
     center_of_mass_parts = [c.strip() for c in center_of_mass.split(",")]
     assert len(center_of_mass_parts) == 2
     center_of_mass_tuple = (float(center_of_mass_parts[0]), float(center_of_mass_parts[1]))
@@ -687,6 +701,7 @@ def assert_has_image_center_of_mass(
 def _get_image_labels(
     output_bytes: bytes,
     channel: Optional[Union[int, str]] = None,
+    frame: Optional[Union[int, str]] = None,
     labels: Optional[Union[str, List[int]]] = None,
     exclude_labels: Optional[Union[str, List[int]]] = None,
 ) -> Tuple["numpy.typing.NDArray", List[Any]]:
@@ -694,7 +709,7 @@ def _get_image_labels(
     Determines the unique labels in the output image or a specific channel.
     """
     assert labels is None or exclude_labels is None
-    im_arr = _get_image(output_bytes, channel)
+    im_arr = _get_image(output_bytes, channel, frame)
 
     def cast_label(label):
         label = label.strip()
@@ -729,6 +744,7 @@ def _get_image_labels(
 def assert_has_image_n_labels(
     output_bytes: OutputBytes,
     channel: Channel = None,
+    frame: Frame = None,
     labels: Labels = None,
     exclude_labels: ExcludeLabels = None,
     n: NumLabels = None,
@@ -744,7 +760,7 @@ def assert_has_image_n_labels(
 
     The primary usage of this assertion is to verify the number of objects in images with uniquely labeled objects.
     """
-    present_labels = _get_image_labels(output_bytes, channel, labels, exclude_labels)[1]
+    present_labels = _get_image_labels(output_bytes, channel, frame, labels, exclude_labels)[1]
     _assert_number(
         len(present_labels),
         n,
@@ -760,6 +776,7 @@ def assert_has_image_n_labels(
 def assert_has_image_mean_object_size(
     output_bytes: OutputBytes,
     channel: Channel = None,
+    frame: Frame = None,
     labels: Labels = None,
     exclude_labels: ExcludeLabels = None,
     mean_object_size: MeanObjectSize = None,
@@ -773,7 +790,7 @@ def assert_has_image_mean_object_size(
 
     The labels must be unique.
     """
-    im_arr, present_labels = _get_image_labels(output_bytes, channel, labels, exclude_labels)
+    im_arr, present_labels = _get_image_labels(output_bytes, channel, frame, labels, exclude_labels)
     assert im_arr.shape[-1] == 1, f"has_image_mean_object_size is undefined for multi-channel images (channels: {im_arr.shape[-1]})"
     object_sizes = sum(
         [

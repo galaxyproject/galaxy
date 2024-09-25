@@ -146,6 +146,8 @@
                     <has_image_depth depth="1" />
                     <has_image_frames frames="5" />
                     <has_image_mean_intensity mean_intensity="5815.49" />
+                    <has_image_mean_intensity mean_intensity="5767.93" frame="0" />
+                    <has_image_mean_intensity mean_intensity="5844.76" frame="4" />
                 </assert_contents>
             </output>
         </test>
