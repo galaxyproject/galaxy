@@ -1,18 +1,39 @@
-import pytest
-from sqlalchemy import select
+from typing import (
+    Generator,
+    TYPE_CHECKING,
+)
 
+import pytest
+from sqlalchemy import (
+    select,
+    text,
+)
+
+from galaxy import model as m
 from galaxy.model import (
     GroupRoleAssociation,
     User,
     UserGroupAssociation,
     UserRoleAssociation,
 )
-from galaxy.model.unittest_utils.migration_scripts_testing_utils import (  # noqa: F401 - contains fixtures we have to import explicitly
-    run_command,
-    tmp_directory,
-)
+from galaxy.model.unittest_utils.migration_scripts_testing_utils import run_command
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
 
 COMMAND = "manage_db.sh"
+
+
+@pytest.fixture(autouse=True)
+def clear_database(engine: "Engine") -> "Generator":
+    """Delete all rows from all tables. Called after each test."""
+    yield
+    with engine.begin() as conn:
+        for table in m.mapper_registry.metadata.tables:
+            # Unless db is sqlite, disable foreign key constraints to delete out of order
+            if engine.name != "sqlite":
+                conn.execute(text(f"ALTER TABLE {table} DISABLE TRIGGER ALL"))
+            conn.execute(text(f"DELETE FROM {table}"))
 
 
 @pytest.fixture(autouse=True)
