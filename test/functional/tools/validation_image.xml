@@ -11,7 +11,7 @@
     <tests>
         <!-- Tests with intensity images -->
         <test>
-            <param name="input" value="im1_uint8.tif" />
+            <param name="input" value="im1_uint8.tif" /><!-- axes: YX -->
             <output name="output">
                 <assert_contents>
                     <has_image_width width="32" />
@@ -22,7 +22,7 @@
             </output>
         </test>
         <test>
-            <param name="input" value="im3_b.tif" />
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
             <output name="output">
                 <assert_contents>
                     <has_image_width width="30" delta="2" />
@@ -30,7 +30,7 @@
             </output>
         </test>
         <test expect_test_failure="true">
-            <param name="input" value="im3_b.tif" />
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
             <output name="output">
                 <assert_contents>
                     <has_image_width width="29" delta="2" />
@@ -38,7 +38,7 @@
             </output>
         </test>
         <test>
-            <param name="input" value="im3_b.tif" />
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
             <output name="output">
                 <assert_contents>
                     <has_image_width width="32" />
@@ -54,7 +54,7 @@
             </output>
         </test>
         <test expect_test_failure="true">
-            <param name="input" value="im3_b.tif" />
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
             <output name="output">
                 <assert_contents>
                     <has_image_mean_intensity channel="0" mean_intensity="0.24" />
@@ -62,7 +62,7 @@
             </output>
         </test>
         <test>
-            <param name="input" value="im3_b.tif" />
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
             <output name="output">
                 <assert_contents>
                     <has_image_mean_intensity channel="0" mean_intensity="0.24" eps="0.0100000001" />
@@ -70,7 +70,7 @@
             </output>
         </test>
         <test>
-            <param name="input" value="im3_b.tif" />
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
             <output name="output">
                 <assert_contents>
                     <has_image_mean_intensity channel="0" min="0.24" max="0.26" />
@@ -78,7 +78,7 @@
             </output>
         </test>
         <test expect_test_failure="true">
-            <param name="input" value="im3_b.tif" />
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
             <output name="output">
                 <assert_contents>
                     <has_image_mean_intensity channel="0" max="0.24" />
@@ -86,16 +86,26 @@
             </output>
         </test>
         <test expect_test_failure="true">
-            <param name="input" value="im3_b.tif" />
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
             <output name="output">
                 <assert_contents>
                     <has_image_mean_intensity channel="0" min="0.26" />
                 </assert_contents>
             </output>
         </test>
+        <test>
+            <param name="input" value="im5_uint8.tif" /><!-- axes: CYX -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_width width="16" />
+                    <has_image_height height="8" />
+                    <has_image_channels channels="2" />
+                </assert_contents>
+            </output>
+        </test>
         <!-- Tests with float TIFF images -->
         <test>
-            <param name="input" value="im4_float.tif" />
+            <param name="input" value="im4_float.tif" /><!-- axes: YX -->
             <output name="output">
                 <assert_contents>
                     <has_image_width width="25" />

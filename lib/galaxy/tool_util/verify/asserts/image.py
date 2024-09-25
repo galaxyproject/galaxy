@@ -415,13 +415,39 @@ def _get_image(
 
     # Try reading with tifffile first. It fails if the file is not a TIFF.
     try:
-        im_arr = tifffile.imread(buf)
+        with tifffile.TiffFile(buf) as im_file:
+            assert len(im_file.series) == 1, f'Image has unsupported number of series: {len(im_file.series)}'
+            im_axes = im_file.series[0].axes
+
+            # Verify that the image format is supported
+            assert frozenset('XY') <= frozenset(im_axes) <= frozenset('XYCS'), f'Image has unsupported axes: {im_axes}'
+
+            # Treat sample axis "S" as channel axis "C" and fail if both are present
+            assert 'C' not in im_axes or 'S' not in im_axes, f'Image has sample and channel axes which is not supported: {im_axes}'
+            im_axes = im_axes.replace('S', 'C')
+
+            # Read the image data
+            im_arr = im_file.asarray()
+
+            # Normalize order of axes Y and X
+            ypos = im_axes.find('Y')
+            xpos = im_axes.find('X')
+            if ypos > xpos:
+                im_arr = im_arr.swapaxes(ypos, xpos)
+
+            # Normalize image axes to YXC
+            cpos = im_axes.find('C')
+            if -1 < cpos < 2:
+                im_arr = numpy.rollaxis(im_arr, cpos, 3)
 
     # If tifffile failed, then the file is not a tifffile. In that case, try with Pillow.
     except tifffile.TiffFileError:
         buf.seek(0)
         with Image.open(buf) as im:
             im_arr = numpy.array(im)
+
+            # Verify that the image format is supported
+            assert im_arr.ndim in (2, 3), f'Image has unsupported dimension: {im_arr.ndim}'
 
     # Select the specified channel (if any).
     if channel is not None:
