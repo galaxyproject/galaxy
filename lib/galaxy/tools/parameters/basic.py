@@ -1468,8 +1468,8 @@ class ColumnListParameter(SelectToolParameter):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
-            if isinstance(dataset, DatasetCollectionElement) and dataset.hda:
-                dataset = dataset.hda
+            if isinstance(dataset, DatasetCollectionElement):
+                dataset = dataset.first_dataset_instance()
             if isinstance(dataset, HistoryDatasetAssociation) and self.ref_input and self.ref_input.formats:
                 direct_match, target_ext, converted_dataset = dataset.find_conversion_destination(
                     self.ref_input.formats
@@ -1561,9 +1561,13 @@ class ColumnListParameter(SelectToolParameter):
         for dataset in util.listify(other_values.get(self.data_ref)):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, HistoryDatasetCollectionAssociation):
-                dataset = dataset.to_hda_representative()
+                if dataset.populated:
+                    dataset = dataset.to_hda_representative()
+                else:
+                    # That's fine, we'll check again on execution
+                    return True
             if isinstance(dataset, DatasetCollectionElement):
-                dataset = dataset.hda
+                dataset = dataset.first_dataset_instance()
             if isinstance(dataset, DatasetInstance):
                 return not dataset.has_data()
             if is_runtime_value(dataset):

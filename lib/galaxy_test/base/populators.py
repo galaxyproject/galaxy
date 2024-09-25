@@ -2906,7 +2906,7 @@ class BaseDatasetCollectionPopulator:
         else:
             return self.__create_payload_collection(history_id, *args, **kwds)
 
-    def __create_payload_fetch(self, history_id: str, collection_type, **kwds):
+    def __create_payload_fetch(self, history_id: str, collection_type, ext="txt", **kwds):
         contents = None
         if "contents" in kwds:
             contents = kwds["contents"]
@@ -2928,7 +2928,7 @@ class BaseDatasetCollectionPopulator:
                     elements.append(contents_level)
                     continue
 
-                element = {"src": "pasted", "ext": "txt"}
+                element = {"src": "pasted", "ext": ext}
                 # Else older style list of contents or element ID and contents,
                 # convert to fetch API.
                 if isinstance(contents_level, tuple):

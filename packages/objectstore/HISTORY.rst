@@ -10,6 +10,17 @@ History
 
 
 -------------------
+24.1.2 (2024-09-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix shared caches with extended metadata collection. by `@jmchilton <https://github.com/jmchilton>`_ in `#18520 <https://github.com/galaxyproject/galaxy/pull/18520>`_
+
+-------------------
 24.1.1 (2024-07-02)
 -------------------
 
