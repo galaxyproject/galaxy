@@ -9,9 +9,10 @@ export const getUserPreferencesModel = (user_id) => {
         information: {
             title: _l("Manage Information"),
             id: "edit-preferences-information",
-            description: config.enable_account_interface && !config.use_remote_user
-                ? _l("Edit your email, addresses and custom parameters or change your public name.")
-                : _l("Edit your custom parameters."),
+            description:
+                config.enable_account_interface && !config.use_remote_user
+                    ? _l("Edit your email, addresses and custom parameters or change your public name.")
+                    : _l("Edit your custom parameters."),
             url: `/api/users/${user_id}/information/inputs`,
             icon: "fa-user",
             redirect: "/user",
