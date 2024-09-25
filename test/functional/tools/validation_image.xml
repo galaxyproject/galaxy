@@ -118,6 +118,8 @@
                     <has_image_depth depth="25" />
                     <has_image_frames frames="1" />
                     <has_image_mean_intensity mean_intensity="26.56" />
+                    <has_image_mean_intensity mean_intensity="12.68" slice="0" />
+                    <has_image_mean_intensity mean_intensity="9.05" slice="24" />
                 </assert_contents>
             </output>
         </test>
@@ -133,6 +135,8 @@
                     <has_image_mean_intensity mean_intensity="14.18" />
                     <has_image_mean_intensity mean_intensity="12.61" channel="0" />
                     <has_image_mean_intensity mean_intensity="15.75" channel="1" />
+                    <has_image_mean_intensity mean_intensity="4.03" slice="0" />
+                    <has_image_mean_intensity mean_intensity="3.44" slice="0" channel="0" />
                 </assert_contents>
             </output>
         </test>

@@ -290,6 +290,13 @@ Channel = Annotated[
         json_type="typing.Optional[StrictInt]",
     ),
 ]
+Slice = Annotated[
+    OptionalXmlInt,
+    AssertionParameter(
+        "Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice).",
+        json_type="typing.Optional[StrictInt]",
+    ),
+]
 Frame = Annotated[
     OptionalXmlInt,
     AssertionParameter(
@@ -398,7 +405,8 @@ def assert_has_image_width(
     max: WidthMax = None,
     negate: Negate = NEGATE_DEFAULT,
 ) -> None:
-    """Asserts the output is an image and has a specific width (in pixels).
+    """
+    Asserts the output is an image and has a specific width (in pixels).
 
     The width is plus/minus ``delta`` (e.g., ``<has_image_width width="512" delta="2" />``).
     Alternatively the range of the expected width can be specified by ``min`` and/or ``max``.
@@ -424,7 +432,8 @@ def assert_has_image_height(
     max: HeightMax = None,
     negate: Negate = NEGATE_DEFAULT,
 ) -> None:
-    """Asserts the output is an image and has a specific height (in pixels).
+    """
+    Asserts the output is an image and has a specific height (in pixels).
 
     The height is plus/minus ``delta`` (e.g., ``<has_image_height height="512" delta="2" />``).
     Alternatively the range of the expected height can be specified by ``min`` and/or ``max``.
@@ -450,7 +459,8 @@ def assert_has_image_channels(
     max: ChannelsMax = None,
     negate: Negate = NEGATE_DEFAULT,
 ) -> None:
-    """Asserts the output is an image and has a specific number of channels.
+    """
+    Asserts the output is an image and has a specific number of channels.
 
     The number of channels is plus/minus ``delta`` (e.g., ``<has_image_channels channels="3" />``).
 
@@ -477,7 +487,8 @@ def assert_has_image_depth(
     max: DepthMax = None,
     negate: Negate = NEGATE_DEFAULT,
 ) -> None:
-    """Asserts the output is an image and has a specific depth (number of slices).
+    """
+    Asserts the output is an image and has a specific depth (number of slices).
 
     The depth is plus/minus ``delta`` (e.g., ``<has_image_depth depth="512" delta="2" />``).
     Alternatively the range of the expected depth can be specified by ``min`` and/or ``max``.
@@ -503,7 +514,8 @@ def assert_has_image_frames(
     max: FramesMax = None,
     negate: Negate = NEGATE_DEFAULT,
 ) -> None:
-    """Asserts the output is an image and has a specific number of frames (number of time steps).
+    """
+    Asserts the output is an image and has a specific number of frames (number of time steps).
 
     The number of frames is plus/minus ``delta`` (e.g., ``<has_image_frames depth="512" delta="2" />``).
     Alternatively the range of the expected number of frames can be specified by ``min`` and/or ``max``.
@@ -545,9 +557,12 @@ def _move_char(s: str, pos_src: int, pos_dst: int) -> str:
 def _get_image(
     output_bytes: bytes,
     channel: Optional[Union[int, str]] = None,
+    slice: Optional[Union[int, str]] = None,
     frame: Optional[Union[int, str]] = None,
 ) -> "numpy.typing.NDArray":
-    """Returns the output image with the axes ``TZYXC``, optionally restricted to a specific `channel` and `frame`.
+    """
+    Returns the output image with the axes ``TZYXC``, optionally restricted to a specific `channel`, `slice`,
+    `frame`, or a combination thereof.
 
     The function tries to read the image using tifffile and Pillow. The image axes are normalized like ``TZYXC``,
     treating sample axis ``S`` as an alias for the channel axis ``C``. For images which cannot be read by tifffile,
@@ -640,6 +655,10 @@ def _get_image(
     if channel is not None:
         im_arr = im_arr[..., [int(channel)]]
 
+    # Select the specified slice (if any).
+    if slice is not None:
+        im_arr = im_arr[:, [int(slice)], ...]
+
     # Select the specified frame (if any).
     if frame is not None:
         im_arr = im_arr[[int(frame)], ...]
@@ -651,18 +670,20 @@ def _get_image(
 def assert_has_image_mean_intensity(
     output_bytes: OutputBytes,
     channel: Channel = None,
+    slice: Slice = None,
     frame: Frame = None,
     mean_intensity: MeanIntensity = None,
     eps: MeanIntensityEps = 0.01,
     min: MeanIntensityMin = None,
     max: MeanIntensityMax = None,
 ) -> None:
-    """Asserts the output is an image and has a specific mean intensity value.
+    """
+    Asserts the output is an image and has a specific mean intensity value.
 
     The mean intensity value is plus/minus ``eps`` (e.g., ``<has_image_mean_intensity mean_intensity="0.83" />``).
     Alternatively the range of the expected mean intensity value can be specified by ``min`` and/or ``max``.
     """
-    im_arr = _get_image(output_bytes, channel, frame)
+    im_arr = _get_image(output_bytes, channel, slice, frame)
     _assert_float(
         actual=im_arr.mean(),
         label="mean intensity",
@@ -677,16 +698,18 @@ def assert_has_image_center_of_mass(
     output_bytes: OutputBytes,
     center_of_mass: CenterOfMass,
     channel: Channel = None,
+    slice: Slice = None,
     frame: Frame = None,
     eps: CenterOfMassEps = 0.01,
 ) -> None:
-    """Asserts the specified output is an image and has the specified center of mass.
+    """
+    Asserts the specified output is an image and has the specified center of mass.
 
     Asserts the output is an image and has a specific center of mass,
     or has an Euclidean distance of ``eps`` or less to that point (e.g.,
     ``<has_image_center_of_mass center_of_mass="511.07, 223.34" />``).
     """
-    im_arr = _get_image(output_bytes, channel, frame)
+    im_arr = _get_image(output_bytes, channel, slice, frame)
     center_of_mass_parts = [c.strip() for c in center_of_mass.split(",")]
     assert len(center_of_mass_parts) == 2
     center_of_mass_tuple = (float(center_of_mass_parts[0]), float(center_of_mass_parts[1]))
@@ -701,6 +724,7 @@ def assert_has_image_center_of_mass(
 def _get_image_labels(
     output_bytes: bytes,
     channel: Optional[Union[int, str]] = None,
+    slice: Optional[Union[int, str]] = None,
     frame: Optional[Union[int, str]] = None,
     labels: Optional[Union[str, List[int]]] = None,
     exclude_labels: Optional[Union[str, List[int]]] = None,
@@ -709,7 +733,7 @@ def _get_image_labels(
     Determines the unique labels in the output image or a specific channel.
     """
     assert labels is None or exclude_labels is None
-    im_arr = _get_image(output_bytes, channel, frame)
+    im_arr = _get_image(output_bytes, channel, slice, frame)
 
     def cast_label(label):
         label = label.strip()
@@ -744,6 +768,7 @@ def _get_image_labels(
 def assert_has_image_n_labels(
     output_bytes: OutputBytes,
     channel: Channel = None,
+    slice: Slice = None,
     frame: Frame = None,
     labels: Labels = None,
     exclude_labels: ExcludeLabels = None,
@@ -753,14 +778,15 @@ def assert_has_image_n_labels(
     max: NumLabelsMax = None,
     negate: Negate = NEGATE_DEFAULT,
 ) -> None:
-    """Asserts the output is an image and has the specified labels.
+    """
+    Asserts the output is an image and has the specified labels.
 
     Labels can be a number of labels or unique values (e.g.,
     ``<has_image_n_labels n="187" exclude_labels="0" />``).
 
     The primary usage of this assertion is to verify the number of objects in images with uniquely labeled objects.
     """
-    present_labels = _get_image_labels(output_bytes, channel, frame, labels, exclude_labels)[1]
+    present_labels = _get_image_labels(output_bytes, channel, slice, frame, labels, exclude_labels)[1]
     _assert_number(
         len(present_labels),
         n,
@@ -776,6 +802,7 @@ def assert_has_image_n_labels(
 def assert_has_image_mean_object_size(
     output_bytes: OutputBytes,
     channel: Channel = None,
+    slice: Slice = None,
     frame: Frame = None,
     labels: Labels = None,
     exclude_labels: ExcludeLabels = None,
@@ -784,13 +811,14 @@ def assert_has_image_mean_object_size(
     min: MeanObjectSizeMin = None,
     max: MeanObjectSizeMax = None,
 ) -> None:
-    """Asserts the output is an image with labeled objects which have the specified mean size (number of pixels),
+    """
+    Asserts the output is an image with labeled objects which have the specified mean size (number of pixels),
 
     The mean size is plus/minus ``eps`` (e.g., ``<has_image_mean_object_size mean_object_size="111.87" exclude_labels="0" />``).
 
     The labels must be unique.
     """
-    im_arr, present_labels = _get_image_labels(output_bytes, channel, frame, labels, exclude_labels)
+    im_arr, present_labels = _get_image_labels(output_bytes, channel, slice, frame, labels, exclude_labels)
     assert im_arr.shape[-1] == 1, f"has_image_mean_object_size is undefined for multi-channel images (channels: {im_arr.shape[-1]})"
     object_sizes = sum(
         [
