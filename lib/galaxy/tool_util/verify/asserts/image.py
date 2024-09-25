@@ -551,7 +551,7 @@ def _move_char(s: str, pos_src: int, pos_dst: int) -> str:
     if pos_dst < 0:
         pos_dst = len(s_list) + pos_dst + 1
     s_list.insert(pos_dst, c)
-    return ''.join(s_list)
+    return "".join(s_list)
 
 
 def _get_image(
@@ -578,10 +578,14 @@ def _get_image(
             im_axes = im_file.series[0].axes
 
             # Verify that the image format is supported
-            assert frozenset("YX") <= frozenset(im_axes) <= frozenset("TZYXCS"), f"Image has unsupported axes: {im_axes}"
+            assert (
+                frozenset("YX") <= frozenset(im_axes) <= frozenset("TZYXCS")
+            ), f"Image has unsupported axes: {im_axes}"
 
             # Treat sample axis "S" as channel axis "C" and fail if both are present
-            assert "C" not in im_axes or "S" not in im_axes, f"Image has sample and channel axes which is not supported: {im_axes}"
+            assert (
+                "C" not in im_axes or "S" not in im_axes
+            ), f"Image has sample and channel axes which is not supported: {im_axes}"
             im_axes = im_axes.replace("S", "C")
 
             # Read the image data
@@ -819,22 +823,22 @@ def assert_has_image_mean_object_size(
     The labels must be unique.
     """
     im_arr, present_labels = _get_image_labels(output_bytes, channel, slice, frame, labels, exclude_labels)
-    assert im_arr.shape[-1] == 1, f"has_image_mean_object_size is undefined for multi-channel images (channels: {im_arr.shape[-1]})"
+    assert (
+        im_arr.shape[-1] == 1
+    ), f"has_image_mean_object_size is undefined for multi-channel images (channels: {im_arr.shape[-1]})"
+
+    # Build list of all object sizes over all time-frames
     object_sizes = sum(
         [
             # Iterate over all XYZC time-frames (axis C is singleton)
-            [
-                (im_arr_t == label).sum() for label in present_labels
-            ]
+            [(im_arr_t == label).sum() for label in present_labels]
             for im_arr_t in im_arr
         ],
-        []  # Build list of all object sizes over all time-frames
+        [],
     )
-    actual_mean_object_size = numpy.mean(
-        [
-            object_size for object_size in object_sizes if object_size > 0
-        ]
-    )
+
+    # Compute the mean object size and verify
+    actual_mean_object_size = numpy.mean([object_size for object_size in object_sizes if object_size > 0])
     _assert_float(
         actual=actual_mean_object_size,
         label="mean object size",
