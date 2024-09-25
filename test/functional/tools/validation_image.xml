@@ -107,6 +107,17 @@
             </output>
         </test>
         <test>
+            <param name="input" value="im7_uint8.tif" /><!-- axes: ZYX -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_width width="16" />
+                    <has_image_height height="8" />
+                    <has_image_channels channels="1" />
+                    <has_image_mean_intensity mean_intensity="26.56" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
             <param name="input" value="im6_uint8.tif" /><!-- axes: ZCYX -->
             <output name="output">
                 <assert_contents>
