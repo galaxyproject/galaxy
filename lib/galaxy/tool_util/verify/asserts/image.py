@@ -326,7 +326,7 @@ def assert_has_image_width(
     """
     im_arr = _get_image(output_bytes)
     _assert_number(
-        im_arr.shape[1],
+        im_arr.shape[3],  # Image axes are normalized like "TZYXC"
         width,
         delta,
         min,
@@ -352,7 +352,7 @@ def assert_has_image_height(
     """
     im_arr = _get_image(output_bytes)
     _assert_number(
-        im_arr.shape[0],
+        im_arr.shape[2],  # Image axes are normalized like "TZYXC"
         height,
         delta,
         min,
@@ -378,9 +378,8 @@ def assert_has_image_channels(
     Alternatively the range of the expected number of channels can be specified by ``min`` and/or ``max``.
     """
     im_arr = _get_image(output_bytes)
-    n_channels = 1 if im_arr.ndim < 3 else im_arr.shape[2]  # we assume here that the image is a 2-D image
     _assert_number(
-        n_channels,
+        im_arr.shape[-1],  # Image axes are normalized like "TZYXC"
         channels,
         delta,
         min,
@@ -392,53 +391,101 @@ def assert_has_image_channels(
 
 
 def _compute_center_of_mass(im_arr: "numpy.typing.NDArray") -> Tuple[float, float]:
-    while im_arr.ndim > 2:
-        im_arr = im_arr.sum(axis=2)
-    im_arr = numpy.abs(im_arr)
-    if im_arr.sum() == 0:
+    im_arr_yx = im_arr.sum(axis=(0, 1, 4))  # Image axes are normalized like "TZYXC"
+    im_arr_yx = numpy.abs(im_arr_yx)
+    if im_arr_yx.sum() == 0:
         return (numpy.nan, numpy.nan)
-    im_arr = im_arr / im_arr.sum()
-    yy, xx = numpy.indices(im_arr.shape)
-    return (im_arr * xx).sum(), (im_arr * yy).sum()
+    im_arr_yx = im_arr_yx / im_arr_yx.sum()
+    yy, xx = numpy.indices(im_arr_yx.shape)
+    return (im_arr_yx * xx).sum(), (im_arr_yx * yy).sum()
+
+
+def _move_char(s: str, pos_src: int, pos_dst: int) -> str:
+    s_list = list(s)
+    c = s_list.pop(pos_src)
+    if pos_dst > pos_src:
+        pos_dst -= 1
+    if pos_dst < 0:
+        pos_dst = len(s_list) + pos_dst + 1
+    s_list.insert(pos_dst, c)
+    return ''.join(s_list)
 
 
 def _get_image(
     output_bytes: bytes,
     channel: Optional[Union[int, str]] = None,
 ) -> "numpy.typing.NDArray":
-    """
-    Returns the output image or a specific channel.
+    """Returns the output image with the axes ``TZYXC``, optionally restricted to a specific channel.
 
-    The function tries to read the image using tifffile and Pillow.
+    The function tries to read the image using tifffile and Pillow. The image axes are normalized like ``TZYXC``,
+    treating sample axis ``S`` as an alias for the channel axis ``C``. For images which cannot be read by tifffile,
+    two- and three-dimensional data is supported. Two-dimensional images are assumed to be in ``YX`` axes order,
+    and three-dimensional images are assumed to be in ``YXC`` axes order.
     """
     buf = io.BytesIO(output_bytes)
 
     # Try reading with tifffile first. It fails if the file is not a TIFF.
     try:
         with tifffile.TiffFile(buf) as im_file:
-            assert len(im_file.series) == 1, f'Image has unsupported number of series: {len(im_file.series)}'
+            assert len(im_file.series) == 1, f"Image has unsupported number of series: {len(im_file.series)}"
             im_axes = im_file.series[0].axes
 
             # Verify that the image format is supported
-            assert frozenset('XY') <= frozenset(im_axes) <= frozenset('XYCS'), f'Image has unsupported axes: {im_axes}'
+            assert frozenset("YX") <= frozenset(im_axes) <= frozenset("TZYXCS"), f"Image has unsupported axes: {im_axes}"
 
             # Treat sample axis "S" as channel axis "C" and fail if both are present
-            assert 'C' not in im_axes or 'S' not in im_axes, f'Image has sample and channel axes which is not supported: {im_axes}'
-            im_axes = im_axes.replace('S', 'C')
+            assert "C" not in im_axes or "S" not in im_axes, f"Image has sample and channel axes which is not supported: {im_axes}"
+            im_axes = im_axes.replace("S", "C")
 
             # Read the image data
             im_arr = im_file.asarray()
 
-            # Normalize order of axes Y and X
-            ypos = im_axes.find('Y')
-            xpos = im_axes.find('X')
+            # Step 1. In the three steps below, the optional axes are added, of if they arent't there yet:
+
+            # (1.1) Append "C" axis if not present yet
+            if im_axes.find("C") == -1:
+                im_arr = im_arr[..., None]
+                im_axes += "C"
+
+            # (1.2) Append "Z" axis if not present yet
+            if im_axes.find("Z") == -1:
+                im_arr = im_arr[..., None]
+                im_axes += "Z"
+
+            # (1.3) Append "T" axis if not present yet
+            if im_axes.find("T") == -1:
+                im_arr = im_arr[..., None]
+                im_axes += "T"
+
+            # Step 2. All supported axes are there now. Normalize the order of the axes:
+
+            # (2.1) Normalize order of axes "Y" and "X"
+            ypos = im_axes.find("Y")
+            xpos = im_axes.find("X")
             if ypos > xpos:
                 im_arr = im_arr.swapaxes(ypos, xpos)
+                im_axes[xpos], im_axes[ypos] = im_axes[ypos], im_axes[xpos]
 
-            # Normalize image axes to YXC
-            cpos = im_axes.find('C')
-            if -1 < cpos < 2:
-                im_arr = numpy.rollaxis(im_arr, cpos, 3)
+            # (2.2) Normalize the position of the "C" axis (should be last)
+            cpos = im_axes.find("C")
+            if cpos < len(im_axes) - 1:
+                im_arr = numpy.moveaxis(im_arr, cpos, -1)
+                im_axes = _move_char(im_axes, cpos, -1)
+
+            # (2.3) Normalize the position of the "T" axis (should be first)
+            tpos = im_axes.find("T")
+            if tpos != 0:
+                im_arr = numpy.moveaxis(im_arr, tpos, 0)
+                im_axes = _move_char(im_axes, tpos, 0)
+
+            # (2.4) Normalize the position of the "Z" axis (should be second)
+            zpos = im_axes.find("Z")
+            if zpos != 1:
+                im_arr = numpy.moveaxis(im_arr, zpos, 1)
+                im_axes = _move_char(im_axes, zpos, 1)
+
+            # Verify that the normalizations were successful
+            assert im_axes == "TZYXC", f"Image axis normalization failed: {im_axes}"
 
     # If tifffile failed, then the file is not a tifffile. In that case, try with Pillow.
     except tifffile.TiffFileError:
@@ -447,11 +494,19 @@ def _get_image(
             im_arr = numpy.array(im)
 
             # Verify that the image format is supported
-            assert im_arr.ndim in (2, 3), f'Image has unsupported dimension: {im_arr.ndim}'
+            assert im_arr.ndim in (2, 3), f"Image has unsupported dimension: {im_arr.ndim}"
+
+            # Normalize the axes
+            if im_arr.ndim == 2:  # Append "C" axis if not present yet
+                im_arr = im_arr[..., None]
+            im_arr = im_arr[None, None, ...]  # Prepend "T" and "Z" axes
+
+            # Verify that the normalizations were successful
+            assert im_arr.ndim == 5, "Image axis normalization failed"
 
     # Select the specified channel (if any).
     if channel is not None:
-        im_arr = im_arr[:, :, int(channel)]
+        im_arr = im_arr[..., [int(channel)]]
 
     # Return the image
     return im_arr
@@ -595,7 +650,22 @@ def assert_has_image_mean_object_size(
     The labels must be unique.
     """
     im_arr, present_labels = _get_image_labels(output_bytes, channel, labels, exclude_labels)
-    actual_mean_object_size = sum((im_arr == label).sum() for label in present_labels) / len(present_labels)
+    assert im_arr.shape[-1] == 1, f"has_image_mean_object_size is undefined for multi-channel images (channels: {im_arr.shape[-1]})"
+    object_sizes = sum(
+        [
+            # Iterate over all XYZC time-frames (axis C is singleton)
+            [
+                (im_arr_t == label).sum() for label in present_labels
+            ]
+            for im_arr_t in im_arr
+        ],
+        []  # Build list of all object sizes over all time-frames
+    )
+    actual_mean_object_size = numpy.mean(
+        [
+            object_size for object_size in object_sizes if object_size > 0
+        ]
+    )
     _assert_float(
         actual=actual_mean_object_size,
         label="mean object size",
