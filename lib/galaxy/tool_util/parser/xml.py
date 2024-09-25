@@ -43,6 +43,7 @@ from .interface import (
     DynamicOptions,
     HelpContent,
     InputSource,
+    OutputCompareType,
     PageSource,
     PagesSource,
     RequiredFiles,
@@ -834,7 +835,7 @@ def __parse_test_attributes(
         value_object = json.loads(attrib.pop("value_json"))
 
     # Method of comparison
-    compare: str = attrib.pop("compare", "diff").lower()
+    compare: OutputCompareType = cast(OutputCompareType, attrib.pop("compare", "diff").lower())
     # Number of lines to allow to vary in logs (for dates, etc)
     lines_diff: int = int(attrib.pop("lines_diff", "0"))
     # Allow a file size to vary if sim_size compare
