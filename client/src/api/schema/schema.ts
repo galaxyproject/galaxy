@@ -11856,7 +11856,14 @@ export interface components {
          * InvocationState
          * @enum {string}
          */
-        InvocationState: "new" | "ready" | "scheduled" | "cancelled" | "cancelling" | "failed";
+        InvocationState:
+            | "new"
+            | "requires_materialization"
+            | "ready"
+            | "scheduled"
+            | "cancelled"
+            | "cancelling"
+            | "failed";
         /**
          * InvocationStep
          * @description Information about workflow invocation step

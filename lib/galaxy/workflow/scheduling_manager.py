@@ -1,11 +1,17 @@
 import os
 from functools import partial
+from typing import Optional
 
 import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
 from galaxy.jobs.handler import InvocationGrabber
 from galaxy.model.base import transaction
+from galaxy.schema.invocation import InvocationState
+from galaxy.schema.tasks import (
+    MaterializeDatasetInstanceTaskRequest,
+    RequestUser,
+)
 from galaxy.util import plugin_config
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
@@ -154,8 +160,9 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         if exception:
             raise exception
 
-    def queue(self, workflow_invocation, request_params, flush=True):
-        workflow_invocation.set_state(model.WorkflowInvocation.states.NEW)
+    def queue(self, workflow_invocation, request_params, flush=True, initial_state: Optional[InvocationState] = None):
+        initial_state = initial_state or model.WorkflowInvocation.states.NEW
+        workflow_invocation.set_state(initial_state)
         workflow_invocation.scheduler = request_params.get("scheduler", None) or self.default_scheduler_id
         sa_session = self.app.model.context
         sa_session.add(workflow_invocation)
@@ -329,6 +336,23 @@ class WorkflowRequestMonitor(Monitors):
     def __attempt_schedule(self, invocation_id, workflow_scheduler):
         with self.app.model.context() as session:
             workflow_invocation = session.get(model.WorkflowInvocation, invocation_id)
+            if workflow_invocation.state == workflow_invocation.states.REQUIRES_MATERIALIZATION:
+                hdas_to_materialize = workflow_invocation.inputs_requiring_materialization()
+                for hda in hdas_to_materialize:
+                    user = RequestUser(user_id=workflow_invocation.history.user_id)
+                    task_request = MaterializeDatasetInstanceTaskRequest(
+                        user=user,
+                        history_id=workflow_invocation.history.id,
+                        source="hda",
+                        content=hda.id,
+                    )
+                    self.app.hda_manager.materialize(task_request, in_place=True)
+                    # place back into ready and let it proceed normally on next iteration?
+                    workflow_invocation.set_state(model.WorkflowInvocation.states.READY)
+                    session.add(workflow_invocation)
+                    session.commit()
+                    if self.app.config.workflow_scheduling_separate_materialization_iteration:
+                        return None
             try:
                 if workflow_invocation.state == workflow_invocation.states.CANCELLING:
                     workflow_invocation.cancel_invocation_steps()

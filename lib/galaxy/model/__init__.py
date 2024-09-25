@@ -18,6 +18,7 @@ import random
 import string
 from collections import defaultdict
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import (
     datetime,
     timedelta,
@@ -8546,6 +8547,12 @@ class StoredWorkflowMenuEntry(Base, RepresentById):
     )
 
 
+@dataclass
+class InputWithRequest:
+    input: Any
+    request: Dict[str, Any]
+
+
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation"
 
@@ -8777,6 +8784,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         and_conditions = [
             or_(
                 WorkflowInvocation.state == WorkflowInvocation.states.NEW,
+                WorkflowInvocation.state == WorkflowInvocation.states.REQUIRES_MATERIALIZATION,
                 WorkflowInvocation.state == WorkflowInvocation.states.READY,
                 WorkflowInvocation.state == WorkflowInvocation.states.CANCELLING,
             ),
@@ -8867,6 +8875,14 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         for input_dataset_collection_assoc in self.input_dataset_collections:
             inputs.append(input_dataset_collection_assoc)
         return inputs
+
+    def inputs_requiring_materialization(self):
+        hdas_to_materialize = []
+        for input_dataset_assoc in self.input_datasets:
+            request = input_dataset_assoc.request
+            if request and not request.get("deferred", False):
+                hdas_to_materialize.append(input_dataset_assoc.dataset)
+        return hdas_to_materialize
 
     def _serialize(self, id_encoder, serialization_options):
         invocation_attrs = dict_for(self)
@@ -9030,20 +9046,28 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             else:
                 request_to_content.workflow_step = step
 
+        request: Optional[Dict[str, Any]] = None
+        if isinstance(content, InputWithRequest):
+            request = content.request
+            content = content.input
+
         history_content_type = getattr(content, "history_content_type", None)
         if history_content_type == "dataset":
             request_to_content = WorkflowRequestToInputDatasetAssociation()
             request_to_content.dataset = content
+            request_to_content.request = request
             attach_step(request_to_content)
             self.input_datasets.append(request_to_content)
         elif history_content_type == "dataset_collection":
             request_to_content = WorkflowRequestToInputDatasetCollectionAssociation()
             request_to_content.dataset_collection = content
+            request_to_content.request = request
             attach_step(request_to_content)
             self.input_dataset_collections.append(request_to_content)
         else:
             request_to_content = WorkflowRequestInputStepParameter()
             request_to_content.parameter_value = content
+            request_to_content.request = request
             attach_step(request_to_content)
             self.input_step_parameters.append(request_to_content)
 
@@ -9467,6 +9491,7 @@ class WorkflowRequestToInputDatasetAssociation(Base, Dictifiable, Serializable):
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
+    request: Mapped[Optional[Dict]] = mapped_column(JSONType)
 
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     dataset: Mapped[Optional["HistoryDatasetAssociation"]] = relationship()
@@ -9502,6 +9527,7 @@ class WorkflowRequestToInputDatasetCollectionAssociation(Base, Dictifiable, Seri
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(
         back_populates="input_dataset_collections"
     )
+    request: Mapped[Optional[Dict]] = mapped_column(JSONType)
 
     history_content_type = "dataset_collection"
     dict_collection_visible_keys = ["id", "workflow_invocation_id", "workflow_step_id", "dataset_collection_id", "name"]
@@ -9525,6 +9551,7 @@ class WorkflowRequestInputStepParameter(Base, Dictifiable, Serializable):
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
     parameter_value: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    request: Mapped[Optional[Dict]] = mapped_column(JSONType)
 
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="input_step_parameters")
@@ -9548,7 +9575,6 @@ class WorkflowInvocationOutputDatasetAssociation(Base, Dictifiable, Serializable
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
     workflow_output_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_output.id"), index=True)
-
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="output_datasets")
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     dataset: Mapped[Optional["HistoryDatasetAssociation"]] = relationship()

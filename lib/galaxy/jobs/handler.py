@@ -130,7 +130,13 @@ class ItemGrabber:
         if self.grab_model is model.Job:
             grab_condition = self.grab_model.state == self.grab_model.states.NEW
         elif self.grab_model is model.WorkflowInvocation:
-            grab_condition = self.grab_model.state.in_((self.grab_model.states.NEW, self.grab_model.states.CANCELLING))
+            grab_condition = self.grab_model.state.in_(
+                (
+                    self.grab_model.states.NEW,
+                    self.grab_model.states.REQUIRES_MATERIALIZATION,
+                    self.grab_model.states.CANCELLING,
+                )
+            )
         else:
             raise NotImplementedError(f"Grabbing {self.grab_model.__name__} not implemented")
         subq = (
