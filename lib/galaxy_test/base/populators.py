@@ -2811,7 +2811,7 @@ class LibraryPopulator:
             files = {}
 
         url_rel = f"libraries/{library_id}/contents"
-        return self.galaxy_interactor.post(url_rel, payload, files=files)
+        return self.galaxy_interactor.post(url_rel, payload, files=files, json=True)
 
     def show_ld_raw(self, library_id: str, library_dataset_id: str) -> Response:
         response = self.galaxy_interactor.get(f"libraries/{library_id}/contents/{library_dataset_id}")
@@ -2830,7 +2830,7 @@ class LibraryPopulator:
     def new_library_dataset_in_private_library(self, library_name="private_dataset", wait=True):
         library = self.new_private_library(library_name)
         payload, files = self.create_dataset_request(library, file_type="txt", contents="create_test")
-        create_response = self.galaxy_interactor.post(f"libraries/{library['id']}/contents", payload, files=files)
+        create_response = self.galaxy_interactor.post(f"libraries/{library['id']}/contents", payload, files=files, json=True)
         api_asserts.assert_status_code_is(create_response, 200)
         library_datasets = create_response.json()
         assert len(library_datasets) == 1
