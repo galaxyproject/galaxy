@@ -313,7 +313,7 @@ class TestLibrariesApi(ApiTestCase):
             "upload_option": "upload_file",
             "files_0|url_paste": FILE_URL,
         }
-        create_response = self._post(f"libraries/{library['id']}/contents", payload)
+        create_response = self._post(f"libraries/{library['id']}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 400)
         assert create_response.json() == "Requested extension 'xxx' unknown, cannot upload dataset."
 
@@ -552,7 +552,7 @@ class TestLibrariesApi(ApiTestCase):
             history_id, contents=["xxx", "yyy"], direct_upload=True, wait=True
         ).json()["outputs"][0]["id"]
         payload = {"from_hdca_id": hdca_id, "create_type": "file", "folder_id": folder_id}
-        create_response = self._post(f"libraries/{library['id']}/contents", payload)
+        create_response = self._post(f"libraries/{library['id']}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
 
     @requires_new_library
@@ -588,7 +588,7 @@ class TestLibrariesApi(ApiTestCase):
             create_type="folder",
             name="New Folder",
         )
-        return self._post(f"libraries/{library['id']}/contents", data=create_data)
+        return self._post(f"libraries/{library['id']}/contents", data=create_data, json=True)
 
     def _create_subfolder(self, containing_folder_id):
         create_data = dict(
