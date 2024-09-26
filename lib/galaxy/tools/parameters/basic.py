@@ -1647,7 +1647,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         drill_down_dynamic_options = input_source.parse_drill_down_dynamic_options(tool_data_path)
         if drill_down_dynamic_options is not None:
             self.is_dynamic = True
-            self.dynamic_options = drill_down_dynamic_options.code_block
+            self.dynamic_options = drill_down_dynamic_options.from_code_block()
             self.options = []
         else:
             self.is_dynamic = False
