@@ -17,7 +17,7 @@ from galaxy.managers.context import (
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.library_contents import (
     LibraryContentsCollectionCreatePayload,
-    LibraryContentsCreateDatasetListResponse,
+    LibraryContentsCreateDatasetCollectionResponse,
     LibraryContentsCreateDatasetResponse,
     LibraryContentsCreateFileListResponse,
     LibraryContentsCreateFolderListResponse,
@@ -97,7 +97,7 @@ class FastAPILibraryContents:
     ) -> Union[
         LibraryContentsCreateFolderListResponse,
         LibraryContentsCreateFileListResponse,
-        LibraryContentsCreateDatasetListResponse,
+        LibraryContentsCreateDatasetCollectionResponse,
         LibraryContentsCreateDatasetResponse,
     ]:
         """

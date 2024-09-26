@@ -29,7 +29,7 @@ from galaxy.model.base import transaction
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.library_contents import (
     LibraryContentsCollectionCreatePayload,
-    LibraryContentsCreateDatasetListResponse,
+    LibraryContentsCreateDatasetCollectionResponse,
     LibraryContentsCreateDatasetResponse,
     LibraryContentsCreateFileListResponse,
     LibraryContentsCreateFolderListResponse,
@@ -96,14 +96,13 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
         # appending all other items in the library recursively
         for content in self._traverse(trans, library.root_folder, current_user_roles):
             url = self._url_for(trans, library_id, content.id, content.api_type)
-            response_class: Union[
-                Type[LibraryContentsIndexFolderResponse], Type[LibraryContentsIndexDatasetResponse]
-            ] = (
-                LibraryContentsIndexFolderResponse
-                if content.api_type == "folder"
-                else LibraryContentsIndexDatasetResponse
-            )
-            rval.append(response_class(id=content.id, type=content.api_type, name=content.api_path, url=url))
+            response_model: Union[LibraryContentsIndexFolderResponse, LibraryContentsIndexDatasetResponse]
+            common_args = dict(id=content.id, type=content.api_type, name=content.api_path, url=url)
+            if content.api_type == "folder":
+                response_model = LibraryContentsIndexFolderResponse(**common_args)
+            else:
+                response_model = LibraryContentsIndexDatasetResponse(**common_args)
+            rval.append(response_model)
         return LibraryContentsIndexListResponse(root=rval)
 
     def show(
@@ -116,20 +115,15 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
     ]:
         """Returns information about library file or folder."""
         class_name, content_id = self._decode_library_content_id(id)
-        rval: Union[
-            LibraryContentsShowFolderResponse,
-            LibraryContentsShowDatasetResponse,
-        ]
         if class_name == "LibraryFolder":
             content = self.get_library_folder(trans, content_id, check_ownership=False, check_accessible=True)
-            rval = LibraryContentsShowFolderResponse(**content.to_dict(view="element"))
+            return LibraryContentsShowFolderResponse(**content.to_dict(view="element"))
         else:
             content = self.get_library_dataset(trans, content_id, check_ownership=False, check_accessible=True)
             rval_dict = content.to_dict(view="element")
             tag_manager = tags.GalaxyTagHandler(trans.sa_session)
             rval_dict["tags"] = tag_manager.get_tags_list(content.library_dataset_dataset_association.tags)
-            rval = LibraryContentsShowDatasetResponse(**rval_dict)
-        return rval
+            return LibraryContentsShowDatasetResponse(**rval_dict)
 
     def create(
         self,
@@ -141,7 +135,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
     ) -> Union[
         LibraryContentsCreateFolderListResponse,
         LibraryContentsCreateFileListResponse,
-        LibraryContentsCreateDatasetListResponse,
+        LibraryContentsCreateDatasetCollectionResponse,
         LibraryContentsCreateDatasetResponse,
     ]:
         """Create a new library file or folder."""
@@ -163,7 +157,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
                 rval = self._copy_hdca_to_library_folder(
                     trans, self.hda_manager, payload.from_hdca_id, payload.folder_id, payload.ldda_message
                 )
-                return LibraryContentsCreateDatasetListResponse(root=rval)
+                return LibraryContentsCreateDatasetCollectionResponse(root=rval)
 
         # Now create the desired content object, either file or folder.
         if payload.create_type == "file":
@@ -174,7 +168,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
             return LibraryContentsCreateFolderListResponse(root=rval)
         elif payload.create_type == "collection":
             rval = self._create_collection(trans, payload, parent)
-            return LibraryContentsCreateDatasetListResponse(root=rval)
+            return LibraryContentsCreateDatasetCollectionResponse(root=rval)
         else:
             raise exceptions.RequestParameterInvalidException("Invalid create_type specified.")
 
@@ -262,13 +256,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
                 f"Malformed library content id ( {str(content_id)} ) specified, unable to decode."
             )
 
-    def _url_for(
-        self,
-        trans: ProvidesUserContext,
-        library_id: DecodedDatabaseIdField,
-        id: int,
-        type: str,
-    ) -> Optional[str]:
+    def _url_for(self, trans: ProvidesUserContext, library_id: DecodedDatabaseIdField, id, type):
         encoded_id = trans.security.encode_id(id)
         if type == "folder":
             encoded_id = f"F{encoded_id}"
