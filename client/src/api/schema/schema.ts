@@ -6130,16 +6130,6 @@ export interface components {
             /** Name */
             name?: unknown;
         };
-        /** Body_create_api_libraries__library_id__contents_post */
-        Body_create_api_libraries__library_id__contents_post: {
-            /** File */
-            file?: string | null;
-            /** Payload */
-            payload:
-            | components["schemas"]["LibraryContentsFolderCreatePayload"]
-            | components["schemas"]["LibraryContentsFileCreatePayload"]
-            | components["schemas"]["LibraryContentsCollectionCreatePayload"];
-        };
         /** Body_fetch_form_api_tools_fetch_post */
         Body_fetch_form_api_tools_fetch_post: {
             /** Files */
@@ -13139,8 +13129,6 @@ export interface components {
             dbkey: string | unknown[] | null;
             /** sub-dictionary containing any extended metadata to associate with the item */
             extended_metadata?: Record<string, never> | null;
-            /** the file to upload */
-            file?: string | null;
             /** file type */
             file_type?: string | null;
             /**
@@ -28135,7 +28123,10 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_create_api_libraries__library_id__contents_post"];
+                "application/json":
+                | components["schemas"]["LibraryContentsFolderCreatePayload"]
+                | components["schemas"]["LibraryContentsFileCreatePayload"]
+                | components["schemas"]["LibraryContentsCollectionCreatePayload"];
             };
         };
         responses: {
