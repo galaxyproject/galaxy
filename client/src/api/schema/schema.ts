@@ -3066,7 +3066,7 @@ export interface paths {
          * @deprecated
          * @description This endpoint is deprecated. Please use GET /api/libraries/datasets/{library_id} instead.
          */
-        get: operations["show_api_libraries__library_id__contents__id__get"];
+        get: operations["library_content_api_libraries__library_id__contents__id__get"];
         /**
          * Update a library file or folder.
          * @deprecated
@@ -6129,6 +6129,16 @@ export interface components {
             history_id?: unknown;
             /** Name */
             name?: unknown;
+        };
+        /** Body_create_api_libraries__library_id__contents_post */
+        Body_create_api_libraries__library_id__contents_post: {
+            /** File */
+            file?: string | null;
+            /** Payload */
+            payload:
+            | components["schemas"]["LibraryContentsFolderCreatePayload"]
+            | components["schemas"]["LibraryContentsFileCreatePayload"]
+            | components["schemas"]["LibraryContentsCollectionCreatePayload"];
         };
         /** Body_fetch_form_api_tools_fetch_post */
         Body_fetch_form_api_tools_fetch_post: {
@@ -13129,6 +13139,8 @@ export interface components {
             dbkey: string | unknown[] | null;
             /** sub-dictionary containing any extended metadata to associate with the item */
             extended_metadata?: Record<string, never> | null;
+            /** the file to upload */
+            file?: string | null;
             /** file type */
             file_type?: string | null;
             /**
@@ -28123,10 +28135,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json":
-                | components["schemas"]["LibraryContentsFolderCreatePayload"]
-                | components["schemas"]["LibraryContentsFileCreatePayload"]
-                | components["schemas"]["LibraryContentsCollectionCreatePayload"];
+                "multipart/form-data": components["schemas"]["Body_create_api_libraries__library_id__contents_post"];
             };
         };
         responses: {
@@ -28163,7 +28172,7 @@ export interface operations {
             };
         };
     };
-    show_api_libraries__library_id__contents__id__get: {
+    library_content_api_libraries__library_id__contents__id__get: {
         parameters: {
             query?: never;
             header?: {
