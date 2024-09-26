@@ -5150,56 +5150,6 @@ test_data: {}
         assert int(str_43) == 43
         assert abs(float(str_4point14) - 4.14) < 0.0001
 
-    @skip_without_tool("param_value_from_file")
-    def test_expression_tool_map_over(self, history_id):
-        self._run_jobs(
-            """
-class: GalaxyWorkflow
-inputs:
-  text_input1: collection
-steps:
-- label: param_out
-  tool_id: param_value_from_file
-  in:
-     input1: text_input1
-- label: consume_expression_parameter
-  tool_id: validation_default
-  in:
-    input1: param_out/text_param
-  outputs:
-    out_file1:
-      rename: "replaced_param_collection"
-test_data:
-  text_input1:
-    collection_type: list
-    elements:
-      - identifier: A
-        content: A
-      - identifier: B
-        content: B
-""",
-            history_id=history_id,
-        )
-        history_contents = self._get(f"histories/{history_id}/contents").json()
-        collection = [
-            c
-            for c in history_contents
-            if c["history_content_type"] == "dataset_collection" and c["name"] == "replaced_param_collection"
-        ][0]
-        collection_details = self._get(collection["url"]).json()
-        assert collection_details["element_count"] == 2
-        elements = collection_details["elements"]
-        assert elements[0]["element_identifier"] == "A"
-        assert elements[1]["element_identifier"] == "B"
-        element_a_content = self.dataset_populator.get_history_dataset_content(
-            history_id, dataset=elements[0]["object"]
-        )
-        element_b_content = self.dataset_populator.get_history_dataset_content(
-            history_id, dataset=elements[1]["object"]
-        )
-        assert element_a_content.strip() == "A"
-        assert element_b_content.strip() == "B"
-
     @skip_without_tool("create_input_collection")
     def test_workflow_optional_input_text_parameter_reevaluation(self):
         with self.dataset_populator.test_history() as history_id:

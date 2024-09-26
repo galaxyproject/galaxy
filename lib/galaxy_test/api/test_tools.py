@@ -2579,6 +2579,36 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert output_hdca["collection_type"] == "list"
 
     @skip_without_tool("column_multi_param")
+    def test_multi_param_column_nested_list(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca = self.dataset_collection_populator.create_list_of_list_in_history(
+                history_id, ext="tabular", wait=True
+            ).json()
+            inputs = {
+                "input1": {"src": "hdca", "id": hdca["id"]},
+                # FIXME: integers don't work here
+                "col": "1",
+            }
+            response = self._run("column_multi_param", history_id, inputs, assert_ok=True)
+            self.dataset_populator.wait_for_job(job_id=response["jobs"][0]["id"], assert_ok=True)
+
+    @skip_without_tool("column_multi_param")
+    def test_multi_param_column_nested_list_fails_on_invalid_column(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca = self.dataset_collection_populator.create_list_of_list_in_history(
+                history_id, ext="tabular", wait=True
+            ).json()
+            inputs = {
+                "input1": {"src": "hdca", "id": hdca["id"]},
+                "col": "10",
+            }
+            try:
+                self._run("column_multi_param", history_id, inputs, assert_ok=True)
+            except AssertionError as e:
+                exception_raised = e
+            assert exception_raised, "Expected invalid column selection to fail job"
+
+    @skip_without_tool("column_multi_param")
     def test_implicit_conversion_and_reduce(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_implicit_collection_and_reduce(history_id=history_id, param="1")

@@ -13,8 +13,6 @@ from galaxy.exceptions import (
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import Group
 from galaxy.model.base import transaction
-from galaxy.model.db.role import get_roles_by_ids
-from galaxy.model.db.user import get_users_by_ids
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.fields import Security
 from galaxy.schema.groups import (
@@ -54,13 +52,11 @@ class GroupsManager:
 
         group = model.Group(name=name)
         sa_session.add(group)
-        user_ids = payload.user_ids
-        users = get_users_by_ids(sa_session, user_ids)
-        role_ids = payload.role_ids
-        roles = get_roles_by_ids(sa_session, role_ids)
-        trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
-        with transaction(sa_session):
-            sa_session.commit()
+
+        trans.app.security_agent.set_group_user_and_role_associations(
+            group, user_ids=payload.user_ids, role_ids=payload.role_ids
+        )
+        sa_session.commit()
 
         encoded_id = Security.security.encode_id(group.id)
         item = group.to_dict(view="element")
@@ -88,22 +84,11 @@ class GroupsManager:
         if name := payload.name:
             self._check_duplicated_group_name(sa_session, name)
             group.name = name
-            sa_session.add(group)
-
-        users = None
-        if payload.user_ids is not None:
-            users = get_users_by_ids(sa_session, payload.user_ids)
-
-        roles = None
-        if payload.role_ids is not None:
-            roles = get_roles_by_ids(sa_session, payload.role_ids)
-
-        self._app.security_agent.set_entity_group_associations(
-            groups=[group], roles=roles, users=users, delete_existing_assocs=False
-        )
-
-        with transaction(sa_session):
             sa_session.commit()
+
+        self._app.security_agent.set_group_user_and_role_associations(
+            group, user_ids=payload.user_ids, role_ids=payload.role_ids
+        )
 
         encoded_id = Security.security.encode_id(group.id)
         item = group.to_dict(view="element")

@@ -780,7 +780,7 @@ class User(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    email: Mapped[str] = mapped_column(TrimmedString(255), index=True)
+    email: Mapped[str] = mapped_column(TrimmedString(255), index=True, unique=True)
     username: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True, unique=True)
     password: Mapped[str] = mapped_column(TrimmedString(255))
     last_password_change: Mapped[Optional[datetime]] = mapped_column(default=now)
@@ -848,14 +848,6 @@ class User(Base, Dictifiable, RepresentById):
     )
     all_notifications: Mapped[List["UserNotificationAssociation"]] = relationship(
         back_populates="user", cascade_backrefs=False
-    )
-    non_private_roles: Mapped[List["UserRoleAssociation"]] = relationship(
-        viewonly=True,
-        primaryjoin=(
-            lambda: (User.id == UserRoleAssociation.user_id)
-            & (UserRoleAssociation.role_id == Role.id)
-            & not_(Role.name == User.email)
-        ),
     )
 
     preferences: AssociationProxy[Any]
@@ -2967,10 +2959,11 @@ class Group(Base, Dictifiable, RepresentById):
 
 class UserGroupAssociation(Base, RepresentById):
     __tablename__ = "user_group_association"
+    __table_args__ = (UniqueConstraint("user_id", "group_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
-    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True, nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     user: Mapped["User"] = relationship(back_populates="groups")
@@ -3685,10 +3678,11 @@ class HistoryUserShareAssociation(Base, UserShareAssociation):
 
 class UserRoleAssociation(Base, RepresentById):
     __tablename__ = "user_role_association"
+    __table_args__ = (UniqueConstraint("user_id", "role_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
-    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True, nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
 
@@ -3703,10 +3697,11 @@ class UserRoleAssociation(Base, RepresentById):
 
 class GroupRoleAssociation(Base, RepresentById):
     __tablename__ = "group_role_association"
+    __table_args__ = (UniqueConstraint("group_id", "role_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True, nullable=True)
-    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True, nullable=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True)
+    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     group: Mapped["Group"] = relationship(back_populates="roles")
@@ -4549,7 +4544,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     creating_job_associations: List[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
     copied_from_history_dataset_association: Optional["HistoryDatasetAssociation"]
     copied_from_library_dataset_dataset_association: Optional["LibraryDatasetDatasetAssociation"]
+    dependent_jobs: List[JobToInputLibraryDatasetAssociation]
     implicitly_converted_datasets: List["ImplicitlyConvertedDatasetAssociation"]
+    implicitly_converted_parent_datasets: List["ImplicitlyConvertedDatasetAssociation"]
 
     validated_states = DatasetValidatedState
 

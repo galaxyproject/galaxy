@@ -10,6 +10,24 @@ History
 
 
 -------------------
+24.1.2 (2024-09-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Handle all requests error in ``ApiBiotoolsMetadataSource._raw_get_metadata`` by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18510 <https://github.com/galaxyproject/galaxy/pull/18510>`_
+* xsd: allow `change_format` and `actions` also in statically defined collection elements, and break recursion by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18605 <https://github.com/galaxyproject/galaxy/pull/18605>`_
+
+============
+Enhancements
+============
+
+* Make `default_panel_view` a `_by_host` option by `@natefoo <https://github.com/natefoo>`_ in `#18471 <https://github.com/galaxyproject/galaxy/pull/18471>`_
+
+-------------------
 24.1.1 (2024-07-02)
 -------------------
 
