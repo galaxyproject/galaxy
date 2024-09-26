@@ -315,7 +315,7 @@ class TestLibrariesApi(ApiTestCase):
         }
         create_response = self._post(f"libraries/{library['id']}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 400)
-        assert create_response.json() == "Requested extension 'xxx' unknown, cannot upload dataset."
+        assert create_response.json()["err_msg"] == "Requested extension 'xxx' unknown, cannot upload dataset."
 
     @skip_if_github_down
     @requires_new_library
@@ -605,6 +605,6 @@ class TestLibrariesApi(ApiTestCase):
         history_id = self.dataset_populator.new_history()
         hda_id = self.dataset_populator.new_dataset(history_id, content=content, wait=wait)["id"]
         payload = {"from_hda_id": hda_id, "create_type": "file", "folder_id": folder_id}
-        ld = self._post(f"libraries/{folder_id}/contents", payload)
+        ld = self._post(f"libraries/{folder_id}/contents", payload, json=True)
         ld.raise_for_status()
         return ld
