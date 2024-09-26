@@ -25,7 +25,6 @@ from galaxy.util.path import (
     safe_relpath,
     unsafe_walk,
 )
-from galaxy.webapps.base.controller import UsesExtendedMetadataMixin
 
 log = logging.getLogger(__name__)
 
@@ -296,7 +295,7 @@ class LibraryActions:
                 trans.sa_session.commit()
         return uploaded_dataset
 
-    def _upload_library_dataset(self, trans, payload, library_id):
+    def _upload_library_dataset(self, trans, payload):
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         folder = trans.sa_session.get(LibraryFolder, payload.folder_id)
@@ -314,9 +313,9 @@ class LibraryActions:
             if error:
                 raise exceptions.RequestParameterInvalidException(message)
         created_outputs_dict = self._upload_dataset(trans, folder.id, payload)
-        return self._create_response(trans, payload, created_outputs_dict, library_id)
+        return created_outputs_dict
 
-    def _create_folder(self, trans, payload, library_id):
+    def _create_folder(self, trans, payload):
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         parent_folder = trans.sa_session.get(LibraryFolder, payload.folder_id)
@@ -338,20 +337,7 @@ class LibraryActions:
         # New folders default to having the same permissions as their parent folder
         trans.app.security_agent.copy_library_permissions(trans, parent_folder, new_folder)
         new_folder_dict = dict(created=new_folder)
-        return self._create_response(trans, payload, new_folder_dict, library_id)
-
-    def _create_response(self, trans, payload, output, library_id):
-        rval = []
-        for v in output.values():
-            if payload.extended_metadata is not None:
-                # If there is extended metadata, store it, attach it to the dataset, and index it
-                extended_metadata = UsesExtendedMetadataMixin
-                extended_metadata.create_extended_metadata(trans, payload.extended_metadata)
-            if isinstance(v, trans.app.model.LibraryDatasetDatasetAssociation):
-                v = v.library_dataset
-            url = self._url_for(trans, library_id, v.id, payload.create_type)
-            rval.append(dict(id=v.id, name=v.name, url=url))
-        return rval
+        return new_folder_dict
 
     def _create_collection(self, trans, payload, parent):
         # Not delegating to library_common, so need to check access to parent folder here.

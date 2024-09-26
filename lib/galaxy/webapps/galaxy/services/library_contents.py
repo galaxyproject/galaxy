@@ -43,7 +43,10 @@ from galaxy.schema.library_contents import (
     LibraryContentsUpdatePayload,
 )
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.webapps.base.controller import UsesLibraryMixinItems
+from galaxy.webapps.base.controller import (
+    UsesExtendedMetadataMixin,
+    UsesLibraryMixinItems,
+)
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
@@ -59,7 +62,7 @@ MaybeLibraryFolderOrDatasetID = Annotated[
 ]
 
 
-class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems):
+class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems, UsesExtendedMetadataMixin):
     """
     Interface/service shared by controllers for interacting with the contents of a library contents.
     """
@@ -159,11 +162,11 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
 
         # Now create the desired content object, either file or folder.
         if payload.create_type == "file":
-            rval = self._upload_library_dataset(trans, payload, library_id)
-            return LibraryContentsCreateFileListResponse(root=rval)
+            rval = self._upload_library_dataset(trans, payload)
+            return LibraryContentsCreateFileListResponse(root=self._create_response(trans, payload, rval, library_id))
         elif payload.create_type == "folder":
-            rval = self._create_folder(trans, payload, library_id)
-            return LibraryContentsCreateFolderListResponse(root=rval)
+            rval = self._create_folder(trans, payload)
+            return LibraryContentsCreateFolderListResponse(root=self._create_response(trans, payload, rval, library_id))
         elif payload.create_type == "collection":
             rval = self._create_collection(trans, payload, parent)
             return LibraryContentsCreateDatasetCollectionResponse(root=rval)
@@ -282,4 +285,16 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems)
                 ld.api_path = f"{folder.api_path}/{ld.name}"
                 ld.api_type = "file"
                 rval.append(ld)
+        return rval
+
+    def _create_response(self, trans, payload, output, library_id):
+        rval = []
+        for v in output.values():
+            if payload.extended_metadata is not None:
+                # If there is extended metadata, store it, attach it to the dataset, and index it
+                self.create_extended_metadata(trans, payload.extended_metadata)
+            if isinstance(v, trans.app.model.LibraryDatasetDatasetAssociation):
+                v = v.library_dataset
+            url = self._url_for(trans, library_id, v.id, payload.create_type)
+            rval.append(dict(id=v.id, name=v.name, url=url))
         return rval
