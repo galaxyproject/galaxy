@@ -19,6 +19,8 @@ from galaxy.managers.file_source_instances import (
     CreateInstancePayload,
     FileSourceInstancesManager,
     ModifyInstancePayload,
+    TestUpdateInstancePayload,
+    TestUpgradeInstancePayload,
     UpdateInstancePayload,
     UpdateInstanceSecretPayload,
     UpgradeInstancePayload,
@@ -531,6 +533,100 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert status.template_settings.is_not_ok
         assert "Input should be a valid boolean" in status.template_settings.message
         assert status.connection is None
+
+    def test_status_existing_valid(self, tmp_path):
+        self.init_user_in_database()
+        self._init_managers(tmp_path)
+        (tmp_path / self.trans.user.username).mkdir()
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="home_directory",
+            template_version=0,
+            variables={},
+            secrets={},
+        )
+        user_file_source = self._create_instance(create_payload)
+        status = self.manager.plugin_status_for_instance(self.trans, user_file_source.uuid)
+        assert status.connection
+        assert not status.connection.is_not_ok
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+
+    def test_status_update_valid(self, tmp_path):
+        self._init_managers(tmp_path, config_dict=simple_variable_template(tmp_path))
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="simple_variable",
+            template_version=0,
+            variables={"var1": "originalvarval"},
+            secrets={},
+        )
+        user_file_source = self._create_instance(create_payload)
+
+        update = TestUpdateInstancePayload(
+            variables={
+                "var1": "newval",
+            }
+        )
+
+        status = self.manager.test_modify_instance(self.trans, user_file_source.uuid, update)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+        assert status.connection
+        assert status.connection.is_not_ok
+
+    def test_status_upgrade_valid(self, tmp_path):
+        user_file_source = self._init_upgrade_test_case(tmp_path)
+        assert "sec1" in user_file_source.secrets
+        assert "sec2" not in user_file_source.secrets
+        self._assert_secret_is(user_file_source, "sec1", "moocow")
+        self._assert_secret_absent(user_file_source, "foobarxyz")
+        self._assert_secret_absent(user_file_source, "sec2")
+        upgrade_to_1 = TestUpgradeInstancePayload(
+            template_version=1,
+            secrets={
+                "sec1": "moocow",
+                "sec2": "aftersec2",
+            },
+            variables={},
+        )
+        status = self.manager.test_modify_instance(self.trans, user_file_source.uuid, upgrade_to_1)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+        assert status.connection
+        assert status.connection.is_not_ok
+
+    def test_status_upgrade_invalid(self, tmp_path):
+        user_file_source = self._init_invalid_upgrade_test_case(tmp_path)
+        upgrade_to_1 = TestUpgradeInstancePayload(
+            template_version=1,
+            secrets={},
+            variables={},
+        )
+        status = self.manager.test_modify_instance(self.trans, user_file_source.uuid, upgrade_to_1)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert status.template_settings.is_not_ok
+        assert "Input should be a valid boolean" in status.template_settings.message
+        assert status.connection is None
+
+    def _init_invalid_upgrade_test_case(self, tmp_path) -> UserFileSourceModel:
+        version_0 = home_directory_template(tmp_path)
+        version_0["version"] = 0
+        version_1 = invalid_home_directory_template_type_error(tmp_path)
+        version_1["version"] = 1
+        version_1["id"] = version_0["id"]
+        config_dict = [
+            version_0,
+            version_1,
+        ]
+        self._init_managers(tmp_path, config_dict=config_dict)
+        return self._create_user_file_source()
 
     def _init_upgrade_test_case(self, tmp_path) -> UserFileSourceModel:
         example_yaml_str = UPGRADE_EXAMPLE

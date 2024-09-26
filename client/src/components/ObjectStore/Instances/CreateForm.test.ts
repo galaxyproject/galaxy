@@ -3,7 +3,7 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { type PluginStatus } from "@/api/configTemplates";
+import { OK_PLUGIN_STATUS } from "@/components/ConfigTemplates/test_fixtures";
 import { type ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
 import { type UserConcreteObjectStore } from "./types";
@@ -80,21 +80,6 @@ const SIMPLE_TEMPLATE: ObjectStoreTemplateSummary = {
     hidden: false,
 };
 
-const FAKE_PLUGIN_STATUS: PluginStatus = {
-    template_definition: {
-        state: "ok",
-        message: "ok",
-    },
-    template_settings: {
-        state: "ok",
-        message: "ok",
-    },
-    connection: {
-        state: "ok",
-        message: "ok",
-    },
-};
-
 const { server, http } = useServerMock();
 
 describe("CreateForm", () => {
@@ -126,10 +111,10 @@ describe("CreateForm", () => {
 
         server.use(
             http.post("/api/object_store_instances", ({ response }) => {
-                return response(200).json(FAKE_OBJECT_STORE);
+                return response(200).json(OK_PLUGIN_STATUS);
             }),
             http.post("/api/object_store_instances/test", ({ response }) => {
-                return response(200).json(FAKE_PLUGIN_STATUS);
+                return response(200).json(OK_PLUGIN_STATUS);
             })
         );
 
@@ -155,7 +140,7 @@ describe("CreateForm", () => {
                 return response("4XX").json({ err_msg: "Error creating this", err_code: 400 }, { status: 400 });
             }),
             http.post("/api/object_store_instances/test", ({ response }) => {
-                return response(200).json(FAKE_PLUGIN_STATUS);
+                return response(200).json(OK_PLUGIN_STATUS);
             })
         );
 
@@ -163,12 +148,13 @@ describe("CreateForm", () => {
         const nameForElement = wrapper.find("#form-element-_meta_name");
         nameForElement.find("input").setValue("My New Name");
         const submitElement = wrapper.find("#submit");
-        expect(wrapper.find(".object-store-instance-creation-error").exists()).toBe(false);
+        expect(wrapper.find("[data-description='object-store-creation-error']").exists()).toBe(false);
         submitElement.trigger("click");
         await flushPromises();
         const emitted = wrapper.emitted("created") || [];
         expect(emitted).toHaveLength(0);
-        const errorEl = wrapper.find(".object-store-instance-creation-error");
+        const errorEl = wrapper.find("[data-description='object-store-creation-error']");
+        console.log(wrapper.html());
         expect(errorEl.exists()).toBe(true);
         expect(errorEl.html()).toContain("Error creating this");
     });

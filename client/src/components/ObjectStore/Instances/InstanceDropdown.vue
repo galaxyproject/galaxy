@@ -37,6 +37,7 @@ async function onRemove() {
 
 const emit = defineEmits<{
     (e: "entryRemoved"): void;
+    (e: "test"): void;
 }>();
 </script>
 
@@ -47,5 +48,6 @@ const emit = defineEmits<{
         :is-upgradable="isUpgradable"
         :route-upgrade="routeUpgrade"
         :route-edit="routeEdit"
+        @test="emit('test')"
         @remove="onRemove" />
 </template>

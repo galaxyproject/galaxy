@@ -8,6 +8,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Union,
 )
 from uuid import uuid4
 
@@ -59,27 +60,35 @@ from galaxy.util.config_templates import (
     PluginStatus,
     settings_exception_to_status,
     status_template_definition,
+    TemplateReference,
     TemplateVariableValueType,
     validate_no_extra_secrets_defined,
     validate_no_extra_variables_defined,
 )
 from galaxy.util.plugin_config import plugin_source_from_dict
 from ._config_templates import (
+    CanTestPluginStatus,
     CreateInstancePayload,
     ModifyInstancePayload,
     prepare_environment,
-    prepare_environment_from_root,
+    prepare_template_parameters_for_testing,
     purge_template_instance,
     recover_secrets,
     save_template_instance,
     sort_templates,
+    TestModifyInstancePayload,
+    TestUpdateInstancePayload,
+    TestUpgradeInstancePayload,
+    to_template_reference,
     update_instance_secret,
     update_template_instance,
     updated_template_variables,
     UpdateInstancePayload,
     UpdateInstanceSecretPayload,
+    UpdateTestTarget,
     upgrade_secrets,
     UpgradeInstancePayload,
+    UpgradeTestTarget,
 )
 
 log = logging.getLogger(__name__)
@@ -166,9 +175,7 @@ class FileSourceInstancesManager:
         self, trans: ProvidesUserContext, id: UUID4, payload: UpgradeInstancePayload
     ) -> UserFileSourceModel:
         persisted_file_source = self._get(trans, id)
-        template = self._get_template(persisted_file_source, payload.template_version)
-        validate_no_extra_variables_defined(payload.variables, template)
-        validate_no_extra_secrets_defined(payload.secrets, template)
+        template = self._get_and_validate_target_upgrade_template(persisted_file_source, payload)
         persisted_file_source.template_version = template.version
         persisted_file_source.template_definition = template.model_dump()
         actual_variables = updated_template_variables(
@@ -180,6 +187,14 @@ class FileSourceInstancesManager:
         upgrade_secrets(trans, persisted_file_source, template, payload, self._app_config)
         self._save(persisted_file_source)
         return self._to_model(trans, persisted_file_source)
+
+    def _get_and_validate_target_upgrade_template(
+        self, persisted_file_source: UserFileSource, payload: Union[UpgradeInstancePayload, TestUpgradeInstancePayload]
+    ) -> FileSourceTemplate:
+        template = self._get_template(persisted_file_source, payload.template_version)
+        validate_no_extra_variables_defined(payload.variables, template)
+        validate_no_extra_secrets_defined(payload.secrets, template)
+        return template
 
     def _update_instance(
         self, trans: ProvidesUserContext, id: UUID4, payload: UpdateInstancePayload
@@ -230,8 +245,46 @@ class FileSourceInstancesManager:
         self._save(persisted_file_source)
         return self._to_model(trans, persisted_file_source)
 
+    def test_modify_instance(
+        self, trans: ProvidesUserContext, id: str, payload: TestModifyInstancePayload
+    ) -> PluginStatus:
+        persisted_file_source = self._get(trans, id)
+        if isinstance(payload, TestUpgradeInstancePayload):
+            return self._plugin_status_for_upgrade(trans, payload, persisted_file_source)
+        else:
+            assert isinstance(payload, TestUpdateInstancePayload)
+            return self._plugin_status_for_update(trans, payload, persisted_file_source)
+
+    def _plugin_status_for_update(
+        self, trans: ProvidesUserContext, payload: TestUpdateInstancePayload, persisted_file_source: UserFileSource
+    ) -> PluginStatus:
+        template = self._get_template(persisted_file_source)
+        target = UpdateTestTarget(persisted_file_source, payload)
+        return self._plugin_status_for_template(trans, target, template)
+
+    def _plugin_status_for_upgrade(
+        self, trans: ProvidesUserContext, payload: TestUpgradeInstancePayload, persisted_file_source: UserFileSource
+    ) -> PluginStatus:
+        template = self._get_and_validate_target_upgrade_template(persisted_file_source, payload)
+        target = UpgradeTestTarget(persisted_file_source, payload)
+        return self._plugin_status_for_template(trans, target, template)
+
+    def plugin_status_for_instance(self, trans: ProvidesUserContext, id: str):
+        persisted_file_source = self._get(trans, id)
+        return self._plugin_status(trans, persisted_file_source, to_template_reference(persisted_file_source))
+
     def plugin_status(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> PluginStatus:
-        template = self._catalog.find_template(payload)
+        return self._plugin_status(trans, payload, payload)
+
+    def _plugin_status(
+        self, trans: ProvidesUserContext, payload: CanTestPluginStatus, template_reference: TemplateReference
+    ):
+        template = self._catalog.find_template(template_reference)
+        return self._plugin_status_for_template(trans, payload, template)
+
+    def _plugin_status_for_template(
+        self, trans: ProvidesUserContext, payload: CanTestPluginStatus, template: FileSourceTemplate
+    ):
         template_definition_status = status_template_definition(template)
         status_kwds = {"template_definition": template_definition_status}
         if template_definition_status.is_not_ok:
@@ -255,38 +308,36 @@ class FileSourceInstancesManager:
     def _template_settings_status(
         self,
         trans: ProvidesUserContext,
-        payload: CreateInstancePayload,
+        payload: CanTestPluginStatus,
         template: FileSourceTemplate,
     ) -> Tuple[Optional[FileSourceConfiguration], PluginAspectStatus]:
-        secrets = payload.secrets
-        variables = payload.variables
-        environment = prepare_environment_from_root(template.environment, self._app_vault, self._app_config)
-        user_details = trans.user.config_template_details()
-
+        template_parameters = prepare_template_parameters_for_testing(
+            trans, template, payload, self._app_vault, self._app_config
+        )
         configuration = None
         exception = None
         try:
-            configuration = template_to_configuration(
-                template,
-                variables=variables,
-                secrets=secrets,
-                user_details=user_details,
-                environment=environment,
-            )
+            configuration = template_to_configuration(template, **template_parameters)
         except Exception as e:
             exception = e
         return configuration, settings_exception_to_status(exception)
 
     def _connection_status(
-        self, trans: ProvidesUserContext, payload: CreateInstancePayload, configuration: FileSourceConfiguration
+        self, trans: ProvidesUserContext, payload: CanTestPluginStatus, configuration: FileSourceConfiguration
     ) -> Tuple[Optional[BaseFilesSource], PluginAspectStatus]:
         file_source = None
         exception = None
+        if isinstance(payload, (UpgradeTestTarget, UpdateTestTarget)):
+            label = payload.instance.name
+            doc = payload.instance.description
+        else:
+            label = payload.name
+            doc = payload.description
         try:
             file_source_properties = configuration_to_file_source_properties(
                 configuration,
-                label=payload.name,
-                doc=payload.description,
+                label=label,
+                doc=doc,
                 id=uuid4().hex,
             )
             file_source = self._resolver._file_source(file_source_properties)
@@ -504,6 +555,9 @@ __all__ = (
     "CreateInstancePayload",
     "FileSourceInstancesManager",
     "ModifyInstancePayload",
+    "TestModifyInstancePayload",
+    "TestUpgradeInstancePayload",
+    "TestUpdateInstancePayload",
     "UpdateInstancePayload",
     "UpdateInstanceSecretPayload",
     "UpgradeInstancePayload",

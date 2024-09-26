@@ -15,6 +15,7 @@ from galaxy.managers.file_source_instances import (
     CreateInstancePayload,
     FileSourceInstancesManager,
     ModifyInstancePayload,
+    TestModifyInstancePayload,
     UserFileSourceModel,
 )
 from galaxy.model import User
@@ -100,6 +101,18 @@ class FastAPIFileSources:
     ) -> UserFileSourceModel:
         return self.file_source_instances_manager.show(trans, user_file_source_id)
 
+    @router.get(
+        "/api/file_source_instances/{user_file_source_id}/test",
+        summary="Test a file source instance and return status.",
+        operation_id="file_sources__instances_test_instance",
+    )
+    def instance_test(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_file_source_id: str = UserFileSourceIdPathParam,
+    ) -> PluginStatus:
+        return self.file_source_instances_manager.plugin_status_for_instance(trans, user_file_source_id)
+
     @router.put(
         "/api/file_source_instances/{user_file_source_id}",
         summary="Update or upgrade user file source instance.",
@@ -112,6 +125,19 @@ class FastAPIFileSources:
         payload: ModifyInstancePayload = Body(...),
     ) -> UserFileSourceModel:
         return self.file_source_instances_manager.modify_instance(trans, user_file_source_id, payload)
+
+    @router.post(
+        "/api/file_source_instances/{user_file_source_id}/test",
+        summary="Test updating or upgrading user file source instance.",
+        operation_id="file_sources__test_instances_update",
+    )
+    def test_update_instance(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_file_source_id: str = UserFileSourceIdPathParam,
+        payload: TestModifyInstancePayload = Body(...),
+    ) -> PluginStatus:
+        return self.file_source_instances_manager.test_modify_instance(trans, user_file_source_id, payload)
 
     @router.delete(
         "/api/file_source_instances/{user_file_source_id}",
