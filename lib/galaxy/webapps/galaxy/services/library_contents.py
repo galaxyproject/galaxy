@@ -1,9 +1,7 @@
 import logging
 from typing import (
     List,
-    Optional,
     Tuple,
-    Type,
     Union,
 )
 
