@@ -135,9 +135,11 @@ class LibraryActions:
                 trans, payload, full_dir, import_dir_desc, library_bunch
             )
         elif payload.upload_option == "upload_paths":
-            uploaded_datasets, _, _ = self._get_path_paste_uploaded_datasets(
+            uploaded_datasets, response_code, message = self._get_path_paste_uploaded_datasets(
                 trans, payload.model_dump(), library_bunch, 200, None
             )
+            if response_code != 200:
+                raise exceptions.RequestParameterInvalidException(message)
         if payload.upload_option == "upload_file" and not uploaded_datasets:
             raise exceptions.RequestParameterInvalidException("Select a file, enter a URL or enter text")
         json_file_path = upload_common.create_paramfile(trans, uploaded_datasets)
@@ -311,7 +313,7 @@ class LibraryActions:
             )
             if error:
                 raise exceptions.RequestParameterInvalidException(message)
-        created_outputs_dict = self._upload_dataset(trans, folder_id=folder.id, payload=payload)
+        created_outputs_dict = self._upload_dataset(trans, folder.id, payload)
         return self._create_response(trans, payload, created_outputs_dict, library_id)
 
     def _create_folder(self, trans, payload, library_id):

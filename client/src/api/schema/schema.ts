@@ -12920,8 +12920,8 @@ export interface components {
              */
             upload_option: components["schemas"]["UploadOption"] | null;
         };
-        /** LibraryContentsCreateDatasetListResponse */
-        LibraryContentsCreateDatasetListResponse: components["schemas"]["LibraryContentsCreateDatasetResponse"][];
+        /** LibraryContentsCreateDatasetCollectionResponse */
+        LibraryContentsCreateDatasetCollectionResponse: components["schemas"]["LibraryContentsCreateDatasetResponse"][];
         /** LibraryContentsCreateDatasetResponse */
         LibraryContentsCreateDatasetResponse: {
             /** Created From Basename */
@@ -12948,8 +12948,13 @@ export interface components {
             misc_blurb: string | null;
             /** Misc Info */
             misc_info: string | null;
-            /** Model Class */
-            model_class: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             * @enum {string}
+             */
+            model_class: "LibraryDatasetDatasetAssociation";
             /** Name */
             name: string;
             /** Parent Library Id */
@@ -13192,7 +13197,13 @@ export interface components {
             misc_blurb: string | null;
             /** Misc Info */
             misc_info: string | null;
-            model_class: components["schemas"]["ModelClass"];
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             * @enum {string}
+             */
+            model_class: "LibraryDataset";
             /** Name */
             name: string;
             /**
@@ -13231,7 +13242,13 @@ export interface components {
             item_count: number;
             /** Library Path */
             library_path: string[];
-            model_class: components["schemas"]["ModelClass"];
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             * @enum {string}
+             */
+            model_class: "LibraryFolder";
             /** Name */
             name: string;
             /** Parent Id */
@@ -13807,11 +13824,6 @@ export interface components {
              */
             time: string;
         };
-        /**
-         * ModelClass
-         * @enum {string}
-         */
-        ModelClass: "LibraryDataset" | "LibraryFolder";
         /**
          * ModelStoreFormat
          * @description Available types of model stores for export.
@@ -27943,7 +27955,7 @@ export interface operations {
                     "application/json":
                         | components["schemas"]["LibraryContentsCreateFolderListResponse"]
                         | components["schemas"]["LibraryContentsCreateFileListResponse"]
-                        | components["schemas"]["LibraryContentsCreateDatasetListResponse"]
+                        | components["schemas"]["LibraryContentsCreateDatasetCollectionResponse"]
                         | components["schemas"]["LibraryContentsCreateDatasetResponse"];
                 };
             };

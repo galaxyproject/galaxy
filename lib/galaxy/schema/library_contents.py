@@ -12,12 +12,17 @@ from pydantic import (
     Field,
     RootModel,
 )
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
     EncodedLibraryFolderDatabaseIdField,
     LibraryFolderDatabaseIdField,
+    ModelClassField,
 )
 from galaxy.schema.schema import (
     Model,
@@ -40,11 +45,6 @@ class CreateType(str, Enum):
 class LinkDataOnly(str, Enum):
     copy_files = "copy_files"
     link_to_files = "link_to_files"
-
-
-class ModelClass(str, Enum):
-    LibraryDataset = "LibraryDataset"
-    LibraryFolder = "LibraryFolder"
 
 
 class LibraryContentsCreatePayload(Model):
@@ -190,7 +190,6 @@ class LibraryContentsIndexListResponse(RootModel):
 
 
 class LibraryContentsShowResponse(Model):
-    model_class: ModelClass
     name: str
     genome_build: Optional[str]
     update_time: str
@@ -198,6 +197,7 @@ class LibraryContentsShowResponse(Model):
 
 
 class LibraryContentsShowFolderResponse(LibraryContentsShowResponse):
+    model_class: Annotated[Literal["LibraryFolder"], ModelClassField(Literal["LibraryFolder"])]
     id: EncodedLibraryFolderDatabaseIdField
     parent_id: Optional[EncodedLibraryFolderDatabaseIdField]
     description: str
@@ -207,6 +207,7 @@ class LibraryContentsShowFolderResponse(LibraryContentsShowResponse):
 
 
 class LibraryContentsShowDatasetResponse(LibraryContentsShowResponse):
+    model_class: Annotated[Literal["LibraryDataset"], ModelClassField(Literal["LibraryDataset"])]
     id: EncodedDatabaseIdField
     ldda_id: EncodedDatabaseIdField
     folder_id: EncodedLibraryFolderDatabaseIdField
@@ -256,7 +257,9 @@ class LibraryContentsCreateDatasetResponse(Model):
     # functions that are shared by LibraryFolderContentsService too
     id: str
     hda_ldda: str
-    model_class: str
+    model_class: Annotated[
+        Literal["LibraryDatasetDatasetAssociation"], ModelClassField(Literal["LibraryDatasetDatasetAssociation"])
+    ]
     name: str
     deleted: bool
     visible: bool
@@ -278,7 +281,7 @@ class LibraryContentsCreateDatasetResponse(Model):
     model_config = ConfigDict(extra="allow")
 
 
-class LibraryContentsCreateDatasetListResponse(RootModel):
+class LibraryContentsCreateDatasetCollectionResponse(RootModel):
     root: List[LibraryContentsCreateDatasetResponse]
 
 
