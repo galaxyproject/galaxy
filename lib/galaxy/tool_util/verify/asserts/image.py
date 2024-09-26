@@ -300,7 +300,7 @@ Slice = Annotated[
 Frame = Annotated[
     OptionalXmlInt,
     AssertionParameter(
-        "Restricts the assertion to a specific frame of the image sequeqnce (where ``0`` corresponds to the first image frame).",
+        "Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).",
         json_type="typing.Optional[StrictInt]",
     ),
 ]
