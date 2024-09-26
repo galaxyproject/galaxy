@@ -1456,7 +1456,7 @@ has_image_center_of_mass_slice_description = (
     """Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice)."""
 )
 
-has_image_center_of_mass_frame_description = """Restricts the assertion to a specific frame of the image sequeqnce (where ``0`` corresponds to the first image frame)."""
+has_image_center_of_mass_frame_description = """Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame)."""
 
 has_image_center_of_mass_eps_description = (
     """The maximum allowed Euclidean distance to the required center of mass (defaults to ``0.01``)."""
@@ -1735,7 +1735,7 @@ has_image_mean_intensity_slice_description = (
     """Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice)."""
 )
 
-has_image_mean_intensity_frame_description = """Restricts the assertion to a specific frame of the image sequeqnce (where ``0`` corresponds to the first image frame)."""
+has_image_mean_intensity_frame_description = """Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame)."""
 
 has_image_mean_intensity_mean_intensity_description = """The required mean value of the image intensities."""
 
@@ -1806,7 +1806,7 @@ has_image_mean_object_size_slice_description = (
     """Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice)."""
 )
 
-has_image_mean_object_size_frame_description = """Restricts the assertion to a specific frame of the image sequeqnce (where ``0`` corresponds to the first image frame)."""
+has_image_mean_object_size_frame_description = """Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame)."""
 
 has_image_mean_object_size_labels_description = """List of labels, separated by a comma. Labels *not* on this list will be excluded from consideration. Cannot be used in combination with ``exclude_labels``."""
 
@@ -1902,7 +1902,7 @@ has_image_n_labels_slice_description = (
     """Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice)."""
 )
 
-has_image_n_labels_frame_description = """Restricts the assertion to a specific frame of the image sequeqnce (where ``0`` corresponds to the first image frame)."""
+has_image_n_labels_frame_description = """Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame)."""
 
 has_image_n_labels_labels_description = """List of labels, separated by a comma. Labels *not* on this list will be excluded from consideration. Cannot be used in combination with ``exclude_labels``."""
 

@@ -3058,7 +3058,7 @@ $attribute_list::5]]></xs:documentation>
           </xs:attribute>
           <xs:attribute name="frame" type="xs:integer" use="optional">
             <xs:annotation>
-              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific frame of the image sequeqnce (where ``0`` corresponds to the first image frame).]]></xs:documentation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).]]></xs:documentation>
             </xs:annotation>
           </xs:attribute>
           <xs:attribute name="eps" type="xs:float" use="optional">
@@ -3244,7 +3244,7 @@ $attribute_list::5]]></xs:documentation>
           </xs:attribute>
           <xs:attribute name="frame" type="xs:integer" use="optional">
             <xs:annotation>
-              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific frame of the image sequeqnce (where ``0`` corresponds to the first image frame).]]></xs:documentation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).]]></xs:documentation>
             </xs:annotation>
           </xs:attribute>
           <xs:attribute name="mean_intensity" type="xs:float" use="optional">
@@ -3293,7 +3293,7 @@ $attribute_list::5]]></xs:documentation>
           </xs:attribute>
           <xs:attribute name="frame" type="xs:integer" use="optional">
             <xs:annotation>
-              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific frame of the image sequeqnce (where ``0`` corresponds to the first image frame).]]></xs:documentation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).]]></xs:documentation>
             </xs:annotation>
           </xs:attribute>
           <xs:attribute name="labels" type="xs:string" use="optional">
@@ -3353,7 +3353,7 @@ $attribute_list::5]]></xs:documentation>
           </xs:attribute>
           <xs:attribute name="frame" type="xs:integer" use="optional">
             <xs:annotation>
-              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific frame of the image sequeqnce (where ``0`` corresponds to the first image frame).]]></xs:documentation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).]]></xs:documentation>
             </xs:annotation>
           </xs:attribute>
           <xs:attribute name="labels" type="xs:string" use="optional">
