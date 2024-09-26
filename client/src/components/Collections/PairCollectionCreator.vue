@@ -298,6 +298,7 @@ onMounted(() => {
                     :oncancel="oncancel"
                     :hide-source-items="hideSourceItems"
                     :suggested-name="initialSuggestedName"
+                    :extensions-toggle="removeExtensions"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle">

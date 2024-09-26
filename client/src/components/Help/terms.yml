@@ -59,6 +59,17 @@ galaxy:
       These lists will be gathered together in a nested list structured (collection type ``list:list``) where
       the outer element count and structure matches that of the input and the inner list for each of those
       is just the outputs of the tool for the corresponding element of the input.
+    collectionBuilder:
+      hideOriginalElements: |
+        Toggling this on means that the original history items that will become a part of the collection
+        will be hidden from the history panel (they will still be searchable via the 'visible: false' filter).
+      filterForDatatypes: |
+        This option allows you to filter items shown here by datatype because this input requires specific
+        extension(s). By default, the toggle is at "Extension" and the list is filtered for the explicit extension(s)
+        required by the input; *if datasets with that extension(s) are available*. If you toggle to "Datatype",
+        the list will be filtered for the "parent" datatype of the required extension (for implicit conversion).
+        If you toggle to "All", the list will show all items regardless of datatype.
+
   jobs:
     states:
       # upload, waiting, failed, paused, deleting, deleted, stop, stopped, skipped.

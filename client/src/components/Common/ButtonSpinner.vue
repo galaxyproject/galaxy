@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlay, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
-
-library.add(faPlay, faSpinner);
 
 interface Props {
     title: string;
@@ -12,13 +9,17 @@ interface Props {
     tooltip?: string;
     disabled?: boolean;
     size?: string;
+    variant?: string;
+    hasPlayIcon?: boolean;
 }
 
 withDefaults(defineProps<Props>(), {
     wait: false,
-    tooltip: undefined,
+    tooltip: "",
     disabled: false,
     size: "md",
+    variant: "primary",
+    hasPlayIcon: true,
 });
 </script>
 
@@ -32,18 +33,18 @@ withDefaults(defineProps<Props>(), {
         title="Please Wait..."
         class="d-flex flex-nowrap align-items-center text-nowrap">
         <FontAwesomeIcon :icon="faSpinner" class="mr-2" spin />
-        {{ title }}
+        <slot>{{ title }}</slot>
     </BButton>
     <BButton
         v-else
         v-b-tooltip.hover.bottom
-        variant="primary"
+        :variant="variant"
         class="d-flex flex-nowrap align-items-center text-nowrap"
         :title="tooltip"
         :disabled="disabled"
         :size="size"
         @click="$emit('onClick')">
-        <FontAwesomeIcon :icon="faPlay" class="mr-2" />
-        {{ title }}
+        <FontAwesomeIcon v-if="hasPlayIcon" :icon="faPlay" class="mr-2" />
+        <slot>{{ title }}</slot>
     </BButton>
 </template>

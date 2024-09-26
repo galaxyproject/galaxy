@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
-import { faCaretDown, faCaretUp, faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faCaretUp, faExclamation, faLink, faPlus, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
@@ -9,10 +9,11 @@ import { computed, onMounted, type Ref, ref, watch } from "vue";
 import { isDatasetElement, isDCE } from "@/api";
 import { getGalaxyInstance } from "@/app";
 import { buildCollectionModal } from "@/components/History/adapters/buildCollectionModal";
+import { createDatasetCollection } from "@/components/History/model/queries";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
+import { useHistoryItemsForType } from "@/composables/useHistoryItemsForType";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
-import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { orList } from "@/utils/strings";
 
@@ -20,6 +21,7 @@ import type { DataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
+import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
@@ -475,18 +477,51 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
 }
 
 const historyStore = useHistoryStore();
-const historyItemsStore = useHistoryItemsStore();
-// Build a new collection
+
+const idToFetchFor = computed(() => historyStore.currentHistoryId);
+const { historyItems, isFetchingItems, errorMessage: historyItemsError } = useHistoryItemsForType(idToFetchFor);
+
+/** Excludes the `paired` collection type for now */
+const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) => collectionType !== "paired");
+
+/** Build a new collection and set it as the current value if valid */
 async function buildNewCollection(collectionType: string) {
-    if (!historyStore.currentHistoryId) {
+    if (
+        !historyStore.currentHistoryId ||
+        !historyStore.currentHistory ||
+        isFetchingItems.value ||
+        historyItemsError.value
+    ) {
         return;
     }
-    const modalResult = await buildCollectionModal(
-        collectionType,
-        historyItemsStore.getHistoryItems(historyStore.currentHistoryId, ""),
-        historyStore.currentHistoryId
-    );
-    // TODO: Implement handling `modalResult` as input for the field
+
+    if (collectionType === "list" || collectionType === "list:paired") {
+        const modalResult = await buildCollectionModal(
+            collectionType,
+            historyItems.value,
+            historyStore.currentHistoryId,
+            {
+                extensions: props.extensions?.filter((ext) => ext !== "data"),
+                defaultHideSourceItems: false,
+            }
+        );
+        const collection = await createDatasetCollection(historyStore.currentHistory, modalResult);
+        if (collection) {
+            // remove the `elements` and `elements_datatypes` keys from the collection
+            // to prevent `handleIncoming` from flagging the collection as invalid
+            if ("elements" in collection) {
+                delete collection.elements;
+            }
+            if ("elements_datatypes" in collection) {
+                delete collection.elements_datatypes;
+            }
+            handleIncoming(collection as any);
+        }
+    }
+    // else if (collectionType === "list:paired") { // TODO: Implement paired collection
+    else {
+        throw Error(`Unknown collection type: ${collectionType}`);
+    }
 }
 
 // Drag/Drop event handlers
@@ -649,22 +684,28 @@ const noOptionsWarningMessage = computed(() => {
             :options="formattedOptions"
             :placeholder="`Select a ${placeholder}`">
             <template v-slot:no-options>
-                <BAlert variant="warning" show>
-                    <div>{{ noOptionsWarningMessage }}</div>
-                    <div v-if="props.collectionTypes?.length > 0">
-                        Click here to create/add:
-                        <BButtonGroup size="sm" buttons>
-                            <BButton
-                                v-for="collectionType in props.collectionTypes"
-                                :key="collectionType"
-                                variant="primary"
-                                @click="buildNewCollection(collectionType)">
-                                {{ collectionType }}
-                            </BButton>
-                        </BButtonGroup>
-                        {{ props.type === "data" ? "datasets" : "dataset collections" }}
-                    </div>
+                <BAlert class="w-100 align-items-center" variant="warning" show>
+                    {{ noOptionsWarningMessage }}
                 </BAlert>
+            </template>
+            <!-- TODO: Improve styling, weirdly positioned to right of select -->
+            <template v-slot:right-actions>
+                <div>
+                    <BButtonGroup v-if="effectiveCollectionTypes?.length > 0" size="sm" buttons>
+                        <ButtonSpinner
+                            v-for="collectionType in effectiveCollectionTypes"
+                            :key="collectionType"
+                            :title="collectionType"
+                            variant="secondary"
+                            :disabled="isFetchingItems"
+                            :has-play-icon="false"
+                            :wait="isFetchingItems"
+                            @onClick="buildNewCollection(collectionType)">
+                            <FontAwesomeIcon v-if="!isFetchingItems" :icon="faPlus" fixed-width />
+                            {{ collectionType }}
+                        </ButtonSpinner>
+                    </BButtonGroup>
+                </div>
             </template>
         </FormSelect>
         <FormSelection

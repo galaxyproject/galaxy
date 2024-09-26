@@ -102,6 +102,7 @@
                     :oncancel="oncancel"
                     :hide-source-items="hideSourceItems"
                     :render-extensions-toggle="true"
+                    :extensions-toggle="removeExtensions"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle">

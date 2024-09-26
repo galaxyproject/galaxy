@@ -1,28 +1,38 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton, BFormCheckbox, BFormGroup, BFormInput, BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import localize from "@/utils/localization";
+import { orList } from "@/utils/strings";
 
-library.add(faChevronDown, faChevronUp);
+import HelpText from "@/components/Help/HelpText.vue";
 
 interface Props {
     oncancel: () => void;
     hideSourceItems: boolean;
     suggestedName?: string;
     renderExtensionsToggle?: boolean;
+    extensions?: string[];
+    extensionsToggle?: boolean;
+    datatypeToggle?: "all" | "datatype" | "ext";
+    datatypeToggleOptions?: { text: string; value: string }[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
     suggestedName: "",
+    extensions: undefined,
+    extensionsToggle: false,
+    datatypeToggle: undefined,
+    datatypeToggleOptions: undefined,
 });
 
 const emit = defineEmits<{
     (e: "remove-extensions-toggle"): void;
     (e: "clicked-create", value: string): void;
     (e: "onUpdateHideSourceItems", value: boolean): void;
+    (e: "on-update-datatype-toggle", value: "all" | "datatype" | "ext"): void;
 }>();
 
 const isExpanded = ref(false);
@@ -48,6 +58,15 @@ watch(
         emit("onUpdateHideSourceItems", localHideSourceItems.value);
     }
 );
+
+const localDatatypeToggle = computed({
+    get: () => {
+        return props.datatypeToggle;
+    },
+    set: (newVal) => {
+        emit("on-update-datatype-toggle", newVal);
+    },
+});
 </script>
 
 <template>
@@ -87,51 +106,80 @@ watch(
             <slot name="middle-content"></slot>
         </div>
 
-        <div class="footer flex-row no-flex">
-            <div class="attributes clear">
-                <div class="clear">
-                    <label v-if="renderExtensionsToggle" class="setting-prompt float-right">
-                        {{ localize("Remove file extensions?") }}
-                        <input
-                            class="remove-extensions float-right"
-                            type="checkbox"
-                            checked
-                            @click="emit('remove-extensions-toggle')" />
-                    </label>
+        <div class="footer flex-row">
+            <div class="vertically-spaced">
+                <div class="d-flex align-items-center justify-content-between">
+                    <BFormGroup
+                        v-if="datatypeToggle"
+                        class="flex-gapx-1 d-flex align-items-center"
+                        label-for="datatype-toggle">
+                        <template v-slot:label>
+                            <HelpText
+                                uri="galaxy.collections.collectionBuilder.filterForDatatypes"
+                                :text="localize('Filter for Datatypes?')" />
+                        </template>
+                        <BFormRadioGroup
+                            id="datatype-toggle"
+                            v-model="localDatatypeToggle"
+                            :options="datatypeToggleOptions"
+                            size="sm"
+                            buttons />
+                    </BFormGroup>
 
-                    <label class="setting-prompt float-right">
-                        {{ localize("Hide original elements?") }}
-                        <input v-model="localHideSourceItems" class="hide-originals float-right" type="checkbox" />
-                    </label>
+                    <BAlert
+                        v-if="extensions && localDatatypeToggle === 'ext'"
+                        class="w-50 py-0"
+                        variant="secondary"
+                        show>
+                        Filtered extensions: <strong>{{ orList(extensions) }}</strong>
+                    </BAlert>
                 </div>
 
-                <div class="clear">
-                    <input
-                        v-model="collectionName"
-                        class="collection-name form-control float-right"
-                        :placeholder="localize('Enter a name for your new collection')" />
+                <div class="d-flex align-items-center justify-content-between">
+                    <BFormGroup class="inputs-form-group">
+                        <BFormCheckbox
+                            v-if="renderExtensionsToggle"
+                            name="remove-extensions"
+                            switch
+                            :checked="extensionsToggle"
+                            @input="emit('remove-extensions-toggle')">
+                            {{ localize("Remove file extensions?") }}
+                        </BFormCheckbox>
 
-                    <div class="collection-name-prompt float-right">
-                        {{ localize("Name:") }}
-                    </div>
+                        <BFormCheckbox v-model="localHideSourceItems" name="hide-originals" switch>
+                            <HelpText
+                                uri="galaxy.collections.collectionBuilder.hideOriginalElements"
+                                :text="localize('Hide original elements')" />
+                        </BFormCheckbox>
+                    </BFormGroup>
+
+                    <BFormGroup
+                        class="flex-gapx-1 d-flex align-items-center w-50 inputs-form-group"
+                        :label="localize('Name:')"
+                        label-for="collection-name">
+                        <BFormInput
+                            id="collection-name"
+                            v-model="collectionName"
+                            :placeholder="localize('Enter a name for your new collection')"
+                            size="sm"
+                            required
+                            :state="!collectionName ? false : null" />
+                    </BFormGroup>
                 </div>
             </div>
 
-            <div class="actions clear vertically-spaced">
-                <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="cancelCreate">
-                        {{ localize("Cancel") }}
-                    </button>
-                </div>
+            <div class="actions vertically-spaced d-flex justify-content-between">
+                <BButton tabindex="-1" @click="cancelCreate">
+                    {{ localize("Cancel") }}
+                </BButton>
 
-                <div class="main-options float-right">
-                    <button
-                        class="create-collection btn btn-primary"
-                        :disabled="!validInput"
-                        @click="emit('clicked-create', collectionName)">
-                        {{ localize("Create collection") }}
-                    </button>
-                </div>
+                <BButton
+                    class="create-collection"
+                    variant="primary"
+                    :disabled="!validInput"
+                    @click="emit('clicked-create', collectionName)">
+                    {{ localize("Create collection") }}
+                </BButton>
             </div>
         </div>
     </div>
@@ -367,38 +415,11 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
     }
     // ------------------------------------------------------------------------ footer
     .footer {
-        .attributes {
-            .setting-prompt {
-                //margin-right: 32px;
-                line-height: 32px;
-                padding-left: 10px;
-                .remove-extensions {
-                    display: inline-block;
-                    width: 24px;
-                    height: 24px;
-                }
-                .hide-originals {
-                    display: inline-block;
-                    width: 24px;
-                    height: 24px;
-                }
-            }
-            // actually appears/floats to the left of the input
-            .collection-name-prompt {
-                margin: 5px 4px 0 0;
-            }
-            .collection-name-prompt.validation-warning:before {
-                //TODO: localize (somehow)
-                content: "(required)";
-                margin-right: 4px;
-                color: red;
-            }
-            .collection-name {
-                width: 50%;
-                &.validation-warning {
-                    border-color: red;
-                }
-            }
+        .inputs-form-group > div {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            column-gap: 0.25rem;
         }
         .actions {
             .other-options > * {

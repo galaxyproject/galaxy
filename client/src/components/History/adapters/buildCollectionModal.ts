@@ -8,15 +8,33 @@
  * deprecated jquery Deferred object.
  */
 
-import LIST_COLLECTION_CREATOR from "components/Collections/ListCollectionCreatorModal";
-import PAIR_COLLECTION_CREATOR from "components/Collections/PairCollectionCreatorModal";
-import LIST_OF_PAIRS_COLLECTION_CREATOR from "components/Collections/PairedListCollectionCreatorModal";
-import RULE_BASED_COLLECTION_CREATOR from "components/Collections/RuleBasedCollectionCreatorModal";
 import jQuery from "jquery";
 
+import type { HistoryItemSummary } from "@/api";
+import LIST_COLLECTION_CREATOR from "@/components/Collections/ListCollectionCreatorModal";
+import PAIR_COLLECTION_CREATOR from "@/components/Collections/PairCollectionCreatorModal";
+import LIST_OF_PAIRS_COLLECTION_CREATOR from "@/components/Collections/PairedListCollectionCreatorModal";
+import RULE_BASED_COLLECTION_CREATOR from "@/components/Collections/RuleBasedCollectionCreatorModal";
+
+export type CollectionType = "list" | "paired" | "list:paired" | "rules";
+export interface BuildCollectionOptions {
+    fromRulesInput?: boolean;
+    fromSelection?: boolean;
+    extensions?: string[];
+    title?: string;
+    defaultHideSourceItems?: boolean;
+    historyId?: string;
+}
+
 // stand-in for buildCollection from history-view-edit.js
-export async function buildCollectionModal(collectionType, selectedContent, historyId, fromRulesInput = false) {
+export async function buildCollectionModal(
+    collectionType: CollectionType,
+    selectedContent: HistoryItemSummary[],
+    historyId: string,
+    options: BuildCollectionOptions = {}
+) {
     // select legacy function
+    const { fromRulesInput = false } = options;
     let createFunc;
     if (collectionType == "list") {
         createFunc = LIST_COLLECTION_CREATOR.createListCollection;
@@ -33,19 +51,25 @@ export async function buildCollectionModal(collectionType, selectedContent, hist
     if (fromRulesInput) {
         return await createFunc(selectedContent);
     } else {
-        const fakeBackboneContent = createBackboneContent(historyId, selectedContent);
+        const fakeBackboneContent = createBackboneContent(historyId, selectedContent, options);
         return await createFunc(fakeBackboneContent);
     }
 }
 
-const createBackboneContent = (historyId, selection) => {
+const createBackboneContent = (historyId: string, selection: HistoryItemSummary[], options: BuildCollectionOptions) => {
     const selectionJson = Array.from(selection.values());
     return {
         historyId,
         toJSON: () => selectionJson,
         // result must be a $.Deferred object instead of a promise because
         // that's the kind of deprecated data format that backbone likes to use.
-        createHDCA(element_identifiers, collection_type, name, hide_source_items, options = {}) {
+        createHDCA(
+            element_identifiers: any,
+            collection_type: CollectionType,
+            name: string,
+            hide_source_items: boolean,
+            options = {}
+        ) {
             const def = jQuery.Deferred();
             return def.resolve(null, {
                 collection_type,
@@ -55,5 +79,8 @@ const createBackboneContent = (historyId, selection) => {
                 options,
             });
         },
+        fromSelection: options.fromSelection,
+        extensions: options.extensions,
+        defaultHideSourceItems: options.defaultHideSourceItems === undefined ? true : options.defaultHideSourceItems,
     };
 };
