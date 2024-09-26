@@ -39,6 +39,10 @@ const props = defineProps({
         type: Array as PropType<SelectValue | SelectValue[]>,
         default: null,
     },
+    maintainSelectionOrder: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits<{
@@ -48,6 +52,7 @@ const emit = defineEmits<{
 const searchValue = ref("");
 const useRegex = ref(false);
 const caseSensitive = ref(false);
+const localSelectionOrder = computed(() => props.maintainSelectionOrder);
 
 const searchRegex = computed(() => {
     if (useRegex.value) {
@@ -94,6 +99,7 @@ const { unselectedOptionsFiltered, selectedOptionsFiltered, running, moreUnselec
     selectedDisplayCount,
     unselectedDisplayCount,
     caseSensitive,
+    maintainSelectionOrder: localSelectionOrder,
 });
 
 // debounced to it doesn't blink, and only appears when relevant

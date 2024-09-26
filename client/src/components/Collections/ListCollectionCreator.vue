@@ -648,6 +648,7 @@ function renameElement(element: any, name: string) {
                         <FormSelectMany
                             v-else
                             v-model="inListElements"
+                            maintain-selection-order
                             :placeholder="localize('Filter datasets by name')"
                             :options="workingElements.map((e) => ({ label: e.name || '', value: e }))">
                             <template v-slot:label-area="{ value }">
