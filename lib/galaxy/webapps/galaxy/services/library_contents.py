@@ -257,11 +257,16 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
                 f"Malformed library content id ( {str(content_id)} ) specified, unable to decode."
             )
 
-    def _url_for(self, trans: ProvidesUserContext, library_id: DecodedDatabaseIdField, id, type):
+    def _url_for(self, trans: ProvidesUserContext, library_id, id, type):
+        encoded_library_id = trans.security.encode_id(library_id)
         encoded_id = trans.security.encode_id(id)
         if type == "folder":
             encoded_id = f"F{encoded_id}"
-        return trans.url_builder("library_content", library_id=library_id, id=encoded_id) if trans.url_builder else None
+        return (
+            trans.url_builder("library_content", library_id=encoded_library_id, id=encoded_id)
+            if trans.url_builder
+            else None
+        )
 
     def _traverse(self, trans: ProvidesUserContext, folder, current_user_roles):
         admin = trans.user_is_admin

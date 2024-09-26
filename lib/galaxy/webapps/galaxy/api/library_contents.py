@@ -65,6 +65,7 @@ class FastAPILibraryContents:
 
     @router.get(
         "/api/libraries/{library_id}/contents/{id}",
+        name="library_content",
         summary="Return a library file or folder.",
         deprecated=True,
     )
