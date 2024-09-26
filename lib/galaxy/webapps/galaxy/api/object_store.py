@@ -130,7 +130,7 @@ class FastAPIObjectStore:
         return self.object_store_instance_manager.index(trans)
 
     @router.get(
-        "/api/object_store_instances/{user_object_store_id}",
+        "/api/object_store_instances/{uuid}",
         summary="Get a persisted user object store instance.",
         operation_id="object_stores__instances_get",
     )
@@ -138,21 +138,21 @@ class FastAPIObjectStore:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-        user_object_store_id: UUID4 = UserObjectStoreIdPathParam,
+        uuid: UUID4 = UserObjectStoreIdPathParam,
     ) -> UserConcreteObjectStoreModel:
-        return self.object_store_instance_manager.show(trans, user_object_store_id)
+        return self.object_store_instance_manager.show(trans, uuid)
 
     @router.get(
-        "/api/object_store_instances/{user_object_store_id}/test",
+        "/api/object_store_instances/{uuid}/test",
         summary="Get a persisted user object store instance.",
         operation_id="object_stores__instances_test_instance",
     )
     def instance_test(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_object_store_id: UUID4 = UserObjectStoreIdPathParam,
+        uuid: UUID4 = UserObjectStoreIdPathParam,
     ) -> PluginStatus:
-        return self.object_store_instance_manager.plugin_status_for_instance(trans, user_object_store_id)
+        return self.object_store_instance_manager.plugin_status_for_instance(trans, uuid)
 
     @router.get(
         "/api/object_stores/{object_store_id}",
@@ -166,7 +166,7 @@ class FastAPIObjectStore:
         return self._model_for(object_store_id)
 
     @router.put(
-        "/api/object_store_instances/{user_object_store_id}",
+        "/api/object_store_instances/{uuid}",
         summary="Update or upgrade user object store instance.",
         operation_id="object_stores__instances_update",
     )
@@ -174,13 +174,13 @@ class FastAPIObjectStore:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-        user_object_store_id: UUID4 = UserObjectStoreIdPathParam,
+        uuid: UUID4 = UserObjectStoreIdPathParam,
         payload: ModifyInstancePayload = Body(...),
     ) -> UserConcreteObjectStoreModel:
-        return self.object_store_instance_manager.modify_instance(trans, user_object_store_id, payload)
+        return self.object_store_instance_manager.modify_instance(trans, uuid, payload)
 
     @router.post(
-        "/api/object_store_instances/{user_object_store_id}/test",
+        "/api/object_store_instances/{uuid}/test",
         summary="Test updating or upgrading user object source instance.",
         operation_id="object_stores__test_instances_update",
     )
@@ -193,7 +193,7 @@ class FastAPIObjectStore:
         return self.object_store_instance_manager.test_modify_instance(trans, user_file_source_id, payload)
 
     @router.delete(
-        "/api/object_store_instances/{user_object_store_id}",
+        "/api/object_store_instances/{uuid}",
         summary="Purge user object store instance.",
         operation_id="object_stores__instances_purge",
         status_code=status.HTTP_204_NO_CONTENT,
@@ -202,9 +202,9 @@ class FastAPIObjectStore:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-        user_object_store_id: UUID4 = UserObjectStoreIdPathParam,
+        uuid: UUID4 = UserObjectStoreIdPathParam,
     ):
-        self.object_store_instance_manager.purge_instance(trans, user_object_store_id)
+        self.object_store_instance_manager.purge_instance(trans, uuid)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(

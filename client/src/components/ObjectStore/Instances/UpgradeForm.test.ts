@@ -114,10 +114,10 @@ describe("UpgradeForm", () => {
             router,
         });
         server.use(
-            http.post("/api/object_store_instances/{user_object_store_id}/test", ({ response }) => {
+            http.post("/api/object_store_instances/{uuid}/test", ({ response }) => {
                 return response(200).json(OK_PLUGIN_STATUS);
             }),
-            http.put("/api/object_store_instances/{user_object_store_id}", ({ response }) => {
+            http.put("/api/object_store_instances/{uuid}", ({ response }) => {
                 return response(200).json(INSTANCE);
             })
         );
@@ -141,10 +141,10 @@ describe("UpgradeForm", () => {
             router,
         });
         server.use(
-            http.post("/api/object_store_instances/{user_object_store_id}/test", ({ response }) => {
+            http.post("/api/object_store_instances/{uuid}/test", ({ response }) => {
                 return response(200).json(OK_PLUGIN_STATUS);
             }),
-            http.put("/api/object_store_instances/{user_object_store_id}", ({ response }) => {
+            http.put("/api/object_store_instances/{uuid}", ({ response }) => {
                 return response("4XX").json({ err_msg: "problem upgrading", err_code: 400 }, { status: 400 });
             })
         );

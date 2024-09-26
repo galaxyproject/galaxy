@@ -19,7 +19,6 @@ export type SecretData = CreateInstancePayload["secrets"];
 export type PluginAspectStatus = components["schemas"]["PluginAspectStatus"];
 export type PluginStatus = components["schemas"]["PluginStatus"];
 
-export type CreateInstancePayload = components["schemas"]["CreateInstancePayload"];
 export type UpgradeInstancePayload = components["schemas"]["UpgradeInstancePayload"];
 export type TestUpgradeInstancePayload = components["schemas"]["TestUpgradeInstancePayload"];
 export type UpdateInstancePayload = components["schemas"]["UpdateInstancePayload"];

@@ -1,15 +1,7 @@
 import { computed, type Ref, ref } from "vue";
 
-import type {
-    CreateInstancePayload,
-    Instance,
-    PluginStatus,
-    TemplateSummary,
-    TestUpdateInstancePayload,
-    TestUpgradeInstancePayload,
-    UpdateInstancePayload,
-    UpgradeInstancePayload,
-} from "@/api/configTemplates";
+import { GalaxyApi } from "@/api";
+import { type Instance, type PluginStatus, type TemplateSummary } from "@/api/configTemplates";
 import { type buildInstanceRoutingComposable } from "@/components/ConfigTemplates/routing";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -40,12 +32,15 @@ export function useConfigurationTesting() {
     };
 }
 
+type CreateTestUrl = "/api/object_store_instances/test" | "/api/file_source_instances/test";
+type CreateUrl = "/api/object_store_instances" | "/api/file_source_instances";
+
 export function useConfigurationTemplateCreation<T extends TemplateSummary, R>(
     what: string,
     template: Ref<T>,
     uuid: Ref<string | undefined>,
-    test: (payload: CreateInstancePayload) => Promise<{ data: PluginStatus }>,
-    create: (payload: CreateInstancePayload) => Promise<{ data: R }>,
+    testUrl: CreateTestUrl,
+    createUrl: CreateUrl,
     onCreate: (result: R) => unknown
 ) {
     const error = ref<string | null>(null);
@@ -56,26 +51,41 @@ export function useConfigurationTemplateCreation<T extends TemplateSummary, R>(
         if (uuid.value) {
             payload.uuid = uuid.value;
         }
-        let pluginStatus;
+        let pluginStatus: PluginStatus;
         try {
             testRunning.value = true;
-            const response = await test(payload);
-            pluginStatus = response["data"];
-            testResults.value = pluginStatus;
+            const { data, error: testRequestError } = await GalaxyApi().POST(testUrl, {
+                body: payload,
+            });
+            if (testRequestError) {
+                error.value = "Failed to verify configuration: " + errorMessageAsString(testRequestError);
+                return;
+            } else {
+                pluginStatus = data;
+                testResults.value = pluginStatus;
+            }
         } catch (e) {
             error.value = "Failed to verify configuration: " + errorMessageAsString(e);
             return;
         } finally {
             testRunning.value = false;
         }
-        const testError = pluginStatusToErrorMessage(pluginStatus);
-        if (testError) {
-            error.value = testError;
-            return;
+        if (pluginStatus) {
+            const testError = pluginStatusToErrorMessage(pluginStatus);
+            if (testError) {
+                error.value = testError;
+                return;
+            }
         }
         try {
-            const { data: userObject } = await create(payload);
-            onCreate(userObject);
+            const { data: userObject, error: createRequestError } = await GalaxyApi().POST(createUrl, {
+                body: payload,
+            });
+            if (createRequestError) {
+                error.value = errorMessageAsString(createRequestError);
+            } else {
+                onCreate(userObject as R);
+            }
         } catch (e) {
             error.value = errorMessageAsString(e);
             return;
@@ -102,7 +112,9 @@ export function useConfigurationTemplateCreation<T extends TemplateSummary, R>(
     };
 }
 
-export function useInstanceTesting<R extends Instance>(testInstance: (id: string) => Promise<{ data: PluginStatus }>) {
+type TestInstanceUrl = "/api/file_source_instances/{uuid}/test" | "/api/object_store_instances/{uuid}/test";
+
+export function useInstanceTesting<R extends Instance>(testUrl: TestInstanceUrl) {
     const showTestResults = ref(false);
     const testResults = ref<PluginStatus | undefined>(undefined);
     const testingError = ref<string | undefined>(undefined);
@@ -112,8 +124,16 @@ export function useInstanceTesting<R extends Instance>(testInstance: (id: string
         testingError.value = undefined;
         showTestResults.value = true;
         try {
-            const { data } = await testInstance(instance.uuid);
-            testResults.value = data;
+            const { data, error } = await GalaxyApi().GET(testUrl, {
+                params: { path: { uuid: instance.uuid } },
+            });
+            const pluginStatus = data;
+            const testRequestError = error;
+            if (testRequestError) {
+                testingError.value = errorMessageAsString(testRequestError);
+            } else {
+                testResults.value = pluginStatus;
+            }
         } catch (e) {
             testingError.value = errorMessageAsString(e);
         }
@@ -128,12 +148,15 @@ export function useInstanceTesting<R extends Instance>(testInstance: (id: string
     };
 }
 
+type TestUpdateUrl = "/api/object_store_instances/{uuid}/test" | "/api/file_source_instances/{uuid}/test";
+type UpdateUrl = "/api/object_store_instances/{uuid}" | "/api/file_source_instances/{uuid}";
+
 export function useConfigurationTemplateEdit<T extends TemplateSummary, R extends Instance>(
     what: string,
     instance: Ref<R | null>,
     template: Ref<T | null>,
-    testUpdate: (payload: TestUpdateInstancePayload) => Promise<{ data: PluginStatus }>,
-    update: (payload: UpdateInstancePayload) => Promise<{ data: R }>,
+    testUpdateUrl: TestUpdateUrl,
+    updateUrl: UpdateUrl,
     useRouting: InstanceRoutingComposableType
 ) {
     const { testRunning, testResults } = useConfigurationTesting();
@@ -161,15 +184,21 @@ export function useConfigurationTemplateEdit<T extends TemplateSummary, R extend
     const loadingMessage = `Loading ${what} template and instance information`;
 
     async function onSubmit(formData: any) {
-        if (template.value) {
+        if (template.value && instance.value) {
             const payload = editFormDataToPayload(template.value, formData);
 
             let pluginStatus;
             try {
                 testRunning.value = true;
                 showForceActionButton.value = false;
-                const response = await testUpdate(payload);
-                pluginStatus = response["data"];
+                const { data: pluginStatus, error: testRequestError } = await GalaxyApi().POST(testUpdateUrl, {
+                    params: { path: { uuid: instance.value.uuid } },
+                    body: payload,
+                });
+                if (testRequestError) {
+                    error.value = errorMessageAsString(testRequestError);
+                    showForceActionButton.value = true;
+                }
                 testResults.value = pluginStatus;
             } catch (e) {
                 error.value = errorMessageAsString(e);
@@ -178,16 +207,25 @@ export function useConfigurationTemplateEdit<T extends TemplateSummary, R extend
             } finally {
                 testRunning.value = false;
             }
-            const testError = pluginStatusToErrorMessage(pluginStatus);
-            if (testError) {
-                error.value = testError;
-                showForceActionButton.value = true;
-                return;
+            if (pluginStatus) {
+                const testError = pluginStatusToErrorMessage(pluginStatus);
+                if (testError) {
+                    error.value = testError;
+                    showForceActionButton.value = true;
+                    return;
+                }
             }
 
             try {
-                const response = await update(payload);
-                await onUpdate(response["data"]);
+                const { data, error: updateRequestError } = await GalaxyApi().PUT(updateUrl, {
+                    params: { path: { uuid: instance.value.uuid } },
+                    body: payload,
+                });
+                if (updateRequestError) {
+                    error.value = errorMessageAsString(updateRequestError);
+                } else {
+                    await onUpdate(data as R);
+                }
             } catch (e) {
                 error.value = errorMessageAsString(e);
                 return;
@@ -196,11 +234,18 @@ export function useConfigurationTemplateEdit<T extends TemplateSummary, R extend
     }
 
     async function onForceSubmit(formData: any) {
-        if (template.value) {
+        if (template.value && instance.value) {
             const payload = editFormDataToPayload(template.value, formData);
             try {
-                const response = await update(payload);
-                await onUpdate(response["data"]);
+                const { data, error: updateRequestError } = await GalaxyApi().PUT(updateUrl, {
+                    params: { path: { uuid: instance.value.uuid } },
+                    body: payload,
+                });
+                if (updateRequestError) {
+                    error.value = errorMessageAsString(updateRequestError);
+                } else {
+                    await onUpdate(data as R);
+                }
             } catch (e) {
                 error.value = errorMessageAsString(e);
                 return;
@@ -228,8 +273,8 @@ export function useConfigurationTemplateUpgrade<T extends TemplateSummary, R ext
     what: string,
     instance: Ref<R>,
     template: Ref<T>,
-    testUpdate: (payload: TestUpgradeInstancePayload) => Promise<{ data: PluginStatus }>,
-    update: (payload: UpgradeInstancePayload) => Promise<{ data: R }>,
+    testUpdateUrl: TestUpdateUrl,
+    updateUrl: UpdateUrl,
     useRouting: InstanceRoutingComposableType
 ) {
     const { goToIndex } = useRouting();
@@ -257,14 +302,26 @@ export function useConfigurationTemplateUpgrade<T extends TemplateSummary, R ext
     });
 
     async function onSubmit(formData: any) {
+        if (!instance.value || !template.value) {
+            return;
+        }
+
         const payload = upgradeFormDataToPayload(template.value, formData);
         let pluginStatus;
         try {
             testRunning.value = true;
             showForceActionButton.value = false;
-            const response = await testUpdate(payload);
-            pluginStatus = response["data"];
-            testResults.value = pluginStatus;
+            const { data: pluginStatus, error: testRequestError } = await GalaxyApi().POST(testUpdateUrl, {
+                params: { path: { uuid: instance.value.uuid } },
+                body: payload,
+            });
+            if (testRequestError) {
+                error.value = errorMessageAsString(testRequestError);
+                showForceActionButton.value = true;
+                return;
+            } else {
+                testResults.value = pluginStatus;
+            }
         } catch (e) {
             showForceActionButton.value = true;
             error.value = errorMessageAsString(e);
@@ -272,16 +329,24 @@ export function useConfigurationTemplateUpgrade<T extends TemplateSummary, R ext
         } finally {
             testRunning.value = false;
         }
-        const testError = pluginStatusToErrorMessage(pluginStatus);
-        if (testError) {
-            error.value = testError;
-            showForceActionButton.value = true;
-            return;
+        if (pluginStatus) {
+            const testError = pluginStatusToErrorMessage(pluginStatus);
+            if (testError) {
+                error.value = testError;
+                showForceActionButton.value = true;
+                return;
+            }
         }
-
         try {
-            const response = await update(payload);
-            await onUpgrade(response["data"]);
+            const { data, error: updateRequestError } = await GalaxyApi().PUT(updateUrl, {
+                params: { path: { uuid: instance.value.uuid } },
+                body: payload,
+            });
+            if (updateRequestError) {
+                error.value = errorMessageAsString(updateRequestError);
+            } else {
+                await onUpgrade(data as R);
+            }
         } catch (e) {
             error.value = errorMessageAsString(e);
             return;
@@ -291,8 +356,15 @@ export function useConfigurationTemplateUpgrade<T extends TemplateSummary, R ext
     async function onForceSubmit(formData: any) {
         const payload = upgradeFormDataToPayload(template.value, formData);
         try {
-            const response = await update(payload);
-            await onUpgrade(response["data"]);
+            const { data, error: updateRequestError } = await GalaxyApi().PUT(updateUrl, {
+                params: { path: { uuid: instance.value.uuid } },
+                body: payload,
+            });
+            if (updateRequestError) {
+                error.value = errorMessageAsString(updateRequestError);
+            } else {
+                await onUpgrade(data as R);
+            }
         } catch (e) {
             error.value = errorMessageAsString(e);
             return;

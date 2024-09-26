@@ -22,8 +22,8 @@ const isUpgradable = computed(() =>
 );
 
 async function onRemove() {
-    const { error } = await GalaxyApi().PUT("/api/file_source_instances/{user_file_source_id}", {
-        params: { path: { user_file_source_id: props.fileSource.uuid } },
+    const { error } = await GalaxyApi().PUT("/api/file_source_instances/{uuid}", {
+        params: { path: { uuid: props.fileSource.uuid } },
         body: {
             hidden: true,
         },

@@ -9,9 +9,6 @@ import { useFiltering } from "@/components/ConfigTemplates/useInstanceFiltering"
 import { useObjectStoreInstancesStore } from "@/stores/objectStoreInstancesStore";
 import _l from "@/utils/localization";
 
-import { testInstance } from "./services";
-
-import InstanceDropdown from "./InstanceDropdown.vue";
 import ManageIndexHeader from "@/components/ConfigTemplates/ManageIndexHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
@@ -43,11 +40,10 @@ function reload() {
     objectStoreInstancesStore.fetchInstances();
 }
 
-const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testingError } = useInstanceTesting(
-    (id: string) => {
-        return testInstance({ user_object_store_id: id });
-    }
-);
+const testInstanceUrl = "/api/object_store_instances/{uuid}/test";
+
+const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testingError } =
+    useInstanceTesting(testInstanceUrl);
 </script>
 
 <template>

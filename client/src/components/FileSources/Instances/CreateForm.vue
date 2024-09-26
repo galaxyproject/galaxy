@@ -4,7 +4,8 @@ import { toRef } from "vue";
 import type { FileSourceTemplateSummary, UserFileSourceModel } from "@/api/fileSources";
 import { useConfigurationTemplateCreation } from "@/components/ConfigTemplates/useConfigurationTesting";
 
-import { create, test } from "./services";
+const createUrl = "/api/file_source_instances";
+const createTestUrl = "/api/file_source_instances/test";
 
 interface CreateFormProps {
     template: FileSourceTemplateSummary;
@@ -22,8 +23,8 @@ const { ActionSummary, error, inputs, InstanceForm, onSubmit, submitTitle, loadi
         "file source",
         toRef(props, "template"),
         toRef(props, "uuid"),
-        test,
-        create,
+        createTestUrl,
+        createUrl,
         (fileSource: UserFileSourceModel) => emit("created", fileSource)
     );
 </script>

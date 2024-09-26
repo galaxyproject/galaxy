@@ -111,7 +111,7 @@ describe("CreateForm", () => {
 
         server.use(
             http.post("/api/object_store_instances", ({ response }) => {
-                return response(200).json(OK_PLUGIN_STATUS);
+                return response(200).json(FAKE_OBJECT_STORE);
             }),
             http.post("/api/object_store_instances/test", ({ response }) => {
                 return response(200).json(OK_PLUGIN_STATUS);

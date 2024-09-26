@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, toRef } from "vue";
 
-import { type TestUpgradeInstancePayload, type UpgradeInstancePayload } from "@/api/configTemplates";
 import { type FileSourceTemplateSummary, type UserFileSourceModel } from "@/api/fileSources";
 import { useConfigurationTemplateUpgrade } from "@/components/ConfigTemplates/useConfigurationTesting";
 
 import { useInstanceRouting } from "./routing";
-import { testUpdate, update } from "./services";
+
+const editTestUrl = "/api/file_source_instances/{uuid}/test";
+const editUrl = "/api/file_source_instances/{uuid}";
 
 interface Props {
     instance: UserFileSourceModel;
@@ -33,8 +34,8 @@ const {
     "file source",
     toRef(props, "instance"),
     toRef(props, "latestTemplate"),
-    (payload: TestUpgradeInstancePayload) => testUpdate({ user_file_source_id: props.instance.uuid, ...payload }),
-    (payload: UpgradeInstancePayload) => update({ user_file_source_id: props.instance.uuid, ...payload }),
+    editTestUrl,
+    editUrl,
     useInstanceRouting
 );
 </script>

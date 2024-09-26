@@ -7,8 +7,6 @@ import { useInstanceTesting } from "@/components/ConfigTemplates/useConfiguratio
 import { useFiltering } from "@/components/ConfigTemplates/useInstanceFiltering";
 import { useFileSourceInstancesStore } from "@/stores/fileSourceInstancesStore";
 
-import { testInstance } from "./services";
-
 import InstanceDropdown from "./InstanceDropdown.vue";
 import ManageIndexHeader from "@/components/ConfigTemplates/ManageIndexHeader.vue";
 import FileSourceTypeSpan from "@/components/FileSources/FileSourceTypeSpan.vue";
@@ -34,11 +32,10 @@ function reload() {
     fileSourceInstancesStore.fetchInstances();
 }
 
-const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testingError } = useInstanceTesting(
-    (id: string) => {
-        return testInstance({ user_file_source_id: id });
-    }
-);
+const testInstanceUrl = "/api/file_source_instances/{uuid}/test";
+
+const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testingError } =
+    useInstanceTesting(testInstanceUrl);
 </script>
 
 <template>

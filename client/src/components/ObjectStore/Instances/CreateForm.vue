@@ -5,7 +5,8 @@ import { useConfigurationTemplateCreation } from "@/components/ConfigTemplates/u
 import type { UserConcreteObjectStore } from "@/components/ObjectStore/Instances/types";
 import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
-import { create, test } from "./services";
+const createUrl = "/api/object_store_instances";
+const createTestUrl = "/api/object_store_instances/test";
 
 interface CreateFormProps {
     template: ObjectStoreTemplateSummary;
@@ -23,8 +24,8 @@ const { ActionSummary, error, inputs, InstanceForm, onSubmit, submitTitle, loadi
         "storage location",
         toRef(props, "template"),
         toRef(props, "uuid"),
-        test,
-        create,
+        createTestUrl,
+        createUrl,
         (instance: UserConcreteObjectStore) => emit("created", instance)
     );
 </script>

@@ -115,57 +115,57 @@ class FastAPIFileSources:
         return self.file_source_instances_manager.index(trans)
 
     @router.get(
-        "/api/file_source_instances/{user_file_source_id}",
+        "/api/file_source_instances/{uuid}",
         summary="Get a persisted user file source instance.",
         operation_id="file_sources__instances_get",
     )
     def instances_show(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_file_source_id: UUID4 = UserFileSourceIdPathParam,
+        uuid: UUID4 = UserFileSourceIdPathParam,
     ) -> UserFileSourceModel:
-        return self.file_source_instances_manager.show(trans, user_file_source_id)
+        return self.file_source_instances_manager.show(trans, uuid)
 
     @router.get(
-        "/api/file_source_instances/{user_file_source_id}/test",
+        "/api/file_source_instances/{uuid}/test",
         summary="Test a file source instance and return status.",
         operation_id="file_sources__instances_test_instance",
     )
     def instance_test(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_file_source_id: UUID4 = UserFileSourceIdPathParam,
+        uuid: UUID4 = UserFileSourceIdPathParam,
     ) -> PluginStatus:
-        return self.file_source_instances_manager.plugin_status_for_instance(trans, user_file_source_id)
+        return self.file_source_instances_manager.plugin_status_for_instance(trans, uuid)
 
     @router.put(
-        "/api/file_source_instances/{user_file_source_id}",
+        "/api/file_source_instances/{uuid}",
         summary="Update or upgrade user file source instance.",
         operation_id="file_sources__instances_update",
     )
     def update_instance(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_file_source_id: UUID4 = UserFileSourceIdPathParam,
+        uuid: UUID4 = UserFileSourceIdPathParam,
         payload: ModifyInstancePayload = Body(...),
     ) -> UserFileSourceModel:
-        return self.file_source_instances_manager.modify_instance(trans, user_file_source_id, payload)
+        return self.file_source_instances_manager.modify_instance(trans, uuid, payload)
 
     @router.post(
-        "/api/file_source_instances/{user_file_source_id}/test",
+        "/api/file_source_instances/{uuid}/test",
         summary="Test updating or upgrading user file source instance.",
         operation_id="file_sources__test_instances_update",
     )
     def test_update_instance(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_file_source_id: UUID4 = UserFileSourceIdPathParam,
+        uuid: UUID4 = UserFileSourceIdPathParam,
         payload: TestModifyInstancePayload = Body(...),
     ) -> PluginStatus:
-        return self.file_source_instances_manager.test_modify_instance(trans, user_file_source_id, payload)
+        return self.file_source_instances_manager.test_modify_instance(trans, uuid, payload)
 
     @router.delete(
-        "/api/file_source_instances/{user_file_source_id}",
+        "/api/file_source_instances/{uuid}",
         summary="Purge user file source instance.",
         operation_id="file_sources__instances_purge",
         status_code=status.HTTP_204_NO_CONTENT,
@@ -173,7 +173,7 @@ class FastAPIFileSources:
     def purge_instance(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_file_source_id: UUID4 = UserFileSourceIdPathParam,
+        uuid: UUID4 = UserFileSourceIdPathParam,
     ):
-        self.file_source_instances_manager.purge_instance(trans, user_file_source_id)
+        self.file_source_instances_manager.purge_instance(trans, uuid)
         return Response(status_code=status.HTTP_204_NO_CONTENT)

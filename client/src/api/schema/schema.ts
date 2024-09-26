@@ -906,7 +906,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/file_source_instances/{user_file_source_id}": {
+    "/api/file_source_instances/{uuid}": {
         parameters: {
             query?: never;
             header?: never;
@@ -925,7 +925,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/file_source_instances/{user_file_source_id}/test": {
+    "/api/file_source_instances/{uuid}/test": {
         parameters: {
             query?: never;
             header?: never;
@@ -3379,7 +3379,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/object_store_instances/{user_object_store_id}": {
+    "/api/object_store_instances/{uuid}": {
         parameters: {
             query?: never;
             header?: never;
@@ -3398,7 +3398,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/object_store_instances/{user_object_store_id}/test": {
+    "/api/object_store_instances/{uuid}/test": {
         parameters: {
             query?: never;
             header?: never;
@@ -20842,7 +20842,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID index for a persisted UserFileSourceStore object. */
-                user_file_source_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -20886,7 +20886,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID index for a persisted UserFileSourceStore object. */
-                user_file_source_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -20937,7 +20937,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID index for a persisted UserFileSourceStore object. */
-                user_file_source_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -20979,7 +20979,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID index for a persisted UserFileSourceStore object. */
-                user_file_source_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -21023,7 +21023,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID index for a persisted UserFileSourceStore object. */
-                user_file_source_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -29552,7 +29552,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID used to identify a persisted UserObjectStore object. */
-                user_object_store_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -29596,7 +29596,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID used to identify a persisted UserObjectStore object. */
-                user_object_store_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -29647,7 +29647,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID used to identify a persisted UserObjectStore object. */
-                user_object_store_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -29689,7 +29689,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID used to identify a persisted UserObjectStore object. */
-                user_object_store_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -29733,7 +29733,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID used to identify a persisted UserObjectStore object. */
-                user_object_store_id: string;
+                uuid: string;
             };
             cookie?: never;
         };

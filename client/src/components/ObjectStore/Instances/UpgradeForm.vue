@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, toRef } from "vue";
 
-import { type TestUpgradeInstancePayload, type UpgradeInstancePayload } from "@/api/configTemplates";
 import { useConfigurationTemplateUpgrade } from "@/components/ConfigTemplates/useConfigurationTesting";
 
 import type { ObjectStoreTemplateSummary } from "../Templates/types";
 import { useInstanceRouting } from "./routing";
-import { testUpdate, update } from "./services";
 import { type UserConcreteObjectStore } from "./types";
+
+const editTestUrl = "/api/object_store_instances/{uuid}/test";
+const editUrl = "/api/object_store_instances/{uuid}";
 
 interface Props {
     instance: UserConcreteObjectStore;
@@ -34,8 +35,8 @@ const {
     "storage location",
     toRef(props, "instance"),
     toRef(props, "latestTemplate"),
-    (payload: TestUpgradeInstancePayload) => testUpdate({ user_object_store_id: props.instance.uuid, ...payload }),
-    (payload: UpgradeInstancePayload) => update({ user_object_store_id: props.instance.uuid, ...payload }),
+    editTestUrl,
+    editUrl,
     useInstanceRouting
 );
 </script>

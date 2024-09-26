@@ -2,14 +2,15 @@
 import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { type TestUpdateInstancePayload, type UpdateInstancePayload } from "@/api/configTemplates";
 import { useConfigurationTemplateEdit } from "@/components/ConfigTemplates/useConfigurationTesting";
 
 import { useInstanceAndTemplate } from "./instance";
 import { useInstanceRouting } from "./routing";
-import { testUpdate, update } from "./services";
 
 import EditSecrets from "./EditSecrets.vue";
+
+const editTestUrl = "/api/file_source_instances/{uuid}/test";
+const editUrl = "/api/file_source_instances/{uuid}";
 
 interface Props {
     instanceId: string;
@@ -34,14 +35,7 @@ const {
     testResults,
     submitTitle,
     showForceActionButton,
-} = useConfigurationTemplateEdit(
-    "file source",
-    instance,
-    template,
-    (payload: TestUpdateInstancePayload) => testUpdate({ user_file_source_id: props.instanceId, ...payload }),
-    (payload: UpdateInstancePayload) => update({ user_file_source_id: props.instanceId, ...payload }),
-    useInstanceRouting
-);
+} = useConfigurationTemplateEdit("file source", instance, template, editTestUrl, editUrl, useInstanceRouting);
 </script>
 <template>
     <div>

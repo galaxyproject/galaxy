@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, watch } from "vue";
 
+import { GalaxyApi } from "@/api";
 import type { UserFileSourceModel } from "@/api/fileSources";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 
 import { useInstanceRouting } from "./routing";
-import { getOAuth2Info } from "./services";
 
 import CreateForm from "@/components/FileSources/Instances/CreateForm.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -39,13 +39,23 @@ watch(
     async (requiresAuth) => {
         const templateValue = template.value;
         if (templateValue && requiresAuth) {
-            const { data } = await getOAuth2Info({
-                template_id: templateValue.id,
-                template_version: templateValue.version || 0,
-            });
-            window.location.href = data.authorize_url;
-        } else {
-            console.log("skipping this...");
+            const { data, error: testRequestError } = await GalaxyApi().GET(
+                "/api/file_source_templates/{template_id}/{template_version}/oauth2",
+                {
+                    params: {
+                        path: {
+                            template_id: templateValue.id,
+                            template_version: templateValue.version || 0,
+                        },
+                    },
+                }
+            );
+            if (testRequestError) {
+                console.log("Error getting OAuth2 URL");
+                console.log(testRequestError);
+            } else {
+                window.location.href = data.authorize_url;
+            }
         }
     },
     { immediate: true }
