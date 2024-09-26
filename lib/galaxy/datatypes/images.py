@@ -223,6 +223,34 @@ class Pdf(Image):
             return fh.read(4) == b"%PDF"
 
 
+class Dicom(Image):
+    """
+    DICOM medical imaging format (.dcm)
+
+    https://formats.kaitai.io/dicom/index.html can be a good (MIT) reference if
+    we need to expand the metadata detection in the future, but for current use
+    cases it was sufficient to collect the file type alone.
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('Vida_Head.MR.Comp_DR-Gain_DR.1005.1.2021.04.27.14.20.13.818.14380335.dcm')
+    >>> Dicom().sniff( fname )
+    True
+    """
+
+    edam_format = "format_3548"
+    file_ext = "dcm"
+
+    def sniff(self, filename: str) -> bool:
+        """Determine if the file is in dicom format."""
+        with open(filename, "rb") as fh:
+            fh.seek(128)
+            return fh.read(4) == b"DICM"
+
+    def get_mime(self) -> str:
+        """Returns the mime type of the datatype"""
+        return "application/dicom"
+
+
 @build_sniff_from_prefix
 class Tck(Binary):
     """
