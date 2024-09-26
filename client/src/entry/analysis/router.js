@@ -416,7 +416,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "file_source_templates/:templateId/new",
                         component: CreateFileSourceInstance,
-                        props: true,
+                        props: (route) => ({
+                            templateId: route.params.templateId,
+                            uuid: route.query.uuid,
+                        }),
                     },
                     {
                         path: "pages/create",

@@ -9,6 +9,7 @@ import { create, test } from "./services";
 
 interface CreateFormProps {
     template: ObjectStoreTemplateSummary;
+    uuid?: string;
 }
 const props = defineProps<CreateFormProps>();
 const title = "Create a new storage location for your data";
@@ -21,6 +22,7 @@ const { ActionSummary, error, inputs, InstanceForm, onSubmit, submitTitle, loadi
     useConfigurationTemplateCreation(
         "storage location",
         toRef(props, "template"),
+        toRef(props, "uuid"),
         test,
         create,
         (instance: UserConcreteObjectStore) => emit("created", instance)

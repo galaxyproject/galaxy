@@ -19,8 +19,11 @@ from pydantic import (
 )
 
 from galaxy.exceptions import (
+    Conflict,
     ItemOwnershipException,
+    ObjectNotFound,
     RequestParameterInvalidException,
+    RequestParameterMissingException,
 )
 from galaxy.files import (
     FileSourceScore,
@@ -45,6 +48,7 @@ from galaxy.files.templates import (
     FileSourceTemplate,
     FileSourceTemplateSummaries,
     FileSourceTemplateType,
+    get_oauth2_config_or_none,
     template_to_configuration,
 )
 from galaxy.managers.context import ProvidesUserContext
@@ -53,11 +57,16 @@ from galaxy.model import (
     UserFileSource,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.schema import OAuth2State
 from galaxy.security.vault import Vault
+from galaxy.util import config_templates  # defer acess to a couple methods to allow monkeypatching in testing
 from galaxy.util.config_templates import (
     connection_exception_to_status,
+    get_authorize_url,
+    OAuth2Info,
     PluginAspectStatus,
     PluginStatus,
+    read_oauth2_info_from_configuration,
     settings_exception_to_status,
     status_template_definition,
     TemplateReference,
@@ -66,16 +75,24 @@ from galaxy.util.config_templates import (
     validate_no_extra_variables_defined,
 )
 from galaxy.util.plugin_config import plugin_source_from_dict
+from galaxy.work.context import SessionRequestContext
 from ._config_templates import (
     CanTestPluginStatus,
     CreateInstancePayload,
+    CreateTestTarget,
+    implicit_parameters_for_instance,
     ModifyInstancePayload,
+    oauth2_redirect_uri,
+    oauth2_refresh_token_status,
     prepare_environment,
+    prepare_environment_from_root,
     prepare_template_parameters_for_testing,
     purge_template_instance,
     recover_secrets,
     save_template_instance,
     sort_templates,
+    TemplateParameters,
+    TemplateServerConfiguration,
     TestModifyInstancePayload,
     TestUpdateInstancePayload,
     TestUpgradeInstancePayload,
@@ -147,6 +164,73 @@ class FileSourceInstancesManager:
     @property
     def summaries(self) -> FileSourceTemplateSummaries:
         return self._catalog.summaries
+
+    def template_oauth2(self, trans: SessionRequestContext, template_id: str, template_version: int) -> OAuth2Info:
+        redirect_uri = oauth2_redirect_uri(trans)
+        template_server_configuration = self._resolver.template_server_configuration(
+            trans.user, template_id, template_version
+        )
+        if template_server_configuration.oauth2_client_pair is None:
+            raise ObjectNotFound(f"Could not find oauth2 configuration for specified plugin template id {template_id}")
+
+        oauth2_configuration = template_server_configuration.oauth2_configuration
+        if not oauth2_configuration:
+            raise Exception(
+                "Configuration error - attempting to template an oauth2 configuration but not configuration found."
+            )
+
+        state = OAuth2State(
+            route=f"file_source_instances/{template_id}/{template_version}",
+            nonce="TODO",
+        ).encode()
+        return OAuth2Info(
+            authorize_url=get_authorize_url(
+                template_server_configuration.oauth2_client_pair,
+                oauth2_configuration,
+                redirect_uri=redirect_uri,
+                state=state,
+                scope=template_server_configuration.oauth2_scope,
+            )
+        )
+
+    def handle_authorization_code(self, trans: SessionRequestContext, code: str, state: OAuth2State) -> str:
+        route = state.route
+        _, template_id, template_version = route.split("/", 3)
+        redirect_uri = oauth2_redirect_uri(trans)
+        template_server_configuration = self._resolver.template_server_configuration(
+            trans.user, template_id, int(template_version)
+        )
+        if template_server_configuration.oauth2_client_pair is None:
+            raise ObjectNotFound(f"Could not find oauth2 configuration for specified plugin template id {template_id}")
+
+        oauth2_configuration = template_server_configuration.oauth2_configuration
+        if not oauth2_configuration:
+            raise Exception(
+                "Configuration error - attempting to template an oauth2 configuration but not configuration found."
+            )
+
+        response = config_templates.get_token_from_code_raw(
+            code,
+            template_server_configuration.oauth2_client_pair,
+            oauth2_configuration,
+            redirect_uri,
+        )
+        response.raise_for_status()  # DO BETTER!
+        user_vault = trans.user_vault
+        new_object_uuid = str(uuid4().hex)
+        refresh_token = response.json()["refresh_token"]
+        refresh_token_vault_key = UserFileSource.vault_key_from_uuid(
+            new_object_uuid, "_oauth2_refresh_token", self._app_config
+        )
+        if not refresh_token:
+            raise RequestParameterMissingException("Missing refresh_token in response from remote resource")
+        user_vault.write_secret(refresh_token_vault_key, refresh_token)
+        return f"file_source_templates/{template_id}/new?uuid={new_object_uuid}"
+
+    def _redirect_uri(self, trans: SessionRequestContext) -> str:
+        galaxy_root = trans.request.url_path
+        redirect_uri = f"{galaxy_root}/oauth2_callback"
+        return redirect_uri
 
     def index(self, trans: ProvidesUserContext) -> List[UserFileSourceModel]:
         stores = self._sa_session.query(UserFileSource).filter(UserFileSource.user_id == trans.user.id).all()
@@ -221,7 +305,12 @@ class FileSourceInstancesManager:
         persisted_file_source = UserFileSource()
         persisted_file_source.user_id = trans.user.id
         assert persisted_file_source.user_id
-        persisted_file_source.uuid = uuid4().hex
+        if payload.uuid:
+            # created a UUID during oauth2 callback to save refresh token
+            self._ensure_no_object_with_uuid(payload.uuid)
+            persisted_file_source.uuid = payload.uuid
+        else:
+            persisted_file_source.uuid = uuid4().hex
         persisted_file_source.template_definition = template.model_dump()
         persisted_file_source.template_id = template.id
         persisted_file_source.template_version = template.version
@@ -246,7 +335,7 @@ class FileSourceInstancesManager:
         return self._to_model(trans, persisted_file_source)
 
     def test_modify_instance(
-        self, trans: ProvidesUserContext, id: str, payload: TestModifyInstancePayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: TestModifyInstancePayload
     ) -> PluginStatus:
         persisted_file_source = self._get(trans, id)
         if isinstance(payload, TestUpgradeInstancePayload):
@@ -269,18 +358,19 @@ class FileSourceInstancesManager:
         target = UpgradeTestTarget(persisted_file_source, payload)
         return self._plugin_status_for_template(trans, target, template)
 
-    def plugin_status_for_instance(self, trans: ProvidesUserContext, id: str):
+    def plugin_status_for_instance(self, trans: ProvidesUserContext, id: UUID4):
         persisted_file_source = self._get(trans, id)
         return self._plugin_status(trans, persisted_file_source, to_template_reference(persisted_file_source))
 
     def plugin_status(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> PluginStatus:
-        return self._plugin_status(trans, payload, payload)
+        target = CreateTestTarget(payload, UserFileSource)
+        return self._plugin_status(trans, target, payload)
 
     def _plugin_status(
-        self, trans: ProvidesUserContext, payload: CanTestPluginStatus, template_reference: TemplateReference
+        self, trans: ProvidesUserContext, target: CanTestPluginStatus, template_reference: TemplateReference
     ):
         template = self._catalog.find_template(template_reference)
-        return self._plugin_status_for_template(trans, payload, template)
+        return self._plugin_status_for_template(trans, target, template)
 
     def _plugin_status_for_template(
         self, trans: ProvidesUserContext, payload: CanTestPluginStatus, template: FileSourceTemplate
@@ -290,7 +380,18 @@ class FileSourceInstancesManager:
         if template_definition_status.is_not_ok:
             return PluginStatus(**status_kwds)
         assert template
-        configuration, template_settings_status = self._template_settings_status(trans, payload, template)
+        template_parameters, oauth2_access_token_generation_status = self._template_parameter_generation(
+            trans, payload, template
+        )
+        if oauth2_access_token_generation_status is not None:
+            status_kwds["oauth2_access_token_generation"] = oauth2_access_token_generation_status
+        if not template_parameters or (
+            oauth2_access_token_generation_status and oauth2_access_token_generation_status.is_not_ok
+        ):
+            return PluginStatus(**status_kwds)
+        configuration, template_settings_status = self._template_settings_status(
+            trans, payload, template, template_parameters
+        )
         status_kwds["template_settings"] = template_settings_status
         if template_settings_status.is_not_ok:
             return PluginStatus(**status_kwds)
@@ -305,15 +406,35 @@ class FileSourceInstancesManager:
         # locally.
         return PluginStatus(**status_kwds)
 
+    def _template_parameter_generation(
+        self,
+        trans: ProvidesUserContext,
+        payload: CanTestPluginStatus,
+        template: FileSourceTemplate,
+    ) -> Tuple[Optional[TemplateParameters], Optional[PluginAspectStatus]]:
+        template_server_configuration = self._resolver.template_server_configuration(
+            trans.user, template.id, template.version
+        )
+        template_parameters = None
+        exception = None
+        try:
+            template_parameters = prepare_template_parameters_for_testing(
+                trans, template, template_server_configuration, payload, self._app_vault, self._app_config
+            )
+        except Exception as e:
+            if template_server_configuration.uses_oauth2:
+                exception = e
+            else:
+                raise
+        return template_parameters, oauth2_refresh_token_status(template_server_configuration, exception)
+
     def _template_settings_status(
         self,
         trans: ProvidesUserContext,
         payload: CanTestPluginStatus,
         template: FileSourceTemplate,
+        template_parameters: TemplateParameters,
     ) -> Tuple[Optional[FileSourceConfiguration], PluginAspectStatus]:
-        template_parameters = prepare_template_parameters_for_testing(
-            trans, template, payload, self._app_vault, self._app_config
-        )
         configuration = None
         exception = None
         try:
@@ -323,16 +444,19 @@ class FileSourceInstancesManager:
         return configuration, settings_exception_to_status(exception)
 
     def _connection_status(
-        self, trans: ProvidesUserContext, payload: CanTestPluginStatus, configuration: FileSourceConfiguration
+        self, trans: ProvidesUserContext, target: CanTestPluginStatus, configuration: FileSourceConfiguration
     ) -> Tuple[Optional[BaseFilesSource], PluginAspectStatus]:
         file_source = None
         exception = None
-        if isinstance(payload, (UpgradeTestTarget, UpdateTestTarget)):
-            label = payload.instance.name
-            doc = payload.instance.description
+        if isinstance(target, (UpgradeTestTarget, UpdateTestTarget)):
+            label = target.instance.name
+            doc = target.instance.description
+        elif isinstance(target, (CreateTestTarget)):
+            label = target.payload.name
+            doc = target.payload.description
         else:
-            label = payload.name
-            doc = payload.description
+            label = target.name
+            doc = target.description
         try:
             file_source_properties = configuration_to_file_source_properties(
                 configuration,
@@ -354,6 +478,12 @@ class FileSourceInstancesManager:
 
     def _index_filter(self, uuid: UUID4):
         return UserFileSource.__table__.c.uuid == uuid
+
+    def _ensure_no_object_with_uuid(self, uuid: UUID4):
+        filter = UserFileSource.__table__.c.uuid == uuid
+        user_file_source = self._sa_session.query(UserFileSource).filter(filter).one_or_none()
+        if user_file_source is not None:
+            raise Conflict()
 
     def _get(self, trans: ProvidesUserContext, uuid: UUID4) -> UserFileSource:
         filter = self._index_filter(uuid)
@@ -444,13 +574,19 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
     def _file_source_properties(self, user_file_source: UserFileSource) -> FilesSourceProperties:
         secrets = recover_secrets(user_file_source, self._app_vault, self._app_config)
         environment = prepare_environment(user_file_source, self._app_vault, self._app_config)
+        template_server_configuration = self.template_server_configuration(
+            user_file_source.user, user_file_source.template_id, user_file_source.template_version
+        )
+        implicit = implicit_parameters_for_instance(
+            user_file_source, template_server_configuration, self._app_vault, self._app_config
+        )
         templates = sort_templates(
             self._app_config,
             self._catalog.catalog.root,
             user_file_source,
         )
         file_source_configuration: FileSourceConfiguration = user_file_source.file_source_configuration(
-            secrets=secrets, environment=environment, templates=templates
+            secrets=secrets, environment=environment, implicit=implicit, templates=templates
         )
         return configuration_to_file_source_properties(
             file_source_configuration,
@@ -497,6 +633,31 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
                 continue
             all_file_source_properties.append(files_source_properties)
         return all_file_source_properties
+
+    def template_server_configuration(
+        self, user, template_id: str, template_version: int
+    ) -> TemplateServerConfiguration:
+        catalog = self._catalog
+        template = catalog.find_template_by(template_id, template_version)
+        oauth2_configuration = get_oauth2_config_or_none(template)
+        oauth2_scope = None
+        if oauth2_configuration is not None:
+            environment = prepare_environment_from_root(template.environment, self._app_vault, self._app_config)
+            user_details = user.config_template_details()
+            oauth2_client_pair_obj, oauth2_scope = read_oauth2_info_from_configuration(
+                template.configuration, user_details, environment
+            )
+            # most configuration definitions won't include this, the default for the
+            # plugin type is the fallback and the typical case here
+            if oauth2_scope is None:
+                oauth2_scope = oauth2_configuration.scope
+        else:
+            oauth2_client_pair_obj = None
+        return TemplateServerConfiguration(
+            oauth2_client_pair=oauth2_client_pair_obj,
+            oauth2_configuration=oauth2_configuration,
+            oauth2_scope=oauth2_scope,
+        )
 
     def user_file_sources_to_dicts(
         self,

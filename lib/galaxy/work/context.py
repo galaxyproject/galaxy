@@ -90,6 +90,11 @@ class GalaxyAbstractRequest:
 
     @property
     @abc.abstractmethod
+    def url_path(self) -> str:
+        """Base with optional prefix added."""
+
+    @property
+    @abc.abstractmethod
     def host(self) -> str:
         """The host address."""
 

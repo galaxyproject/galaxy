@@ -150,7 +150,7 @@ class FastAPIObjectStore:
     def instance_test(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_object_store_id: str = UserObjectStoreIdPathParam,
+        user_object_store_id: UUID4 = UserObjectStoreIdPathParam,
     ) -> PluginStatus:
         return self.object_store_instance_manager.plugin_status_for_instance(trans, user_object_store_id)
 
@@ -187,7 +187,7 @@ class FastAPIObjectStore:
     def test_update_instance(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_file_source_id: str = UserObjectStoreIdPathParam,
+        user_file_source_id: UUID4 = UserObjectStoreIdPathParam,
         payload: TestModifyInstancePayload = Body(...),
     ) -> PluginStatus:
         return self.object_store_instance_manager.test_modify_instance(trans, user_file_source_id, payload)

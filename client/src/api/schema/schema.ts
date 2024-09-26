@@ -926,10 +926,22 @@ export interface paths {
         trace?: never;
     };
     "/api/file_source_instances/{user_file_source_id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Test a file source instance and return status. */
         get: operations["file_sources__instances_test_instance"];
+        put?: never;
         /** Test updating or upgrading user file source instance. */
         post: operations["file_sources__test_instances_update"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/file_source_templates": {
         parameters: {
@@ -940,6 +952,23 @@ export interface paths {
         };
         /** Get a list of file source templates available to build user defined file sources from */
         get: operations["file_sources__templates_index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/file_source_templates/{template_id}/{template_version}/oauth2": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Template Oauth2 */
+        get: operations["file_sources__template_oauth2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3370,10 +3399,22 @@ export interface paths {
         trace?: never;
     };
     "/api/object_store_instances/{user_object_store_id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get a persisted user object store instance. */
         get: operations["object_stores__instances_test_instance"];
+        put?: never;
         /** Test updating or upgrading user object source instance. */
         post: operations["object_stores__test_instances_update"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/object_store_templates": {
         parameters: {
@@ -5659,6 +5700,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/oauth2_callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Callback entry point for remote resource responses with OAuth2 authorization codes */
+        get: operations["oauth2_callback_oauth2_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6830,6 +6888,8 @@ export interface components {
             template_id: string;
             /** Template Version */
             template_version: number;
+            /** Uuid */
+            uuid?: string | null;
             /** Variables */
             variables: {
                 [key: string]: string | boolean | number;
@@ -9047,7 +9107,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata" | "webdav";
+            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata" | "webdav" | "dropbox" | "googledrive";
             /** Variables */
             variables?:
                 | (
@@ -14454,6 +14514,11 @@ export interface components {
              */
             updated_count: number;
         };
+        /** OAuth2Info */
+        OAuth2Info: {
+            /** Authorize Url */
+            authorize_url: string;
+        };
         /** ObjectExportTaskResponse */
         ObjectExportTaskResponse: {
             /**
@@ -14993,6 +15058,7 @@ export interface components {
         /** PluginStatus */
         PluginStatus: {
             connection?: components["schemas"]["PluginAspectStatus"] | null;
+            oauth2_access_token_generation?: components["schemas"]["PluginAspectStatus"] | null;
             template_definition: components["schemas"]["PluginAspectStatus"];
             template_settings?: components["schemas"]["PluginAspectStatus"] | null;
         };
@@ -16531,20 +16597,20 @@ export interface components {
         TestUpdateInstancePayload: {
             /** Variables */
             variables?: {
-                [key: string]: (string | boolean | number) | undefined;
+                [key: string]: string | boolean | number;
             } | null;
         };
         /** TestUpgradeInstancePayload */
         TestUpgradeInstancePayload: {
             /** Secrets */
             secrets: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             };
             /** Template Version */
             template_version: number;
             /** Variables */
             variables: {
-                [key: string]: (string | boolean | number) | undefined;
+                [key: string]: string | boolean | number;
             };
         };
         /** ToolDataDetails */
@@ -17398,7 +17464,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata" | "webdav";
+            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata" | "webdav" | "dropbox" | "googledrive";
             /** Uri Root */
             uri_root: string;
             /**
@@ -20905,43 +20971,61 @@ export interface operations {
         };
     };
     file_sources__instances_test_instance: {
-        /** Test a file source instance and return status. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            query?: never;
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The UUID index for a persisted UserFileSourceStore object. */
             path: {
+                /** @description The UUID index for a persisted UserFileSourceStore object. */
                 user_file_source_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["PluginStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
     file_sources__test_instances_update: {
-        /** Test updating or upgrading user file source instance. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            query?: never;
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The UUID index for a persisted UserFileSourceStore object. */
             path: {
+                /** @description The UUID index for a persisted UserFileSourceStore object. */
                 user_file_source_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -20953,14 +21037,29 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["PluginStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20984,6 +21083,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FileSourceTemplateSummaries"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    file_sources__template_oauth2: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The template ID of the target file source template. */
+                template_id: string;
+                /** @description The template version of the target file source template. */
+                template_version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OAuth2 authorization url to redirect user to prior to creation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuth2Info"];
                 };
             };
             /** @description Request Error */
@@ -29536,43 +29681,61 @@ export interface operations {
         };
     };
     object_stores__instances_test_instance: {
-        /** Get a persisted user object store instance. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            query?: never;
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The UUID used to identify a persisted UserObjectStore object. */
             path: {
+                /** @description The UUID used to identify a persisted UserObjectStore object. */
                 user_object_store_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["PluginStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
     object_stores__test_instances_update: {
-        /** Test updating or upgrading user object source instance. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            query?: never;
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The UUID used to identify a persisted UserObjectStore object. */
             path: {
+                /** @description The UUID used to identify a persisted UserObjectStore object. */
                 user_object_store_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -29584,14 +29747,29 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["PluginStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -36591,6 +36769,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Service"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    oauth2_callback_oauth2_callback_get: {
+        parameters: {
+            query: {
+                /** @description Base-64 encoded JSON used to route request within Galaxy. */
+                state: string;
+                code: string;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Request Error */

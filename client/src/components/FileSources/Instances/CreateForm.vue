@@ -8,6 +8,7 @@ import { create, test } from "./services";
 
 interface CreateFormProps {
     template: FileSourceTemplateSummary;
+    uuid?: string;
 }
 const props = defineProps<CreateFormProps>();
 const title = "Create a new file source for your data";
@@ -20,6 +21,7 @@ const { ActionSummary, error, inputs, InstanceForm, onSubmit, submitTitle, loadi
     useConfigurationTemplateCreation(
         "file source",
         toRef(props, "template"),
+        toRef(props, "uuid"),
         test,
         create,
         (fileSource: UserFileSourceModel) => emit("created", fileSource)

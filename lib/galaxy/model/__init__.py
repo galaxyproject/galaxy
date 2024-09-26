@@ -194,6 +194,7 @@ from galaxy.util import (
 )
 from galaxy.util.config_templates import (
     EnvironmentDict,
+    ImplicitConfigurationParameters,
     SecretsDict,
     Template as ConfigTemplate,
     TemplateEnvironment,
@@ -11076,6 +11077,10 @@ class HasConfigSecrets(RepresentById):
     uuid: Mapped[Union[UUID, str]]
     user: Mapped["User"]
 
+    @classmethod
+    def vault_key_from_uuid(clazz, uuid: Union[str, UUID], secret: str, app_config: UsesTemplatesAppConfig) -> str:
+        return f"{clazz.secret_config_type}/{str(get_uuid(uuid))}/{secret}"
+
     def vault_id_prefix(self, app_config: UsesTemplatesAppConfig) -> str:
         id_str = str(self.uuid)
         user_vault_id_prefix = f"{self.secret_config_type}/{id_str}"
@@ -11230,7 +11235,11 @@ class UserFileSource(Base, HasConfigTemplate):
         return FileSourceTemplate(**self.template_definition or {})
 
     def file_source_configuration(
-        self, secrets: SecretsDict, environment: EnvironmentDict, templates: Optional[List[FileSourceTemplate]] = None
+        self,
+        secrets: SecretsDict,
+        environment: EnvironmentDict,
+        implicit: ImplicitConfigurationParameters,
+        templates: Optional[List[FileSourceTemplate]] = None,
     ) -> FileSourceConfiguration:
         if templates is None:
             templates = [self.template]
@@ -11245,6 +11254,7 @@ class UserFileSource(Base, HasConfigTemplate):
                     secrets=secrets,
                     user_details=user_details,
                     environment=environment,
+                    implicit=implicit,
                 )
             except Exception as e:
                 if first_exception is None:
