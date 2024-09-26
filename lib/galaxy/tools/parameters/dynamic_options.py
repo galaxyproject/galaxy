@@ -286,14 +286,12 @@ class ParamValueFilter(Filter):
         return self.ref_name
 
     def filter_options(self, options, trans, other_values):
-        if trans is not None and trans.workflow_building_mode:
-            return []
         ref = other_values.get(self.ref_name, None)
-        if ref is None:
+        if ref is None or is_runtime_value(ref):
             ref = []
 
         # - for HDCAs the list of contained HDAs is extracted
-        # - single values are transformed in a single eleent list
+        # - single values are transformed in a single element list
         # - remaining cases are already lists (select and data parameters with multiple=true)
         if isinstance(ref, HistoryDatasetCollectionAssociation):
             ref = ref.to_hda_representative(multiple=True)
