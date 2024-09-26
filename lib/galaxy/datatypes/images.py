@@ -128,7 +128,36 @@ class OMETiff(Tiff):
 
 
 class Hamamatsu(Image):
+    """
+    > The Hamamatsu format has three variants. VMS and VMU consist of an index
+    > file, 2 or more image files, and (in the case of VMS) an “optimisation”
+    > file. NDPI consists of a single TIFF-like file with some custom TIFF tags.
+    > VMS and NDPI contain JPEG images; VMU contains NGR images (a custom
+    > uncompressed format).
+    (via https://openslide.org/formats/hamamatsu/)
+
+    """
     file_ext = "vms"
+
+
+class NDPI(Image):
+    """
+    > NDPI uses a TIFF-like structure, but libtiff cannot read the headers of
+    > an NDPI file. This is because NDPI specifies the RowsPerStrip as the height
+    > of the file, and after doing out the multiplication, this typically
+    > overflows libtiff and it refuses to open the file. Also, the TIFF tags are
+    > not stored in sorted order.
+    (via https://openslide.org/formats/hamamatsu/)
+
+    Python's tifffile, however, claims to be able to read these.
+    """
+    file_ext = "ndpi"
+
+    def sniff(self, filename: str) -> bool:
+        with tifffile.TiffFile(filename) as tif:
+            if tif.is_ndpi:
+                return True
+        return False
 
 
 class Mirax(Image):
