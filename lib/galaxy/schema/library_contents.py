@@ -214,7 +214,7 @@ class LibraryContentsShowDatasetResponse(LibraryContentsShowResponse):
     state: str
     file_name: str
     created_from_basename: Optional[str]
-    uploaded_by: str
+    uploaded_by: Optional[str]
     message: Optional[str]
     date_uploaded: str
     file_size: int
