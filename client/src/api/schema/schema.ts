@@ -13219,7 +13219,7 @@ export interface components {
             /** Update Time */
             update_time: string;
             /** Uploaded By */
-            uploaded_by: string;
+            uploaded_by: string | null;
             /** Uuid */
             uuid: string;
         } & {
