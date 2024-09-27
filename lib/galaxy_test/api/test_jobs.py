@@ -1,8 +1,12 @@
-import datetime
 import json
 import os
 import time
 import urllib.parse
+from datetime import (
+    datetime,
+    timedelta,
+    timezone,
+)
 from operator import itemgetter
 from unittest import SkipTest
 
@@ -104,13 +108,13 @@ class TestJobsApi(ApiTestCase, TestsTools):
 
     @pytest.mark.require_new_history
     def test_index_date_filter(self, history_id):
-        two_weeks_ago = (datetime.datetime.utcnow() - datetime.timedelta(14)).isoformat()
-        last_week = (datetime.datetime.utcnow() - datetime.timedelta(7)).isoformat()
-        before = datetime.datetime.utcnow().isoformat()
+        two_weeks_ago = (datetime.now(tz=timezone.utc) - timedelta(14)).isoformat()
+        last_week = (datetime.now(tz=timezone.utc) - timedelta(7)).isoformat()
+        before = datetime.now(tz=timezone.utc).isoformat()
         today = before[:10]
-        tomorrow = (datetime.datetime.utcnow() + datetime.timedelta(1)).isoformat()[:10]
+        tomorrow = (datetime.now(tz=timezone.utc) + timedelta(1)).isoformat()[:10]
         self.__history_with_new_dataset(history_id)
-        after = datetime.datetime.utcnow().isoformat()
+        after = datetime.now(tz=timezone.utc).isoformat()
 
         # Test using dates
         jobs = self.__jobs_index(data={"date_range_min": today, "date_range_max": tomorrow})

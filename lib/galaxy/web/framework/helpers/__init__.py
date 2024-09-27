@@ -10,6 +10,7 @@ import re
 from datetime import (
     datetime,
     timedelta,
+    timezone,
 )
 
 from babel import default_locale
@@ -29,14 +30,14 @@ def time_ago(x):
     Convert a datetime to a string.
     """
     # If the date is more than one week ago, then display the actual date instead of in words
-    if datetime.utcnow() - x > timedelta(weeks=1):  # Greater than a week difference
+    if datetime.now(tz=timezone.utc) - x > timedelta(weeks=1):  # Greater than a week difference
         return x.strftime("%b %d, %Y")
     else:
         # Workaround https://github.com/python-babel/babel/issues/137
         kwargs = {}
         if not default_locale("LC_TIME"):
             kwargs["locale"] = "en_US_POSIX"
-        return format_timedelta(x - datetime.utcnow(), threshold=1, add_direction=True, **kwargs)  # type: ignore[arg-type] # https://github.com/python/mypy/issues/9676
+        return format_timedelta(x - datetime.now(tz=timezone.utc), threshold=1, add_direction=True, **kwargs)  # type: ignore[arg-type] # https://github.com/python/mypy/issues/9676
 
 
 def iff(a, b, c):

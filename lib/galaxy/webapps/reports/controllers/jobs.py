@@ -6,6 +6,7 @@ from datetime import (
     date,
     datetime,
     timedelta,
+    timezone,
 )
 from math import (
     ceil,
@@ -409,7 +410,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         monitor_user_id = get_monitor_id(trans, monitor_email)
 
         # If specified_date is not received, we'll default to the current month
-        specified_date = kwd.get("specified_date", datetime.utcnow().strftime("%Y-%m-%d"))
+        specified_date = kwd.get("specified_date", datetime.now(tz=timezone.utc).strftime("%Y-%m-%d"))
         specified_month = specified_date[:7]
 
         year, month = map(int, specified_month.split("-"))
@@ -519,7 +520,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         monitor_user_id = get_monitor_id(trans, monitor_email)
 
         # If specified_date is not received, we'll default to the current month
-        specified_date = kwd.get("specified_date", datetime.utcnow().strftime("%Y-%m-%d"))
+        specified_date = kwd.get("specified_date", datetime.now(tz=timezone.utc).strftime("%Y-%m-%d"))
         specified_month = specified_date[:7]
         year, month = map(int, specified_month.split("-"))
         start_date = date(year, month, 1)
@@ -1237,7 +1238,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         monitor_user_id = get_monitor_id(trans, monitor_email)
 
         tool_id = params.get("tool_id", "Add a column1")
-        specified_date = params.get("specified_date", datetime.utcnow().strftime("%Y-%m-%d"))
+        specified_date = params.get("specified_date", datetime.now(tz=timezone.utc).strftime("%Y-%m-%d"))
         q = (
             sa.select(
                 self.select_month(model.Job.table.c.create_time).label("date"),

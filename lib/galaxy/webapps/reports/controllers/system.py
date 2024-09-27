@@ -3,6 +3,7 @@ import shutil
 from datetime import (
     datetime,
     timedelta,
+    timezone,
 )
 from decimal import Decimal
 
@@ -72,7 +73,7 @@ class System(BaseUIController):
         message = ""
         if params.userless_histories_days:
             userless_histories_days = int(params.userless_histories_days)
-            cutoff_time = datetime.utcnow() - timedelta(days=userless_histories_days)
+            cutoff_time = datetime.now(tz=timezone.utc) - timedelta(days=userless_histories_days)
             history_count = 0
             dataset_count = 0
             stmt = select(model.History).filter(
@@ -104,7 +105,7 @@ class System(BaseUIController):
         message = ""
         if params.deleted_histories_days:
             deleted_histories_days = int(params.deleted_histories_days)
-            cutoff_time = datetime.utcnow() - timedelta(days=deleted_histories_days)
+            cutoff_time = datetime.now(tz=timezone.utc) - timedelta(days=deleted_histories_days)
             history_count = 0
             dataset_count = 0
             disk_space = 0
@@ -146,7 +147,7 @@ class System(BaseUIController):
         message = ""
         if params.deleted_datasets_days:
             deleted_datasets_days = int(params.deleted_datasets_days)
-            cutoff_time = datetime.utcnow() - timedelta(days=deleted_datasets_days)
+            cutoff_time = datetime.now(tz=timezone.utc) - timedelta(days=deleted_datasets_days)
             dataset_count = 0
             disk_space = 0
             stmt = select(model.Dataset).filter(

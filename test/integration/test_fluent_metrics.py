@@ -1,5 +1,8 @@
 import json
-from datetime import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 
 from galaxy_test.driver import integration_util
 
@@ -29,7 +32,7 @@ class TestFluentMetricsIntegration(integration_util.IntegrationTestCase):
         metrics = [
             {
                 "namespace": "api-test",
-                "time": f"{datetime.utcnow().isoformat()}Z",
+                "time": f"{datetime.now(tz=timezone.utc).isoformat()}Z",
                 "level": 1,
                 "args": json.dumps({"arg01": "test"}),
             }

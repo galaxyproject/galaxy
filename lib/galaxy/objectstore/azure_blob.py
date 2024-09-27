@@ -7,6 +7,7 @@ import os
 from datetime import (
     datetime,
     timedelta,
+    timezone,
 )
 
 try:
@@ -327,7 +328,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
                     container_name=self.container_name,
                     blob_name=rel_path,
                     permission=BlobSasPermissions(read=True),
-                    expiry=datetime.utcnow() + timedelta(hours=1),
+                    expiry=datetime.now(tz=timezone.utc) + timedelta(hours=1),
                 )
                 return f"{url}?{token}"
             except AzureHttpError:

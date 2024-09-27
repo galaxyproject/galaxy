@@ -8,7 +8,10 @@ import random
 import re
 import string
 import time
-from datetime import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 from typing import (
     Any,
     Dict,
@@ -469,13 +472,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return None, "Please provide a token or a user and password."
         if token:
             token_result = trans.sa_session.get(self.app.model.PasswordResetToken, token)
-            if not token_result or not token_result.expiration_time > datetime.utcnow():
+            if not token_result or not token_result.expiration_time > datetime.now(tz=timezone.utc):
                 return None, "Invalid or expired password reset token, please request a new one."
             user = token_result.user
             message = self.__set_password(trans, user, password, confirm)
             if message:
                 return None, message
-            token_result.expiration_time = datetime.utcnow()
+            token_result.expiration_time = datetime.now(tz=timezone.utc)
             trans.sa_session.add(token_result)
             return user, "Password has been changed. Token has been invalidated."
         else:
@@ -546,7 +549,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         template_context = {
             "name": escape(username),
             "user_email": escape(email),
-            "date": datetime.utcnow().strftime("%D"),
+            "date": datetime.now(tz=timezone.utc).strftime("%D"),
             "hostname": trans.request.host,
             "activation_url": activation_link,
             "terms_url": self.app.config.terms_url,
