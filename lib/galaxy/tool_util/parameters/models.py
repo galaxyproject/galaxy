@@ -64,6 +64,8 @@ StateRepresentationT = Literal[
     "request",
     "request_internal",
     "request_internal_dereferenced",
+    "landing_request",
+    "landing_request_internal",
     "job_internal",
     "test_case_xml",
     "workflow_step",
@@ -219,6 +221,8 @@ class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
         requires_value = self.request_requires_value
         if state_representation == "job_internal":
             requires_value = True
+        elif _is_landing_request(state_representation):
+            requires_value = False
         return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
 
     @property
@@ -240,7 +244,12 @@ class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):
         py_type = self.py_type
         if state_representation == "workflow_step_linked":
             py_type = allow_connected_value(py_type)
-        return dynamic_model_information_from_py_type(self, py_type)
+        requires_value = self.request_requires_value
+        if state_representation == "job_internal":
+            requires_value = True
+        elif _is_landing_request(state_representation):
+            requires_value = False
+        return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
 
     @property
     def request_requires_value(self) -> bool:
@@ -405,9 +414,18 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         if state_representation == "request":
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type), BatchDataInstance)
+        if state_representation == "landing_request":
+            return allow_batching(
+                dynamic_model_information_from_py_type(self, self.py_type, requires_value=False), BatchDataInstance
+            )
         elif state_representation == "request_internal":
             return allow_batching(
                 dynamic_model_information_from_py_type(self, self.py_type_internal), BatchDataInstanceInternal
+            )
+        elif state_representation == "landing_request_internal":
+            return allow_batching(
+                dynamic_model_information_from_py_type(self, self.py_type_internal, requires_value=False),
+                BatchDataInstanceInternal,
             )
         elif state_representation == "request_internal_dereferenced":
             return allow_batching(
@@ -455,6 +473,12 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         if state_representation == "request":
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type))
+        elif state_representation == "landing_request":
+            return allow_batching(dynamic_model_information_from_py_type(self, self.py_type, requires_value=False))
+        elif state_representation == "landing_request_internal":
+            return allow_batching(
+                dynamic_model_information_from_py_type(self, self.py_type_internal, requires_value=False)
+            )
         elif state_representation in ["request_internal", "request_internal_dereferenced"]:
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type_internal))
         elif state_representation == "job_internal":
@@ -600,7 +624,10 @@ class DirectoryUriParameterModel(BaseGalaxyToolParameterModelDefinition):
         return AnyUrl
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        return dynamic_model_information_from_py_type(self, self.py_type)
+        requires_value = self.request_requires_value
+        if _is_landing_request(state_representation):
+            requires_value = False
+        return dynamic_model_information_from_py_type(self, self.py_type, requires_value=requires_value)
 
     @property
     def request_requires_value(self) -> bool:
@@ -1080,9 +1107,14 @@ class RepeatParameterModel(BaseGalaxyToolParameterModelDefinition):
         instance_class: Type[BaseModel] = create_field_model(
             self.parameters, f"Repeat_{self.name}", state_representation
         )
+        min_length = self.min
+        max_length = self.max
         requires_value = self.request_requires_value
         if state_representation == "job_internal":
             requires_value = True
+        elif _is_landing_request(state_representation):
+            requires_value = False
+            min_length = 0  # in a landing request - parameters can be partially filled
 
         initialize_repeat: Any
         if requires_value:
@@ -1091,7 +1123,7 @@ class RepeatParameterModel(BaseGalaxyToolParameterModelDefinition):
             initialize_repeat = None
 
         class RepeatType(RootModel):
-            root: List[instance_class] = Field(initialize_repeat, min_length=self.min, max_length=self.max)  # type: ignore[valid-type]
+            root: List[instance_class] = Field(initialize_repeat, min_length=min_length, max_length=max_length)  # type: ignore[valid-type]
 
         return DynamicModelInformation(
             self.name,
@@ -1382,6 +1414,8 @@ def create_model_factory(state_representation: StateRepresentationT):
 create_request_model = create_model_factory("request")
 create_request_internal_model = create_model_factory("request_internal")
 create_request_internal_dereferenced_model = create_model_factory("request_internal_dereferenced")
+create_landing_request_model = create_model_factory("landing_request")
+create_landing_request_internal_model = create_model_factory("landing_request_internal")
 create_job_internal_model = create_model_factory("job_internal")
 create_test_case_model = create_model_factory("test_case_xml")
 create_workflow_step_model = create_model_factory("workflow_step")
@@ -1413,6 +1447,10 @@ def create_field_model(
     return pydantic_model
 
 
+def _is_landing_request(state_representation: StateRepresentationT):
+    return state_representation in ["landing_request", "landing_request_internal"]
+
+
 def validate_against_model(pydantic_model: Type[BaseModel], parameter_state: Dict[str, Any]) -> None:
     try:
         pydantic_model(**parameter_state)
@@ -1441,6 +1479,8 @@ def validate_model_type_factory(state_representation: StateRepresentationT) -> V
 validate_request = validate_model_type_factory("request")
 validate_internal_request = validate_model_type_factory("request_internal")
 validate_internal_request_dereferenced = validate_model_type_factory("request_internal_dereferenced")
+validate_landing_request = validate_model_type_factory("landing_request")
+validate_internal_landing_request = validate_model_type_factory("landing_request_internal")
 validate_internal_job = validate_model_type_factory("job_internal")
 validate_test_case = validate_model_type_factory("test_case_xml")
 validate_workflow_step = validate_model_type_factory("workflow_step")

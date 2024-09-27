@@ -187,7 +187,6 @@ class ToolParameter(UsesDictVisibleKeys):
         self.hidden = input_source.get_bool("hidden", False)
         self.refresh_on_change = input_source.get_bool("refresh_on_change", False)
         self.optional = input_source.parse_optional()
-        self.optionality_inferred = False
         self.is_dynamic = False
         self.label = input_source.parse_label()
         self.help = input_source.parse_help()
@@ -352,6 +351,7 @@ class ToolParameter(UsesDictVisibleKeys):
 class SimpleTextToolParameter(ToolParameter):
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
+        self.optionality_inferred = False
         super().__init__(tool, input_source)
         optional = input_source.get("optional", None)
         if optional is not None:
@@ -405,6 +405,7 @@ class TextToolParameter(SimpleTextToolParameter):
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
+        self.profile = tool.profile
         self.datalist = []
         for title, value, _ in input_source.parse_static_options():
             self.datalist.append({"label": title, "value": value})
@@ -419,6 +420,16 @@ class TextToolParameter(SimpleTextToolParameter):
             and contains_workflow_parameter(value, search=search)
         ):
             return super().validate(value, trans)
+
+    @property
+    def wrapper_default() -> Optional[str]:
+        """Handle change in default handling pre and post 23.0 profiles."""
+        profile = self.profile
+        legacy_behavior = (profile is None or Version(str(profile)) < Version("23.0"))
+        default_value = None
+        if self.optional and self.optionality_inferred and legacy_behavior:
+            default_value = ""
+        return default_value
 
     def to_dict(self, trans, other_values=None):
         d = super().to_dict(trans)
