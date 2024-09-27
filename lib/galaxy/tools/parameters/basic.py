@@ -1814,6 +1814,9 @@ class DrillDownSelectToolParameter(SelectToolParameter):
             return "\n".join(map(str, rval))
         return "Nothing selected."
 
+    def get_dependencies(self):
+        return []
+
     def to_dict(self, trans, other_values=None):
         other_values = other_values or {}
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
