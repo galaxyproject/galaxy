@@ -40,6 +40,8 @@ from .models import (
 )
 from .state import (
     JobInternalToolState,
+    LandingRequestInternalToolState,
+    LandingRequestToolState,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
     RequestToolState,
@@ -67,7 +69,7 @@ AdaptCollections = Callable[[JsonTestCollectionDefDict], DataCollectionRequest]
 def decode(
     external_state: RequestToolState, input_models: ToolParameterBundle, decode_id: Callable[[str], int]
 ) -> RequestInternalToolState:
-    """Prepare an external representation of tool state (request) for storing in the database (request_internal)."""
+    """Prepare an internal representation of tool state (request_internal) for storing in the database."""
 
     external_state.validate(input_models)
     decode_callback = _decode_callback_for(decode_id)
@@ -83,17 +85,51 @@ def decode(
 
 
 def encode(
-    external_state: RequestInternalToolState, input_models: ToolParameterBundle, encode_id: EncodeFunctionT
+    internal_state: RequestInternalToolState, input_models: ToolParameterBundle, encode_id: EncodeFunctionT
 ) -> RequestToolState:
+    """Prepare an external representation of tool state (request) from persisted state in the database (request_internal)."""
+
+    encode_callback = _encode_callback_for(encode_id)
+    request_state_dict = visit_input_values(
+        input_models,
+        internal_state,
+        encode_callback,
+    )
+    request_state = RequestToolState(request_state_dict)
+    request_state.validate(input_models)
+    return request_state
+
+
+def landing_decode(
+    external_state: LandingRequestToolState, input_models: ToolParameterBundle, decode_id: Callable[[str], int]
+) -> LandingRequestInternalToolState:
+    """Prepare an external representation of tool state (request) for storing in the database (request_internal)."""
+
+    external_state.validate(input_models)
+    decode_callback = _decode_callback_for(decode_id)
+    internal_state_dict = visit_input_values(
+        input_models,
+        external_state,
+        decode_callback,
+    )
+
+    internal_request_state = LandingRequestInternalToolState(internal_state_dict)
+    internal_request_state.validate(input_models)
+    return internal_request_state
+
+
+def landing_encode(
+    internal_state: LandingRequestInternalToolState, input_models: ToolParameterBundle, encode_id: EncodeFunctionT
+) -> LandingRequestToolState:
     """Prepare an external representation of tool state (request) for storing in the database (request_internal)."""
 
     encode_callback = _encode_callback_for(encode_id)
     request_state_dict = visit_input_values(
         input_models,
-        external_state,
+        internal_state,
         encode_callback,
     )
-    request_state = RequestToolState(request_state_dict)
+    request_state = LandingRequestToolState(request_state_dict)
     request_state.validate(input_models)
     return request_state
 
