@@ -18,8 +18,10 @@ from galaxy.tool_util.parameters import (
     RequestToolState,
     ToolParameterBundleModel,
     validate_internal_job,
+    validate_internal_landing_request,
     validate_internal_request,
     validate_internal_request_dereferenced,
+    validate_landing_request,
     validate_request,
     validate_test_case,
     validate_workflow_step,
@@ -97,6 +99,10 @@ def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolPar
         "request_internal_invalid": _assert_internal_requests_invalid,
         "request_internal_dereferenced_valid": _assert_internal_requests_dereferenced_validate,
         "request_internal_dereferenced_invalid": _assert_internal_requests_dereferenced_invalid,
+        "landing_request_valid": _assert_landing_requests_validate,
+        "landing_request_invalid": _assert_landing_requests_invalid,
+        "landing_request_internal_valid": _assert_internal_landing_requests_validate,
+        "landing_request_internal_invalid": _assert_internal_landing_requests_invalid,
         "job_internal_valid": _assert_internal_jobs_validate,
         "job_internal_invalid": _assert_internal_jobs_invalid,
         "test_case_xml_valid": _assert_test_cases_validate,
@@ -165,6 +171,12 @@ _assert_workflow_step_validates, _assert_workflow_step_invalid = model_assertion
 _assert_workflow_step_linked_validates, _assert_workflow_step_linked_invalid = model_assertion_function_factory(
     validate_workflow_step_linked, "linked workflow step tool state"
 )
+_assert_landing_request_validates, _assert_landing_request_invalid = model_assertion_function_factory(
+    validate_landing_request, "landing request"
+)
+_assert_internal_landing_request_validates, _assert_internal_landing_request_invalid = model_assertion_function_factory(
+    validate_internal_landing_request, " internallanding request"
+)
 
 _assert_requests_validate = partial(_for_each, _assert_request_validates)
 _assert_requests_invalid = partial(_for_each, _assert_request_invalid)
@@ -180,6 +192,10 @@ _assert_workflow_steps_validate = partial(_for_each, _assert_workflow_step_valid
 _assert_workflow_steps_invalid = partial(_for_each, _assert_workflow_step_invalid)
 _assert_workflow_steps_linked_validate = partial(_for_each, _assert_workflow_step_linked_validates)
 _assert_workflow_steps_linked_invalid = partial(_for_each, _assert_workflow_step_linked_invalid)
+_assert_landing_requests_validate = partial(_for_each, _assert_landing_request_validates)
+_assert_landing_requests_invalid = partial(_for_each, _assert_landing_request_invalid)
+_assert_internal_landing_requests_validate = partial(_for_each, _assert_internal_landing_request_validates)
+_assert_internal_landing_requests_invalid = partial(_for_each, _assert_internal_landing_request_invalid)
 
 
 def decode_val(val: str) -> int:
