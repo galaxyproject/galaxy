@@ -64,6 +64,7 @@
             :viewport-bounding-box="viewportBoundingBox"
             @panBy="panBy"
             @moveTo="moveTo" />
+        <slot></slot>
     </div>
 </template>
 <script setup lang="ts">

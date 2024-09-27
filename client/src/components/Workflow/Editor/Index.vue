@@ -149,9 +149,10 @@
                     @onChange="onChange"
                     @onRemove="onRemove"
                     @onUpdateStepPosition="onUpdateStepPosition">
+                    <NodeInspector v-if="activeStep" :step="activeStep"></NodeInspector>
                 </WorkflowGraph>
             </div>
-            <FlexPanel side="right">
+            <!--FlexPanel side="right">
                 <div class="unified-panel bg-white">
                     <div ref="rightPanelElement" class="unified-panel-body workflow-right p-2">
                         <div v-if="!initialLoading" class="position-relative h-100">
@@ -178,7 +179,7 @@
                         </div>
                     </div>
                 </div>
-            </FlexPanel>
+            </FlexPanel-->
         </template>
     </div>
 </template>
@@ -217,6 +218,7 @@ import reportDefault from "./reportDefault";
 
 import WorkflowLint from "./Lint.vue";
 import MessagesModal from "./MessagesModal.vue";
+import NodeInspector from "./NodeInspector.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 import SaveChangesModal from "./SaveChangesModal.vue";
 import StateUpgradeModal from "./StateUpgradeModal.vue";
@@ -225,12 +227,9 @@ import WorkflowGraph from "./WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import MarkdownToolBox from "@/components/Markdown/MarkdownToolBox.vue";
-import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
-import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
-import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 
 library.add(faArrowLeft, faArrowRight, faHistory);
 
@@ -238,12 +237,9 @@ export default {
     components: {
         ActivityBar,
         MarkdownEditor,
-        FlexPanel,
         SaveChangesModal,
         StateUpgradeModal,
         ToolPanel,
-        FormDefault,
-        FormTool,
         WorkflowAttributes,
         WorkflowLint,
         RefactorConfirmationModal,
@@ -253,6 +249,7 @@ export default {
         UndoRedoStack,
         WorkflowPanel,
         MarkdownToolBox,
+        NodeInspector,
     },
     props: {
         workflowId: {
