@@ -570,7 +570,7 @@ class WorkflowProgress:
             step_id = step.id
             if step_id not in self.inputs_by_step_id and "output" not in outputs:
                 default_value = step.input_default_value
-                if default_value or step.input_optional:
+                if step.default_value_set:
                     outputs["output"] = default_value
                 else:
                     log.error(f"{step.log_str()} not found in inputs_step_id {self.inputs_by_step_id}")

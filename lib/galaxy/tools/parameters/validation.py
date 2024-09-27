@@ -3,7 +3,6 @@ Classes related to parameter validation.
 """
 
 import abc
-import json
 import logging
 import os.path
 
@@ -86,7 +85,7 @@ class RegexValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get("message"), elem.text, elem.get("negate", "false"))
+        return cls(elem.get("message"), elem.get("content"), elem.get("negate", False))
 
     def __init__(self, message, expression, negate):
         if message is None:
@@ -111,11 +110,11 @@ class ExpressionValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get("message"), elem.text, elem.get("negate", "false"))
+        return cls(elem.get("message"), elem.get("content"), elem.get("negate", False))
 
     def __init__(self, message, expression, negate):
         if message is None:
-            message = f"Value '%s' does not evaluate to {'True' if negate == 'false' else 'False'} for '{expression}'"
+            message = f"Value '%s' does not evaluate to {'True' if not negate else 'False'} for '{expression}'"
         super().__init__(message, negate)
         self.expression = expression
         # Save compiled expression, code objects are thread safe (right?)
@@ -140,9 +139,9 @@ class InRangeValidator(ExpressionValidator):
             elem.get("message"),
             elem.get("min"),
             elem.get("max"),
-            elem.get("exclude_min", "false"),
-            elem.get("exclude_max", "false"),
-            elem.get("negate", "false"),
+            elem.get("exclude_min", False),
+            elem.get("exclude_max", False),
+            elem.get("negate", False),
         )
 
     def __init__(self, message, range_min, range_max, exclude_min=False, exclude_max=False, negate=False):
@@ -178,7 +177,7 @@ class LengthValidator(InRangeValidator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get("message"), elem.get("min"), elem.get("max"), elem.get("negate", "false"))
+        return cls(elem.get("message"), elem.get("min"), elem.get("max"), elem.get("negate", False))
 
     def __init__(self, message, length_min, length_max, negate):
         if message is None:
@@ -198,10 +197,10 @@ class DatasetOkValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        negate = elem.get("negate", "false")
+        negate = elem.get("negate", False)
         message = elem.get("message")
         if message is None:
-            if negate == "false":
+            if not negate:
                 message = "The selected dataset is still being generated, select another dataset or wait until it is completed"
             else:
                 message = "The selected dataset must not be in state OK"
@@ -220,9 +219,9 @@ class DatasetEmptyValidator(Validator):
     @classmethod
     def from_element(cls, param, elem):
         message = elem.get("message")
-        negate = elem.get("negate", "false")
+        negate = elem.get("negate", False)
         if not message:
-            message = f"The selected dataset is {'non-' if negate == 'true' else ''}empty, this tool expects {'non-' if negate == 'false' else ''}empty files."
+            message = f"The selected dataset is {'non-' if negate else ''}empty, this tool expects {'non-' if negate == 'false' else ''}empty files."
         return cls(message, negate)
 
     def validate(self, value, trans=None):
@@ -238,7 +237,7 @@ class DatasetExtraFilesPathEmptyValidator(Validator):
     @classmethod
     def from_element(cls, param, elem):
         message = elem.get("message")
-        negate = elem.get("negate", "false")
+        negate = elem.get("negate", False)
         if not message:
             message = f"The selected dataset's extra_files_path directory is {'non-' if negate == 'true' else ''}empty or does {'not ' if negate == 'false' else ''}exist, this tool expects {'non-' if negate == 'false' else ''}empty extra_files_path directories associated with the selected input."
         return cls(message, negate)
@@ -259,10 +258,10 @@ class MetadataValidator(Validator):
     def from_element(cls, param, elem):
         message = elem.get("message")
         return cls(
-            message=message, check=elem.get("check", ""), skip=elem.get("skip", ""), negate=elem.get("negate", "false")
+            message=message, check=elem.get("check", ""), skip=elem.get("skip", ""), negate=elem.get("negate", False)
         )
 
-    def __init__(self, message=None, check="", skip="", negate="false"):
+    def __init__(self, message=None, check="", skip="", negate=False):
         if not message:
             if not util.asbool(negate):
                 message = "Metadata '%s' missing, click the pencil icon in the history item to edit / save the metadata attributes"
@@ -292,7 +291,7 @@ class MetadataEqualValidator(Validator):
 
     requires_dataset_metadata = True
 
-    def __init__(self, metadata_name=None, value=None, message=None, negate="false"):
+    def __init__(self, metadata_name=None, value=None, message=None, negate=False):
         if not message:
             if not util.asbool(negate):
                 message = f"Metadata value for '{metadata_name}' must be '{value}', but it is '%s'."
@@ -304,12 +303,12 @@ class MetadataEqualValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        value = elem.get("value", None) or json.loads(elem.get("value_json", "null"))
+        value = elem.get("value") or elem.get("value_json")
         return cls(
-            metadata_name=elem.get("metadata_name", None),
+            metadata_name=elem.get("metadata_name"),
             value=value,
-            message=elem.get("message", None),
-            negate=elem.get("negate", "false"),
+            message=elem.get("message"),
+            negate=elem.get("negate", False),
         )
 
     def validate(self, value, trans=None):
@@ -328,9 +327,9 @@ class UnspecifiedBuildValidator(Validator):
     @classmethod
     def from_element(cls, param, elem):
         message = elem.get("message")
-        negate = elem.get("negate", "false")
+        negate = elem.get("negate", False)
         if not message:
-            message = f"{'Unspecified' if negate == 'false' else 'Specified'} genome build, click the pencil icon in the history item to {'set' if negate == 'false' else 'remove'} the genome build"
+            message = f"{'Unspecified' if not negate else 'Specified'} genome build, click the pencil icon in the history item to {'set' if negate == 'false' else 'remove'} the genome build"
         return cls(message, negate)
 
     def validate(self, value, trans=None):
@@ -351,7 +350,7 @@ class NoOptionsValidator(Validator):
     @classmethod
     def from_element(cls, param, elem):
         message = elem.get("message")
-        negate = elem.get("negate", "false")
+        negate = elem.get("negate", False)
         if not message:
             message = f"{'No options' if negate == 'false' else 'Options'} available for selection"
         return cls(message, negate)
@@ -368,9 +367,9 @@ class EmptyTextfieldValidator(Validator):
     @classmethod
     def from_element(cls, param, elem):
         message = elem.get("message")
-        negate = elem.get("negate", "false")
+        negate = elem.get("negate", False)
         if not message:
-            if negate == "false":
+            if not negate:
                 message = elem.get("message", "Field requires a value")
             else:
                 message = elem.get("message", "Field must not set a value")
@@ -406,7 +405,7 @@ class MetadataInFileColumnValidator(Validator):
         line_startswith = elem.get("line_startswith")
         if line_startswith:
             line_startswith = line_startswith.strip()
-        negate = elem.get("negate", "false")
+        negate = elem.get("negate", False)
         return cls(filename, metadata_name, metadata_column, message, line_startswith, split, negate)
 
     def __init__(
@@ -417,7 +416,7 @@ class MetadataInFileColumnValidator(Validator):
         message="Value for metadata not found.",
         line_startswith=None,
         split="\t",
-        negate="false",
+        negate=False,
     ):
         super().__init__(message, negate)
         self.metadata_name = metadata_name
@@ -456,10 +455,10 @@ class ValueInDataTableColumnValidator(Validator):
         except ValueError:
             pass
         message = elem.get("message", f"Value was not found in {table_name}.")
-        negate = elem.get("negate", "false")
+        negate = elem.get("negate", False)
         return cls(tool_data_table, column, message, negate)
 
-    def __init__(self, tool_data_table, column, message="Value not found.", negate="false"):
+    def __init__(self, tool_data_table, column, message="Value not found.", negate=False):
         super().__init__(message, negate)
         self.valid_values = []
         self._data_table_content_version = None
@@ -496,7 +495,7 @@ class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
     note: this is covered in a framework test (validation_value_in_datatable)
     """
 
-    def __init__(self, tool_data_table, metadata_column, message="Value already present.", negate="false"):
+    def __init__(self, tool_data_table, metadata_column, message="Value already present.", negate=False):
         super().__init__(tool_data_table, metadata_column, message, negate)
 
     def validate(self, value, trans=None):
@@ -532,11 +531,11 @@ class MetadataInDataTableColumnValidator(ValueInDataTableColumnValidator):
         except ValueError:
             pass
         message = elem.get("message", f"Value for metadata {metadata_name} was not found in {table_name}.")
-        negate = elem.get("negate", "false")
+        negate = elem.get("negate", False)
         return cls(tool_data_table, metadata_name, metadata_column, message, negate)
 
     def __init__(
-        self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", negate="false"
+        self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", negate=False
     ):
         super().__init__(tool_data_table, metadata_column, message, negate)
         self.metadata_name = metadata_name
@@ -558,7 +557,12 @@ class MetadataNotInDataTableColumnValidator(MetadataInDataTableColumnValidator):
     requires_dataset_metadata = True
 
     def __init__(
-        self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", negate="false"
+        self,
+        tool_data_table,
+        metadata_name,
+        metadata_column,
+        message="Value for metadata not found.",
+        negate=False,
     ):
         super().__init__(tool_data_table, metadata_name, metadata_column, message, negate)
 
@@ -590,9 +594,9 @@ class MetadataInRangeValidator(InRangeValidator):
             elem.get("message"),
             elem.get("min"),
             elem.get("max"),
-            elem.get("exclude_min", "false"),
-            elem.get("exclude_max", "false"),
-            elem.get("negate", "false"),
+            elem.get("exclude_min", False),
+            elem.get("exclude_max", False),
+            elem.get("negate", False),
         )
         ret.message = "Metadata: " + ret.message
         return ret

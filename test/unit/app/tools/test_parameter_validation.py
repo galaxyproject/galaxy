@@ -107,7 +107,7 @@ class TestParameterValidation(BaseParameterTestCase):
 </param>"""
         )
         p.validate("foo")
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Field requires a value"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Field requires a value"):
             p.validate("")
 
         p = self._parameter_for(
@@ -116,7 +116,7 @@ class TestParameterValidation(BaseParameterTestCase):
     <validator type="empty_field" negate="true"/>
 </param>"""
         )
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Field must not set a value"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Field must not set a value"):
             p.validate("foo")
         p.validate("")
 
@@ -130,14 +130,14 @@ class TestParameterValidation(BaseParameterTestCase):
         p.validate("Foo")
         p.validate("foo")
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value 'Fop' does not match regular expression '\[Ff\]oo'"
+            ValueError, r"Parameter 'blah': Value 'Fop' does not match regular expression '\[Ff\]oo'"
         ):
             p.validate("Fop")
 
         # test also valitation of lists (for select parameters)
         p.validate(["Foo", "foo"])
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value 'Fop' does not match regular expression '\[Ff\]oo'"
+            ValueError, r"Parameter 'blah': Value 'Fop' does not match regular expression '\[Ff\]oo'"
         ):
             p.validate(["Foo", "Fop"])
 
@@ -148,16 +148,16 @@ class TestParameterValidation(BaseParameterTestCase):
 </param>"""
         )
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value 'Foo' does match regular expression '\[Ff\]oo'"
+            ValueError, r"Parameter 'blah': Value 'Foo' does match regular expression '\[Ff\]oo'"
         ):
             p.validate("Foo")
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value 'foo' does match regular expression '\[Ff\]oo'"
+            ValueError, r"Parameter 'blah': Value 'foo' does match regular expression '\[Ff\]oo'"
         ):
             p.validate("foo")
         p.validate("Fop")
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value 'foo' does match regular expression '\[Ff\]oo'"
+            ValueError, r"Parameter 'blah': Value 'foo' does match regular expression '\[Ff\]oo'"
         ):
             p.validate(["Fop", "foo"])
         p.validate(["Fop", "fop"])
@@ -171,9 +171,9 @@ class TestParameterValidation(BaseParameterTestCase):
         )
         p.validate("foo")
         p.validate("bar")
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Must have length of at least 2 and at most 8"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Must have length of at least 2 and at most 8"):
             p.validate("f")
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Must have length of at least 2 and at most 8"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Must have length of at least 2 and at most 8"):
             p.validate("foobarbaz")
 
         p = self._parameter_for(
@@ -182,9 +182,9 @@ class TestParameterValidation(BaseParameterTestCase):
     <validator type="length" min="2" max="8" negate="true"/>
 </param>"""
         )
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Must not have length of at least 2 and at most 8"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Must not have length of at least 2 and at most 8"):
             p.validate("foo")
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Must not have length of at least 2 and at most 8"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Must not have length of at least 2 and at most 8"):
             p.validate("bar")
         p.validate("f")
         p.validate("foobarbaz")
@@ -204,11 +204,11 @@ class TestParameterValidation(BaseParameterTestCase):
     <validator type="in_range" message="Doh!! %s not in range" min="10" exclude_min="true" max="20"/>
 </param>"""
         )
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Doh!! 10 not in range"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Doh!! 10 not in range"):
             p.validate(10)
         p.validate(15)
         p.validate(20)
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Doh!! 21 not in range"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Doh!! 21 not in range"):
             p.validate(21)
 
         p = self._parameter_for(
@@ -220,12 +220,12 @@ class TestParameterValidation(BaseParameterTestCase):
         p.validate(10)
         with self.assertRaisesRegex(
             ValueError,
-            r"Parameter blah: Value \('15'\) must not fulfill float\('10'\) < float\(value\) <= float\('20'\)",
+            r"Parameter 'blah': Value \('15'\) must not fulfill float\('10'\) < float\(value\) <= float\('20'\)",
         ):
             p.validate(15)
         with self.assertRaisesRegex(
             ValueError,
-            r"Parameter blah: Value \('20'\) must not fulfill float\('10'\) < float\(value\) <= float\('20'\)",
+            r"Parameter 'blah': Value \('20'\) must not fulfill float\('10'\) < float\(value\) <= float\('20'\)",
         ):
             p.validate(20)
         p.validate(21)
@@ -253,7 +253,7 @@ class TestParameterValidation(BaseParameterTestCase):
         p.validate(ok_hda)
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: The selected dataset is still being generated, select another dataset or wait until it is completed",
+            "Parameter 'blah': The selected dataset is still being generated, select another dataset or wait until it is completed",
         ):
             p.validate(notok_hda)
         p = self._parameter_for(
@@ -262,7 +262,7 @@ class TestParameterValidation(BaseParameterTestCase):
     <validator type="dataset_ok_validator" negate="true"/>
 </param>"""
         )
-        with self.assertRaisesRegex(ValueError, "Parameter blah: The selected dataset must not be in state OK"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': The selected dataset must not be in state OK"):
             p.validate(ok_hda)
         p.validate(notok_hda)
 
@@ -288,7 +288,7 @@ class TestParameterValidation(BaseParameterTestCase):
         )
         p.validate(full_hda)
         with self.assertRaisesRegex(
-            ValueError, "Parameter blah: The selected dataset is empty, this tool expects non-empty files."
+            ValueError, "Parameter 'blah': The selected dataset is empty, this tool expects non-empty files."
         ):
             p.validate(empty_hda)
 
@@ -299,7 +299,7 @@ class TestParameterValidation(BaseParameterTestCase):
 </param>"""
         )
         with self.assertRaisesRegex(
-            ValueError, "Parameter blah: The selected dataset is non-empty, this tool expects empty files."
+            ValueError, "Parameter 'blah': The selected dataset is non-empty, this tool expects empty files."
         ):
             p.validate(full_hda)
         p.validate(empty_hda)
@@ -329,7 +329,7 @@ class TestParameterValidation(BaseParameterTestCase):
         p.validate(has_extra_hda)
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: The selected dataset's extra_files_path directory is empty or does not exist, this tool expects non-empty extra_files_path directories associated with the selected input.",
+            "Parameter 'blah': The selected dataset's extra_files_path directory is empty or does not exist, this tool expects non-empty extra_files_path directories associated with the selected input.",
         ):
             p.validate(has_no_extra_hda)
 
@@ -342,7 +342,7 @@ class TestParameterValidation(BaseParameterTestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: The selected dataset's extra_files_path directory is non-empty or does exist, this tool expects empty extra_files_path directories associated with the selected input.",
+            "Parameter 'blah': The selected dataset's extra_files_path directory is non-empty or does exist, this tool expects empty extra_files_path directories associated with the selected input.",
         ):
             p.validate(has_extra_hda)
         p.validate(has_no_extra_hda)
@@ -376,7 +376,7 @@ class TestParameterValidation(BaseParameterTestCase):
         p = self._parameter_for(xml=param_xml.format(check="strandCol", skip=""))
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: Metadata 'strandCol' missing, click the pencil icon in the history item to edit / save the metadata attributes",
+            "Parameter 'blah': Metadata 'strandCol' missing, click the pencil icon in the history item to edit / save the metadata attributes",
         ):
             p.validate(hda)
 
@@ -385,7 +385,7 @@ class TestParameterValidation(BaseParameterTestCase):
         p = self._parameter_for(xml=param_xml.format(check="", skip="dbkey,comment_lines,column_names,nameCol"))
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: Metadata 'strandCol' missing, click the pencil icon in the history item to edit / save the metadata attributes",
+            "Parameter 'blah': Metadata 'strandCol' missing, click the pencil icon in the history item to edit / save the metadata attributes",
         ):
             p.validate(hda)
 
@@ -398,7 +398,7 @@ class TestParameterValidation(BaseParameterTestCase):
         p = self._parameter_for(xml=param_xml_negate.format(check="nameCol", skip=""))
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: At least one of the checked metadata 'nameCol' is set, click the pencil icon in the history item to edit / save the metadata attributes",
+            "Parameter 'blah': At least one of the checked metadata 'nameCol' is set, click the pencil icon in the history item to edit / save the metadata attributes",
         ):
             p.validate(hda)
 
@@ -409,7 +409,7 @@ class TestParameterValidation(BaseParameterTestCase):
         )
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: At least one of the non skipped metadata 'dbkey,comment_lines,column_names,strandCol' is set, click the pencil icon in the history item to edit / save the metadata attributes",
+            "Parameter 'blah': At least one of the non skipped metadata 'dbkey,comment_lines,column_names,strandCol' is set, click the pencil icon in the history item to edit / save the metadata attributes",
         ):
             p.validate(hda)
 
@@ -437,7 +437,7 @@ class TestParameterValidation(BaseParameterTestCase):
         p.validate(has_dbkey_hda)
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: Unspecified genome build, click the pencil icon in the history item to set the genome build",
+            "Parameter 'blah': Unspecified genome build, click the pencil icon in the history item to set the genome build",
         ):
             p.validate(has_no_dbkey_hda)
 
@@ -449,7 +449,7 @@ class TestParameterValidation(BaseParameterTestCase):
         )
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: Specified genome build, click the pencil icon in the history item to remove the genome build",
+            "Parameter 'blah': Specified genome build, click the pencil icon in the history item to remove the genome build",
         ):
             p.validate(has_dbkey_hda)
         p.validate(has_no_dbkey_hda)
