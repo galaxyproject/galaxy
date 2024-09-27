@@ -741,6 +741,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     user_tool_section_filters: List[str]
     visualization_plugins_directory: str
     workflow_resource_params_mapper: str
+    file_source_temp_dir: str
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

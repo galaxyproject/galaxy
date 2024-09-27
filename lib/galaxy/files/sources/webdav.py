@@ -3,12 +3,13 @@ try:
 except ImportError:
     WebDAVFS = None
 
-import tempfile
 from typing import (
     cast,
     Optional,
     Union,
 )
+
+from typing_extensions import NotRequired
 
 from typing_extensions import NotRequired
 
