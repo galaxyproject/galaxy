@@ -445,7 +445,7 @@ gx_hidden:
     - parameter: moocow
     - {}
   workflow_step_invalid:
-    - parmaeter: 5
+    - parameter: 5
     - parameter: {}
     - parameter: { "moo": "cow" }
   workflow_step_linked_valid:
@@ -470,7 +470,7 @@ gx_hidden_optional:
     - {}
     - parameter: null
   workflow_step_invalid:
-    - parmaeter: 5
+    - parameter: 5
     - parameter: {}
     - parameter: { "moo": "cow" }
   workflow_step_linked_valid:
