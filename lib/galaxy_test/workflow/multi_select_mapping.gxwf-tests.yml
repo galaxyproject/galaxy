@@ -16,6 +16,8 @@
           ext: 'expression.json'
   outputs:
     output:
+      class: Collection
+      collection_type: list
       elements:
         the_example_2:
           asserts:

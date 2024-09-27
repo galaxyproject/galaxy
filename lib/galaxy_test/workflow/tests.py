@@ -96,10 +96,7 @@ class TestWorkflow(ApiTestCase):
         if is_collection_test:
             assert isinstance(test_properties, dict)
             test_properties["name"] = output_name
-            # setup preferred name "elements" in accordance with work in https://github.com/galaxyproject/planemo/pull/1417
-            test_properties["element_tests"] = test_properties["elements"]
-            output_def = TestCollectionOutputDef.from_dict(test_properties)
-
+            output_def = TestCollectionOutputDef.from_yaml_test_format(test_properties)
             invocation_details = self.workflow_populator.get_invocation(run_summary.invocation_id, step_details=True)
             assert output_name in invocation_details["output_collections"]
             test_output = invocation_details["output_collections"][output_name]

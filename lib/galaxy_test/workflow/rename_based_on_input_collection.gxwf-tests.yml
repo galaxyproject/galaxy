@@ -18,5 +18,6 @@
           type: File
   outputs:
     output:
+      class: File
       metadata:
         name: 'the_dataset_pair suffix'

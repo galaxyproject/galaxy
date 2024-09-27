@@ -10,6 +10,7 @@
       type: raw
   outputs:
     output:
+      class: File
       asserts:
         - that: has_line
           line: "parameter: 2"

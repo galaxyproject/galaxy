@@ -10,7 +10,8 @@
           content: B
   outputs:
     out1:
-      attributes: { collection_type: list }
+      class: Collection
+      collection_type: list
       elements:
         A:
           asserts:
