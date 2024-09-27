@@ -546,8 +546,6 @@ def _compute_center_of_mass(im_arr: "numpy.typing.NDArray") -> Tuple[float, floa
 def _move_char(s: str, pos_src: int, pos_dst: int) -> str:
     s_list = list(s)
     c = s_list.pop(pos_src)
-    if pos_dst > pos_src:
-        pos_dst -= 1
     if pos_dst < 0:
         pos_dst = len(s_list) + pos_dst + 1
     s_list.insert(pos_dst, c)
