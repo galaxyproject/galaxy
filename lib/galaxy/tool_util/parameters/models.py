@@ -70,6 +70,9 @@ StateRepresentationT = Literal[
     "workflow_step_linked",
 ]
 
+DEFAULT_MODEL_NAME = "DynamicModelForTool"
+RawStateDict = Dict[str, Any]
+
 
 # could be made more specific - validators need to be classmethod
 ValidatorDictT = Dict[str, Callable]
@@ -1368,34 +1371,21 @@ def create_model_strict(*args, **kwd) -> Type[BaseModel]:
     return create_model(*args, __config__=model_config, **kwd)
 
 
-def create_request_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.parameters, name, "request")
+def create_model_factory(state_representation: StateRepresentationT):
+
+    def create_method(tool: ToolParameterBundle, name: str = DEFAULT_MODEL_NAME) -> Type[BaseModel]:
+        return create_field_model(tool.parameters, name, state_representation)
+
+    return create_method
 
 
-def create_request_internal_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.parameters, name, "request_internal")
-
-
-def create_request_internal_dereferenced_model(
-    tool: ToolParameterBundle, name: str = "DynamicModelForTool"
-) -> Type[BaseModel]:
-    return create_field_model(tool.parameters, name, "request_internal_dereferenced")
-
-
-def create_job_internal_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.parameters, name, "job_internal")
-
-
-def create_test_case_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.parameters, name, "test_case_xml")
-
-
-def create_workflow_step_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.parameters, name, "workflow_step")
-
-
-def create_workflow_step_linked_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.parameters, name, "workflow_step_linked")
+create_request_model = create_model_factory("request")
+create_request_internal_model = create_model_factory("request_internal")
+create_request_internal_dereferenced_model = create_model_factory("request_internal_dereferenced")
+create_job_internal_model = create_model_factory("job_internal")
+create_test_case_model = create_model_factory("test_case_xml")
+create_workflow_step_model = create_model_factory("workflow_step")
+create_workflow_step_linked_model = create_model_factory("workflow_step_linked")
 
 
 def create_field_model(
@@ -1432,36 +1422,26 @@ def validate_against_model(pydantic_model: Type[BaseModel], parameter_state: Dic
         raise RequestParameterInvalidException(str(e))
 
 
-def validate_request(tool: ToolParameterBundle, request: Dict[str, Any]) -> None:
-    pydantic_model = create_request_model(tool)
-    validate_against_model(pydantic_model, request)
+class ValidationFunctionT(Protocol):
+
+    def __call__(self, tool: ToolParameterBundle, request: RawStateDict, name: str = DEFAULT_MODEL_NAME) -> None: ...
 
 
-def validate_internal_request(tool: ToolParameterBundle, request: Dict[str, Any]) -> None:
-    pydantic_model = create_request_internal_model(tool)
-    validate_against_model(pydantic_model, request)
+def validate_model_type_factory(state_representation: StateRepresentationT) -> ValidationFunctionT:
+
+    def validate_request(tool: ToolParameterBundle, request: Dict[str, Any], name: str = DEFAULT_MODEL_NAME) -> None:
+        pydantic_model = create_field_model(
+            tool.parameters, name=DEFAULT_MODEL_NAME, state_representation=state_representation
+        )
+        validate_against_model(pydantic_model, request)
+
+    return validate_request
 
 
-def validate_internal_request_dereferenced(tool: ToolParameterBundle, request: Dict[str, Any]) -> None:
-    pydantic_model = create_request_internal_dereferenced_model(tool)
-    validate_against_model(pydantic_model, request)
-
-
-def validate_internal_job(tool: ToolParameterBundle, request: Dict[str, Any]) -> None:
-    pydantic_model = create_job_internal_model(tool)
-    validate_against_model(pydantic_model, request)
-
-
-def validate_test_case(tool: ToolParameterBundle, request: Dict[str, Any]) -> None:
-    pydantic_model = create_test_case_model(tool)
-    validate_against_model(pydantic_model, request)
-
-
-def validate_workflow_step(tool: ToolParameterBundle, request: Dict[str, Any]) -> None:
-    pydantic_model = create_workflow_step_model(tool)
-    validate_against_model(pydantic_model, request)
-
-
-def validate_workflow_step_linked(tool: ToolParameterBundle, request: Dict[str, Any]) -> None:
-    pydantic_model = create_workflow_step_linked_model(tool)
-    validate_against_model(pydantic_model, request)
+validate_request = validate_model_type_factory("request")
+validate_internal_request = validate_model_type_factory("request_internal")
+validate_internal_request_dereferenced = validate_model_type_factory("request_internal_dereferenced")
+validate_internal_job = validate_model_type_factory("job_internal")
+validate_test_case = validate_model_type_factory("test_case_xml")
+validate_workflow_step = validate_model_type_factory("workflow_step")
+validate_workflow_step_linked = validate_model_type_factory("workflow_step_linked")
