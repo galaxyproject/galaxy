@@ -14,7 +14,10 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    LibraryFolderDatabaseIdField,
+)
 from galaxy.schema.library_contents import (
     LibraryContentsCollectionCreatePayload,
     LibraryContentsCreateDatasetCollectionResponse,
@@ -55,7 +58,7 @@ class FastAPILibraryContents:
     )
     def index(
         self,
-        library_id: DecodedDatabaseIdField,
+        library_id: Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField],
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> LibraryContentsIndexListResponse:
         """
@@ -71,7 +74,7 @@ class FastAPILibraryContents:
     )
     def show(
         self,
-        library_id: DecodedDatabaseIdField,
+        library_id: Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField],
         id: MaybeLibraryFolderOrDatasetID,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> Union[
@@ -90,7 +93,7 @@ class FastAPILibraryContents:
     )
     def create(
         self,
-        library_id: DecodedDatabaseIdField,
+        library_id: Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField],
         payload: Union[
             LibraryContentsFolderCreatePayload, LibraryContentsFileCreatePayload, LibraryContentsCollectionCreatePayload
         ],
@@ -113,7 +116,7 @@ class FastAPILibraryContents:
     )
     def update(
         self,
-        library_id: DecodedDatabaseIdField,
+        library_id: Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField],
         id: DecodedDatabaseIdField,
         payload,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -130,7 +133,7 @@ class FastAPILibraryContents:
     )
     def delete(
         self,
-        library_id: DecodedDatabaseIdField,
+        library_id: Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField],
         id: DecodedDatabaseIdField,
         payload: Optional[LibraryContentsDeletePayload] = Body(None),
         trans: ProvidesHistoryContext = DependsOnTrans,

@@ -24,7 +24,10 @@ from galaxy.model import (
     tags,
 )
 from galaxy.model.base import transaction
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    LibraryFolderDatabaseIdField,
+)
 from galaxy.schema.library_contents import (
     LibraryContentsCollectionCreatePayload,
     LibraryContentsCreateDatasetCollectionResponse,
@@ -80,7 +83,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
     def index(
         self,
         trans: ProvidesUserContext,
-        library_id: DecodedDatabaseIdField,
+        library_id: Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField],
     ) -> LibraryContentsIndexListResponse:
         """Return a list of library files and folders."""
         rval: List[Union[LibraryContentsIndexFolderResponse, LibraryContentsIndexDatasetResponse]] = []
@@ -129,7 +132,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
     def create(
         self,
         trans: ProvidesHistoryContext,
-        library_id: DecodedDatabaseIdField,
+        library_id: Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField],
         payload: Union[
             LibraryContentsFolderCreatePayload, LibraryContentsFileCreatePayload, LibraryContentsCollectionCreatePayload
         ],
