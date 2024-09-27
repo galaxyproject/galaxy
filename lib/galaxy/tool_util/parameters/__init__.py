@@ -39,6 +39,7 @@ from .models import (
     HiddenParameterModel,
     IntegerParameterModel,
     LabelValue,
+    RawStateDict,
     RepeatParameterModel,
     RulesParameterModel,
     SelectParameterModel,
@@ -55,6 +56,7 @@ from .models import (
     validate_test_case,
     validate_workflow_step,
     validate_workflow_step_linked,
+    ValidationFunctionT,
 )
 from .state import (
     JobInternalToolState,
@@ -113,6 +115,8 @@ __all__ = (
     "ConditionalParameterModel",
     "ConditionalWhen",
     "RepeatParameterModel",
+    "RawStateDict",
+    "ValidationFunctionT",
     "validate_against_model",
     "validate_internal_job",
     "validate_internal_request",
