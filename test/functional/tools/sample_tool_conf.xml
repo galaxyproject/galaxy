@@ -279,6 +279,7 @@
   <!-- Tools for dependency and container testing. -->
   <tool file="legacy_r.xml" />
   <tool file="mulled_example_multi_1.xml" />
+  <tool file="mulled_example_multi_2.xml" />
   <tool file="mulled_example_multi_versionless.xml" />
   <tool file="mulled_example_multi_incomplete.xml" />
   <tool file="mulled_example_conflict.xml" />

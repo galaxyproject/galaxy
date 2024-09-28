@@ -480,6 +480,11 @@ class MulledTestCase:
     mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
 
 
+class MulledTestCaseWithBuildInfo:
+    tool_id = "mulled_example_multi_2"
+    mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
+
+
 class TestDefaultContainerResolvers(DockerContainerResolverTestCase, ContainerResolverTestCases, MulledTestCase):
     """
     Test default container resolvers
@@ -528,6 +533,60 @@ class TestDefaultContainerResolvers(DockerContainerResolverTestCase, ContainerRe
                 "identifier": f"quay.io/biocontainers/{MulledTestCase.mulled_hash}",
                 "cached": True,
                 "cache_name": f"quay.io/biocontainers/{MulledTestCase.mulled_hash}",
+                "cache_namespace": "biocontainers",
+            },
+        ],
+    }
+
+
+class TestDefaultContainerResolversWithBuildInfo(
+    DockerContainerResolverTestCase, ContainerResolverTestCases, MulledTestCaseWithBuildInfo
+):
+    """
+    Same as TestDefaultContainerResolvers but with a tool using build info
+    serves to check if the mulled hashes are cumputed correctly
+    """
+
+    assumptions: Dict[str, Any] = {
+        "run": {
+            "output": [
+                "bedtools v2.26.0",
+                "samtools: error while loading shared libraries: libcrypto.so.1.0.0",
+            ],
+            "cached": True,
+            "resolver_type": "mulled",  # only used to check mulled / explicit
+            "cache_name": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+            "cache_namespace": "biocontainers",
+        },
+        "list": [
+            {
+                "resolver_type": "mulled",
+                "identifier": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cached": False,
+                "cache_name": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cache_namespace": "biocontainers",
+            },
+            {
+                "resolver_type": "mulled",
+                "identifier": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cached": False,
+                "cache_name": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cache_namespace": "biocontainers",
+            },
+        ],
+        "build": [
+            {
+                "resolver_type": "mulled",
+                "identifier": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cached": True,
+                "cache_name": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cache_namespace": "biocontainers",
+            },
+            {
+                "resolver_type": "cached_mulled",
+                "identifier": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
+                "cached": True,
+                "cache_name": f"quay.io/biocontainers/{MulledTestCaseWithBuildInfo.mulled_hash}",
                 "cache_namespace": "biocontainers",
             },
         ],
