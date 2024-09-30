@@ -7,7 +7,12 @@ from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
 from galaxy.jobs.handler import InvocationGrabber
 from galaxy.model.base import transaction
-from galaxy.schema.invocation import InvocationState
+from galaxy.schema.invocation import (
+    FailureReason,
+    InvocationFailureDatasetFailed,
+    InvocationState,
+    InvocationUnexpectedFailure,
+)
 from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
     RequestUser,
@@ -335,8 +340,9 @@ class WorkflowRequestMonitor(Monitors):
 
     def __attempt_materialize(self, workflow_invocation, session) -> bool:
         try:
-            hdas_to_materialize = workflow_invocation.inputs_requiring_materialization()
-            for hda in hdas_to_materialize:
+            inputs_to_materialize = workflow_invocation.inputs_requiring_materialization()
+            for input_to_materialize in inputs_to_materialize:
+                hda = input_to_materialize.hda
                 user = RequestUser(user_id=workflow_invocation.history.user_id)
                 task_request = MaterializeDatasetInstanceTaskRequest(
                     user=user,
@@ -345,7 +351,20 @@ class WorkflowRequestMonitor(Monitors):
                     content=hda.id,
                     validate_hashes=True,
                 )
-                self.app.hda_manager.materialize(task_request, in_place=True)
+                materialized_okay = self.app.hda_manager.materialize(task_request, in_place=True)
+                if not materialized_okay:
+                    workflow_invocation.fail()
+                    workflow_invocation.add_message(
+                        InvocationFailureDatasetFailed(
+                            workflow_step_id=input_to_materialize.input_dataset.workflow_step.id,
+                            reason=FailureReason.dataset_failed,
+                            hda_id=hda.id,
+                        )
+                    )
+                    session.add(workflow_invocation)
+                    session.commit()
+                    return False
+
             # place back into ready and let it proceed normally on next iteration?
             workflow_invocation.set_state(model.WorkflowInvocation.states.READY)
             session.add(workflow_invocation)
@@ -354,6 +373,8 @@ class WorkflowRequestMonitor(Monitors):
         except Exception as e:
             log.exception(f"Failed to materialize dataset for workflow {workflow_invocation.id} - {e}")
             workflow_invocation.fail()
+            failure = InvocationUnexpectedFailure(reason=FailureReason.unexpected_failure, details=str(e))
+            workflow_invocation.add_message(failure)
             session.add(workflow_invocation)
             session.commit()
         return False

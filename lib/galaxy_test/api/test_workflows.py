@@ -1624,11 +1624,11 @@ steps:
             invocation_id = self.workflow_populator.invoke_workflow_and_wait(
                 workflow_id, request=workflow_request, assert_ok=False
             ).json()["id"]
-            invocation = self._invocation_details(workflow_id, invocation_id)
-            assert invocation["state"] == "scheduled", invocation
-            invocation_jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
-            for job in invocation_jobs:
-                assert job["state"] == "paused"
+            invocation_details = self._invocation_details(workflow_id, invocation_id)
+            assert invocation_details["state"] == "failed"
+            assert len(invocation_details["messages"]) == 1
+            message = invocation_details["messages"][0]
+            assert message["reason"] == "dataset_failed"
 
     @skip_without_tool("cat1")
     def test_run_workflow_with_invalid_url(self):
@@ -1658,11 +1658,11 @@ steps:
             invocation_id = self.workflow_populator.invoke_workflow_and_wait(
                 workflow_id, request=workflow_request, assert_ok=False
             ).json()["id"]
-            invocation = self._invocation_details(workflow_id, invocation_id)
-            assert invocation["state"] == "scheduled", invocation
-            invocation_jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
-            for job in invocation_jobs:
-                assert job["state"] == "paused"
+            invocation_details = self._invocation_details(workflow_id, invocation_id)
+            assert invocation_details["state"] == "failed"
+            assert len(invocation_details["messages"]) == 1
+            message = invocation_details["messages"][0]
+            assert message["reason"] == "dataset_failed"
 
     def __run_cat_workflow(self, inputs_by, history_id: Optional[str] = None):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")

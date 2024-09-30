@@ -176,7 +176,7 @@ class HDAManager(
                 session.commit()
         return hda
 
-    def materialize(self, request: MaterializeDatasetInstanceTaskRequest, in_place: bool = False) -> None:
+    def materialize(self, request: MaterializeDatasetInstanceTaskRequest, in_place: bool = False) -> bool:
         request_user: RequestUser = request.user
         materializer = materializer_factory(
             True,  # attached...
@@ -195,9 +195,12 @@ class HDAManager(
         )
         if not in_place:
             history.add_dataset(new_hda, set_hid=True)
+        else:
+            new_hda.set_total_size()
         session = self.session()
         with transaction(session):
             session.commit()
+        return new_hda.is_ok
 
     def copy(
         self, item: Any, history=None, hide_copy: bool = False, flush: bool = True, **kwargs: Any

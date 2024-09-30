@@ -8573,6 +8573,12 @@ class InputWithRequest:
     request: Dict[str, Any]
 
 
+@dataclass
+class InputToMaterialize:
+    hda: "HistoryDatasetAssociation"
+    input_dataset: "WorkflowRequestToInputDatasetAssociation"
+
+
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation"
 
@@ -8896,14 +8902,19 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             inputs.append(input_dataset_collection_assoc)
         return inputs
 
-    def inputs_requiring_materialization(self):
-        hdas_to_materialize = []
+    def inputs_requiring_materialization(self) -> List[InputToMaterialize]:
+        hdas_to_materialize: List[InputToMaterialize] = []
         for input_dataset_assoc in self.input_datasets:
             request = input_dataset_assoc.request
             if request:
                 deferred = request.get("deferred", False)
                 if not deferred:
-                    hdas_to_materialize.append(input_dataset_assoc.dataset)
+                    hdas_to_materialize.append(
+                        InputToMaterialize(
+                            input_dataset_assoc.dataset,
+                            input_dataset_assoc,
+                        )
+                    )
         return hdas_to_materialize
 
     def _serialize(self, id_encoder, serialization_options):
