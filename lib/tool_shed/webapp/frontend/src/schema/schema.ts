@@ -532,6 +532,23 @@ export interface paths {
         patch?: never
         trace?: never
     }
+    "/api/tools/{tool_id}/versions/{tool_version}/parameter_landing_request_schema": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Return a JSON schema description of the tool's inputs for the tool landing request API. */
+        get: operations["tools__parameter_landing_request_schema"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/api/tools/{tool_id}/versions/{tool_version}/parameter_request_schema": {
         parameters: {
             query?: never
@@ -543,7 +560,24 @@ export interface paths {
          * Return a JSON schema description of the tool's inputs for the tool request API that will be added to Galaxy at some point
          * @description The tool request schema includes validation of map/reduce concepts that can be consumed by the tool execution API and not just the request for a single execution.
          */
-        get: operations["tools__parameter_request_model"]
+        get: operations["tools__parameter_request_schema"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/api/tools/{tool_id}/versions/{tool_version}/parameter_test_case_xml_schema": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Return a JSON schema description of the tool's inputs for test case construction. */
+        get: operations["tools__parameter_test_case_xml_schema"]
         put?: never
         post?: never
         delete?: never
@@ -4422,7 +4456,93 @@ export interface operations {
             }
         }
     }
-    tools__parameter_request_model: {
+    tools__parameter_landing_request_schema: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+                tool_id: string
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    tools__parameter_request_schema: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+                tool_id: string
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    tools__parameter_test_case_xml_schema: {
         parameters: {
             query?: never
             header?: never
