@@ -352,7 +352,7 @@ class WorkflowRequestMonitor(Monitors):
             session.commit()
             return True
         except Exception as e:
-            log.info(f"Failed to materialize dataset for workflow {workflow_invocation.id} - {e}")
+            log.exception(f"Failed to materialize dataset for workflow {workflow_invocation.id} - {e}")
             workflow_invocation.fail()
             session.add(workflow_invocation)
             session.commit()
@@ -363,7 +363,7 @@ class WorkflowRequestMonitor(Monitors):
             workflow_invocation = session.get(model.WorkflowInvocation, invocation_id)
             if workflow_invocation.state == workflow_invocation.states.REQUIRES_MATERIALIZATION:
                 if not self.__attempt_materialize(workflow_invocation, session):
-                    return
+                    return None
                 if self.app.config.workflow_scheduling_separate_materialization_iteration:
                     return None
             try:
