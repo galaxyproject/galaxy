@@ -124,6 +124,29 @@ function focusOptionAtIndex(selected: "selected" | "unselected", index: number) 
     }
 }
 
+/** convert array of select options to a map of select labels to select values */
+function optionsToLabelMap(options: SelectOption[]): Map<string, SelectValue> {
+    return new Map(options.map((o) => [o.label, o.value]));
+}
+
+function valuesToOptions(values: SelectValue[]): SelectOption[] {
+    function stringifyObject(value: SelectValue) {
+        return typeof value === "object" && value !== null ? JSON.stringify(value) : value;
+    }
+
+    const comparableValues = values.map(stringifyObject);
+    const valueSet = new Set(comparableValues);
+    const options: SelectOption[] = [];
+
+    props.options.forEach((option) => {
+        if (valueSet.has(stringifyObject(option.value))) {
+            options.push(option);
+        }
+    });
+
+    return options;
+}
+
 async function selectOption(event: MouseEvent, index: number): Promise<void> {
     if (event.shiftKey || event.ctrlKey) {
         handleHighlight(event, index, highlightUnselected);
@@ -168,10 +191,10 @@ async function deselectOption(event: MouseEvent, index: number) {
 function selectAll() {
     if (highlightUnselected.highlightedIndexes.length > 0) {
         const highlightedValues = highlightUnselected.highlightedOptions.map((o) => o.value);
-        const selectedSet = new Set([...selected.value, ...highlightedValues]);
-        selected.value = Array.from(selectedSet);
+        selected.value = [...selected.value, ...highlightedValues];
 
-        unselectedOptionsFiltered.value.filter((o) => highlightedValues.includes(o.value));
+        const highlightedMap = optionsToLabelMap(highlightUnselected.highlightedOptions);
+        unselectedOptionsFiltered.value.filter((o) => highlightedMap.has(o.label));
     } else if (searchValue.value === "") {
         selected.value = props.options.map((o) => o.value);
 
@@ -188,13 +211,13 @@ function selectAll() {
 
 function deselectAll() {
     if (highlightSelected.highlightedIndexes.length > 0) {
-        const selectedSet = new Set(selected.value);
-        const highlightedValues = highlightSelected.highlightedOptions.map((o) => o.value);
+        const selectedMap = optionsToLabelMap(valuesToOptions(selected.value));
+        const highlightedMap = optionsToLabelMap(highlightSelected.highlightedOptions);
 
-        highlightedValues.forEach((v) => selectedSet.delete(v));
-        selected.value = Array.from(selectedSet);
+        highlightedMap.forEach((_value, label) => selectedMap.delete(label));
+        selected.value = Array.from(selectedMap.values());
 
-        selectedOptionsFiltered.value.filter((o) => highlightedValues.includes(o.value));
+        selectedOptionsFiltered.value.filter((o) => highlightedMap.has(o.label));
     } else if (searchValue.value === "") {
         selected.value = [];
         selectedOptionsFiltered.value = [];
