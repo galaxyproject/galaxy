@@ -63,6 +63,7 @@ from .models import (
     ValidationFunctionT,
 )
 from .state import (
+    HasToolParameters,
     JobInternalToolState,
     LandingRequestInternalToolState,
     LandingRequestToolState,
@@ -137,6 +138,7 @@ __all__ = (
     "ToolState",
     "TestCaseToolState",
     "ToolParameterT",
+    "HasToolParameters",
     "to_json_schema_string",
     "test_case_state",
     "RequestToolState",
