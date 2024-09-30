@@ -1072,7 +1072,9 @@ libraries:
       download_button: '#download-btn'
       delete_btn: '.toolbtn-bulk-delete'
       toast_msg: '.b-toast'
-      toast_warning: '.b-toast-warning'
+      alert_not_exists_user_import_dir:
+        type: xpath
+        selector: //div[contains(@class, "alert-danger") and contains(normalize-space(text()), "Your user import directory does not exist")]
       select_import_dir_item: '[for="drilldown-option-${name}"]'
       import_dir_btn:
         type: xpath
