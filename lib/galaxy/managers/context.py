@@ -39,10 +39,13 @@ import abc
 import string
 from json import dumps
 from typing import (
+    Any,
     Callable,
     cast,
+    Dict,
     List,
     Optional,
+    Tuple,
 )
 
 from sqlalchemy import select
@@ -204,6 +207,13 @@ class ProvidesUserContext(ProvidesAppContext):
 
     galaxy_session: Optional[GalaxySession] = None
     _tag_handler: Optional[GalaxyTagHandlerSession] = None
+    _short_term_cache: Dict[Tuple[str, ...], Any]
+
+    def set_cache_value(self, args: Tuple[str, ...], value: Any):
+        self._short_term_cache[args] = value
+
+    def get_cache_value(self, args: Tuple[str, ...], default: Any = None) -> Any:
+        return self._short_term_cache.get(args, default)
 
     @property
     def tag_handler(self):

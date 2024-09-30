@@ -3670,6 +3670,17 @@ class FilterEmptyDatasetsTool(FilterDatasetsTool):
         return False
 
 
+class FilterNullTool(FilterDatasetsTool):
+    tool_type = "filter_null"
+    require_dataset_ok = True
+
+    @staticmethod
+    def element_is_valid(element: model.DatasetCollectionElement):
+        element_object = element.element_object
+        assert isinstance(element_object, model.DatasetInstance)
+        return element_object.extension == "expression.json" and element_object.blurb == "skipped"
+
+
 class FlattenTool(DatabaseOperationTool):
     tool_type = "flatten_collection"
     require_terminal_states = False
