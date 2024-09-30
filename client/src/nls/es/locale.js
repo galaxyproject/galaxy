@@ -608,7 +608,7 @@ define({
         "Agregar o modificar la configuración que permite que Galaxy acceda a tus recursos en la nube",
 
     "Manage Toolbox Filters": "Manejar filtros de la caja de herramientas",
-    "Manage Custom Builds": "Administrar compilaciones personalizadas",
+    "Manage Custom Builds": "Administrar construcciones personalizadas",
 
     "Enable notifications": "Habilitar notificaciones",
     "Allow push and tab notifcations on job completion. To disable, revoke the site notification privilege in your browser.":
