@@ -4104,3 +4104,23 @@ mapping:
         per_host: true
         desc: |
           Enable the integration of the Galaxy Help Forum in the tool panel. This requires the help_forum_api_url to be set.
+
+      file_source_temp_dir:
+        type: str
+        required: false
+        desc: |
+          Directory to store temporary files for file sources. This defaults to new_file_path if not set.
+      
+      file_source_webdav_use_temp_files:
+        type: bool
+        default: true
+        desc: |
+          Default value for use_temp_files for webdav plugins that don't explicitly declare this.
+
+      file_source_listings_expiry_time:
+        type: int
+        default: 60
+        desc: |
+          Number of seconds before file source content listings are refreshed. Shorter times will result in more
+          queries while browsing a file sources. Longer times will result in fewer requests to file sources but
+          outdated contents might be displayed to the user. Currently only affects s3fs file sources.
