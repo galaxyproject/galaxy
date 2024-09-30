@@ -72,6 +72,7 @@ onMounted(() => {
         <span v-if="!hasOptions" class="align-indent"></span>
         <component
             :is="isComponent"
+            :id="`drilldown-option-${option.name}`"
             class="drilldown-option d-inline"
             value="true"
             :disabled="option.disabled"
