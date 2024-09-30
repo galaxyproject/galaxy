@@ -2298,6 +2298,12 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         assert upload_response.status_code == 200, upload_response
         return upload_response.json()
 
+    def build_module(self, step_type: str, content_id: Optional[str] = None, inputs: Optional[Dict[str, Any]] = None):
+        payload = {"inputs": inputs or {}, "type": step_type, "content_id": content_id}
+        response = self._post("workflows/build_module", data=payload, json=True)
+        assert response.status_code == 200, response
+        return response.json()
+
     def _import_tool_response(self, tool) -> Response:
         using_requirement("admin")
         tool_str = json.dumps(tool, indent=4)
