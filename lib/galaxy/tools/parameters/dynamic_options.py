@@ -833,6 +833,9 @@ class DynamicOptions:
         return rval
 
     def get_options(self, trans, other_values):
+
+        rval = []
+
         def to_triple(values):
             if len(values) == 2:
                 return [str(values[0]), str(values[1]), False]
@@ -875,8 +878,7 @@ class DynamicOptions:
                     data = []
 
             # We only support the very specific ["name", "value", "selected"] format for now.
-            return [to_triple(d) for d in data]
-        rval = []
+            rval = [to_triple(d) for d in data]
         if (
             self.file_fields is not None
             or self.tool_data_table is not None
