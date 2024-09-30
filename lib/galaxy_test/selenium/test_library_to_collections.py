@@ -63,7 +63,7 @@ class TestLibraryToCollections(SeleniumTestCase, UsesLibraryAssertions):
                 collection_option=collection_option
             ).wait_for_and_click()
         self.screenshot(f"libraries_to_collection_landing_is_new_history={is_new_history}")
-        self.components.libraries.folder.import_datasets_ok_button.wait_for_and_click()
+        self.components.libraries.folder.add_to_history_as_collection.wait_for_and_click()
         self.build_collection_and_assert()
         if is_new_history:
             assert self.history_panel_name_element().text == random_name
@@ -78,7 +78,7 @@ class TestLibraryToCollections(SeleniumTestCase, UsesLibraryAssertions):
             collection_option="list:paired"
         ).wait_for_and_click()
         self.screenshot(f"test_export_pairs_list={is_new_history}")
-        self.components.libraries.folder.import_datasets_ok_button.wait_for_and_click()
+        self.components.libraries.folder.add_to_history_as_collection.wait_for_and_click()
         self.components.libraries.folder.clear_filters.wait_for_and_click()
         self.collection_builder_click_paired_item("forward", 0)
         self.collection_builder_click_paired_item("reverse", 1)
