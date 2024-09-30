@@ -49,12 +49,6 @@ class WorkRequestContext(ProvidesHistoryContext):
         self.workflow_building_mode = workflow_building_mode
         self.galaxy_session = galaxy_session
 
-    def set_cache_value(self, args: Tuple[str, ...], value: Any):
-        self._short_term_cache[args] = value
-
-    def get_cache_value(self, args: Tuple[str, ...], default: Any = None) -> Any:
-        return self._short_term_cache.get(args, default)
-
     @property
     def app(self):
         return self._app
