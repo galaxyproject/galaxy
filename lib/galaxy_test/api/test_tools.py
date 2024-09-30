@@ -13,6 +13,8 @@ from typing import (
 from uuid import uuid4
 
 import pytest
+from jsonschema import validate
+from jsonschema.exceptions import ValidationError
 from requests import (
     get,
     put,
@@ -246,6 +248,31 @@ class TestToolsApi(ApiTestCase, TestsTools):
         xref = get_json["xrefs"][0]
         assert xref["reftype"] == "bio.tools"
         assert xref["value"] == "bwa"
+
+    @skip_without_tool("gx_int")
+    def test_tool_schemas(self):
+        tool_id = "gx_int"
+
+        def get_jsonschema(state_type: str):
+            schema_url = self._api_url(f"tools/{tool_id}/parameter_{state_type}_schema")
+            schema_response = get(schema_url)
+            schema_response.raise_for_status()
+            return schema_response.json()
+
+        request_schema = get_jsonschema("request")
+        validate(instance={"parameter": 5}, schema=request_schema)
+        with pytest.raises(ValidationError):
+            validate(instance={"parameter": "Foobar"}, schema=request_schema)
+
+        test_case_schema = get_jsonschema("test_case_xml")
+        validate(instance={"parameter": 5}, schema=test_case_schema)
+        with pytest.raises(ValidationError):
+            validate(instance={"parameter": "Foobar"}, schema=test_case_schema)
+
+        landing_schema = get_jsonschema("landing_request")
+        validate(instance={"parameter": 5}, schema=landing_schema)
+        with pytest.raises(ValidationError):
+            validate(instance={"parameter": "Foobar"}, schema=landing_schema)
 
     @skip_without_tool("test_data_source")
     @skip_if_github_down

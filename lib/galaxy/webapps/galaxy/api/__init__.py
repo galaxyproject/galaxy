@@ -81,6 +81,11 @@ from galaxy.model import User
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
+from galaxy.tool_util.parameters import (
+    HasToolParameters,
+    to_json_schema_string,
+    ToolState,
+)
 from galaxy.web.framework.decorators import require_admin_message
 from galaxy.webapps.base.controller import BaseAPIController
 from galaxy.webapps.galaxy.api.cbv import cbv
@@ -609,6 +614,14 @@ def as_form(cls: Type[BaseModel]):
     _as_form.__signature__ = sig  # type: ignore[attr-defined]
     cls.as_form = _as_form  # type: ignore[attr-defined]
     return cls
+
+
+def json_schema_response_for_tool_state_model(
+    state_type: Type[ToolState], has_parameters: HasToolParameters
+) -> Response:
+    pydantic_model = state_type.parameter_model_for(has_parameters)
+    json_str = to_json_schema_string(pydantic_model)
+    return Response(content=json_str, media_type="application/json")
 
 
 async def try_get_request_body_as_json(request: Request) -> Optional[Any]:
