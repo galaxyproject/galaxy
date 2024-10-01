@@ -2,7 +2,7 @@
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 interface Props {
     value: string;
@@ -18,12 +18,13 @@ const emit = defineEmits<{
 const editable = ref(false);
 const localValue = ref(props.value);
 
+const computedValue = computed(() => props.value);
+
 watch(
     () => editable.value,
     (value) => {
         if (!value) {
             emit("input", localValue.value);
-            localValue.value = props.value;
         }
     }
 );
@@ -34,10 +35,9 @@ watch(
         <input
             id="click-to-edit-input"
             v-model="localValue"
-            class="click-to-edit-input"
             tabindex="0"
             contenteditable
-            @blur="editable = false"
+            @blur.prevent.stop="editable = false"
             @keyup.prevent.stop.enter="editable = false"
             @keyup.prevent.stop.escape="editable = false"
             @click.prevent.stop />
@@ -50,15 +50,20 @@ watch(
         v-else
         role="button"
         for="click-to-edit-input"
+        class="click-to-edit-label"
         tabindex="0"
         @keyup.enter="editable = true"
         @click.stop="editable = true">
-        {{ localValue }}
+        <span v-if="computedValue">{{ computedValue }}</span>
+        <i v-else>{{ title }}</i>
     </label>
 </template>
 
 <style scoped lang="scss">
-.click-to-edit-input {
-    line-height: 1 !important;
+.click-to-edit-label {
+    cursor: text;
+    &:hover > * {
+        text-decoration: underline;
+    }
 }
 </style>

@@ -43,7 +43,7 @@ function clickDiscard() {
         <span class="d-flex flex-gapx-1">
             {{ element.hid }}:
             <strong>
-                <ClickToEdit v-model="elementName" style="cursor: text" :title="localize('Click to rename')" />
+                <ClickToEdit v-model="elementName" :title="localize('Click to rename')" />
             </strong>
             <i> ({{ element.extension }}) </i>
         </span>
