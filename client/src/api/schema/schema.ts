@@ -6092,8 +6092,11 @@ export interface components {
             extended_metadata?: unknown;
             /** File Type */
             file_type?: unknown;
-            /** Files */
-            files?: string[] | null;
+            /**
+             * Files
+             * @default []
+             */
+            files: unknown;
             /**
              * Filesystem Paths
              * @default
@@ -13093,6 +13096,11 @@ export interface components {
             extended_metadata?: Record<string, never> | null;
             /** file type */
             file_type?: string | null;
+            /**
+             * list of dictionaries containing the uploaded file fields
+             * @default []
+             */
+            files: Record<string, never>[];
             /**
              * (only if upload_option is 'upload_paths' and the user is an admin) file paths on the Galaxy server to upload to the library, one file per line
              * @default

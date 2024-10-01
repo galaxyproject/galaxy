@@ -163,7 +163,7 @@ class FastAPILibraryContents:
         if not files:
             data = await request.form()
             upload_files = []
-            for i, upload_file in enumerate(data.values()):
+            for upload_file in data.values():
                 if isinstance(upload_file, StarletteUploadFile):
                     with tempfile.NamedTemporaryFile(
                         dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
@@ -171,7 +171,7 @@ class FastAPILibraryContents:
                         shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
                     upload_file.file.close()
                     upload_files.append(dict(filename=upload_file.filename, local_filename=dest.name))
-            setattr(payload, "files", upload_files)
+            payload.files = upload_files
 
         return self.service.create(trans, library_id, payload)
 

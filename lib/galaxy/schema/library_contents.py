@@ -130,6 +130,10 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
         None,
         title="UUID of the dataset to upload",
     )
+    files: List[Dict[str, Any]] = Field(
+        [],
+        title="list of dictionaries containing the uploaded file fields",
+    )
 
     # uploaded file fields
     model_config = ConfigDict(extra="allow")
