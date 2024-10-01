@@ -72,7 +72,12 @@ function getTabClass(job: JobDetails) {
         <WorkflowInvocationJob :job="firstJob" />
     </div>
     <BTabs v-else vertical pills card nav-class="p-0">
-        <BTab v-for="job in jobsDetails" :key="job.id" :title-item-class="getTabClass(job)" title-link-class="w-100">
+        <BTab
+            v-for="job in jobsDetails"
+            :key="job.id"
+            data-description="workflow invocation job"
+            :title-item-class="getTabClass(job)"
+            title-link-class="w-100">
             <template v-slot:title>
                 {{ job.state }}
                 <FontAwesomeIcon
