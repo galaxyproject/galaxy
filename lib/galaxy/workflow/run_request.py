@@ -10,11 +10,13 @@ from typing import (
 )
 
 from galaxy import exceptions
+from galaxy.managers.hdas import dereference_input
 from galaxy.model import (
     EffectiveOutput,
     History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    InputWithRequest,
     LibraryDataset,
     LibraryDatasetDatasetAssociation,
     WorkflowInvocation,
@@ -25,6 +27,7 @@ from galaxy.model.base import (
     ensure_object_added_to_session,
     transaction,
 )
+from galaxy.tool_util.parameters import DataRequestUri
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.workflow.resources import get_resource_mapper_function
 
@@ -57,6 +60,9 @@ class WorkflowRunConfig:
     :param inputs: Map from step ids to dict's containing HDA for these steps.
     :type inputs: dict
 
+    :param requires_materialization: True if an input requires materialization before
+                                     the workflow is scheduled.
+
     :param inputs_by: How inputs maps to inputs (datasets/collections) to workflows
                       steps - by unencoded database id ('step_id'), index in workflow
                       'step_index' (independent of database), or by input name for
@@ -78,6 +84,7 @@ class WorkflowRunConfig:
         copy_inputs_to_history: bool = False,
         use_cached_job: bool = False,
         resource_params: Optional[Dict[int, Any]] = None,
+        requires_materialization: bool = False,
         preferred_object_store_id: Optional[str] = None,
         preferred_outputs_object_store_id: Optional[str] = None,
         preferred_intermediate_object_store_id: Optional[str] = None,
@@ -91,6 +98,7 @@ class WorkflowRunConfig:
         self.resource_params = resource_params or {}
         self.allow_tool_state_corrections = allow_tool_state_corrections
         self.use_cached_job = use_cached_job
+        self.requires_materialization = requires_materialization
         self.preferred_object_store_id = preferred_object_store_id
         self.preferred_outputs_object_store_id = preferred_outputs_object_store_id
         self.preferred_intermediate_object_store_id = preferred_intermediate_object_store_id
@@ -310,7 +318,7 @@ def build_workflow_run_configs(
     legacy = payload.get("legacy", False)
     already_normalized = payload.get("parameters_normalized", False)
     raw_parameters = payload.get("parameters", {})
-
+    requires_materialization: bool = False
     run_configs = []
     unexpanded_param_map = _normalize_step_parameters(
         workflow.steps, raw_parameters, legacy=legacy, already_normalized=already_normalized
@@ -368,16 +376,22 @@ def build_workflow_run_configs(
                 raise exceptions.RequestParameterInvalidException(
                     f"Not input source type defined for input '{input_dict}'."
                 )
-            if "id" not in input_dict:
-                raise exceptions.RequestParameterInvalidException(f"Not input id defined for input '{input_dict}'.")
+            input_source = input_dict["src"]
+            if "id" not in input_dict and input_source != "url":
+                raise exceptions.RequestParameterInvalidException(f"No input id defined for input '{input_dict}'.")
+            elif input_source == "url" and not input_dict.get("url"):
+                raise exceptions.RequestParameterInvalidException(
+                    f"Supplied 'url' is empty or absent for input '{input_dict}'."
+                )
             if "content" in input_dict:
                 raise exceptions.RequestParameterInvalidException(
                     f"Input cannot specify explicit 'content' attribute {input_dict}'."
                 )
-            input_source = input_dict["src"]
-            input_id = input_dict["id"]
+            input_id = input_dict.get("id")
             try:
+                added_to_history = False
                 if input_source == "ldda":
+                    assert input_id
                     ldda = trans.sa_session.get(LibraryDatasetDatasetAssociation, trans.security.decode_id(input_id))
                     assert ldda
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
@@ -385,6 +399,7 @@ def build_workflow_run_configs(
                     )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif input_source == "ld":
+                    assert input_id
                     library_dataset = trans.sa_session.get(LibraryDataset, trans.security.decode_id(input_id))
                     assert library_dataset
                     ldda = library_dataset.library_dataset_dataset_association
@@ -394,6 +409,7 @@ def build_workflow_run_configs(
                     )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif input_source == "hda":
+                    assert input_id
                     # Get dataset handle, add to dict and history if necessary
                     content = trans.sa_session.get(HistoryDatasetAssociation, trans.security.decode_id(input_id))
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
@@ -401,11 +417,21 @@ def build_workflow_run_configs(
                     )
                 elif input_source == "hdca":
                     content = app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", input_id)
+                elif input_source == "url":
+                    data_request = DataRequestUri.model_validate(input_dict)
+                    hda: HistoryDatasetAssociation = dereference_input(trans, data_request, history)
+                    added_to_history = True
+                    content = InputWithRequest(
+                        input=hda,
+                        request=data_request.model_dump(mode="json"),
+                    )
+                    if not data_request.deferred:
+                        requires_materialization = True
                 else:
                     raise exceptions.RequestParameterInvalidException(
                         f"Unknown workflow input source '{input_source}' specified."
                     )
-                if add_to_history and content.history != history:
+                if not added_to_history and add_to_history and content.history != history:
                     if isinstance(content, HistoryDatasetCollectionAssociation):
                         content = content.copy(element_destination=history, flush=False)
                     else:
@@ -474,6 +500,7 @@ def build_workflow_run_configs(
                 allow_tool_state_corrections=allow_tool_state_corrections,
                 use_cached_job=use_cached_job,
                 resource_params=resource_params,
+                requires_materialization=requires_materialization,
                 preferred_object_store_id=preferred_object_store_id,
                 preferred_outputs_object_store_id=preferred_outputs_object_store_id,
                 preferred_intermediate_object_store_id=preferred_intermediate_object_store_id,

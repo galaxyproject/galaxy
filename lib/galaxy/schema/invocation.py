@@ -281,6 +281,7 @@ class InvocationMessageResponseModel(RootModel):
 
 class InvocationState(str, Enum):
     NEW = "new"  # Brand new workflow invocation... maybe this should be same as READY
+    REQUIRES_MATERIALIZATION = "requires_materialization"  # an otherwise NEW or READY workflow that requires inputs to be materialized (undeferred)
     READY = "ready"  # Workflow ready for another iteration of scheduling.
     SCHEDULED = "scheduled"  # Workflow has been scheduled.
     CANCELLED = "cancelled"

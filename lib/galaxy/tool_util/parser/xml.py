@@ -30,6 +30,7 @@ from galaxy.util import (
     Element,
     ElementTree,
     string_as_bool,
+    string_as_bool_or_none,
     XML,
     xml_text,
     xml_to_string,
@@ -1326,6 +1327,9 @@ class XmlInputSource(InputSource):
 
     def get_bool(self, key, default):
         return string_as_bool(self.get(key, default))
+
+    def get_bool_or_none(self, key, default):
+        return string_as_bool_or_none(self.get(key, default))
 
     def parse_label(self):
         return xml_text(self.input_elem, "label")

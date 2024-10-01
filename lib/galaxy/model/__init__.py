@@ -18,6 +18,7 @@ import random
 import string
 from collections import defaultdict
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import (
     datetime,
     timedelta,
@@ -176,6 +177,7 @@ from galaxy.schema.schema import (
     DatasetValidatedState,
     InvocationsStateCounts,
     JobState,
+    ToolRequestState,
 )
 from galaxy.schema.workflow.comments import WorkflowCommentModel
 from galaxy.security import get_permitted_actions
@@ -212,6 +214,7 @@ from galaxy.util.form_builder import (
     WorkflowMappingField,
 )
 from galaxy.util.hash_util import (
+    HashFunctionNameEnum,
     md5_hash_str,
     new_insecure_hash,
 )
@@ -1328,6 +1331,30 @@ class PasswordResetToken(Base):
         self.expiration_time = now() + timedelta(hours=24)
 
 
+class ToolSource(Base, Dictifiable, RepresentById):
+    __tablename__ = "tool_source"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    hash: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    source: Mapped[dict] = mapped_column(JSONType)
+
+
+class ToolRequest(Base, Dictifiable, RepresentById):
+    __tablename__ = "tool_request"
+
+    states: TypeAlias = ToolRequestState
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tool_source_id: Mapped[int] = mapped_column(ForeignKey("tool_source.id"), index=True)
+    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
+    request: Mapped[dict] = mapped_column(JSONType)
+    state: Mapped[Optional[str]] = mapped_column(TrimmedString(32), index=True)
+    state_message: Mapped[Optional[str]] = mapped_column(JSONType, index=True)
+
+    tool_source: Mapped["ToolSource"] = relationship()
+    history: Mapped[Optional["History"]] = relationship(back_populates="tool_requests")
+
+
 class DynamicTool(Base, Dictifiable, RepresentById):
     __tablename__ = "dynamic_tool"
 
@@ -1454,7 +1481,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     preferred_object_store_id: Mapped[Optional[str]] = mapped_column(String(255))
     object_store_id_overrides: Mapped[Optional[STR_TO_STR_DICT]] = mapped_column(JSONType)
+    tool_request_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tool_request.id"), index=True)
 
+    tool_request: Mapped[Optional["ToolRequest"]] = relationship()
     user: Mapped[Optional["User"]] = relationship()
     galaxy_session: Mapped[Optional["GalaxySession"]] = relationship()
     history: Mapped[Optional["History"]] = relationship(back_populates="jobs")
@@ -3177,6 +3206,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     )
     user: Mapped[Optional["User"]] = relationship(back_populates="histories")
     jobs: Mapped[List["Job"]] = relationship(back_populates="history", cascade_backrefs=False)
+    tool_requests: Mapped[List["ToolRequest"]] = relationship(back_populates="history")
 
     update_time = column_property(
         select(func.max(HistoryAudit.update_time)).where(HistoryAudit.history_id == id).scalar_subquery(),
@@ -4464,7 +4494,17 @@ class DatasetSource(Base, Dictifiable, Serializable):
         return new_source
 
 
-class DatasetSourceHash(Base, Serializable):
+class HasHashFunctionName:
+    hash_function: Mapped[Optional[str]]
+
+    @property
+    def hash_func_name(self) -> HashFunctionNameEnum:
+        as_str = self.hash_function
+        assert as_str
+        return HashFunctionNameEnum(self.hash_function)
+
+
+class DatasetSourceHash(Base, Serializable, HasHashFunctionName):
     __tablename__ = "dataset_source_hash"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -4489,7 +4529,7 @@ class DatasetSourceHash(Base, Serializable):
         return new_hash
 
 
-class DatasetHash(Base, Dictifiable, Serializable):
+class DatasetHash(Base, Dictifiable, Serializable, HasHashFunctionName):
     __tablename__ = "dataset_hash"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -4517,6 +4557,15 @@ class DatasetHash(Base, Dictifiable, Serializable):
         new_hash.hash_value = self.hash_value
         new_hash.extra_files_path = self.extra_files_path
         return new_hash
+
+    @property
+    def hash_func_name(self) -> HashFunctionNameEnum:
+        as_str = self.hash_function
+        assert as_str
+        return HashFunctionNameEnum(self.hash_function)
+
+
+DescribesHash = Union[DatasetSourceHash, DatasetHash]
 
 
 def datatype_for_extension(extension, datatypes_registry=None) -> "Data":
@@ -8518,6 +8567,18 @@ class StoredWorkflowMenuEntry(Base, RepresentById):
     )
 
 
+@dataclass
+class InputWithRequest:
+    input: Any
+    request: Dict[str, Any]
+
+
+@dataclass
+class InputToMaterialize:
+    hda: "HistoryDatasetAssociation"
+    input_dataset: "WorkflowRequestToInputDatasetAssociation"
+
+
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation"
 
@@ -8749,6 +8810,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         and_conditions = [
             or_(
                 WorkflowInvocation.state == WorkflowInvocation.states.NEW,
+                WorkflowInvocation.state == WorkflowInvocation.states.REQUIRES_MATERIALIZATION,
                 WorkflowInvocation.state == WorkflowInvocation.states.READY,
                 WorkflowInvocation.state == WorkflowInvocation.states.CANCELLING,
             ),
@@ -8839,6 +8901,21 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         for input_dataset_collection_assoc in self.input_dataset_collections:
             inputs.append(input_dataset_collection_assoc)
         return inputs
+
+    def inputs_requiring_materialization(self) -> List[InputToMaterialize]:
+        hdas_to_materialize: List[InputToMaterialize] = []
+        for input_dataset_assoc in self.input_datasets:
+            request = input_dataset_assoc.request
+            if request:
+                deferred = request.get("deferred", False)
+                if not deferred:
+                    hdas_to_materialize.append(
+                        InputToMaterialize(
+                            input_dataset_assoc.dataset,
+                            input_dataset_assoc,
+                        )
+                    )
+        return hdas_to_materialize
 
     def _serialize(self, id_encoder, serialization_options):
         invocation_attrs = dict_for(self)
@@ -9002,20 +9079,28 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             else:
                 request_to_content.workflow_step = step
 
+        request: Optional[Dict[str, Any]] = None
+        if isinstance(content, InputWithRequest):
+            request = content.request
+            content = content.input
+
         history_content_type = getattr(content, "history_content_type", None)
         if history_content_type == "dataset":
             request_to_content = WorkflowRequestToInputDatasetAssociation()
             request_to_content.dataset = content
+            request_to_content.request = request
             attach_step(request_to_content)
             self.input_datasets.append(request_to_content)
         elif history_content_type == "dataset_collection":
             request_to_content = WorkflowRequestToInputDatasetCollectionAssociation()
             request_to_content.dataset_collection = content
+            request_to_content.request = request
             attach_step(request_to_content)
             self.input_dataset_collections.append(request_to_content)
         else:
             request_to_content = WorkflowRequestInputStepParameter()
             request_to_content.parameter_value = content
+            request_to_content.request = request
             attach_step(request_to_content)
             self.input_step_parameters.append(request_to_content)
 
@@ -9439,6 +9524,7 @@ class WorkflowRequestToInputDatasetAssociation(Base, Dictifiable, Serializable):
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
+    request: Mapped[Optional[Dict]] = mapped_column(JSONType)
 
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     dataset: Mapped[Optional["HistoryDatasetAssociation"]] = relationship()
@@ -9474,6 +9560,7 @@ class WorkflowRequestToInputDatasetCollectionAssociation(Base, Dictifiable, Seri
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(
         back_populates="input_dataset_collections"
     )
+    request: Mapped[Optional[Dict]] = mapped_column(JSONType)
 
     history_content_type = "dataset_collection"
     dict_collection_visible_keys = ["id", "workflow_invocation_id", "workflow_step_id", "dataset_collection_id", "name"]
@@ -9497,6 +9584,7 @@ class WorkflowRequestInputStepParameter(Base, Dictifiable, Serializable):
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
     parameter_value: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    request: Mapped[Optional[Dict]] = mapped_column(JSONType)
 
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="input_step_parameters")
@@ -9520,7 +9608,6 @@ class WorkflowInvocationOutputDatasetAssociation(Base, Dictifiable, Serializable
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
     workflow_output_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_output.id"), index=True)
-
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="output_datasets")
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     dataset: Mapped[Optional["HistoryDatasetAssociation"]] = relationship()
@@ -11160,6 +11247,43 @@ class UserFileSource(Base, HasConfigTemplate):
             raise first_exception
 
         raise ValueError("No template sent to file_source_configuration")
+
+
+# TODO: add link from tool_request to this
+class ToolLandingRequest(Base):
+    __tablename__ = "tool_landing_request"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    update_time: Mapped[Optional[datetime]] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
+    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    tool_id: Mapped[str] = mapped_column(String(255))
+    tool_version: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+    request_state: Mapped[Optional[Dict]] = mapped_column(JSONType)
+    client_secret: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+
+    user: Mapped[Optional["User"]] = relationship()
+
+
+# TODO: add link from workflow_invocation to this
+class WorkflowLandingRequest(Base):
+    __tablename__ = "workflow_landing_request"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("stored_workflow.id"), nullable=True)
+    stored_workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow.id"), nullable=True)
+
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    update_time: Mapped[Optional[datetime]] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
+    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    request_state: Mapped[Optional[Dict]] = mapped_column(JSONType)
+    client_secret: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+
+    user: Mapped[Optional["User"]] = relationship()
+    stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship()
+    workflow: Mapped[Optional["Workflow"]] = relationship()
 
 
 class UserAction(Base, RepresentById):

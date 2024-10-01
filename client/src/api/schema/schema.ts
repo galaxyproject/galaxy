@@ -4880,6 +4880,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workflow_landings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Landing */
+        post: operations["create_landing_api_workflow_landings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflow_landings/{uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Landing */
+        get: operations["get_landing_api_workflow_landings__uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflow_landings/{uuid}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Landing */
+        post: operations["claim_landing_api_workflow_landings__uuid__claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workflows": {
         parameters: {
             query?: never;
@@ -6270,6 +6321,11 @@ export interface components {
              */
             type: string;
         };
+        /** ClaimLandingPayload */
+        ClaimLandingPayload: {
+            /** Client Secret */
+            client_secret?: string | null;
+        };
         /** CleanableItemsSummary */
         CleanableItemsSummary: {
             /**
@@ -6914,6 +6970,20 @@ export interface components {
              * @description The relative URL to get this particular Quota details from the rest API.
              */
             url: string;
+        };
+        /** CreateWorkflowLandingRequestPayload */
+        CreateWorkflowLandingRequestPayload: {
+            /** Client Secret */
+            client_secret?: string | null;
+            /** Request State */
+            request_state?: Record<string, never> | null;
+            /** Workflow Id */
+            workflow_id: string;
+            /**
+             * Workflow Target Type
+             * @enum {string}
+             */
+            workflow_target_type: "stored_workflow" | "workflow";
         };
         /** CreatedEntryResponse */
         CreatedEntryResponse: {
@@ -11856,7 +11926,14 @@ export interface components {
          * InvocationState
          * @enum {string}
          */
-        InvocationState: "new" | "ready" | "scheduled" | "cancelled" | "cancelling" | "failed";
+        InvocationState:
+            | "new"
+            | "requires_materialization"
+            | "ready"
+            | "scheduled"
+            | "cancelled"
+            | "cancelling"
+            | "failed";
         /**
          * InvocationStep
          * @description Information about workflow invocation step
@@ -12790,6 +12867,11 @@ export interface components {
              */
             value: string;
         };
+        /**
+         * LandingRequestState
+         * @enum {string}
+         */
+        LandingRequestState: "unclaimed" | "claimed";
         /** LegacyLibraryPermissionsPayload */
         LegacyLibraryPermissionsPayload: {
             /**
@@ -13333,6 +13415,21 @@ export interface components {
              * @description The source of the content. Can be other history element to be copied or library elements.
              */
             source: components["schemas"]["DatasetSourceType"];
+            /**
+             * Validate hashes
+             * @description Set to true to enable dataset validation during materialization.
+             * @default false
+             */
+            validate_hashes: boolean;
+        };
+        /** MaterializeDatasetOptions */
+        MaterializeDatasetOptions: {
+            /**
+             * Validate hashes
+             * @description Set to true to enable dataset validation during materialization.
+             * @default false
+             */
+            validate_hashes: boolean;
         };
         /** MessageExceptionModel */
         MessageExceptionModel: {
@@ -17440,6 +17537,25 @@ export interface components {
             states: {
                 [key: string]: number;
             };
+        };
+        /** WorkflowLandingRequest */
+        WorkflowLandingRequest: {
+            /** Request State */
+            request_state: Record<string, never>;
+            state: components["schemas"]["LandingRequestState"];
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier for this dataset.
+             */
+            uuid: string;
+            /** Workflow Id */
+            workflow_id: string;
+            /**
+             * Workflow Target Type
+             * @enum {string}
+             */
+            workflow_target_type: "stored_workflow" | "workflow";
         };
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
@@ -23380,7 +23496,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MaterializeDatasetOptions"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -33144,6 +33264,143 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserModel"] | null;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_landing_api_workflow_landings_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWorkflowLandingRequestPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_landing_api_workflow_landings__uuid__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted landing request. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    claim_landing_api_workflow_landings__uuid__claim_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted landing request. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimLandingPayload"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowLandingRequest"];
                 };
             };
             /** @description Request Error */

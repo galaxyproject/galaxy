@@ -338,6 +338,9 @@ class YamlInputSource(InputSource):
     def get_bool(self, key, default):
         return self.input_dict.get(key, default)
 
+    def get_bool_or_none(self, key, default):
+        return self.input_dict.get(key, default)
+
     def parse_input_type(self):
         input_type = self.input_dict["type"]
         if input_type == "repeat":

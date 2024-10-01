@@ -79,6 +79,26 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert not new_hda_details["deleted"]
 
     @pytest.mark.require_new_history
+    def test_materialize_hash_failure(self, history_id: str):
+        store_dict = deferred_hda_model_store_dict(source_uri="gxfiles://testdatafiles/2.bed")
+        store_dict["datasets"][0]["file_metadata"]["hashes"][0]["hash_value"] = "invalidhash"
+        as_list = self.dataset_populator.create_contents_from_store(history_id, store_dict=store_dict)
+        assert len(as_list) == 1
+        deferred_hda = as_list[0]
+        assert deferred_hda["model_class"] == "HistoryDatasetAssociation"
+        assert deferred_hda["state"] == "deferred"
+        assert not deferred_hda["deleted"]
+
+        self.dataset_populator.materialize_dataset_instance(history_id, deferred_hda["id"], validate_hashes=True)
+        self.dataset_populator.wait_on_history_length(history_id, 2)
+        new_hda_details = self.dataset_populator.get_history_dataset_details(
+            history_id, hid=2, assert_ok=False, wait=False
+        )
+        assert new_hda_details["model_class"] == "HistoryDatasetAssociation"
+        assert new_hda_details["state"] == "error"
+        assert not new_hda_details["deleted"]
+
+    @pytest.mark.require_new_history
     def test_materialize_history_dataset_bam(self, history_id: str):
         as_list = self.dataset_populator.create_contents_from_store(
             history_id,

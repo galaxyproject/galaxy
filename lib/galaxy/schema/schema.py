@@ -3681,7 +3681,15 @@ class PageSummaryBase(Model):
     )
 
 
-class MaterializeDatasetInstanceAPIRequest(Model):
+class MaterializeDatasetOptions(Model):
+    validate_hashes: bool = Field(
+        False,
+        title="Validate hashes",
+        description="Set to true to enable dataset validation during materialization.",
+    )
+
+
+class MaterializeDatasetInstanceAPIRequest(MaterializeDatasetOptions):
     source: DatasetSourceType = Field(
         title="Source",
         description="The source of the content. Can be other history element to be copied or library elements.",
@@ -3735,6 +3743,22 @@ class AsyncTaskResultSummary(Model):
         None,
         title="Queue of task being done derived from Celery AsyncResult",
     )
+
+
+ToolRequestIdField = Field(title="ID", description="Encoded ID of the role")
+
+
+class ToolRequestState(str, Enum):
+    NEW = "new"
+    SUBMITTED = "submitted"
+    FAILED = "failed"
+
+
+class ToolRequestModel(Model):
+    id: EncodedDatabaseIdField = ToolRequestIdField
+    request: Dict[str, Any]
+    state: ToolRequestState
+    state_message: Optional[str]
 
 
 class AsyncFile(Model):
@@ -3814,6 +3838,49 @@ class PageSummaryList(RootModel):
         default=[],
         title="List with summary information of Pages.",
     )
+
+
+class LandingRequestState(str, Enum):
+    UNCLAIMED = "unclaimed"
+    CLAIMED = "claimed"
+
+
+ToolLandingRequestIdField = Field(title="ID", description="Encoded ID of the tool landing request")
+WorkflowLandingRequestIdField = Field(title="ID", description="Encoded ID of the workflow landing request")
+
+
+class CreateToolLandingRequestPayload(Model):
+    tool_id: str
+    tool_version: Optional[str] = None
+    request_state: Optional[Dict[str, Any]] = None
+    client_secret: Optional[str] = None
+
+
+class CreateWorkflowLandingRequestPayload(Model):
+    workflow_id: str
+    workflow_target_type: Literal["stored_workflow", "workflow"]
+    request_state: Optional[Dict[str, Any]] = None
+    client_secret: Optional[str] = None
+
+
+class ClaimLandingPayload(Model):
+    client_secret: Optional[str] = None
+
+
+class ToolLandingRequest(Model):
+    uuid: UuidField
+    tool_id: str
+    tool_version: Optional[str] = None
+    request_state: Optional[Dict[str, Any]] = None
+    state: LandingRequestState
+
+
+class WorkflowLandingRequest(Model):
+    uuid: UuidField
+    workflow_id: str
+    workflow_target_type: Literal["stored_workflow", "workflow"]
+    request_state: Dict[str, Any]
+    state: LandingRequestState
 
 
 class MessageExceptionModel(BaseModel):
