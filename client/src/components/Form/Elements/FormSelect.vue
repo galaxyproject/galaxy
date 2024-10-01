@@ -84,7 +84,7 @@ const reorderedOptions = computed(() => {
  * Tracks if the select field has options
  */
 const hasOptions: ComputedRef<Boolean> = computed(() => {
-    return props.options.length > 0;
+    return filteredOptions.value.length > 0;
 });
 
 /**
@@ -92,7 +92,7 @@ const hasOptions: ComputedRef<Boolean> = computed(() => {
  */
 const initialValue: ComputedRef<SelectValue> = computed(() => {
     if (props.value === null && !props.optional && hasOptions.value) {
-        const v = props.options[0];
+        const v = filteredOptions.value[0];
         if (v) {
             return v.value;
         }
@@ -116,7 +116,7 @@ const selectedValues = computed(() => (Array.isArray(props.value) ? props.value 
  * Tracks current value and emits changes
  */
 const currentValue = computed({
-    get: () => props.options.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
+    get: () => filteredOptions.value.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
     set: (val: Array<SelectOption> | SelectOption): void => {
         if (Array.isArray(val)) {
             if (val.length > 0) {
@@ -135,6 +135,7 @@ const currentValue = computed({
  * Ensures that an initial value is selected for non-optional inputs
  */
 function setInitialValue(): void {
+    filteredOptions.value = props.options;
     if (initialValue.value) {
         emit("input", initialValue.value);
     }
