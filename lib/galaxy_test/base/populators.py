@@ -2736,10 +2736,9 @@ class LibraryPopulator:
         return show().json()
 
     def raw_library_contents_create(self, library_id, payload, files=None):
-        if files is None:
-            files = {}
-
         url_rel = f"libraries/{library_id}/contents"
+        if not files:
+            return self.galaxy_interactor.post(url_rel, json=payload)
         return self.galaxy_interactor.post(url_rel, payload, files=files)
 
     def show_ld_raw(self, library_id: str, library_dataset_id: str) -> Response:
