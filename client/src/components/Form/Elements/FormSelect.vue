@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, type ComputedRef, onMounted, type PropType, watch } from "vue";
+import { computed, type ComputedRef, onMounted, type PropType, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useMultiselect } from "@/composables/useMultiselect";
@@ -54,19 +54,21 @@ const emit = defineEmits<{
     (e: "input", value: SelectValue | Array<SelectValue>): void;
 }>();
 
+const filteredOptions = ref<SelectOption[]>(props.options);
+
 /**
  * When there are more options than this, push selected options to the end
  */
 const optionReorderThreshold = 8;
 
 const reorderedOptions = computed(() => {
-    if (props.options.length <= optionReorderThreshold) {
-        return props.options;
+    if (filteredOptions.value.length <= optionReorderThreshold) {
+        return filteredOptions.value;
     } else {
         const selectedOptions: SelectOption[] = [];
         const unselectedOptions: SelectOption[] = [];
 
-        props.options.forEach((option) => {
+        filteredOptions.value.forEach((option) => {
             if (selectedValues.value.includes(option.value)) {
                 selectedOptions.push(option);
             } else {
@@ -156,6 +158,20 @@ onMounted(() => {
 function isValueWithTags(item: SelectValue): item is ValueWithTags {
     return (item as ValueWithTags).tags !== undefined;
 }
+
+function onSearchChange(search: string): void {
+    filteredOptions.value = search
+        ? props.options.filter((option) => filterByLabelOrTags(option, search))
+        : props.options;
+}
+
+function filterByLabelOrTags(option: SelectOption, search: string): boolean {
+    return (
+        option.label.toLowerCase().includes(search.toLowerCase()) ||
+        (isValueWithTags(option.value) &&
+            option.value.tags.some((tag) => tag.toLowerCase().includes(search.toLowerCase())))
+    );
+}
 </script>
 
 <template>
@@ -176,6 +192,8 @@ function isValueWithTags(item: SelectValue): item is ValueWithTags {
             :selected-label="selectedLabel"
             :select-label="null"
             track-by="value"
+            :internal-search="false"
+            @search-change="onSearchChange"
             @open="onOpen"
             @close="onClose">
             <template v-slot:option="{ option }">
