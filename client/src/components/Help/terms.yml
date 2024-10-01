@@ -63,12 +63,9 @@ galaxy:
       hideOriginalElements: |
         Toggling this on means that the original history items that will become a part of the collection
         will be hidden from the history panel (they will still be searchable via the 'visible: false' filter).
-      filterForDatatypes: |
-        This option allows you to filter items shown here by datatype because this input requires specific
-        extension(s). By default, the toggle is at "Extension" and the list is filtered for the explicit extension(s)
-        required by the input; *if datasets with that extension(s) are available*. If you toggle to "Datatype",
-        the list will be filtered for the "parent" datatype of the required extension (for implicit conversion).
-        If you toggle to "All", the list will show all items regardless of datatype.
+      filteredExtensions: |
+        The history is filtered for the extensions that are required for this collection. You might see some
+        items with other extensions since those can still be valid inputs via implicit conversion.
 
   jobs:
     states:

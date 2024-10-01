@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormCheckbox, BFormGroup, BFormInput, BFormRadioGroup } from "bootstrap-vue";
+import { BAlert, BButton, BFormCheckbox, BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import localize from "@/utils/localization";
@@ -16,16 +16,12 @@ interface Props {
     renderExtensionsToggle?: boolean;
     extensions?: string[];
     extensionsToggle?: boolean;
-    datatypeToggle?: "all" | "datatype" | "ext";
-    datatypeToggleOptions?: { text: string; value: string }[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
     suggestedName: "",
     extensions: undefined,
     extensionsToggle: false,
-    datatypeToggle: undefined,
-    datatypeToggleOptions: undefined,
 });
 
 const emit = defineEmits<{
@@ -58,15 +54,6 @@ watch(
         emit("onUpdateHideSourceItems", localHideSourceItems.value);
     }
 );
-
-const localDatatypeToggle = computed({
-    get: () => {
-        return props.datatypeToggle;
-    },
-    set: (newVal) => {
-        emit("on-update-datatype-toggle", newVal);
-    },
-});
 </script>
 
 <template>
@@ -81,9 +68,11 @@ const localDatatypeToggle = computed({
                     @click="clickForHelp">
                     <div v-if="!isExpanded">
                         <FontAwesomeIcon :icon="faChevronDown" />
+                        <span class="sr-only">{{ localize("Expand Help") }}</span>
                     </div>
                     <div v-else>
                         <FontAwesomeIcon :icon="faChevronUp" />
+                        <span class="sr-only">{{ localize("Close Help") }}</span>
                     </div>
                 </a>
 
@@ -97,6 +86,7 @@ const localDatatypeToggle = computed({
                         role="button"
                         :title="localize('Expand or Close Help')"
                         @click="clickForHelp">
+                        <span class="sr-only">{{ localize("Expand Help") }}</span>
                     </a>
                 </div>
             </div>
@@ -109,29 +99,11 @@ const localDatatypeToggle = computed({
         <div class="footer flex-row">
             <div class="vertically-spaced">
                 <div class="d-flex align-items-center justify-content-between">
-                    <BFormGroup
-                        v-if="datatypeToggle"
-                        class="flex-gapx-1 d-flex align-items-center"
-                        label-for="datatype-toggle">
-                        <template v-slot:label>
-                            <HelpText
-                                uri="galaxy.collections.collectionBuilder.filterForDatatypes"
-                                :text="localize('Filter for Datatypes?')" />
-                        </template>
-                        <BFormRadioGroup
-                            id="datatype-toggle"
-                            v-model="localDatatypeToggle"
-                            :options="datatypeToggleOptions"
-                            size="sm"
-                            buttons />
-                    </BFormGroup>
-
-                    <BAlert
-                        v-if="extensions && localDatatypeToggle === 'ext'"
-                        class="w-50 py-0"
-                        variant="secondary"
-                        show>
-                        Filtered extensions: <strong>{{ orList(extensions) }}</strong>
+                    <BAlert v-if="extensions?.length" class="w-100 py-0" variant="secondary" show>
+                        <HelpText
+                            uri="galaxy.collections.collectionBuilder.filteredExtensions"
+                            :text="localize('Filtered extensions: ')" />
+                        <strong>{{ orList(extensions) }}</strong>
                     </BAlert>
                 </div>
 
@@ -194,9 +166,6 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
 .collection-creator {
     height: 100%;
     overflow: hidden;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     // ------------------------------------------------------------------------ general
     ol,
     li {

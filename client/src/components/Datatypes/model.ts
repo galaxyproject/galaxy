@@ -45,8 +45,4 @@ export class DatatypesMapperModel {
         const fullClassName = this.datatypesMapping.ext_to_class_name[extension];
         return fullClassName?.split(".")[2];
     }
-
-    isSubClassOfAny(child: string, parents: DatatypesCombinedMap["datatypes"]): boolean {
-        return parents.every((parent) => this.getParentDatatype(parent) === this.getParentDatatype(child));
-    }
 }

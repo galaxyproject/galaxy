@@ -17,14 +17,6 @@ import FormSelectMany from "../Form/Elements/FormSelectMany/FormSelectMany.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 import DatasetCollectionElementView from "@/components/Collections/ListDatasetCollectionElementView.vue";
 
-const DEFAULT_DATATYPE_FILTER_OPTIONS = [
-    { text: "All", value: "all" },
-    { text: "Datatype", value: "datatype" },
-    { text: "Extension", value: "ext" },
-];
-
-type DatatypeToggle = "all" | "datatype" | "ext" | undefined;
-
 interface Props {
     initialElements: HistoryItemSummary[];
     oncancel: () => void;
@@ -81,21 +73,7 @@ const inListElements = ref<HDASummary[]>([]);
 const datatypesMapperStore = useDatatypesMapperStore();
 const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
 
-const datatypeToggleOptions = ref<{ text: string; value: string }[] | undefined>(
-    props.extensions?.length ? DEFAULT_DATATYPE_FILTER_OPTIONS : undefined
-);
-const baseDatatypeToggle = computed(() => {
-    const options = datatypeToggleOptions.value || [];
-    return options.find((option) => option.value === "ext")
-        ? "ext"
-        : options.find((option) => option.value === "datatype")
-        ? "datatype"
-        : "all";
-});
-
-const datatypeToggle = ref<DatatypeToggle>(props.extensions?.length ? "ext" : undefined);
-
-/** Are we filtering by extension or datatype? */
+/** Are we filtering by datatype? */
 const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
 
 /** set up instance vars function */
@@ -149,28 +127,11 @@ function _validateElements() {
         return !problem;
     });
 
-    // if all elements are invalid, try again by switching to the next datatypeToggle value
-    // until we've tried both `ext` and `datatype` and then we revert to showing everything
-    if (props.initialElements.length && allElementsAreInvalid.value && !props.fromSelection && filterExtensions.value) {
-        if (datatypeToggle.value === "ext") {
-            datatypeToggleOptions.value = datatypeToggleOptions.value?.filter((option) => option.value !== "ext");
-            datatypeToggle.value = "datatype";
-        } else if (datatypeToggle.value === "datatype") {
-            // we've tried both `ext` and `datatype`, so we remove the toggle options
-            datatypeToggleOptions.value = undefined;
-            datatypeToggle.value = "all";
-        } else {
-            return;
-        }
-        // re-run `_elementsSetUp` to filter out invalid elements for the new datatypeToggle value
-        _elementsSetUp();
-    }
-
     return workingElements.value;
 }
 
 /** describe what is wrong with a particular element if anything */
-function _isElementInvalid(element: HistoryItemSummary) {
+function _isElementInvalid(element: HistoryItemSummary): string | null {
     if (element.history_content_type === "dataset_collection") {
         return localize("is a collection, this is not allowed");
     }
@@ -185,17 +146,13 @@ function _isElementInvalid(element: HistoryItemSummary) {
         return localize("has been deleted or purged");
     }
 
-    if (filterExtensions.value && datatypeToggle.value !== "all" && element.extension) {
-        if (
-            // is the element's extension not a subtype of any of the required extensions?
-            (datatypeToggle.value === "ext" &&
-                !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)) ||
-            // else, does the element's extension have the same parent class as any of the required extensions?
-            (datatypeToggle.value === "datatype" &&
-                !datatypesMapper.value?.isSubClassOfAny(element.extension, props.extensions!))
-        ) {
-            return localize("has an invalid extension");
-        }
+    // is the element's extension not a subtype of any of the required extensions?
+    if (
+        filterExtensions.value &&
+        element.extension &&
+        !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
+    ) {
+        return localize("has an invalid extension");
     }
     return null;
 }
@@ -219,7 +176,6 @@ function _mangleDuplicateNames() {
 }
 
 function changeDatatypeFilter(newFilter: "all" | "datatype" | "ext") {
-    datatypeToggle.value = newFilter;
     _elementsSetUp();
 }
 
@@ -305,7 +261,6 @@ function checkForDuplicates() {
 
 /** reset all data to the initial state */
 function reset() {
-    datatypeToggle.value = baseDatatypeToggle.value;
     _instanceSetUp();
     getOriginalNames();
 }
@@ -462,8 +417,6 @@ function renameElement(element: any, name: string) {
                     :oncancel="oncancel"
                     :hide-source-items="hideSourceItems"
                     :extensions="extensions"
-                    :datatype-toggle="filterExtensions && datatypeToggleOptions ? datatypeToggle : undefined"
-                    :datatype-toggle-options="datatypeToggleOptions"
                     @on-update-datatype-toggle="changeDatatypeFilter"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate">

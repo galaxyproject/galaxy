@@ -507,14 +507,15 @@ async function buildNewCollection(collectionType: string) {
         );
         const collection = await createDatasetCollection(historyStore.currentHistory, modalResult);
         if (collection) {
-            // remove the `elements` and `elements_datatypes` keys from the collection
-            // to prevent `handleIncoming` from flagging the collection as invalid
-            if ("elements" in collection) {
-                delete collection.elements;
-            }
-            if ("elements_datatypes" in collection) {
-                delete collection.elements_datatypes;
-            }
+            // TODO: Commenting this out; should we allow `handleIncoming` to handle this or not?
+            // // remove the `elements` and `elements_datatypes` keys from the collection
+            // // to prevent `handleIncoming` from flagging the collection as invalid
+            // if ("elements" in collection) {
+            //     delete collection.elements;
+            // }
+            // if ("elements_datatypes" in collection) {
+            //     delete collection.elements_datatypes;
+            // }
             handleIncoming(collection as any);
         }
     }
