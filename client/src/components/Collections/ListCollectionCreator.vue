@@ -26,10 +26,10 @@ const DEFAULT_DATATYPE_FILTER_OPTIONS = [
 type DatatypeToggle = "all" | "datatype" | "ext" | undefined;
 
 interface Props {
-    initialElements: Array<any>;
+    initialElements: HistoryItemSummary[];
     oncancel: () => void;
     oncreate: () => void;
-    creationFn: (workingElements: any, collectionName: string, hideSourceItems: boolean) => any;
+    creationFn: (workingElements: HDASummary[], collectionName: string, hideSourceItems: boolean) => any;
     defaultHideSourceItems?: boolean;
     fromSelection?: boolean;
     extensions?: string[];
@@ -38,7 +38,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "clicked-create", workingElements: any, collectionName: string, hideSourceItems: boolean): void;
+    (e: "clicked-create", workingElements: HDASummary[], collectionName: string, hideSourceItems: boolean): void;
 }>();
 
 const state = ref("build");
@@ -75,7 +75,7 @@ const allElementsAreInvalid = computed(() => {
 });
 
 /** If not `fromSelection`, the list of elements that will become the collection */
-const inListElements = ref<any>([]);
+const inListElements = ref<HDASummary[]>([]);
 
 // variables for datatype mapping and then filtering
 const datatypesMapperStore = useDatatypesMapperStore();
@@ -121,21 +121,21 @@ function _elementsSetUp() {
     // reverse the order of the elements to emulate what we have in the history panel
     workingElements.value.reverse();
 
-    _ensureElementIds();
+    // _ensureElementIds();
     _validateElements();
     _mangleDuplicateNames();
 }
 
-/** add ids to dataset objs in initial list if none */
-function _ensureElementIds() {
-    workingElements.value.forEach((element) => {
-        if (!Object.prototype.hasOwnProperty.call(element, "id")) {
-            console.warn("Element missing id", element);
-        }
-    });
+// TODO: not sure if this is needed
+// function _ensureElementIds() {
+//     workingElements.value.forEach((element) => {
+//         if (!Object.prototype.hasOwnProperty.call(element, "id")) {
+//             console.warn("Element missing id", element);
+//         }
+//     });
 
-    return workingElements.value;
-}
+//     return workingElements.value;
+// }
 
 // /** separate working list into valid and invalid elements for this collection */
 function _validateElements() {
