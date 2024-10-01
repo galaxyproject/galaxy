@@ -156,7 +156,7 @@ onMounted(() => {
 });
 
 function isValueWithTags(item: SelectValue): item is ValueWithTags {
-    return (item as ValueWithTags).tags !== undefined;
+    return item !== null && typeof item === "object" && (item as ValueWithTags).tags !== undefined;
 }
 
 function onSearchChange(search: string): void {
