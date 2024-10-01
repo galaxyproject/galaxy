@@ -6,7 +6,6 @@ introduced hashlib which replaced sha in Python 2.4 and previous versions.
 import hashlib
 import hmac
 import logging
-import os
 from enum import Enum
 from typing import (
     Any,
@@ -19,6 +18,7 @@ from typing import (
 )
 
 from . import smart_str
+from .path import StrPath
 
 log = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ def memory_bound_hexdigest(
         file.close()
 
 
-def md5_hash_file(path: Union[str, os.PathLike]) -> Optional[str]:
+def md5_hash_file(path: StrPath) -> Optional[str]:
     """
     Return a md5 hashdigest for a file or None if path could not be read.
     """

@@ -1,7 +1,5 @@
 import contextlib
 import os
-import random
-import string
 import tempfile
 import uuid
 
@@ -10,6 +8,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from galaxy import model as m
+from galaxy.model.unittest_utils.utils import (
+    random_email,
+    random_str,
+)
 
 
 @pytest.fixture
@@ -118,6 +120,19 @@ def make_default_history_permissions(session, make_history, make_role):
 
 
 @pytest.fixture
+def make_default_user_permissions(session, make_user, make_role):
+    def f(**kwd):
+        kwd["user"] = kwd.get("user") or make_user()
+        kwd["action"] = kwd.get("action") or random_str()
+        kwd["role"] = kwd.get("role") or make_role()
+        model = m.DefaultUserPermissions(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
 def make_event(session):
     def f(**kwd):
         model = m.Event(**kwd)
@@ -143,6 +158,26 @@ def make_galaxy_session_to_history_association(session, make_history, make_galax
         kwd["galaxy_session"] = kwd.get("galaxy_session") or make_galaxy_session()
         kwd["history"] = kwd.get("history") or make_history()
         model = m.GalaxySessionToHistoryAssociation(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_group(session):
+    def f(**kwd):
+        model = m.Group(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_group_role_association(session):
+    def f(group, role):
+        model = m.GroupRoleAssociation(group, role)
         write_to_db(session, model)
         return model
 
@@ -396,6 +431,16 @@ def make_user_item_rating_association(session):
 
 
 @pytest.fixture
+def make_user_group_association(session):
+    def f(user, group):
+        model = m.UserGroupAssociation(user, group)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
 def make_user_role_association(session):
     def f(user, role):
         model = m.UserRoleAssociation(user, role)
@@ -447,17 +492,6 @@ def transaction(session):
             yield
     else:
         yield
-
-
-def random_str() -> str:
-    alphabet = string.ascii_lowercase + string.digits
-    size = random.randint(5, 10)
-    return "".join(random.choices(alphabet, k=size))
-
-
-def random_email() -> str:
-    text = random_str()
-    return f"{text}@galaxy.testing"
 
 
 def write_to_db(session, model) -> None:

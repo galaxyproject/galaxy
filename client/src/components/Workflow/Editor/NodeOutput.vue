@@ -310,7 +310,7 @@ const outputDetails = computed(() => {
     const outputType =
         collectionType && collectionType.isCollection && collectionType.collectionType
             ? `output is ${collectionTypeToDescription(collectionType)}`
-            : `output is ${terminal.value.type || "dataset"}`;
+            : `output is  ${terminal.value.optional ? "optional " : ""}${terminal.value.type || "dataset"}`;
     if (isMultiple.value) {
         if (!collectionType) {
             collectionType = NULL_COLLECTION_TYPE_DESCRIPTION;

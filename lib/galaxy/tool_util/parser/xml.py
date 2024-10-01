@@ -43,10 +43,10 @@ from .interface import (
     DynamicOptions,
     HelpContent,
     InputSource,
+    OutputCompareType,
     PageSource,
     PagesSource,
     RequiredFiles,
-    TestCollectionDefDict,
     TestCollectionDefElementDict,
     TestCollectionDefElementObject,
     TestCollectionOutputDef,
@@ -59,6 +59,7 @@ from .interface import (
     ToolSourceTestOutputAttributes,
     ToolSourceTestOutputs,
     ToolSourceTests,
+    XmlTestCollectionDefDict,
     XrefDict,
 )
 from .output_actions import ToolOutputActionGroup
@@ -189,8 +190,7 @@ class XmlToolSource(ToolSource):
 
     def parse_tool_type(self):
         root = self.root
-        if root.get("tool_type", None) is not None:
-            return root.get("tool_type")
+        return root.get("tool_type")
 
     def parse_name(self):
         return self.root.get("name") or self.parse_id()
@@ -834,7 +834,7 @@ def __parse_test_attributes(
         value_object = json.loads(attrib.pop("value_json"))
 
     # Method of comparison
-    compare: str = attrib.pop("compare", "diff").lower()
+    compare: OutputCompareType = cast(OutputCompareType, attrib.pop("compare", "diff").lower())
     # Number of lines to allow to vary in logs (for dates, etc)
     lines_diff: int = int(attrib.pop("lines_diff", "0"))
     # Allow a file size to vary if sim_size compare
@@ -1011,7 +1011,7 @@ def __parse_inputs_elems(test_elem, i) -> ToolSourceTestInputs:
     return raw_inputs
 
 
-def _test_collection_def_dict(elem: Element) -> TestCollectionDefDict:
+def _test_collection_def_dict(elem: Element) -> XmlTestCollectionDefDict:
     elements: List[TestCollectionDefElementDict] = []
     attrib: Dict[str, Any] = _element_to_dict(elem)
     collection_type = attrib["type"]
@@ -1027,7 +1027,7 @@ def _test_collection_def_dict(elem: Element) -> TestCollectionDefDict:
             element_definition = __parse_param_elem(element)
         elements.append({"element_identifier": element_identifier, "element_definition": element_definition})
 
-    return TestCollectionDefDict(
+    return XmlTestCollectionDefDict(
         model_class="TestCollectionDef",
         attributes=attrib,
         collection_type=collection_type,

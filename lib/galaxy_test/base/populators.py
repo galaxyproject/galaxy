@@ -101,6 +101,7 @@ from galaxy.util import (
     galaxy_root_path,
     UNKNOWN,
 )
+from galaxy.util.path import StrPath
 from galaxy.util.resources import resource_string
 from galaxy.util.unittest_utils import skip_if_site_down
 from galaxy_test.base.decorators import (
@@ -1701,7 +1702,7 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
 
 
 # Things gxformat2 knows how to upload as workflows
-YamlContentT = Union[str, os.PathLike, dict]
+YamlContentT = Union[StrPath, dict]
 
 
 class BaseWorkflowPopulator(BasePopulator):
@@ -2297,6 +2298,12 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         upload_response = self._import_tool_response(tool)
         assert upload_response.status_code == 200, upload_response
         return upload_response.json()
+
+    def build_module(self, step_type: str, content_id: Optional[str] = None, inputs: Optional[Dict[str, Any]] = None):
+        payload = {"inputs": inputs or {}, "type": step_type, "content_id": content_id}
+        response = self._post("workflows/build_module", data=payload, json=True)
+        assert response.status_code == 200, response
+        return response.json()
 
     def _import_tool_response(self, tool) -> Response:
         using_requirement("admin")
@@ -2906,7 +2913,7 @@ class BaseDatasetCollectionPopulator:
         else:
             return self.__create_payload_collection(history_id, *args, **kwds)
 
-    def __create_payload_fetch(self, history_id: str, collection_type, **kwds):
+    def __create_payload_fetch(self, history_id: str, collection_type, ext="txt", **kwds):
         contents = None
         if "contents" in kwds:
             contents = kwds["contents"]
@@ -2928,7 +2935,7 @@ class BaseDatasetCollectionPopulator:
                     elements.append(contents_level)
                     continue
 
-                element = {"src": "pasted", "ext": "txt"}
+                element = {"src": "pasted", "ext": ext}
                 # Else older style list of contents or element ID and contents,
                 # convert to fetch API.
                 if isinstance(contents_level, tuple):
@@ -3151,7 +3158,12 @@ def load_data_dict(
         elif is_dict and "type" in value:
             input_type = value.pop("type")
             if input_type == "File":
-                content = open_test_data(value)
+                if "value" in value:
+                    content = open_test_data(value)
+                elif "content" in value:
+                    content = value["content"]
+                else:
+                    raise ValueError(f"Invalid test_data def {test_data}")
                 new_dataset_kwds = {"content": content}
                 if "name" in value:
                     new_dataset_kwds["name"] = value["name"]

@@ -5619,7 +5619,7 @@ Currently the filters in the ``filter_types`` dictionary in the module
     </xs:attribute>
     <xs:attribute name="column" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Column targeted by this filter given as column index or a column name. Invalid if ``type`` is ``add_value`` or ``remove_value``.
+        <xs:documentation xml:lang="en">Column targeted by this filter given as 0-based column index or a column name. Invalid if ``type`` is ``add_value`` or ``remove_value``.
 </xs:documentation>
       </xs:annotation>
     </xs:attribute>

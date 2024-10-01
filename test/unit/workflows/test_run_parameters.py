@@ -1,5 +1,6 @@
 from galaxy import model
 from galaxy.model.base import transaction
+from galaxy.model.unittest_utils.utils import random_email
 from galaxy.workflow.run_request import (
     _normalize_inputs,
     _normalize_step_parameters,
@@ -89,7 +90,7 @@ def __new_input():
 
 
 def __workflow_fixure(trans):
-    user = model.User(email="testworkflow_params@bx.psu.edu", password="pass")
+    user = model.User(email=random_email(), password="pass")
     stored_workflow = model.StoredWorkflow()
     stored_workflow.user = user
     workflow = model.Workflow()

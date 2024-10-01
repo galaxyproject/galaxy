@@ -304,6 +304,16 @@ describe("canAccept", () => {
             "Cannot attach a text parameter to a integer input"
         );
     });
+    it("rejects optional integer to required parameter connection", () => {
+        const integerInputParam = terminals["multi data"]!["advanced|advanced_threshold"] as InputParameterTerminal;
+        const optionalIntegerOutputParam = terminals["optional integer parameter input"]![
+            "output"
+        ] as OutputParameterTerminal;
+        expect(integerInputParam.canAccept(optionalIntegerOutputParam).canAccept).toBe(false);
+        expect(integerInputParam.canAccept(optionalIntegerOutputParam).reason).toBe(
+            "Cannot attach an optional output to a required parameter"
+        );
+    });
     it("rejects data to parameter connection", () => {
         const dataOut = terminals["data input"]!["output"] as OutputTerminal;
         const integerInputParam = terminals["multi data"]!["advanced|advanced_threshold"] as InputParameterTerminal;

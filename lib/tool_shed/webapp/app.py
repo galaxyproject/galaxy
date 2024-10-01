@@ -1,10 +1,7 @@
 import logging
 import sys
 import time
-from typing import (
-    Any,
-    Optional,
-)
+from typing import Optional
 
 from sqlalchemy.orm.scoping import scoped_session
 
@@ -54,7 +51,7 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
         # will be overwritten when building WSGI app
         self.is_webapp = False
         # Read the tool_shed.ini configuration file and check for errors.
-        self.config: Any = config.Configuration(**kwd)
+        self.config = config.Configuration(**kwd)
         self.config.check()
         configure_logging(self.config)
         self.application_stack = application_stack_instance()

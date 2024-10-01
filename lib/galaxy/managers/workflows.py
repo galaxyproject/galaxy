@@ -242,6 +242,12 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
                                 raise exceptions.RequestParameterInvalidException(message)
                             stmt = stmt.where(StoredWorkflowUserShareAssociation.user == user)
+                        elif q == "bookmarked":
+                            stmt = (
+                                stmt.join(model.StoredWorkflowMenuEntry)
+                                .where(model.StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id)
+                                .where(model.StoredWorkflowMenuEntry.user_id == user.id)
+                            )
                 elif isinstance(term, RawTextTerm):
                     tf = w_tag_filter(term.text, False)
                     alias = aliased(User)
@@ -1654,7 +1660,7 @@ class WorkflowContentsManager(UsesAnnotations):
         inputs = {}
         for step in workflow.input_steps:
             step_type = step.type
-            step_label = step.label or step.tool_inputs.get("name")
+            step_label = step.label or step.tool_inputs and step.tool_inputs.get("name")
             if step_label:
                 label = step_label
             elif step_type == "data_input":
@@ -1948,7 +1954,7 @@ class WorkflowContentsManager(UsesAnnotations):
         to the actual `label` attribute which is available for all module types, unique, and mapped to its own database column.
         """
         if not module.label and module.type in ["data_input", "data_collection_input"]:
-            new_state = safe_loads(state)
+            new_state = safe_loads(state) or {}
             default_label = new_state.get("name")
             if default_label and util.unicodify(default_label).lower() not in [
                 "input dataset",

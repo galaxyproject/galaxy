@@ -3,8 +3,6 @@
 # how to use this function...
 # PYTHONPATH=lib python lib/galaxy/tool_util/verify/codegen.py
 
-from __future__ import annotations
-
 import argparse
 import inspect
 import os
@@ -34,7 +32,7 @@ galaxy_xsd_path = os.path.join(os.path.dirname(__file__), "..", "xsd", "galaxy.x
 
 Children = Literal["allowed", "required", "forbidden"]
 
-DESCRIPTION = """This script synchronizes dynamic code aritfacts against models in Galaxy.
+DESCRIPTION = """This script synchronizes dynamic code artifacts against models in Galaxy.
 
 Right now this just synchronizes Galaxy's XSD file against documentation in Galaxy's assertion modules but
 in the future it will also build Pydantic models for these functions.
@@ -55,6 +53,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    model_validator,
     RootModel,
     StrictFloat,
     StrictInt,
@@ -113,9 +112,8 @@ def check_non_negative_if_int(v: typing.Any):
 {{assertion.name}}_{{ parameter.name }}_description = '''{{ parameter.description }}'''
 {% endfor %}
 
-class {{assertion.name}}_model(AssertionModel):
-    r\"\"\"{{ assertion.docstring }}\"\"\"
-    that: Literal["{{assertion.name}}"] = "{{assertion.name}}"
+class base_{{assertion.name}}_model(AssertionModel):
+    '''base model for {{assertion.name}} describing attributes.'''
 {% for parameter in assertion.parameters %}
 {% if not parameter.is_deprecated %}
     {{ parameter.name }}: {{ parameter.type_str }} = Field(
@@ -124,21 +122,52 @@ class {{assertion.name}}_model(AssertionModel):
     )
 {% endif %}
 {% endfor %}
-{% if assertion.children == "required" %}
-    children: "assertion_list"
-{% endif %}
-{% if assertion.children == "allowed" %}
+{% if assertion.children in ["required", "allowed"] %}
     children: typing.Optional["assertion_list"] = None
+    asserts: typing.Optional["assertion_list"] = None
+
+{% if assertion.children == "required" %}
+    @model_validator(mode='before')
+    @classmethod
+    def validate_children(self, data: typing.Any):
+        if isinstance(data, dict) and 'children' not in data and 'asserts' not in data:
+            raise ValueError("At least one of 'children' or 'asserts' must be specified for this assertion type.")
+        return data
 {% endif %}
+{% endif %}
+
+
+class {{assertion.name}}_model(base_{{assertion.name}}_model):
+    r\"\"\"{{ assertion.docstring }}\"\"\"
+    that: Literal["{{assertion.name}}"] = "{{assertion.name}}"
+
+class {{assertion.name}}_model_nested(AssertionModel):
+    r\"\"\"Nested version of this assertion model.\"\"\"
+    {{assertion.name}}: base_{{assertion.name}}_model
 {% endfor %}
 
-any_assertion_model = Annotated[typing.Union[
+any_assertion_model_flat = Annotated[typing.Union[
 {% for assertion in assertions %}
     {{assertion.name}}_model,
 {% endfor %}
 ], Field(discriminator="that")]
 
-assertion_list = RootModel[typing.List[any_assertion_model]]
+any_assertion_model_nested = typing.Union[
+{% for assertion in assertions %}
+    {{assertion.name}}_model_nested,
+{% endfor %}
+]
+
+assertion_list = RootModel[typing.List[typing.Union[any_assertion_model_flat, any_assertion_model_nested]]]
+
+
+class assertion_dict(AssertionModel):
+{% for assertion in assertions %}
+    {{assertion.name}}: typing.Optional[base_{{assertion.name}}_model] = None
+{% endfor %}
+
+
+assertions = typing.Union[assertion_list, assertion_dict]
 """
 
 

@@ -1,6 +1,7 @@
 import uuid
 
 from galaxy import model
+from galaxy.model.unittest_utils.utils import random_email
 from galaxy.objectstore import (
     QuotaSourceInfo,
     QuotaSourceMap,
@@ -16,7 +17,7 @@ class TestPurgeUsage(BaseModelTestCase):
     def setUp(self):
         super().setUp()
         model = self.model
-        u = model.User(email="purge_usage@example.com", password="password")
+        u = model.User(email=random_email(), password="password")
         u.disk_usage = 25
         self.persist(u)
 

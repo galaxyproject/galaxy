@@ -23,11 +23,11 @@ import { absPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ExportOptions from "./ExportOptions.vue";
-import RDMCredentialsInfo from "./RDMCredentialsInfo.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
 import ExportToRDMRepositoryForm from "@/components/Common/ExportRDMForm.vue";
 import ExportRecordDetails from "@/components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "@/components/Common/ExportRecordTable.vue";
+import RDMCredentialsInfo from "@/components/Common/RDMCredentialsInfo.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 

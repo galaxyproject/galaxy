@@ -1423,7 +1423,7 @@ class InputParameterModule(WorkflowModule):
 
                     def callback(input, prefixed_name, context, **kwargs):
                         if prefixed_name == connection.input_name and hasattr(input, "get_options"):  # noqa: B023
-                            static_options.append(input.get_options(self.trans, {}))
+                            static_options.append(input.get_options(self.trans, context))
 
                     visit_input_values(tool_inputs, module.state.inputs, callback)
                 elif isinstance(module, SubWorkflowModule):

@@ -27,14 +27,14 @@ class HelpForumPost(HelpTempBaseModel):
     """Model for a post in the help forum."""
 
     id: Annotated[int, Field(description="The ID of the post.")]
-    name: Annotated[str, Field(description="The name of the post.")]
-    username: Annotated[str, Field(description="The username of the post author.")]
-    avatar_template: Annotated[str, Field(description="The avatar template of the user.")]
-    created_at: Annotated[str, Field(description="The creation date of the post.")]
-    like_count: Annotated[int, Field(description="The number of likes of the post.")]
-    blurb: Annotated[str, Field(description="The blurb of the post.")]
-    post_number: Annotated[int, Field(description="The post number of the post.")]
-    topic_id: Annotated[int, Field(description="The ID of the topic of the post.")]
+    name: Annotated[Optional[str], Field(description="The name of the post.")]
+    username: Annotated[Optional[str], Field(description="The username of the post author.")]
+    avatar_template: Annotated[Optional[str], Field(description="The avatar template of the user.")]
+    created_at: Annotated[Optional[str], Field(description="The creation date of the post.")]
+    like_count: Annotated[Optional[int], Field(description="The number of likes of the post.")]
+    blurb: Annotated[Optional[str], Field(description="The blurb of the post.")]
+    post_number: Annotated[Optional[int], Field(description="The post number of the post.")]
+    topic_id: Annotated[Optional[int], Field(description="The ID of the topic of the post.")]
 
 
 class HelpForumTopic(Model):

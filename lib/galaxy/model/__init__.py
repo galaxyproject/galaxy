@@ -780,7 +780,7 @@ class User(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    email: Mapped[str] = mapped_column(TrimmedString(255), index=True)
+    email: Mapped[str] = mapped_column(TrimmedString(255), index=True, unique=True)
     username: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True, unique=True)
     password: Mapped[str] = mapped_column(TrimmedString(255))
     last_password_change: Mapped[Optional[datetime]] = mapped_column(default=now)
@@ -848,14 +848,6 @@ class User(Base, Dictifiable, RepresentById):
     )
     all_notifications: Mapped[List["UserNotificationAssociation"]] = relationship(
         back_populates="user", cascade_backrefs=False
-    )
-    non_private_roles: Mapped[List["UserRoleAssociation"]] = relationship(
-        viewonly=True,
-        primaryjoin=(
-            lambda: (User.id == UserRoleAssociation.user_id)
-            & (UserRoleAssociation.role_id == Role.id)
-            & not_(Role.name == User.email)
-        ),
     )
 
     preferences: AssociationProxy[Any]
@@ -2967,10 +2959,11 @@ class Group(Base, Dictifiable, RepresentById):
 
 class UserGroupAssociation(Base, RepresentById):
     __tablename__ = "user_group_association"
+    __table_args__ = (UniqueConstraint("user_id", "group_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
-    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True, nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     user: Mapped["User"] = relationship(back_populates="groups")
@@ -3685,10 +3678,11 @@ class HistoryUserShareAssociation(Base, UserShareAssociation):
 
 class UserRoleAssociation(Base, RepresentById):
     __tablename__ = "user_role_association"
+    __table_args__ = (UniqueConstraint("user_id", "role_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
-    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True, nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
 
@@ -3703,10 +3697,11 @@ class UserRoleAssociation(Base, RepresentById):
 
 class GroupRoleAssociation(Base, RepresentById):
     __tablename__ = "group_role_association"
+    __table_args__ = (UniqueConstraint("group_id", "role_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True, nullable=True)
-    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True, nullable=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True)
+    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     group: Mapped["Group"] = relationship(back_populates="roles")
@@ -4051,6 +4046,7 @@ def setup_global_object_store_for_models(object_store: "BaseObjectStore") -> Non
 
 class Dataset(Base, StorableObject, Serializable):
     __tablename__ = "dataset"
+    __table_args__ = (UniqueConstraint("uuid", name="uq_uuid_column"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
@@ -4066,7 +4062,7 @@ class Dataset(Base, StorableObject, Serializable):
     created_from_basename: Mapped[Optional[str]] = mapped_column(TEXT)
     file_size: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 0))
     total_size: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 0))
-    uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType())
+    uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType(), unique=True)
 
     actions: Mapped[List["DatasetPermissions"]] = relationship(back_populates="dataset")
     job: Mapped[Optional["Job"]] = relationship(primaryjoin=(lambda: Dataset.job_id == Job.id))
@@ -4114,7 +4110,9 @@ class Dataset(Base, StorableObject, Serializable):
 
     non_ready_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.SETTING_METADATA)
     ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
-    valid_input_states = tuple(set(states.__members__.values()) - {states.ERROR, states.DISCARDED})
+    valid_input_states = tuple(
+        set(states.__members__.values()) - {states.ERROR, states.DISCARDED, states.FAILED_METADATA}
+    )
     no_data_states = (states.PAUSED, states.DEFERRED, states.DISCARDED, *non_ready_states)
     terminal_states = (
         states.OK,
@@ -4546,6 +4544,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     creating_job_associations: List[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
     copied_from_history_dataset_association: Optional["HistoryDatasetAssociation"]
     copied_from_library_dataset_dataset_association: Optional["LibraryDatasetDatasetAssociation"]
+    dependent_jobs: List[JobToInputLibraryDatasetAssociation]
+    implicitly_converted_datasets: List["ImplicitlyConvertedDatasetAssociation"]
+    implicitly_converted_parent_datasets: List["ImplicitlyConvertedDatasetAssociation"]
 
     validated_states = DatasetValidatedState
 
@@ -4873,9 +4874,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     def get_converted_files_by_type(self, file_type):
         for assoc in self.implicitly_converted_datasets:
             if not assoc.deleted and assoc.type == file_type:
-                if assoc.dataset:
-                    return assoc.dataset
-                return assoc.dataset_ldda
+                item = assoc.dataset or assoc.dataset_ldda
+                if not item.deleted and item.state in Dataset.valid_input_states:
+                    return item
         return None
 
     def get_converted_dataset_deps(self, trans, target_ext):

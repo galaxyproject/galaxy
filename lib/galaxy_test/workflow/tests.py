@@ -8,6 +8,12 @@ import requests
 import yaml
 from gxformat2.yaml import ordered_load
 
+from galaxy.tool_util.models import (
+    OutputChecks,
+    OutputsDict,
+    TestDicts,
+    TestJobDict,
+)
 from galaxy.tool_util.parser.interface import TestCollectionOutputDef
 from galaxy.tool_util.verify import verify_file_contents_against_dict
 from galaxy.tool_util.verify.interactor import (
@@ -52,7 +58,7 @@ class TestWorkflow(ApiTestCase):
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     @pytest.mark.workflow
-    def test_workflow(self, workflow_path: Path, test_job):
+    def test_workflow(self, workflow_path: Path, test_job: TestJobDict):
         with workflow_path.open() as f:
             yaml_content = ordered_load(f)
         with self.dataset_populator.test_history() as history_id:
@@ -63,35 +69,34 @@ class TestWorkflow(ApiTestCase):
             )
             self._verify(run_summary, test_job["outputs"])
 
-    def _verify(self, run_summary: RunJobsSummary, output_definitions):
+    def _verify(self, run_summary: RunJobsSummary, output_definitions: OutputsDict):
         for output_name, output_definition in output_definitions.items():
             self._verify_output(run_summary, output_name, output_definition)
 
-    def _verify_output(self, run_summary: RunJobsSummary, output_name, test_properties):
-        is_collection_test = "elements" in test_properties
+    def _verify_output(self, run_summary: RunJobsSummary, output_name, test_properties: OutputChecks):
+        is_collection_test = isinstance(test_properties, dict) and "elements" in test_properties
         item_label = f"Output named {output_name}"
 
         def get_filename(name):
             return tempfile.NamedTemporaryFile(prefix=f"gx_workflow_framework_test_file_{output_name}", delete=False)
 
-        def verify_dataset(dataset: dict, test_properties: dict):
+        def verify_dataset(dataset: dict, test_properties: OutputChecks):
             output_content = self.dataset_populator.get_history_dataset_content(
                 run_summary.history_id, dataset=dataset, type="bytes"
             )
             verify_file_contents_against_dict(get_filename, _get_location, item_label, output_content, test_properties)
-            metadata = get_metadata_to_test(test_properties)
-            if metadata:
-                dataset_details = self.dataset_populator.get_history_dataset_details(
-                    run_summary.history_id, content_id=dataset["id"]
-                )
-                compare_expected_metadata_to_api_response(metadata, dataset_details)
+            if isinstance(test_properties, dict):
+                metadata = get_metadata_to_test(test_properties)
+                if metadata:
+                    dataset_details = self.dataset_populator.get_history_dataset_details(
+                        run_summary.history_id, content_id=dataset["id"]
+                    )
+                    compare_expected_metadata_to_api_response(metadata, dataset_details)
 
         if is_collection_test:
+            assert isinstance(test_properties, dict)
             test_properties["name"] = output_name
-            # setup preferred name "elements" in accordance with work in https://github.com/galaxyproject/planemo/pull/1417
-            test_properties["element_tests"] = test_properties["elements"]
-            output_def = TestCollectionOutputDef.from_dict(test_properties)
-
+            output_def = TestCollectionOutputDef.from_yaml_test_format(test_properties)
             invocation_details = self.workflow_populator.get_invocation(run_summary.invocation_id, step_details=True)
             assert output_name in invocation_details["output_collections"]
             test_output = invocation_details["output_collections"][output_name]
@@ -105,14 +110,15 @@ class TestWorkflow(ApiTestCase):
 
             verify_collection(output_def, output_collection, verify_dataset_element)
         else:
-            test_properties["name"] = output_name
+            if isinstance(test_properties, dict):
+                test_properties["name"] = output_name
             invocation_details = self.workflow_populator.get_invocation(run_summary.invocation_id, step_details=True)
             assert output_name in invocation_details["outputs"]
             test_output = invocation_details["outputs"][output_name]
             verify_dataset(test_output, test_properties)
 
 
-def _test_jobs(workflow_path: Path) -> list:
+def _test_jobs(workflow_path: Path) -> TestDicts:
     test_path = _workflow_test_path(workflow_path)
     with test_path.open() as f:
         jobs = yaml.safe_load(f)

@@ -3338,7 +3338,7 @@ class HDACustom(HDADetailed):
     # TODO: Fix this workaround for partial_model not supporting UUID fields for some reason.
     # The error otherwise is: `PydanticUserError: 'UuidVersion' cannot annotate 'nullable'.`
     # Also ignoring mypy complaints about the type redefinition.
-    uuid: Optional[UUID4]  # type: ignore
+    uuid: Optional[UUID4]  # type: ignore[assignment]
 
     # Add fields that are not part of any view here
     visualizations: Annotated[

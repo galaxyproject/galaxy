@@ -319,7 +319,7 @@ def _from_input_source_cwl(input_source: CwlInputSource) -> ToolParameterT:
 
 
 def input_models_from_json(json: List[Dict[str, Any]]) -> ToolParameterBundle:
-    return ToolParameterBundleModel(input_models=json)
+    return ToolParameterBundleModel(parameters=json)
 
 
 def tool_parameter_bundle_from_json(json: Dict[str, Any]) -> ToolParameterBundleModel:
@@ -328,7 +328,7 @@ def tool_parameter_bundle_from_json(json: Dict[str, Any]) -> ToolParameterBundle
 
 def input_models_for_tool_source(tool_source: ToolSource) -> ToolParameterBundleModel:
     pages = tool_source.parse_input_pages()
-    return ToolParameterBundleModel(input_models=input_models_for_pages(pages))
+    return ToolParameterBundleModel(parameters=input_models_for_pages(pages))
 
 
 def input_models_for_pages(pages: PagesSource) -> List[ToolParameterT]:

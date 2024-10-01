@@ -20,6 +20,7 @@ from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tools import create_tool_from_source
 from galaxy.util.bunch import Bunch
+from galaxy.util.path import StrPath
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
@@ -83,10 +84,10 @@ class UsesTools(UsesApp):
         tool_id="test_tool",
         extra_file_contents=None,
         extra_file_path=None,
-        tool_path=None,
+        tool_path: Optional[StrPath] = None,
     ):
         if tool_path is None:
-            self.tool_file = os.path.join(self.test_directory, filename)
+            self.tool_file: StrPath = os.path.join(self.test_directory, filename)
             contents_template = string.Template(tool_contents)
             tool_contents = contents_template.safe_substitute(dict(version=version, profile=profile, tool_id=tool_id))
             self.__write_tool(tool_contents)
@@ -96,7 +97,7 @@ class UsesTools(UsesApp):
             self.tool_file = tool_path
         return self.__setup_tool()
 
-    def _init_tool_for_path(self, tool_file):
+    def _init_tool_for_path(self, tool_file: StrPath):
         self.tool_file = tool_file
         return self.__setup_tool()
 

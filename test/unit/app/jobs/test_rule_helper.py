@@ -66,7 +66,7 @@ def __setup_fixtures(app):
     # user3 has no jobs.
     user1 = model.User(email=USER_EMAIL_1, password="pass1")
     user2 = model.User(email=USER_EMAIL_2, password="pass2")
-    user3 = model.User(email=USER_EMAIL_2, password="pass2")
+    user3 = model.User(email=USER_EMAIL_3, password="pass3")
 
     app.add(user1, user2, user3)
 

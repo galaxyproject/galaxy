@@ -339,7 +339,7 @@ export interface paths {
         };
         /**
          * Displays information about and/or content of a dataset.
-         * @description **Note**: Due to the multipurpose nature of this endpoint, which can receive a wild variety of parameters
+         * @description **Note**: Due to the multipurpose nature of this endpoint, which can receive a wide variety of parameters
          *     and return different kinds of responses, the documentation here will be limited.
          *     To get more information please check the source code.
          */
@@ -6330,6 +6330,12 @@ export interface components {
         CompositeDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -6360,6 +6366,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -8668,10 +8676,26 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** FetchDatasetHash */
+        FetchDatasetHash: {
+            /**
+             * Hash Function
+             * @enum {string}
+             */
+            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+            /** Hash Value */
+            hash_value: string;
+        };
         /** FileDataElement */
         FileDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -8701,6 +8725,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -8966,6 +8992,12 @@ export interface components {
         FtpImportElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -8997,6 +9029,8 @@ export interface components {
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Ftp Path */
             ftp_path: string;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -10535,17 +10569,17 @@ export interface components {
              * Avatar Template
              * @description The avatar template of the user.
              */
-            avatar_template: string;
+            avatar_template: string | null;
             /**
              * Blurb
              * @description The blurb of the post.
              */
-            blurb: string;
+            blurb: string | null;
             /**
              * Created At
              * @description The creation date of the post.
              */
-            created_at: string;
+            created_at: string | null;
             /**
              * Id
              * @description The ID of the post.
@@ -10555,27 +10589,27 @@ export interface components {
              * Like Count
              * @description The number of likes of the post.
              */
-            like_count: number;
+            like_count: number | null;
             /**
              * Name
              * @description The name of the post.
              */
-            name: string;
+            name: string | null;
             /**
              * Post Number
              * @description The post number of the post.
              */
-            post_number: number;
+            post_number: number | null;
             /**
              * Topic Id
              * @description The ID of the topic of the post.
              */
-            topic_id: number;
+            topic_id: number | null;
             /**
              * Username
              * @description The username of the post author.
              */
-            username: string;
+            username: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -13374,6 +13408,12 @@ export interface components {
         NestedElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -13416,6 +13456,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -14018,6 +14060,12 @@ export interface components {
         PastedDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -14047,6 +14095,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -14078,6 +14128,12 @@ export interface components {
         PathDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -14107,6 +14163,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Link Data Only */
@@ -14799,6 +14857,12 @@ export interface components {
         ServerDirElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -14828,6 +14892,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Link Data Only */
@@ -16443,6 +16509,12 @@ export interface components {
         UrlDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -16472,6 +16544,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -18388,6 +18462,10 @@ export interface operations {
                 hda_ldda?: components["schemas"]["DatasetSourceType"];
                 /** @description The type of information about the dataset to be requested. Each of these values may require additional parameters in the request and may return different responses. */
                 data_type?: components["schemas"]["RequestDataType"] | null;
+                /** @description Maximum number of items to return. Currently only applies to `data_type=raw_data` requests */
+                limit?: number | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item. Currently only applies to `data_type=raw_data` requests */
+                offset?: number | null;
                 /** @description View to be passed to the serializer */
                 view?: string | null;
                 /** @description Comma-separated list of keys to be passed to the serializer */
@@ -33135,8 +33213,17 @@ export interface operations {
                  *     `is:published`
                  *     : Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.
                  *
-                 *     `is:share_with_me`
+                 *     `is:importable`
+                 *     : Include only importable workflows in the final result.
+                 *
+                 *     `is:deleted`
+                 *     : Include only deleted workflows in the final result.
+                 *
+                 *     `is:shared_with_me`
                  *     : Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.
+                 *
+                 *     `is:bookmarked`
+                 *     : Include only workflows bookmarked by the requesting user.
                  *
                  *     ## Free Text
                  *
