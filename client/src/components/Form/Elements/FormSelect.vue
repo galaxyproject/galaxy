@@ -8,11 +8,14 @@ import Multiselect from "vue-multiselect";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { uid } from "@/utils/utils";
 
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+
 library.add(faCheckSquare, faSquare);
 
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
 
 type SelectValue = Record<string, unknown> | string | number | null;
+type ValueWithTags = SelectValue & { tags: string[] };
 
 interface SelectOption {
     label: string;
@@ -149,6 +152,10 @@ watch(
 onMounted(() => {
     setInitialValue();
 });
+
+function isValueWithTags(item: SelectValue): item is ValueWithTags {
+    return (item as ValueWithTags).tags !== undefined;
+}
 </script>
 
 <template>
@@ -173,7 +180,14 @@ onMounted(() => {
             @close="onClose">
             <template v-slot:option="{ option }">
                 <div class="d-flex align-items-center justify-content-between">
-                    <span>{{ option.label }}</span>
+                    <div>
+                        <span>{{ option.label }}</span>
+                        <StatelessTags
+                            v-if="isValueWithTags(option.value)"
+                            class="tags mt-2"
+                            :value="option.value.tags"
+                            disabled />
+                    </div>
                     <FontAwesomeIcon v-if="selectedValues.includes(option.value)" :icon="faCheckSquare" />
                     <FontAwesomeIcon v-else :icon="faSquare" />
                 </div>
