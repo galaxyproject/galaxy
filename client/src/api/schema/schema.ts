@@ -13044,49 +13044,64 @@ export interface components {
             /** the type of collection to create */
             collection_type: string;
             /**
-             * if True, copy the elements into the collection
+             * Copy Elements
+             * @description if True, copy the elements into the collection
              * @default false
              */
             copy_elements: boolean;
-            /** the type of item to create */
+            /** @description the type of item to create */
             create_type: components["schemas"]["CreateType"];
             /** list of dictionaries containing the element identifiers for the collection */
             element_identifiers: Record<string, never>[];
-            /** sub-dictionary containing any extended metadata to associate with the item */
+            /**
+             * Extended Metadata
+             * @description sub-dictionary containing any extended metadata to associate with the item
+             */
             extended_metadata?: Record<string, never> | null;
             /**
-             * the encoded id of the parent folder of the new item
+             * Folder Id
+             * @description the encoded id of the parent folder of the new item
              * @example 0123456789ABCDEF
              */
             folder_id: string;
-            /** (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library */
+            /**
+             * From Hda Id
+             * @description (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library
+             */
             from_hda_id?: string | null;
-            /** (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library */
+            /**
+             * From Hdca Id
+             * @description (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library
+             */
             from_hdca_id?: string | null;
             /**
-             * if True, hide the source items in the collection
+             * Hide Source Items
+             * @description if True, hide the source items in the collection
              * @default false
              */
             hide_source_items: boolean;
             /**
-             * the new message attribute of the LDDA created
+             * Ldda Message
+             * @description the new message attribute of the LDDA created
              * @default
              */
             ldda_message: string;
             /** the name of the collection */
             name?: string | null;
             /**
-             * create tags on datasets using the file's original name
+             * Tag Using Filenames
+             * @description create tags on datasets using the file's original name
              * @default false
              */
             tag_using_filenames: boolean;
             /**
-             * create the given list of tags on datasets
+             * Tags
+             * @description create the given list of tags on datasets
              * @default []
              */
             tags: string[];
             /**
-             * the method to use for uploading files
+             * @description the method to use for uploading files
              * @default upload_file
              */
             upload_option: components["schemas"]["UploadOption"];
@@ -13172,7 +13187,8 @@ export interface components {
         /** LibraryContentsDeletePayload */
         LibraryContentsDeletePayload: {
             /**
-             * if True, purge the library dataset
+             * Purge
+             * @description if True, purge the library dataset
              * @default false
              */
             purge: boolean;
@@ -13189,38 +13205,50 @@ export interface components {
         };
         /** LibraryContentsFileCreatePayload */
         LibraryContentsFileCreatePayload: {
-            /** the type of item to create */
+            /** @description the type of item to create */
             create_type: components["schemas"]["CreateType"];
             /**
              * database key
              * @default ?
              */
             dbkey: string | unknown[];
-            /** sub-dictionary containing any extended metadata to associate with the item */
+            /**
+             * Extended Metadata
+             * @description sub-dictionary containing any extended metadata to associate with the item
+             */
             extended_metadata?: Record<string, never> | null;
             /** file type */
             file_type?: string | null;
             /**
-             * (only if upload_option is 'upload_paths' and the user is an admin) file paths on the Galaxy server to upload to the library, one file per line
+             * Filesystem Paths
+             * @description (only if upload_option is 'upload_paths' and the user is an admin) file paths on the Galaxy server to upload to the library, one file per line
              * @default
              */
             filesystem_paths: string;
             /**
-             * the encoded id of the parent folder of the new item
+             * Folder Id
+             * @description the encoded id of the parent folder of the new item
              * @example 0123456789ABCDEF
              */
             folder_id: string;
-            /** (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library */
+            /**
+             * From Hda Id
+             * @description (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library
+             */
             from_hda_id?: string | null;
-            /** (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library */
+            /**
+             * From Hdca Id
+             * @description (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library
+             */
             from_hdca_id?: string | null;
             /**
-             * the new message attribute of the LDDA created
+             * Ldda Message
+             * @description the new message attribute of the LDDA created
              * @default
              */
             ldda_message: string;
             /**
-             * (only when upload_option is 'upload_directory' or 'upload_paths').Setting to 'link_to_files' symlinks instead of copying the files
+             * @description (only when upload_option is 'upload_directory' or 'upload_paths').Setting to 'link_to_files' symlinks instead of copying the files
              * @default copy_files
              */
             link_data_only: components["schemas"]["LinkDataOnly"];
@@ -13230,27 +13258,30 @@ export interface components {
              */
             roles: string;
             /**
-             * (only if upload_option is 'upload_directory') relative path of the subdirectory of Galaxy ``library_import_dir`` (if admin) or ``user_library_import_dir`` (if non-admin) to upload. All and only the files (i.e. no subdirectories) contained in the specified directory will be uploaded.
+             * Server Dir
+             * @description (only if upload_option is 'upload_directory') relative path of the subdirectory of Galaxy ``library_import_dir`` (if admin) or ``user_library_import_dir`` (if non-admin) to upload. All and only the files (i.e. no subdirectories) contained in the specified directory will be uploaded.
              * @default
              */
             server_dir: string;
             /**
-             * create tags on datasets using the file's original name
+             * Tag Using Filenames
+             * @description create tags on datasets using the file's original name
              * @default false
              */
             tag_using_filenames: boolean;
             /**
-             * create the given list of tags on datasets
+             * Tags
+             * @description create the given list of tags on datasets
              * @default []
              */
             tags: string[];
             /**
-             * list of dictionaries containing the uploaded file fields
+             * list of the uploaded files
              * @default []
              */
             upload_files: Record<string, never>[];
             /**
-             * the method to use for uploading files
+             * @description the method to use for uploading files
              * @default upload_file
              */
             upload_option: components["schemas"]["UploadOption"];
@@ -13261,26 +13292,37 @@ export interface components {
         };
         /** LibraryContentsFolderCreatePayload */
         LibraryContentsFolderCreatePayload: {
-            /** the type of item to create */
+            /** @description the type of item to create */
             create_type: components["schemas"]["CreateType"];
             /**
              * description of the folder to create
              * @default
              */
             description: string;
-            /** sub-dictionary containing any extended metadata to associate with the item */
+            /**
+             * Extended Metadata
+             * @description sub-dictionary containing any extended metadata to associate with the item
+             */
             extended_metadata?: Record<string, never> | null;
             /**
-             * the encoded id of the parent folder of the new item
+             * Folder Id
+             * @description the encoded id of the parent folder of the new item
              * @example 0123456789ABCDEF
              */
             folder_id: string;
-            /** (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library */
+            /**
+             * From Hda Id
+             * @description (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library
+             */
             from_hda_id?: string | null;
-            /** (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library */
+            /**
+             * From Hdca Id
+             * @description (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library
+             */
             from_hdca_id?: string | null;
             /**
-             * the new message attribute of the LDDA created
+             * Ldda Message
+             * @description the new message attribute of the LDDA created
              * @default
              */
             ldda_message: string;
@@ -13290,17 +13332,19 @@ export interface components {
              */
             name: string;
             /**
-             * create tags on datasets using the file's original name
+             * Tag Using Filenames
+             * @description create tags on datasets using the file's original name
              * @default false
              */
             tag_using_filenames: boolean;
             /**
-             * create the given list of tags on datasets
+             * Tags
+             * @description create the given list of tags on datasets
              * @default []
              */
             tags: string[];
             /**
-             * the method to use for uploading files
+             * @description the method to use for uploading files
              * @default upload_file
              */
             upload_option: components["schemas"]["UploadOption"];

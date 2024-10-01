@@ -26,9 +26,10 @@ from galaxy.model import (
 from galaxy.model.base import transaction
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.library_contents import (
-    CREATE_PAYLOAD,
-    CREATE_RESPOSNSE,
-    LIBRARY_ID,
+    AnyLibraryContentsCreatePayload,
+    AnyLibraryContentsCreateResponse,
+    AnyLibraryContentsShowResponse,
+    AnyLibraryId,
     LibraryContentsCreateDatasetCollectionResponse,
     LibraryContentsCreateDatasetResponse,
     LibraryContentsCreateFileListResponse,
@@ -41,7 +42,6 @@ from galaxy.schema.library_contents import (
     LibraryContentsShowDatasetResponse,
     LibraryContentsShowFolderResponse,
     LibraryContentsUpdatePayload,
-    SHOW_RESPONSE,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.base.controller import (
@@ -81,7 +81,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
     def index(
         self,
         trans: ProvidesUserContext,
-        library_id: LIBRARY_ID,
+        library_id: AnyLibraryId,
     ) -> LibraryContentsIndexListResponse:
         """Return a list of library files and folders."""
         rval: List[Union[LibraryContentsIndexFolderResponse, LibraryContentsIndexDatasetResponse]] = []
@@ -111,7 +111,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         self,
         trans: ProvidesUserContext,
         id: MaybeLibraryFolderOrDatasetID,
-    ) -> SHOW_RESPONSE:
+    ) -> AnyLibraryContentsShowResponse:
         """Returns information about library file or folder."""
         class_name, content_id = self._decode_library_content_id(id)
         if class_name == "LibraryFolder":
@@ -127,9 +127,9 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
     def create(
         self,
         trans: ProvidesHistoryContext,
-        library_id: LIBRARY_ID,
-        payload: CREATE_PAYLOAD,
-    ) -> CREATE_RESPOSNSE:
+        library_id: AnyLibraryId,
+        payload: AnyLibraryContentsCreatePayload,
+    ) -> AnyLibraryContentsCreateResponse:
         """Create a new library file or folder."""
         if trans.user_is_bootstrap_admin:
             raise exceptions.RealUserRequiredException("Only real users can create a new library file or folder.")
@@ -194,45 +194,39 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
     ) -> LibraryContentsDeleteResponse:
         """Delete the LibraryDataset with the given ``id``."""
         rval = {"id": id}
-        try:
-            ld = self.get_library_dataset(trans, id, check_ownership=False, check_accessible=True)
-            user_is_admin = trans.user_is_admin
-            can_modify = trans.app.security_agent.can_modify_library_item(trans.user.all_roles(), ld)
-            log.debug("is_admin: %s, can_modify: %s", user_is_admin, can_modify)
-            if not (user_is_admin or can_modify):
-                raise exceptions.InsufficientPermissionsException(
-                    "Unauthorized to delete or purge this library dataset"
-                )
+        ld = self.get_library_dataset(trans, id, check_ownership=False, check_accessible=True)
+        user_is_admin = trans.user_is_admin
+        can_modify = trans.app.security_agent.can_modify_library_item(trans.user.all_roles(), ld)
+        log.debug("is_admin: %s, can_modify: %s", user_is_admin, can_modify)
+        if not (user_is_admin or can_modify):
+            raise exceptions.InsufficientPermissionsException("Unauthorized to delete or purge this library dataset")
 
-            ld.deleted = True
-            if payload.purge:
-                ld.purged = True
-                trans.sa_session.add(ld)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
-
-                # TODO: had to change this up a bit from Dataset.user_can_purge
-                dataset = ld.library_dataset_dataset_association.dataset
-                no_history_assoc = len(dataset.history_associations) == len(dataset.purged_history_associations)
-                no_library_assoc = dataset.library_associations == [ld.library_dataset_dataset_association]
-                can_purge_dataset = not dataset.purged and no_history_assoc and no_library_assoc
-
-                if can_purge_dataset:
-                    try:
-                        ld.library_dataset_dataset_association.dataset.full_delete()
-                        trans.sa_session.add(ld.dataset)
-                    except Exception:
-                        pass
-                    # flush now to preserve deleted state in case of later interruption
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
-                rval["purged"] = True
+        ld.deleted = True
+        if payload.purge:
+            ld.purged = True
+            trans.sa_session.add(ld)
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
-            rval["deleted"] = True
-        except Exception as exc:
-            log.exception(f"library_contents API, delete: uncaught exception: {id}, {payload}")
-            raise exceptions.InternalServerError(util.unicodify(exc))
+
+            # TODO: had to change this up a bit from Dataset.user_can_purge
+            dataset = ld.library_dataset_dataset_association.dataset
+            no_history_assoc = len(dataset.history_associations) == len(dataset.purged_history_associations)
+            no_library_assoc = dataset.library_associations == [ld.library_dataset_dataset_association]
+            can_purge_dataset = not dataset.purged and no_history_assoc and no_library_assoc
+
+            if can_purge_dataset:
+                try:
+                    ld.library_dataset_dataset_association.dataset.full_delete()
+                    trans.sa_session.add(ld.dataset)
+                except Exception:
+                    pass
+                # flush now to preserve deleted state in case of later interruption
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
+            rval["purged"] = True
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+        rval["deleted"] = True
         return LibraryContentsDeleteResponse(**rval)
 
     def _decode_library_content_id(

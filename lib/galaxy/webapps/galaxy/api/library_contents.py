@@ -24,14 +24,14 @@ from galaxy.managers.context import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.library_contents import (
-    CREATE_PAYLOAD,
-    CREATE_RESPOSNSE,
-    LIBRARY_ID,
+    AnyLibraryContentsCreatePayload,
+    AnyLibraryContentsCreateResponse,
+    AnyLibraryContentsShowResponse,
+    AnyLibraryId,
     LibraryContentsDeletePayload,
     LibraryContentsDeleteResponse,
     LibraryContentsFileCreatePayload,
     LibraryContentsIndexListResponse,
-    SHOW_RESPONSE,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -74,7 +74,7 @@ class FastAPILibraryContents:
     )
     def index(
         self,
-        library_id: LIBRARY_ID,
+        library_id: AnyLibraryId,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> LibraryContentsIndexListResponse:
         """This endpoint is deprecated. Please use GET /api/folders/{folder_id}/contents instead."""
@@ -88,10 +88,10 @@ class FastAPILibraryContents:
     )
     def show(
         self,
-        library_id: LIBRARY_ID,
+        library_id: AnyLibraryId,
         id: MaybeLibraryFolderOrDatasetID,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> SHOW_RESPONSE:
+    ) -> AnyLibraryContentsShowResponse:
         """This endpoint is deprecated. Please use GET /api/libraries/datasets/{library_id} instead."""
         return self.service.show(trans, id)
 
@@ -103,10 +103,10 @@ class FastAPILibraryContents:
     )
     def create_json(
         self,
-        library_id: LIBRARY_ID,
-        payload: CREATE_PAYLOAD,
+        library_id: AnyLibraryId,
+        payload: AnyLibraryContentsCreatePayload,
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> CREATE_RESPOSNSE:
+    ) -> AnyLibraryContentsCreateResponse:
         """This endpoint is deprecated. Please use POST /api/folders/{folder_id} or POST /api/folders/{folder_id}/contents instead."""
         return self.service.create(trans, library_id, payload)
 
@@ -119,11 +119,11 @@ class FastAPILibraryContents:
     async def create_form(
         self,
         request: Request,
-        library_id: LIBRARY_ID,
+        library_id: AnyLibraryId,
         payload: LibraryContentsFileCreatePayload = Depends(LibraryContentsCreateForm.as_form),
         files: Optional[List[UploadFile]] = None,
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> CREATE_RESPOSNSE:
+    ) -> AnyLibraryContentsCreateResponse:
         """This endpoint is deprecated. Please use POST /api/folders/{folder_id} or POST /api/folders/{folder_id}/contents instead."""
         # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
         if not files:
@@ -148,7 +148,7 @@ class FastAPILibraryContents:
     )
     def update(
         self,
-        library_id: LIBRARY_ID,
+        library_id: AnyLibraryId,
         id: DecodedDatabaseIdField,
         payload,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -163,7 +163,7 @@ class FastAPILibraryContents:
     )
     def delete(
         self,
-        library_id: LIBRARY_ID,
+        library_id: AnyLibraryId,
         id: DecodedDatabaseIdField,
         payload: Optional[LibraryContentsDeletePayload] = Body(None),
         trans: ProvidesHistoryContext = DependsOnTrans,
