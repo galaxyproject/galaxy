@@ -24,10 +24,7 @@ from galaxy.model import (
     tags,
 )
 from galaxy.model.base import transaction
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    LibraryFolderDatabaseIdField,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.library_contents import (
     CREATE_PAYLOAD,
     CREATE_RESPOSNSE,
