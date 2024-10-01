@@ -1533,7 +1533,6 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         else:
             delete_stmt = delete_stmt.where(UserRoleAssociation.role_id != private_role.id)
         role_ids = self._filter_private_roles(role_ids)
-        # breakpoint()
 
         insert_values = [{"user_id": user.id, "role_id": role_id} for role_id in role_ids]
         self._set_associations(user, UserRoleAssociation, delete_stmt, insert_values)
