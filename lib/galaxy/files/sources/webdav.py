@@ -28,6 +28,7 @@ class WebDavFilesSource(PyFilesystem2FilesSource):
     plugin_type = "webdav"
     required_module = WebDAVFS
     required_package = "fs.webdavfs"
+    allow_key_error_on_empty_directories = True
 
     def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
         props = cast(WebDavFilesSourceProperties, self._serialization_props(user_context))
