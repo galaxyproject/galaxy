@@ -1,6 +1,7 @@
 import json
 import os
 import urllib.parse
+from base64 import b64encode
 
 import pytest
 from tusclient import client
@@ -24,6 +25,9 @@ from galaxy_test.base.populators import (
     stage_inputs,
 )
 from ._framework import ApiTestCase
+
+B64_FOR_1_2_3 = b64encode(b"1 2 3").decode("utf-8")
+URI_FOR_1_2_3 = f"base64://{B64_FOR_1_2_3}"
 
 
 class TestToolsUpload(ApiTestCase):
@@ -926,6 +930,63 @@ class TestToolsUpload(ApiTestCase):
         dataset_id = metadata["id"]
         terminal_validated_state = self.dataset_populator.validate_dataset_and_wait(history_id, dataset_id)
         assert terminal_validated_state == "ok", terminal_validated_state
+
+    def test_upload_and_validate_hash_valid(self):
+        with self.dataset_populator.test_history() as history_id:
+            destination = {"type": "hdas"}
+            targets = [
+                {
+                    "destination": destination,
+                    "items": [
+                        {
+                            "src": "url",
+                            "url": URI_FOR_1_2_3,
+                            "hashes": [
+                                {"hash_function": "SHA-1", "hash_value": "65e9d53484d28eef5447bc06fe2d754d1090975a"}
+                            ],
+                        },
+                    ],
+                }
+            ]
+            payload = {
+                "history_id": history_id,
+                "targets": targets,
+                "validate_hashes": True,
+            }
+            fetch_response = self.dataset_populator.fetch(payload)
+            self._assert_status_code_is(fetch_response, 200)
+            # history ok implies the dataset upload work
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+    def test_upload_and_validate_hash_invalid(self):
+        with self.dataset_populator.test_history() as history_id:
+            destination = {"type": "hdas"}
+            targets = [
+                {
+                    "destination": destination,
+                    "items": [
+                        {
+                            "src": "url",
+                            "url": URI_FOR_1_2_3,
+                            "hashes": [{"hash_function": "SHA-1", "hash_value": "invalidhash"}],
+                        },
+                    ],
+                }
+            ]
+            payload = {
+                "history_id": history_id,
+                "targets": targets,
+                "validate_hashes": True,
+            }
+            fetch_response = self.dataset_populator.fetch(payload, assert_ok=True, wait=False)
+            self._assert_status_code_is(fetch_response, 200)
+            outputs = fetch_response.json()["outputs"]
+            new_dataset = outputs[0]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+            dataset_details = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset=new_dataset, assert_ok=False
+            )
+            assert dataset_details["state"] == "error"
 
     def _velvet_upload(self, history_id, extra_inputs):
         payload = self.dataset_populator.upload_payload(
