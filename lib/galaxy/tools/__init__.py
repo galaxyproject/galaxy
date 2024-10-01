@@ -176,6 +176,7 @@ from galaxy.util.json import (
     safe_loads,
     swap_inf_nan,
 )
+from galaxy.util.path import StrPath
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import (
     fill_template,
@@ -370,15 +371,16 @@ class ToolNotFoundException(Exception):
     pass
 
 
-def create_tool_from_source(app, tool_source, config_file=None, **kwds):
+def create_tool_from_source(app, tool_source: ToolSource, config_file: Optional[StrPath] = None, **kwds):
     # Allow specifying a different tool subclass to instantiate
     if (tool_module := tool_source.parse_tool_module()) is not None:
         module, cls = tool_module
         mod = __import__(module, globals(), locals(), [cls])
         ToolClass = getattr(mod, cls)
-    elif tool_source.parse_tool_type():
-        tool_type = tool_source.parse_tool_type()
+    elif tool_type := tool_source.parse_tool_type():
         ToolClass = tool_types.get(tool_type)
+        if not ToolClass:
+            raise ValueError(f"Unrecognized tool type: {tool_type}")
     else:
         # Normal tool
         root = getattr(tool_source, "root", None)
@@ -388,7 +390,7 @@ def create_tool_from_source(app, tool_source, config_file=None, **kwds):
 
 
 def create_tool_from_representation(
-    app, raw_tool_source: str, tool_dir: str, tool_source_class="XmlToolSource"
+    app, raw_tool_source: str, tool_dir: Optional[StrPath] = None, tool_source_class="XmlToolSource"
 ) -> "Tool":
     tool_source = get_tool_source(tool_source_class=tool_source_class, raw_tool_source=raw_tool_source)
     return create_tool_from_source(app, tool_source=tool_source, tool_dir=tool_dir)
@@ -560,7 +562,7 @@ class ToolBox(AbstractToolBox):
                 self.cache_regions[tool_cache_data_dir] = ToolDocumentCache(cache_dir=tool_cache_data_dir)
             return self.cache_regions[tool_cache_data_dir]
 
-    def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
+    def create_tool(self, config_file: str, tool_cache_data_dir=None, **kwds):
         cache = self.get_cache_region(tool_cache_data_dir)
         if config_file.endswith(".xml") and cache and not cache.disabled:
             tool_document = cache.get(config_file)
@@ -617,7 +619,6 @@ class ToolBox(AbstractToolBox):
         Retrieve all loaded versions of a tool from the toolbox and return a select list enabling
         selection of a different version, the list of the tool's loaded versions, and the specified tool.
         """
-        toolbox = self
         tool_version_select_field = None
         tools = []
         tool = None
@@ -629,11 +630,11 @@ class ToolBox(AbstractToolBox):
                 # Some data sources send back redirects ending with `/`, this takes care of that case
                 tool_id = tool_id[:-1]
             if get_loaded_tools_by_lineage:
-                tools = toolbox.get_loaded_tools_by_lineage(tool_id)
+                tools = self.get_loaded_tools_by_lineage(tool_id)
             else:
-                tools = toolbox.get_tool(tool_id, tool_version=tool_version, get_all_versions=True)
+                tools = self.get_tool(tool_id, tool_version=tool_version, get_all_versions=True)
             if tools:
-                tool = toolbox.get_tool(tool_id, tool_version=tool_version, get_all_versions=False)
+                tool = self.get_tool(tool_id, tool_version=tool_version, get_all_versions=False)
                 if len(tools) > 1:
                     tool_version_select_field = self.__build_tool_version_select_field(tools, tool.id, set_selected)
                 break
@@ -775,24 +776,22 @@ class Tool(UsesDictVisibleKeys):
 
     def __init__(
         self,
-        config_file,
+        config_file: Optional[StrPath],
         tool_source: ToolSource,
         app: "UniverseApplication",
-        guid=None,
+        guid: Optional[str] = None,
         repository_id=None,
         tool_shed_repository=None,
-        allow_code_files=True,
-        dynamic=False,
-        tool_dir=None,
+        allow_code_files: bool = True,
+        dynamic: bool = False,
+        tool_dir: Optional[StrPath] = None,
     ):
         """Load a tool from the config named by `config_file`"""
+        self.config_file = config_file
         # Determine the full path of the directory where the tool config is
         if config_file is not None:
-            self.config_file = config_file
-            self.tool_dir = tool_dir or os.path.dirname(config_file)
-        else:
-            self.config_file = None
-            self.tool_dir = tool_dir
+            tool_dir = tool_dir or os.path.dirname(config_file)
+        self.tool_dir = tool_dir
 
         self.app = app
         self.repository_id = repository_id
@@ -1032,7 +1031,7 @@ class Tool(UsesDictVisibleKeys):
             return False
         return True
 
-    def parse(self, tool_source: ToolSource, guid=None, dynamic=False):
+    def parse(self, tool_source: ToolSource, guid: Optional[str] = None, dynamic: bool = False) -> None:
         """
         Read tool configuration from the element `root` and fill in `self`.
         """
@@ -1130,6 +1129,7 @@ class Tool(UsesDictVisibleKeys):
             version_cmd_interpreter = tool_source.parse_version_command_interpreter()
             if version_cmd_interpreter:
                 executable = self.version_string_cmd.split()[0]
+                assert self.tool_dir is not None
                 abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
                 command_line = self.version_string_cmd.replace(executable, abs_executable, 1)
                 self.version_string_cmd = f"{version_cmd_interpreter} {command_line}"
@@ -1249,7 +1249,7 @@ class Tool(UsesDictVisibleKeys):
 
         self._is_workflow_compatible = self.check_workflow_compatible(self.tool_source)
 
-    def __parse_legacy_features(self, tool_source):
+    def __parse_legacy_features(self, tool_source: ToolSource):
         self.code_namespace: Dict[str, str] = {}
         self.hook_map: Dict[str, str] = {}
         self.uihints: Dict[str, str] = {}
@@ -1268,6 +1268,7 @@ class Tool(UsesDictVisibleKeys):
                     # map hook to function
                     self.hook_map[key] = value
             file_name = code_elem.get("file")
+            assert self.tool_dir is not None
             code_path = os.path.join(self.tool_dir, file_name)
             if self._allow_code_files:
                 with open(code_path) as f:
@@ -1349,9 +1350,8 @@ class Tool(UsesDictVisibleKeys):
     @property
     def _repository_dir(self):
         """If tool shed installed tool, the base directory of the repository installed."""
-        repository_base_dir = None
-
         if getattr(self, "tool_shed", None):
+            assert self.tool_dir is not None
             tool_dir = Path(self.tool_dir)
             for repo_dir in itertools.chain([tool_dir], tool_dir.parents):
                 if repo_dir.name == self.repository_name and repo_dir.parent.name == self.installed_changeset_revision:
@@ -1359,7 +1359,7 @@ class Tool(UsesDictVisibleKeys):
             else:
                 log.error(f"Problem finding repository dir for tool '{self.id}'")
 
-        return repository_base_dir
+        return None
 
     def test_data_path(self, filename):
         test_data = None
@@ -2402,16 +2402,16 @@ class Tool(UsesDictVisibleKeys):
         return collected
 
     def to_archive(self):
-        tool = self
         tarball_files = []
         temp_files = []
-        with open(os.path.abspath(tool.config_file)) as fh1:
+        assert self.config_file
+        with open(os.path.abspath(self.config_file)) as fh1:
             tool_xml = fh1.read()
         # Retrieve tool help images and rewrite the tool's xml into a temporary file with the path
         # modified to be relative to the repository root.
         image_found = False
-        if tool.help is not None:
-            tool_help = tool.help._source
+        if self.help is not None:
+            tool_help = self.help._source
             # Check each line of the rendered tool help for an image tag that points to a location under static/
             for help_line in tool_help.split("\n"):
                 image_regex = re.compile(r'img alt="[^"]+" src="\${static_path}/([^"]+)"')
@@ -2429,25 +2429,25 @@ class Tool(UsesDictVisibleKeys):
             with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as fh2:
                 new_tool_config = fh2.name
                 fh2.write(tool_xml)
-            tool_tup = (new_tool_config, os.path.split(tool.config_file)[-1])
+            tool_tup = (new_tool_config, os.path.split(self.config_file)[-1])
             temp_files.append(new_tool_config)
         else:
-            tool_tup = (os.path.abspath(tool.config_file), os.path.split(tool.config_file)[-1])
+            tool_tup = (os.path.abspath(self.config_file), os.path.split(self.config_file)[-1])
         tarball_files.append(tool_tup)
         # TODO: This feels hacky.
-        tool_command = tool.command.strip().split()[0]
-        tool_path = os.path.dirname(os.path.abspath(tool.config_file))
+        tool_command = self.command.strip().split()[0]
+        tool_path = os.path.dirname(os.path.abspath(self.config_file))
         # Add the tool XML to the tuple that will be used to populate the tarball.
         if os.path.exists(os.path.join(tool_path, tool_command)):
             tarball_files.append((os.path.join(tool_path, tool_command), tool_command))
         # Find and add macros and code files.
-        for external_file in tool.get_externally_referenced_paths(os.path.abspath(tool.config_file)):
+        for external_file in self.get_externally_referenced_paths(os.path.abspath(self.config_file)):
             external_file_abspath = os.path.abspath(os.path.join(tool_path, external_file))
             tarball_files.append((external_file_abspath, external_file))
         if os.path.exists(os.path.join(tool_path, "Dockerfile")):
             tarball_files.append((os.path.join(tool_path, "Dockerfile"), "Dockerfile"))
         # Find tests, and check them for test data.
-        if (tests := tool.tests) is not None:
+        if (tests := self.tests) is not None:
             for test in tests:
                 # Add input file tuples to the list.
                 for input in test.inputs:
@@ -2463,7 +2463,7 @@ class Tool(UsesDictVisibleKeys):
                     if os.path.exists(output_filepath):
                         td_tup = (output_filepath, os.path.join("test-data", filename))
                         tarball_files.append(td_tup)
-        for param in tool.input_params:
+        for param in self.input_params:
             # Check for tool data table definitions.
             param_options = getattr(param, "options", None)
             if param_options is not None:
@@ -4168,7 +4168,6 @@ class DuplicateFileToCollectionTool(DatabaseOperationTool):
 
 
 # Populate tool_type to ToolClass mappings
-tool_types = {}
 TOOL_CLASSES: List[Type[Tool]] = [
     Tool,
     SetMetadataTool,
@@ -4188,9 +4187,7 @@ TOOL_CLASSES: List[Type[Tool]] = [
     ExtractDatasetCollectionTool,
     DataDestinationTool,
 ]
-for tool_class in TOOL_CLASSES:
-    tool_types[tool_class.tool_type] = tool_class
-
+tool_types = {tool_class.tool_type: tool_class for tool_class in TOOL_CLASSES}
 
 # ---- Utility classes to be factored out -----------------------------------
 

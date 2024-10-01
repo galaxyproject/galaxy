@@ -3,5 +3,5 @@ node_modules
 # don't lint build output (make sure it's set to your correct build folder name)
 dist
 
-# Ignore codegen aritfacts
+# Ignore codegen artifacts
 src/gql/*.ts

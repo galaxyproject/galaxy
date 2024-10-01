@@ -101,6 +101,7 @@ from galaxy.util import (
     galaxy_root_path,
     UNKNOWN,
 )
+from galaxy.util.path import StrPath
 from galaxy.util.resources import resource_string
 from galaxy.util.unittest_utils import skip_if_site_down
 from galaxy_test.base.decorators import (
@@ -1701,7 +1702,7 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
 
 
 # Things gxformat2 knows how to upload as workflows
-YamlContentT = Union[str, os.PathLike, dict]
+YamlContentT = Union[StrPath, dict]
 
 
 class BaseWorkflowPopulator(BasePopulator):

@@ -207,7 +207,7 @@ class ToolParameter(UsesDictVisibleKeys):
         """Return user friendly name for the parameter"""
         return self.label if self.label else self.name
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         """
         Convert a value from an HTML POST into the parameters preferred value
         format.
@@ -468,7 +468,7 @@ class IntegerToolParameter(TextToolParameter):
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator(None, self.min, self.max))
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         other_values = other_values or {}
         try:
             return int(value)
@@ -541,7 +541,7 @@ class FloatToolParameter(TextToolParameter):
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator(None, self.min, self.max))
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         other_values = other_values or {}
         try:
             return float(value)
@@ -587,11 +587,11 @@ class BooleanToolParameter(ToolParameter):
     >>> print(p.name)
     _name
     >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', True)]
-    >>> print(p.from_json('true'))
+    >>> print(p.from_json('true', trans))
     True
     >>> print(p.to_param_dict_string(True))
     _truevalue
-    >>> print(p.from_json('false'))
+    >>> print(p.from_json('false', trans))
     False
     >>> print(p.to_param_dict_string(False))
     _falsevalue
@@ -615,7 +615,7 @@ class BooleanToolParameter(ToolParameter):
         self.optional = input_source.get_bool("optional", False)
         self.checked = boolean_is_checked(input_source)
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         return self.to_python(value)
 
     def to_python(self, value, app=None):
@@ -666,7 +666,7 @@ class FileToolParameter(ToolParameter):
     def __init__(self, tool, input_source):
         super().__init__(tool, input_source)
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
         if isinstance(value, FilesPayload):
@@ -765,7 +765,7 @@ class FTPFileToolParameter(ToolParameter):
         else:
             return lst[0]
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         return self.to_python(value, trans.app, validate=True)
 
     def to_json(self, value, app, use_security):
@@ -885,7 +885,7 @@ class BaseURLToolParameter(HiddenToolParameter):
     def get_initial_value(self, trans, other_values):
         return self._get_value(trans)
 
-    def from_json(self, value=None, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         return self._get_value(trans)
 
     def _get_value(self, trans):
@@ -1004,7 +1004,7 @@ class SelectToolParameter(ToolParameter):
         """
         return {n: v for n, v, _ in self.get_options(trans, other_values)}
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         return self._select_from_json(value, trans, other_values=other_values, require_legal_value=True)
 
     def _select_from_json(self, value, trans, other_values=None, require_legal_value=True):
@@ -1284,7 +1284,7 @@ class SelectTagParameter(SelectToolParameter):
             self.default_value = input_source.get("value", None)
         self.is_dynamic = True
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         other_values = other_values or {}
         if self.multiple:
             tag_list = []
@@ -1412,7 +1412,7 @@ class ColumnListParameter(SelectToolParameter):
             return value.strip()
         return value
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         """
         Label convention prepends column number with a 'c', but tool uses the integer. This
         removes the 'c' when entered into a workflow.
@@ -1701,7 +1701,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         recurse_options(legal_values, self.get_options(trans=trans, other_values=other_values))
         return legal_values
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         other_values = other_values or {}
         legal_values = self.get_legal_values(trans, other_values, value)
         if not legal_values and trans.workflow_building_mode:
@@ -2102,7 +2102,7 @@ class DataToolParameter(BaseDataToolParameter):
                     )
                 self.conversions.append((name, conv_extension, [conv_type]))
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         session = trans.sa_session
 
         other_values = other_values or {}
@@ -2459,7 +2459,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if match:
                 yield history_dataset_collection, match.implicit_conversion
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         session = trans.sa_session
 
         other_values = other_values or {}

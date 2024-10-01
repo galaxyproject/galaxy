@@ -72,7 +72,7 @@ class ToolApp(MinimalToolApp):
         self.security = None  # type: ignore[assignment]
 
 
-def main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY):
+def main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY) -> None:
     metadata_params = get_metadata_params(WORKING_DIRECTORY)
     datatypes_config = metadata_params["datatypes_config"]
     if not os.path.exists(datatypes_config):

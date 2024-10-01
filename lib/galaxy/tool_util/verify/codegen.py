@@ -3,8 +3,6 @@
 # how to use this function...
 # PYTHONPATH=lib python lib/galaxy/tool_util/verify/codegen.py
 
-from __future__ import annotations
-
 import argparse
 import inspect
 import os
@@ -34,7 +32,7 @@ galaxy_xsd_path = os.path.join(os.path.dirname(__file__), "..", "xsd", "galaxy.x
 
 Children = Literal["allowed", "required", "forbidden"]
 
-DESCRIPTION = """This script synchronizes dynamic code aritfacts against models in Galaxy.
+DESCRIPTION = """This script synchronizes dynamic code artifacts against models in Galaxy.
 
 Right now this just synchronizes Galaxy's XSD file against documentation in Galaxy's assertion modules but
 in the future it will also build Pydantic models for these functions.
