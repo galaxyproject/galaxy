@@ -10,6 +10,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Literal,
     Optional,
     Union,
 )
@@ -21,7 +22,6 @@ from fastapi import (
     Response,
     status,
 )
-from gxformat2.yaml import ordered_dump
 from pydantic import (
     UUID1,
     UUID4,
@@ -78,7 +78,15 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.workflows import (
     InvokeWorkflowPayload,
+    SetWorkflowMenuPayload,
+    SetWorkflowMenuSummary,
     StoredWorkflowDetailed,
+    WorkflowDictEditorSummary,
+    WorkflowDictExportSummary,
+    WorkflowDictFormat2Summary,
+    WorkflowDictFormat2WrappedYamlSummary,
+    WorkflowDictPreviewSummary,
+    WorkflowDictRunSummary,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -86,11 +94,7 @@ from galaxy.tools import recommendations
 from galaxy.tools._types import ParameterValidationErrorsT
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
-from galaxy.web import (
-    expose_api,
-    expose_api_raw_anonymous_and_sessionless,
-    format_return_as_json,
-)
+from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
     SharableMixin,
     url_for,
@@ -144,46 +148,6 @@ class WorkflowsAPIController(
         self.workflow_manager = app.workflow_manager
         self.workflow_contents_manager = app.workflow_contents_manager
         self.tool_recommendations = recommendations.ToolRecommendations()
-
-    @expose_api
-    def set_workflow_menu(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        """
-        Save workflow menu to be shown in the tool panel
-        PUT /api/workflows/menu
-        """
-        payload = payload or {}
-        user = trans.user
-        workflow_ids = payload.get("workflow_ids")
-        if workflow_ids is None:
-            workflow_ids = []
-        elif not isinstance(workflow_ids, list):
-            workflow_ids = [workflow_ids]
-        workflow_ids_decoded = []
-        # Decode the encoded workflow ids
-        for ids in workflow_ids:
-            workflow_ids_decoded.append(trans.security.decode_id(ids))
-        session = trans.sa_session
-        # This explicit remove seems like a hack, need to figure out
-        # how to make the association do it automatically.
-        for m in user.stored_workflow_menu_entries:
-            session.delete(m)
-        user.stored_workflow_menu_entries = []
-        # To ensure id list is unique
-        seen_workflow_ids = set()
-        for wf_id in workflow_ids_decoded:
-            if wf_id in seen_workflow_ids:
-                continue
-            else:
-                seen_workflow_ids.add(wf_id)
-            m = model.StoredWorkflowMenuEntry()
-            m.stored_workflow = session.get(model.StoredWorkflow, wf_id)
-
-            user.stored_workflow_menu_entries.append(m)
-        with transaction(session):
-            session.commit()
-        message = "Menu updated."
-        trans.set_message(message)
-        return {"message": message, "status": "done"}
 
     @expose_api
     def create(self, trans: GalaxyWebTransaction, payload=None, **kwd):
@@ -322,56 +286,6 @@ class WorkflowsAPIController(
 
         # This was already raised above, but just in case...
         raise exceptions.RequestParameterMissingException("No method for workflow creation supplied.")
-
-    @expose_api_raw_anonymous_and_sessionless
-    def workflow_dict(self, trans: GalaxyWebTransaction, workflow_id, **kwd):
-        """
-        GET /api/workflows/{encoded_workflow_id}/download
-
-        Returns a selected workflow.
-
-        :type   style:  str
-        :param  style:  Style of export. The default is 'export', which is the meant to be used
-                        with workflow import endpoints. Other formats such as 'instance', 'editor',
-                        'run' are more tied to the GUI and should not be considered stable APIs.
-                        The default format for 'export' is specified by the
-                        admin with the `default_workflow_export_format` config
-                        option. Style can be specified as either 'ga' or 'format2' directly
-                        to be explicit about which format to download.
-
-        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
-                                          by default.
-        :type   instance:                 boolean
-        """
-        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id, **kwd)
-
-        style = kwd.get("style", "export")
-        download_format = kwd.get("format")
-        version = kwd.get("version")
-        history = None
-        if history_id := kwd.get("history_id"):
-            history = self.history_manager.get_accessible(
-                self.decode_id(history_id), trans.user, current_history=trans.history
-            )
-        ret_dict = self.workflow_contents_manager.workflow_to_dict(
-            trans, stored_workflow, style=style, version=version, history=history
-        )
-        if download_format == "json-download":
-            sname = stored_workflow.name
-            sname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in sname)[0:150]
-            if ret_dict.get("format-version", None) == "0.1":
-                extension = "ga"
-            else:
-                extension = "gxwf.json"
-            trans.response.headers["Content-Disposition"] = (
-                f'attachment; filename="Galaxy-Workflow-{sname}.{extension}"'
-            )
-            trans.response.set_content_type("application/galaxy-archive")
-
-        if style == "format2" and download_format != "json-download":
-            return ordered_dump(ret_dict)
-        else:
-            return format_return_as_json(ret_dict, pretty=True)
 
     @expose_api
     def import_new_workflow_deprecated(self, trans: GalaxyWebTransaction, payload, **kwd):
@@ -737,10 +651,6 @@ class WorkflowsAPIController(
             changeset_revision = item["changeset_revision"]
             irm.install(tool_shed_url, name, owner, changeset_revision, install_options)
 
-    def __get_stored_accessible_workflow(self, trans, workflow_id, **kwd):
-        instance = util.string_as_bool(kwd.get("instance", "false"))
-        return self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id=not instance)
-
     def __get_stored_workflow(self, trans, workflow_id, **kwd):
         instance = util.string_as_bool(kwd.get("instance", "false"))
         return self.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
@@ -887,6 +797,32 @@ SkipStepCountsQueryParam: bool = Query(
     description="Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts.",
 )
 
+StyleQueryParam = Annotated[
+    Optional[
+        Literal["export", "format2", "editor", "legacy", "instance", "run", "preview", "format2_wrapped_yaml", "ga"]
+    ],
+    Query(
+        title="Style of export",
+        description="The default is 'export', which is meant to be used with workflow import endpoints. Other formats such as 'instance', 'editor', 'run' are tied to the GUI and should not be considered stable APIs. The default format for 'export' is specified by the admin with the `default_workflow_export_format` config option. Style can be specified as either 'ga' or 'format2' directly to be explicit about which format to download.",
+    ),
+]
+
+FormatQueryParam = Annotated[
+    Optional[str],
+    Query(
+        title="Format",
+        description="The format to download the workflow in.",
+    ),
+]
+
+WorkflowsHistoryIDQueryParam = Annotated[
+    Optional[DecodedDatabaseIdField],
+    Query(
+        title="History ID",
+        description="The history id to import a workflow from.",
+    ),
+]
+
 InvokeWorkflowBody = Annotated[
     InvokeWorkflowPayload,
     Body(
@@ -903,6 +839,24 @@ RefactorWorkflowBody = Annotated[
         title="Refactor workflow",
         description="The values to refactor a workflow.",
     ),
+]
+
+SetWorkflowMenuBody = Annotated[
+    Optional[SetWorkflowMenuPayload],
+    Body(
+        title="Set workflow menu",
+        description="The values to set a workflow menu.",
+    ),
+]
+
+DownloadWorkflowSummary = Union[
+    WorkflowDictEditorSummary,
+    StoredWorkflowDetailed,
+    WorkflowDictRunSummary,
+    WorkflowDictPreviewSummary,
+    WorkflowDictFormat2Summary,
+    WorkflowDictExportSummary,
+    WorkflowDictFormat2WrappedYamlSummary,
 ]
 
 
@@ -960,6 +914,29 @@ class FastAPIWorkflows:
     ) -> SharingStatus:
         """Return the sharing status of the item."""
         return self.service.shareable_service.sharing(trans, workflow_id)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/download",
+        summary="Returns a selected workflow.",
+        response_model_exclude_unset=True,
+    )
+    # Preserve the following download route for now for dependent applications  -- deprecate at some point
+    @router.get(
+        "/api/workflows/download/{workflow_id}",
+        summary="Returns a selected workflow.",
+        response_model_exclude_unset=True,
+    )
+    def workflow_dict(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        history_id: WorkflowsHistoryIDQueryParam = None,
+        style: StyleQueryParam = "export",
+        format: FormatQueryParam = None,
+        version: VersionQueryParam = None,
+        instance: InstanceQueryParam = False,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> DownloadWorkflowSummary:
+        return self.service.download_workflow(trans, workflow_id, history_id, style, format, version, instance)
 
     @router.put(
         "/api/workflows/{workflow_id}/enable_link_access",
@@ -1021,6 +998,17 @@ class FastAPIWorkflows:
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
         return self.service.shareable_service.unpublish(trans, workflow_id)
+
+    @router.put(
+        "/api/workflows/menu",
+        summary="Save workflow menu to be shown in the tool panel",
+    )
+    def set_workflow_menu(
+        self,
+        payload: SetWorkflowMenuBody = None,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> SetWorkflowMenuSummary:
+        return self.service.set_workflow_menu(payload, trans)
 
     @router.put(
         "/api/workflows/{workflow_id}/share_with_users",
@@ -1190,7 +1178,7 @@ WorkflowIdQueryParam = Annotated[
     ),
 ]
 
-HistoryIdQueryParam = Annotated[
+InvocationsHistoryIdQueryParam = Annotated[
     Optional[DecodedDatabaseIdField],
     Query(
         title="History ID",
@@ -1299,7 +1287,7 @@ class FastAPIInvocations:
         self,
         response: Response,
         workflow_id: WorkflowIdQueryParam = None,
-        history_id: HistoryIdQueryParam = None,
+        history_id: InvocationsHistoryIdQueryParam = None,
         job_id: JobIdQueryParam = None,
         user_id: UserIdQueryParam = None,
         sort_by: InvocationsSortByQueryParam = None,
@@ -1353,7 +1341,7 @@ class FastAPIInvocations:
         self,
         response: Response,
         workflow_id: StoredWorkflowIDPathParam,
-        history_id: HistoryIdQueryParam = None,
+        history_id: InvocationsHistoryIdQueryParam = None,
         job_id: JobIdQueryParam = None,
         user_id: UserIdQueryParam = None,
         sort_by: InvocationsSortByQueryParam = None,
