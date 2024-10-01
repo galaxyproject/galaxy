@@ -3047,7 +3047,7 @@ export interface paths {
          * @deprecated
          * @description This endpoint is deprecated. Please use POST /api/folders/{folder_id} or POST /api/folders/{folder_id}/contents instead.
          */
-        post: operations["create_api_libraries__library_id__contents_post"];
+        post: operations["create_form_api_libraries__library_id__contents_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6078,6 +6078,70 @@ export interface components {
             history_id?: unknown;
             /** Name */
             name?: unknown;
+        };
+        /** Body_create_form_api_libraries__library_id__contents_post */
+        Body_create_form_api_libraries__library_id__contents_post: {
+            /** Create Type */
+            create_type: unknown;
+            /**
+             * Dbkey
+             * @default ?
+             */
+            dbkey: unknown;
+            /** Extended Metadata */
+            extended_metadata?: unknown;
+            /** File Type */
+            file_type?: unknown;
+            /** Files */
+            files?: string[] | null;
+            /**
+             * Filesystem Paths
+             * @default
+             */
+            filesystem_paths: unknown;
+            /** Folder Id */
+            folder_id: unknown;
+            /** From Hda Id */
+            from_hda_id?: unknown;
+            /** From Hdca Id */
+            from_hdca_id?: unknown;
+            /**
+             * Ldda Message
+             * @default
+             */
+            ldda_message: unknown;
+            /**
+             * Link Data Only
+             * @default copy_files
+             */
+            link_data_only: unknown;
+            /**
+             * Roles
+             * @default
+             */
+            roles: unknown;
+            /**
+             * Server Dir
+             * @default
+             */
+            server_dir: unknown;
+            /**
+             * Tag Using Filenames
+             * @default false
+             */
+            tag_using_filenames: unknown;
+            /**
+             * Tags
+             * @default []
+             */
+            tags: unknown;
+            /**
+             * Upload Option
+             * @default upload_file
+             */
+            upload_option: unknown;
+            /** Uuid */
+            uuid?: unknown;
         };
         /** Body_fetch_form_api_tools_fetch_post */
         Body_fetch_form_api_tools_fetch_post: {
@@ -12876,7 +12940,7 @@ export interface components {
              * if True, copy the elements into the collection
              * @default false
              */
-            copy_elements: boolean | null;
+            copy_elements: boolean;
             /** the type of item to create */
             create_type: components["schemas"]["CreateType"];
             /** list of dictionaries containing the element identifiers for the collection */
@@ -12896,29 +12960,29 @@ export interface components {
              * if True, hide the source items in the collection
              * @default false
              */
-            hide_source_items: boolean | null;
+            hide_source_items: boolean;
             /**
              * the new message attribute of the LDDA created
              * @default
              */
-            ldda_message: string | null;
+            ldda_message: string;
             /** the name of the collection */
             name?: string | null;
             /**
              * create tags on datasets using the file's original name
              * @default false
              */
-            tag_using_filenames: boolean | null;
+            tag_using_filenames: boolean;
             /**
              * create the given list of tags on datasets
              * @default []
              */
-            tags: string[] | null;
+            tags: string[];
             /**
              * the method to use for uploading files
              * @default upload_file
              */
-            upload_option: components["schemas"]["UploadOption"] | null;
+            upload_option: components["schemas"]["UploadOption"];
         };
         /** LibraryContentsCreateDatasetCollectionResponse */
         LibraryContentsCreateDatasetCollectionResponse: components["schemas"]["LibraryContentsCreateDatasetResponse"][];
@@ -13004,7 +13068,7 @@ export interface components {
              * if True, purge the library dataset
              * @default false
              */
-            purge: boolean | null;
+            purge: boolean;
         };
         /** LibraryContentsDeleteResponse */
         LibraryContentsDeleteResponse: {
@@ -13024,7 +13088,7 @@ export interface components {
              * database key
              * @default ?
              */
-            dbkey: string | unknown[] | null;
+            dbkey: string | unknown[];
             /** sub-dictionary containing any extended metadata to associate with the item */
             extended_metadata?: Record<string, never> | null;
             /** file type */
@@ -13033,7 +13097,7 @@ export interface components {
              * (only if upload_option is 'upload_paths' and the user is an admin) file paths on the Galaxy server to upload to the library, one file per line
              * @default
              */
-            filesystem_paths: string | null;
+            filesystem_paths: string;
             /**
              * the encoded id of the parent folder of the new item
              * @example 0123456789ABCDEF
@@ -13047,39 +13111,41 @@ export interface components {
              * the new message attribute of the LDDA created
              * @default
              */
-            ldda_message: string | null;
+            ldda_message: string;
             /**
              * (only when upload_option is 'upload_directory' or 'upload_paths').Setting to 'link_to_files' symlinks instead of copying the files
              * @default copy_files
              */
-            link_data_only: components["schemas"]["LinkDataOnly"] | null;
+            link_data_only: components["schemas"]["LinkDataOnly"];
             /**
              * user selected roles
              * @default
              */
-            roles: string | null;
+            roles: string;
             /**
              * (only if upload_option is 'upload_directory') relative path of the subdirectory of Galaxy ``library_import_dir`` (if admin) or ``user_library_import_dir`` (if non-admin) to upload. All and only the files (i.e. no subdirectories) contained in the specified directory will be uploaded.
              * @default
              */
-            server_dir: string | null;
+            server_dir: string;
             /**
              * create tags on datasets using the file's original name
              * @default false
              */
-            tag_using_filenames: boolean | null;
+            tag_using_filenames: boolean;
             /**
              * create the given list of tags on datasets
              * @default []
              */
-            tags: string[] | null;
+            tags: string[];
             /**
              * the method to use for uploading files
              * @default upload_file
              */
-            upload_option: components["schemas"]["UploadOption"] | null;
+            upload_option: components["schemas"]["UploadOption"];
             /** UUID of the dataset to upload */
             uuid?: string | null;
+        } & {
+            [key: string]: unknown;
         };
         /** LibraryContentsFolderCreatePayload */
         LibraryContentsFolderCreatePayload: {
@@ -13089,7 +13155,7 @@ export interface components {
              * description of the folder to create
              * @default
              */
-            description: string | null;
+            description: string;
             /** sub-dictionary containing any extended metadata to associate with the item */
             extended_metadata?: Record<string, never> | null;
             /**
@@ -13105,27 +13171,27 @@ export interface components {
              * the new message attribute of the LDDA created
              * @default
              */
-            ldda_message: string | null;
+            ldda_message: string;
             /**
              * name of the folder to create
              * @default
              */
-            name: string | null;
+            name: string;
             /**
              * create tags on datasets using the file's original name
              * @default false
              */
-            tag_using_filenames: boolean | null;
+            tag_using_filenames: boolean;
             /**
              * create the given list of tags on datasets
              * @default []
              */
-            tags: string[] | null;
+            tags: string[];
             /**
              * the method to use for uploading files
              * @default upload_file
              */
-            upload_option: components["schemas"]["UploadOption"] | null;
+            upload_option: components["schemas"]["UploadOption"];
         };
         /** LibraryContentsIndexDatasetResponse */
         LibraryContentsIndexDatasetResponse: {
@@ -27929,7 +27995,7 @@ export interface operations {
             };
         };
     };
-    create_api_libraries__library_id__contents_post: {
+    create_form_api_libraries__library_id__contents_post: {
         parameters: {
             query?: never;
             header?: {
@@ -27943,10 +28009,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json":
-                    | components["schemas"]["LibraryContentsFolderCreatePayload"]
-                    | components["schemas"]["LibraryContentsFileCreatePayload"]
-                    | components["schemas"]["LibraryContentsCollectionCreatePayload"];
+                "multipart/form-data": components["schemas"]["Body_create_form_api_libraries__library_id__contents_post"];
             };
         };
         responses: {
