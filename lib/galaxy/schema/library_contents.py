@@ -1,3 +1,4 @@
+import json
 from enum import Enum
 from typing import (
     Any,
@@ -12,6 +13,7 @@ from pydantic import (
     Field,
     RootModel,
 )
+from pydantic.functional_validators import field_validator
 from typing_extensions import (
     Annotated,
     Literal,
@@ -52,7 +54,7 @@ class LibraryContentsCreatePayload(Model):
         ...,
         title="the type of item to create",
     )
-    upload_option: Optional[UploadOption] = Field(
+    upload_option: UploadOption = Field(
         UploadOption.upload_file,
         title="the method to use for uploading files",
     )
@@ -60,11 +62,11 @@ class LibraryContentsCreatePayload(Model):
         ...,
         title="the encoded id of the parent folder of the new item",
     )
-    tag_using_filenames: Optional[bool] = Field(
+    tag_using_filenames: bool = Field(
         False,
         title="create tags on datasets using the file's original name",
     )
-    tags: Optional[List[str]] = Field(
+    tags: List[str] = Field(
         [],
         title="create the given list of tags on datasets",
     )
@@ -76,7 +78,7 @@ class LibraryContentsCreatePayload(Model):
         None,
         title="(only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library",
     )
-    ldda_message: Optional[str] = Field(
+    ldda_message: str = Field(
         "",
         title="the new message attribute of the LDDA created",
     )
@@ -85,13 +87,20 @@ class LibraryContentsCreatePayload(Model):
         title="sub-dictionary containing any extended metadata to associate with the item",
     )
 
+    @field_validator("tags", mode="before", check_fields=False)
+    @classmethod
+    def tags_string_to_json(cls, v):
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
+
 
 class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
-    dbkey: Optional[Union[str, list]] = Field(
+    dbkey: Union[str, list] = Field(
         "?",
         title="database key",
     )
-    roles: Optional[str] = Field(
+    roles: str = Field(
         "",
         title="user selected roles",
     )
@@ -99,7 +108,7 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
         None,
         title="file type",
     )
-    server_dir: Optional[str] = Field(
+    server_dir: str = Field(
         "",
         title="(only if upload_option is 'upload_directory') relative path of the "
         "subdirectory of Galaxy ``library_import_dir`` (if admin) or "
@@ -107,12 +116,12 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
         "All and only the files (i.e. no subdirectories) contained "
         "in the specified directory will be uploaded.",
     )
-    filesystem_paths: Optional[str] = Field(
+    filesystem_paths: str = Field(
         "",
         title="(only if upload_option is 'upload_paths' and the user is an admin) "
         "file paths on the Galaxy server to upload to the library, one file per line",
     )
-    link_data_only: Optional[LinkDataOnly] = Field(
+    link_data_only: LinkDataOnly = Field(
         LinkDataOnly.copy_files,
         title="(only when upload_option is 'upload_directory' or 'upload_paths')."
         "Setting to 'link_to_files' symlinks instead of copying the files",
@@ -122,13 +131,16 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
         title="UUID of the dataset to upload",
     )
 
+    # uploaded file fields
+    model_config = ConfigDict(extra="allow")
+
 
 class LibraryContentsFolderCreatePayload(LibraryContentsCreatePayload):
-    name: Optional[str] = Field(
+    name: str = Field(
         "",
         title="name of the folder to create",
     )
-    description: Optional[str] = Field(
+    description: str = Field(
         "",
         title="description of the folder to create",
     )
@@ -147,11 +159,11 @@ class LibraryContentsCollectionCreatePayload(LibraryContentsCreatePayload):
         None,
         title="the name of the collection",
     )
-    hide_source_items: Optional[bool] = Field(
+    hide_source_items: bool = Field(
         False,
         title="if True, hide the source items in the collection",
     )
-    copy_elements: Optional[bool] = Field(
+    copy_elements: bool = Field(
         False,
         title="if True, copy the elements into the collection",
     )
@@ -165,7 +177,7 @@ class LibraryContentsUpdatePayload(Model):
 
 
 class LibraryContentsDeletePayload(Model):
-    purge: Optional[bool] = Field(
+    purge: bool = Field(
         False,
         title="if True, purge the library dataset",
     )
