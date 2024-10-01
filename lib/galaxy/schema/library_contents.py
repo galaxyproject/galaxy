@@ -52,39 +52,39 @@ class LinkDataOnly(str, Enum):
 class LibraryContentsCreatePayload(Model):
     create_type: CreateType = Field(
         ...,
-        title="the type of item to create",
+        description="the type of item to create",
     )
     upload_option: UploadOption = Field(
         UploadOption.upload_file,
-        title="the method to use for uploading files",
+        description="the method to use for uploading files",
     )
     folder_id: LibraryFolderDatabaseIdField = Field(
         ...,
-        title="the encoded id of the parent folder of the new item",
+        description="the encoded id of the parent folder of the new item",
     )
     tag_using_filenames: bool = Field(
         False,
-        title="create tags on datasets using the file's original name",
+        description="create tags on datasets using the file's original name",
     )
     tags: List[str] = Field(
         [],
-        title="create the given list of tags on datasets",
+        description="create the given list of tags on datasets",
     )
     from_hda_id: Optional[DecodedDatabaseIdField] = Field(
         None,
-        title="(only if create_type is 'file') the encoded id of an accessible HDA to copy into the library",
+        description="(only if create_type is 'file') the encoded id of an accessible HDA to copy into the library",
     )
     from_hdca_id: Optional[DecodedDatabaseIdField] = Field(
         None,
-        title="(only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library",
+        description="(only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library",
     )
     ldda_message: str = Field(
         "",
-        title="the new message attribute of the LDDA created",
+        description="the new message attribute of the LDDA created",
     )
     extended_metadata: Optional[Dict[str, Any]] = Field(
         None,
-        title="sub-dictionary containing any extended metadata to associate with the item",
+        description="sub-dictionary containing any extended metadata to associate with the item",
     )
 
     @field_validator("tags", mode="before", check_fields=False)
@@ -110,7 +110,7 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
     )
     server_dir: str = Field(
         "",
-        title="(only if upload_option is 'upload_directory') relative path of the "
+        description="(only if upload_option is 'upload_directory') relative path of the "
         "subdirectory of Galaxy ``library_import_dir`` (if admin) or "
         "``user_library_import_dir`` (if non-admin) to upload. "
         "All and only the files (i.e. no subdirectories) contained "
@@ -118,12 +118,12 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
     )
     filesystem_paths: str = Field(
         "",
-        title="(only if upload_option is 'upload_paths' and the user is an admin) "
+        description="(only if upload_option is 'upload_paths' and the user is an admin) "
         "file paths on the Galaxy server to upload to the library, one file per line",
     )
     link_data_only: LinkDataOnly = Field(
         LinkDataOnly.copy_files,
-        title="(only when upload_option is 'upload_directory' or 'upload_paths')."
+        description="(only when upload_option is 'upload_directory' or 'upload_paths')."
         "Setting to 'link_to_files' symlinks instead of copying the files",
     )
     uuid: Optional[str] = Field(
@@ -132,7 +132,7 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
     )
     upload_files: List[Dict[str, Any]] = Field(
         [],
-        title="list of dictionaries containing the uploaded file fields",
+        title="list of the uploaded files",
     )
 
     # uploaded file fields
@@ -165,25 +165,25 @@ class LibraryContentsCollectionCreatePayload(LibraryContentsCreatePayload):
     )
     hide_source_items: bool = Field(
         False,
-        title="if True, hide the source items in the collection",
+        description="if True, hide the source items in the collection",
     )
     copy_elements: bool = Field(
         False,
-        title="if True, copy the elements into the collection",
+        description="if True, copy the elements into the collection",
     )
 
 
 class LibraryContentsUpdatePayload(Model):
     converted_dataset_id: Optional[DecodedDatabaseIdField] = Field(
         None,
-        title="the decoded id of the dataset that was created from the file",
+        title="the decoded id of the dataset",
     )
 
 
 class LibraryContentsDeletePayload(Model):
     purge: bool = Field(
         False,
-        title="if True, purge the library dataset",
+        description="if True, purge the library dataset",
     )
 
 
@@ -310,18 +310,18 @@ class LibraryContentsPurgedResponse(LibraryContentsDeleteResponse):
     purged: bool
 
 
-LIBRARY_ID = Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField]
+AnyLibraryId = Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField]
 
-SHOW_RESPONSE = Union[
+AnyLibraryContentsShowResponse = Union[
     LibraryContentsShowFolderResponse,
     LibraryContentsShowDatasetResponse,
 ]
 
-CREATE_PAYLOAD = Union[
+AnyLibraryContentsCreatePayload = Union[
     LibraryContentsFolderCreatePayload, LibraryContentsFileCreatePayload, LibraryContentsCollectionCreatePayload
 ]
 
-CREATE_RESPOSNSE = Union[
+AnyLibraryContentsCreateResponse = Union[
     LibraryContentsCreateFolderListResponse,
     LibraryContentsCreateFileListResponse,
     LibraryContentsCreateDatasetCollectionResponse,
