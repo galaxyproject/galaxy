@@ -41,6 +41,7 @@ from galaxy.model import (
 )
 from galaxy.model.dataset_collections import builder
 from galaxy.schema.fetch_data import FilesPayload
+from galaxy.tool_util.parameters.factory import get_color_value
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.tool_util.parser.util import (
     boolean_is_checked,
@@ -848,7 +849,7 @@ class ColorToolParameter(ToolParameter):
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
-        self.value = input_source.get("value", "#000000")
+        self.value = get_color_value(input_source)
         self.rgb = input_source.get_bool("rgb", False)
 
     def get_initial_value(self, trans, other_values):
