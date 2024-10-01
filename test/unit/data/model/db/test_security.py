@@ -13,7 +13,7 @@ from . import have_same_elements
 @pytest.fixture
 def make_user_and_role(session, make_user, make_role, make_user_role_association):
     """
-    Each user created in Galaxy is assumed to have a private role, such that role.name == user.email.
+    Each user created in Galaxy is assumed to have a private role, such that role.type == Role.types.PRIVATE.
     Since we are testing user/group/role associations here, to ensure the correct state of the test database,
     we need to ensure that a user is never created without a corresponding private role.
     Therefore, we use this fixture instead of make_user (which only creates a user).
@@ -21,7 +21,7 @@ def make_user_and_role(session, make_user, make_role, make_user_role_association
 
     def f(**kwd):
         user = make_user()
-        private_role = make_role(name=user.email, type=Role.types.PRIVATE)
+        private_role = make_role(type=Role.types.PRIVATE)
         make_user_role_association(user, private_role)
         return user, private_role
 
@@ -31,14 +31,7 @@ def make_user_and_role(session, make_user, make_role, make_user_role_association
 def test_private_user_role_assoc_not_affected_by_setting_user_roles(session, make_user_and_role):
     # Create user with a private role
     user, private_role = make_user_and_role()
-    assert user.email == private_role.name
     verify_user_associations(user, [], [private_role])  # the only existing association is with the private role
-
-    # Update users's email so it's no longer the same as the private role's name.
-    user.email = user.email + "updated"
-    session.add(user)
-    session.commit()
-    assert user.email != private_role.name
 
     # Delete user roles
     GalaxyRBACAgent(session).set_user_group_and_role_associations(user, role_ids=[])
@@ -49,14 +42,7 @@ def test_private_user_role_assoc_not_affected_by_setting_user_roles(session, mak
 def test_private_user_role_assoc_not_affected_by_setting_role_users(session, make_user_and_role):
     # Create user with a private role
     user, private_role = make_user_and_role()
-    assert user.email == private_role.name
     verify_user_associations(user, [], [private_role])  # the only existing association is with the private role
-
-    # Update users's email
-    user.email = user.email + "updated"
-    session.add(user)
-    session.commit()
-    assert user.email != private_role.name
 
     # Update role users
     GalaxyRBACAgent(session).set_role_user_and_group_associations(private_role, user_ids=[])
