@@ -6092,11 +6092,8 @@ export interface components {
             extended_metadata?: unknown;
             /** File Type */
             file_type?: unknown;
-            /**
-             * Files
-             * @default []
-             */
-            files: unknown;
+            /** Files */
+            files?: string[] | null;
             /**
              * Filesystem Paths
              * @default
@@ -6138,6 +6135,11 @@ export interface components {
              * @default []
              */
             tags: unknown;
+            /**
+             * Upload Files
+             * @default []
+             */
+            upload_files: unknown;
             /**
              * Upload Option
              * @default upload_file
@@ -13097,11 +13099,6 @@ export interface components {
             /** file type */
             file_type?: string | null;
             /**
-             * list of dictionaries containing the uploaded file fields
-             * @default []
-             */
-            files: Record<string, never>[];
-            /**
              * (only if upload_option is 'upload_paths' and the user is an admin) file paths on the Galaxy server to upload to the library, one file per line
              * @default
              */
@@ -13145,6 +13142,11 @@ export interface components {
              * @default []
              */
             tags: string[];
+            /**
+             * list of dictionaries containing the uploaded file fields
+             * @default []
+             */
+            upload_files: Record<string, never>[];
             /**
              * the method to use for uploading files
              * @default upload_file
