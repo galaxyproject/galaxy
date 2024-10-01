@@ -152,7 +152,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="d-flex justify-content-between align-items-center">
+    <div>
         <Multiselect
             v-if="hasOptions"
             :id="id"
@@ -182,6 +182,5 @@ onMounted(() => {
         <slot v-else name="no-options">
             <b-alert v-localize class="w-100" variant="warning" show> No options available. </b-alert>
         </slot>
-        <slot name="right-actions" />
     </div>
 </template>

@@ -656,6 +656,18 @@ const noOptionsWarningMessage = computed(() => {
                     <FontAwesomeIcon v-if="loading" icon="fa-spinner" spin />
                     <span v-else class="font-weight-bold">...</span>
                 </BButton>
+                <BButtonGroup v-if="effectiveCollectionTypes?.length > 0" size="sm" buttons>
+                    <ButtonSpinner
+                        v-for="collectionType in effectiveCollectionTypes"
+                        :key="collectionType"
+                        :tooltip="collectionType"
+                        variant="secondary"
+                        :disabled="isFetchingItems"
+                        :icon="faPlus"
+                        :wait="isFetchingItems"
+                        @onClick="buildNewCollection(collectionType)">
+                    </ButtonSpinner>
+                </BButtonGroup>
             </BButtonGroup>
             <div v-if="extensions && extensions.length > 0">
                 <BButton :id="formatsButtonId" class="ui-link" @click="formatsVisible = !formatsVisible">
@@ -688,25 +700,6 @@ const noOptionsWarningMessage = computed(() => {
                 <BAlert class="w-100 align-items-center" variant="warning" show>
                     {{ noOptionsWarningMessage }}
                 </BAlert>
-            </template>
-            <!-- TODO: Improve styling, weirdly positioned to right of select -->
-            <template v-slot:right-actions>
-                <div>
-                    <BButtonGroup v-if="effectiveCollectionTypes?.length > 0" size="sm" buttons>
-                        <ButtonSpinner
-                            v-for="collectionType in effectiveCollectionTypes"
-                            :key="collectionType"
-                            :title="collectionType"
-                            variant="secondary"
-                            :disabled="isFetchingItems"
-                            :has-play-icon="false"
-                            :wait="isFetchingItems"
-                            @onClick="buildNewCollection(collectionType)">
-                            <FontAwesomeIcon v-if="!isFetchingItems" :icon="faPlus" fixed-width />
-                            {{ collectionType }}
-                        </ButtonSpinner>
-                    </BButtonGroup>
-                </div>
             </template>
         </FormSelect>
         <FormSelection
