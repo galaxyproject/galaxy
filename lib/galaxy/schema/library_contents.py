@@ -130,7 +130,7 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
         None,
         title="UUID of the dataset to upload",
     )
-    files: List[Dict[str, Any]] = Field(
+    upload_files: List[Dict[str, Any]] = Field(
         [],
         title="list of dictionaries containing the uploaded file fields",
     )
@@ -308,3 +308,22 @@ class LibraryContentsDeleteResponse(Model):
 
 class LibraryContentsPurgedResponse(LibraryContentsDeleteResponse):
     purged: bool
+
+
+LIBRARY_ID = Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField]
+
+SHOW_RESPONSE = Union[
+    LibraryContentsShowFolderResponse,
+    LibraryContentsShowDatasetResponse,
+]
+
+CREATE_PAYLOAD = Union[
+    LibraryContentsFolderCreatePayload, LibraryContentsFileCreatePayload, LibraryContentsCollectionCreatePayload
+]
+
+CREATE_RESPOSNSE = Union[
+    LibraryContentsCreateFolderListResponse,
+    LibraryContentsCreateFileListResponse,
+    LibraryContentsCreateDatasetCollectionResponse,
+    LibraryContentsCreateDatasetResponse,
+]

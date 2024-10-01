@@ -29,21 +29,22 @@ from galaxy.schema.fields import (
     LibraryFolderDatabaseIdField,
 )
 from galaxy.schema.library_contents import (
-    LibraryContentsCollectionCreatePayload,
+    CREATE_PAYLOAD,
+    CREATE_RESPOSNSE,
+    LIBRARY_ID,
     LibraryContentsCreateDatasetCollectionResponse,
     LibraryContentsCreateDatasetResponse,
     LibraryContentsCreateFileListResponse,
     LibraryContentsCreateFolderListResponse,
     LibraryContentsDeletePayload,
     LibraryContentsDeleteResponse,
-    LibraryContentsFileCreatePayload,
-    LibraryContentsFolderCreatePayload,
     LibraryContentsIndexDatasetResponse,
     LibraryContentsIndexFolderResponse,
     LibraryContentsIndexListResponse,
     LibraryContentsShowDatasetResponse,
     LibraryContentsShowFolderResponse,
     LibraryContentsUpdatePayload,
+    SHOW_RESPONSE,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.base.controller import (
@@ -83,7 +84,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
     def index(
         self,
         trans: ProvidesUserContext,
-        library_id: Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField],
+        library_id: LIBRARY_ID,
     ) -> LibraryContentsIndexListResponse:
         """Return a list of library files and folders."""
         rval: List[Union[LibraryContentsIndexFolderResponse, LibraryContentsIndexDatasetResponse]] = []
@@ -113,10 +114,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         self,
         trans: ProvidesUserContext,
         id: MaybeLibraryFolderOrDatasetID,
-    ) -> Union[
-        LibraryContentsShowFolderResponse,
-        LibraryContentsShowDatasetResponse,
-    ]:
+    ) -> SHOW_RESPONSE:
         """Returns information about library file or folder."""
         class_name, content_id = self._decode_library_content_id(id)
         if class_name == "LibraryFolder":
@@ -132,16 +130,9 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
     def create(
         self,
         trans: ProvidesHistoryContext,
-        library_id: Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField],
-        payload: Union[
-            LibraryContentsFolderCreatePayload, LibraryContentsFileCreatePayload, LibraryContentsCollectionCreatePayload
-        ],
-    ) -> Union[
-        LibraryContentsCreateFolderListResponse,
-        LibraryContentsCreateFileListResponse,
-        LibraryContentsCreateDatasetCollectionResponse,
-        LibraryContentsCreateDatasetResponse,
-    ]:
+        library_id: LIBRARY_ID,
+        payload: CREATE_PAYLOAD,
+    ) -> CREATE_RESPOSNSE:
         """Create a new library file or folder."""
         if trans.user_is_bootstrap_admin:
             raise exceptions.RealUserRequiredException("Only real users can create a new library file or folder.")
