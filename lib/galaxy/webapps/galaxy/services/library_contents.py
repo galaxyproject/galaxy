@@ -8,10 +8,7 @@ from typing import (
 from fastapi import Path
 from typing_extensions import Annotated
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import exceptions
 from galaxy.actions.library import LibraryActions
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import (
