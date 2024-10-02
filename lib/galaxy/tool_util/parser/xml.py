@@ -30,6 +30,7 @@ from galaxy.util import (
     Element,
     ElementTree,
     string_as_bool,
+    string_as_bool_or_none,
     XML,
     xml_text,
     xml_to_string,
@@ -190,8 +191,7 @@ class XmlToolSource(ToolSource):
 
     def parse_tool_type(self):
         root = self.root
-        if root.get("tool_type", None) is not None:
-            return root.get("tool_type")
+        return root.get("tool_type")
 
     def parse_name(self):
         return self.root.get("name") or self.parse_id()
@@ -1327,6 +1327,9 @@ class XmlInputSource(InputSource):
 
     def get_bool(self, key, default):
         return string_as_bool(self.get(key, default))
+
+    def get_bool_or_none(self, key, default):
+        return string_as_bool_or_none(self.get(key, default))
 
     def parse_label(self):
         return xml_text(self.input_elem, "label")

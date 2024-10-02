@@ -6,3 +6,57 @@ empty_select:
   - {}
   request_invalid:
   - select_optional: anyoption
+
+select_from_dataset_in_conditional:
+  request_valid:
+  - single: {src: hda, id: abcde133543d}
+  request_invalid:
+  - single: 7
+  request_internal_valid:
+  - single: {src: hda, id: 7}
+  request_internal_invalid:
+  - single: 7
+  job_internal_valid:
+  - single: {src: hda, id: 7}
+  job_internal_valid:
+  - single: {src: hda, id: 7}
+    cond:
+      cond: single
+      select_single: chr10
+      inner_cond:
+        inner_cond: single
+        select_single: chr10
+  job_internal_invalid:
+  - single: {src: hda, id: 7}
+    cond:
+      cond: single
+      select_single: chr10
+      inner_cond:
+        inner_cond: single
+        select_single: chr10
+        badoption: true
+  - single: {src: hda, id: 7}
+    cond:
+      cond: single
+      select_single: chr10
+
+column_param:
+  request_valid:
+  - input1: {src: hda, id: abcde133543d}
+    col: 1
+    col_names: 1
+  request_invalid:
+  - input1: {src: hda, id: abcde133543d}
+    col: moocow
+    col_names: moocow
+  request_internal_valid:
+  - input1: {src: hda, id: 7}
+    col: 1
+    col_names: 1
+  request_internal_invalid:
+  - input1: {src: hda, id: abcde133543d}
+    col: 1
+    col_names: 1
+
+
+

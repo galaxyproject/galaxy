@@ -10,6 +10,13 @@ echo '$url_param_value_header_and_body' > '$param_value_header_and_body'
             <options from_url="https://usegalaxy.org/api/genomes">
             </options>
         </param>
+        <param name="dynamic_param_filtered_with_validator" type="select">
+            <!-- tested in test_build_module_filter_dynamic_select -->
+            <options from_url="https://usegalaxy.org/api/genomes">
+                <filter type="param_value" ref="url_param_value" column="1" />
+            </options>
+            <validator type="no_options" message="Need at least one option here" />
+        </param>
         <!--
         <param name="url_param_value_templated" type="select">
             <options from_url="http://localhost:8000/data?user=$__user_id__">

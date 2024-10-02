@@ -10,6 +10,13 @@ echo '$parameter' >> '$output'
     </outputs>
     <tests>
         <test>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="myfalse" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
             <param name="parameter" value_json="false" />
             <output name="output">
                 <assert_contents>

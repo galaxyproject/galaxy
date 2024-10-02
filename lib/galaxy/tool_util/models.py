@@ -13,12 +13,16 @@ from typing import (
 )
 
 from pydantic import (
+    AfterValidator,
     AnyUrl,
     BaseModel,
     ConfigDict,
+    Field,
     RootModel,
 )
 from typing_extensions import (
+    Annotated,
+    Literal,
     NotRequired,
     TypedDict,
 )
@@ -113,7 +117,7 @@ class BaseTestOutputModel(StrictModel):
 
 
 class TestDataOutputAssertions(BaseTestOutputModel):
-    pass
+    class_: Optional[Literal["File"]] = Field("File", alias="class")
 
 
 class TestCollectionCollectionElementAssertions(StrictModel):
@@ -131,14 +135,29 @@ TestCollectionElementAssertion = Union[
 TestCollectionCollectionElementAssertions.model_rebuild()
 
 
+def _check_collection_type(v: str) -> str:
+    if len(v) == 0:
+        raise ValueError("Invalid empty collection_type specified.")
+    collection_levels = v.split(":")
+    for collection_level in collection_levels:
+        if collection_level not in ["list", "paired"]:
+            raise ValueError(f"Invalid collection_type specified [{v}]")
+    return v
+
+
+CollectionType = Annotated[Optional[str], AfterValidator(_check_collection_type)]
+
+
 class CollectionAttributes(StrictModel):
-    collection_type: Optional[str] = None
+    collection_type: CollectionType = None
 
 
 class TestCollectionOutputAssertions(StrictModel):
+    class_: Optional[Literal["Collection"]] = Field("Collection", alias="class")
     elements: Optional[Dict[str, TestCollectionElementAssertion]] = None
     element_tests: Optional[Dict[str, "TestCollectionElementAssertion"]] = None
     attributes: Optional[CollectionAttributes] = None
+    collection_type: CollectionType = None
 
 
 TestOutputLiteral = Union[bool, int, float, str]

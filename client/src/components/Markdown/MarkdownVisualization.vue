@@ -73,14 +73,14 @@ export default {
             if (this.argumentPayload.settings && this.argumentPayload.settings.length > 0) {
                 settings = this.argumentPayload.settings.slice();
             }
-            if (this.argumentPayload.groups && this.argumentPayload.groups.length > 0) {
+            if (this.argumentPayload.tracks && this.argumentPayload.tracks.length > 0) {
                 settings = settings || [];
                 settings.push({
                     type: "repeat",
                     title: "Columns",
-                    name: "groups",
+                    name: "tracks",
                     min: 1,
-                    inputs: this.argumentPayload.groups.map((x) => {
+                    inputs: this.argumentPayload.tracks.map((x) => {
                         if (x.type == "data_column") {
                             x.is_workflow = true;
                         }

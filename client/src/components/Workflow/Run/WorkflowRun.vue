@@ -30,6 +30,7 @@ interface Props {
     preferSimpleForm?: boolean;
     simpleFormTargetHistory?: string;
     simpleFormUseJobCache?: boolean;
+    requestState?: Record<string, never>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -37,6 +38,7 @@ const props = withDefaults(defineProps<Props>(), {
     preferSimpleForm: false,
     simpleFormTargetHistory: "current",
     simpleFormUseJobCache: false,
+    requestState: undefined,
 });
 
 const loading = ref(true);
@@ -200,6 +202,7 @@ defineExpose({
                         :target-history="simpleFormTargetHistory"
                         :use-job-cache="simpleFormUseJobCache"
                         :can-mutate-current-history="canRunOnHistory"
+                        :request-state="requestState"
                         @submissionSuccess="handleInvocations"
                         @submissionError="handleSubmissionError"
                         @showAdvanced="showAdvanced" />

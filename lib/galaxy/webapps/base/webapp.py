@@ -14,6 +14,7 @@ from typing import (
     Any,
     Dict,
     Optional,
+    Tuple,
 )
 from urllib.parse import urlparse
 
@@ -325,6 +326,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.galaxy_session = None
         self.error_message = None
         self.host = self.request.host
+        self._short_term_cache: Dict[Tuple[str, ...], Any] = {}
 
         # set any cross origin resource sharing headers if configured to do so
         self.set_cors_headers()

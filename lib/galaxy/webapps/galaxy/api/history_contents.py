@@ -7,6 +7,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Set,
     Union,
 )
 
@@ -53,6 +54,7 @@ from galaxy.schema.schema import (
     HistoryContentType,
     MaterializeDatasetInstanceAPIRequest,
     MaterializeDatasetInstanceRequest,
+    MaterializeDatasetOptions,
     StoreExportPayload,
     UpdateHistoryContentsBatchPayload,
     UpdateHistoryContentsPayload,
@@ -335,11 +337,10 @@ def parse_content_types(types: Union[List[str], str]) -> List[HistoryContentType
 def parse_dataset_details(details: Optional[str]):
     """Parses the different values that the `dataset_details` parameter
     can have from a string."""
-    dataset_details = None
     if details is not None and details != "all":
-        dataset_details = set(util.listify(details))
+        dataset_details: Union[None, Set[str], str] = set(util.listify(details))
     else:  # either None or 'all'
-        dataset_details = details  # type: ignore
+        dataset_details = details
     return dataset_details
 
 
@@ -1072,12 +1073,17 @@ class FastAPIHistoryContents:
         history_id: HistoryIDPathParam,
         id: HistoryItemIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        materialize_api_payload: Optional[MaterializeDatasetOptions] = Body(None),
     ) -> AsyncTaskResultSummary:
+        validate_hashes: bool = (
+            materialize_api_payload.validate_hashes if materialize_api_payload is not None else False
+        )
         # values are already validated, use model_construct
         materialize_request = MaterializeDatasetInstanceRequest.model_construct(
             history_id=history_id,
             source=DatasetSourceType.hda,
             content=id,
+            validate_hashes=validate_hashes,
         )
         rval = self.service.materialize(trans, materialize_request)
         return rval

@@ -1,3 +1,4 @@
+import sys
 from functools import partial
 from typing import (
     Any,
@@ -7,6 +8,7 @@ from typing import (
     Optional,
 )
 
+import pytest
 import yaml
 
 from galaxy.exceptions import RequestParameterInvalidException
@@ -18,6 +20,7 @@ from galaxy.tool_util.parameters import (
     ToolParameterBundleModel,
     validate_internal_job,
     validate_internal_request,
+    validate_internal_request_dereferenced,
     validate_request,
     validate_test_case,
     validate_workflow_step,
@@ -31,6 +34,10 @@ from galaxy.tool_util.unittest_utils.parameters import (
 from galaxy.util.resources import resource_string
 
 RawStateDict = Dict[str, Any]
+
+
+if sys.version_info < (3, 8):  # noqa: UP036
+    pytest.skip(reason="Pydantic tool parameter models require python3.8 or higher", allow_module_level=True)
 
 
 def specification_object():
@@ -91,6 +98,8 @@ def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolPar
         "request_invalid": _assert_requests_invalid,
         "request_internal_valid": _assert_internal_requests_validate,
         "request_internal_invalid": _assert_internal_requests_invalid,
+        "request_internal_dereferenced_valid": _assert_internal_requests_dereferenced_validate,
+        "request_internal_dereferenced_invalid": _assert_internal_requests_dereferenced_invalid,
         "job_internal_valid": _assert_internal_jobs_validate,
         "job_internal_invalid": _assert_internal_jobs_invalid,
         "test_case_xml_valid": _assert_test_cases_validate,
@@ -151,6 +160,26 @@ def _assert_internal_request_invalid(parameters: ToolParameterBundleModel, reque
     assert (
         exc is not None
     ), f"Parameters {parameters} didn't result in validation error on internal request {request} as expected."
+
+
+def _assert_internal_request_dereferenced_validates(
+    parameters: ToolParameterBundleModel, request: RawStateDict
+) -> None:
+    try:
+        validate_internal_request_dereferenced(parameters, request)
+    except RequestParameterInvalidException as e:
+        raise AssertionError(f"Parameters {parameters} failed to validate dereferenced internal request {request}. {e}")
+
+
+def _assert_internal_request_dereferenced_invalid(parameters: ToolParameterBundleModel, request: RawStateDict) -> None:
+    exc = None
+    try:
+        validate_internal_request_dereferenced(parameters, request)
+    except RequestParameterInvalidException as e:
+        exc = e
+    assert (
+        exc is not None
+    ), f"Parameters {parameters} didn't result in validation error on dereferenced internal request {request} as expected."
 
 
 def _assert_internal_job_validates(parameters: ToolParameterBundleModel, request: RawStateDict) -> None:
@@ -235,6 +264,8 @@ _assert_requests_validate = partial(_for_each, _assert_request_validates)
 _assert_requests_invalid = partial(_for_each, _assert_request_invalid)
 _assert_internal_requests_validate = partial(_for_each, _assert_internal_request_validates)
 _assert_internal_requests_invalid = partial(_for_each, _assert_internal_request_invalid)
+_assert_internal_requests_dereferenced_validate = partial(_for_each, _assert_internal_request_dereferenced_validates)
+_assert_internal_requests_dereferenced_invalid = partial(_for_each, _assert_internal_request_dereferenced_invalid)
 _assert_internal_jobs_validate = partial(_for_each, _assert_internal_job_validates)
 _assert_internal_jobs_invalid = partial(_for_each, _assert_internal_job_invalid)
 _assert_test_cases_validate = partial(_for_each, _assert_test_case_validates)

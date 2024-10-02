@@ -4937,6 +4937,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workflow_landings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Landing */
+        post: operations["create_landing_api_workflow_landings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflow_landings/{uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Landing */
+        get: operations["get_landing_api_workflow_landings__uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflow_landings/{uuid}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Landing */
+        post: operations["claim_landing_api_workflow_landings__uuid__claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workflows": {
         parameters: {
             query?: never;
@@ -6026,18 +6077,18 @@ export interface components {
             source: "admin" | "galaxy";
             /** Type */
             type:
-                | (
-                      | "faster"
-                      | "slower"
-                      | "short_term"
-                      | "backed_up"
-                      | "not_backed_up"
-                      | "more_secure"
-                      | "less_secure"
-                      | "more_stable"
-                      | "less_stable"
-                  )
-                | ("cloud" | "quota" | "no_quota" | "restricted" | "user_defined");
+            | (
+                | "faster"
+                | "slower"
+                | "short_term"
+                | "backed_up"
+                | "not_backed_up"
+                | "more_secure"
+                | "less_secure"
+                | "more_stable"
+                | "less_stable"
+            )
+            | ("cloud" | "quota" | "no_quota" | "restricted" | "user_defined");
         };
         /** BasicRoleModel */
         BasicRoleModel: {
@@ -6396,6 +6447,11 @@ export interface components {
              */
             type: string;
         };
+        /** ClaimLandingPayload */
+        ClaimLandingPayload: {
+            /** Client Secret */
+            client_secret?: string | null;
+        };
         /** CleanableItemsSummary */
         CleanableItemsSummary: {
             /**
@@ -6456,6 +6512,12 @@ export interface components {
         CompositeDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -6486,6 +6548,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -6604,8 +6668,8 @@ export interface components {
             input: components["schemas"]["InputReferenceByOrderIndex"] | components["schemas"]["InputReferenceByLabel"];
             /** Output */
             output:
-                | components["schemas"]["OutputReferenceByOrderIndex"]
-                | components["schemas"]["OutputReferenceByLabel"];
+            | components["schemas"]["OutputReferenceByOrderIndex"]
+            | components["schemas"]["OutputReferenceByLabel"];
         };
         /** ContentsObject */
         ContentsObject: {
@@ -7038,6 +7102,20 @@ export interface components {
          * @enum {string}
          */
         CreateType: "file" | "folder" | "collection";
+        /** CreateWorkflowLandingRequestPayload */
+        CreateWorkflowLandingRequestPayload: {
+            /** Client Secret */
+            client_secret?: string | null;
+            /** Request State */
+            request_state?: Record<string, never> | null;
+            /** Workflow Id */
+            workflow_id: string;
+            /**
+             * Workflow Target Type
+             * @enum {string}
+             */
+            workflow_target_type: "stored_workflow" | "workflow";
+        };
         /** CreatedEntryResponse */
         CreatedEntryResponse: {
             /**
@@ -7523,10 +7601,10 @@ export interface components {
              * @description The element's specific data depending on the value of `element_type`.
              */
             object?:
-                | components["schemas"]["HDAObject"]
-                | components["schemas"]["HDADetailed"]
-                | components["schemas"]["DCObject"]
-                | null;
+            | components["schemas"]["HDAObject"]
+            | components["schemas"]["HDADetailed"]
+            | components["schemas"]["DCObject"]
+            | null;
         };
         /**
          * DCEType
@@ -7585,9 +7663,9 @@ export interface components {
             auto_decompress: boolean;
             /** Destination */
             destination:
-                | components["schemas"]["HdaDestination"]
-                | components["schemas"]["LibraryFolderDestination"]
-                | components["schemas"]["LibraryDestination"];
+            | components["schemas"]["HdaDestination"]
+            | components["schemas"]["LibraryFolderDestination"]
+            | components["schemas"]["LibraryDestination"];
             elements_from: components["schemas"]["ElementsFromType"];
             /** Ftp Path */
             ftp_path?: string | null;
@@ -7609,20 +7687,20 @@ export interface components {
             auto_decompress: boolean;
             /** Destination */
             destination:
-                | components["schemas"]["HdaDestination"]
-                | components["schemas"]["LibraryFolderDestination"]
-                | components["schemas"]["LibraryDestination"];
+            | components["schemas"]["HdaDestination"]
+            | components["schemas"]["LibraryFolderDestination"]
+            | components["schemas"]["LibraryDestination"];
             /** Elements */
             elements: (
                 | (
-                      | components["schemas"]["FileDataElement"]
-                      | components["schemas"]["PastedDataElement"]
-                      | components["schemas"]["UrlDataElement"]
-                      | components["schemas"]["PathDataElement"]
-                      | components["schemas"]["ServerDirElement"]
-                      | components["schemas"]["FtpImportElement"]
-                      | components["schemas"]["CompositeDataElement"]
-                  )
+                    | components["schemas"]["FileDataElement"]
+                    | components["schemas"]["PastedDataElement"]
+                    | components["schemas"]["UrlDataElement"]
+                    | components["schemas"]["PathDataElement"]
+                    | components["schemas"]["ServerDirElement"]
+                    | components["schemas"]["FtpImportElement"]
+                    | components["schemas"]["CompositeDataElement"]
+                )
                 | components["schemas"]["NestedElement"]
             )[];
         };
@@ -7827,18 +7905,18 @@ export interface components {
          * @enum {string}
          */
         DatasetState:
-            | "new"
-            | "upload"
-            | "queued"
-            | "running"
-            | "ok"
-            | "empty"
-            | "error"
-            | "paused"
-            | "setting_metadata"
-            | "failed_metadata"
-            | "deferred"
-            | "discarded";
+        | "new"
+        | "upload"
+        | "queued"
+        | "running"
+        | "ok"
+        | "empty"
+        | "error"
+        | "paused"
+        | "setting_metadata"
+        | "failed_metadata"
+        | "deferred"
+        | "discarded";
         /** DatasetStorageDetails */
         DatasetStorageDetails: {
             /**
@@ -8272,8 +8350,8 @@ export interface components {
             input: components["schemas"]["InputReferenceByOrderIndex"] | components["schemas"]["InputReferenceByLabel"];
             /** Output */
             output:
-                | components["schemas"]["OutputReferenceByOrderIndex"]
-                | components["schemas"]["OutputReferenceByLabel"];
+            | components["schemas"]["OutputReferenceByOrderIndex"]
+            | components["schemas"]["OutputReferenceByLabel"];
         };
         /**
          * DisplayApp
@@ -8652,8 +8730,8 @@ export interface components {
             object_type: components["schemas"]["ExportObjectType"];
             /** Payload */
             payload:
-                | components["schemas"]["WriteStoreToPayload"]
-                | components["schemas"]["ShortTermStoreExportPayload"];
+            | components["schemas"]["WriteStoreToPayload"]
+            | components["schemas"]["ShortTermStoreExportPayload"];
             /** User Id */
             user_id?: string | null;
         };
@@ -8799,10 +8877,26 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** FetchDatasetHash */
+        FetchDatasetHash: {
+            /**
+             * Hash Function
+             * @enum {string}
+             */
+            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+            /** Hash Value */
+            hash_value: string;
+        };
         /** FileDataElement */
         FileDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -8832,6 +8926,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -8945,13 +9041,13 @@ export interface components {
             type: "ftp" | "posix" | "s3fs" | "azure" | "onedata";
             /** Variables */
             variables?:
-                | (
-                      | components["schemas"]["TemplateVariableString"]
-                      | components["schemas"]["TemplateVariableInteger"]
-                      | components["schemas"]["TemplateVariablePathComponent"]
-                      | components["schemas"]["TemplateVariableBoolean"]
-                  )[]
-                | null;
+            | (
+                | components["schemas"]["TemplateVariableString"]
+                | components["schemas"]["TemplateVariableInteger"]
+                | components["schemas"]["TemplateVariablePathComponent"]
+                | components["schemas"]["TemplateVariableBoolean"]
+            )[]
+            | null;
             /**
              * Version
              * @default 0
@@ -9097,6 +9193,12 @@ export interface components {
         FtpImportElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -9128,6 +9230,8 @@ export interface components {
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Ftp Path */
             ftp_path: string;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -10612,14 +10716,14 @@ export interface components {
             /** Elements */
             elements: (
                 | (
-                      | components["schemas"]["FileDataElement"]
-                      | components["schemas"]["PastedDataElement"]
-                      | components["schemas"]["UrlDataElement"]
-                      | components["schemas"]["PathDataElement"]
-                      | components["schemas"]["ServerDirElement"]
-                      | components["schemas"]["FtpImportElement"]
-                      | components["schemas"]["CompositeDataElement"]
-                  )
+                    | components["schemas"]["FileDataElement"]
+                    | components["schemas"]["PastedDataElement"]
+                    | components["schemas"]["UrlDataElement"]
+                    | components["schemas"]["PathDataElement"]
+                    | components["schemas"]["ServerDirElement"]
+                    | components["schemas"]["FtpImportElement"]
+                    | components["schemas"]["CompositeDataElement"]
+                )
                 | components["schemas"]["NestedElement"]
             )[];
             /** Name */
@@ -10918,10 +11022,10 @@ export interface components {
             operation: components["schemas"]["HistoryContentItemOperation"];
             /** Params */
             params?:
-                | components["schemas"]["ChangeDatatypeOperationParams"]
-                | components["schemas"]["ChangeDbkeyOperationParams"]
-                | components["schemas"]["TagOperationParams"]
-                | null;
+            | components["schemas"]["ChangeDatatypeOperationParams"]
+            | components["schemas"]["ChangeDbkeyOperationParams"]
+            | components["schemas"]["TagOperationParams"]
+            | null;
         };
         /** HistoryContentBulkOperationResult */
         HistoryContentBulkOperationResult: {
@@ -10948,15 +11052,15 @@ export interface components {
          * @enum {string}
          */
         HistoryContentItemOperation:
-            | "hide"
-            | "unhide"
-            | "delete"
-            | "undelete"
-            | "purge"
-            | "change_datatype"
-            | "change_dbkey"
-            | "add_tags"
-            | "remove_tags";
+        | "hide"
+        | "unhide"
+        | "delete"
+        | "undelete"
+        | "purge"
+        | "change_datatype"
+        | "change_dbkey"
+        | "add_tags"
+        | "remove_tags";
         /**
          * HistoryContentSource
          * @enum {string}
@@ -11273,8 +11377,8 @@ export interface components {
         ImportToolDataBundle: {
             /** Source */
             source:
-                | components["schemas"]["ImportToolDataBundleDatasetSource"]
-                | components["schemas"]["ImportToolDataBundleUriSource"];
+            | components["schemas"]["ImportToolDataBundleDatasetSource"]
+            | components["schemas"]["ImportToolDataBundleUriSource"];
         };
         /** ImportToolDataBundleDatasetSource */
         ImportToolDataBundleDatasetSource: {
@@ -11794,17 +11898,17 @@ export interface components {
             };
         };
         InvocationMessageResponseUnion:
-            | components["schemas"]["InvocationCancellationReviewFailedResponse"]
-            | components["schemas"]["InvocationCancellationHistoryDeletedResponse"]
-            | components["schemas"]["InvocationCancellationUserRequestResponse"]
-            | components["schemas"]["InvocationFailureDatasetFailedResponse"]
-            | components["schemas"]["InvocationFailureCollectionFailedResponse"]
-            | components["schemas"]["InvocationFailureJobFailedResponse"]
-            | components["schemas"]["InvocationFailureOutputNotFoundResponse"]
-            | components["schemas"]["InvocationFailureExpressionEvaluationFailedResponse"]
-            | components["schemas"]["InvocationFailureWhenNotBooleanResponse"]
-            | components["schemas"]["InvocationUnexpectedFailureResponse"]
-            | components["schemas"]["InvocationEvaluationWarningWorkflowOutputNotFoundResponse"];
+        | components["schemas"]["InvocationCancellationReviewFailedResponse"]
+        | components["schemas"]["InvocationCancellationHistoryDeletedResponse"]
+        | components["schemas"]["InvocationCancellationUserRequestResponse"]
+        | components["schemas"]["InvocationFailureDatasetFailedResponse"]
+        | components["schemas"]["InvocationFailureCollectionFailedResponse"]
+        | components["schemas"]["InvocationFailureJobFailedResponse"]
+        | components["schemas"]["InvocationFailureOutputNotFoundResponse"]
+        | components["schemas"]["InvocationFailureExpressionEvaluationFailedResponse"]
+        | components["schemas"]["InvocationFailureWhenNotBooleanResponse"]
+        | components["schemas"]["InvocationUnexpectedFailureResponse"]
+        | components["schemas"]["InvocationEvaluationWarningWorkflowOutputNotFoundResponse"];
         /** InvocationOutput */
         InvocationOutput: {
             /**
@@ -11953,7 +12057,14 @@ export interface components {
          * InvocationState
          * @enum {string}
          */
-        InvocationState: "new" | "ready" | "scheduled" | "cancelled" | "cancelling" | "failed";
+        InvocationState:
+        | "new"
+        | "requires_materialization"
+        | "ready"
+        | "scheduled"
+        | "cancelled"
+        | "cancelling"
+        | "failed";
         /**
          * InvocationStep
          * @description Information about workflow invocation step
@@ -12733,11 +12844,11 @@ export interface components {
              * @description The values of the job parameter
              */
             value?:
-                | (components["schemas"]["EncodedJobParameterHistoryItem"] | null)[]
-                | number
-                | boolean
-                | string
-                | null;
+            | (components["schemas"]["EncodedJobParameterHistoryItem"] | null)[]
+            | number
+            | boolean
+            | string
+            | null;
         };
         /**
          * JobSourceType
@@ -12750,21 +12861,21 @@ export interface components {
          * @enum {string}
          */
         JobState:
-            | "new"
-            | "resubmitted"
-            | "upload"
-            | "waiting"
-            | "queued"
-            | "running"
-            | "ok"
-            | "error"
-            | "failed"
-            | "paused"
-            | "deleting"
-            | "deleted"
-            | "stop"
-            | "stopped"
-            | "skipped";
+        | "new"
+        | "resubmitted"
+        | "upload"
+        | "waiting"
+        | "queued"
+        | "running"
+        | "ok"
+        | "error"
+        | "failed"
+        | "paused"
+        | "deleting"
+        | "deleted"
+        | "stop"
+        | "stopped"
+        | "skipped";
         /** JobStateSummary */
         JobStateSummary: {
             /**
@@ -12887,6 +12998,11 @@ export interface components {
              */
             value: string;
         };
+        /**
+         * LandingRequestState
+         * @enum {string}
+         */
+        LandingRequestState: "unclaimed" | "claimed";
         /** LegacyLibraryPermissionsPayload */
         LegacyLibraryPermissionsPayload: {
             /**
@@ -13879,6 +13995,21 @@ export interface components {
              * @description The source of the content. Can be other history element to be copied or library elements.
              */
             source: components["schemas"]["DatasetSourceType"];
+            /**
+             * Validate hashes
+             * @description Set to true to enable dataset validation during materialization.
+             * @default false
+             */
+            validate_hashes: boolean;
+        };
+        /** MaterializeDatasetOptions */
+        MaterializeDatasetOptions: {
+            /**
+             * Validate hashes
+             * @description Set to true to enable dataset validation during materialization.
+             * @default false
+             */
+            validate_hashes: boolean;
         };
         /** MessageExceptionModel */
         MessageExceptionModel: {
@@ -13954,6 +14085,12 @@ export interface components {
         NestedElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -13979,14 +14116,14 @@ export interface components {
             /** Elements */
             elements: (
                 | (
-                      | components["schemas"]["FileDataElement"]
-                      | components["schemas"]["PastedDataElement"]
-                      | components["schemas"]["UrlDataElement"]
-                      | components["schemas"]["PathDataElement"]
-                      | components["schemas"]["ServerDirElement"]
-                      | components["schemas"]["FtpImportElement"]
-                      | components["schemas"]["CompositeDataElement"]
-                  )
+                    | components["schemas"]["FileDataElement"]
+                    | components["schemas"]["PastedDataElement"]
+                    | components["schemas"]["UrlDataElement"]
+                    | components["schemas"]["PathDataElement"]
+                    | components["schemas"]["ServerDirElement"]
+                    | components["schemas"]["FtpImportElement"]
+                    | components["schemas"]["CompositeDataElement"]
+                )
                 | components["schemas"]["NestedElement"]
             )[];
             elements_from?: components["schemas"]["ElementsFromType"] | null;
@@ -13996,6 +14133,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -14122,16 +14261,16 @@ export interface components {
              * @description The category of the notification. Represents the type of the notification. E.g. 'message' or 'new_shared_item'.
              */
             category:
-                | components["schemas"]["MandatoryNotificationCategory"]
-                | components["schemas"]["PersonalNotificationCategory"];
+            | components["schemas"]["MandatoryNotificationCategory"]
+            | components["schemas"]["PersonalNotificationCategory"];
             /**
              * Content
              * @description The content of the notification. The structure depends on the category.
              */
             content:
-                | components["schemas"]["MessageNotificationContent"]
-                | components["schemas"]["NewSharedItemNotificationContent"]
-                | components["schemas"]["BroadcastNotificationContent"];
+            | components["schemas"]["MessageNotificationContent"]
+            | components["schemas"]["NewSharedItemNotificationContent"]
+            | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Expiration time
              * @description The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.
@@ -14210,16 +14349,16 @@ export interface components {
              * @description The category of the notification. Represents the type of the notification. E.g. 'message' or 'new_shared_item'.
              */
             category:
-                | components["schemas"]["MandatoryNotificationCategory"]
-                | components["schemas"]["PersonalNotificationCategory"];
+            | components["schemas"]["MandatoryNotificationCategory"]
+            | components["schemas"]["PersonalNotificationCategory"];
             /**
              * Content
              * @description The content of the notification. The structure depends on the category.
              */
             content:
-                | components["schemas"]["MessageNotificationContent"]
-                | components["schemas"]["NewSharedItemNotificationContent"]
-                | components["schemas"]["BroadcastNotificationContent"];
+            | components["schemas"]["MessageNotificationContent"]
+            | components["schemas"]["NewSharedItemNotificationContent"]
+            | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Create time
              * Format: date-time
@@ -14369,13 +14508,13 @@ export interface components {
             type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3" | "onedata";
             /** Variables */
             variables?:
-                | (
-                      | components["schemas"]["TemplateVariableString"]
-                      | components["schemas"]["TemplateVariableInteger"]
-                      | components["schemas"]["TemplateVariablePathComponent"]
-                      | components["schemas"]["TemplateVariableBoolean"]
-                  )[]
-                | null;
+            | (
+                | components["schemas"]["TemplateVariableString"]
+                | components["schemas"]["TemplateVariableInteger"]
+                | components["schemas"]["TemplateVariablePathComponent"]
+                | components["schemas"]["TemplateVariableBoolean"]
+            )[]
+            | null;
             /**
              * Version
              * @default 0
@@ -14598,6 +14737,12 @@ export interface components {
         PastedDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -14627,6 +14772,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -14658,6 +14805,12 @@ export interface components {
         PathDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -14687,6 +14840,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Link Data Only */
@@ -15018,26 +15173,26 @@ export interface components {
         RefactorActionExecution: {
             /** Action */
             action:
-                | components["schemas"]["AddInputAction"]
-                | components["schemas"]["AddStepAction"]
-                | components["schemas"]["ConnectAction"]
-                | components["schemas"]["DisconnectAction"]
-                | components["schemas"]["ExtractInputAction"]
-                | components["schemas"]["ExtractUntypedParameter"]
-                | components["schemas"]["FileDefaultsAction"]
-                | components["schemas"]["FillStepDefaultsAction"]
-                | components["schemas"]["UpdateAnnotationAction"]
-                | components["schemas"]["UpdateCreatorAction"]
-                | components["schemas"]["UpdateNameAction"]
-                | components["schemas"]["UpdateLicenseAction"]
-                | components["schemas"]["UpdateOutputLabelAction"]
-                | components["schemas"]["UpdateReportAction"]
-                | components["schemas"]["UpdateStepLabelAction"]
-                | components["schemas"]["UpdateStepPositionAction"]
-                | components["schemas"]["UpgradeSubworkflowAction"]
-                | components["schemas"]["UpgradeToolAction"]
-                | components["schemas"]["UpgradeAllStepsAction"]
-                | components["schemas"]["RemoveUnlabeledWorkflowOutputs"];
+            | components["schemas"]["AddInputAction"]
+            | components["schemas"]["AddStepAction"]
+            | components["schemas"]["ConnectAction"]
+            | components["schemas"]["DisconnectAction"]
+            | components["schemas"]["ExtractInputAction"]
+            | components["schemas"]["ExtractUntypedParameter"]
+            | components["schemas"]["FileDefaultsAction"]
+            | components["schemas"]["FillStepDefaultsAction"]
+            | components["schemas"]["UpdateAnnotationAction"]
+            | components["schemas"]["UpdateCreatorAction"]
+            | components["schemas"]["UpdateNameAction"]
+            | components["schemas"]["UpdateLicenseAction"]
+            | components["schemas"]["UpdateOutputLabelAction"]
+            | components["schemas"]["UpdateReportAction"]
+            | components["schemas"]["UpdateStepLabelAction"]
+            | components["schemas"]["UpdateStepPositionAction"]
+            | components["schemas"]["UpgradeSubworkflowAction"]
+            | components["schemas"]["UpgradeToolAction"]
+            | components["schemas"]["UpgradeAllStepsAction"]
+            | components["schemas"]["RemoveUnlabeledWorkflowOutputs"];
             /** Messages */
             messages: components["schemas"]["RefactorActionExecutionMessage"][];
         };
@@ -15108,10 +15263,10 @@ export interface components {
          * @enum {string}
          */
         RefactorActionExecutionMessageTypeEnum:
-            | "tool_version_change"
-            | "tool_state_adjustment"
-            | "connection_drop_forced"
-            | "workflow_output_drop_forced";
+        | "tool_version_change"
+        | "tool_state_adjustment"
+        | "connection_drop_forced"
+        | "workflow_output_drop_forced";
         /** RefactorRequest */
         RefactorRequest: {
             /** Actions */
@@ -15278,14 +15433,14 @@ export interface components {
          * @enum {string}
          */
         RequestDataType:
-            | "state"
-            | "converted_datasets_state"
-            | "data"
-            | "features"
-            | "raw_data"
-            | "track_config"
-            | "genome_data"
-            | "in_use_state";
+        | "state"
+        | "converted_datasets_state"
+        | "data"
+        | "features"
+        | "raw_data"
+        | "track_config"
+        | "genome_data"
+        | "in_use_state";
         /**
          * Requirement
          * @description Available types of job sources (model classes) that produce dataset collections.
@@ -15379,6 +15534,12 @@ export interface components {
         ServerDirElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -15408,6 +15569,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Link Data Only */
@@ -16038,8 +16201,8 @@ export interface components {
              * @description Additional information about the creator (or multiple creators) of this workflow.
              */
             creator?:
-                | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
-                | null;
+            | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
+            | null;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.
@@ -16132,12 +16295,12 @@ export interface components {
              */
             steps: {
                 [key: string]:
-                    | components["schemas"]["InputDataStep"]
-                    | components["schemas"]["InputDataCollectionStep"]
-                    | components["schemas"]["InputParameterStep"]
-                    | components["schemas"]["PauseStep"]
-                    | components["schemas"]["ToolStep"]
-                    | components["schemas"]["SubworkflowStep"];
+                | components["schemas"]["InputDataStep"]
+                | components["schemas"]["InputDataCollectionStep"]
+                | components["schemas"]["InputParameterStep"]
+                | components["schemas"]["PauseStep"]
+                | components["schemas"]["ToolStep"]
+                | components["schemas"]["SubworkflowStep"];
             };
             tags: components["schemas"]["TagCollection"];
             /**
@@ -16256,13 +16419,13 @@ export interface components {
          * @enum {string}
          */
         TaggableItemClass:
-            | "History"
-            | "HistoryDatasetAssociation"
-            | "HistoryDatasetCollectionAssociation"
-            | "LibraryDatasetDatasetAssociation"
-            | "Page"
-            | "StoredWorkflow"
-            | "Visualization";
+        | "History"
+        | "HistoryDatasetAssociation"
+        | "HistoryDatasetCollectionAssociation"
+        | "LibraryDatasetDatasetAssociation"
+        | "Page"
+        | "StoredWorkflow"
+        | "Visualization";
         /**
          * TaskState
          * @description Enum representing the possible states of a task.
@@ -16870,8 +17033,8 @@ export interface components {
             action_type: "update_output_label";
             /** Output */
             output:
-                | components["schemas"]["OutputReferenceByOrderIndex"]
-                | components["schemas"]["OutputReferenceByLabel"];
+            | components["schemas"]["OutputReferenceByOrderIndex"]
+            | components["schemas"]["OutputReferenceByLabel"];
             /** Output Label */
             output_label: string;
         };
@@ -17028,6 +17191,12 @@ export interface components {
         UrlDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -17057,6 +17226,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -17285,8 +17456,8 @@ export interface components {
              * @description The content of the notification. The structure depends on the category.
              */
             content:
-                | components["schemas"]["MessageNotificationContent"]
-                | components["schemas"]["NewSharedItemNotificationContent"];
+            | components["schemas"]["MessageNotificationContent"]
+            | components["schemas"]["NewSharedItemNotificationContent"];
             /**
              * Create time
              * Format: date-time
@@ -17924,8 +18095,8 @@ export interface components {
         };
         /** WorkflowInvocationResponse */
         WorkflowInvocationResponse:
-            | components["schemas"]["WorkflowInvocationElementView"]
-            | components["schemas"]["WorkflowInvocationCollectionView"];
+        | components["schemas"]["WorkflowInvocationElementView"]
+        | components["schemas"]["WorkflowInvocationCollectionView"];
         /** WorkflowInvocationStateSummary */
         WorkflowInvocationStateSummary: {
             /**
@@ -17951,6 +18122,25 @@ export interface components {
             states: {
                 [key: string]: number;
             };
+        };
+        /** WorkflowLandingRequest */
+        WorkflowLandingRequest: {
+            /** Request State */
+            request_state: Record<string, never>;
+            state: components["schemas"]["LandingRequestState"];
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier for this dataset.
+             */
+            uuid: string;
+            /** Workflow Id */
+            workflow_id: string;
+            /**
+             * Workflow Target Type
+             * @enum {string}
+             */
+            workflow_target_type: "stored_workflow" | "workflow";
         };
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
@@ -18597,9 +18787,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["HDCACustom"]
-                        | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"];
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
@@ -19054,13 +19244,13 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["HDACustom"]
-                        | components["schemas"]["HDADetailed"]
-                        | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDAInaccessible"]
-                        | components["schemas"]["HDCACustom"]
-                        | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"];
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"]
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
@@ -19278,10 +19468,10 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["HDACustom"]
-                        | components["schemas"]["HDADetailed"]
-                        | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDAInaccessible"];
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"];
                 };
             };
             /** @description Request Error */
@@ -19648,9 +19838,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json":
-                    | components["schemas"]["UpdateDatasetPermissionsPayload"]
-                    | components["schemas"]["UpdateDatasetPermissionsPayloadAliasB"]
-                    | components["schemas"]["UpdateDatasetPermissionsPayloadAliasC"];
+                | components["schemas"]["UpdateDatasetPermissionsPayload"]
+                | components["schemas"]["UpdateDatasetPermissionsPayloadAliasB"]
+                | components["schemas"]["UpdateDatasetPermissionsPayloadAliasC"];
             };
         };
         responses: {
@@ -20608,9 +20798,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json":
-                    | components["schemas"]["UpdateInstanceSecretPayload"]
-                    | components["schemas"]["UpgradeInstancePayload"]
-                    | components["schemas"]["UpdateInstancePayload"];
+                | components["schemas"]["UpdateInstanceSecretPayload"]
+                | components["schemas"]["UpgradeInstancePayload"]
+                | components["schemas"]["UpdateInstancePayload"];
             };
         };
         responses: {
@@ -21097,8 +21287,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["LibraryFolderCurrentPermissions"]
-                        | components["schemas"]["LibraryAvailablePermissions"];
+                    | components["schemas"]["LibraryFolderCurrentPermissions"]
+                    | components["schemas"]["LibraryAvailablePermissions"];
                 };
             };
             /** @description Request Error */
@@ -21296,8 +21486,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["ListUriResponse"]
-                        | components["schemas"]["ListJstreeResponse"];
+                    | components["schemas"]["ListUriResponse"]
+                    | components["schemas"]["ListJstreeResponse"];
                 };
             };
             /** @description Request Error */
@@ -22514,10 +22704,10 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["JobImportHistoryResponse"]
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["JobImportHistoryResponse"]
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -22839,9 +23029,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -22892,9 +23082,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -22986,9 +23176,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -23158,9 +23348,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -23214,9 +23404,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -23271,9 +23461,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -23322,9 +23512,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomArchivedHistoryView"]
-                        | components["schemas"]["ArchivedHistoryDetailed"]
-                        | components["schemas"]["ArchivedHistorySummary"];
+                    | components["schemas"]["CustomArchivedHistoryView"]
+                    | components["schemas"]["ArchivedHistoryDetailed"]
+                    | components["schemas"]["ArchivedHistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -23372,9 +23562,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"];
+                    | components["schemas"]["CustomHistoryView"]
+                    | components["schemas"]["HistoryDetailed"]
+                    | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Request Error */
@@ -23618,6 +23808,14 @@ export interface operations {
                 };
                 content: {
                     "application/json":
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"]
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"]
+                    | (
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
@@ -23625,15 +23823,7 @@ export interface operations {
                         | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
-                        | (
-                              | components["schemas"]["HDACustom"]
-                              | components["schemas"]["HDADetailed"]
-                              | components["schemas"]["HDASummary"]
-                              | components["schemas"]["HDAInaccessible"]
-                              | components["schemas"]["HDCACustom"]
-                              | components["schemas"]["HDCADetailed"]
-                              | components["schemas"]["HDCASummary"]
-                          )[];
+                    )[];
                 };
             };
             /** @description Request Error */
@@ -23891,7 +24081,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MaterializeDatasetOptions"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -23940,9 +24134,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json":
-                    | components["schemas"]["UpdateDatasetPermissionsPayload"]
-                    | components["schemas"]["UpdateDatasetPermissionsPayloadAliasB"]
-                    | components["schemas"]["UpdateDatasetPermissionsPayloadAliasC"];
+                | components["schemas"]["UpdateDatasetPermissionsPayload"]
+                | components["schemas"]["UpdateDatasetPermissionsPayloadAliasB"]
+                | components["schemas"]["UpdateDatasetPermissionsPayloadAliasC"];
             };
         };
         responses: {
@@ -24447,13 +24641,13 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["HDACustom"]
-                        | components["schemas"]["HDADetailed"]
-                        | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDAInaccessible"]
-                        | components["schemas"]["HDCACustom"]
-                        | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"];
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"]
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
@@ -24511,13 +24705,13 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["HDACustom"]
-                        | components["schemas"]["HDADetailed"]
-                        | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDAInaccessible"]
-                        | components["schemas"]["HDCACustom"]
-                        | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"];
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"]
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
@@ -24793,6 +24987,14 @@ export interface operations {
                 };
                 content: {
                     "application/json":
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"]
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"]
+                    | (
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
@@ -24800,15 +25002,7 @@ export interface operations {
                         | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
-                        | (
-                              | components["schemas"]["HDACustom"]
-                              | components["schemas"]["HDADetailed"]
-                              | components["schemas"]["HDASummary"]
-                              | components["schemas"]["HDAInaccessible"]
-                              | components["schemas"]["HDCACustom"]
-                              | components["schemas"]["HDCADetailed"]
-                              | components["schemas"]["HDCASummary"]
-                          )[];
+                    )[];
                 };
             };
             /** @description Request Error */
@@ -24864,13 +25058,13 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["HDACustom"]
-                        | components["schemas"]["HDADetailed"]
-                        | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDAInaccessible"]
-                        | components["schemas"]["HDCACustom"]
-                        | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"];
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"]
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
@@ -24928,13 +25122,13 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["HDACustom"]
-                        | components["schemas"]["HDADetailed"]
-                        | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDAInaccessible"]
-                        | components["schemas"]["HDCACustom"]
-                        | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"];
+                    | components["schemas"]["HDACustom"]
+                    | components["schemas"]["HDADetailed"]
+                    | components["schemas"]["HDASummary"]
+                    | components["schemas"]["HDAInaccessible"]
+                    | components["schemas"]["HDCACustom"]
+                    | components["schemas"]["HDCADetailed"]
+                    | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
@@ -25064,9 +25258,9 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["JobStateSummary"]
-                        | components["schemas"]["ImplicitCollectionJobsStateSummary"]
-                        | components["schemas"]["WorkflowInvocationStateSummary"];
+                    | components["schemas"]["JobStateSummary"]
+                    | components["schemas"]["ImplicitCollectionJobsStateSummary"]
+                    | components["schemas"]["WorkflowInvocationStateSummary"];
                 };
             };
             /** @description Request Error */
@@ -25464,8 +25658,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["JobExportHistoryArchiveModel"]
-                        | components["schemas"]["JobIdResponse"];
+                    | components["schemas"]["JobExportHistoryArchiveModel"]
+                    | components["schemas"]["JobIdResponse"];
                 };
             };
             /** @description The exported archive file is not ready yet. */
@@ -27088,8 +27282,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["ShowFullJobResponse"]
-                        | components["schemas"]["EncodedJobDetails"];
+                    | components["schemas"]["ShowFullJobResponse"]
+                    | components["schemas"]["EncodedJobDetails"];
                 };
             };
             /** @description Request Error */
@@ -27927,8 +28121,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["LibraryCurrentPermissions"]
-                        | components["schemas"]["LibraryAvailablePermissions"];
+                    | components["schemas"]["LibraryCurrentPermissions"]
+                    | components["schemas"]["LibraryAvailablePermissions"];
                 };
             };
             /** @description Request Error */
@@ -27970,8 +28164,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json":
-                    | components["schemas"]["LibraryPermissionsPayload"]
-                    | components["schemas"]["LegacyLibraryPermissionsPayload"];
+                | components["schemas"]["LibraryPermissionsPayload"]
+                | components["schemas"]["LegacyLibraryPermissionsPayload"];
             };
         };
         responses: {
@@ -27982,8 +28176,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["LibraryLegacySummary"]
-                        | components["schemas"]["LibraryCurrentPermissions"];
+                    | components["schemas"]["LibraryLegacySummary"]
+                    | components["schemas"]["LibraryCurrentPermissions"];
                 };
             };
             /** @description Request Error */
@@ -28074,10 +28268,10 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["LibraryContentsCreateFolderListResponse"]
-                        | components["schemas"]["LibraryContentsCreateFileListResponse"]
-                        | components["schemas"]["LibraryContentsCreateDatasetCollectionResponse"]
-                        | components["schemas"]["LibraryContentsCreateDatasetResponse"];
+                    | components["schemas"]["LibraryContentsCreateFolderListResponse"]
+                    | components["schemas"]["LibraryContentsCreateFileListResponse"]
+                    | components["schemas"]["LibraryContentsCreateDatasetCollectionResponse"]
+                    | components["schemas"]["LibraryContentsCreateDatasetResponse"];
                 };
             };
             /** @description Request Error */
@@ -28123,8 +28317,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["LibraryContentsShowFolderResponse"]
-                        | components["schemas"]["LibraryContentsShowDatasetResponse"];
+                    | components["schemas"]["LibraryContentsShowFolderResponse"]
+                    | components["schemas"]["LibraryContentsShowDatasetResponse"];
                 };
             };
             /** @description Request Error */
@@ -28477,8 +28671,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["NotificationCreatedResponse"]
-                        | components["schemas"]["AsyncTaskResultSummary"];
+                    | components["schemas"]["NotificationCreatedResponse"]
+                    | components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Request Error */
@@ -29174,9 +29368,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json":
-                    | components["schemas"]["UpdateInstanceSecretPayload"]
-                    | components["schemas"]["UpgradeInstancePayload"]
-                    | components["schemas"]["UpdateInstancePayload"];
+                | components["schemas"]["UpdateInstanceSecretPayload"]
+                | components["schemas"]["UpgradeInstancePayload"]
+                | components["schemas"]["UpdateInstancePayload"];
             };
         };
         responses: {
@@ -30500,8 +30694,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["ListUriResponse"]
-                        | components["schemas"]["ListJstreeResponse"];
+                    | components["schemas"]["ListUriResponse"]
+                    | components["schemas"]["ListJstreeResponse"];
                 };
             };
             /** @description Request Error */
@@ -32078,8 +32272,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json":
-                    | components["schemas"]["UserCreationPayload"]
-                    | components["schemas"]["RemoteUserCreationPayload"];
+                | components["schemas"]["UserCreationPayload"]
+                | components["schemas"]["RemoteUserCreationPayload"];
             };
         };
         responses: {
@@ -32233,8 +32427,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["DetailedUserModel"]
-                        | components["schemas"]["AnonUserModel"];
+                    | components["schemas"]["DetailedUserModel"]
+                    | components["schemas"]["AnonUserModel"];
                 };
             };
             /** @description Request Error */
@@ -32374,8 +32568,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["DetailedUserModel"]
-                        | components["schemas"]["AnonUserModel"];
+                    | components["schemas"]["DetailedUserModel"]
+                    | components["schemas"]["AnonUserModel"];
                 };
             };
             /** @description Request Error */
@@ -33912,6 +34106,143 @@ export interface operations {
             };
         };
     };
+    create_landing_api_workflow_landings_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWorkflowLandingRequestPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_landing_api_workflow_landings__uuid__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted landing request. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    claim_landing_api_workflow_landings__uuid__claim_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted landing request. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimLandingPayload"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     index_api_workflows_get: {
         parameters: {
             query?: {
@@ -34391,8 +34722,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["WorkflowInvocationResponse"]
-                        | components["schemas"]["WorkflowInvocationResponse"][];
+                    | components["schemas"]["WorkflowInvocationResponse"]
+                    | components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
             /** @description Request Error */
@@ -35449,8 +35780,8 @@ export interface operations {
                 };
                 content: {
                     "application/json":
-                        | components["schemas"]["WorkflowInvocationResponse"]
-                        | components["schemas"]["WorkflowInvocationResponse"][];
+                    | components["schemas"]["WorkflowInvocationResponse"]
+                    | components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
             /** @description Request Error */

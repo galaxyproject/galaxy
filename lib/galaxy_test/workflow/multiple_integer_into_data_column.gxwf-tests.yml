@@ -10,6 +10,7 @@
       type: raw
   outputs:
     output:
+      class: File
       asserts:
         - that: has_text
           text: "col 1,2"

@@ -5,8 +5,10 @@
       replaceme: moocow
   outputs:
     out1:
+      class: File
       metadata:
         name: 'moocow name'
     out2:
+      class: File
       metadata:
         name: 'moocow name 2'

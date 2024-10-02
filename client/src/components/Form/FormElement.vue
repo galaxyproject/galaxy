@@ -14,6 +14,7 @@ import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } 
 import FormBoolean from "./Elements/FormBoolean.vue";
 import FormColor from "./Elements/FormColor.vue";
 import FormData from "./Elements/FormData/FormData.vue";
+import FormDataUri from "./Elements/FormData/FormDataUri.vue";
 import FormDataDialog from "./Elements/FormDataDialog.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
 import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
@@ -130,6 +131,14 @@ const elementId = computed(() => `form-element-${props.id}`);
 const hasAlert = computed(() => alerts.value.length > 0);
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
 const showField = computed(() => !collapsed.value && !props.disabled);
+const isUriDataField = computed(() => {
+    const dataField = props.type == "data";
+    if (dataField && props.value && "src" in props.value) {
+        const src = props.value.src;
+        return src == "url";
+    }
+    return false;
+});
 
 const previewText = computed(() => attrs.value["text_value"]);
 const helpText = computed(() => {
@@ -284,6 +293,12 @@ function onAlert(value: string | undefined) {
                 :display="attrs.display"
                 :options="attrs.options"
                 :optional="attrs.optional"
+                :multiple="attrs.multiple" />
+            <FormDataUri
+                v-else-if="isUriDataField"
+                :id="id"
+                v-model="currentValue"
+                :value="attrs.value"
                 :multiple="attrs.multiple" />
             <FormData
                 v-else-if="['data', 'data_collection'].includes(props.type)"

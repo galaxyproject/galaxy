@@ -285,7 +285,7 @@ class ExecutionTracker:
         self.collection_info = collection_info
         self.completed_jobs = completed_jobs
 
-        self._on_text = None
+        self._on_text: Optional[str] = None
 
         # Populated as we go...
         self.failed_jobs = 0
@@ -322,7 +322,7 @@ class ExecutionTracker:
         self.execution_errors.append(error)
 
     @property
-    def on_text(self):
+    def on_text(self) -> Optional[str]:
         collection_info = self.collection_info
         if self._on_text is None and collection_info is not None:
             collection_names = ["collection %d" % c.hid for c in collection_info.collections.values()]

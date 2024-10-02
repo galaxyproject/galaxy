@@ -77,10 +77,17 @@ from gxformat2 import (
     ImporterGalaxyInterface,
 )
 from gxformat2.yaml import ordered_load
+from pydantic import UUID4
 from requests import Response
 from rocrate.rocrate import ROCrate
 from typing_extensions import Literal
 
+from galaxy.schema.schema import (
+    CreateToolLandingRequestPayload,
+    CreateWorkflowLandingRequestPayload,
+    ToolLandingRequest,
+    WorkflowLandingRequest,
+)
 from galaxy.tool_util.client.staging import InteractorStaging
 from galaxy.tool_util.cwl.util import (
     download_output,
@@ -101,6 +108,7 @@ from galaxy.util import (
     galaxy_root_path,
     UNKNOWN,
 )
+from galaxy.util.path import StrPath
 from galaxy.util.resources import resource_string
 from galaxy.util.unittest_utils import skip_if_site_down
 from galaxy_test.base.decorators import (
@@ -369,7 +377,9 @@ class BasePopulator(metaclass=ABCMeta):
     galaxy_interactor: ApiTestInteractor
 
     @abstractmethod
-    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
+    def _post(
+        self, route, data=None, files=None, headers=None, admin=False, json: bool = False, anon: bool = False
+    ) -> Response:
         """POST data to target Galaxy instance on specified route."""
 
     @abstractmethod
@@ -758,6 +768,34 @@ class BaseDatasetPopulator(BasePopulator):
         wait_on(_wait_for_purge, "dataset to become purged", timeout=2)
         return self._get(dataset_url)
 
+    def create_tool_landing(self, payload: CreateToolLandingRequestPayload) -> ToolLandingRequest:
+        create_url = "tool_landings"
+        json = payload.model_dump(mode="json")
+        create_response = self._post(create_url, json, json=True, anon=True)
+        api_asserts.assert_status_code_is(create_response, 200)
+        create_response.raise_for_status()
+        return ToolLandingRequest.model_validate(create_response.json())
+
+    def create_workflow_landing(self, payload: CreateWorkflowLandingRequestPayload) -> WorkflowLandingRequest:
+        create_url = "workflow_landings"
+        json = payload.model_dump(mode="json")
+        create_response = self._post(create_url, json, json=True, anon=True)
+        api_asserts.assert_status_code_is(create_response, 200)
+        create_response.raise_for_status()
+        return WorkflowLandingRequest.model_validate(create_response.json())
+
+    def claim_tool_landing(self, uuid: UUID4) -> ToolLandingRequest:
+        url = f"tool_landings/{uuid}/claim"
+        claim_response = self._post(url, {"client_secret": "foobar"}, json=True)
+        api_asserts.assert_status_code_is(claim_response, 200)
+        return ToolLandingRequest.model_validate(claim_response.json())
+
+    def claim_workflow_landing(self, uuid: UUID4) -> WorkflowLandingRequest:
+        url = f"workflow_landings/{uuid}/claim"
+        claim_response = self._post(url, {"client_secret": "foobar"}, json=True)
+        api_asserts.assert_status_code_is(claim_response, 200)
+        return WorkflowLandingRequest.model_validate(claim_response.json())
+
     def create_tool_from_path(self, tool_path: str) -> Dict[str, Any]:
         tool_directory = os.path.dirname(os.path.abspath(tool_path))
         payload = dict(
@@ -944,7 +982,9 @@ class BaseDatasetPopulator(BasePopulator):
         tool_response = self._post(url, data=payload)
         return tool_response
 
-    def materialize_dataset_instance(self, history_id: str, id: str, source: str = "hda"):
+    def materialize_dataset_instance(
+        self, history_id: str, id: str, source: str = "hda", validate_hashes: bool = False
+    ):
         payload: Dict[str, Any]
         if source == "ldda":
             url = f"histories/{history_id}/materialize"
@@ -955,6 +995,8 @@ class BaseDatasetPopulator(BasePopulator):
         else:
             url = f"histories/{history_id}/contents/datasets/{id}/materialize"
             payload = {}
+        if validate_hashes:
+            payload["validate_hashes"] = True
         create_response = self._post(url, payload, json=True)
         api_asserts.assert_status_code_is_ok(create_response)
         create_response_json = create_response.json()
@@ -1664,8 +1706,10 @@ class GalaxyInteractorHttpMixin:
     def _api_key(self):
         return self.galaxy_interactor.api_key
 
-    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
-        return self.galaxy_interactor.post(route, data, files=files, admin=admin, headers=headers, json=json)
+    def _post(
+        self, route, data=None, files=None, headers=None, admin=False, json: bool = False, anon: bool = False
+    ) -> Response:
+        return self.galaxy_interactor.post(route, data, files=files, admin=admin, headers=headers, json=json, anon=anon)
 
     def _put(self, route, data=None, headers=None, admin=False, json: bool = False):
         return self.galaxy_interactor.put(route, data, headers=headers, admin=admin, json=json)
@@ -1701,7 +1745,7 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
 
 
 # Things gxformat2 knows how to upload as workflows
-YamlContentT = Union[str, os.PathLike, dict]
+YamlContentT = Union[StrPath, dict]
 
 
 class BaseWorkflowPopulator(BasePopulator):
@@ -1956,6 +2000,7 @@ class BaseWorkflowPopulator(BasePopulator):
         history_id: Optional[str] = None,
         inputs: Optional[dict] = None,
         request: Optional[dict] = None,
+        assert_ok: bool = True,
     ) -> Response:
         invoke_return = self.invoke_workflow(workflow_id, history_id=history_id, inputs=inputs, request=request)
         invoke_return.raise_for_status()
@@ -1968,7 +2013,7 @@ class BaseWorkflowPopulator(BasePopulator):
             if history_id.startswith("hist_id="):
                 history_id = history_id[len("hist_id=") :]
         assert history_id
-        self.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=True)
+        self.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
         return invoke_return
 
     def workflow_report_json(self, workflow_id: str, invocation_id: str) -> dict:
@@ -2155,23 +2200,33 @@ class BaseWorkflowPopulator(BasePopulator):
             workflow_id = self.create_workflow(workflow)
         if not history_id:
             history_id = self.dataset_populator.new_history()
-        hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
-        hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6", wait=True)
+        hda1: Optional[Dict[str, Any]] = None
+        hda2: Optional[Dict[str, Any]] = None
+        label_map: Optional[Dict[str, Any]] = None
+        if inputs_by != "url":
+            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
+            hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6", wait=True)
+            label_map = {"WorkflowInput1": ds_entry(hda1), "WorkflowInput2": ds_entry(hda2)}
         workflow_request = dict(
             history=f"hist_id={history_id}",
         )
-        label_map = {"WorkflowInput1": ds_entry(hda1), "WorkflowInput2": ds_entry(hda2)}
         if inputs_by == "step_id":
+            assert label_map
             ds_map = self.build_ds_map(workflow_id, label_map)
             workflow_request["ds_map"] = ds_map
         elif inputs_by == "step_index":
+            assert hda1
+            assert hda2
             index_map = {"0": ds_entry(hda1), "1": ds_entry(hda2)}
             workflow_request["inputs"] = json.dumps(index_map)
             workflow_request["inputs_by"] = "step_index"
         elif inputs_by == "name":
+            assert label_map
             workflow_request["inputs"] = json.dumps(label_map)
             workflow_request["inputs_by"] = "name"
         elif inputs_by in ["step_uuid", "uuid_implicitly"]:
+            assert hda1
+            assert hda2
             assert workflow, f"Must specify workflow for this inputs_by {inputs_by} parameter value"
             uuid_map = {
                 workflow["steps"]["0"]["uuid"]: ds_entry(hda1),
@@ -2180,6 +2235,16 @@ class BaseWorkflowPopulator(BasePopulator):
             workflow_request["inputs"] = json.dumps(uuid_map)
             if inputs_by == "step_uuid":
                 workflow_request["inputs_by"] = "step_uuid"
+        elif inputs_by in ["url", "deferred_url"]:
+            input_b64_1 = base64.b64encode(b"1 2 3").decode("utf-8")
+            input_b64_2 = base64.b64encode(b"4 5 6").decode("utf-8")
+            deferred = inputs_by == "deferred_url"
+            inputs = {
+                "WorkflowInput1": {"src": "url", "url": f"base64://{input_b64_1}", "ext": "txt", "deferred": deferred},
+                "WorkflowInput2": {"src": "url", "url": f"base64://{input_b64_2}", "ext": "txt", "deferred": deferred},
+            }
+            workflow_request["inputs"] = json.dumps(inputs)
+            workflow_request["inputs_by"] = "name"
 
         return workflow_request, history_id, workflow_id
 
@@ -2297,6 +2362,12 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         upload_response = self._import_tool_response(tool)
         assert upload_response.status_code == 200, upload_response
         return upload_response.json()
+
+    def build_module(self, step_type: str, content_id: Optional[str] = None, inputs: Optional[Dict[str, Any]] = None):
+        payload = {"inputs": inputs or {}, "type": step_type, "content_id": content_id}
+        response = self._post("workflows/build_module", data=payload, json=True)
+        assert response.status_code == 200, response
+        return response.json()
 
     def _import_tool_response(self, tool) -> Response:
         using_requirement("admin")
@@ -3239,6 +3310,7 @@ def wait_on_state(
             "queued",
             "new",
             "ready",
+            "requires_materialization",
             "stop",
             "stopped",
             "setting_metadata",
@@ -3292,11 +3364,14 @@ class GiHttpMixin:
     def _get(self, route, data=None, headers=None, admin=False) -> Response:
         return self._gi.make_get_request(self._url(route), params=data)
 
-    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
+    def _post(
+        self, route, data=None, files=None, headers=None, admin=False, json: bool = False, anon: bool = False
+    ) -> Response:
         if headers is None:
             headers = {}
         headers = headers.copy()
-        headers["x-api-key"] = self._gi.key
+        if not anon:
+            headers["x-api-key"] = self._gi.key
         return requests.post(self._url(route), data=data, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def _put(self, route, data=None, headers=None, admin=False, json: bool = False):

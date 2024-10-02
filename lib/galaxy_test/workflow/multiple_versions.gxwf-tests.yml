@@ -6,12 +6,14 @@
       type: raw
   outputs:
     output_1:
+      class: File
       asserts:
         - that: has_text
           text: 'Version 0.1'
         - that: not_has_text
           text: 'Version 0.2'
     output_2:
+      class: File
       asserts:
         - that: has_text
           text: 'Version 0.2'
