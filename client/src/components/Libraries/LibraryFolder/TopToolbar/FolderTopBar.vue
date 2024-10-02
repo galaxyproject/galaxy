@@ -105,7 +105,7 @@ const containsFileOrFolder = computed(() => {
     return props.folderContents.find((el) => el.type === "folder" || el.type === "file");
 });
 const canDelete = computed(() => {
-    return !!(containsFileOrFolder.value && isAdmin.value);
+    return !!(containsFileOrFolder.value && props.metadata.can_modify_folder);
 });
 const datasetManipulation = computed(() => {
     return !!(containsFileOrFolder.value && userStore.currentUser);
