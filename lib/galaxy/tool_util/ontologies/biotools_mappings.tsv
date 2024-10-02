@@ -133,7 +133,6 @@ samtools_fixmate	samtools
 samtool_filter2	samtools
 ngsutils_bam_filter	ngsutils
 samtools_rmdup	samtools
-sam_merge2	Broken link in tool shed
 bamhash	bamhash
 bedtools_annotatebed	bedtools
 bedtools_bed12tobed6	bedtools
