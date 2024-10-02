@@ -25,7 +25,7 @@ var GroupView = Backbone.View.extend({
     },
     render: function () {
         var self = this;
-        var inputs = Utils.clone(this.chart.plugin.groups) || [];
+        var inputs = Utils.clone(this.chart.plugin.tracks) || [];
         var dataset_id = this.chart.get("dataset_id");
         if (dataset_id) {
             this.chart.state("wait", "Loading metadata...");
@@ -127,7 +127,7 @@ export default Backbone.View.extend({
         });
     },
     render: function () {
-        if (_.size(this.chart.plugin.groups) > 0) {
+        if (_.size(this.chart.plugin.tracks) > 0) {
             this.repeat.$el.show();
         } else {
             this.repeat.$el.hide();

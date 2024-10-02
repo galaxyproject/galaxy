@@ -36,7 +36,7 @@ export default Backbone.View.extend({
                 )
                 .append(new Settings(this.app).$el),
         });
-        if (this.chart.plugin.groups) {
+        if (this.chart.plugin.tracks) {
             this.tabs.add({
                 id: "groups",
                 icon: "fa-database",
