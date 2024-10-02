@@ -267,6 +267,9 @@ class ChartVisualizationPlugin(ScriptVisualizationPlugin):
     MAKO_TEMPLATE = "chart_entry_point.mako"
 
 
+class ObservableVisualizationPlugin(ScriptVisualizationPlugin):
+    MAKO_TEMPLATE = "observable_entry_point.mako"
+
 class StaticFileVisualizationPlugin(VisualizationPlugin):
     """
     A visualization plugin that starts by loading a static html file defined in

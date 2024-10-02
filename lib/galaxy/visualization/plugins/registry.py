@@ -201,6 +201,9 @@ class VisualizationsRegistry:
         # from a static file (html, etc)
         elif config["entry_point"]["type"] == "html":
             plugin_class = vis_plugins.StaticFileVisualizationPlugin
+        # from an observable notebook
+        elif config["entry_point"]["type"] == "observable":
+            plugin_class = vis_plugins.ObservableVisualizationPlugin
         return plugin_class(
             self.app(),
             plugin_path,

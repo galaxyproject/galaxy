@@ -33,7 +33,7 @@ class VisualizationsConfigParser:
     """
 
     #: what are the allowed 'entry_point_type' for entry_point elements
-    ALLOWED_ENTRY_POINT_TYPES = ["mako", "html", "script", "chart"]
+    ALLOWED_ENTRY_POINT_TYPES = ["mako", "html", "script", "chart", "observable"]
     #: what are the allowed href targets when clicking on a visualization anchor
     VALID_RENDER_TARGETS = ["galaxy_main", "_top", "_blank"]
 
