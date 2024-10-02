@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, type ComputedRef, onMounted, type PropType, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
+import { useFilterObjectArray } from "@/composables/filter/filter";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { uid } from "@/utils/utils";
 
@@ -54,7 +55,8 @@ const emit = defineEmits<{
     (e: "input", value: SelectValue | Array<SelectValue>): void;
 }>();
 
-const filteredOptions = ref<SelectOption[]>(props.options);
+const filter = ref("");
+const filteredOptions = useFilterObjectArray(props.options, filter, ["label", "value"]);
 
 /**
  * When there are more options than this, push selected options to the end
@@ -84,7 +86,7 @@ const reorderedOptions = computed(() => {
  * Tracks if the select field has options
  */
 const hasOptions: ComputedRef<Boolean> = computed(() => {
-    return filteredOptions.value.length > 0;
+    return props.options.length > 0;
 });
 
 /**
@@ -92,7 +94,7 @@ const hasOptions: ComputedRef<Boolean> = computed(() => {
  */
 const initialValue: ComputedRef<SelectValue> = computed(() => {
     if (props.value === null && !props.optional && hasOptions.value) {
-        const v = filteredOptions.value[0];
+        const v = props.options[0];
         if (v) {
             return v.value;
         }
@@ -116,7 +118,7 @@ const selectedValues = computed(() => (Array.isArray(props.value) ? props.value 
  * Tracks current value and emits changes
  */
 const currentValue = computed({
-    get: () => filteredOptions.value.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
+    get: () => props.options.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
     set: (val: Array<SelectOption> | SelectOption): void => {
         if (Array.isArray(val)) {
             if (val.length > 0) {
@@ -135,7 +137,6 @@ const currentValue = computed({
  * Ensures that an initial value is selected for non-optional inputs
  */
 function setInitialValue(): void {
-    filteredOptions.value = props.options;
     if (initialValue.value) {
         emit("input", initialValue.value);
     }
@@ -161,17 +162,7 @@ function isValueWithTags(item: SelectValue): item is ValueWithTags {
 }
 
 function onSearchChange(search: string): void {
-    filteredOptions.value = search
-        ? props.options.filter((option) => filterByLabelOrTags(option, search))
-        : props.options;
-}
-
-function filterByLabelOrTags(option: SelectOption, search: string): boolean {
-    return (
-        option.label.toLowerCase().includes(search.toLowerCase()) ||
-        (isValueWithTags(option.value) &&
-            option.value.tags.some((tag) => tag.toLowerCase().includes(search.toLowerCase())))
-    );
+    filter.value = search;
 }
 </script>
 
