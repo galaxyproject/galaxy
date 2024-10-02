@@ -170,7 +170,7 @@ function cancelWorkflowSchedulingLocal() {
 </script>
 
 <template>
-    <div v-if="invocation" class="d-flex flex-column w-100">
+    <div v-if="invocation" class="d-flex flex-column w-100" data-description="workflow invocation state">
         <WorkflowInvocationHeader
             :is-full-page="props.isFullPage"
             :invocation="invocation"
