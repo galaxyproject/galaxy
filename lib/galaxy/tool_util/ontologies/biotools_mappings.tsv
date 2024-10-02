@@ -44,6 +44,7 @@ gffcompare	gffcompare
 sample_seqs	biopython
 seq_filter_by_id	biopython
 rxlr_motifs	signalp
+rxlr_motifs	hmmer2
 crossmap_bam	crossmap
 samtools_bam_to_cram	samtools
 crossmap_region	crossmap
@@ -260,7 +261,6 @@ fraggenescan	fraggenescan
 repeatmodeler	repeatmodeler
 promoter2	promoter
 Psortb	psortb
-rxlr_motifs	signalp hmmer2
 signalp3	signalp
 tmhmm2	tmhmm
 wolf_psort	wolf_psort
