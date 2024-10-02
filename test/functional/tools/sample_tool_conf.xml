@@ -303,6 +303,7 @@
   <tool file="${model_tools_path}/filter_failed_collection.xml" />
   <tool file="${model_tools_path}/keep_success_collection.xml" />
   <tool file="${model_tools_path}/filter_empty_collection.xml" />
+  <tool file="${model_tools_path}/filter_null.xml" />
   <tool file="${model_tools_path}/flatten_collection.xml" />
   <tool file="${model_tools_path}/sort_collection_list.xml" />
   <tool file="${model_tools_path}/harmonize_two_collections_list.xml" />
