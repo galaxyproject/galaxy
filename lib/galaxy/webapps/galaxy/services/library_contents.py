@@ -26,7 +26,6 @@ from galaxy.schema.library_contents import (
     AnyLibraryContentsCreatePayload,
     AnyLibraryContentsCreateResponse,
     AnyLibraryContentsShowResponse,
-    AnyLibraryId,
     LibraryContentsCreateDatasetCollectionResponse,
     LibraryContentsCreateDatasetResponse,
     LibraryContentsCreateFileListResponse,
@@ -78,7 +77,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
     def index(
         self,
         trans: ProvidesUserContext,
-        library_id: AnyLibraryId,
+        library_id: DecodedDatabaseIdField,
     ) -> LibraryContentsIndexListResponse:
         """Return a list of library files and folders."""
         rval: List[Union[LibraryContentsIndexFolderResponse, LibraryContentsIndexDatasetResponse]] = []
@@ -124,7 +123,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
     def create(
         self,
         trans: ProvidesHistoryContext,
-        library_id: AnyLibraryId,
+        library_id: DecodedDatabaseIdField,
         payload: AnyLibraryContentsCreatePayload,
     ) -> AnyLibraryContentsCreateResponse:
         """Create a new library file or folder."""

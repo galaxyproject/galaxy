@@ -27,7 +27,6 @@ from galaxy.schema.library_contents import (
     AnyLibraryContentsCreatePayload,
     AnyLibraryContentsCreateResponse,
     AnyLibraryContentsShowResponse,
-    AnyLibraryId,
     LibraryContentsDeletePayload,
     LibraryContentsDeleteResponse,
     LibraryContentsFileCreatePayload,
@@ -74,7 +73,7 @@ class FastAPILibraryContents:
     )
     def index(
         self,
-        library_id: AnyLibraryId,
+        library_id: DecodedDatabaseIdField,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> LibraryContentsIndexListResponse:
         """This endpoint is deprecated. Please use GET /api/folders/{folder_id}/contents instead."""
@@ -88,7 +87,7 @@ class FastAPILibraryContents:
     )
     def show(
         self,
-        library_id: AnyLibraryId,
+        library_id: DecodedDatabaseIdField,
         id: MaybeLibraryFolderOrDatasetID,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> AnyLibraryContentsShowResponse:
@@ -103,7 +102,7 @@ class FastAPILibraryContents:
     )
     def create_json(
         self,
-        library_id: AnyLibraryId,
+        library_id: DecodedDatabaseIdField,
         payload: AnyLibraryContentsCreatePayload,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> AnyLibraryContentsCreateResponse:
@@ -119,7 +118,7 @@ class FastAPILibraryContents:
     async def create_form(
         self,
         request: Request,
-        library_id: AnyLibraryId,
+        library_id: DecodedDatabaseIdField,
         payload: LibraryContentsFileCreatePayload = Depends(LibraryContentsCreateForm.as_form),
         files: Optional[List[UploadFile]] = None,
         trans: ProvidesHistoryContext = DependsOnTrans,
@@ -148,7 +147,7 @@ class FastAPILibraryContents:
     )
     def update(
         self,
-        library_id: AnyLibraryId,
+        library_id: DecodedDatabaseIdField,
         id: DecodedDatabaseIdField,
         payload,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -163,7 +162,7 @@ class FastAPILibraryContents:
     )
     def delete(
         self,
-        library_id: AnyLibraryId,
+        library_id: DecodedDatabaseIdField,
         id: DecodedDatabaseIdField,
         payload: Optional[LibraryContentsDeletePayload] = Body(None),
         trans: ProvidesHistoryContext = DependsOnTrans,

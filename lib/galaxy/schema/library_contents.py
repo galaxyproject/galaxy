@@ -310,8 +310,6 @@ class LibraryContentsPurgedResponse(LibraryContentsDeleteResponse):
     purged: bool
 
 
-AnyLibraryId = Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField]
-
 AnyLibraryContentsShowResponse = Union[
     LibraryContentsShowFolderResponse,
     LibraryContentsShowDatasetResponse,
