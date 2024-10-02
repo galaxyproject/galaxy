@@ -1,13 +1,21 @@
 <script setup lang="ts">
 import { faClock } from "@fortawesome/free-regular-svg-icons";
-import { faArrowLeft, faEdit, faHdd, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faEdit, faHdd, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BButtonGroup } from "bootstrap-vue";
+import { computed } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
+import { Toast } from "@/composables/toast";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
+import { getAppRoot } from "@/onload";
+import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
+import { copyWorkflow } from "../Workflow/workflows.services";
+
+import AsyncButton from "../Common/AsyncButton.vue";
 import Heading from "../Common/Heading.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
 import UtcDate from "../UtcDate.vue";
@@ -22,6 +30,31 @@ interface Props {
 const props = defineProps<Props>();
 
 const { workflow } = useWorkflowInstance(props.invocation.workflow_id);
+
+const userStore = useUserStore();
+const owned = computed(() => {
+    if (userStore.currentUser && workflow.value) {
+        return userStore.currentUser.username === workflow.value.owner;
+    } else {
+        return false;
+    }
+});
+
+async function onImport() {
+    if (!workflow.value || !workflow.value.owner) {
+        return;
+    }
+    try {
+        await copyWorkflow(workflow.value.id, workflow.value.owner);
+        Toast.success(
+            localize("Click here to view the imported workflow in the workflows list"),
+            localize("Workflow imported successfully"),
+            `${getAppRoot()}workflows/list`
+        );
+    } catch (error) {
+        Toast.error(errorMessageAsString(error), localize("Failed to import workflow"));
+    }
+}
 
 function getWorkflowName(): string {
     return workflow.value?.name || "...";
@@ -69,6 +102,7 @@ function getWorkflowName(): string {
                 </div>
                 <BButtonGroup vertical>
                     <BButton
+                        v-if="owned"
                         v-b-tooltip.hover.noninteractive.html
                         :title="
                             !workflow.deleted
@@ -82,6 +116,17 @@ function getWorkflowName(): string {
                         <FontAwesomeIcon :icon="faEdit" />
                         <span v-localize>Edit</span>
                     </BButton>
+                    <AsyncButton
+                        v-else
+                        v-b-tooltip.hover.noninteractive
+                        size="sm"
+                        :disabled="userStore.isAnonymous"
+                        :title="localize('Import this workflow')"
+                        :icon="faUpload"
+                        variant="outline-primary"
+                        :action="onImport">
+                        <span v-localize>Import</span>
+                    </AsyncButton>
                     <WorkflowRunButton
                         :id="workflow.id || ''"
                         :title="
