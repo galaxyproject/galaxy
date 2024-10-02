@@ -879,6 +879,57 @@ class TestToolsApi(ApiTestCase, TestsTools):
             output_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, wait=True)
             assert not output_details["visible"]
 
+    @skip_without_tool("gx_text")
+    @skip_without_tool("gx_text_optional")
+    def test_null_to_text_tools(self):
+        # we have a tool test for this but I wanted to verify it wasn't just the
+        # tool test framework filling in a default. Creating a raw request here
+        # verifies that currently select parameters don't require a selection.
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            inputs: Dict[str, Any] = {}
+            response = self._run("gx_text", history_id, inputs, assert_ok=True)
+            output1 = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
+            assert output1_content.strip() == ""
+
+            output_json = response["outputs"][1]
+            output_json_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output_json)
+            assert json.loads(output_json_content)["parameter"] == ""
+
+            inputs = {
+                "parameter": None,
+            }
+            response = self._run("gx_text", history_id, inputs, assert_ok=True)
+            output1 = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
+            assert output1_content.strip() == ""
+
+            output_json = response["outputs"][1]
+            output_json_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output_json)
+            assert json.loads(output_json_content)["parameter"] == ""
+
+            inputs = {}
+            response = self._run("gx_text_optional", history_id, inputs, assert_ok=True)
+            output1 = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
+            assert output1_content.strip() == ""
+
+            output_json = response["outputs"][1]
+            output_json_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output_json)
+            assert json.loads(output_json_content)["parameter"] is None
+
+            inputs = {
+                "parameter": None,
+            }
+            response = self._run("gx_text_optional", history_id, inputs, assert_ok=True)
+            output1 = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
+            assert output1_content.strip() == ""
+
+            output_json = response["outputs"][1]
+            output_json_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output_json)
+            assert json.loads(output_json_content)["parameter"] is None
+
     @skip_without_tool("gx_select")
     @skip_without_tool("gx_select_no_options_validation")
     def test_select_first_by_default(self):
@@ -900,7 +951,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert "an invalid option" in response.text
 
         with self.dataset_populator.test_history(require_new=True) as history_id:
-            inputs: Dict[str, Any] = {}
+            inputs = {}
             response = self._run("gx_select_no_options_validation", history_id, inputs, assert_ok=True)
             output = response["outputs"][0]
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
@@ -923,7 +974,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
             assert output1_content.strip() == "None"
 
-            inputs: Dict[str, Any] = {}
+            inputs = {}
             response = self._run("gx_select_optional_no_options_validation", history_id, inputs, assert_ok=True)
             output = response["outputs"][0]
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
