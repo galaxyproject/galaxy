@@ -597,7 +597,7 @@ elif [ -n "$framework_workflows_test" ]; then
     else
         selector=""
     fi
-    extra_args="lib/galaxy_test/workflow/tests.py $selector"
+    extra_args="lib/galaxy_test/workflow/test_framework_workflows.py $selector"
 elif [ -n "$selenium_script" ]; then
     extra_args="$selenium_script"
 elif [ -n "$toolshed_script" ]; then
