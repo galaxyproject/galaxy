@@ -7,6 +7,7 @@ import { computed } from "vue";
 
 import type { InvocationJobsSummary, InvocationStep, WorkflowInvocationElementView } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
+import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
 import {
@@ -131,8 +132,9 @@ const jobStatesStr = computed(() => {
                     <FontAwesomeIcon :icon="faHdd" />History:
                     <SwitchToHistoryLink :history-id="props.invocation.history_id" />
                     <BBadge
-                        v-if="props.newHistoryTarget"
+                        v-if="props.newHistoryTarget && useHistoryStore().currentHistoryId !== props.newHistoryTarget"
                         v-b-tooltip.hover.noninteractive
+                        data-description="new history badge"
                         role="button"
                         variant="info"
                         title="Results generated in a new history. Click on history name to switch to that history.">
