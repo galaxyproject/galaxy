@@ -2,14 +2,14 @@
 import { faClock } from "@fortawesome/free-regular-svg-icons";
 import { faArrowLeft, faEdit, faHdd, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup } from "bootstrap-vue";
-import { computed } from "vue";
+import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
+import { computed, ref } from "vue";
+import { RouterLink } from "vue-router";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
-import { Toast } from "@/composables/toast";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
-import { getAppRoot } from "@/onload";
 import { useUserStore } from "@/stores/userStore";
+import { Workflow } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -40,19 +40,18 @@ const owned = computed(() => {
     }
 });
 
+const importErrorMessage = ref<string | null>(null);
+const importedWorkflow = ref<Workflow | null>(null);
+
 async function onImport() {
     if (!workflow.value || !workflow.value.owner) {
         return;
     }
     try {
-        await copyWorkflow(workflow.value.id, workflow.value.owner);
-        Toast.success(
-            localize("Click here to view the imported workflow in the workflows list"),
-            localize("Workflow imported successfully"),
-            `${getAppRoot()}workflows/list`
-        );
+        const wf = await copyWorkflow(workflow.value.id, workflow.value.owner);
+        importedWorkflow.value = wf as unknown as Workflow;
     } catch (error) {
-        Toast.error(errorMessageAsString(error), localize("Failed to import workflow"));
+        importErrorMessage.value = errorMessageAsString(error, "Failed to import workflow");
     }
 }
 
@@ -63,6 +62,16 @@ function getWorkflowName(): string {
 
 <template>
     <div>
+        <BAlert v-if="importErrorMessage" variant="danger" dismissible show @dismissed="importErrorMessage = null">
+            {{ importErrorMessage }}
+        </BAlert>
+        <BAlert v-else-if="importedWorkflow" variant="info" dismissible show @dismissed="importedWorkflow = null">
+            <span>
+                Workflow <b>{{ importedWorkflow.name }}</b> imported successfully.
+            </span>
+            <RouterLink to="/workflows/list">Click here</RouterLink> to view the imported workflow in the workflows
+            list.
+        </BAlert>
         <div class="d-flex flex-gapx-1">
             <Heading h1 separator inline truncate size="xl" class="flex-grow-1">
                 Invoked Workflow: "{{ getWorkflowName() }}"
