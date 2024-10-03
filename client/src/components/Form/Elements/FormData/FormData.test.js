@@ -1,3 +1,5 @@
+import "@/composables/__mocks__/filter";
+
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
@@ -8,6 +10,8 @@ import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useEventStore } from "@/stores/eventStore";
 
 import MountTarget from "./FormData.vue";
+
+jest.mock("@/composables/filter");
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
