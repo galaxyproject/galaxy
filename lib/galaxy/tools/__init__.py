@@ -663,7 +663,17 @@ class Tool(Dictifiable):
 
     @property
     def version_object(self):
-        return packaging.version.parse(self.version)
+        version = self.version
+        version_split = version.split("+", 1)
+        if (len(version_split) == 2
+                and version_split[1].startswith("galaxy")
+                and version_split[1] != "galaxy"
+                and version_split[1][6] != "."):
+            # Per PEP-440 this would be sorted lexicographically if not separated by a '.', this forces a numeric sort
+            # if the characters after 'galaxy' are an integer, otherwise the outcome will be the same.
+            version_split[1] = "galaxy." + version_split[1][6:]
+            version = "+".join(version_split)
+        return packaging.version.parse(version)
 
     @property
     def sa_session(self):
