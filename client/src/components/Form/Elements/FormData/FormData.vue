@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCopy, faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
-import { faCaretDown, faCaretUp, faExclamation, faLink, faPlus, faUnlink } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCaretDown,
+    faCaretUp,
+    faExclamation,
+    faLink,
+    faPlus,
+    faSpinner,
+    faUnlink,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
@@ -25,7 +31,11 @@ import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
-library.add(faCopy, faFile, faFolder, faCaretDown, faCaretUp, faExclamation, faLink, faUnlink);
+const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
+    list: "List",
+    "list:paired": "List of Dataset Pairs",
+    paired: "Dataset Pair",
+};
 
 type SelectOption = {
     label: string;
@@ -653,14 +663,14 @@ const noOptionsWarningMessage = computed(() => {
                     <FontAwesomeIcon :icon="['far', v.icon]" />
                 </BButton>
                 <BButton v-if="canBrowse" v-b-tooltip.hover.bottom title="Browse or Upload Datasets" @click="onBrowse">
-                    <FontAwesomeIcon v-if="loading" icon="fa-spinner" spin />
+                    <FontAwesomeIcon v-if="loading" :icon="faSpinner" spin />
                     <span v-else class="font-weight-bold">...</span>
                 </BButton>
                 <BButtonGroup v-if="effectiveCollectionTypes?.length > 0" size="sm" buttons>
                     <ButtonSpinner
                         v-for="collectionType in effectiveCollectionTypes"
                         :key="collectionType"
-                        :tooltip="collectionType"
+                        :tooltip="`Create a new ${COLLECTION_TYPE_TO_LABEL[collectionType]}`"
                         :variant="formattedOptions.length === 0 ? 'warning' : 'secondary'"
                         :disabled="isFetchingItems"
                         :icon="faPlus"
@@ -672,8 +682,8 @@ const noOptionsWarningMessage = computed(() => {
             <div v-if="extensions && extensions.length > 0">
                 <BButton :id="formatsButtonId" class="ui-link" @click="formatsVisible = !formatsVisible">
                     accepted formats
-                    <FontAwesomeIcon v-if="formatsVisible" icon="fa-caret-up" />
-                    <FontAwesomeIcon v-else icon="fa-caret-down" />
+                    <FontAwesomeIcon v-if="formatsVisible" :icon="faCaretUp" />
+                    <FontAwesomeIcon v-else :icon="faCaretDown" />
                 </BButton>
                 <BCollapse v-model="formatsVisible">
                     <ul class="pl-3 m-0">
@@ -716,18 +726,18 @@ const noOptionsWarningMessage = computed(() => {
                 class="checkbox no-highlight"
                 switch>
                 <span v-if="currentLinked">
-                    <FontAwesomeIcon icon="fa-link" />
+                    <FontAwesomeIcon :icon="faLink" />
                     <b v-localize class="mr-1">Linked:</b>
                     <span v-localize>Datasets will be run in matched order with other datasets.</span>
                 </span>
                 <span v-else>
-                    <FontAwesomeIcon icon="fa-unlink" />
+                    <FontAwesomeIcon :icon="faUnlink" />
                     <b v-localize class="mr-1">Unlinked:</b>
                     <span v-localize>Dataset will be run against *all* other datasets.</span>
                 </span>
             </BFormCheckbox>
             <div class="info text-info">
-                <FontAwesomeIcon icon="fa-exclamation" />
+                <FontAwesomeIcon :icon="faExclamation" />
                 <span v-if="props.type == 'data' && currentVariant.src == SOURCE.COLLECTION" class="ml-1">
                     The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
                     tool.
