@@ -145,6 +145,8 @@ DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
 
 SKIP_FLAKEY_TESTS_ON_ERROR = os.environ.get("GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR", None)
 
+PRIVATE_ROLE_TYPE = "private"
+
 
 def flakey(method):
     @wraps(method)
@@ -1277,11 +1279,13 @@ class BaseDatasetPopulator(BasePopulator):
         return users[0]["id"]
 
     def user_private_role_id(self) -> str:
-        user_email = self.user_email()
-        roles = self.get_roles()
-        users_roles = [r for r in roles if r["name"] == user_email]
-        assert len(users_roles) == 1, f"Did not find exactly one role for email {user_email} - {users_roles}"
-        role = users_roles[0]
+        userid = self.user_id()
+        response = self._get(f"users/{userid}/roles", admin=True)
+        assert response.status_code == 200
+        roles = response.json()
+        private_roles = [r for r in roles if r["type"] == PRIVATE_ROLE_TYPE]
+        assert len(private_roles) == 1, f"Did not find exactly one private role for user {userid} - {private_roles}"
+        role = private_roles[0]
         assert "id" in role, role
         return role["id"]
 
