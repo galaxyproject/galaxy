@@ -282,7 +282,7 @@ class NotificationManager:
         This kind of notification is not explicitly associated with any specific user but it is accessible by all users.
         """
         self.ensure_notifications_enabled()
-        notification = self._create_notification_model(request)
+        notification = self._create_notification_model(request, self.config.galaxy_external_url)
         self.sa_session.add(notification)
         with transaction(self.sa_session):
             self.sa_session.commit()

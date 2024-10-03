@@ -706,6 +706,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     enable_tool_shed_check: bool
     galaxy_data_manager_data_path: str
     galaxy_infrastructure_url: str
+    galaxy_external_url: Optional[str]
     hours_between_check: int
     integrated_tool_panel_config: str
     involucro_path: str
