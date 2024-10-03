@@ -56,7 +56,7 @@ const emit = defineEmits<{
 }>();
 
 const filter = ref("");
-const filteredOptions = useFilterObjectArray(props.options, filter, ["label", "value"]);
+const filteredOptions = useFilterObjectArray(props.options, filter, ["label", ["value", "tags"]]);
 
 /**
  * When there are more options than this, push selected options to the end
