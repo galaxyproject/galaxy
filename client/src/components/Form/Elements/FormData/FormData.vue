@@ -661,7 +661,7 @@ const noOptionsWarningMessage = computed(() => {
                         v-for="collectionType in effectiveCollectionTypes"
                         :key="collectionType"
                         :tooltip="collectionType"
-                        variant="secondary"
+                        :variant="formattedOptions.length === 0 ? 'warning' : 'secondary'"
                         :disabled="isFetchingItems"
                         :icon="faPlus"
                         :wait="isFetchingItems"
