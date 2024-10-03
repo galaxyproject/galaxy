@@ -2,10 +2,11 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { toValue } from "@vueuse/core";
 import { computed, type ComputedRef, onMounted, type PropType, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
-import { useFilterObjectArray } from "@/composables/filter/filter";
+import { useFilterObjectArray } from "@/composables/filter";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { uid } from "@/utils/utils";
 
@@ -147,7 +148,10 @@ function setInitialValue(): void {
  */
 watch(
     () => props.options,
-    () => setInitialValue()
+    () => {
+        filteredOptions.value = toValue(useFilterObjectArray(props.options, filter, ["label", ["value", "tags"]]));
+        setInitialValue();
+    }
 );
 
 /**
