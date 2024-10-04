@@ -129,6 +129,17 @@ def target_history(
 
 
 @pytest.fixture
+def required_tools(
+    dataset_populator: DatasetPopulator, history_id: str, required_tool_ids: List[str]
+) -> List[RequiredTool]:
+    tools = []
+    for tool_id in required_tool_ids:
+        tool = RequiredTool(dataset_populator, tool_id, history_id)
+        tools.append(tool)
+    return tools
+
+
+@pytest.fixture
 def required_tool(dataset_populator: DatasetPopulator, history_id: str, required_tool_ids: List[str]) -> RequiredTool:
     if len(required_tool_ids) != 1:
         raise AssertionError("required_tool fixture must only be used on methods that require a single tool")
