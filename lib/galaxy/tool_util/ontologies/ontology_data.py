@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import (
     cast,
     Dict,
@@ -34,13 +35,11 @@ EDAM_OPERATION_MAPPING_FILENAME = "edam_operation_mappings.tsv"
 EDAM_TOPIC_MAPPING_FILENAME = "edam_topic_mappings.tsv"
 
 BIOTOOLS_MAPPING_CONTENT = _read_ontology_data_text(BIOTOOLS_MAPPING_FILENAME)
-BIOTOOLS_MAPPING: Dict[str, str] = dict(
-    [
-        cast(Tuple[str, str], tuple(x.split("\t")))
-        for x in BIOTOOLS_MAPPING_CONTENT.splitlines()
-        if not x.startswith("#")
-    ]
-)
+BIOTOOLS_MAPPING: Dict[str, List[str]] = defaultdict(list)
+for line in BIOTOOLS_MAPPING_CONTENT.splitlines():
+    if not line.startswith("#"):
+        tool_id, xref = line.split("\t")
+        BIOTOOLS_MAPPING[tool_id].append(xref)
 EDAM_OPERATION_MAPPING_CONTENT = _read_ontology_data_text(EDAM_OPERATION_MAPPING_FILENAME)
 EDAM_OPERATION_MAPPING: Dict[str, List[str]] = _multi_dict_mapping(EDAM_OPERATION_MAPPING_CONTENT)
 
@@ -61,11 +60,11 @@ def biotools_reference(xrefs):
     return None
 
 
-def legacy_biotools_external_reference(all_ids: List[str]) -> Optional[str]:
+def legacy_biotools_external_reference(all_ids: List[str]) -> List[str]:
     for tool_id in all_ids:
         if tool_id in BIOTOOLS_MAPPING:
             return BIOTOOLS_MAPPING[tool_id]
-    return None
+    return []
 
 
 def expand_ontology_data(
@@ -74,9 +73,9 @@ def expand_ontology_data(
     xrefs = tool_source.parse_xrefs()
     has_biotools_reference = any(x["reftype"] == "bio.tools" for x in xrefs)
     if not has_biotools_reference:
-        legacy_biotools_ref = legacy_biotools_external_reference(all_ids)
-        if legacy_biotools_ref is not None:
-            xrefs.append({"value": legacy_biotools_ref, "reftype": "bio.tools"})
+        for legacy_biotools_ref in legacy_biotools_external_reference(all_ids):
+            if legacy_biotools_ref is not None:
+                xrefs.append({"value": legacy_biotools_ref, "reftype": "bio.tools"})
 
     edam_operations = tool_source.parse_edam_operations()
     edam_topics = tool_source.parse_edam_topics()
