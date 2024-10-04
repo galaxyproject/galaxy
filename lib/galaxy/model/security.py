@@ -792,10 +792,13 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         return role, num_in_groups
 
     def get_sharing_roles(self, user):
-        stmt = select(Role).where(
-            and_((Role.name).like(f"Sharing role for: %{user.email}%"), Role.type == Role.types.SHARING)
+        stmt = (
+            select(Role)
+            .join(Role.users)
+            .where(UserRoleAssociation.user_id == user.id)
+            .where(Role.type == Role.types.SHARING)
         )
-        return self.sa_session.scalars(stmt)
+        return self.sa_session.scalars(stmt).all()
 
     def user_set_default_permissions(
         self,
