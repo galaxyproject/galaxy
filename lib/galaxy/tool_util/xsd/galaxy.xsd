@@ -3051,6 +3051,16 @@ $attribute_list::5]]></xs:documentation>
               <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).]]></xs:documentation>
             </xs:annotation>
           </xs:attribute>
+          <xs:attribute name="slice" type="xs:integer" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="frame" type="xs:integer" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
           <xs:attribute name="eps" type="xs:float" use="optional">
             <xs:annotation>
               <xs:documentation xml:lang="en"><![CDATA[The maximum allowed Euclidean distance to the required center of mass (defaults to ``0.01``).]]></xs:documentation>
@@ -3088,6 +3098,82 @@ $attribute_list::5]]></xs:documentation>
           <xs:attribute name="max" type="xs:nonNegativeInteger" use="optional">
             <xs:annotation>
               <xs:documentation xml:lang="en"><![CDATA[Maximum allowed number of channels.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.image.assert_has_image_depth-->
+      <xs:element name="has_image_depth">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the output is an image and has a specific depth (number of slices).
+
+The depth is plus/minus ``delta`` (e.g., ``<has_image_depth depth="512" delta="2" />``).
+Alternatively the range of the expected depth can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="depth" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Expected depth of the image (number of slices).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum allowed difference of the image depth (number of slices, default is 0). The observed depth has to be in the range ``value +- delta``.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum allowed depth of the image (number of slices).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum allowed depth of the image (number of slices).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[A boolean that can be set to true to negate the outcome of the assertion.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <!-- XSD doc for element auto-generated from galaxy.tool_util.verify.asserts.image.assert_has_image_frames-->
+      <xs:element name="has_image_frames">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the output is an image and has a specific number of frames (number of time steps).
+
+The number of frames is plus/minus ``delta`` (e.g., ``<has_image_frames depth="512" delta="2" />``).
+Alternatively the range of the expected number of frames can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5]]></xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="frames" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Expected number of frames in the image sequence (number of time steps).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="delta" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum allowed difference of the number of frames in the image sequence (number of time steps, default is 0). The observed number of frames has to be in the range ``value +- delta``.]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="min" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Minimum allowed number of frames in the image sequence (number of time steps).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="max" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Maximum allowed number of frames in the image sequence (number of time steps).]]></xs:documentation>
             </xs:annotation>
           </xs:attribute>
           <xs:attribute name="negate" type="PermissiveBoolean" use="optional">
@@ -3151,6 +3237,16 @@ $attribute_list::5]]></xs:documentation>
               <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).]]></xs:documentation>
             </xs:annotation>
           </xs:attribute>
+          <xs:attribute name="slice" type="xs:integer" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="frame" type="xs:integer" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
           <xs:attribute name="mean_intensity" type="xs:float" use="optional">
             <xs:annotation>
               <xs:documentation xml:lang="en"><![CDATA[The required mean value of the image intensities.]]></xs:documentation>
@@ -3188,6 +3284,16 @@ $attribute_list::5]]></xs:documentation>
           <xs:attribute name="channel" type="xs:integer" use="optional">
             <xs:annotation>
               <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="slice" type="xs:integer" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="frame" type="xs:integer" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).]]></xs:documentation>
             </xs:annotation>
           </xs:attribute>
           <xs:attribute name="labels" type="xs:string" use="optional">
@@ -3238,6 +3344,16 @@ $attribute_list::5]]></xs:documentation>
           <xs:attribute name="channel" type="xs:integer" use="optional">
             <xs:annotation>
               <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="slice" type="xs:integer" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice).]]></xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="frame" type="xs:integer" use="optional">
+            <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).]]></xs:documentation>
             </xs:annotation>
           </xs:attribute>
           <xs:attribute name="labels" type="xs:string" use="optional">
