@@ -41,6 +41,7 @@ function createPairedListCollection(contents) {
         defaultHideSourceItems: contents.defaultHideSourceItems,
         fromSelection: contents.fromSelection,
         extensions: contents.extensions,
+        historyName: contents.historyName,
         creationFn: function (elements, name, hideSourceItems) {
             elements = elements.map((pair) => ({
                 collection_type: "paired",

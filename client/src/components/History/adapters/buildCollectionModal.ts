@@ -24,6 +24,7 @@ export interface BuildCollectionOptions {
     title?: string;
     defaultHideSourceItems?: boolean;
     historyId?: string;
+    historyName?: string;
 }
 
 // stand-in for buildCollection from history-view-edit.js
@@ -82,5 +83,6 @@ const createBackboneContent = (historyId: string, selection: HistoryItemSummary[
         fromSelection: options.fromSelection,
         extensions: options.extensions,
         defaultHideSourceItems: options.defaultHideSourceItems === undefined ? true : options.defaultHideSourceItems,
+        historyName: options.historyName,
     };
 };

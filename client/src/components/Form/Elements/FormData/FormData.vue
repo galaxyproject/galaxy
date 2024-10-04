@@ -10,6 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { isDatasetElement, isDCE } from "@/api";
@@ -18,9 +19,10 @@ import { buildCollectionModal } from "@/components/History/adapters/buildCollect
 import { createDatasetCollection } from "@/components/History/model/queries";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useHistoryItemsForType } from "@/composables/useHistoryItemsForType";
+import { useUserHistories } from "@/composables/userHistories";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
-import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 import { orList } from "@/utils/strings";
 
 import type { DataOption } from "./types";
@@ -486,36 +488,27 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
-const historyStore = useHistoryStore();
+const { currentUser } = storeToRefs(useUserStore());
+const { currentHistoryId, currentHistory } = useUserHistories(currentUser);
 
-const idToFetchFor = computed(() => historyStore.currentHistoryId);
-const { historyItems, isFetchingItems, errorMessage: historyItemsError } = useHistoryItemsForType(idToFetchFor);
+const { historyItems, isFetchingItems, errorMessage: historyItemsError } = useHistoryItemsForType(currentHistoryId);
 
 /** Excludes the `paired` collection type for now */
 const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) => collectionType !== "paired");
 
 /** Build a new collection and set it as the current value if valid */
 async function buildNewCollection(collectionType: string) {
-    if (
-        !historyStore.currentHistoryId ||
-        !historyStore.currentHistory ||
-        isFetchingItems.value ||
-        historyItemsError.value
-    ) {
+    if (!currentHistoryId.value || !currentHistory.value || isFetchingItems.value || historyItemsError.value) {
         return;
     }
 
     if (collectionType === "list" || collectionType === "list:paired") {
-        const modalResult = await buildCollectionModal(
-            collectionType,
-            historyItems.value,
-            historyStore.currentHistoryId,
-            {
-                extensions: props.extensions?.filter((ext) => ext !== "data"),
-                defaultHideSourceItems: false,
-            }
-        );
-        const collection = await createDatasetCollection(historyStore.currentHistory, modalResult);
+        const modalResult = await buildCollectionModal(collectionType, historyItems.value, currentHistoryId.value, {
+            extensions: props.extensions?.filter((ext) => ext !== "data"),
+            defaultHideSourceItems: false,
+            historyName: currentHistory.value?.name,
+        });
+        const collection = await createDatasetCollection(currentHistory.value, modalResult);
         if (collection) {
             // TODO: Commenting this out; should we allow `handleIncoming` to handle this or not?
             // // remove the `elements` and `elements_datatypes` keys from the collection

@@ -41,6 +41,7 @@ function createListCollection(contents) {
         defaultHideSourceItems: contents.defaultHideSourceItems,
         fromSelection: contents.fromSelection,
         extensions: contents.extensions,
+        historyName: contents.historyName,
         creationFn: function (elements, name, hideSourceItems) {
             elements = elements.map((element) => ({
                 id: element.id,
