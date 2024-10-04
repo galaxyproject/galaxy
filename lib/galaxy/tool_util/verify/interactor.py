@@ -1132,7 +1132,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
             raise AssertionError(message)
 
     expected_element_count = output_collection_def.count
-    if expected_element_count:
+    if expected_element_count is not None:
         actual_element_count = len(data_collection["elements"])
         if expected_element_count != actual_element_count:
             message = f"Output collection '{name}': expected to have {expected_element_count} elements, but it had {actual_element_count}."
@@ -1185,7 +1185,8 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
                     message = f"Output collection '{name}': identifier '{identifier}' found out of order, expected order of {expected_sort_order} for the tool generated collection elements {eo_ids}"
                     raise AssertionError(message)
 
-    verify_elements(data_collection["elements"], output_collection_def.element_tests)
+    if output_collection_def.element_tests:
+        verify_elements(data_collection["elements"], output_collection_def.element_tests)
 
 
 def _verify_composite_datatype_file_content(

@@ -1,0 +1,22 @@
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: data_collection
+  when:
+    type: boolean
+outputs:
+  out:
+    outputSource: filter_null/output
+steps:
+  cat:
+    tool_id: cat
+    in:
+      input1:
+        source: input_collection
+      when:
+        source: when
+    when: $(inputs.when)
+  filter_null:
+    tool_id: '__FILTER_NULL__'
+    in:
+      input: cat/out_file1

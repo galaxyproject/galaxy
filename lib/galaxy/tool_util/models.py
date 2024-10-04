@@ -156,6 +156,7 @@ class TestCollectionOutputAssertions(StrictModel):
     class_: Optional[Literal["Collection"]] = Field("Collection", alias="class")
     elements: Optional[Dict[str, TestCollectionElementAssertion]] = None
     element_tests: Optional[Dict[str, "TestCollectionElementAssertion"]] = None
+    element_count: Optional[int] = None
     attributes: Optional[CollectionAttributes] = None
     collection_type: CollectionType = None
 
