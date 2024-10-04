@@ -33,7 +33,7 @@ def main(argv=None):
     parser.add_argument(
         "targets", metavar="TARGETS", default=None, help="Comma-separated packages for calculating the mulled hash."
     )
-    parser.add_argument("--hash", dest="hash", choices=["conda", "v1", "v2"], default="v2")
+    parser.add_argument("--hash", dest="hash", choices=IMAGE_FUNCS.keys(), default="v2")
     args = parser.parse_args()
     targets = target_str_to_targets(args.targets)
     image_name = IMAGE_FUNCS[args.hash]
