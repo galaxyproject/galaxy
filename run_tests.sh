@@ -492,14 +492,15 @@ do
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
           unit_extra='--doctest-modules
-			--ignore lib/galaxy/jobs/runners/chronos.py
-			--ignore lib/galaxy/model/migrations/alembic
-			--ignore lib/galaxy/tools/bundled
-			--ignore lib/galaxy/web/proxy/js/node_modules/
-			--ignore lib/galaxy_test
-			--ignore lib/tool_shed/test
-			--ignore lib/tool_shed/webapp/controllers
-			--ignore=lib/tool_shed/webapp/model/migrations/alembic/'
+            --ignore lib/galaxy/datatypes/converters/
+            --ignore lib/galaxy/jobs/runners/chronos.py
+            --ignore lib/galaxy/model/migrations/alembic
+            --ignore lib/galaxy/tools/bundled
+            --ignore lib/galaxy/web/proxy/js/node_modules/
+            --ignore lib/galaxy_test
+            --ignore lib/tool_shed/test
+            --ignore lib/tool_shed/webapp/controllers
+            --ignore=lib/tool_shed/webapp/model/migrations/alembic/'
           generate_cwl_conformance_tests=1
           if [ $# -gt 1 ]; then
               unit_extra="$unit_extra $2"

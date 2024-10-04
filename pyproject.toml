@@ -60,7 +60,6 @@ edam-ontology = "*"
 fastapi-slim = ">=0.111.0"
 fs = "*"
 future = ">=1.0.0"  # Python 3.12 support
-galaxy_sequence_utils = "*"
 graphene = "*"
 graphene-sqlalchemy = ">=3.0.0rc1"  # need a beta release to be compat. with starlette plugin
 graphql-core = "*"
