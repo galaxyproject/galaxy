@@ -3461,6 +3461,17 @@ class DescribeToolExecutionOutput:
             raise AssertionError(f"Output dataset had file extension {ext}, not the expected extension {expected_ext}")
         return self
 
+    @property
+    def json(self) -> Any:
+        contents = self.contents
+        return json.loads(contents)
+
+    def with_json(self, expected_json: Any) -> Self:
+        json = self.json
+        if json != expected_json:
+            raise AssertionError(f"Output dataset contianed JSON {json}, not {expected_json} as expected")
+        return self
+
     # aliases that might help make tests more like English in particular cases. Declaring them explicitly
     # instead quick little aliases because of https://github.com/python/mypy/issues/6700
     def assert_contains(self, expected_contents: str) -> Self:
@@ -3584,6 +3595,9 @@ class DescribeJob:
 class DescribeFailure:
     def __init__(self, response: Response):
         self._response = response
+
+    def __call__(self) -> Self:
+        return self
 
     def with_status_code(self, code: int) -> Self:
         api_asserts.assert_status_code_is(self._response, code)
@@ -3728,12 +3742,24 @@ class DescribeToolExecution:
         return DescribeJob(self._dataset_populator, history_id, job["id"])
 
     @property
-    def assert_fails(self) -> DescribeFailure:
+    def that_fails(self) -> DescribeFailure:
         self._ensure_executed()
         execute_response = self._execute_response
         assert execute_response is not None
-        api_asserts.assert_status_code_is_not_ok(execute_response)
-        return DescribeFailure(execute_response)
+        if execute_response.status_code != 200:
+            return DescribeFailure(execute_response)
+        else:
+            response = self._assert_executed_ok()
+            jobs = response["jobs"]
+            for job in jobs:
+                final_state = self._dataset_populator.wait_for_job(job["id"])
+                assert final_state == "error"
+            return DescribeFailure(execute_response)
+
+    # alternative assert_ syntax for cases where it reads better.
+    @property
+    def assert_fails(self) -> DescribeFailure:
+        return self.that_fails
 
 
 class GiHttpMixin:

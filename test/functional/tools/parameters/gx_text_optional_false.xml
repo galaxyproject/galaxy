@@ -1,4 +1,4 @@
-<tool id="gx_text" name="gx_text" version="1.0.0">
+<tool id="gx_text_optional_false" name="gx_text_optional_false" version="1.0.0">
     <command><![CDATA[
 echo '$parameter' >> '$output';
 cat '$inputs' >> $inputs_json;
@@ -7,20 +7,12 @@ cat '$inputs' >> $inputs_json;
         <inputs name="inputs" filename="inputs.json" />
     </configfiles>
     <inputs>
-        <param name="parameter" type="text" />
+        <param name="parameter" type="text" optional="false" />
     </inputs>
     <outputs>
         <data name="output" format="txt" />
         <data name="inputs_json" format="json" />
     </outputs>
     <tests>
-        <test>
-            <param name="parameter" value="12456" />
-            <output name="output">
-                <assert_contents>
-                    <has_line line="12456" />
-                </assert_contents>
-            </output>
-        </test>
     </tests>
 </tool>
