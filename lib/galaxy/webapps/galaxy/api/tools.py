@@ -73,6 +73,17 @@ router = Router(tags=["tools"])
 FetchDataForm = as_form(FetchDataFormPayload)
 
 
+async def get_files(request: Request, files: Optional[List[UploadFile]] = None):
+    # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
+    files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
+    if not files2:
+        data = await request.form()
+        for value in data.values():
+            if isinstance(value, StarletteUploadFile):
+                files2.append(value)
+    return files2
+
+
 @router.cbv
 class FetchTools:
     service: ToolsService = depends(ToolsService)
@@ -88,20 +99,11 @@ class FetchTools:
     )
     def fetch_form(
         self,
-        request: Request,
         payload: FetchDataFormPayload = Depends(FetchDataForm.as_form),
-        files: Optional[List[UploadFile]] = None,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        files: List[StarletteUploadFile] = Depends(get_files),
     ):
-        files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
-
-        # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
-        if not files2:
-            data = await request.form()
-            for value in data.values():
-                if isinstance(value, StarletteUploadFile):
-                    files2.append(value)
-        return self.service.create_fetch(trans, payload, files2)
+        return self.service.create_fetch(trans, payload, files)
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
