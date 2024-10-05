@@ -78,7 +78,7 @@ class FetchTools:
     service: ToolsService = depends(ToolsService)
 
     @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
-    async def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
+    def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
         return self.service.create_fetch(trans, payload)
 
     @router.post(
@@ -86,7 +86,7 @@ class FetchTools:
         summary="Upload files to Galaxy",
         route_class_override=FormDataApiRoute,
     )
-    async def fetch_form(
+    def fetch_form(
         self,
         request: Request,
         payload: FetchDataFormPayload = Depends(FetchDataForm.as_form),
