@@ -38,7 +38,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "ts_visjs",
     "venn",
 ];
-const INSTALL_PLUGIN_BUILD_IDS = ["msa"]; // todo: derive from XML
+const INSTALL_PLUGIN_BUILD_IDS = ["ngl", "msa"]; // todo: derive from XML
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
 
@@ -245,10 +245,11 @@ async function installDependenciesFromXML(xmlPath, pluginDir) {
                     );
 
                     if (installResult.status === 0) {
-                        await fs.copy(
-                            path.join(pluginDir, "node_modules", pkgName, "static"),
-                            path.join(pluginDir, "static")
-                        );
+                        const packagePath = path.join(pluginDir, "node_modules", pkgName);
+                        const defaultPath = path.join(packagePath, "static");
+                        const alternatePath = path.join(packagePath, "dist/static");
+                        const sourcePath = fs.existsSync(defaultPath) ? defaultPath : alternatePath;
+                        await fs.copy(sourcePath, path.join(pluginDir, "static"));
                         console.log(`Installed package ${pkgName}@${version} in ${pluginDir}`);
                     } else {
                         console.error(`Error installing package ${pkgName}@${version} in ${pluginDir}`);
