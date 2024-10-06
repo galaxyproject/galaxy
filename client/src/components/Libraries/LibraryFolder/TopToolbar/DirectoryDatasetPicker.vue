@@ -13,10 +13,12 @@ import {
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { type components } from "@/api/schema";
 import { type Option } from "@/components/Form/Elements/FormDrilldown/utilities";
 import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { Toast } from "@/composables/toast";
 import { useDbKeyStore } from "@/stores/dbKeyStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import FormDrilldown from "@/components/Form/Elements/FormDrilldown/FormDrilldown.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -35,6 +37,7 @@ const autoExtension = {
     descriptionUrl: "",
 };
 
+type ListUriResponse = components["schemas"]["ListUriResponse"];
 type DbKey = { id: string; text: string };
 type DbKeyList = DbKey[];
 
@@ -119,18 +122,16 @@ async function fetchOptions() {
         },
     });
 
-    options.value = mapDataToOptions(data);
+    options.value = mapDataToOptions(data as ListUriResponse);
 
     if (error) {
-        console.error(error);
-
-        errorMessage.value = "Failed to load directories: " + error?.err_msg;
+        errorMessage.value = errorMessageAsString(error, "Failed to load directories.");
     }
 
     optionsLoading.value = false;
 }
 
-function mapDataToOptions(data: any): Option[] {
+function mapDataToOptions(data: ListUriResponse): Option[] {
     return data?.map((item: any) => {
         const option: Option = {
             name: item.text,
@@ -167,29 +168,21 @@ function getFullPathById(id: string): string {
 }
 
 async function fetchExtAndDbKey() {
-    try {
-        extensionsList.value = datatypes.value;
+    extensionsList.value = datatypes.value;
 
-        extensionsList.value.sort((a, b) => (a.extension > b.extension ? 1 : a.extension < b.extension ? -1 : 0));
+    extensionsList.value.sort((a, b) => (a.extension > b.extension ? 1 : a.extension < b.extension ? -1 : 0));
 
-        extensionsList.value = [autoExtension, ...extensionsList.value];
+    extensionsList.value = [autoExtension, ...extensionsList.value];
 
-        selectedExtension.value = autoExtension;
-    } catch (err) {
-        console.error(err);
-    }
+    selectedExtension.value = autoExtension;
 
-    try {
-        await dbKeyStore.fetchUploadDbKeys();
+    await dbKeyStore.fetchUploadDbKeys();
 
-        dbKeyList.value = dbKeyStore.uploadDbKeys as DbKeyList;
+    dbKeyList.value = dbKeyStore.uploadDbKeys as DbKeyList;
 
-        selectedDbKey.value = dbKeyStore.uploadDbKeys.find((item: DbKey) => item.id === "?");
+    selectedDbKey.value = dbKeyStore.uploadDbKeys.find((item: DbKey) => item.id === "?");
 
-        dbKeyList.value.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
-    } catch (err) {
-        console.error(err);
-    }
+    dbKeyList.value.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
 }
 
 async function onImport() {
