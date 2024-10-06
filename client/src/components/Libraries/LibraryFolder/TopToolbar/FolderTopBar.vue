@@ -63,7 +63,7 @@ const { config, isConfigLoaded } = useConfig();
 const userStore = useUserStore();
 const { isAdmin } = storeToRefs(userStore);
 
-type ImportSource = "history" | "userdir" | "importdir" | "path" | "";
+type ImportSource = "history" | "userdir" | "importdir" | "path" | undefined;
 const modalShow = ref<ImportSource>();
 const progress = ref(false);
 const progressNote = ref("");
@@ -200,7 +200,7 @@ async function importToHistoryModal(isCollection: boolean) {
     }
 }
 
-function onAddDatasets(source: ImportSource = "") {
+function onAddDatasets(source?: ImportSource) {
     modalShow.value = source;
 }
 
