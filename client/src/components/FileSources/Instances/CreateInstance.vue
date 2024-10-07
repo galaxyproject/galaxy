@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { BAlert } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { UserFileSourceModel } from "@/api/fileSources";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { useInstanceRouting } from "./routing";
 
@@ -23,14 +25,23 @@ fileSourceTemplatesStore.fetchTemplates();
 const { goToIndex } = useInstanceRouting();
 
 const props = defineProps<Props>();
+
+const loading = ref(false);
+const errorMessage = ref("");
+
 const template = computed(() => fileSourceTemplatesStore.getLatestTemplate(props.templateId));
+const redirectMessage = computed(
+    () =>
+        `You will redirected to ${template.value?.name} to authorize Galaxy to access this resource remotely. Please wait`
+);
 const requiresOAuth2AuthorizeRedirect = computed(() => {
     const templateValue = template.value;
     return props.uuid == undefined && templateValue && OAUTH2_TYPES.indexOf(templateValue.type) >= 0;
 });
 
-async function onCreated(objectStore: UserFileSourceModel) {
+function onCreated(objectStore: UserFileSourceModel) {
     const message = `Created file source ${objectStore.name}`;
+
     goToIndex({ message });
 }
 
@@ -38,7 +49,10 @@ watch(
     requiresOAuth2AuthorizeRedirect,
     async (requiresAuth) => {
         const templateValue = template.value;
+
         if (templateValue && requiresAuth) {
+            loading.value = true;
+
             const { data, error: testRequestError } = await GalaxyApi().GET(
                 "/api/file_source_templates/{template_id}/{template_version}/oauth2",
                 {
@@ -50,9 +64,11 @@ watch(
                     },
                 }
             );
+
             if (testRequestError) {
-                console.log("Error getting OAuth2 URL");
-                console.log(testRequestError);
+                errorMessage.value = errorMessageAsString(testRequestError, "Error getting OAuth2 URL");
+
+                loading.value = false;
             } else {
                 window.location.href = data.authorize_url;
             }
@@ -64,10 +80,14 @@ watch(
 
 <template>
     <div>
-        <LoadingSpan v-if="!template" message="Loading file source templates" />
-        <LoadingSpan
-            v-else-if="requiresOAuth2AuthorizeRedirect"
-            message="Fetching redirect information, you will need to authorize Galaxy to have access to this resource remotely" />
-        <CreateForm v-else :uuid="uuid" :template="template" @created="onCreated"></CreateForm>
+        <BAlert v-if="loading" show variant="info">
+            <LoadingSpan v-if="!template" message="Loading file source templates" />
+            <LoadingSpan v-else-if="requiresOAuth2AuthorizeRedirect && !errorMessage" :message="redirectMessage" />
+        </BAlert>
+
+        <BAlert v-if="errorMessage" show variant="danger">
+            {{ errorMessage }}
+        </BAlert>
+        <CreateForm v-if="!loading && template" :uuid="uuid" :template="template" @created="onCreated" />
     </div>
 </template>
