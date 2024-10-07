@@ -11,7 +11,6 @@ import {
     BDropdownItem,
     BFormCheckbox,
 } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
