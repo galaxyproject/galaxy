@@ -66,7 +66,6 @@ const emit = defineEmits<{
 const { config, isConfigLoaded } = useConfig();
 
 const userStore = useUserStore();
-const { isAdmin } = storeToRefs(userStore);
 
 const { datatypes } = useDetailedDatatypes();
 
