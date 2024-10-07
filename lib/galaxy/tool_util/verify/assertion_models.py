@@ -1452,6 +1452,12 @@ has_image_center_of_mass_center_of_mass_description = """The required center of 
 
 has_image_center_of_mass_channel_description = """Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel)."""
 
+has_image_center_of_mass_slice_description = (
+    """Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice)."""
+)
+
+has_image_center_of_mass_frame_description = """Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame)."""
+
 has_image_center_of_mass_eps_description = (
     """The maximum allowed Euclidean distance to the required center of mass (defaults to ``0.01``)."""
 )
@@ -1468,6 +1474,16 @@ class base_has_image_center_of_mass_model(AssertionModel):
     channel: typing.Optional[StrictInt] = Field(
         None,
         description=has_image_center_of_mass_channel_description,
+    )
+
+    slice: typing.Optional[StrictInt] = Field(
+        None,
+        description=has_image_center_of_mass_slice_description,
+    )
+
+    frame: typing.Optional[StrictInt] = Field(
+        None,
+        description=has_image_center_of_mass_frame_description,
     )
 
     eps: Annotated[typing.Union[StrictInt, StrictFloat], BeforeValidator(check_non_negative_if_set)] = Field(
@@ -1548,6 +1564,116 @@ class has_image_channels_model_nested(AssertionModel):
     has_image_channels: base_has_image_channels_model
 
 
+has_image_depth_depth_description = """Expected depth of the image (number of slices)."""
+
+has_image_depth_delta_description = """Maximum allowed difference of the image depth (number of slices, default is 0). The observed depth has to be in the range ``value +- delta``."""
+
+has_image_depth_min_description = """Minimum allowed depth of the image (number of slices)."""
+
+has_image_depth_max_description = """Maximum allowed depth of the image (number of slices)."""
+
+has_image_depth_negate_description = """A boolean that can be set to true to negate the outcome of the assertion."""
+
+
+class base_has_image_depth_model(AssertionModel):
+    """base model for has_image_depth describing attributes."""
+
+    depth: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+        None,
+        description=has_image_depth_depth_description,
+    )
+
+    delta: Annotated[StrictInt, BeforeValidator(check_non_negative_if_set)] = Field(
+        0,
+        description=has_image_depth_delta_description,
+    )
+
+    min: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+        None,
+        description=has_image_depth_min_description,
+    )
+
+    max: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+        None,
+        description=has_image_depth_max_description,
+    )
+
+    negate: typing.Union[bool, str] = Field(
+        False,
+        description=has_image_depth_negate_description,
+    )
+
+
+class has_image_depth_model(base_has_image_depth_model):
+    r"""Asserts the output is an image and has a specific depth (number of slices).
+
+    The depth is plus/minus ``delta`` (e.g., ``<has_image_depth depth="512" delta="2" />``).
+    Alternatively the range of the expected depth can be specified by ``min`` and/or ``max``."""
+
+    that: Literal["has_image_depth"] = "has_image_depth"
+
+
+class has_image_depth_model_nested(AssertionModel):
+    r"""Nested version of this assertion model."""
+
+    has_image_depth: base_has_image_depth_model
+
+
+has_image_frames_frames_description = """Expected number of frames in the image sequence (number of time steps)."""
+
+has_image_frames_delta_description = """Maximum allowed difference of the number of frames in the image sequence (number of time steps, default is 0). The observed number of frames has to be in the range ``value +- delta``."""
+
+has_image_frames_min_description = """Minimum allowed number of frames in the image sequence (number of time steps)."""
+
+has_image_frames_max_description = """Maximum allowed number of frames in the image sequence (number of time steps)."""
+
+has_image_frames_negate_description = """A boolean that can be set to true to negate the outcome of the assertion."""
+
+
+class base_has_image_frames_model(AssertionModel):
+    """base model for has_image_frames describing attributes."""
+
+    frames: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+        None,
+        description=has_image_frames_frames_description,
+    )
+
+    delta: Annotated[StrictInt, BeforeValidator(check_non_negative_if_set)] = Field(
+        0,
+        description=has_image_frames_delta_description,
+    )
+
+    min: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+        None,
+        description=has_image_frames_min_description,
+    )
+
+    max: Annotated[typing.Optional[StrictInt], BeforeValidator(check_non_negative_if_set)] = Field(
+        None,
+        description=has_image_frames_max_description,
+    )
+
+    negate: typing.Union[bool, str] = Field(
+        False,
+        description=has_image_frames_negate_description,
+    )
+
+
+class has_image_frames_model(base_has_image_frames_model):
+    r"""Asserts the output is an image and has a specific number of frames (number of time steps).
+
+    The number of frames is plus/minus ``delta`` (e.g., ``<has_image_frames depth="512" delta="2" />``).
+    Alternatively the range of the expected number of frames can be specified by ``min`` and/or ``max``."""
+
+    that: Literal["has_image_frames"] = "has_image_frames"
+
+
+class has_image_frames_model_nested(AssertionModel):
+    r"""Nested version of this assertion model."""
+
+    has_image_frames: base_has_image_frames_model
+
+
 has_image_height_height_description = """Expected height of the image (in pixels)."""
 
 has_image_height_delta_description = """Maximum allowed difference of the image height (in pixels, default is 0). The observed height has to be in the range ``value +- delta``."""
@@ -1605,6 +1731,12 @@ class has_image_height_model_nested(AssertionModel):
 
 has_image_mean_intensity_channel_description = """Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel)."""
 
+has_image_mean_intensity_slice_description = (
+    """Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice)."""
+)
+
+has_image_mean_intensity_frame_description = """Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame)."""
+
 has_image_mean_intensity_mean_intensity_description = """The required mean value of the image intensities."""
 
 has_image_mean_intensity_eps_description = """The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean value of the image intensities has to be in the range ``value +- eps``."""
@@ -1620,6 +1752,16 @@ class base_has_image_mean_intensity_model(AssertionModel):
     channel: typing.Optional[StrictInt] = Field(
         None,
         description=has_image_mean_intensity_channel_description,
+    )
+
+    slice: typing.Optional[StrictInt] = Field(
+        None,
+        description=has_image_mean_intensity_slice_description,
+    )
+
+    frame: typing.Optional[StrictInt] = Field(
+        None,
+        description=has_image_mean_intensity_frame_description,
     )
 
     mean_intensity: typing.Optional[typing.Union[StrictInt, StrictFloat]] = Field(
@@ -1660,6 +1802,12 @@ class has_image_mean_intensity_model_nested(AssertionModel):
 
 has_image_mean_object_size_channel_description = """Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel)."""
 
+has_image_mean_object_size_slice_description = (
+    """Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice)."""
+)
+
+has_image_mean_object_size_frame_description = """Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame)."""
+
 has_image_mean_object_size_labels_description = """List of labels, separated by a comma. Labels *not* on this list will be excluded from consideration. Cannot be used in combination with ``exclude_labels``."""
 
 has_image_mean_object_size_exclude_labels_description = """List of labels to be excluded from consideration, separated by a comma. The primary usage of this attribute is to exclude the background of a label image. Cannot be used in combination with ``labels``."""
@@ -1683,6 +1831,16 @@ class base_has_image_mean_object_size_model(AssertionModel):
     channel: typing.Optional[StrictInt] = Field(
         None,
         description=has_image_mean_object_size_channel_description,
+    )
+
+    slice: typing.Optional[StrictInt] = Field(
+        None,
+        description=has_image_mean_object_size_slice_description,
+    )
+
+    frame: typing.Optional[StrictInt] = Field(
+        None,
+        description=has_image_mean_object_size_frame_description,
     )
 
     labels: typing.Optional[typing.List[int]] = Field(
@@ -1740,6 +1898,12 @@ class has_image_mean_object_size_model_nested(AssertionModel):
 
 has_image_n_labels_channel_description = """Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel)."""
 
+has_image_n_labels_slice_description = (
+    """Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice)."""
+)
+
+has_image_n_labels_frame_description = """Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame)."""
+
 has_image_n_labels_labels_description = """List of labels, separated by a comma. Labels *not* on this list will be excluded from consideration. Cannot be used in combination with ``exclude_labels``."""
 
 has_image_n_labels_exclude_labels_description = """List of labels to be excluded from consideration, separated by a comma. The primary usage of this attribute is to exclude the background of a label image. Cannot be used in combination with ``labels``."""
@@ -1761,6 +1925,16 @@ class base_has_image_n_labels_model(AssertionModel):
     channel: typing.Optional[StrictInt] = Field(
         None,
         description=has_image_n_labels_channel_description,
+    )
+
+    slice: typing.Optional[StrictInt] = Field(
+        None,
+        description=has_image_n_labels_slice_description,
+    )
+
+    frame: typing.Optional[StrictInt] = Field(
+        None,
+        description=has_image_n_labels_frame_description,
     )
 
     labels: typing.Optional[typing.List[int]] = Field(
@@ -1897,6 +2071,8 @@ any_assertion_model_flat = Annotated[
         has_size_model,
         has_image_center_of_mass_model,
         has_image_channels_model,
+        has_image_depth_model,
+        has_image_frames_model,
         has_image_height_model,
         has_image_mean_intensity_model,
         has_image_mean_object_size_model,
@@ -1931,6 +2107,8 @@ any_assertion_model_nested = typing.Union[
     has_size_model_nested,
     has_image_center_of_mass_model_nested,
     has_image_channels_model_nested,
+    has_image_depth_model_nested,
+    has_image_frames_model_nested,
     has_image_height_model_nested,
     has_image_mean_intensity_model_nested,
     has_image_mean_object_size_model_nested,
@@ -1990,6 +2168,10 @@ class assertion_dict(AssertionModel):
     has_image_center_of_mass: typing.Optional[base_has_image_center_of_mass_model] = None
 
     has_image_channels: typing.Optional[base_has_image_channels_model] = None
+
+    has_image_depth: typing.Optional[base_has_image_depth_model] = None
+
+    has_image_frames: typing.Optional[base_has_image_frames_model] = None
 
     has_image_height: typing.Optional[base_has_image_height_model] = None
 

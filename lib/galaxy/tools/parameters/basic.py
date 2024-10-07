@@ -1646,13 +1646,11 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         drill_down_dynamic_options = input_source.parse_drill_down_dynamic_options(tool_data_path)
         if drill_down_dynamic_options is not None:
             self.is_dynamic = True
-            self.dynamic_options = drill_down_dynamic_options.code_block
-            self.filtered = drill_down_dynamic_options.filters
+            self.dynamic_options = drill_down_dynamic_options.from_code_block()
             self.options = []
         else:
             self.is_dynamic = False
             self.dynamic_options = None
-            self.filtered = {}
             self.options = input_source.parse_drill_down_static_options(tool_data_path)
 
     def _get_options_from_code(self, trans=None, other_values=None):
@@ -1673,20 +1671,6 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                 options = self._get_options_from_code(trans=trans, other_values=other_values)
             else:
                 options = []
-            for filter_key, filter_value in self.filtered.items():
-                dataset = other_values.get(filter_key)
-                if dataset.__class__.__name__.endswith(
-                    "DatasetFilenameWrapper"
-                ):  # this is a bad way to check for this, but problems importing class (due to circular imports?)
-                    dataset = dataset.dataset
-                if dataset:
-                    for meta_key, meta_dict in filter_value.items():
-                        if hasattr(dataset, "metadata") and hasattr(dataset.metadata, "spec"):
-                            check_meta_val = dataset.metadata.spec[meta_key].param.to_string(
-                                dataset.metadata.get(meta_key)
-                            )
-                            if check_meta_val in meta_dict:
-                                options.extend(meta_dict[check_meta_val])
             return options
         return self.options
 
@@ -1830,10 +1814,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         return "Nothing selected."
 
     def get_dependencies(self):
-        """
-        Get the *names* of the other params this param depends on.
-        """
-        return list(self.filtered.keys())
+        return []
 
     def to_dict(self, trans, other_values=None):
         other_values = other_values or {}

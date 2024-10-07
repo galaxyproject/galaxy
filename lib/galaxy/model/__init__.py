@@ -4723,8 +4723,10 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         self.state = self.states.OK
         self.blurb = "skipped"
         self.visible = False
+        null = json.dumps(None)
         with open(self.dataset.get_file_name(), "w") as out:
-            out.write(json.dumps(None))
+            out.write(null)
+        self.peek = null
         self.set_total_size()
 
     def get_file_name(self, sync_cache: bool = True) -> str:

@@ -704,6 +704,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     drmaa_external_runjob_script: str
     email_from: Optional[str]
     enable_tool_shed_check: bool
+    file_source_temp_dir: str
     galaxy_data_manager_data_path: str
     galaxy_infrastructure_url: str
     hours_between_check: int
@@ -1236,6 +1237,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         else:
             _load_theme(self.themes_config_file, self.themes)
 
+        if self.file_source_temp_dir:
+            self.file_source_temp_dir = os.path.abspath(self.file_source_temp_dir)
+
     def _process_celery_config(self):
         if self.celery_conf and self.celery_conf.get("result_backend") is None:
             # If the result_backend is not set, use a SQLite database in the data directory
@@ -1348,6 +1352,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.template_cache_path,
             self.tool_data_path,
             self.user_library_import_dir,
+            self.file_source_temp_dir,
         ]
         for path in paths_to_check:
             self._ensure_directory(path)

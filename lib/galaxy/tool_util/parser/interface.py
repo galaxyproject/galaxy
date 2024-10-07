@@ -443,18 +443,11 @@ class DynamicOptions(metaclass=ABCMeta):
         """If dynamic options are loaded from an index file, return the name."""
 
 
-DrillDownDynamicFilters = Dict[str, Dict[str, dict]]  # {input key: {metadata_key: metadata values}}
-
-
 class DrillDownDynamicOptions(metaclass=ABCMeta):
 
     @abstractmethod
     def from_code_block(self) -> Optional[str]:
         """Get a code block to do an eval on."""
-
-    @abstractmethod
-    def from_filters(self) -> Optional[DrillDownDynamicFilters]:
-        """Get filters to apply to target datasets."""
 
 
 class InputSource(metaclass=ABCMeta):
@@ -868,10 +861,13 @@ class RequiredFiles:
 class TestCollectionOutputDef:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
-    def __init__(self, name, attrib, element_tests):
+    def __init__(self, name, attrib, element_tests, element_count: Optional[int] = None):
         self.name = name
         self.collection_type = attrib.get("type", None)
-        count = attrib.get("count", None)
+        if element_count is not None:
+            count = element_count
+        else:
+            count = attrib.get("count")
         self.count = int(count) if count is not None else None
         self.attrib = attrib
         self.element_tests = element_tests
@@ -881,7 +877,8 @@ class TestCollectionOutputDef:
         return TestCollectionOutputDef(
             name=as_dict["name"],
             attrib=as_dict.get("attributes", {}),
-            element_tests=as_dict["element_tests"],
+            element_tests=as_dict.get("element_tests"),
+            element_count=as_dict.get("element_count"),
         )
 
     @staticmethod
@@ -898,7 +895,7 @@ class TestCollectionOutputDef:
         return TestCollectionOutputDef.from_dict(as_dict)
 
     def to_dict(self):
-        return dict(name=self.name, attributes=self.attrib, element_tests=self.element_tests)
+        return dict(name=self.name, attributes=self.attrib, element_tests=self.element_tests, element_count=self.count)
 
 
 class DrillDownOptionsDict(TypedDict):

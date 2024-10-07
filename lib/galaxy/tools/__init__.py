@@ -3798,7 +3798,15 @@ class FilterNullTool(FilterDatasetsTool):
     def element_is_valid(element: model.DatasetCollectionElement):
         element_object = element.element_object
         assert isinstance(element_object, model.DatasetInstance)
-        return element_object.extension == "expression.json" and element_object.blurb == "skipped"
+        if element_object.extension == "expression.json":
+            if element_object.peek == "null":
+                # shortcut
+                return False
+            else:
+                with open(element_object.get_file_name()) as fh:
+                    if fh.read(5) == "null":
+                        return False
+        return True
 
 
 class FlattenTool(DatabaseOperationTool):
