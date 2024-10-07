@@ -193,7 +193,6 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         ld = self.get_library_dataset(trans, id, check_ownership=False, check_accessible=True)
         user_is_admin = trans.user_is_admin
         can_modify = trans.app.security_agent.can_modify_library_item(trans.user.all_roles(), ld)
-        log.debug("is_admin: %s, can_modify: %s", user_is_admin, can_modify)
         if not (user_is_admin or can_modify):
             raise exceptions.InsufficientPermissionsException("Unauthorized to delete or purge this library dataset")
 
