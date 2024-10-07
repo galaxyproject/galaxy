@@ -57,6 +57,7 @@ class LibraryContentsCreatePayload(Model):
     upload_option: UploadOption = Field(
         UploadOption.upload_file,
         description="the method to use for uploading files",
+        deprecated=True,
     )
     folder_id: LibraryFolderDatabaseIdField = Field(
         ...,

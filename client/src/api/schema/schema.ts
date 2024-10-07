@@ -13112,6 +13112,7 @@ export interface components {
              */
             tags: string[];
             /**
+             * @deprecated
              * @description the method to use for uploading files
              * @default upload_file
              */
@@ -13289,6 +13290,7 @@ export interface components {
             /** list of the uploaded files */
             upload_files?: Record<string, never>[] | null;
             /**
+             * @deprecated
              * @description the method to use for uploading files
              * @default upload_file
              */
@@ -13352,6 +13354,7 @@ export interface components {
              */
             tags: string[];
             /**
+             * @deprecated
              * @description the method to use for uploading files
              * @default upload_file
              */
