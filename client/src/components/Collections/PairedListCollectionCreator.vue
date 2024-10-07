@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { faCheckCircle, faExclamationCircle, faLink, faTimes, faUnlink } from "@fortawesome/free-solid-svg-icons";
+import { faExclamationCircle, faLink, faTimes, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import draggable from "vuedraggable";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 // import levenshteinDistance from '@/utils/levenshtein';
 import localize from "@/utils/localization";
 import { naturalSort } from "@/utils/naturalSort";
@@ -105,15 +106,15 @@ const autoPairButton = computed(() => {
     if (!firstAutoPairDone.value && pairableElements.value.length > 0) {
         variant = "primary";
         icon = faExclamationCircle;
-        text = localize("Click to auto-pair datasets based on the current filters.");
+        text = localize("Click to auto-pair datasets based on the current filters");
     } else if (pairableElements.value.length > 0) {
-        variant = "success";
-        icon = faCheckCircle;
-        text = localize("Auto-pair possible!");
+        variant = "secondary";
+        icon = faLink;
+        text = localize("Auto-pair possible based on current filters");
     } else {
         variant = "secondary";
         icon = faLink;
-        text = localize("Auto-pair not possible");
+        text = localize("Click to attempt auto-pairing datasets");
     }
     return { variant, icon, text };
 });
@@ -155,6 +156,13 @@ const tooFewElementsSelected = computed(() => {
 const noUnpairedElementsDisplayed = computed(() => {
     return numOfUnpairedForwardElements.value + numOfUnpairedReverseElements.value === 0;
 });
+
+// variables for datatype mapping and then filtering
+const datatypesMapperStore = useDatatypesMapperStore();
+const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
+
+/** Are we filtering by datatype? */
+const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
 
 _elementsSetUp();
 
@@ -247,6 +255,15 @@ function _isElementInvalid(element: HistoryItemSummary) {
     }
     if (element.deleted || element.purged) {
         return localize("has been deleted or purged");
+    }
+
+    // is the element's extension not a subtype of any of the required extensions?
+    if (
+        filterExtensions.value &&
+        element.extension &&
+        !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
+    ) {
+        return localize("has an invalid extension");
     }
     return null;
 }
