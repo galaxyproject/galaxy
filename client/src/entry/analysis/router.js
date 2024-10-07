@@ -395,6 +395,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "file_source_instances/create",
                         component: CreateUserFileSource,
+                        props: (route) => {
+                            return {
+                                error: route.params.error,
+                            };
+                        },
                     },
                     {
                         path: "file_source_instances/index",

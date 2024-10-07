@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import Query
 from fastapi.responses import RedirectResponse
 
@@ -16,12 +18,18 @@ StateQueryParam: str = Query(
     title="State information sent with auth request",
     description="Base-64 encoded JSON used to route request within Galaxy.",
 )
-CodeQueryParam: str = Query(
-    ...,
+CodeQueryParam: Optional[str] = Query(
+    None,
     title="OAuth2 Authorization Code from remote resource",
+)
+ErrorQueryParam: Optional[str] = Query(
+    None,
+    title="OAuth2 Error from remote resource",
 )
 
 router = Router(tags=["oauth2"])
+
+ERROR_REDIRECT_PATH = "file_source_instances/create"
 
 
 @router.cbv
@@ -36,8 +44,16 @@ class OAuth2Callback:
         self,
         trans: SessionRequestContext = DependsOnTrans,
         state: str = StateQueryParam,
-        code: str = CodeQueryParam,
+        code: Optional[str] = CodeQueryParam,
+        error: Optional[str] = ErrorQueryParam,
     ):
+        if error:
+            return RedirectResponse(f"{trans.request.url_path}{ERROR_REDIRECT_PATH}?error={error}")
+        elif not code:
+            return RedirectResponse(
+                f"{trans.request.url_path}{ERROR_REDIRECT_PATH}?error=No credentials provided, please try again."
+            )
+
         oauth2_state = OAuth2State.decode(state)
         # TODO: save session information in cookie to verify not CSRF with oauth2_state.nonce
         route = oauth2_state.route

@@ -36796,7 +36796,8 @@ export interface operations {
             query: {
                 /** @description Base-64 encoded JSON used to route request within Galaxy. */
                 state: string;
-                code: string;
+                code?: string | null;
+                error?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
