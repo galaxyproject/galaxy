@@ -120,7 +120,7 @@ class FastAPIVisualizations:
         "/api/visualizations",
         summary="Returns visualizations for the current user.",
     )
-    async def index(
+    def index(
         self,
         response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
