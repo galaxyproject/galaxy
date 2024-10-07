@@ -4,6 +4,7 @@ import tempfile
 from typing import (
     cast,
     List,
+    Optional,
     Tuple,
     Union,
 )
@@ -130,7 +131,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         trans: ProvidesHistoryContext,
         library_id: DecodedDatabaseIdField,
         payload: AnyLibraryContentsCreatePayload,
-        files: List[StarletteUploadFile] = [],
+        files: Optional[List[StarletteUploadFile]] = None,
     ) -> AnyLibraryContentsCreateResponse:
         """Create a new library file or folder."""
         if trans.user_is_bootstrap_admin:
@@ -157,13 +158,14 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         if payload.create_type == "file":
             payload = cast(LibraryContentsFileCreatePayload, payload)
             upload_files = []
-            for upload_file in files:
-                with tempfile.NamedTemporaryFile(
-                    dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
-                ) as dest:
-                    shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
-                upload_file.file.close()
-                upload_files.append(dict(filename=upload_file.filename, local_filename=dest.name))
+            if files:
+                for upload_file in files:
+                    with tempfile.NamedTemporaryFile(
+                        dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
+                    ) as dest:
+                        shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
+                    upload_file.file.close()
+                    upload_files.append(dict(filename=upload_file.filename, local_filename=dest.name))
             payload.upload_files = upload_files
             rval = self._upload_library_dataset(trans, payload)
             return LibraryContentsCreateFileListResponse(root=self._create_response(trans, payload, rval, library_id))
