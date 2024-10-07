@@ -1,0 +1,16 @@
+<tool id="gx_directory_uri" name="gx_directory_uri" version="1.0.0">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command><![CDATA[
+        echo 'parameter: $parameter' > $output
+    ]]></command>
+    <inputs>
+        <param type="directory_uri" name="parameter">
+            <validator type="length" min="10" max="45" />
+            <validator type="expression">'api' in value</validator>
+            <validator type="regex">^.*json$</validator>
+        </param>
+    </inputs>
+    <expand macro="simple_text_output" />
+</tool>

@@ -881,6 +881,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("gx_text")
     @skip_without_tool("gx_text_optional")
+    @skip_without_tool("gx_text_optional_false")
+    @skip_without_tool("gx_text_empty_validation")
     def test_null_to_text_tools(self):
         # we have a tool test for this but I wanted to verify it wasn't just the
         # tool test framework filling in a default. Creating a raw request here
@@ -929,6 +931,40 @@ class TestToolsApi(ApiTestCase, TestsTools):
             output_json = response["outputs"][1]
             output_json_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output_json)
             assert json.loads(output_json_content)["parameter"] is None
+
+            inputs = {}
+            response = self._run("gx_text_optional_false", history_id, inputs, assert_ok=True)
+            output1 = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
+            assert output1_content.strip() == ""
+
+            output_json = response["outputs"][1]
+            output_json_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output_json)
+            assert json.loads(output_json_content)["parameter"] == ""
+
+            inputs = {
+                "parameter": None,
+            }
+            response = self._run("gx_text_optional_false", history_id, inputs, assert_ok=True)
+            output1 = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
+            assert output1_content.strip() == ""
+
+            output_json = response["outputs"][1]
+            output_json_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output_json)
+            assert json.loads(output_json_content)["parameter"] == ""
+
+            inputs = {}
+            response = self._run("gx_text_empty_validation", history_id, inputs).json()
+            state = self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=False)
+            assert state == "error"
+
+            inputs = {
+                "parameter": None,
+            }
+            response = self._run("gx_text_empty_validation", history_id, inputs).json()
+            state = self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=False)
+            assert state == "error"
 
     @skip_without_tool("gx_select")
     @skip_without_tool("gx_select_no_options_validation")

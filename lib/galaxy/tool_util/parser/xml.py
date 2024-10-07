@@ -71,6 +71,10 @@ from .output_objects import (
     ToolOutputCollection,
     ToolOutputCollectionStructure,
 )
+from .parameter_validators import (
+    AnyValidatorModel,
+    parse_xml_validators,
+)
 from .stdio import (
     aggressive_error_checks,
     error_on_exit_code,
@@ -1339,8 +1343,8 @@ class XmlInputSource(InputSource):
     def parse_sanitizer_elem(self):
         return self.input_elem.find("sanitizer")
 
-    def parse_validator_elems(self):
-        return self.input_elem.findall("validator")
+    def parse_validators(self) -> List[AnyValidatorModel]:
+        return parse_xml_validators(self.input_elem)
 
     def parse_dynamic_options(self) -> Optional[XmlDynamicOptions]:
         """Return a XmlDynamicOptions to describe dynamic options if options elem is available."""
