@@ -62,6 +62,24 @@ class JsonApiRoute(APIContentTypeRoute):
 LibraryContentsCreateForm = as_form(LibraryContentsFileCreatePayload)
 
 
+async def get_files(
+    request: Request, trans: ProvidesUserContext = DependsOnTrans, files: Optional[List[UploadFile]] = None
+):
+    # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
+    if not files:
+        data = await request.form()
+        upload_files = []
+        for upload_file in data.values():
+            if isinstance(upload_file, StarletteUploadFile):
+                with tempfile.NamedTemporaryFile(
+                    dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
+                ) as dest:
+                    shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
+                upload_file.file.close()
+                upload_files.append(dict(filename=upload_file.filename, local_filename=dest.name))
+        return upload_files
+
+
 @router.cbv
 class FastAPILibraryContents:
     service: LibraryContentsService = depends(LibraryContentsService)
@@ -115,29 +133,15 @@ class FastAPILibraryContents:
         deprecated=True,
         route_class_override=FormDataApiRoute,
     )
-    async def create_form(
+    def create_form(
         self,
-        request: Request,
         library_id: DecodedDatabaseIdField,
         payload: LibraryContentsFileCreatePayload = Depends(LibraryContentsCreateForm.as_form),
-        files: Optional[List[UploadFile]] = None,
+        files: Optional[List[UploadFile]] = Depends(get_files),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> AnyLibraryContentsCreateResponse:
         """This endpoint is deprecated. Please use POST /api/folders/{folder_id} or POST /api/folders/{folder_id}/contents instead."""
-        # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
-        if not files:
-            data = await request.form()
-            upload_files = []
-            for upload_file in data.values():
-                if isinstance(upload_file, StarletteUploadFile):
-                    with tempfile.NamedTemporaryFile(
-                        dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
-                    ) as dest:
-                        shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
-                    upload_file.file.close()
-                    upload_files.append(dict(filename=upload_file.filename, local_filename=dest.name))
-            payload.upload_files = upload_files
-
+        payload.upload_files = files
         return self.service.create(trans, library_id, payload)
 
     @router.put(
