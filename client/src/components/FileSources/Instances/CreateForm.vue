@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { toRef } from "vue";
+import { computed, toRef } from "vue";
 
 import type { FileSourceTemplateSummary, UserFileSourceModel } from "@/api/fileSources";
 import { useConfigurationTemplateCreation } from "@/components/ConfigTemplates/useConfigurationTesting";
@@ -12,7 +12,7 @@ interface CreateFormProps {
     uuid?: string;
 }
 const props = defineProps<CreateFormProps>();
-const title = "Create a new file source for your data";
+const title = computed(() => `Create a ${props.template.name} File Source`);
 
 const emit = defineEmits<{
     (e: "created", fileSource: UserFileSourceModel): void;
