@@ -13,7 +13,6 @@ import {
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type components } from "@/api/schema";
 import { type Option } from "@/components/Form/Elements/FormDrilldown/utilities";
 import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { Toast } from "@/composables/toast";
@@ -37,7 +36,6 @@ const autoExtension = {
     descriptionUrl: "",
 };
 
-type ListUriResponse = components["schemas"]["ListUriResponse"];
 type DbKey = { id: string; text: string };
 type DbKeyList = DbKey[];
 
@@ -122,7 +120,7 @@ async function fetchOptions() {
         },
     });
 
-    options.value = mapDataToOptions(data as ListUriResponse);
+    options.value = mapDataToOptions(data);
 
     if (error) {
         errorMessage.value = errorMessageAsString(error, "Failed to load directories.");
@@ -131,7 +129,7 @@ async function fetchOptions() {
     optionsLoading.value = false;
 }
 
-function mapDataToOptions(data: ListUriResponse): Option[] {
+function mapDataToOptions(data: any): Option[] {
     return data?.map((item: any) => {
         const option: Option = {
             name: item.text,
