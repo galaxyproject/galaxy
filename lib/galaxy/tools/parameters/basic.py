@@ -2485,7 +2485,10 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             rval = value
         elif isinstance(value, MutableMapping) and "src" in value and "id" in value:
             if value["src"] == "hdca":
-                rval = cast(HistoryDatasetCollectionAssociation, src_id_to_item(sa_session=trans.sa_session, value=value, security=trans.security))
+                rval = cast(
+                    HistoryDatasetCollectionAssociation,
+                    src_id_to_item(sa_session=trans.sa_session, value=value, security=trans.security),
+                )
         elif isinstance(value, list):
             if len(value) > 0:
                 value = value[0]
