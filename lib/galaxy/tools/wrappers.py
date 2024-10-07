@@ -130,7 +130,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
         self.input = input
         if value is None and input.type == "text":
             # Tools with old profile versions may treat an optional text parameter as `""`
-            value = cast(TextToolParameter, input).wrapper_default()
+            value = cast(TextToolParameter, input).wrapper_default
         self.value = value
         self._other_values: Dict[str, str] = other_values or {}
 
