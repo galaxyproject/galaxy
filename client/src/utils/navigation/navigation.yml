@@ -1032,7 +1032,7 @@ libraries:
       add_to_history_collection: '.add-to-history-collection'
       # TODO: Most of these aren't very good selectors but the same DOM elements
       # are reused without adding specific classes, IDs, or roles to anything.
-      import_modal: '.modal'
+      import_modal: '.directory-dataset-picker'
       import_datasets_from_history_modal: '.selection-dialog-modal'
       import_datasets_from_history_modal_history_search: '.selection-dialog-modal .search-query'
       import_datasets_from_history_modal_dataset_search: '.selection-dialog-modal input[placeholder="search datasets"]'
@@ -1041,8 +1041,15 @@ libraries:
       import_datasets_from_history_modal_select_list_item_by_index: '.selection-dialog-modal table tbody tr[aria-rowindex="${row_index}"] td[aria-colindex="1"]'
       import_datasets_from_history_modal_ok: '.selection-dialog-modal [data-description="selection dialog ok"]'
       import_datasets_from_history_modal_cancel: '.selection-dialog-modal [data-description="selection dialog cancel"]'
-      import_datasets_ok_button: '.modal-footer .buttons #button-0'
-      import_datasets_cancel_button: '.modal-footer .buttons #button-1'
+      add_to_history_as_collection:
+        type: xpath
+        selector: '//button[contains(text(), "Continue")]'
+      import_datasets_ok_button:
+        type: xpath
+        selector: '//button[contains(text(), "Import")]'
+      import_datasets_cancel_button:
+        type: xpath
+        selector: '//button[contains(text(), "Close")]'
       export_to_history_options: '#library-collection-type-select'
       export_to_history_paired_option: 'option[value="${collection_option}"]'
       export_to_history_collection_name: '.collection-name'
@@ -1066,8 +1073,10 @@ libraries:
       download_button: '#download-btn'
       delete_btn: '.toolbtn-bulk-delete'
       toast_msg: '.b-toast'
-      toast_warning: '.b-toast-warning'
-      select_import_dir_item: 'li[full_path="${name}"] .jstree-anchor'
+      alert_not_exists_user_import_dir:
+        type: xpath
+        selector: //div[contains(@class, "alert-danger") and contains(normalize-space(text()), "Your user import directory does not exist")]
+      select_import_dir_item: '[for="drilldown-option-${name}"]'
       import_dir_btn:
         type: xpath
         selector: '//button[contains(text(), "Import")]'
