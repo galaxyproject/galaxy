@@ -2,7 +2,6 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { toValue } from "@vueuse/core";
 import { computed, type ComputedRef, onMounted, type PropType, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
@@ -57,7 +56,7 @@ const emit = defineEmits<{
 }>();
 
 const filter = ref("");
-const filteredOptions = filterByLabelAndTag();
+const filteredOptions = useFilterObjectArray(() => props.options, filter, ["label", ["value", "tags"]]);
 
 /**
  * When there are more options than this, push selected options to the end
@@ -149,7 +148,6 @@ function setInitialValue(): void {
 watch(
     () => props.options,
     () => {
-        filteredOptions.value = toValue(filterByLabelAndTag());
         setInitialValue();
     }
 );
@@ -160,10 +158,6 @@ watch(
 onMounted(() => {
     setInitialValue();
 });
-
-function filterByLabelAndTag() {
-    return useFilterObjectArray(() => props.options, filter, ["label", ["value", "tags"]]);
-}
 
 function isValueWithTags(item: SelectValue): item is ValueWithTags {
     return item !== null && typeof item === "object" && (item as ValueWithTags).tags !== undefined;
