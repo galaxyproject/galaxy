@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArrowUp, faCaretDown, faEdit, faStethoscope, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useRouter } from "vue-router/composables";
@@ -11,8 +10,6 @@ interface Props {
     routeUpgrade: string;
     isUpgradable: boolean;
 }
-
-library.add(faArrowUp, faCaretDown, faEdit, faStethoscope, faTrash);
 
 const router = useRouter();
 
@@ -33,7 +30,7 @@ const emit = defineEmits<{
             aria-haspopup="true"
             aria-expanded="false"
             class="ui-link font-weight-bold text-nowrap">
-            <FontAwesomeIcon icon="caret-down" class="fa-lg" />
+            <FontAwesomeIcon :icon="faCaretDown" size="lg" />
             <span class="instance-dropdown-name font-weight-bold">{{ name }}</span>
         </button>
         <div class="dropdown-menu" :aria-labelledby="`${prefix}-instance-dropdown`">
@@ -51,15 +48,15 @@ const emit = defineEmits<{
                 :href="routeEdit"
                 @keypress="router.push(routeEdit)"
                 @click.prevent="router.push(routeEdit)">
-                <FontAwesomeIcon icon="edit" />
+                <FontAwesomeIcon :icon="faEdit" />
                 <span v-localize>Edit configuration</span>
             </button>
             <button class="dropdown-item" @keypress="emit('test')" @click.prevent="emit('test')">
-                <FontAwesomeIcon icon="stethoscope" />
+                <FontAwesomeIcon :icon="faStethoscope" />
                 <span v-localize>Test instance</span>
             </button>
             <button class="dropdown-item" @keypress="emit('remove')" @click.prevent="emit('remove')">
-                <FontAwesomeIcon icon="trash" />
+                <FontAwesomeIcon :icon="faTrash" />
                 <span v-localize>Remove instance</span>
             </button>
         </div>
