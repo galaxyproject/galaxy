@@ -19,7 +19,7 @@ interface Props {
 const props = defineProps<Props>();
 const { instance, template } = useInstanceAndTemplate(ref(props.instanceId));
 
-const title = computed(() => `Edit File Source ${instance.value?.name} Settings`);
+const title = computed(() => `Edit ${template.value?.name} settings for ${instance.value?.name}`);
 const errorDataDescription = "file-source-update-error";
 
 const {
