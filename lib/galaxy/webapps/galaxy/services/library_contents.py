@@ -1,11 +1,15 @@
 import logging
+import shutil
+import tempfile
 from typing import (
+    cast,
     List,
     Tuple,
     Union,
 )
 
 from fastapi import Path
+from starlette.datastructures import UploadFile as StarletteUploadFile
 from typing_extensions import Annotated
 
 from galaxy import exceptions
@@ -32,6 +36,7 @@ from galaxy.schema.library_contents import (
     LibraryContentsCreateFolderListResponse,
     LibraryContentsDeletePayload,
     LibraryContentsDeleteResponse,
+    LibraryContentsFileCreatePayload,
     LibraryContentsIndexDatasetResponse,
     LibraryContentsIndexFolderResponse,
     LibraryContentsIndexListResponse,
@@ -125,6 +130,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         trans: ProvidesHistoryContext,
         library_id: DecodedDatabaseIdField,
         payload: AnyLibraryContentsCreatePayload,
+        files: List[StarletteUploadFile] = [],
     ) -> AnyLibraryContentsCreateResponse:
         """Create a new library file or folder."""
         if trans.user_is_bootstrap_admin:
@@ -149,6 +155,16 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
 
         # Now create the desired content object, either file or folder.
         if payload.create_type == "file":
+            payload = cast(LibraryContentsFileCreatePayload, payload)
+            upload_files = []
+            for upload_file in files:
+                with tempfile.NamedTemporaryFile(
+                    dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
+                ) as dest:
+                    shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
+                upload_file.file.close()
+                upload_files.append(dict(filename=upload_file.filename, local_filename=dest.name))
+            payload.upload_files = upload_files
             rval = self._upload_library_dataset(trans, payload)
             return LibraryContentsCreateFileListResponse(root=self._create_response(trans, payload, rval, library_id))
         elif payload.create_type == "folder":

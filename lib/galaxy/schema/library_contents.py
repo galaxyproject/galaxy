@@ -130,8 +130,8 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
         None,
         title="UUID of the dataset to upload",
     )
-    upload_files: List[Dict[str, Any]] = Field(
-        [],
+    upload_files: Optional[List[Dict[str, Any]]] = Field(
+        None,
         title="list of the uploaded files",
     )
 

@@ -6186,11 +6186,8 @@ export interface components {
              * @default []
              */
             tags: unknown;
-            /**
-             * Upload Files
-             * @default []
-             */
-            upload_files: unknown;
+            /** Upload Files */
+            upload_files?: unknown;
             /**
              * Upload Option
              * @default upload_file
@@ -13289,11 +13286,8 @@ export interface components {
              * @default []
              */
             tags: string[];
-            /**
-             * list of the uploaded files
-             * @default []
-             */
-            upload_files: Record<string, never>[];
+            /** list of the uploaded files */
+            upload_files?: Record<string, never>[] | null;
             /**
              * @description the method to use for uploading files
              * @default upload_file

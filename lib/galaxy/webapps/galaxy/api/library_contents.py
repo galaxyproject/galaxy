@@ -3,9 +3,8 @@ API operations on the contents of a data library.
 """
 
 import logging
-import shutil
-import tempfile
 from typing import (
+    cast,
     List,
     Optional,
 )
@@ -62,22 +61,15 @@ class JsonApiRoute(APIContentTypeRoute):
 LibraryContentsCreateForm = as_form(LibraryContentsFileCreatePayload)
 
 
-async def get_files(
-    request: Request, trans: ProvidesUserContext = DependsOnTrans, files: Optional[List[UploadFile]] = None
-):
+async def get_files(request: Request, files: Optional[List[UploadFile]] = None):
     # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
-    if not files:
+    files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
+    if not files2:
         data = await request.form()
-        upload_files = []
-        for upload_file in data.values():
-            if isinstance(upload_file, StarletteUploadFile):
-                with tempfile.NamedTemporaryFile(
-                    dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
-                ) as dest:
-                    shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
-                upload_file.file.close()
-                upload_files.append(dict(filename=upload_file.filename, local_filename=dest.name))
-        return upload_files
+        for value in data.values():
+            if isinstance(value, StarletteUploadFile):
+                files2.append(value)
+    return files2
 
 
 @router.cbv
@@ -137,12 +129,11 @@ class FastAPILibraryContents:
         self,
         library_id: DecodedDatabaseIdField,
         payload: LibraryContentsFileCreatePayload = Depends(LibraryContentsCreateForm.as_form),
-        files: Optional[List[UploadFile]] = Depends(get_files),
+        files: List[StarletteUploadFile] = Depends(get_files),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> AnyLibraryContentsCreateResponse:
         """This endpoint is deprecated. Please use POST /api/folders/{folder_id} or POST /api/folders/{folder_id}/contents instead."""
-        payload.upload_files = files
-        return self.service.create(trans, library_id, payload)
+        return self.service.create(trans, library_id, payload, files)
 
     @router.put(
         "/api/libraries/{library_id}/contents/{id}",
