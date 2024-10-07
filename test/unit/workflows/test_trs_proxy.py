@@ -4,6 +4,7 @@ from os import environ
 import pytest
 import yaml
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ConfigDoesNotAllowException
 from galaxy.workflow.trs_proxy import (
     GA4GH_GALAXY_DESCRIPTOR,
@@ -18,8 +19,12 @@ search_test = pytest.mark.skipif(
 )
 
 
+def get_trs_proxy():
+    return TrsProxy(GalaxyAppConfiguration(trs_servers_config_file=None, fetch_url_allowlist_ips=[]))
+
+
 def test_proxy():
-    proxy = TrsProxy()
+    proxy = get_trs_proxy()
     server = proxy.get_server("dockstore")
 
     assert "dockstore" == proxy.get_servers()[0]["id"]
@@ -49,7 +54,7 @@ def test_proxy():
 
 
 def test_match_url():
-    proxy = TrsProxy()
+    proxy = get_trs_proxy()
     valid_dockstore = proxy._match_url(
         "https://dockstore.org/api/ga4gh/trs/v2/tools/"
         "quay.io%2Fcollaboratory%2Fdockstore-tool-bedtools-genomecov/versions/0.3",
@@ -115,7 +120,7 @@ def test_match_url():
 
 
 def test_server_from_url():
-    proxy = TrsProxy()
+    proxy = get_trs_proxy()
     server = proxy.server_from_url("https://workflowhub.eu")
 
     assert "https://workflowhub.eu" == server._trs_url
@@ -144,7 +149,7 @@ def test_server_from_url():
 
 @search_test
 def test_search():
-    proxy = TrsProxy()
+    proxy = get_trs_proxy()
     server = proxy.get_server("dockstore")
 
     search_kwd = parse_search_kwds("documentation")
