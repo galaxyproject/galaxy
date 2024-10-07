@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
-import { onMounted, ref } from "vue";
+import { onBeforeMount, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type ClaimLandingPayload } from "@/api/landings";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -21,21 +20,17 @@ const props = withDefaults(defineProps<Props>(), {
 const workflowId = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
 const requestState = ref<Record<string, never> | null>(null);
+const instance = ref<boolean>(false);
 
-onMounted(async () => {
-    const payload: ClaimLandingPayload = {};
-    if (props.secret) {
-        payload["client_secret"] = props.secret;
-    }
-
-    const { data, error } = await GalaxyApi().POST("/api/workflow_landings/{uuid}/claim", {
+onBeforeMount(async () => {
+    const { data, error } = await GalaxyApi().GET("/api/workflow_landings/{uuid}", {
         params: {
             path: { uuid: props.uuid },
         },
-        body: payload,
     });
     if (data) {
         workflowId.value = data.workflow_id;
+        instance.value = data.workflow_target_type === "workflow";
         requestState.value = data.request_state;
     } else {
         errorMessage.value = errorMessageAsString(error);
@@ -55,7 +50,11 @@ onMounted(async () => {
             </BAlert>
         </div>
         <div v-else>
-            <WorkflowRun :workflow-id="workflowId" :prefer-simple-form="true" :request-state="requestState" />
+            <WorkflowRun
+                :workflow-id="workflowId"
+                :prefer-simple-form="true"
+                :request-state="requestState"
+                :instance="instance" />
         </div>
     </div>
 </template>

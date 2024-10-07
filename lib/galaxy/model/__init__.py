@@ -11282,6 +11282,8 @@ class WorkflowLandingRequest(Base):
     uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
     request_state: Mapped[Optional[Dict]] = mapped_column(JSONType)
     client_secret: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+    workflow_source: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+    workflow_source_type: Mapped[Optional[str]] = mapped_column(String(255), default=None)
 
     user: Mapped[Optional["User"]] = relationship()
     stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship()
