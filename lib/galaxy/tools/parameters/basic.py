@@ -47,6 +47,7 @@ from galaxy.tool_util.parser.util import (
     boolean_is_checked,
     boolean_true_and_false_values,
     ParameterParseException,
+    text_input_is_optional,
 )
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.util import (
@@ -194,9 +195,7 @@ class ToolParameter(UsesDictVisibleKeys):
             self.sanitizer = ToolParameterSanitizer.from_element(sanitizer_elem)
         else:
             self.sanitizer = None
-        self.validators = []
-        for elem in input_source.parse_validator_elems():
-            self.validators.append(validation.Validator.from_element(self, elem))
+        self.validators = validation.to_validators(tool.app if tool else None, input_source.parse_validators())
 
     @property
     def visible(self) -> bool:
@@ -351,7 +350,6 @@ class ToolParameter(UsesDictVisibleKeys):
 class SimpleTextToolParameter(ToolParameter):
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
-        self.optionality_inferred = False
         super().__init__(tool, input_source)
         optional = input_source.get("optional", None)
         if optional is not None:
@@ -359,18 +357,7 @@ class SimpleTextToolParameter(ToolParameter):
         else:
             # Optionality not explicitly defined, default to False
             optional = False
-            if self.type == "text":
-                # A text parameter that doesn't raise a validation error on empty string
-                # is considered to be optional
-                try:
-                    for validator in self.validators:
-                        validator.validate("")
-                    optional = True
-                    self.optionality_inferred = True
-                except ValueError:
-                    pass
         self.optional = optional
-
         if self.optional:
             self.value = None
         else:
@@ -405,10 +392,16 @@ class TextToolParameter(SimpleTextToolParameter):
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
-        self.profile = tool.profile
+        self.profile = tool.profile if tool else None
         self.datalist = []
         for title, value, _ in input_source.parse_static_options():
             self.datalist.append({"label": title, "value": value})
+
+        # why does Integer and Float subclass this :_(
+        if self.type == "text":
+            self.optional, self.optionality_inferred = text_input_is_optional(input_source)
+        else:
+            self.optionality_inferred = False
         self.value = input_source.get("value")
         self.area = input_source.get_bool("area", False)
 
@@ -422,10 +415,10 @@ class TextToolParameter(SimpleTextToolParameter):
             return super().validate(value, trans)
 
     @property
-    def wrapper_default() -> Optional[str]:
+    def wrapper_default(self) -> Optional[str]:
         """Handle change in default handling pre and post 23.0 profiles."""
         profile = self.profile
-        legacy_behavior = (profile is None or Version(str(profile)) < Version("23.0"))
+        legacy_behavior = profile is None or Version(str(profile)) < Version("23.0")
         default_value = None
         if self.optional and self.optionality_inferred and legacy_behavior:
             default_value = ""
@@ -478,7 +471,7 @@ class IntegerToolParameter(TextToolParameter):
             except ValueError:
                 raise ParameterValueError("attribute 'max' must be an integer", self.name, self.max)
         if self.min is not None or self.max is not None:
-            self.validators.append(validation.InRangeValidator(None, self.min, self.max))
+            self.validators.append(validation.InRangeValidator.simple_range_validator(self.min, self.max))
 
     def from_json(self, value, trans, other_values=None):
         other_values = other_values or {}
@@ -551,7 +544,7 @@ class FloatToolParameter(TextToolParameter):
             except ValueError:
                 raise ParameterValueError("attribute 'max' must be a real number", self.name, self.max)
         if self.min is not None or self.max is not None:
-            self.validators.append(validation.InRangeValidator(None, self.min, self.max))
+            self.validators.append(validation.InRangeValidator.simple_range_validator(self.min, self.max))
 
     def from_json(self, value, trans, other_values=None):
         other_values = other_values or {}
@@ -2056,7 +2049,7 @@ class DataToolParameter(BaseDataToolParameter):
         self.load_contents = int(input_source.get("load_contents", 0))
         # Add metadata validator
         if not input_source.get_bool("no_validation", False):
-            self.validators.append(validation.MetadataValidator())
+            self.validators.append(validation.MetadataValidator.default_metadata_validator())
         self._parse_formats(trans, input_source)
         tag = input_source.get("tag")
         self.multiple = input_source.get_bool("multiple", False)
