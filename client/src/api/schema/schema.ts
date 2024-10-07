@@ -4399,6 +4399,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tool_landings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Landing */
+        post: operations["create_landing_api_tool_landings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tool_landings/{uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Landing */
+        get: operations["get_landing_api_tool_landings__uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tool_landings/{uuid}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Landing */
+        post: operations["claim_landing_api_tool_landings__uuid__claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tool_requests/{id}": {
         parameters: {
             query?: never;
@@ -7550,6 +7601,22 @@ export interface components {
              * @description The relative URL to get this particular Quota details from the rest API.
              */
             url: string;
+        };
+        /** CreateToolLandingRequestPayload */
+        CreateToolLandingRequestPayload: {
+            /** Client Secret */
+            client_secret?: string | null;
+            /**
+             * Public
+             * @default false
+             */
+            public: boolean;
+            /** Request State */
+            request_state?: Record<string, never> | null;
+            /** Tool Id */
+            tool_id: string;
+            /** Tool Version */
+            tool_version?: string | null;
         };
         /**
          * CreateType
@@ -18170,6 +18237,22 @@ export interface components {
              * @description A `\t` (TAB) separated list of column __contents__. You must specify a value for each of the columns of the data table.
              */
             values: string;
+        };
+        /** ToolLandingRequest */
+        ToolLandingRequest: {
+            /** Request State */
+            request_state?: Record<string, never> | null;
+            state: components["schemas"]["LandingRequestState"];
+            /** Tool Id */
+            tool_id: string;
+            /** Tool Version */
+            tool_version?: string | null;
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier for this dataset.
+             */
+            uuid: string;
         };
         /** ToolRequestModel */
         ToolRequestModel: {
@@ -34167,6 +34250,143 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToolDataDetails"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_landing_api_tool_landings_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateToolLandingRequestPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_landing_api_tool_landings__uuid__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted landing request. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    claim_landing_api_tool_landings__uuid__claim_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted landing request. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimLandingPayload"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolLandingRequest"];
                 };
             };
             /** @description Request Error */
