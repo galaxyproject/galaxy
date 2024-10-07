@@ -1,7 +1,14 @@
 <script setup lang="ts">
-import { faExclamationCircle, faLink, faTimes, faUnlink } from "@fortawesome/free-solid-svg-icons";
+import {
+    faAngleDown,
+    faAngleUp,
+    faExclamationCircle,
+    faLink,
+    faTimes,
+    faUnlink,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
+import { BAlert, BButton, BButtonGroup, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import draggable from "vuedraggable";
 
@@ -11,6 +18,7 @@ import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import localize from "@/utils/localization";
 import { naturalSort } from "@/utils/naturalSort";
 
+import Heading from "../Common/Heading.vue";
 import PairedElementView from "./PairedElementView.vue";
 import UnpairedDatasetElementView from "./UnpairedDatasetElementView.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
@@ -63,6 +71,7 @@ const autoPairsPossible = ref(true);
 const twoPassAutoPairing = ref(true);
 const removeExtensions = ref(true);
 const firstAutoPairDone = ref(false);
+const showPairingSection = ref(true);
 
 // Elements
 const workingElements = ref<HDASummary[]>([]);
@@ -74,6 +83,7 @@ const selectedReverseElement = ref<HDASummary | null>(null);
 // Filters
 const forwardFilter = ref(COMMON_FILTERS[DEFAULT_FILTER][0] || "");
 const reverseFilter = ref(COMMON_FILTERS[DEFAULT_FILTER][1] || "");
+const hasFilter = computed(() => forwardFilter.value || reverseFilter.value);
 
 // Autopairing
 const strategy = ref(autoPairLCS);
@@ -1036,183 +1046,211 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         </p>
                     </template>
                     <template v-slot:middle-content>
-                        <div class="column-headers vertically-spaced flex-column-container">
-                            <div class="forward-column flex-column column">
-                                <div class="column-header">
-                                    <div class="column-title">
-                                        <span class="title">
-                                            {{ numOfUnpairedForwardElements }}
-                                            {{ localize("unpaired forward") }}
-                                        </span>
-                                        <span class="title-info unpaired-info">
-                                            {{ numOfFilteredOutForwardElements }} {{ localize("filtered out") }}
-                                        </span>
+                        <BCard no-body class="mb-2">
+                            <BCardHeader
+                                class="d-flex justify-content-between align-items-center unselectable"
+                                role="button"
+                                @click="showPairingSection = !showPairingSection">
+                                <Heading size="sm">Pairing</Heading>
+                                <i class="text-muted">
+                                    {{ localize("Click to hide/show datasets to pair") }}
+                                    <FontAwesomeIcon
+                                        :icon="showPairingSection ? faAngleUp : faAngleDown"
+                                        size="lg"
+                                        fixed-width />
+                                </i>
+                            </BCardHeader>
+                            <BCardBody v-show="showPairingSection" class="pairing-split-parent">
+                                <div class="column-headers vertically-spaced flex-column-container">
+                                    <div class="forward-column flex-column column">
+                                        <div class="column-header">
+                                            <div class="column-title">
+                                                <span class="title">
+                                                    {{ numOfUnpairedForwardElements }}
+                                                    {{ localize("unpaired forward") }}
+                                                </span>
+                                                <span class="title-info unpaired-info">
+                                                    {{ numOfFilteredOutForwardElements }} {{ localize("filtered out") }}
+                                                </span>
+                                            </div>
+                                            <div
+                                                class="unpaired-filter forward-unpaired-filter search-input search-query input-group">
+                                                <label for="forward-filter" class="sr-only">{{
+                                                    FILTER_TEXT_TITLE
+                                                }}</label>
+                                                <input
+                                                    id="foward-filter"
+                                                    v-model="forwardFilter"
+                                                    type="text"
+                                                    :placeholder="FILTER_TEXT_PLACEHOLDER"
+                                                    :title="FILTER_TEXT_TITLE" />
+                                                <div class="input-group-append" :title="CHOOSE_FILTER_TITLE">
+                                                    <button
+                                                        class="btn btn-outline-secondary dropdown-toggle"
+                                                        type="button"
+                                                        data-toggle="dropdown"
+                                                        aria-haspopup="true"
+                                                        aria-expanded="false"></button>
+                                                    <div class="dropdown-menu">
+                                                        <a
+                                                            class="dropdown-item"
+                                                            href="javascript:void(0);"
+                                                            @click="changeFilters('illumina')">
+                                                            _1
+                                                        </a>
+                                                        <a
+                                                            class="dropdown-item"
+                                                            href="javascript:void(0);"
+                                                            @click="changeFilters('Rs')">
+                                                            _R1
+                                                        </a>
+                                                        <a
+                                                            class="dropdown-item"
+                                                            href="javascript:void(0);"
+                                                            @click="changeFilters('dot12s')">
+                                                            .1.fastq
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div
-                                        class="unpaired-filter forward-unpaired-filter search-input search-query input-group">
-                                        <label for="forward-filter" class="sr-only">{{ FILTER_TEXT_TITLE }}</label>
-                                        <input
-                                            id="foward-filter"
-                                            v-model="forwardFilter"
-                                            type="text"
-                                            :placeholder="FILTER_TEXT_PLACEHOLDER"
-                                            :title="FILTER_TEXT_TITLE" />
-                                        <div class="input-group-append" :title="CHOOSE_FILTER_TITLE">
-                                            <button
-                                                class="btn btn-outline-secondary dropdown-toggle"
-                                                type="button"
-                                                data-toggle="dropdown"
-                                                aria-haspopup="true"
-                                                aria-expanded="false"></button>
-                                            <div class="dropdown-menu">
-                                                <a
-                                                    class="dropdown-item"
-                                                    href="javascript:void(0);"
-                                                    @click="changeFilters('illumina')"
-                                                    >_1</a
+                                    <div class="paired-column flex-column no-flex column">
+                                        <BButtonGroup vertical>
+                                            <BButton
+                                                class="clear-filters-link"
+                                                size="sm"
+                                                :variant="hasFilter ? 'danger' : 'secondary'"
+                                                @click="clickClearFilters">
+                                                <FontAwesomeIcon :icon="faTimes" fixed-width />
+                                                {{ localize("Clear Filters") }}
+                                            </BButton>
+                                            <BButton
+                                                class="autopair-link"
+                                                size="sm"
+                                                :title="autoPairButton.text"
+                                                :variant="autoPairButton.variant"
+                                                @click="clickAutopair">
+                                                <FontAwesomeIcon :icon="autoPairButton.icon" fixed-width />
+                                                {{ localize("Auto-pair") }}
+                                            </BButton>
+                                        </BButtonGroup>
+                                    </div>
+                                    <div class="reverse-column flex-column column">
+                                        <div class="column-header">
+                                            <div class="column-title">
+                                                <span class="title">
+                                                    {{ numOfUnpairedReverseElements }}
+                                                    {{ localize("unpaired reverse") }}
+                                                </span>
+                                                <span class="title-info unpaired-info">
+                                                    {{ numOfFilteredOutReverseElements }}
+                                                    {{ localize("filtered out") }}</span
                                                 >
-                                                <a
-                                                    class="dropdown-item"
-                                                    href="javascript:void(0);"
-                                                    @click="changeFilters('Rs')"
-                                                    >_R1</a
-                                                >
-                                                <a
-                                                    class="dropdown-item"
-                                                    href="javascript:void(0);"
-                                                    @click="changeFilters('dot12s')"
-                                                    >.1.fastq</a
-                                                >
+                                            </div>
+                                            <div
+                                                class="unpaired-filter reverse-unpaired-filter justify-content-end search-input search-query input-group">
+                                                <label for="reverse-filter" class="sr-only">{{
+                                                    FILTER_TEXT_TITLE
+                                                }}</label>
+                                                <input
+                                                    id="reverse-filter"
+                                                    v-model="reverseFilter"
+                                                    type="text"
+                                                    :placeholder="FILTER_TEXT_PLACEHOLDER"
+                                                    :title="FILTER_TEXT_TITLE" />
+                                                <div class="input-group-append" :title="CHOOSE_FILTER_TITLE">
+                                                    <button
+                                                        class="btn btn-outline-secondary dropdown-toggle"
+                                                        type="button"
+                                                        data-toggle="dropdown"
+                                                        aria-haspopup="true"
+                                                        aria-expanded="false"></button>
+                                                    <div class="dropdown-menu">
+                                                        <a
+                                                            class="dropdown-item"
+                                                            href="javascript:void(0);"
+                                                            @click="changeFilters('illumina')">
+                                                            _2
+                                                        </a>
+                                                        <a
+                                                            class="dropdown-item"
+                                                            href="javascript:void(0);"
+                                                            @click="changeFilters('Rs')">
+                                                            _R2
+                                                        </a>
+                                                        <a
+                                                            class="dropdown-item"
+                                                            href="javascript:void(0);"
+                                                            @click="changeFilters('dot12s')">
+                                                            .2.fastq
+                                                        </a>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="paired-column flex-column no-flex column">
-                                <BButtonGroup vertical>
-                                    <BButton class="clear-filters-link" size="sm" @click="clickClearFilters">
-                                        <FontAwesomeIcon :icon="faTimes" fixed-width />
-                                        {{ localize("Clear Filters") }}
-                                    </BButton>
-                                    <BButton
-                                        v-b-tooltip.hover.noninteractive
-                                        class="autopair-link"
-                                        size="sm"
-                                        :title="autoPairButton.text"
-                                        :disabled="pairableElements.length === 0"
-                                        :variant="autoPairButton.variant"
-                                        @click="clickAutopair">
-                                        <FontAwesomeIcon :icon="autoPairButton.icon" fixed-width />
-                                        {{ localize("Auto-pair") }}
-                                    </BButton>
-                                </BButtonGroup>
-                            </div>
-                            <div class="reverse-column flex-column column">
-                                <div class="column-header">
-                                    <div class="column-title">
-                                        <span class="title">
-                                            {{ numOfUnpairedReverseElements }}
-                                            {{ localize("unpaired reverse") }}
-                                        </span>
-                                        <span class="title-info unpaired-info">
-                                            {{ numOfFilteredOutReverseElements }} {{ localize("filtered out") }}</span
-                                        >
+                                <div class="pairing-split-child">
+                                    <div v-if="noUnpairedElementsDisplayed">
+                                        <BAlert show variant="warning">
+                                            {{ localize("No datasets were found matching the current filters.") }}
+                                        </BAlert>
                                     </div>
-                                    <div
-                                        class="unpaired-filter reverse-unpaired-filter justify-content-end search-input search-query input-group">
-                                        <label for="reverse-filter" class="sr-only">{{ FILTER_TEXT_TITLE }}</label>
-                                        <input
-                                            id="reverse-filter"
-                                            v-model="reverseFilter"
-                                            type="text"
-                                            :placeholder="FILTER_TEXT_PLACEHOLDER"
-                                            :title="FILTER_TEXT_TITLE" />
-                                        <div class="input-group-append" :title="CHOOSE_FILTER_TITLE">
-                                            <button
-                                                class="btn btn-outline-secondary dropdown-toggle"
-                                                type="button"
-                                                data-toggle="dropdown"
-                                                aria-haspopup="true"
-                                                aria-expanded="false"></button>
-                                            <div class="dropdown-menu">
-                                                <a
-                                                    class="dropdown-item"
-                                                    href="javascript:void(0);"
-                                                    @click="changeFilters('illumina')"
-                                                    >_2</a
-                                                >
-                                                <a
-                                                    class="dropdown-item"
-                                                    href="javascript:void(0);"
-                                                    @click="changeFilters('Rs')"
-                                                    >_R2</a
-                                                >
-                                                <a
-                                                    class="dropdown-item"
-                                                    href="javascript:void(0);"
-                                                    @click="changeFilters('dot12s')"
-                                                    >.2.fastq</a
-                                                >
-                                            </div>
+                                    <div class="unpaired-columns flex-column-container scroll-container flex-row">
+                                        <div class="forward-column flex-column column truncate">
+                                            <ol class="column-datasets">
+                                                <UnpairedDatasetElementView
+                                                    v-for="element in forwardElements"
+                                                    :key="element.id"
+                                                    :class="{
+                                                        selected:
+                                                            selectedForwardElement &&
+                                                            element.id === selectedForwardElement.id,
+                                                    }"
+                                                    :disabled="element.id === selectedReverseElement?.id"
+                                                    :element="element"
+                                                    @element-is-selected="forwardElementSelected" />
+                                            </ol>
+                                        </div>
+                                        <div class="paired-column flex-column no-flex column truncate">
+                                            <ol
+                                                v-if="forwardFilter !== '' && reverseFilter !== ''"
+                                                class="column-datasets">
+                                                <li
+                                                    v-for="(pairableElement, index) in pairableElements"
+                                                    :key="index"
+                                                    class="dataset"
+                                                    role="button"
+                                                    tabindex="0"
+                                                    @keyup.enter="
+                                                        _pair(pairableElement.forward, pairableElement.reverse)
+                                                    "
+                                                    @click="_pair(pairableElement.forward, pairableElement.reverse)">
+                                                    {{ localize("Pair these datasets") }}
+                                                </li>
+                                            </ol>
+                                        </div>
+                                        <div class="reverse-column flex-column column truncate">
+                                            <ol class="column-datasets">
+                                                <UnpairedDatasetElementView
+                                                    v-for="element in reverseElements"
+                                                    :key="element.id"
+                                                    :class="{
+                                                        selected:
+                                                            selectedReverseElement &&
+                                                            element.id == selectedReverseElement.id,
+                                                    }"
+                                                    :disabled="element.id === selectedForwardElement?.id"
+                                                    :element="element"
+                                                    @element-is-selected="reverseElementSelected" />
+                                            </ol>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="pairing-split-parent">
-                            <div class="pairing-split-child">
-                                <div v-if="noUnpairedElementsDisplayed">
-                                    <BAlert show variant="warning">
-                                        {{ localize("No datasets were found matching the current filters.") }}
-                                    </BAlert>
-                                </div>
-                                <div class="unpaired-columns flex-column-container scroll-container flex-row">
-                                    <div class="forward-column flex-column column truncate">
-                                        <ol class="column-datasets">
-                                            <UnpairedDatasetElementView
-                                                v-for="element in forwardElements"
-                                                :key="element.id"
-                                                :class="{
-                                                    selected:
-                                                        selectedForwardElement &&
-                                                        element.id === selectedForwardElement.id,
-                                                }"
-                                                :disabled="element.id === selectedReverseElement?.id"
-                                                :element="element"
-                                                @element-is-selected="forwardElementSelected" />
-                                        </ol>
-                                    </div>
-                                    <div class="paired-column flex-column no-flex column truncate">
-                                        <ol v-if="forwardFilter !== '' && reverseFilter !== ''" class="column-datasets">
-                                            <li
-                                                v-for="(pairableElement, index) in pairableElements"
-                                                :key="index"
-                                                class="dataset"
-                                                role="button"
-                                                tabindex="0"
-                                                @keyup.enter="_pair(pairableElement.forward, pairableElement.reverse)"
-                                                @click="_pair(pairableElement.forward, pairableElement.reverse)">
-                                                {{ localize("Pair these datasets") }}
-                                            </li>
-                                        </ol>
-                                    </div>
-                                    <div class="reverse-column flex-column column truncate">
-                                        <ol class="column-datasets">
-                                            <UnpairedDatasetElementView
-                                                v-for="element in reverseElements"
-                                                :key="element.id"
-                                                :class="{
-                                                    selected:
-                                                        selectedReverseElement &&
-                                                        element.id == selectedReverseElement.id,
-                                                }"
-                                                :disabled="element.id === selectedForwardElement?.id"
-                                                :element="element"
-                                                @element-is-selected="reverseElementSelected" />
-                                        </ol>
-                                    </div>
-                                </div>
-                            </div>
+                            </BCardBody>
+                        </BCard>
+                        <div>
                             <div class="pairing-split-child">
                                 <div class="column-header">
                                     <div class="column-title paired-column-title">
