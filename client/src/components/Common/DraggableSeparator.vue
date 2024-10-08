@@ -106,7 +106,7 @@ const style = computed(() => ({
     <button
         ref="draggable"
         class="drag-handle"
-        :class="`side-${props.side}`"
+        :class="[`side-${props.side}`, { show: showHover }]"
         :style="style"
         @mouseenter="hoverDraggable = true"
         @focusin="hoverDraggable = true"
@@ -119,12 +119,14 @@ const style = computed(() => ({
 </template>
 
 <style scoped lang="scss">
+@import "theme/blue.scss";
+
 $border-width: 6px;
 
 .drag-handle {
     --position: 0;
 
-    background-color: blue;
+    background-color: transparent;
     border: none;
     border-radius: 0;
     position: absolute;
@@ -148,6 +150,29 @@ $border-width: 6px;
     &.side-right {
         right: var(--position);
         margin-right: -$border-width;
+    }
+
+    &::after {
+        display: block;
+        content: "";
+        position: absolute;
+        top: 0;
+        width: $border-width;
+        height: 100%;
+        background-color: transparent;
+        transition: background-color 0.1s;
+    }
+
+    &.show::after {
+        background-color: $brand-info;
+    }
+
+    &.side-left.show::after {
+        left: 0;
+    }
+
+    &.side-right.show::after {
+        right: 0;
     }
 }
 </style>
