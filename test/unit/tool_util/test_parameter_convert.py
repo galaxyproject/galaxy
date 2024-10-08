@@ -217,6 +217,19 @@ def test_fill_defaults():
     assert with_defaults["cond"]["cond"] == "single"
     assert with_defaults["cond"]["inner_cond"]["inner_cond"] == "single"
 
+    # dynamic parameters should just stay empty - null would cause runtime to skip over population
+    with_defaults = fill_state_for({}, "parameters/gx_select_dynamic", partial=True)
+    assert "parameter" not in with_defaults
+
+    # dynamic parameters should just stay empty - null would cause runtime to skip over population
+    with_defaults = fill_state_for(
+        {"conditional_parameter": {"test_parameter": False}},
+        "parameters/gx_conditional_boolean_discriminate_on_string_value",
+    )
+    assert "conditional_parameter" in with_defaults
+    assert "boolean_parameter" in with_defaults["conditional_parameter"]
+    assert with_defaults["conditional_parameter"]["boolean_parameter"] is False
+
 
 def _fake_dereference(input: DataRequestUri) -> DataRequestInternalHda:
     return DataRequestInternalHda(id=EXAMPLE_ID_1)
