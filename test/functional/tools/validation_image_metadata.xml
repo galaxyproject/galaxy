@@ -67,6 +67,20 @@
         <param name="input_channels_3" type="data" format="data" optional="true">
             <validator type="dataset_metadata_equal" metadata_name="channels" value="3" />
         </param>
+        <!-- Checks for "depth" metadata -->
+        <param name="input_depth_0" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="depth" value="0" />
+        </param>
+        <param name="input_channels_25" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="depth" value="25" />
+        </param>
+        <!-- Checks for "frames" metadata -->
+        <param name="input_frames_0" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="frames" value="0" />
+        </param>
+        <param name="input_frames_5" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="frames" value="5" />
+        </param>
     </inputs>
     <outputs>
         <data name="output" format="data" />
@@ -88,6 +102,10 @@
             <param name="input_channels_0" value="im1_uint8.tif" />
             <param name="input_channels_2" value="im5_uint8.tif" /><!-- axes: CYX -->
             <param name="input_channels_3" value="im3_b.tif" /><!-- axes: YXS -->
+            <param name="input_depth_0" value="im1_uint8.tif" /><!-- axes: YXS -->
+            <param name="input_depth_25" value="im7_uint8.tif" /><!-- axes: ZYX -->
+            <param name="input_frames_0" value="im1_uint8.tif" /><!-- axes: YXS -->
+            <param name="input_frames_5" value="im8_uint16.tif" /><!-- axes: TYX -->
             <expand macro="test-output" />
         </test>
         <!-- Tests with PNG files -->
@@ -101,6 +119,8 @@
             <param name="input_height_32" value="im2_b.png" />
             <param name="input_channels_0" value="im1_uint8.png" />
             <param name="input_channels_3" value="im3_a.png" />
+            <param name="input_depth_0" value="im1_uint8.png" />
+            <param name="input_frames_0" value="im1_uint8.png" />
             <expand macro="test-output" />
         </test>
         <!-- End of tests -->

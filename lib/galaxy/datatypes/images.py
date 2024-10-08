@@ -104,6 +104,22 @@ class Image(data.Data):
         optional=True,
     )
 
+    MetadataElement(
+        name="depth",
+        desc="Depth of the image (number of slices)",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    MetadataElement(
+        name="frames",
+        desc="Number of frames in the image sequence (number of time steps)",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
     def __init__(self, **kwd):
         super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
@@ -143,6 +159,8 @@ class Image(data.Data):
                     dataset.metadata.num_unique_values = str(len(np.unique(im)))
                     dataset.metadata.width = str(im_arr.shape[1])
                     dataset.metadata.height = str(im_arr.shape[0])
+                    dataset.metadata.depth = "0"
+                    dataset.metadata.frames = "0"
                     if im_arr.ndim == 2:
                         dataset.metadata.axes = "YX"
                         dataset.metadata.channels = "0"
@@ -197,9 +215,11 @@ class Tiff(Image):
             offsets = [page.offset for page in tif.pages]
             dataset.metadata.axes = tif.series[0].axes.upper()
             dataset.metadata.dtype = str(tif.series[0].dtype)
-            dataset.metadata.width = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, 'X'))
-            dataset.metadata.height = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, 'Y'))
-            dataset.metadata.channels = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes.replace('S', 'C'), 'C'))
+            dataset.metadata.width = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "X"))
+            dataset.metadata.height = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "Y"))
+            dataset.metadata.channels = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes.replace("S", "C"), "C"))
+            dataset.metadata.depth = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "Z"))
+            dataset.metadata.frames = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "T"))
             dataset.metadata.num_unique_values = str(len(np.unique(im_arr)))
         with open(offsets_file.get_file_name(), "w") as f:
             json.dump(offsets, f)
