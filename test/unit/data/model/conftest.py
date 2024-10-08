@@ -375,6 +375,14 @@ def make_page(session, make_user):
 @pytest.fixture
 def make_role(session):
     def f(**kwd):
+        # We must specify `name` because after removing the unique constraint
+        # from role.name (migration 9a5207190a4d) and setting up a default name
+        # generation for roles that do not receive a name argument that does
+        # not generate unique names, any migration unit tests that use
+        # this fixture AFTER DOWNGRADING (like # test_migrations.py::test_349dd9d9aac9)
+        # would break due to violating that constraint (restored via
+        # downgrading) without setting name.
+        kwd["name"] = kwd.get("name") or random_str()
         model = m.Role(**kwd)
         write_to_db(session, model)
         return model
