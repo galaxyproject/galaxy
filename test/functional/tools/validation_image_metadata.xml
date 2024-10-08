@@ -33,6 +33,16 @@
         <param name="input_dtype_float64" type="data" format="data" optional="true">
             <validator type="dataset_metadata_equal" metadata_name="dtype" value="float64" />
         </param>
+        <!-- Checks for "num_unique_values" metadata -->
+        <param name="input_num_unique_values_1" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value="1" />
+        </param>
+        <param name="input_num_unique_values_2" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value="2" />
+        </param>
+        <param name="input_num_unique_values_618" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value="618" />
+        </param>
     </inputs>
     <outputs>
         <data name="output" format="data" />
@@ -45,6 +55,8 @@
             <param name="input_dtype_uint8" value="im6_uint8.tif" />
             <param name="input_dtype_uint16" value="im8_uint16.tif" />
             <param name="input_dtype_float64" value="im4_float.tif" />
+            <param name="input_num_unique_values_2" value="im3_b.tif" />
+            <param name="input_num_unique_values_618" value="im4_float.tif" />
             <expand macro="test-output" />
         </test>
         <!-- Tests with PNG files -->
@@ -52,6 +64,8 @@
             <param name="input_axes_yx" value="im1_uint8.png" />
             <param name="input_axes_yxc" value="im3_a.png" />
             <param name="input_dtype_uint8" value="im1_uint8.png" />
+            <param name="input_num_unique_values_1" value="im2_a.png" />
+            <param name="input_num_unique_values_2" value="im2_b.png" />
             <expand macro="test-output" />
         </test>
     </tests>

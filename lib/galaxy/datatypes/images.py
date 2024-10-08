@@ -72,6 +72,14 @@ class Image(data.Data):
         optional=True,
     )
 
+    MetadataElement(
+        name="num_unique_values",
+        desc="Number of unique values in the image data (e.g., should be 2 for binary images)",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
     def __init__(self, **kwd):
         super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
@@ -108,6 +116,7 @@ class Image(data.Data):
                 with PIL.Image.open(dataset.get_file_name()) as im:
                     im_arr = np.array(im)
                     dataset.metadata.dtype = str(im_arr.dtype)
+                    dataset.metadata.num_unique_values = str(len(np.unique(im)))
                     if im_arr.ndim == 2:
                         dataset.metadata.axes = 'YX'
                     elif im_arr.ndim == 3:
@@ -146,6 +155,9 @@ class Tiff(Image):
     def set_meta(
         self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
+        """
+        Populate the metadata of the TIFF image using the tifffile library.
+        """
         spec_key = "offsets"
         offsets_file = dataset.metadata.offsets
         if not offsets_file:
@@ -153,9 +165,11 @@ class Tiff(Image):
                 dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
             )
         with tifffile.TiffFile(dataset.get_file_name()) as tif:
+            im_arr = tif.asarray()
             offsets = [page.offset for page in tif.pages]
             dataset.metadata.axes = tif.series[0].axes.upper()
             dataset.metadata.dtype = str(tif.series[0].dtype)
+            dataset.metadata.num_unique_values = str(len(np.unique(im_arr)))
         with open(offsets_file.get_file_name(), "w") as f:
             json.dump(offsets, f)
         dataset.metadata.offsets = offsets_file
