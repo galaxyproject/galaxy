@@ -211,16 +211,26 @@ class Tiff(Image):
                 dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
             )
         with tifffile.TiffFile(dataset.get_file_name()) as tif:
-            im_arr = tif.asarray()
             offsets = [page.offset for page in tif.pages]
+
+            # Populate the metadata fields that should be generally available
             dataset.metadata.axes = tif.series[0].axes.upper()
             dataset.metadata.dtype = str(tif.series[0].dtype)
-            dataset.metadata.width = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "X"))
-            dataset.metadata.height = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "Y"))
-            dataset.metadata.channels = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes.replace("S", "C"), "C"))
-            dataset.metadata.depth = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "Z"))
-            dataset.metadata.frames = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "T"))
-            dataset.metadata.num_unique_values = str(len(np.unique(im_arr)))
+
+            # Populate the metadata fields that require reading the image data
+            try:
+                im_arr = tif.asarray()
+            except ValueError:  # Occurs if the compression of the TIFF file is unsupported
+                im_arr = None
+            if im_arr is not None:
+                dataset.metadata.width = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "X"))
+                dataset.metadata.height = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "Y"))
+                dataset.metadata.channels = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes.replace("S", "C"), "C"))
+                dataset.metadata.depth = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "Z"))
+                dataset.metadata.frames = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "T"))
+                dataset.metadata.num_unique_values = str(len(np.unique(im_arr)))
+
+        # Populate the "offsets" file and metadata field
         with open(offsets_file.get_file_name(), "w") as f:
             json.dump(offsets, f)
         dataset.metadata.offsets = offsets_file
