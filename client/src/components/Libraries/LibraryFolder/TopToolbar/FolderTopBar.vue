@@ -11,7 +11,6 @@ import {
     BDropdownItem,
     BFormCheckbox,
 } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -61,7 +60,6 @@ const emit = defineEmits<{
 const { config, isConfigLoaded } = useConfig();
 
 const userStore = useUserStore();
-const { isAdmin } = storeToRefs(userStore);
 
 type ImportSource = "history" | "userdir" | "importdir" | "path" | undefined;
 const modalShow = ref<ImportSource>();
@@ -83,7 +81,7 @@ const containsFileOrFolder = computed(() => {
     return props.folderContents.find((el) => el.type === "folder" || el.type === "file");
 });
 const canDelete = computed(() => {
-    return !!(containsFileOrFolder.value && isAdmin.value);
+    return !!(containsFileOrFolder.value && props.metadata.can_modify_folder);
 });
 const datasetManipulation = computed(() => {
     return !!(containsFileOrFolder.value && userStore.currentUser);
