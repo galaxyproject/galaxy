@@ -1230,10 +1230,7 @@ ON CONFLICT
 
     def attempt_create_private_role(self):
         session = object_session(self)
-        role_name = self.email
-        role_desc = f"Private Role for {self.email}"
-        role_type = Role.types.PRIVATE
-        role = Role(name=role_name, description=role_desc, type=role_type)
+        role = Role(type=Role.types.PRIVATE)
         assoc = UserRoleAssociation(self, role)
         session.add(assoc)
         with transaction(session):
