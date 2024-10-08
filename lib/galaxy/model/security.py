@@ -1024,7 +1024,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         self.set_dataset_permission(dataset, {self.permitted_actions.DATASET_ACCESS: [sharing_role]})
 
     def _create_sharing_role(self, users):
-        sharing_role = Role(name=f"Sharing role for: {', '.join(u.email for u in users)}", type=Role.types.SHARING)
+        sharing_role = Role(type=Role.types.SHARING)
         self.sa_session.add(sharing_role)
         with transaction(self.sa_session):
             self.sa_session.commit()
@@ -1807,3 +1807,7 @@ def is_foreign_key_violation(error):
         # If this is a PostgreSQL foreign key error, then error.orig is an instance of psycopg2.errors.ForeignKeyViolation
         # and should have an attribute `pgcode` = 23503.
         return int(getattr(error.orig, "pgcode", -1)) == 23503
+
+
+def role_name_by_type(type):
+    return f"{type} role"
