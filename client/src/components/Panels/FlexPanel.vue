@@ -76,7 +76,8 @@ const sideClasses = computed(() => ({
             :side="props.side"
             :min="props.minWidth"
             :max="props.maxWidth"
-            @positionChanged="(v) => (panelWidth = v)"></DraggableSeparator>
+            @positionChanged="(v) => (panelWidth = v)"
+            @visibilityChanged="(v) => (isHoveringDragHandle = v)"></DraggableSeparator>
 
         <button
             v-if="props.collapsible"
