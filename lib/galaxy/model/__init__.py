@@ -3768,8 +3768,12 @@ class Role(Base, Dictifiable, RepresentById):
         ADMIN = "admin"
         SHARING = "sharing"
 
+    @staticmethod
+    def default_name(role_type):
+        return f"{role_type.value} role"
+
     def __init__(self, name=None, description=None, type=types.SYSTEM, deleted=False):
-        self.name = name
+        self.name = name or Role.default_name(type)
         self.description = description
         self.type = type
         self.deleted = deleted
