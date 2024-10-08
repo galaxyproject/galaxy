@@ -5,7 +5,12 @@ Image classes
 import base64
 import json
 import logging
-from typing import Optional
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
 import mrcfile
 import numpy as np
@@ -214,7 +219,7 @@ class Tiff(Image):
             offsets = [page.offset for page in tif.pages]
 
             # Aggregate a list of values for each metadata field (one value for each series of the TIFF file)
-            metadata = {
+            metadata: Dict[str, List[Any]] = {
                 key: []
                 for key in [
                     "axes",
