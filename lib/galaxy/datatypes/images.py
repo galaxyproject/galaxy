@@ -15,7 +15,7 @@ try:
     import PIL
     import PIL.Image
 except ImportError:
-    PIL = None
+    PIL = None  # type: ignore[assignment, unused-ignore]
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
