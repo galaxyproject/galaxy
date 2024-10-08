@@ -1,0 +1,44 @@
+<tool id="validation_image_metadata" name="validation_image_metadata" version="1.0">
+    <command><![CDATA[
+      cat /dev/null > testfile
+    ]]></command>
+    <inputs>
+        <param name="input_axes_yx" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="axes" value="YX" />
+        </param>
+        <param name="input_axes_yxc" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="axes" value="YXC" />
+        </param>
+        <param name="input_axes_zcyx" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="axes" value="ZCYX" />
+        </param>
+        <!--<param name="input_dtype_uint8" type="data" format="data">
+            <validator type="dataset_metadata_equal" metadata_name="dtype" value="uint8" />
+        </param>-->
+    </inputs>
+    <outputs>
+        <data name="output" format="data" />
+    </outputs>
+    <tests>
+        <!-- Tests with TIFF files -->
+        <test>
+            <param name="input_axes_yx" value="im1_uint8.tif" />
+            <param name="input_axes_zcyx" value="im6_uint8.tif" />
+            <output name="output">
+                <assert_contents>
+                    <has_size value="0" delta="0" />
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Tests with PNG files -->
+        <test>
+            <param name="input_axes_yx" value="im1_uint8.png" />
+            <param name="input_axes_yxc" value="im3_a.png" />
+            <output name="output">
+                <assert_contents>
+                    <has_size value="0" delta="0" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

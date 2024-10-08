@@ -11,6 +11,12 @@ import mrcfile
 import numpy as np
 import tifffile
 
+try:
+    import PIL
+    import PIL.Image
+except ImportError:
+    PIL = None
+
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
     FileParameter,
@@ -50,6 +56,14 @@ class Image(data.Data):
     edam_format = "format_3547"
     file_ext = ""
 
+    MetadataElement(
+        name="axes",
+        desc="Axes of the image data",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
     def __init__(self, **kwd):
         super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
@@ -72,6 +86,26 @@ class Image(data.Data):
         with open(dataset.get_file_name(), "rb") as f:
             base64_image_data = base64.b64encode(f.read()).decode("utf-8")
         return f"![{name}](data:image/{self.file_ext};base64,{base64_image_data})"
+
+    def set_meta(
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+    ) -> None:
+        """
+        Try to populate the metadata of the image using a generic image loading library (pillow), if available.
+
+        If an image has two axes, they are assumed to be ``YX``. If an image has three axes, they are assumed to be ``YXC``.
+        """
+        if PIL is not None:
+            try:
+                with PIL.Image.open(dataset.get_file_name()) as im:
+                    im_arr = np.array(im)
+#                    dataset.metadata.dtype = str(im_arr.dtype)
+                    if im_arr.ndim == 2:
+                        dataset.metadata.axes = 'YX'
+                    elif im_arr.ndim == 3:
+                        dataset.metadata.axes = 'YXC'
+            except PIL.UnidentifiedImageError:
+                pass
 
 
 class Jpg(Image):
@@ -112,6 +146,7 @@ class Tiff(Image):
             )
         with tifffile.TiffFile(dataset.get_file_name()) as tif:
             offsets = [page.offset for page in tif.pages]
+            dataset.metadata.axes = tif.series[0].axes.upper()
         with open(offsets_file.get_file_name(), "w") as f:
             json.dump(offsets, f)
         dataset.metadata.offsets = offsets_file
