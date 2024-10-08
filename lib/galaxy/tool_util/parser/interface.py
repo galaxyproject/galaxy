@@ -436,6 +436,10 @@ class DynamicOptions(metaclass=ABCMeta):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abstractmethod
+    def get_dynamic_options_code(self) -> Optional[str]:
+        """If dynamic options are a piece of code to eval, return it."""
+
+    @abstractmethod
     def get_data_table_name(self) -> Optional[str]:
         """If dynamic options are loaded from a data table, return the name."""
 
