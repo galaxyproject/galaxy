@@ -1300,18 +1300,23 @@ class XmlPageSource(PageSource):
 
 class XmlDynamicOptions(DynamicOptions):
 
-    def __init__(self, options_elem: Element):
+    def __init__(self, options_elem: Element, dynamic_option_code: Optional[str]):
         self._options_elem = options_elem
+        self._dynamic_options_code = dynamic_option_code
 
     def elem(self) -> Element:
         return self._options_elem
 
+    def get_dynamic_options_code(self) -> Optional[str]:
+        """If dynamic options are a piece of code to eval, return it."""
+        return self._dynamic_options_code
+
     def get_data_table_name(self) -> Optional[str]:
         """If dynamic options are loaded from a data table, return the name."""
-        return self._options_elem.get("from_data_table")
+        return self._options_elem.get("from_data_table") if self._options_elem is not None else None
 
     def get_index_file_name(self) -> Optional[str]:
-        return self._options_elem.get("from_file")
+        return self._options_elem.get("from_file") if self._options_elem is not None else None
 
 
 class XmlInputSource(InputSource):
@@ -1349,7 +1354,12 @@ class XmlInputSource(InputSource):
     def parse_dynamic_options(self) -> Optional[XmlDynamicOptions]:
         """Return a XmlDynamicOptions to describe dynamic options if options elem is available."""
         options_elem = self.input_elem.find("options")
-        return XmlDynamicOptions(options_elem) if options_elem is not None else None
+        dynamic_option_code = self.input_elem.get("dynamic_options")
+        is_dynamic = options_elem is not None or dynamic_option_code is not None
+        if is_dynamic:
+            return XmlDynamicOptions(options_elem, dynamic_option_code)
+        else:
+            return None
 
     def parse_static_options(self) -> List[Tuple[str, str, bool]]:
         """

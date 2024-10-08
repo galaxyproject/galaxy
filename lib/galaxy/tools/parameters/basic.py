@@ -123,6 +123,8 @@ def parse_dynamic_options(param, input_source):
     if not dynamic_options_config:
         return None
     options_elem = dynamic_options_config.elem()
+    if options_elem is None:
+        return None
     return dynamic_options.DynamicOptions(options_elem, param)
 
 
