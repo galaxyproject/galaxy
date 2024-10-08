@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useDebounce, useDraggable } from "@vueuse/core";
-import { computed, ref, watch } from "vue";
+import { useDebounce, useDraggable, useElementBounding } from "@vueuse/core";
+import { computed, onMounted, ref, watch } from "vue";
 
 import { useEmit } from "@/composables/eventEmitter";
 import { useClamp } from "@/composables/math";
@@ -14,14 +14,12 @@ const props = withDefaults(
         showDelay?: number;
         keyboardStepSize?: number;
         side: "left" | "right";
-        additionalOffset?: number;
     }>(),
     {
         showDelay: 100,
         keyboardStepSize: 50,
-        min: -Infinity,
+        min: 0,
         max: Infinity,
-        additionalOffset: 0,
     }
 );
 
@@ -34,6 +32,13 @@ const emit = defineEmits<{
 const { throttle } = useAnimationFrameThrottle();
 
 const draggable = ref<HTMLButtonElement | null>(null);
+const positionedParent = ref<HTMLElement | null>(null);
+
+onMounted(() => {
+    positionedParent.value = (draggable.value?.offsetParent as HTMLElement) ?? null;
+});
+
+const rootBoundingBox = useElementBounding(positionedParent);
 
 const { position: draggablePosition, isDragging } = useDraggable(draggable, {
     preventDefault: true,
@@ -56,8 +61,16 @@ watch(
     () => (handlePosition.value = props.position)
 );
 
+const borderWidth = 6;
+
 function updatePosition() {
-    handlePosition.value = draggablePosition.value.x;
+    if (props.side === "left") {
+        handlePosition.value = draggablePosition.value.x - rootBoundingBox.left.value + borderWidth;
+    } else {
+        const clientWidth = document.body.clientWidth;
+        const rootRightDistance = document.body.clientWidth - rootBoundingBox.right.value;
+        handlePosition.value = clientWidth - draggablePosition.value.x - rootRightDistance - borderWidth;
+    }
 }
 
 watch(
@@ -106,13 +119,12 @@ const style = computed(() => ({
 </template>
 
 <style scoped lang="scss">
-$border-width: 8px;
+$border-width: 6px;
 
 .drag-handle {
     --position: 0;
 
-    background-color: transparent;
-    background: none;
+    background-color: blue;
     border: none;
     border-radius: 0;
     position: absolute;
@@ -130,10 +142,12 @@ $border-width: 8px;
 
     &.side-left {
         left: var(--position);
+        margin-left: -$border-width;
     }
 
     &.side-right {
         right: var(--position);
+        margin-right: -$border-width;
     }
 }
 </style>
