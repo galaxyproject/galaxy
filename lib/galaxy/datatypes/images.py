@@ -96,6 +96,14 @@ class Image(data.Data):
         optional=True,
     )
 
+    MetadataElement(
+        name="channels",
+        desc="Number of channels of the image",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
     def __init__(self, **kwd):
         super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
@@ -136,9 +144,11 @@ class Image(data.Data):
                     dataset.metadata.width = str(im_arr.shape[1])
                     dataset.metadata.height = str(im_arr.shape[0])
                     if im_arr.ndim == 2:
-                        dataset.metadata.axes = 'YX'
+                        dataset.metadata.axes = "YX"
+                        dataset.metadata.channels = "0"
                     elif im_arr.ndim == 3:
-                        dataset.metadata.axes = 'YXC'
+                        dataset.metadata.axes = "YXC"
+                        dataset.metadata.channels = str(im_arr.shape[2])
             except PIL.UnidentifiedImageError:
                 pass
 
@@ -189,6 +199,7 @@ class Tiff(Image):
             dataset.metadata.dtype = str(tif.series[0].dtype)
             dataset.metadata.width = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, 'X'))
             dataset.metadata.height = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, 'Y'))
+            dataset.metadata.channels = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes.replace('S', 'C'), 'C'))
             dataset.metadata.num_unique_values = str(len(np.unique(im_arr)))
         with open(offsets_file.get_file_name(), "w") as f:
             json.dump(offsets, f)
