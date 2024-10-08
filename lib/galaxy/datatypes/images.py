@@ -64,6 +64,14 @@ class Image(data.Data):
         optional=True,
     )
 
+    MetadataElement(
+        name="dtype",
+        desc="Data type of the image pixels or voxels",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
     def __init__(self, **kwd):
         super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
@@ -99,7 +107,7 @@ class Image(data.Data):
             try:
                 with PIL.Image.open(dataset.get_file_name()) as im:
                     im_arr = np.array(im)
-#                    dataset.metadata.dtype = str(im_arr.dtype)
+                    dataset.metadata.dtype = str(im_arr.dtype)
                     if im_arr.ndim == 2:
                         dataset.metadata.axes = 'YX'
                     elif im_arr.ndim == 3:
@@ -147,6 +155,7 @@ class Tiff(Image):
         with tifffile.TiffFile(dataset.get_file_name()) as tif:
             offsets = [page.offset for page in tif.pages]
             dataset.metadata.axes = tif.series[0].axes.upper()
+            dataset.metadata.dtype = str(tif.series[0].dtype)
         with open(offsets_file.get_file_name(), "w") as f:
             json.dump(offsets, f)
         dataset.metadata.offsets = offsets_file
