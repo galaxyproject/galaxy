@@ -1,4 +1,14 @@
 <tool id="validation_image_metadata" name="validation_image_metadata" version="1.0">
+    <macros>
+        <!-- Tests are not executed if they have no output checks, thus define a dummy check -->
+        <xml name="test-output">
+            <output name="output">
+                <assert_contents>
+                    <has_size value="0" delta="0" />
+                </assert_contents>
+            </output>
+        </xml>
+   </macros>
     <command><![CDATA[
       cat /dev/null > testfile
     ]]></command>
@@ -24,21 +34,13 @@
         <test>
             <param name="input_axes_yx" value="im1_uint8.tif" />
             <param name="input_axes_zcyx" value="im6_uint8.tif" />
-            <output name="output">
-                <assert_contents>
-                    <has_size value="0" delta="0" />
-                </assert_contents>
-            </output>
+            <expand macro="test-output" />
         </test>
         <!-- Tests with PNG files -->
         <test>
             <param name="input_axes_yx" value="im1_uint8.png" />
             <param name="input_axes_yxc" value="im3_a.png" />
-            <output name="output">
-                <assert_contents>
-                    <has_size value="0" delta="0" />
-                </assert_contents>
-            </output>
+            <expand macro="test-output" />
         </test>
     </tests>
 </tool>
