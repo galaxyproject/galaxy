@@ -215,8 +215,16 @@ class Tiff(Image):
 
             # Aggregate a list of values for each metadata field (one value for each series of the TIFF file)
             metadata = {
-                key: [] for key in [
-                    "axes", "dtype", "width", "height", "channels", "depth", "frames", "num_unique_values",
+                key: []
+                for key in [
+                    "axes",
+                    "dtype",
+                    "width",
+                    "height",
+                    "channels",
+                    "depth",
+                    "frames",
+                    "num_unique_values",
                 ]
             }
             for series in tif.series:
