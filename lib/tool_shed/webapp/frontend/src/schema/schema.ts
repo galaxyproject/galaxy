@@ -1386,6 +1386,16 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_directory_uri"
+            /**
+             * Validators
+             * @default []
+             */
+            validators: (
+                | components["schemas"]["LengthParameterValidatorModel"]
+                | components["schemas"]["RegexParameterValidatorModel"]
+                | components["schemas"]["ExpressionParameterValidatorModel"]
+                | components["schemas"]["EmptyFieldParameterValidatorModel"]
+            )[]
         }
         /** DrillDownOptionsDict */
         DrillDownOptionsDict: {
@@ -1439,6 +1449,57 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_drill_down"
+        }
+        /** EmptyFieldParameterValidatorModel */
+        EmptyFieldParameterValidatorModel: {
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean
+            /** Message */
+            message?: string | null
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean
+            /**
+             * Type
+             * @default empty_field
+             * @constant
+             * @enum {string}
+             */
+            type: "empty_field"
+        }
+        /**
+         * ExpressionParameterValidatorModel
+         * @description Check if a one line python expression given expression evaluates to True.
+         *
+         *     The expression is given is the content of the validator tag.
+         */
+        ExpressionParameterValidatorModel: {
+            /** Expression */
+            expression: string
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean
+            /** Message */
+            message?: string | null
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean
+            /**
+             * Type
+             * @default expression
+             * @constant
+             * @enum {string}
+             */
+            type: "expression"
         }
         /** FailedRepositoryUpdateMessage */
         FailedRepositoryUpdateMessage: {
@@ -1514,6 +1575,11 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_float"
+            /**
+             * Validators
+             * @default []
+             */
+            validators: components["schemas"]["InRangeParameterValidatorModel"][]
             /** Value */
             value?: number | null
         }
@@ -1629,6 +1695,16 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_hidden"
+            /**
+             * Validators
+             * @default []
+             */
+            validators: (
+                | components["schemas"]["LengthParameterValidatorModel"]
+                | components["schemas"]["RegexParameterValidatorModel"]
+                | components["schemas"]["ExpressionParameterValidatorModel"]
+                | components["schemas"]["EmptyFieldParameterValidatorModel"]
+            )[]
             /** Value */
             value: string | null
         }
@@ -1666,6 +1742,42 @@ export interface components {
          * @enum {string}
          */
         ImageType: "Docker" | "Singularity" | "Conda"
+        /** InRangeParameterValidatorModel */
+        InRangeParameterValidatorModel: {
+            /**
+             * Exclude Max
+             * @default false
+             */
+            exclude_max: boolean
+            /**
+             * Exclude Min
+             * @default false
+             */
+            exclude_min: boolean
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean
+            /** Max */
+            max?: number | null
+            /** Message */
+            message?: string | null
+            /** Min */
+            min?: number | null
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean
+            /**
+             * Type
+             * @default in_range
+             * @constant
+             * @enum {string}
+             */
+            type: "in_range"
+        }
         /** InstallInfo */
         InstallInfo: {
             metadata_info?: components["schemas"]["RepositoryMetadataInstallInfo"] | null
@@ -1704,6 +1816,11 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_integer"
+            /**
+             * Validators
+             * @default []
+             */
+            validators: components["schemas"]["InRangeParameterValidatorModel"][]
             /** Value */
             value?: number | null
         }
@@ -1716,12 +1833,60 @@ export interface components {
             /** Value */
             value: string
         }
+        /** LengthParameterValidatorModel */
+        LengthParameterValidatorModel: {
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean
+            /** Max */
+            max?: number | null
+            /** Message */
+            message?: string | null
+            /** Min */
+            min?: number | null
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean
+            /**
+             * Type
+             * @default length
+             * @constant
+             * @enum {string}
+             */
+            type: "length"
+        }
         /** MessageExceptionModel */
         MessageExceptionModel: {
             /** Err Code */
             err_code: number
             /** Err Msg */
             err_msg: string
+        }
+        /** NoOptionsParameterValidatorModel */
+        NoOptionsParameterValidatorModel: {
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean
+            /** Message */
+            message?: string | null
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean
+            /**
+             * Type
+             * @default no_options
+             * @constant
+             * @enum {string}
+             */
+            type: "no_options"
         }
         /** Organization */
         Organization: {
@@ -1799,6 +1964,37 @@ export interface components {
             version: string | null
             /** Xrefs */
             xrefs: components["schemas"]["XrefDict"][]
+        }
+        /**
+         * RegexParameterValidatorModel
+         * @description Check if a regular expression **matches** the value, i.e. appears
+         *     at the beginning of the value. To enforce a match of the complete value use
+         *     ``$`` at the end of the expression. The expression is given is the content
+         *     of the validator tag. Note that for ``selects`` each option is checked
+         *     separately.
+         */
+        RegexParameterValidatorModel: {
+            /** Expression */
+            expression: string
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean
+            /** Message */
+            message?: string | null
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean
+            /**
+             * Type
+             * @default regex
+             * @constant
+             * @enum {string}
+             */
+            type: "regex"
         }
         /** RepeatParameterModel */
         RepeatParameterModel: {
@@ -2254,6 +2450,8 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_select"
+            /** Validators */
+            validators: components["schemas"]["NoOptionsParameterValidatorModel"][]
         }
         /** Service */
         Service: {
@@ -2366,6 +2564,16 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_text"
+            /**
+             * Validators
+             * @default []
+             */
+            validators: (
+                | components["schemas"]["LengthParameterValidatorModel"]
+                | components["schemas"]["RegexParameterValidatorModel"]
+                | components["schemas"]["ExpressionParameterValidatorModel"]
+                | components["schemas"]["EmptyFieldParameterValidatorModel"]
+            )[]
             /** Value */
             value?: string | null
         }
