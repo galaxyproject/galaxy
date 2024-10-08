@@ -1,0 +1,535 @@
+// Bob Hanson hansonr@stolaf.edu
+
+
+// getIta.spt
+//
+// 2023.10.24 Bob Hanson hansonr@stolaf.edu
+//
+// requires Jmol 16.2.5 or higher
+//
+// Create JSON of International Tables space group data, 
+// including all settings found using the getgen program 
+// for the settings (using &settings=ITA+Settings) 
+// and for general positions (using &what=text and mat=-y,-z,x-y)
+//
+// For generators and Wyckoff positions, we use trgen
+// with flags what=gen and what=wpos. &trmat=c,-a-c,b is used rather than &trm=-y,-z,x-y 
+//
+// for example:
+// 
+// https://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-getgen?gnum=7&what=text&mat=x,y,z
+// https://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-getgen?gnum=7&settings=ITA+Settings
+// https://www.cryst.ehu.es/cgi-bin/cryst/programs//nph-trgen?gnum=51&what=gen&trmat=b,a,-c
+//
+// settings included are those from getgen, not wp-list:
+//
+// https://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-wp-list?gnum=7&settings=ITA+Settings
+// 
+// which are far more abundant. Note that with just a bit of modification, this script could be used to 
+// create files from any desired list of transformations. For now I a just using this simple list.
+//
+// General position coordinates for Wyckoff positions are skipped, as they are redundant.
+//
+// Output files are available in the src/org/jmol/symmetry/sg/json folder
+//
+
+// a bit of hardwiring:
+
+targetDir = "c:/temp/bilbao/ita/";
+
+// variables for the createJSONFiles call (below), after the functions
+
+issues = [];
+
+itadelay = 0.1;
+itaFirst = 5;
+itaLast = 230;
+itaForceNew = false;
+ncleg = 0;
+
+// only one function to run here:
+
+function createJSONFiles(n, forceNew) {
+
+	// creates ita_<i>.json, by space group
+
+	// n option to start at a given number (-30), or only a certain number (30), or all (0)
+	// forceNew option true to overwrite local files; false to use them if they are there.
+
+	var allSettings = []; 	
+	var allMore = [];
+	var allTransforms = [["i", "clegId","det","hm","hm_alt","hall", "more"]]; // , "xyz"]];
+	var allOps = [];
+	for (var i = 1; i <= itaLast; i++) {
+		if (n < 0 && i < -n || n > 0 && i != n) {
+			continue;
+		}
+		_getAllOps(i, allOps);
+		var adata = _createJSONArray(i, forceNew, allSettings, allMore, allTransforms);
+		var thedata = adata.format("JSON");
+		var fname = targetDir + "json/ita_" + i + ".json";
+		write var thedata @fname;
+	}
+	if (n == 0 || n == -1) {
+		allSettings += allMore;
+		var thedata = allSettings.format("JSON");
+		var fname = targetDir + "json/ita_all.json";
+		write var thedata @fname;
+		thedata = allOps.format("JSON");
+		fname = targetDir + "json/ops_all.json";
+		write var thedata @fname;
+		for (var g in allSettings) {
+			if (g.gen) {
+  				g.ngen = g.pop("gen").length;
+  				g.ngp = g.pop("gp").length;
+  				g.nwpos = g.pop("wpos").pos.length;
+			}
+		}
+		fname = targetDir + "json/ita_list.json";
+		write var thedata @fname;
+		var thedata = allTransforms.join("\t",TRUE);
+		var fname = targetDir + "txt/cleg_settings.tab";
+		write var thedata @fname;
+
+
+		print "done -- " + allSettings.length + " settings and " + allOps.length + " operations";
+	}
+	print issues;
+}
+
+function _getAllOps(sg, allOps) {
+	var y = _getITADataHTM(sg, 1, "gp_full", "", "", forceNew).split('<td align="center"');
+	for (var i = 8; i < y.length; i += 4) {
+		var xyz = y[i].split("&nbsp;")[3].trim();
+		if (!xyz) {
+			i -= 3;
+			continue;
+		}
+		var m = y[i].split("<pre>")[2].split("</pre>")[1].trim().replace("\n"," |");
+		var ita = _fixName((y[i+1])[2][0].split("</td")[1].trim());
+		var seitz = _fixName((y[i+2])[2][0].split("</td")[1].trim().replace("<sub>","_<sub>"));
+		allOps.push({"sg":i,"xyz":xyz,"ita":ita,"seitz":seitz,"m":m});
+	}
+}
+
+// all other functions are "private" to this script
+
+function _createJSONArray(i, forceNew, allSettings, allMore, allTransforms) {
+
+	// Create ITA records for a specific space group.
+
+	// start by getting the ITA settings using getgen 
+	// some reordering is done for groups 48, 50, 59, 68, and 78,
+	// which for some reason are not presented with the default (a,b,c) transformation
+	// as the first setting on the list. 
+
+	var x = _getITADataHTM(i, 0, "", "", "", forceNew);
+
+	var myTransforms = "";
+
+	var x = x.split("<a href=")[4][-3];
+	var sg = {};
+	var k0 = 0;
+	sg.sg = i;
+	sg.its = [];
+	sg.n = x.length;
+	var outOfOrder = false;
+	for (var j = 1; j <= x.length; j++) {
+  		var its = {};  
+		var a = x[j].split('"');
+		var unconv = "";
+		var href = "https://www.cryst.ehu.es" + a[2].replace("//","/");
+		if (href.find("unconv=")) {
+			unconv = _getField(href, "unconv", 100);
+			its.hm =  _fixName(unconv);
+		} else if (!href.find("Standard")) {
+			href += "&standard=Standard%2FDefault+Setting";
+		}
+		if (!its.hm) {
+			its.hm = _fixName((a[3])[2][0].split("</a>")[1]);
+		}
+		its.hm = _fixHM(its.hm);
+		if (its.hm.find(" (")) {
+			a = its.hm.replace(")", " (").split(" (");
+			its.hm = a[2] + if(a[3];a[3];"");
+			its.hmAlt = a[1] + if(a[3];a[3];"");
+		}
+		its.id = its.hm.replace(" ","_").replace(":","");
+		var tm = _getField(href, "trmat", 100);	
+		if (!tm)tm = "a,b,c";
+//		its.tm = tm;	
+		its.trm = _toTransform(tm, true);
+		its.det = unitcell(its.trm,true)%1%2;
+		its.clegId = "" + i + ":" + its.trm; 
+		its.set = j;
+		its.sg = i;
+		if (tm == "a,b,c" && j > 1 || outOfOrder) {
+			// out of order! -- we want origin 2 to be first here because it is the default
+			// space groups 48, 50, 59, 68, and 70
+			if (!outOfOrder) {
+				for (var k = sg.its.length; k > 0; --k) {
+					var kk = k + x.length/2;
+					var itk = sg.its[k];
+					sg.its[kk] = itk;
+				}
+			}
+			k0++;
+			sg.its[k0] = its;
+			outOfOrder = true;
+		} else {
+	  		sg.its.push(its);
+		}
+		var gdata = _getGPText(i, j, tm, its.hm, forceNew);
+		its.gp = _getGPJson(its, gdata);
+		gdata = _getITADataHTM(i, j, "gen", tm, "", forceNew);
+		its.gen = _getGeneratorJson(gdata);
+		gdata = _getITADataHTM(i, j, "wpos", tm, unconv, forceNew);
+		its.wpos = _getWyckoffJson(its, gdata);
+	}
+	for (var j = 1; j <= sg.its.length; j++) {
+		ns++;
+		var s = sg.its[j];
+		s.set = j;
+		allSettings.push(s);
+		//var xyz = s.gp.join(";");
+		var hall = if(j == 1;s.hall;"");
+		var atr = [++ncleg, s.clegId, s.det, s.hm, s.hmAlt, hall ];
+		allTransforms.push(atr);
+		myTransforms += ";" + s.clegId + ";"
+	}
+	var more = _getWPListJSON(i, sg, myTransforms, allMore.length, allTransforms, forceNew);
+	if (more) {
+		for (var j = 1; j<= more.length; j++) {
+			more[j].set = sg.n + j;
+print "" + j + " " + more[j].set + " " + sg.n;
+			sg.its.push(more[j]);
+		}
+		sg.n++;
+print more;
+//		sg.its += more;
+
+print sg.its;
+		allMore += more;
+		//issues.push(more);
+	}
+	return sg;
+}
+
+function _getWPListJSON(i, sg, myTransforms, nm, allTransforms, forceNew) {
+	var more = [];
+	print "getwplistJson " + nm;
+	var a = _getITADataHTM(i, 0, "wp-list", "", "", forceNew).split("trgen");
+	for (var j = 2; j <= a.length; j++) {
+		var href = a[j].split('">')[1];
+		var tm = _getField(href, "trmat", 100);
+		var trm = _toTransform(tm, true);
+		var clegId = "" + i + ":" + trm;
+		if (!myTransforms.find(";" + clegId + ";")) {
+			var unconv = _fixHM(_fixName(_getField(href, "unconv", 100)));
+			nm++;
+			var sm = {
+				"clegId":clegId,
+				"det": unitcell(trm,true)%1%2,
+				"more": true,
+				"hm":unconv,
+				"id": unconv.replace(" ","_").replace(":",""),
+//				"i": nm,
+//				"tm": tm,
+				"sg": i,
+				"trm": trm};
+			more.push(sm);
+			var atr = [++ncleg, sm.clegId, sm.det, sm.hm, "", "", nm ];
+			allTransforms.push(atr);
+
+		}		
+	}
+	return if(more.length ; more ; null);
+
+
+}
+
+function _fixHM(hm) {
+	return hm.replace("[origin ",":").replace("[ cell choice ",":").replace("]","").trim();
+}
+
+function _getITADataHTM(i, j, what, trmat, unconv, forceNew) {
+
+// https://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-wp-list?gnum=7&settings=ITA+Settings
+
+	// the main function for retieving data from trgen or getgen
+
+	var localFile = targetDir + "data/" + if(what ; what ; "its") + "_" + i + if(j;"_"+j+".html";".htm");
+	var prog = if (what == "wp-list" ; what ; if(trmat ; "trgen" ; "getgen"));
+	var url = if(forceNew ; "https://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-" + prog 
+		+ "?gnum=" + i 
+		+ if(what && what != "wp-list" ; "&what=" + what.split("_")[1] ; "&settings=ITA+Settings")
+		+ if(trmat ; "&trmat=" + trmat ; "")
+		+ if(unconv ; "&unconv=" + _fixURI(unconv) + "&from=ita" ; "")
+		;  localFile);
+	//print "getting " + url;
+	delay @itadelay;
+	var gdata = load(url);
+	if (forceNew) {
+		write var gdata @localFile;
+	} else if (gdata.find("FileNotFound")) {
+		gdata = _getITADataHTM(i, j, what, trmat, unconv, true);
+	}
+	return gdata;
+}
+
+function _getGPText(i, j, trmat, hm, forceNew) {
+
+
+	var bcsCall = "https://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-getgen" 
+		+ "?gnum=" + i + "&what=text&mat=" + _toXYZ(trmat);
+
+	//issues.push("# " + i + " " + j + " " + hm + " " + trmat + " " + bcsCall);	
+
+	// specifically for retieving data from getgen for general position text
+	var localFile = targetDir + "data/gp_" + i + if(j;"_"+j+".html";".htm");
+	var url = if(forceNew ; bcsCall	;  localFile);
+	//print "getting " + url;
+	delay @itadelay;
+	var gdata = load(url);
+	if (forceNew) {
+		write var gdata @localFile;
+	} else if (gdata.find("FileNotFound")) {
+		gdata = _getGPText(i, j, trmat, true);
+	}
+	return gdata;
+}
+
+function _getGPJson(its, gdata) {
+
+	// just split the text on the <big> tag
+	// normalize -n/m to +(1-n/m); "+1," to ","
+
+	var gp = [];
+	var d = gdata.split("<big>");
+	var xyzlist = "";
+	for (var j = 2; j <= d.length; j++) {
+		var xyz0 = d[j].split(" ")[2].split("<")[1];
+		var xyz = _fixUnitXYZ(xyz0);
+		var key = ";" + xyz + ";"; 
+		if (xyzlist.find(key)) {
+			//issues += "removed " + xyz0 + " in " + its.sg + "." + its.set;
+			continue;
+		} else if (xyz != xyz0) {
+			//issues += "replaced " + xyz0 + " with " + xyz + " in "  + its.sg + "." + its.set;
+		}
+		xyzlist += key;
+		gp.push(xyz);
+  	}
+	var xyz = gp.join(";");
+	var sg = spacegroup(xyz);
+	if (sg && sg.type == "hash") {
+		its.jmolId = sg.jmolId;
+		its.hall = sg.HallSymbol;
+	} else {
+		its.jmolId = _newJmolEntry(its, gp, xyz);
+		//issues.push(e);
+	}
+	return gp;
+}
+
+function _newJmolEntry(its, gp, xyz) {
+	var lc = its.hm %-9999;
+	var n = gp.count;
+	var key = "" + its.sg + ":" + lc[1];
+	//var e = "\t\"" + key + ";" + n + ";-;" + lc + ";xyz;" + xyz + "\", // ITA " + its.sg + "." + its.set; 
+	return key;
+}
+
+function _fixURI(s) {
+  return s.replace(" ","%20");
+}
+
+function _fixUnitXYZ(xyz) {
+	// this only for translation
+	// ITA gives non-normalized transformed operations for several settings, particularly when	
+	// rotating to F from I or C from P in tetragonals, h to r in trigonals, and I to F in cubics.
+	// normalizes the code and removes the duplicated operators in case those are created
+	return (xyz + ",").replace("-1/2","+1/2").replace("-3/2","+1/2").replace("+3/2","+1/2").replace("-1/4","+3/4").replace("-3/4","+1/4").replace("-1/3","+2/3").replace("-2/3","+1/3").replace("-1/6","+5/6").replace("-5/6","+1/6").replace("-1/8","+7/8").replace("-3/8","+5/8").replace("-7/8","+1/8").replace("-1/12","+11/12").replace("-5/12","+7/12").replace("-7/12","+5/12").replace("-11/12","+1/12").replace("+1,",",")[1][-1];
+}
+
+function _getGeneratorJson(gdata) {
+
+	// parse the generator list using <nobr> tags. All cases return two columns here, 
+	// so we always just skip the first column.
+
+	var gen = [];
+	var y = gdata.split("<nobr>");
+	for (var j = 5; j <= y.length; j += 3) {
+		var coor = y[j++].split("</nobr>")[1] + "," + y[j++].split("</nobr>")[1] + "," + y[j++].split("</nobr>")[1];
+		gen.push(_fixUnitXYZ(coor));
+  	}
+	return gen;
+}
+
+function _getWyckoffJson(its, gdata) {
+	// Wyckoff positions are a bit trickier.
+	// currently adding some Jmol-derived geometric elements here, just for the first member of the list.
+	var wyck = {};  
+	var isUnconv = gdata.find("Standard/Default setting");
+	gdata = gdata.split("NOTE")[-1];
+	var w = gdata.split("Wyck");
+	var y = w[0].split("align=center>")[2][0];
+	var pos = [];
+	wyck.pos = pos;
+	var n = 0;
+	var nctr = 0;
+	for (var j = 1; j <= y.length; j++) {
+		if (j == 1 && y[j].find("(")) {
+			if (isUnconv) {
+				// skip first column
+				j++;
+			}
+			var c = y[j].split("</td")[1].split("+");
+			var cent = [];
+			for (var k = 1; k <= c.length; k++) {
+				var cp = c[k].split("(")[2].split(")")[1];
+				if (cp && cp != "0,0,0") {
+					cent.push(cp);
+					nctr++;
+				}
+			}
+			if (nctr > 0)
+			   wyck.cent = cent;
+			continue;
+		}
+		var d = {};
+		d.mult = 0+y[j++].split("</td")[1];
+		d.label = y[j++].split("</td")[1];
+		var td = y[j];
+		var it = td.find("<");
+		d.desc = td[1][it - 1];
+		if (!td.find("(")) {
+			td = y[++j];
+		}
+
+
+		td = y[j].split("<table>")[0];
+		td = td.split("<nobr>");
+		var coor = [];
+		for (var k = 2; k <= td.length; k++) {
+			var t = td[k];
+			if (t.find('(') == 1) {
+				t = '">' + t;
+			}
+			if (t.find('">') && t.find(')')) {
+				var p = t.split('">')[2].split("(")[2].split(")")[1];
+				coor.push(p);
+			}
+		}
+		d.mult = coor.length * (nctr + 1);
+		if (++n == 1) {
+			// skip first, which is general positions in a transformed format
+			d.geom = "general";
+		} else {
+			d.coord = coor;
+			d.geom = _getWyckoffElement(coor[1]);
+		}
+		pos.push(d);
+  	}
+	return wyck;
+}
+
+
+function _getWyckoffElement(p) {
+	var xyz = p.split(",");
+	var n = 0; 
+	var nxyz = ({});
+	for (var i = 1; i <= 3; i++) {
+		if (xyz[i].find('x')) {
+			nxyz |= 1;
+		}		
+		if (xyz[i].find('y')) {
+			nxyz |= 2;
+		}		
+		if (xyz[i].find('z')) {
+			nxyz |= 3;
+		}		
+	}
+	switch (nxyz.length) {
+	case 0:
+		return "point";
+	case 1:
+		return "line";
+	case 2:
+		return "plane";
+	}
+	return "general";
+}
+
+// utility methods
+
+function _fixName(s) {
+
+	// remove HTML markings, fix "unconv" :R
+
+	return (s.trim()
+		.replace("<i>","").replace("</i>","")
+		.replace("<b>","").replace("</b>","")
+		.replace("<sub>","").replace("</sub>","")
+		.replace("&#124;","|")).replace("  "," ").replace(":R",":r");
+}
+
+m40 = [[0 0 0 0][0 0 0 0][0 0 0 0][0 0 0 1]];
+
+function _toTransform(xyz){ 
+	// 1 0 -1 | 0
+	// 0 1  0 | 0
+	// 0 0  2 | 1/2
+	// 
+	// x-z,y,2z+1/2 to "a,b,-a+2c;0,0,1/2 (transposed)
+	// a,b,-a+2c+1/2 also to "a,b,-a+2c;0,0,1/2 (not transposed)
+
+	// the function unitcell() runs org.jmol.symmetry.UnitCell.getMatrixAndUnitCell()
+	// unitcell() removes any embedded translations and puts the rotation in xyz-row,abc column format
+	// we get any embedded translation using symop()
+
+	var m = -unitcell(xyz, true);
+	var abc = symop(m, "xyz").replace('x','a').replace('y','b').replace('z','c');
+
+	var t = symop(xyz, "matrix")%2;
+	if (t == 0) {
+		return abc;
+	}
+	return abc + ";" + symop(m40 + t, "xyz");
+}
+
+function _toXYZ(abc){
+
+	// getGen needs the transposed matrix, in xyz format. 
+	// this does the trick, as -m4 is the transpose of m4, and symop(matrix, "xyz") 
+ 	// will accept a,b,c and return x,y,z
+	// check for translation and don't transpose that
+
+	var a = symop(abc, "matrix");
+	var t = a%2; // get translation vector
+	if (1.0 * t == 0) {
+		// transpose if no translation
+		a = -a;
+	} else {
+		// remove translation from 4x4, transpose it, then return translation
+		a = -(a + -t) + t;
+  }
+  return symop(a, "xyz");
+}
+
+function _getField(gdata, field, max) {
+	
+	// get a &... field form a URL
+
+	var i = gdata.find(field + "=");
+	return (i == 0 ? "" : (gdata[i+field.length + 1][i+max] + "&").split("&")[1]);
+}
+
+createJSONFiles(itaFirst, itaForceNew);
+
+
+/**
+2024.04.09 fixing :R as :r in HM 146,148,155,160,166,167
+2024.03.23 adjusted to incorporate all ITA settings (611) plus all already in Jmol (total 689)
+2024.04.18 its.cleg -> its.clegId and adds :a,b,c to default settings
+2024.04.22 adds "more:true" settings (from wp-list)
