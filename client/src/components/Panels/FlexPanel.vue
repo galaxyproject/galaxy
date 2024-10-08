@@ -4,7 +4,7 @@ import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, watch } from "vue";
 
-import DraggableSeparator from "../Common/DraggableSeparator.vue";
+import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 
 library.add(faChevronLeft, faChevronRight);
 
@@ -71,7 +71,12 @@ const sideClasses = computed(() => ({
         class="flex-panel"
         :class="{ ...sideClasses }"
         :style="`--width: ${panelWidth}px`">
-        <DraggableSeparator :position="panelWidth" :side="props.side"></DraggableSeparator>
+        <DraggableSeparator
+            :position="panelWidth"
+            :side="props.side"
+            :min="props.minWidth"
+            :max="props.maxWidth"
+            @positionChanged="(v) => (panelWidth = v)"></DraggableSeparator>
 
         <button
             v-if="props.collapsible"
