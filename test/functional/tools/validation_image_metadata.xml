@@ -43,6 +43,20 @@
         <param name="input_num_unique_values_618" type="data" format="data" optional="true">
             <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value="618" />
         </param>
+        <!-- Checks for "width" metadata -->
+        <param name="input_width_16" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="width" value="16" />
+        </param>
+        <param name="input_width_32" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="width" value="32" />
+        </param>
+        <!-- Checks for "height" metadata -->
+        <param name="input_height_8" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="height" value="8" />
+        </param>
+        <param name="input_height_32" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="height" value="32" />
+        </param>
     </inputs>
     <outputs>
         <data name="output" format="data" />
@@ -57,6 +71,10 @@
             <param name="input_dtype_float64" value="im4_float.tif" />
             <param name="input_num_unique_values_2" value="im3_b.tif" />
             <param name="input_num_unique_values_618" value="im4_float.tif" />
+            <param name="width_16" value="im7_uint8.tif" /><!-- axes: ZYX -->
+            <param name="width_32" value="im3_b.tif" /><!-- axes: YXS -->
+            <param name="height_8" value="im7_uint8.tif" /><!-- axes: ZYX -->
+            <param name="height_32" value="im3_b.tif" /><!-- axes: YXS -->
             <expand macro="test-output" />
         </test>
         <!-- Tests with PNG files -->
@@ -66,6 +84,8 @@
             <param name="input_dtype_uint8" value="im1_uint8.png" />
             <param name="input_num_unique_values_1" value="im2_a.png" />
             <param name="input_num_unique_values_2" value="im2_b.png" />
+            <param name="input_width_32" value="im2_b.png" />
+            <param name="input_height_32" value="im2_b.png" />
             <expand macro="test-output" />
         </test>
     </tests>
