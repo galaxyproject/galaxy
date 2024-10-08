@@ -213,23 +213,36 @@ class Tiff(Image):
         with tifffile.TiffFile(dataset.get_file_name()) as tif:
             offsets = [page.offset for page in tif.pages]
 
-            # Populate the metadata fields that should be generally available
-            dataset.metadata.axes = tif.series[0].axes.upper()
-            dataset.metadata.dtype = str(tif.series[0].dtype)
+            # Aggregate a list of values for each metadata field (one value for each series of the TIFF file)
+            metadata = {
+                key: [] for key in [
+                    "axes", "dtype", "width", "height", "channels", "depth", "frames", "num_unique_values",
+                ]
+            }
+            for series in tif.series:
 
-            # Populate the metadata fields that require reading the image data
-            try:
-                im_arr = tif.asarray()
-            except ValueError:  # Occurs if the compression of the TIFF file is unsupported
-                im_arr = None
-            if im_arr is not None:
-                axes = dataset.metadata.axes.replace("S", "C")
-                dataset.metadata.width = str(Tiff._get_axis_size(im_arr, axes, "X"))
-                dataset.metadata.height = str(Tiff._get_axis_size(im_arr, axes, "Y"))
-                dataset.metadata.channels = str(Tiff._get_axis_size(im_arr, axes, "C"))
-                dataset.metadata.depth = str(Tiff._get_axis_size(im_arr, axes, "Z"))
-                dataset.metadata.frames = str(Tiff._get_axis_size(im_arr, axes, "T"))
-                dataset.metadata.num_unique_values = str(len(np.unique(im_arr)))
+                # Determine the metadata values that should be generally available
+                metadata["axes"].append(series.axes.upper())
+                metadata["dtype"].append(series.dtype)
+
+                # Determine the metadata values that require reading the image data
+                try:
+                    im_arr = series.asarray()
+                except ValueError:  # Occurs if the compression of the TIFF file is unsupported
+                    im_arr = None
+                if im_arr is not None:
+                    axes = metadata["axes"][-1].replace("S", "C")
+                    metadata["width"].append(Tiff._get_axis_size(im_arr, axes, "X"))
+                    metadata["height"].append(Tiff._get_axis_size(im_arr, axes, "Y"))
+                    metadata["channels"].append(Tiff._get_axis_size(im_arr, axes, "C"))
+                    metadata["depth"].append(Tiff._get_axis_size(im_arr, axes, "Z"))
+                    metadata["frames"].append(Tiff._get_axis_size(im_arr, axes, "T"))
+                    metadata["num_unique_values"].append(len(np.unique(im_arr)))
+
+            # Populate the metadata fields based on the values determined above
+            for key, values in metadata.items():
+                if len(values) > 0:
+                    setattr(dataset.metadata, key, ",".join(str(value) for value in values))
 
         # Populate the "offsets" file and metadata field
         with open(offsets_file.get_file_name(), "w") as f:
