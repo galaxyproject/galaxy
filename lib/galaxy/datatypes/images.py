@@ -223,11 +223,12 @@ class Tiff(Image):
             except ValueError:  # Occurs if the compression of the TIFF file is unsupported
                 im_arr = None
             if im_arr is not None:
-                dataset.metadata.width = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "X"))
-                dataset.metadata.height = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "Y"))
-                dataset.metadata.channels = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes.replace("S", "C"), "C"))
-                dataset.metadata.depth = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "Z"))
-                dataset.metadata.frames = str(Tiff._get_axis_size(im_arr, dataset.metadata.axes, "T"))
+                axes = dataset.metadata.axes.replace("S", "C")
+                dataset.metadata.width = str(Tiff._get_axis_size(im_arr, axes, "X"))
+                dataset.metadata.height = str(Tiff._get_axis_size(im_arr, axes, "Y"))
+                dataset.metadata.channels = str(Tiff._get_axis_size(im_arr, axes, "C"))
+                dataset.metadata.depth = str(Tiff._get_axis_size(im_arr, axes, "Z"))
+                dataset.metadata.frames = str(Tiff._get_axis_size(im_arr, axes, "T"))
                 dataset.metadata.num_unique_values = str(len(np.unique(im_arr)))
 
         # Populate the "offsets" file and metadata field
