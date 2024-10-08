@@ -3770,6 +3770,10 @@ class Role(Base, Dictifiable, RepresentById):
         ADMIN = "admin"
         SHARING = "sharing"
 
+    @staticmethod
+    def default_name(role_type):
+        return f"{role_type.value} role"
+
     @hybrid_property
     def name(self):
         if self.type == Role.types.PRIVATE:
@@ -3784,7 +3788,7 @@ class Role(Base, Dictifiable, RepresentById):
         self._name = name
 
     def __init__(self, name=None, description=None, type=types.SYSTEM, deleted=False):
-        self.name = name
+        self.name = name or Role.default_name(type)
         self.description = description
         self.type = type
         self.deleted = deleted
