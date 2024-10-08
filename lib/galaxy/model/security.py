@@ -792,10 +792,13 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         return role, num_in_groups
 
     def get_sharing_roles(self, user):
-        stmt = select(Role).where(
-            and_((Role.name).like(f"Sharing role for: %{user.email}%"), Role.type == Role.types.SHARING)
+        stmt = (
+            select(Role)
+            .join(Role.users)
+            .where(UserRoleAssociation.user_id == user.id)
+            .where(Role.type == Role.types.SHARING)
         )
-        return self.sa_session.scalars(stmt)
+        return self.sa_session.scalars(stmt).all()
 
     def user_set_default_permissions(
         self,
@@ -1017,13 +1020,17 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                     sharing_role = role
                     break
         if sharing_role is None:
-            sharing_role = Role(name=f"Sharing role for: {', '.join(u.email for u in users)}", type=Role.types.SHARING)
-            self.sa_session.add(sharing_role)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
-            for user in users:
-                self.associate_user_role(user, sharing_role)
+            sharing_role = self._create_sharing_role(users)
         self.set_dataset_permission(dataset, {self.permitted_actions.DATASET_ACCESS: [sharing_role]})
+
+    def _create_sharing_role(self, users):
+        sharing_role = Role(name=f"Sharing role for: {', '.join(u.email for u in users)}", type=Role.types.SHARING)
+        self.sa_session.add(sharing_role)
+        with transaction(self.sa_session):
+            self.sa_session.commit()
+        for user in users:
+            self.associate_user_role(user, sharing_role)
+        return sharing_role
 
     def set_all_library_permissions(self, trans, library_item, permissions=None):
         # Set new permissions on library_item, eliminating all current permissions

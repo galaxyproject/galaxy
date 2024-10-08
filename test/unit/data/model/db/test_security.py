@@ -76,6 +76,33 @@ def test_cannot_assign_private_roles(session, make_user_and_role, make_role):
     verify_user_associations(user, [], [private_role1, new_role])
 
 
+def test_get_sharing_roles(session, make_user):
+    security_agent = GalaxyRBACAgent(session)
+    user1 = make_user()
+    user2 = make_user()
+
+    # verify: no sharing roles yet
+    roles1 = security_agent.get_sharing_roles(user1)
+    assert len(roles1) == 0
+    roles2 = security_agent.get_sharing_roles(user2)
+    assert len(roles2) == 0
+
+    # create sharing role for both users, verify
+    sharing_role = security_agent._create_sharing_role([user1, user2])
+    roles1 = security_agent.get_sharing_roles(user1)
+    assert len(roles1) == 1
+    roles2 = security_agent.get_sharing_roles(user2)
+    assert len(roles2) == 1
+
+    # update user's email, retrieve sharing roles for that user again, verify
+    user1.email = f"{user1.email}-updated"
+    roles3 = security_agent.get_sharing_roles(user1)
+    assert len(roles3) == 1
+
+    # verify we've been retrieving the correct role
+    assert roles1[0] is roles2[0] is roles3[0] is sharing_role
+
+
 class TestSetGroupUserAndRoleAssociations:
 
     def test_add_associations_to_existing_group(self, session, make_user_and_role, make_role, make_group):
