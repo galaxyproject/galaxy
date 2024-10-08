@@ -312,7 +312,6 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
         )
         test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
         when = _select_which_when(conditional, test_value, conditional_state)
-        test_parameter = conditional.test_parameter
         _fill_default_for(conditional_state, test_parameter)
         _fill_defaults(conditional_state, when)
     elif parameter_type in ["gx_repeat"]:

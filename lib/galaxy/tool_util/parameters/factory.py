@@ -276,7 +276,12 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         default_test_value = cond_test_parameter_default_value(test_parameter)
         for value, case_inputs_sources in input_source.parse_when_input_sources():
             if isinstance(test_parameter, BooleanParameterModel):
-                # TODO: investigate truevalue/falsevalue when...
+                true_value = test_param_input_source.get("truevalue")
+                false_value = test_param_input_source.get("falsevalue")
+                if isinstance(value, str) and value == true_value:
+                    value = True
+                elif isinstance(value, str) and value == false_value:
+                    value = False
                 typed_value = string_as_bool(value)
             else:
                 typed_value = value
