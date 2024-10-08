@@ -47,7 +47,18 @@ const actionText = computed(() => {
     return "View in new tab";
 });
 
+const linkTitle = computed(() => {
+    if (historyStore.currentHistoryId === props.historyId) {
+        return "This is your current history";
+    } else {
+        return `<b>${actionText.value}</b><br>${history.value?.name}`;
+    }
+});
+
 async function onClick(history: HistorySummary) {
+    if (historyStore.currentHistoryId === history.id) {
+        return;
+    }
     if (canSwitch.value) {
         if (props.filters) {
             historyStore.applyFilters(history.id, props.filters);
@@ -75,9 +86,10 @@ function viewHistoryInNewTab(history: HistorySummary) {
         <div v-else class="history-link">
             <BLink
                 v-b-tooltip.hover.top.noninteractive.html
+                data-description="switch to history link"
                 class="truncate"
                 href="#"
-                :title="`<b>${actionText}</b><br>${history.name}`"
+                :title="linkTitle"
                 @click.stop="onClick(history)">
                 {{ history.name }}
             </BLink>
