@@ -31,6 +31,16 @@ router = Router(tags=["oauth2"])
 
 ERROR_REDIRECT_PATH = "file_source_instances/create"
 
+VALID_OAUTH2_ERROR_CODES = [
+    "access_denied",
+    "invalid_request",
+    "unauthorized_client",
+    "unsupported_response_type",
+    "invalid_scope",
+    "server_error",
+    "temporarily_unavailable",
+]
+
 
 @router.cbv
 class OAuth2Callback:
@@ -48,7 +58,8 @@ class OAuth2Callback:
         error: Optional[str] = ErrorQueryParam,
     ):
         if error:
-            return RedirectResponse(f"{trans.request.url_path}{ERROR_REDIRECT_PATH}?error={error}")
+            error_code = self._ensure_valid_oauth_error_code(error)
+            return RedirectResponse(f"{trans.request.url_path}{ERROR_REDIRECT_PATH}?error={error_code}")
         elif not code:
             return RedirectResponse(
                 f"{trans.request.url_path}{ERROR_REDIRECT_PATH}?error=No credentials provided, please try again."
@@ -64,3 +75,10 @@ class OAuth2Callback:
             raise ObjectNotFound(f"Could not find oauth2 callback for route {route}")
 
         return RedirectResponse(f"{trans.request.url_path}{redirect}")
+
+    def _ensure_valid_oauth_error_code(self, error: str) -> str:
+        # if the error code is valid, return it as is so the client can
+        # handle it or display the appropriate error message
+        if error in VALID_OAUTH2_ERROR_CODES:
+            return error
+        return "Unknown OAuth2 error code"
