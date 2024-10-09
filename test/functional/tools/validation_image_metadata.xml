@@ -71,7 +71,7 @@
         <param name="input_depth_0" type="data" format="data" optional="true">
             <validator type="dataset_metadata_equal" metadata_name="depth" value="0" />
         </param>
-        <param name="input_channels_25" type="data" format="data" optional="true">
+        <param name="input_depth_25" type="data" format="data" optional="true">
             <validator type="dataset_metadata_equal" metadata_name="depth" value="25" />
         </param>
         <!-- Checks for "frames" metadata -->
