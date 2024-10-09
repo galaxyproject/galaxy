@@ -407,7 +407,7 @@ function onBrowse() {
 }
 
 function canAcceptDatatype(itemDatatypes: string | Array<string>) {
-    if (!(props.extensions?.length > 0)) {
+    if (!(props.extensions?.length > 0) || props.extensions.includes("data")) {
         return true;
     }
     let datatypes: Array<string>;
