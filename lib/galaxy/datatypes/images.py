@@ -263,7 +263,20 @@ class Tiff(Image):
                 json.dump(offsets, f)
             dataset.metadata.offsets = offsets_file
 
-        except BaseException:  # For arbitrary errors from deep inside the tifffile library
+        # Catch errors from deep inside the tifffile library
+        except (
+            AttributeError,
+            IndexError,
+            KeyError,
+            NotImplementedError,
+            OSError,
+            PermissionError,
+            RuntimeError,
+            tifffile.OmeXmlError,
+            tifffile.TiffFileError,
+            TypeError,
+            ValueError,
+        ):
             pass
 
     @staticmethod
