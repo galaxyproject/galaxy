@@ -19,6 +19,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "drawrna",
     "editor",
     "example",
+    "fits_graph_viewer",
     "fits_image_viewer",
     "h5web",
     "heatmap/heatmap_default",
