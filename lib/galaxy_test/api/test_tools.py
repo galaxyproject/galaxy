@@ -3254,31 +3254,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
         hdca_list_id = response.json()["outputs"][0]["id"]
         return hdca_list_id
 
-    def __build_nested_list(self, history_id):
-        response = self.dataset_collection_populator.upload_collection(
-            history_id,
-            "list:paired",
-            elements=[
-                {
-                    "name": "test0",
-                    "elements": [
-                        {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "txt"},
-                        {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "txt"},
-                    ],
-                },
-                {
-                    "name": "test1",
-                    "elements": [
-                        {"src": "pasted", "paste_content": "789\n", "name": "forward", "ext": "txt"},
-                        {"src": "pasted", "paste_content": "0ab\n", "name": "reverse", "ext": "txt"},
-                    ],
-                },
-            ],
-            wait=True,
-        )
-        self._assert_status_code_is(response, 200)
-        hdca_list_id = response.json()["outputs"][0]["id"]
-        return hdca_list_id
+    def __build_nested_list(self, history_id: str) -> str:
+        return self.dataset_collection_populator.example_list_of_pairs(history_id)
 
     def _build_pair(self, history_id, contents, run_cat=False):
         create_response = self.dataset_collection_populator.create_pair_in_history(

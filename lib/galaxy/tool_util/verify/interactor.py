@@ -390,14 +390,17 @@ class GalaxyInteractorApi:
 
     @contextlib.contextmanager
     def test_history(
-        self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None
+        self,
+        require_new: bool = True,
+        cleanup_callback: Optional[Callable[[str], None]] = None,
+        name: Optional[str] = None,
     ) -> Generator[str, None, None]:
         history_id = None
         if not require_new:
             history_id = DEFAULT_TARGET_HISTORY
 
         cleanup = CLEANUP_TEST_HISTORIES
-        history_id = history_id or self.new_history()
+        history_id = history_id or self.new_history(name)
         try:
             yield history_id
         except Exception:
@@ -407,7 +410,8 @@ class GalaxyInteractorApi:
             if cleanup and cleanup_callback is not None:
                 cleanup_callback(history_id)
 
-    def new_history(self, history_name: str = "test_history", publish_history: bool = False) -> str:
+    def new_history(self, history_name: Optional[str] = None, publish_history: bool = False) -> str:
+        history_name = history_name or "test_history"
         create_response = self._post("histories", {"name": history_name})
         try:
             create_response.raise_for_status()
