@@ -70,7 +70,7 @@ def _wrap_method_with_galaxy_requirement(method, tag: KnownRequirementT):
 def requires_tool_id(tool_id: str):
 
     def method_wrapper(method):
-        return getattr(pytest.mark, "requires_tool_id")(tool_id)(method)
+        return pytest.mark.requires_tool_id(tool_id)(method)
 
     return method_wrapper
 

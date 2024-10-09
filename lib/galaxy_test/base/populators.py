@@ -63,7 +63,6 @@ from typing import (
     List,
     NamedTuple,
     Optional,
-    Self,
     Set,
     Tuple,
     Union,
@@ -84,6 +83,7 @@ from requests import Response
 from rocrate.rocrate import ROCrate
 from typing_extensions import (
     Literal,
+    Self,
     TypedDict,
 )
 
@@ -3531,7 +3531,7 @@ class DescribeJob:
         final_state = self.final_state
         if final_state != expected_state:
             raise AssertionError(
-                f"Expected job {self._job_id} to end with state {state} but it ended with state {final_state}"
+                f"Expected job {self._job_id} to end with state {expected_state} but it ended with state {final_state}"
             )
         return self
 
