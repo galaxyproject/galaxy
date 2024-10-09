@@ -1174,7 +1174,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
             for ld in traverse(folder):
                 hda = ld.library_dataset_dataset_association.to_history_dataset_association(
-                    history, add_to_history=True
+                    history, add_to_history=True, flush=False
                 )
                 hda_dict = self.hda_serializer.serialize_to_view(
                     hda, user=trans.user, trans=trans, encode_id=False, **serialization_params.model_dump()
