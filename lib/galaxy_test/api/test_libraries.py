@@ -171,25 +171,6 @@ class TestLibrariesApi(ApiTestCase):
         assert role_id in available_role_ids
 
     @requires_new_library
-    def test_get_library_available_permissions_with_query(self):
-        library = self.library_populator.new_library("GetAvailablePermissionWithQueryTestLibrary")
-        library_id = library["id"]
-
-        with self._different_user():
-            email = self.library_populator.user_email()
-
-        # test at least 2 user roles should be available now
-        available = self.library_populator.get_permissions(library_id, scope="available")
-        available_role_ids = [role["id"] for role in available["roles"]]
-        assert len(available_role_ids) > 1
-
-        # test query for specific role/email
-        available = self.library_populator.get_permissions(library_id, scope="available", q=email)
-        available_role_emails = [role["name"] for role in available["roles"]]
-        assert available["total"] == 1
-        assert available_role_emails[0] == email
-
-    @requires_new_library
     def test_create_library_dataset_bootstrap_user(self, library_name="private_dataset", wait=True):
         library = self.library_populator.new_private_library(library_name)
         payload, files = self.library_populator.create_dataset_request(library, file_type="txt", contents="create_test")

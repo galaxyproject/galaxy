@@ -134,7 +134,6 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         is_library_access: Optional[bool] = False,
         page: int = 1,
         page_limit: int = 10,
-        query: Optional[str] = None,
     ) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
         """Load all permissions for the given library id and return it.
 
@@ -167,7 +166,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         #  Return roles that are available to select.
         elif scope == LibraryPermissionScope.available:
             roles, total_roles = trans.app.security_agent.get_valid_roles(
-                trans, library, query, page, page_limit, is_library_access
+                trans, library, page, page_limit, is_library_access
             )
 
             return_roles = []

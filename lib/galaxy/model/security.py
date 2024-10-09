@@ -128,7 +128,7 @@ class GalaxyRBACAgent(RBACAgent):
                 roles.append(item_permission.role)
         return roles
 
-    def get_valid_roles(self, trans, item, query=None, page=None, page_limit=None, is_library_access=False):
+    def get_valid_roles(self, trans, item, page=None, page_limit=None, is_library_access=False):
         """
         This method retrieves the list of possible roles that user can select
         in the item permissions form. Admins can select any role so the
@@ -138,11 +138,6 @@ class GalaxyRBACAgent(RBACAgent):
         sharing roles and any public role (not private and not sharing).
         """
         roles = []
-        if query not in [None, ""]:
-            query = query.strip().replace("_", "/_").replace("%", "/%").replace("/", "//")
-            search_query = f"{query}%"
-        else:
-            search_query = None
         # Limit the query only to get the page needed
         if page is not None and page_limit is not None:
             limit = page * page_limit
@@ -164,8 +159,6 @@ class GalaxyRBACAgent(RBACAgent):
             else:
                 # User is not an admin but the configuration exposes all private roles to all users.
                 stmt = select(Role).where(and_(Role.deleted == false(), Role.type == Role.types.PRIVATE))
-            if search_query:
-                stmt = stmt.where(Role.name.like(search_query, escape="/"))
 
             count_stmt = select(func.count()).select_from(stmt)
             total_count = trans.sa_session.scalar(count_stmt)
