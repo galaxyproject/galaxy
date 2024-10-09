@@ -10,6 +10,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
 )
 
 import mrcfile
@@ -159,19 +160,26 @@ class Image(data.Data):
         if PIL is not None:
             try:
                 with PIL.Image.open(dataset.get_file_name()) as im:
-                    im_arr = np.array(im)
-                    dataset.metadata.dtype = str(im_arr.dtype)
-                    dataset.metadata.num_unique_values = str(len(np.unique(im)))
-                    dataset.metadata.width = str(im_arr.shape[1])
-                    dataset.metadata.height = str(im_arr.shape[0])
+
+                    # Determine the metadata values that are available without loading the image data
+                    dataset.metadata.width = str(im.size[1])
+                    dataset.metadata.height = str(im.size[0])
                     dataset.metadata.depth = "0"
-                    dataset.metadata.frames = "0"
-                    if im_arr.ndim == 2:
+                    dataset.metadata.frames = str(getattr(im, 'n_frames', 0))
+                    dataset.metadata.num_unique_values = str(sum(val > 0 for val in im.histogram()))
+
+                    # Peek into a small 2x2 section of the image data
+                    im_peek_arr = np.array(im.crop((0, 0, min((2, im.size[1])), min((2, im.size[0])))))
+
+                    # Determine the remaining metadata values
+                    dataset.metadata.dtype = str(im_peek_arr.dtype)
+                    if im_peek_arr.ndim == 2:
                         dataset.metadata.axes = "YX"
                         dataset.metadata.channels = "0"
-                    elif im_arr.ndim == 3:
+                    elif im_peek_arr.ndim == 3:
                         dataset.metadata.axes = "YXC"
-                        dataset.metadata.channels = str(im_arr.shape[2])
+                        dataset.metadata.channels = str(im_peek_arr.shape[2])
+
             except PIL.UnidentifiedImageError:
                 pass
 
@@ -239,19 +247,19 @@ class Tiff(Image):
                     metadata["axes"].append(page.axes.upper())
                     metadata["dtype"].append(page.dtype)
 
+                    axes = metadata["axes"][-1].replace("S", "C")
+                    metadata["width"].append(Tiff._get_axis_size(page.shape, axes, "X"))
+                    metadata["height"].append(Tiff._get_axis_size(page.shape, axes, "Y"))
+                    metadata["channels"].append(Tiff._get_axis_size(page.shape, axes, "C"))
+                    metadata["depth"].append(Tiff._get_axis_size(page.shape, axes, "Z"))
+                    metadata["frames"].append(Tiff._get_axis_size(page.shape, axes, "T"))
+
                     # Determine the metadata values that require reading the image data
                     try:
                         im_arr = page.asarray()
-                    except ValueError:  # Occurs if the compression of the TIFF file is unsupported
-                        im_arr = None
-                    if im_arr is not None:
-                        axes = metadata["axes"][-1].replace("S", "C")
-                        metadata["width"].append(Tiff._get_axis_size(im_arr, axes, "X"))
-                        metadata["height"].append(Tiff._get_axis_size(im_arr, axes, "Y"))
-                        metadata["channels"].append(Tiff._get_axis_size(im_arr, axes, "C"))
-                        metadata["depth"].append(Tiff._get_axis_size(im_arr, axes, "Z"))
-                        metadata["frames"].append(Tiff._get_axis_size(im_arr, axes, "T"))
                         metadata["num_unique_values"].append(len(np.unique(im_arr)))
+                    except ValueError:  # Occurs if the compression of the TIFF file is unsupported
+                        pass
 
                 # Populate the metadata fields based on the values determined above
                 for key, values in metadata.items():
@@ -278,9 +286,9 @@ class Tiff(Image):
             pass
 
     @staticmethod
-    def _get_axis_size(im_arr: "np.typing.NDArray", axes: str, axis: str) -> int:
+    def _get_axis_size(shape: Tuple[int, ...], axes: str, axis: str) -> int:
         idx = axes.find(axis)
-        return im_arr.shape[idx] if idx >= 0 else 0
+        return shape[idx] if idx >= 0 else 0
 
 
 class OMETiff(Tiff):
