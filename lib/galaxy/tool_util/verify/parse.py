@@ -1,5 +1,6 @@
 import logging
 import os
+import traceback
 from typing import (
     Any,
     Iterable,
@@ -141,7 +142,7 @@ def _description_from_tool_source(
                 "error": False,
             }
         )
-    except Exception as e:
+    except Exception:
         processed_test_dict = InvalidToolTestDict(
             {
                 "tool_id": tool_id,
@@ -149,7 +150,7 @@ def _description_from_tool_source(
                 "test_index": test_index,
                 "inputs": {},
                 "error": True,
-                "exception": unicodify(e),
+                "exception": unicodify(traceback.format_exc()),
                 "maxseconds": maxseconds,
             }
         )
