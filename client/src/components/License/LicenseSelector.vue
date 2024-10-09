@@ -2,7 +2,7 @@
 import { faEdit, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BFormSelect } from "bootstrap-vue";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { type components } from "@/api/schema";
@@ -24,7 +24,7 @@ const emit = defineEmits<{
 }>();
 
 const editLicense = ref(false);
-const licensesLoading = ref(false);
+const licensesLoading = ref(true);
 const errorMessage = ref<string>("");
 const currentLicense = ref<string>(props.inputLicense);
 const licenses = ref<LicenseMetadataModel[] | undefined>([]);
@@ -72,16 +72,7 @@ function onLicense(l: string) {
     emit("onLicense", l);
 }
 
-watch(
-    () => props.inputLicense,
-    (newLicense) => {
-        currentLicense.value = newLicense;
-    }
-);
-
-onMounted(async () => {
-    licensesLoading.value = true;
-
+async function fetchLicenses() {
     const { error, data } = await GalaxyApi().GET("/api/licenses");
 
     if (error) {
@@ -91,7 +82,16 @@ onMounted(async () => {
     licenses.value = data;
 
     licensesLoading.value = false;
-});
+}
+
+watch(
+    () => props.inputLicense,
+    (newLicense) => {
+        currentLicense.value = newLicense;
+    }
+);
+
+fetchLicenses();
 </script>
 
 <template>
