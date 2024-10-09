@@ -254,6 +254,14 @@ class CreateHistoryContentPayload(CreateHistoryContentPayloadFromCollection, Cre
     model_config = ConfigDict(extra="allow")
 
 
+class ImportHistoryContentPayload(Model):
+    items: List[CreateHistoryContentPayload] = Field(
+        ...,
+        title="library datasets or folders",
+        description="The list of library datasets or folders to import from the library.",
+    )
+
+
 class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelStores):
     """Common interface/service logic for interactions with histories contents in the context of the API.
 
@@ -526,11 +534,42 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             source = payload.source
             if source == HistoryContentSource.library_folder:
                 return self.__create_datasets_from_library_folder(trans, history, payload, serialization_params)
-            else:
+            elif source in (HistoryContentSource.library, HistoryContentSource.hda):
                 return self.__create_dataset(trans, history, payload, serialization_params)
+            else:
+                raise exceptions.RequestParameterInvalidException(
+                    f"'source' must be either 'library' or 'hda' of 'library_folder': {source}"
+                )
         elif history_content_type == HistoryContentType.dataset_collection:
             return self.__create_dataset_collection(trans, history, payload, serialization_params)
         raise exceptions.UnknownContentsType(f"Unknown contents type: {payload.type}")
+
+    def import_from_library(
+        self,
+        trans: ProvidesHistoryContext,
+        history_id: DecodedDatabaseIdField,
+        payload: ImportHistoryContentPayload,
+    ) -> HistoryContentBulkOperationResult:
+        history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
+        errors: List[BulkOperationItemError] = []
+        for item in payload.items:
+            try:
+                if item.type == HistoryContentType.dataset:
+                    if item.source == HistoryContentSource.library_folder:
+                        self._create_datasets_from_library_folder(trans, history, item)
+                    elif item.source == HistoryContentSource.library:
+                        self._create_dataset(trans, history, item)
+            except Exception as exc:
+                errors.append(
+                    BulkOperationItemError(
+                        item=EncodedHistoryContentItem(id=item.content, history_content_type=item.type),
+                        error=str(exc),
+                    )
+                )
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+        success_count = len(payload.items) - len(errors)
+        return HistoryContentBulkOperationResult(success_count=success_count, errors=errors)
 
     def create_from_store(
         self,
@@ -1133,6 +1172,47 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             id=id,
         )
 
+    def _create_datasets_from_library_folder(
+        self,
+        trans,
+        history: History,
+        payload: CreateHistoryContentPayloadFromCopy,
+    ):
+        rval = []
+        content = payload.content
+        if content is None:
+            raise exceptions.RequestParameterMissingException("'content' id of lda or hda is missing")
+
+        folder_id = content
+        folder = self.folder_manager.get(trans, folder_id)
+
+        current_user_roles = trans.get_current_user_roles()
+        security_agent: GalaxyRBACAgent = trans.app.security_agent
+
+        def traverse(folder):
+            admin = trans.user_is_admin
+            rval = []
+            for subfolder in folder.active_folders:
+                if not admin:
+                    can_access, folder_ids = security_agent.check_folder_contents(
+                        trans.user, current_user_roles, subfolder
+                    )
+                if (admin or can_access) and not subfolder.deleted:
+                    rval.extend(traverse(subfolder))
+            for ld in folder.datasets:
+                if not admin:
+                    can_access = security_agent.can_access_dataset(
+                        current_user_roles, ld.library_dataset_dataset_association.dataset
+                    )
+                if (admin or can_access) and not ld.deleted:
+                    rval.append(ld)
+            return rval
+
+        for ld in traverse(folder):
+            hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
+            rval.append(hda)
+        return rval
+
     def __create_datasets_from_library_folder(
         self,
         trans,
@@ -1140,53 +1220,39 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         payload: CreateHistoryContentPayloadFromCopy,
         serialization_params: SerializationParams,
     ):
-        rval = []
-        source = payload.source
-        if source == HistoryContentSource.library_folder:
-            content = payload.content
-            if content is None:
-                raise exceptions.RequestParameterMissingException("'content' id of lda or hda is missing")
-
-            folder_id = content
-            folder = self.folder_manager.get(trans, folder_id)
-
-            current_user_roles = trans.get_current_user_roles()
-            security_agent: GalaxyRBACAgent = trans.app.security_agent
-
-            def traverse(folder):
-                admin = trans.user_is_admin
-                rval = []
-                for subfolder in folder.active_folders:
-                    if not admin:
-                        can_access, folder_ids = security_agent.check_folder_contents(
-                            trans.user, current_user_roles, subfolder
-                        )
-                    if (admin or can_access) and not subfolder.deleted:
-                        rval.extend(traverse(subfolder))
-                for ld in folder.datasets:
-                    if not admin:
-                        can_access = security_agent.can_access_dataset(
-                            current_user_roles, ld.library_dataset_dataset_association.dataset
-                        )
-                    if (admin or can_access) and not ld.deleted:
-                        rval.append(ld)
-                return rval
-
-            for ld in traverse(folder):
-                hda = ld.library_dataset_dataset_association.to_history_dataset_association(
-                    history, add_to_history=True
-                )
-                hda_dict = self.hda_serializer.serialize_to_view(
-                    hda, user=trans.user, trans=trans, encode_id=False, **serialization_params.model_dump()
-                )
-                rval.append(hda_dict)
-        else:
-            message = f"Invalid 'source' parameter in request: {source}"
-            raise exceptions.RequestParameterInvalidException(message)
+        hdas = self._create_datasets_from_library_folder(trans, history, payload)
 
         with transaction(trans.sa_session):
             trans.sa_session.commit()
+
+        rval = []
+        for hda in hdas:
+            rval.append(
+                self.hda_serializer.serialize_to_view(
+                    hda, user=trans.user, trans=trans, encode_id=False, **serialization_params.model_dump()
+                )
+            )
         return rval
+
+    def _create_dataset(
+        self,
+        trans,
+        history: History,
+        payload: CreateHistoryContentPayloadFromCopy,
+    ):
+        source = payload.source
+        content = payload.content
+        if content is None:
+            raise exceptions.RequestParameterMissingException("'content' id of lda or hda is missing")
+
+        if source == HistoryContentSource.library:
+            hda = self.__create_hda_from_ldda(trans, history, content)
+        elif source == HistoryContentSource.hda:
+            hda = self.__create_hda_from_copy(trans, history, content)
+        else:
+            return None
+
+        return hda
 
     def __create_dataset(
         self,
@@ -1195,24 +1261,11 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         payload: CreateHistoryContentPayloadFromCopy,
         serialization_params: SerializationParams,
     ):
-        source = payload.source
-        if source not in (HistoryContentSource.library, HistoryContentSource.hda):
-            raise exceptions.RequestParameterInvalidException(f"'source' must be either 'library' or 'hda': {source}")
-        content = payload.content
-        if content is None:
-            raise exceptions.RequestParameterMissingException("'content' id of lda or hda is missing")
-
-        hda = None
-        if source == HistoryContentSource.library:
-            hda = self.__create_hda_from_ldda(trans, history, content)
-        elif source == HistoryContentSource.hda:
-            hda = self.__create_hda_from_copy(trans, history, content)
-
-        if hda is None:
-            return None
+        hda = self._create_dataset(trans, history, payload)
 
         with transaction(trans.sa_session):
             trans.sa_session.commit()
+
         return self.hda_serializer.serialize_to_view(
             hda, user=trans.user, trans=trans, encode_id=False, **serialization_params.model_dump()
         )

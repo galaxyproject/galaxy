@@ -82,6 +82,7 @@ from galaxy.webapps.galaxy.services.history_contents import (
     HistoriesContentsService,
     HistoryContentsIndexJobsSummaryParams,
     HistoryContentsIndexParams,
+    ImportHistoryContentPayload,
     LegacyHistoryContentsIndexParams,
 )
 
@@ -730,9 +731,22 @@ class FastAPIHistoryContents:
         serialization_params: SerializationParams,
         payload: CreateHistoryContentPayload,
     ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
-        """Create a new `HDA` or `HDCA` in the given History."""
+        """Create a new `HDA` orCreateHistoryContentPayload `HDCA` in the given History."""
         payload.type = type or payload.type
         return self.service.create(trans, history_id, payload, serialization_params)
+
+    @router.post(
+        "/api/histories/{history_id}/contents/import",
+        summary="Batch create new items in the given History.",
+    )
+    def import_from_library(
+        self,
+        history_id: HistoryIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: ImportHistoryContentPayload = Body(...),
+    ) -> HistoryContentBulkOperationResult:
+        """Batch create new items in the given History."""
+        return self.service.import_from_library(trans, history_id, payload)
 
     @router.put(
         "/api/histories/{history_id}/contents/{dataset_id}/permissions",

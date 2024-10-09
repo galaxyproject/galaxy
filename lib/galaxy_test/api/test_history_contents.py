@@ -1001,6 +1001,21 @@ class TestHistoryContentsApi(ApiTestCase):
         self._assert_status_code_is(update_response, 403)
         assert update_response.json()["err_msg"] == "History is immutable"
 
+    def test_import_from_library(self, history_id):
+        library_dataset_1 = self.library_populator.new_library_dataset("new_library_dataset")
+        library_dataset_2 = self.library_populator.new_library_dataset("new_library_dataset")
+        payload = {
+            "items": [
+                {"content": library_dataset_1["id"], "source": "library"},
+                {"content": library_dataset_2["id"], "source": "library"},
+            ]
+        }
+        response = self._post(f"histories/{history_id}/contents/import", data=payload, json=True)
+        self._assert_status_code_is(response, 200)
+        import_result = response.json()
+        assert import_result["success_count"] == 2, import_result
+        assert not import_result["errors"]
+
 
 class TestHistoryContentsApiBulkOperation(ApiTestCase):
     """

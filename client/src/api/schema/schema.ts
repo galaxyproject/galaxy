@@ -1818,6 +1818,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/histories/{history_id}/contents/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch create new items in the given History.
+         * @description Batch create new items in the given History.
+         */
+        post: operations["import_from_library_api_histories__history_id__contents_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/histories/{history_id}/contents/{dataset_id}/permissions": {
         parameters: {
             query?: never;
@@ -11369,6 +11389,14 @@ export interface components {
             states: {
                 [key: string]: number;
             };
+        };
+        /** ImportHistoryContentPayload */
+        ImportHistoryContentPayload: {
+            /**
+             * library datasets or folders
+             * @description The list of library datasets or folders to import from the library.
+             */
+            items: components["schemas"]["CreateHistoryContentPayload"][];
         };
         /** ImportToolDataBundle */
         ImportToolDataBundle: {
@@ -24091,6 +24119,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    import_from_library_api_histories__history_id__contents_import_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportHistoryContentPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryContentBulkOperationResult"];
                 };
             };
             /** @description Request Error */
