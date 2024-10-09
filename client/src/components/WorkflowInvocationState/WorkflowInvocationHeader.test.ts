@@ -1,4 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
@@ -81,14 +82,9 @@ async function mountWorkflowInvocationHeader(ownsWorkflow = true, hasReturnBtn =
     });
 
     const userStore = useUserStore();
-    userStore.currentUser = {
-        id: "1",
-        email: "test@mail.test",
-        tags_used: [],
-        isAnonymous: false,
-        total_disk_usage: 0,
+    userStore.currentUser = getFakeRegisteredUser({
         username: ownsWorkflow ? WORKFLOW_OWNER : OTHER_USER,
-    };
+    });
 
     return { wrapper };
 }
