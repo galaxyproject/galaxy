@@ -81,8 +81,8 @@
         <param name="input_frames_5" type="data" format="data" optional="true">
             <validator type="dataset_metadata_equal" metadata_name="frames" value="5" />
         </param>
-        <!-- Checks for TIFF files with multiple series -->
-        <param name="input_multi_series_tiff" type="data" format="data" optional="true">
+        <!-- Checks for TIFF files with multiple pages -->
+        <param name="input_multipage_tiff" type="data" format="data" optional="true">
             <validator type="dataset_metadata_equal" metadata_name="axes" value="YXS,YX" />
             <validator type="dataset_metadata_equal" metadata_name="dtype" value="uint8,uint16" />
             <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value="2,255" />
@@ -130,7 +130,7 @@
             <param name="input_depth_25" value="im7_uint8.tif" /><!-- axes: ZYX -->
             <param name="input_frames_0" value="im1_uint8.tif" /><!-- axes: YXS -->
             <param name="input_frames_5" value="im8_uint16.tif" /><!-- axes: TYX -->
-            <param name="input_multi_series_tiff" value="im9_multiseries.tif" />
+            <param name="input_multipage_tiff" value="im9_multipage.tif" />
             <param name="input_unsupported_tiff_compression" value="1.tiff" />
             <expand macro="test-output" />
         </test>

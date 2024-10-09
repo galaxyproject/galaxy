@@ -218,7 +218,7 @@ class Tiff(Image):
         with tifffile.TiffFile(dataset.get_file_name()) as tif:
             offsets = [page.offset for page in tif.pages]
 
-            # Aggregate a list of values for each metadata field (one value for each series of the TIFF file)
+            # Aggregate a list of values for each metadata field (one value for each page of the TIFF file)
             metadata: Dict[str, List[Any]] = {
                 key: []
                 for key in [
@@ -232,15 +232,15 @@ class Tiff(Image):
                     "num_unique_values",
                 ]
             }
-            for series in tif.series:
+            for page in tif.series:
 
                 # Determine the metadata values that should be generally available
-                metadata["axes"].append(series.axes.upper())
-                metadata["dtype"].append(series.dtype)
+                metadata["axes"].append(page.axes.upper())
+                metadata["dtype"].append(page.dtype)
 
                 # Determine the metadata values that require reading the image data
                 try:
-                    im_arr = series.asarray()
+                    im_arr = page.asarray()
                 except ValueError:  # Occurs if the compression of the TIFF file is unsupported
                     im_arr = None
                 if im_arr is not None:
