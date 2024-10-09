@@ -1002,19 +1002,35 @@ class TestHistoryContentsApi(ApiTestCase):
         assert update_response.json()["err_msg"] == "History is immutable"
 
     def test_import_from_library(self, history_id):
-        library_dataset_1 = self.library_populator.new_library_dataset("new_library_dataset")
-        library_dataset_2 = self.library_populator.new_library_dataset("new_library_dataset")
+        library_dataset_1 = self.library_populator.new_library_dataset("new_library_dataset1")
+        library_dataset_2 = self.library_populator.new_library_dataset("new_library_dataset2")
+
+        library = self.library_populator.new_private_library("new_library_folder")
+        data = {
+            "name": "Test Folder",
+            "description": "The description of Test Folder",
+        }
+        create_response = self._post(f"folders/{library['root_folder_id']}", data=data, json=True)
+        self._assert_status_code_is(create_response, 200)
+        library_folder = create_response.json()
+
         payload = {
             "items": [
                 {"content": library_dataset_1["id"], "source": "library"},
                 {"content": library_dataset_2["id"], "source": "library"},
+                {"content": library_folder["id"], "source": "library_folder"},
             ]
         }
         response = self._post(f"histories/{history_id}/contents/import", data=payload, json=True)
         self._assert_status_code_is(response, 200)
         import_result = response.json()
-        assert import_result["success_count"] == 2, import_result
+        assert import_result["success_count"] == 3, import_result
         assert not import_result["errors"]
+
+    def test_import_from_library_invalid(self, history_id):
+        payload = {"items": [{"content": "invalid", "source": "library"}]}
+        response = self._post(f"histories/{history_id}/contents/import", data=payload, json=True)
+        self._assert_status_code_is(response, 400)
 
 
 class TestHistoryContentsApiBulkOperation(ApiTestCase):
