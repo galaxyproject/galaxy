@@ -869,8 +869,7 @@ class RexpBase(Html):
             pf = None
         if pf:
             header = pf[0].strip()
-            columns = header.split("\t")  # hope is header
-            columns = [escape(x) for x in columns]
+            columns = [escape(x) for x in header.split("\t")]  # hope is header
             dataset.metadata.column_names = columns
             dataset.metadata.columns = len(columns)
             dataset.peek = "".join(pf[:5])
