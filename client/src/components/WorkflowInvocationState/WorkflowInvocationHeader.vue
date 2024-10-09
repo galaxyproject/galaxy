@@ -3,13 +3,15 @@ import { faClock } from "@fortawesome/free-regular-svg-icons";
 import { faArrowLeft, faEdit, faHdd, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
 
+import { isRegisteredUser } from "@/api";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useUserStore } from "@/stores/userStore";
-import { Workflow } from "@/stores/workflowStore";
+import type { Workflow } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -31,10 +33,10 @@ const props = defineProps<Props>();
 
 const { workflow } = useWorkflowInstance(props.invocation.workflow_id);
 
-const userStore = useUserStore();
+const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 const owned = computed(() => {
-    if (userStore.currentUser && workflow.value) {
-        return userStore.currentUser.username === workflow.value.owner;
+    if (isRegisteredUser(currentUser.value) && workflow.value) {
+        return currentUser.value.username === workflow.value.owner;
     } else {
         return false;
     }
@@ -129,7 +131,7 @@ function getWorkflowName(): string {
                         v-else
                         v-b-tooltip.hover.noninteractive
                         size="sm"
-                        :disabled="userStore.isAnonymous"
+                        :disabled="isAnonymous"
                         :title="localize('Import this workflow')"
                         :icon="faUpload"
                         variant="outline-primary"
