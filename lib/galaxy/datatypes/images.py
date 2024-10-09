@@ -263,7 +263,7 @@ class Tiff(Image):
                 json.dump(offsets, f)
             dataset.metadata.offsets = offsets_file
 
-        except:  # Corrupted/unsupported TIFF file structure
+        except:  # noqa: E722  # For arbitrary errors from deep inside the tifffile library
             pass
 
     @staticmethod
