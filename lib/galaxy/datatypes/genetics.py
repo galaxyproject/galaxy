@@ -863,16 +863,16 @@ class RexpBase(Html):
         pp = os.path.join(dataset.extra_files_path, pn)
         dataset.metadata.pheno_path = pp
         try:
-            with open(pp) as f:
-                pf = f.readlines()  # read the basename.phenodata in the extra_files_path
+            with open(pp) as file:
+                pf = file.readlines()  # read the basename.phenodata in the extra_files_path
         except Exception:
             pf = None
         if pf:
-            h = pf[0].strip()
-            h = h.split("\t")  # hope is header
-            h = [escape(x) for x in h]
-            dataset.metadata.column_names = h
-            dataset.metadata.columns = len(h)
+            header = pf[0].strip()
+            columns = header.split("\t")  # hope is header
+            columns = [escape(x) for x in columns]
+            dataset.metadata.column_names = columns
+            dataset.metadata.columns = len(columns)
             dataset.peek = "".join(pf[:5])
         else:
             dataset.metadata.column_names = []
