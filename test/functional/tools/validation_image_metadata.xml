@@ -105,6 +105,17 @@
             <validator type="dataset_metadata_equal" metadata_name="depth" value="" />
             <validator type="dataset_metadata_equal" metadata_name="frames" value="" />
         </param>
+        <!-- Checks for empty files -->
+        <param name="input_empty" type="data" format="data" optional="true">
+            <validator type="dataset_metadata_equal" metadata_name="axes" value="" />
+            <validator type="dataset_metadata_equal" metadata_name="dtype" value="" />
+            <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value="" />
+            <validator type="dataset_metadata_equal" metadata_name="width" value="" />
+            <validator type="dataset_metadata_equal" metadata_name="height" value="" />
+            <validator type="dataset_metadata_equal" metadata_name="channels" value="" />
+            <validator type="dataset_metadata_equal" metadata_name="depth" value="" />
+            <validator type="dataset_metadata_equal" metadata_name="frames" value="" />
+        </param>
     </inputs>
     <outputs>
         <data name="output" format="data" />
@@ -132,6 +143,7 @@
             <param name="input_frames_5" value="im8_uint16.tif" /><!-- axes: TYX -->
             <param name="input_multipage_tiff" value="im9_multipage.tif" />
             <param name="input_unsupported_tiff_compression" value="1.tiff" />
+            <param name="input_empty" value="im_empty.tif" />
             <expand macro="test-output" />
         </test>
         <!-- Tests with PNG files -->
