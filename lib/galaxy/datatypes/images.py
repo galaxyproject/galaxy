@@ -165,7 +165,7 @@ class Image(data.Data):
                     dataset.metadata.width = str(im.size[1])
                     dataset.metadata.height = str(im.size[0])
                     dataset.metadata.depth = "0"
-                    dataset.metadata.frames = str(getattr(im, 'n_frames', 0))
+                    dataset.metadata.frames = str(getattr(im, "n_frames", 0))
                     dataset.metadata.num_unique_values = str(sum(val > 0 for val in im.histogram()))
 
                     # Peek into a small 2x2 section of the image data
