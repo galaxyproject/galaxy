@@ -55,4 +55,6 @@ jobs:
       - name: Run mypy checks
         run: tox -e mypy
       - uses: psf/black@stable
+        with:
+          version: "24.8.0"  # last version supporting Python 3.8
       - uses: isort/isort-action@v1
