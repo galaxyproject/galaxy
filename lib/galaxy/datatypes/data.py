@@ -1217,10 +1217,6 @@ class Directory(Data):
     # The behavior of this class is intended to be similar to that of
     # composite types, but with arbitrary structure of extra_files.
 
-    # A prioritized list of files in the directory that, if present, can serve
-    # as a replacement for a composite type's primary dataset.
-    recognized_index_files: List[str] = []
-
     # Directories converted from archives, and possibly others, have a single
     # root folder inside the directory. The root_folder attribute lets tools
     # access that folder without first exploring the directory tree themselves.
@@ -1234,17 +1230,6 @@ class Directory(Data):
         visible=False,
     )
 
-    # Capture the actual index file obtained from the recognized_index_files
-    # list for a concrete directory.
-    MetadataElement(
-        name="index_file",
-        default=None,
-        desc="Name of the index file relative to the root folder",
-        readonly=True,
-        optional=False,
-        visible=False,
-    )
-
     def set_meta(self, dataset: DatasetProtocol, **kwd):
         efp = dataset.extra_files_path
         efp_items = os.listdir(efp)
@@ -1253,12 +1238,6 @@ class Directory(Data):
             dataset.metadata.root_folder = root_folder_name
         else:
             dataset.metadata.root_folder = ""
-        index_file = None
-        for f in self.recognized_index_files:
-            if os.path.isfile(os.path.join(efp, root_folder_name, f)):
-                index_file = f
-                break
-        dataset.metadata.index_file = index_file
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
@@ -1277,57 +1256,6 @@ class Directory(Data):
         """
         error, msg, messagetype = False, "", ""
         return error, msg, messagetype
-
-    def display_data(
-        self,
-        trans,
-        dataset: DatasetHasHidProtocol,
-        preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
-        **kwd,
-    ):
-        headers = kwd.get("headers", {})
-        # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
-        # content from being rendered in the browser
-        headers["X-Content-Type-Options"] = "nosniff"
-        if to_ext:
-            # Download the directory structure as an archive
-            trans.log_event(f"Download directory for dataset id: {str(dataset.id)}")
-            return self._archive_composite_dataset(trans, dataset, headers, do_action=kwd.get("do_action", "zip"))
-        if preview:
-            root_folder = dataset.metadata.root_folder
-            index_file = dataset.metadata.index_file
-            if not filename or filename == "index":
-                if root_folder is not None and index_file:
-                    # display the index file in lieu of the empty primary dataset
-                    file_path = os.path.join(dataset.extra_files_path, root_folder, index_file)
-                    self._clean_and_set_mime_type(trans, "text/plain", headers)  # type: ignore[arg-type]
-                    return self._yield_user_file_content(trans, dataset, file_path, headers), headers
-                elif root_folder:
-                    # delegate to the parent method, which knows how to display
-                    # a directory
-                    filename = root_folder
-                else:
-                    # No meaningful display available, show an info message instead
-                    self._clean_and_set_mime_type(trans, "text/plain", headers)  # type: ignore[arg-type]
-                    if root_folder is None:
-                        return util.smart_str(
-                            "Cannot generate preview with incomplete metadata. Resetting metadata may help."
-                        )
-                    elif self.recognized_index_files:
-                        return util.smart_str(
-                            "None of the known key files for the datatype present. Is the datatype format set correctly?"
-                        )
-                    else:
-                        return util.smart_str("No preview available for this dataset."), headers
-
-        return super().display_data(
-            trans,
-            dataset=dataset,
-            filename=filename,
-            **kwd,
-        )
 
 
 class GenericAsn1(Text):
