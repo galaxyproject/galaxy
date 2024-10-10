@@ -1174,7 +1174,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
             hdas = [
                 ld.library_dataset_dataset_association.to_history_dataset_association(
-                    history, add_to_history=True, flush=False
+                    history, add_to_history=True, commit=False
                 )
                 for ld in traverse(folder)
             ]
