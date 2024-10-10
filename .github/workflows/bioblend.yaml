@@ -59,7 +59,7 @@ jobs:
       - name: Install tox
         run: |
           python3 -m pip install --upgrade pip setuptools
-          python3 -m pip install 'tox>=1.8.0' 'virtualenv>=20.0.14'
+          python3 -m pip install 'tox>=1.8.0'
       - name: Set up Python for Galaxy
         uses: actions/setup-python@v5
         with:
