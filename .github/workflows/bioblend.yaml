@@ -122,7 +122,7 @@ jobs:
           GALAXY_DIR=galaxy-${{ matrix.galaxy_version }}
           git clone --depth=1 -b ${{ matrix.galaxy_version }} https://github.com/galaxyproject/galaxy $GALAXY_DIR
           export DATABASE_CONNECTION=postgresql://postgres:@localhost/galaxy
-          ./run_bioblend_tests.sh -g $GALAXY_DIR -v python${{ steps.get_galaxy_python_version.outputs.galaxy_python_version }} -e ${{ matrix.tox_env }}
+          ./bioblend/run_bioblend_tests.sh -g $GALAXY_DIR -v python${{ steps.get_galaxy_python_version.outputs.galaxy_python_version }} -e ${{ matrix.tox_env }}
       - name: The job has failed
         if: ${{ failure() }}
         run: |
