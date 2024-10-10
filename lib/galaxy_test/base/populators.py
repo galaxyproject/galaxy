@@ -781,6 +781,7 @@ class BaseDatasetPopulator(BasePopulator):
         json = payload.model_dump(mode="json")
         create_response = self._post(create_url, json, json=True, anon=True)
         api_asserts.assert_status_code_is(create_response, 200)
+        assert create_response.headers["access-control-allow-origin"]
         create_response.raise_for_status()
         return WorkflowLandingRequest.model_validate(create_response.json())
 

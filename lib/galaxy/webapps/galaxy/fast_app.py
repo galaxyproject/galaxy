@@ -10,7 +10,6 @@ from fastapi import (
 )
 from fastapi.openapi.constants import REF_TEMPLATE
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import Response
 
 from galaxy.schema.generics import CustomJsonSchema
 from galaxy.version import VERSION
@@ -121,14 +120,6 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             allow_methods=["*"],
             max_age=600,
         )
-    else:
-        # handle CORS preflight requests - synchronize with wsgi behavior.
-        @app.options("/api/{rest_of_path:path}")
-        async def preflight_handler(request: Request, rest_of_path: str) -> Response:
-            response = Response()
-            response.headers["Access-Control-Allow-Headers"] = "*"
-            response.headers["Access-Control-Max-Age"] = "600"
-            return response
 
 
 def include_legacy_openapi(app, gx_app):

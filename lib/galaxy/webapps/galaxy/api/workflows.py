@@ -1165,7 +1165,7 @@ class FastAPIWorkflows:
     ) -> StoredWorkflowDetailed:
         return self.service.show_workflow(trans, workflow_id, instance, legacy, version)
 
-    @router.post("/api/workflow_landings", public=True)
+    @router.post("/api/workflow_landings", public=True, allow_cors=True)
     def create_landing(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
