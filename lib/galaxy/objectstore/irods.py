@@ -40,7 +40,7 @@ def _config_xml_error(tag):
 
 
 def _config_dict_error(key):
-    msg = "No {key} key in config dictionary".forma(key=key)
+    msg = "No {key} key in config dictionary".format(key=key)
     raise Exception(msg)
 
 
