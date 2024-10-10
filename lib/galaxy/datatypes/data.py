@@ -1217,31 +1217,9 @@ class Directory(Data):
     # The behavior of this class is intended to be similar to that of
     # composite types, but with arbitrary structure of extra_files.
 
-    # Directories converted from archives, and possibly others, have a single
-    # root folder inside the directory. The root_folder attribute lets tools
-    # access that folder without first exploring the directory tree themselves.
-    # Will be set to the empty string for flat directories.
-    MetadataElement(
-        name="root_folder",
-        default=None,
-        desc="Name of the root folder of the directory",
-        readonly=True,
-        optional=False,
-        visible=False,
-    )
-
-    def set_meta(self, dataset: DatasetProtocol, **kwd):
-        efp = dataset.extra_files_path
-        efp_items = os.listdir(efp)
-        root_folder_name = efp_items[0]
-        if len(efp_items) == 1 and os.path.isdir(os.path.join(efp, root_folder_name)):
-            dataset.metadata.root_folder = root_folder_name
-        else:
-            dataset.metadata.root_folder = ""
-
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = f"{dataset.metadata.root_folder}"
+            dataset.peek = f"{dataset.extra_files_path}"
             dataset.blurb = nice_size(dataset.dataset.total_size)
         else:
             dataset.peek = "file does not exist"
