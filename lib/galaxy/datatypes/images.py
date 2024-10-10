@@ -5,6 +5,7 @@ Image classes
 import base64
 import json
 import logging
+import struct
 from typing import (
     Any,
     Dict,
@@ -278,6 +279,7 @@ class Tiff(Image):
             KeyError,
             OSError,
             RuntimeError,
+            struct.error,
             tifffile.OmeXmlError,
             tifffile.TiffFileError,
             TypeError,
