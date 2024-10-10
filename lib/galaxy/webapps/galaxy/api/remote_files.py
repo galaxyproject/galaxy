@@ -128,7 +128,7 @@ class FastAPIRemoteFiles:
         deprecated=True,
         summary="Displays remote files available to the user. Please use /api/remote_files instead.",
     )
-    async def index(
+    def index(
         self,
         response: Response,
         user_ctx: ProvidesUserContext = DependsOnTrans,
@@ -157,7 +157,7 @@ class FastAPIRemoteFiles:
         summary="Display plugin information for each of the gxfiles:// URI targets available.",
         response_description="A list with details about each plugin.",
     )
-    async def plugins(
+    def plugins(
         self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
         browsable_only: Annotated[Optional[bool], BrowsableQueryParam] = True,
@@ -176,7 +176,7 @@ class FastAPIRemoteFiles:
         "/api/remote_files",
         summary="Creates a new entry (directory/record) on the remote files source.",
     )
-    async def create_entry(
+    def create_entry(
         self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
         payload: CreateEntryPayload = Body(

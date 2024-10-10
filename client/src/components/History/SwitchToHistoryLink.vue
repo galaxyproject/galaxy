@@ -8,6 +8,7 @@ import { useRouter } from "vue-router/composables";
 
 import { type HistorySummary, userOwnsHistory } from "@/api";
 import { Toast } from "@/composables/toast";
+import { useEventStore } from "@/stores/eventStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -47,8 +48,10 @@ const actionText = computed(() => {
     return "View in new tab";
 });
 
-async function onClick(history: HistorySummary) {
-    if (canSwitch.value) {
+async function onClick(event: MouseEvent, history: HistorySummary) {
+    const eventStore = useEventStore();
+    const ctrlKey = eventStore.isMac ? event.metaKey : event.ctrlKey;
+    if (!ctrlKey && canSwitch.value) {
         if (props.filters) {
             historyStore.applyFilters(history.id, props.filters);
         } else {
@@ -78,7 +81,7 @@ function viewHistoryInNewTab(history: HistorySummary) {
                 class="truncate"
                 href="#"
                 :title="`<b>${actionText}</b><br>${history.name}`"
-                @click.stop="onClick(history)">
+                @click.stop="onClick($event, history)">
                 {{ history.name }}
             </BLink>
 

@@ -103,7 +103,7 @@ class FastAPIPages:
         summary="Lists all Pages viewable by the user.",
         response_description="A list with summary page information.",
     )
-    async def index(
+    def index(
         self,
         response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -153,7 +153,7 @@ class FastAPIPages:
         summary="Marks the specific Page as deleted.",
         status_code=status.HTTP_204_NO_CONTENT,
     )
-    async def delete(
+    def delete(
         self,
         id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -167,7 +167,7 @@ class FastAPIPages:
         summary="Undelete the specific Page.",
         status_code=status.HTTP_204_NO_CONTENT,
     )
-    async def undelete(
+    def undelete(
         self,
         id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -188,7 +188,7 @@ class FastAPIPages:
             501: {"description": "PDF conversion service not available."},
         },
     )
-    async def show_pdf(
+    def show_pdf(
         self,
         id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -210,7 +210,7 @@ class FastAPIPages:
             501: {"description": "PDF conversion service not available."},
         },
     )
-    async def prepare_pdf(
+    def prepare_pdf(
         self,
         id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -226,7 +226,7 @@ class FastAPIPages:
         summary="Return a page summary and the content of the last revision.",
         response_description="The page summary information.",
     )
-    async def show(
+    def show(
         self,
         id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,

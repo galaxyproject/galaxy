@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
 import {
     BAlert,
     BButton,
@@ -11,32 +11,26 @@ import {
     BDropdownItem,
     BFormCheckbox,
 } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { Services } from "@/components/Libraries/LibraryFolder/services";
-import mod_add_datasets from "@/components/Libraries/LibraryFolder/TopToolbar/add-datasets";
 import { deleteSelectedItems } from "@/components/Libraries/LibraryFolder/TopToolbar/delete-selected";
 import download from "@/components/Libraries/LibraryFolder/TopToolbar/download";
 import mod_import_collection from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-collection";
 import mod_import_dataset from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
 import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
-import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { Toast } from "@/composables/toast";
-import { useDbKeyStore } from "@/stores/dbKeyStore";
+import { getAppRoot } from "@/onload";
 import { useUserStore } from "@/stores/userStore";
 
 import FolderDetails from "@/components/Libraries/LibraryFolder/FolderDetails/FolderDetails.vue";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
 import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
+import DirectoryDatasetPicker from "@/components/Libraries/LibraryFolder/TopToolbar/DirectoryDatasetPicker.vue";
 import ProgressBar from "@/components/ProgressBar.vue";
 import HistoryDatasetPicker from "@/components/SelectionDialog/HistoryDatasetPicker.vue";
-
-library.add(faBook, faCaretDown, faDownload, faHome, faPlus, faTrash);
-
-type GenomesList = { id: string; text: string }[];
 
 interface Props {
     metadata: any;
@@ -66,15 +60,9 @@ const emit = defineEmits<{
 const { config, isConfigLoaded } = useConfig();
 
 const userStore = useUserStore();
-const { isAdmin } = storeToRefs(userStore);
 
-const { datatypes } = useDetailedDatatypes();
-
-const dbKeyStore = useDbKeyStore();
-
-const modalShow = ref("");
-const genomesList = ref<GenomesList>([]);
-const extensionsList = ref<DetailedDatatypes[]>([]);
+type ImportSource = "history" | "userdir" | "importdir" | "path" | undefined;
+const modalShow = ref<ImportSource>();
 const progress = ref(false);
 const progressNote = ref("");
 const progressStatus = reactive({
@@ -82,18 +70,6 @@ const progressStatus = reactive({
     okCount: 0,
     errorCount: 0,
     runningCount: 0,
-});
-const auto = ref({
-    id: "auto",
-    extension: "auto",
-    text: "Auto-detect",
-    description: `This system will try to detect the file type automatically.
-                     If your file is not detected properly as one of the known formats,
-                     it most likely means that it has some format problems (e.g., different
-                     number of columns on different rows). You can still coerce the system
-                     to set your data to the format you think it should be.
-                     You can also upload compressed files, which will automatically be decompressed`,
-    description_url: "",
 });
 
 const services = new Services();
@@ -105,7 +81,7 @@ const containsFileOrFolder = computed(() => {
     return props.folderContents.find((el) => el.type === "folder" || el.type === "file");
 });
 const canDelete = computed(() => {
-    return !!(containsFileOrFolder.value && isAdmin.value);
+    return !!(containsFileOrFolder.value && props.metadata.can_modify_folder);
 });
 const datasetManipulation = computed(() => {
     return !!(containsFileOrFolder.value && userStore.currentUser);
@@ -222,48 +198,8 @@ async function importToHistoryModal(isCollection: boolean) {
     }
 }
 
-function onAddDatasets(source: string = "") {
+function onAddDatasets(source?: ImportSource) {
     modalShow.value = source;
-}
-
-// TODO: after replacing the selection dialog with the new component that is not using jquery
-async function addDatasets(source: string) {
-    await fetchExtAndGenomes();
-
-    new mod_add_datasets.AddDatasets({
-        source: source,
-        id: props.folderId,
-        updateContent: updateContent,
-        list_genomes: genomesList.value,
-        list_extensions: extensionsList.value,
-    });
-}
-
-function updateContent() {
-    emit("fetchFolderContents");
-}
-// END TODO
-
-async function fetchExtAndGenomes() {
-    try {
-        extensionsList.value = datatypes.value;
-
-        extensionsList.value.sort((a, b) => (a.extension > b.extension ? 1 : a.extension < b.extension ? -1 : 0));
-
-        extensionsList.value = [auto.value, ...extensionsList.value];
-    } catch (err) {
-        console.error(err);
-    }
-
-    try {
-        await dbKeyStore.fetchUploadDbKeys();
-
-        genomesList.value = dbKeyStore.uploadDbKeys;
-
-        genomesList.value.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
-    } catch (err) {
-        console.error(err);
-    }
 }
 
 function resetProgress() {
@@ -273,7 +209,10 @@ function resetProgress() {
     progressStatus.runningCount = 0;
 }
 
-async function onAddDatasetsFromHistory(selectedDatasets: SelectionItem[]) {
+async function addDatasets(
+    selectedDatasets: SelectionItem[] | Record<string, string | boolean>[],
+    datasetApiCall: Function
+) {
     resetProgress();
 
     progress.value = true;
@@ -286,22 +225,10 @@ async function onAddDatasetsFromHistory(selectedDatasets: SelectionItem[]) {
         try {
             progressStatus.runningCount++;
 
-            const { error } = await GalaxyApi().POST("/api/folders/{folder_id}/contents", {
-                params: {
-                    path: { folder_id: props.folderId },
-                },
-                body: {
-                    ldda_message: null,
-                    from_hda_id: dataset.id,
-                },
-            });
-
-            if (error) {
-                throw new Error(error.err_msg);
-            }
+            await datasetApiCall(dataset);
 
             progressStatus.okCount++;
-        } catch (err) {
+        } catch (e) {
             progressStatus.errorCount++;
         } finally {
             progressStatus.runningCount--;
@@ -322,6 +249,34 @@ async function onAddDatasetsFromHistory(selectedDatasets: SelectionItem[]) {
 
     emit("setBusy", false);
     emit("fetchFolderContents");
+}
+
+function onAddDatasetsFromHistory(selectedDatasets: SelectionItem[]) {
+    const datasetApiCall = async (dataset: SelectionItem) => {
+        const { error } = await GalaxyApi().POST("/api/folders/{folder_id}/contents", {
+            params: {
+                path: { folder_id: props.folderId },
+            },
+            body: {
+                ldda_message: null,
+                from_hda_id: dataset.id,
+            },
+        });
+
+        if (error) {
+            throw new Error(error.err_msg);
+        }
+    };
+
+    addDatasets(selectedDatasets, datasetApiCall);
+}
+
+function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolean>[]) {
+    const datasetApiCall = async (dataset: Record<string, string | boolean>) => {
+        await axios.post(`${getAppRoot()}api/libraries/datasets`, dataset);
+    };
+
+    addDatasets(selectedDatasets, datasetApiCall);
 }
 </script>
 
@@ -364,18 +319,18 @@ async function onAddDatasetsFromHistory(selectedDatasets: SelectionItem[]) {
 
                         <BDropdownItem @click="onAddDatasets('history')"> from History </BDropdownItem>
 
-                        <BDropdownItem v-if="userLibraryImportDirAvailable" @click="addDatasets('userdir')">
+                        <BDropdownItem v-if="userLibraryImportDirAvailable" @click="onAddDatasets('userdir')">
                             from User Directory
                         </BDropdownItem>
 
                         <BDropdownDivider v-if="libraryImportDir || allowLibraryPathPaste" />
 
                         <BDropdownGroup v-if="libraryImportDir || allowLibraryPathPaste" header="Admins Only">
-                            <BDropdownItem v-if="libraryImportDir" @click="addDatasets('importdir')">
+                            <BDropdownItem v-if="libraryImportDir" @click="onAddDatasets('importdir')">
                                 from Import Directory
                             </BDropdownItem>
 
-                            <BDropdownItem v-if="allowLibraryPathPaste" @click="addDatasets('path')">
+                            <BDropdownItem v-if="allowLibraryPathPaste" @click="onAddDatasets('path')">
                                 from Path
                             </BDropdownItem>
                         </BDropdownGroup>
@@ -448,6 +403,12 @@ async function onAddDatasetsFromHistory(selectedDatasets: SelectionItem[]) {
             v-if="modalShow === 'history'"
             :folder-id="props.folderId"
             @onSelect="onAddDatasetsFromHistory"
+            @onClose="onAddDatasets" />
+        <DirectoryDatasetPicker
+            v-else-if="modalShow"
+            :target="modalShow"
+            :folder-id="props.folderId"
+            @onSelect="onAddDatasetsDirectory"
             @onClose="onAddDatasets" />
     </div>
 </template>

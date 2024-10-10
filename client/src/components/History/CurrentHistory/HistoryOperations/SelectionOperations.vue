@@ -99,7 +99,7 @@
                     collection-name="Database/Builds"
                     :loading="loadingDbKeys"
                     :items="dbkeys"
-                    :current-item-id="selectedDbKey"
+                    :current-item="selectedDbKey"
                     @update:selected-item="onSelectedDbKey" />
             </DbKeyProvider>
         </b-modal>
@@ -116,7 +116,7 @@
                     collection-name="Data Types"
                     :loading="loadingDatatypes"
                     :items="datatypes"
-                    :current-item-id="selectedDatatype"
+                    :current-item="selectedDatatype"
                     @update:selected-item="onSelectedDatatype" />
             </DatatypesProvider>
         </b-modal>
@@ -186,8 +186,8 @@ export default {
     },
     data: function () {
         return {
-            selectedDbKey: "?",
-            selectedDatatype: "auto",
+            selectedDbKey: { id: "?", text: "unspecified (?)" },
+            selectedDatatype: { id: "auto", text: "Auto-detect" },
             selectedTags: [],
         };
     },
@@ -307,12 +307,12 @@ export default {
             this.runOnSelection(purgeSelectedContent);
         },
         changeDbkeyOfSelected() {
-            this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedDbKey });
-            this.selectedDbKey = "?";
+            this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedDbKey.id });
+            this.selectedDbKey = { id: "?" };
         },
         changeDatatypeOfSelected() {
-            this.runOnSelection(changeDatatypeOfSelectedContent, { datatype: this.selectedDatatype });
-            this.selectedDatatype = "auto";
+            this.runOnSelection(changeDatatypeOfSelectedContent, { datatype: this.selectedDatatype.id });
+            this.selectedDatatype = { id: "auto", text: "Auto-detect" };
         },
         addTagsToSelected() {
             this.runOnSelection(addTagsToSelectedContent, { tags: this.selectedTags });
@@ -354,10 +354,10 @@ export default {
             this.$emit("operation-error", { errorMessage, result });
         },
         onSelectedDbKey(dbkey) {
-            this.selectedDbKey = dbkey.id;
+            this.selectedDbKey = dbkey;
         },
         onSelectedDatatype(datatype) {
-            this.selectedDatatype = datatype.id;
+            this.selectedDatatype = datatype;
         },
 
         // collection creation, fires up a modal
