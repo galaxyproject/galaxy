@@ -1234,7 +1234,7 @@ class Directory(Data):
         return root_folder_name
 
 
-class ZarrGeneric(Directory):
+class GenericZarr(Directory):
     """Class representing a zarr-format file structure with general-purpose numeric content."""
 
     def sniff(self, filename: str) -> bool:

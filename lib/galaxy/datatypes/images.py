@@ -129,7 +129,7 @@ class OMETiff(Tiff):
         return False
 
 
-class ZarrImageGeneric(Image):
+class GenericZarrImage(Image):
     file_ext = ""
 
     def __init__(self, **kwd):
@@ -159,17 +159,17 @@ class ZarrImageGeneric(Image):
     def sniff(self, filename: str) -> bool:
         # Even if we were detecting a zarr-like folder structure, we couldn't
         # know whether the file is for imaging purposes.
-        # That's why we return False here and leave detection to the ZarrGeneric
+        # That's why we return False here and leave detection to the GenericZarr
         # class derived from Data.
         return False
 
 
-class ZarrImage(ZarrImageGeneric):
+class ZarrImage(GenericZarrImage):
     file_ext = "zarr"
     edam_format = "format_3547"
 
 
-class OMEZarr(ZarrImageGeneric):
+class OMEZarr(GenericZarrImage):
     file_ext = "ome_zarr"
 
 

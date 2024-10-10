@@ -309,7 +309,7 @@
       <converter file="archive_to_directory.xml" target_datatype="directory"/>
     </datatype>
     <datatype extension="directory" type="galaxy.datatypes.data:Directory"/>
-    <datatype extension="zarr_generic" type="galaxy.datatypes.data:ZarrGeneric" />
+    <datatype extension="zarr_generic" type="galaxy.datatypes.data:GenericZarr" />
     <datatype extension="yaml" type="galaxy.datatypes.text:Yaml" display_in_upload="true" />
     <!-- Proteomics Datatypes -->
     <datatype extension="mrm" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="true"/>
