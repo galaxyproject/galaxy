@@ -16,7 +16,7 @@ concurrency:
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Python 3.7 is not available via setup-python on ubuntu >=24.04
     strategy:
       fail-fast: false
       matrix:
