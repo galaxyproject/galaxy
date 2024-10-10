@@ -2,9 +2,11 @@
 Object Store plugin for the Integrated Rule-Oriented Data System (iRODS)
 """
 
+import json
 import logging
 import os
 import shutil
+import ssl
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -40,7 +42,7 @@ def _config_xml_error(tag):
 
 
 def _config_dict_error(key):
-    msg = "No {key} key in config dictionary".forma(key=key)
+    msg = "No {key} key in config dictionary".format(key=key)
     raise Exception(msg)
 
 
@@ -51,6 +53,7 @@ def parse_config_xml(config_xml):
             _config_xml_error("auth")
         username = a_xml[0].get("username")
         password = a_xml[0].get("password")
+        sslfile = a_xml[0].get("sslfile", None)
 
         r_xml = config_xml.findall("resource")
         if not r_xml:
@@ -88,6 +91,7 @@ def parse_config_xml(config_xml):
             "auth": {
                 "username": username,
                 "password": password,
+                "sslfile": sslfile,
             },
             "resource": {
                 "name": resource_name,
@@ -138,6 +142,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         self.password = auth_dict.get("password")
         if self.password is None:
             _config_dict_error("auth->password")
+        self.sslfile = auth_dict.get("sslfile")
 
         resource_dict = config_dict["resource"]
         if resource_dict is None:
@@ -193,15 +198,27 @@ class IRODSObjectStore(CachingConcreteObjectStore):
 
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
+        
 
-        self.session = iRODSSession(
-            host=self.host,
-            port=self.port,
-            user=self.username,
-            password=self.password,
-            zone=self.zone,
-            refresh_time=self.refresh_time,
-        )
+        session_params = {
+            'host': self.host,
+            'port': self.port,
+            'user': self.username,
+            'password': self.password,
+            'zone': self.zone,
+            'refresh_time': self.refresh_time,
+        }
+
+        # Add ssl parameters only if self.sslfile is not None
+        if self.sslfile is not None:
+            with open(self.sslfile, "r") as file:
+                ssl_settings = json.load(file)
+
+            ssl_settings['ssl_context'] = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH)
+            session_params.update(ssl_settings)
+
+        self.session = iRODSSession(**session_params)
+
         # Set connection timeout
         self.session.connection_timeout = self.timeout
 
@@ -284,6 +301,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             "auth": {
                 "username": self.username,
                 "password": self.password,
+                "sslfile": self.sslfile,
             },
             "resource": {
                 "name": self.resource,
