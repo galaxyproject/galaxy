@@ -72,7 +72,6 @@ jobs:
         run: |
           # Create a PostgreSQL database for Galaxy. The default SQLite3 database makes test fail randomly because of "database locked" error.
           createdb -U postgres galaxy
-          export BIOBLEND_TOOLSHED_URL=https://testtoolshed.g2.bx.psu.edu/
           export DATABASE_CONNECTION=postgresql://postgres:@localhost/galaxy
           ./bioblend/run_bioblend_tests.sh -g galaxy -v python${{ matrix.galaxy_python_version }} -e ${{ matrix.tox_env }}
       - name: The job has failed
