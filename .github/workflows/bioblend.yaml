@@ -1,16 +1,19 @@
-name: Tests
+name: BioBlend Tests
 on:
   pull_request:
     paths:
-      - "lib/galaxy/webapps/galaxy/api/**"
+      - .github/workflows/bioblend.yaml
+      - lib/galaxy/schema/**
+      - lib/galaxy/webapps/galaxy/api/**
+      - lib/galaxy/webapps/galaxy/services/**
   workflow_dispatch:
 
 concurrency:
-  group: test-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres
@@ -28,41 +31,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        tox_env: [py38]
-        galaxy_version:
-          - dev
-          - release_24.1
-          - release_24.0
-          - release_23.2
-          - release_23.1
-          - release_23.0
-          - release_22.05
-          - release_22.01
-          - release_21.09
-          - release_21.05
-          - release_21.01
-          - release_20.09
-          - release_20.05
-          - release_20.01
-          - release_19.09
-          - release_19.05
-        include:
-          - os: ubuntu-latest
-            tox_env: py313
-            galaxy_version: dev
-          # Cannot test on macOS because service containers are not supported
-          # yet: https://github.community/t/github-actions-services-available-on-others-vms/16916
-          # - os: macos-latest
-          #   tox_env: py38
-          #   galaxy_version: dev
+        tox_env: [py313]
+        galaxy_python_version: ["3.8"]
     steps:
-      - run: git clone https://github.com/galaxyproject/bioblend
+      - name: Checkout Galaxy
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          path: galaxy
+      - name: Checkout Bioblend
+        uses: actions/checkout@v4
+        with:
+          repository: galaxyproject/bioblend
+          path: bioblend
       - name: Cache pip dir
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: pip-cache-${{ matrix.tox_env }}-${{ matrix.galaxy_version }}
+          key: pip-cache-${{ matrix.tox_env }}
       - name: Calculate Python version for BioBlend from tox_env
         id: get_bioblend_python_version
         run: echo "bioblend_python_version=$(echo "${{ matrix.tox_env }}" | sed -e 's/^py\([3-9]\)\([0-9]\+\)/\1.\2/')" >> $GITHUB_OUTPUT
@@ -74,37 +60,10 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip setuptools
           python3 -m pip install 'tox>=1.8.0' 'virtualenv>=20.0.14'
-      - name: Determine Python version for Galaxy
-        id: get_galaxy_python_version
-        run: |
-          case ${{ matrix.galaxy_version }} in
-            release_19.05 | release_19.09 | release_20.0? )
-              # The minimum Python version supported by the 19.05 and 19.09
-              # releases is 2.7, but virtualenv dropped support for creating
-              # Python <3.7 environments in v20.22.0 .
-              # The minimum Python version supported by the 20.0* releases is
-              # 3.5, but the setup-python GitHub action dropped support for
-              # Python 3.5 and 3.6 on Ubuntu 22.04, see
-              # https://github.com/actions/setup-python/issues/544#issuecomment-1332535877
-              galaxy_python_version=3.7
-              ;;
-            release_21.0? )
-              # The minimum Python supported version by these releases is 3.6,
-              # but same as above.
-              galaxy_python_version=3.7
-              ;;
-            release_22.0? | release_23.? )
-              galaxy_python_version=3.7
-              ;;
-            release_24.? | dev )
-              galaxy_python_version=3.8
-              ;;
-          esac
-          echo "galaxy_python_version=$galaxy_python_version" >> $GITHUB_OUTPUT
       - name: Set up Python for Galaxy
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ steps.get_galaxy_python_version.outputs.galaxy_python_version }}
+          python-version: ${{ matrix.galaxy_python_version }}
       - name: Run tests
         env:
           PGPASSWORD: postgres
@@ -113,16 +72,10 @@ jobs:
         run: |
           # Create a PostgreSQL database for Galaxy. The default SQLite3 database makes test fail randomly because of "database locked" error.
           createdb -U postgres galaxy
-          # Run ToolShed tests only once per Python version
-          if [ "${{ matrix.galaxy_version }}" = 'dev' ]; then
-              export BIOBLEND_TOOLSHED_URL=https://testtoolshed.g2.bx.psu.edu/
-          fi
-          # Install Galaxy
-          GALAXY_DIR=galaxy-${{ matrix.galaxy_version }}
-          git clone --depth=1 -b ${{ matrix.galaxy_version }} https://github.com/galaxyproject/galaxy $GALAXY_DIR
+          export BIOBLEND_TOOLSHED_URL=https://testtoolshed.g2.bx.psu.edu/
           export DATABASE_CONNECTION=postgresql://postgres:@localhost/galaxy
-          ./bioblend/run_bioblend_tests.sh -g $GALAXY_DIR -v python${{ steps.get_galaxy_python_version.outputs.galaxy_python_version }} -e ${{ matrix.tox_env }}
+          ./bioblend/run_bioblend_tests.sh -g galaxy -v python${{ matrix.galaxy_python_version }} -e ${{ matrix.tox_env }}
       - name: The job has failed
         if: ${{ failure() }}
         run: |
-          cat galaxy-${{ matrix.galaxy_version }}/*.log
+          cat galaxy/*.log
