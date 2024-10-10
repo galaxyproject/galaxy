@@ -11,8 +11,6 @@ from typing import (
 
 from typing_extensions import NotRequired
 
-from typing_extensions import NotRequired
-
 from . import (
     FilesSourceOptions,
     FilesSourceProperties,

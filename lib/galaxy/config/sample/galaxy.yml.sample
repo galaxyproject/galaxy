@@ -697,11 +697,6 @@ galaxy:
   # cleaned up in default Celery task configuration.
   #short_term_storage_cleanup_interval: 3600
 
-  # The file_source_temp_dir is a temporary directory used by file sources
-  # that require temporary storage for file operations.
-  # Defaults to new_file_path.
-  #file_source_temp_dir: null
-
   # Configured FileSource plugins.
   # The value of this option will be resolved with respect to
   # <config_dir>.
