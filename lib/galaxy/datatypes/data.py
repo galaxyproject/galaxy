@@ -1219,7 +1219,6 @@ class Directory(Data):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = f"{dataset.extra_files_path}"
             dataset.blurb = nice_size(dataset.dataset.total_size)
         else:
             dataset.peek = "file does not exist"
