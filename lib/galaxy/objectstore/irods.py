@@ -51,6 +51,7 @@ def parse_config_xml(config_xml):
             _config_xml_error("auth")
         username = a_xml[0].get("username")
         password = a_xml[0].get("password")
+        envfile = a_xml[0].get("envfile", None)
 
         r_xml = config_xml.findall("resource")
         if not r_xml:
@@ -88,6 +89,7 @@ def parse_config_xml(config_xml):
             "auth": {
                 "username": username,
                 "password": password,
+                "envfile": envfile,
             },
             "resource": {
                 "name": resource_name,
@@ -138,6 +140,9 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         self.password = auth_dict.get("password")
         if self.password is None:
             _config_dict_error("auth->password")
+        self.envfile = auth_dict.get("envfile")
+        # if self.envfile is None:
+        #     _config_dict_error("auth->envfile")
 
         resource_dict = config_dict["resource"]
         if resource_dict is None:
@@ -193,15 +198,23 @@ class IRODSObjectStore(CachingConcreteObjectStore):
 
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
+        
 
-        self.session = iRODSSession(
-            host=self.host,
-            port=self.port,
-            user=self.username,
-            password=self.password,
-            zone=self.zone,
-            refresh_time=self.refresh_time,
-        )
+        session_params = {
+            'host': self.host,
+            'port': self.port,
+            'user': self.username,
+            'password': self.password,
+            'zone': self.zone,
+            'refresh_time': self.refresh_time,
+        }
+
+        # Add the irods_env_file parameter only if self.envfile is not None
+        if self.envfile is not None:
+            session_params['irods_env_file'] = self.envfile
+
+        self.session = iRODSSession(**session_params)
+
         # Set connection timeout
         self.session.connection_timeout = self.timeout
 
