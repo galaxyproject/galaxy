@@ -11,6 +11,8 @@ BISMARK_DIR = os.path.join(galaxy_directory(), "lib/tool_shed/test/test_data/rep
 BOWTIE2_INDICES = os.path.join(
     galaxy_directory(), "lib/tool_shed/test/test_data/bowtie2_loc_sample/bowtie2_indices.loc.sample"
 )
+MISSING_DATA_REF_DIR = os.path.join(galaxy_directory(), "lib/tool_shed/test/test_data/repos/missing_data_ref")
+WRONG_DATA_REF_DIR = os.path.join(galaxy_directory(), "lib/tool_shed/test/test_data/repos/wrong_data_ref")
 
 
 def test_validate_valid_tool():
@@ -62,6 +64,22 @@ def test_validate_tool_without_index():
         assert len(invalid_files_and_errors_tups) == 0
         assert not tool.params_with_missing_data_table_entry
         assert not tool.params_with_missing_index_file
+
+
+def test_validate_missing_data_ref():
+    repo_dir = MISSING_DATA_REF_DIR
+    with get_tool_validator() as tv:
+        full_path = os.path.join(repo_dir, "missing_data_ref.xml")
+        tool, valid, message = tv.load_tool_from_config(repository_id=None, full_path=full_path)
+        assert valid is False
+
+
+def test_validate_wrong_data_ref():
+    repo_dir = WRONG_DATA_REF_DIR
+    with get_tool_validator() as tv:
+        full_path = os.path.join(repo_dir, "wrong_data_ref.xml")
+        tool, valid, message = tv.load_tool_from_config(repository_id=None, full_path=full_path)
+        assert valid is False
 
 
 @contextmanager
