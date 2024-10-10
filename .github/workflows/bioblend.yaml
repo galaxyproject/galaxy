@@ -2,7 +2,7 @@ name: Tests
 on:
   pull_request:
     paths:
-      - 'lib/galaxy/webapps/galaxy/api/**'
+      - "lib/galaxy/webapps/galaxy/api/**"
   workflow_dispatch:
 
 concurrency:
@@ -57,8 +57,7 @@ jobs:
           #   tox_env: py38
           #   galaxy_version: dev
     steps:
-      - run:
-          git clone https://github.com/galaxyproject/bioblend
+      - run: git clone https://github.com/galaxyproject/bioblend
       - name: Cache pip dir
         uses: actions/cache@v4
         with:
