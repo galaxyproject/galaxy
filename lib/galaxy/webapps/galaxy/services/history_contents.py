@@ -1180,6 +1180,8 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                     hda, user=trans.user, trans=trans, encode_id=False, **serialization_params.model_dump()
                 )
                 rval.append(hda_dict)
+            history.add_pending_items()
+
         else:
             message = f"Invalid 'source' parameter in request: {source}"
             raise exceptions.RequestParameterInvalidException(message)

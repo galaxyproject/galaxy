@@ -6048,7 +6048,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         self.library_dataset = library_dataset
         self.user = user
 
-    def to_history_dataset_association(self, target_history, parent_id=None, add_to_history=False, visible=None, flush=True):
+    def to_history_dataset_association(
+        self, target_history, parent_id=None, add_to_history=False, visible=None, flush=True
+    ):
         sa_session = object_session(self)
         hda = HistoryDatasetAssociation(
             name=self.name,
@@ -6072,7 +6074,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         sa_session.add(hda)
         hda.metadata = self.metadata
         if add_to_history and target_history:
-            target_history.add_dataset(hda)
+            target_history.stage_addition(hda)
+            if flush:
+                target_history.add_pending_items()
         if flush:
             with transaction(sa_session):
                 sa_session.commit()
