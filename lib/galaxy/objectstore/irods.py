@@ -2,9 +2,11 @@
 Object Store plugin for the Integrated Rule-Oriented Data System (iRODS)
 """
 
+import json
 import logging
 import os
 import shutil
+import ssl
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -51,7 +53,7 @@ def parse_config_xml(config_xml):
             _config_xml_error("auth")
         username = a_xml[0].get("username")
         password = a_xml[0].get("password")
-        envfile = a_xml[0].get("envfile", None)
+        sslfile = a_xml[0].get("sslfile", None)
 
         r_xml = config_xml.findall("resource")
         if not r_xml:
@@ -89,7 +91,7 @@ def parse_config_xml(config_xml):
             "auth": {
                 "username": username,
                 "password": password,
-                "envfile": envfile,
+                "sslfile": sslfile,
             },
             "resource": {
                 "name": resource_name,
@@ -140,7 +142,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         self.password = auth_dict.get("password")
         if self.password is None:
             _config_dict_error("auth->password")
-        self.envfile = auth_dict.get("envfile")
+        self.sslfile = auth_dict.get("sslfile")
         # if self.envfile is None:
         #     _config_dict_error("auth->envfile")
 
@@ -209,9 +211,13 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             'refresh_time': self.refresh_time,
         }
 
-        # Add the irods_env_file parameter only if self.envfile is not None
-        if self.envfile is not None:
-            session_params['irods_env_file'] = self.envfile
+        # Add ssl parameters only if self.sslfile is not None
+        if self.sslfile is not None:
+            with open(self.sslfile, "r") as file:
+                ssl_settings = json.load(file)
+
+            ssl_settings['ssl_context'] = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH)
+            session_params.update(ssl_settings)
 
         self.session = iRODSSession(**session_params)
 
@@ -297,6 +303,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             "auth": {
                 "username": self.username,
                 "password": self.password,
+                "sslfile": self.sslfile,
             },
             "resource": {
                 "name": self.resource,
