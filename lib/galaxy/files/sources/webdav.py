@@ -3,6 +3,7 @@ try:
 except ImportError:
     WebDAVFS = None
 
+import tempfile
 from typing import (
     cast,
     Optional,
