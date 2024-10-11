@@ -4,7 +4,6 @@
         <requirement type="package" version="23.2.1">galaxy-util</requirement>
     </requirements>
     <command><![CDATA[
-        cp '$metadata_json' galaxy.json &&
         mkdir '$output1.files_path' &&
         cd '$output1.files_path' &&
         python -c "from galaxy.util.compression_utils import CompressedFile; CompressedFile('$input1').extract('.')"
@@ -23,7 +22,7 @@
             <option value="directory">directory</option>
         </param>
     </inputs>
-    <outputs>
+    <outputs provided_metadata_file="metadata_json">
         <data format="auto" name="output1"/>
     </outputs>
     <tests>
