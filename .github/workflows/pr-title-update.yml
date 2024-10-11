@@ -1,4 +1,4 @@
-name: Update PR Title If Target Branch Is A Version Branch
+name: Update PR title
 
 on:
   pull_request_target:
