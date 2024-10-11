@@ -23,7 +23,7 @@
         </param>
     </inputs>
     <outputs provided_metadata_file="metadata_json">
-        <data format="auto" name="output1"/>
+        <data format="directory" name="output1"/>
     </outputs>
     <tests>
         <test>
