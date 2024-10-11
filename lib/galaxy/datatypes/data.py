@@ -1214,16 +1214,6 @@ class Directory(Data):
 
     file_ext = "directory"
 
-    # The behavior of this class is intended to be similar to that of
-    # composite types, but with arbitrary structure of extra_files.
-
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        if not dataset.dataset.purged:
-            dataset.blurb = nice_size(dataset.dataset.total_size)
-        else:
-            dataset.peek = "file does not exist"
-            dataset.blurb = "file purged from disk"
-
     def _archive_main_file(
         self, archive: ZipstreamWrapper, display_name: str, data_filename: str
     ) -> Tuple[bool, str, str]:
