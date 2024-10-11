@@ -9,6 +9,7 @@ const MESSAGES = {
     azure: "This is an remote file source plugin based on the Azure service.",
     onedata: "This is an remote file source plugin based on the Onedata service.",
     ftp: "This is an remote file source plugin based on the FTP protocol.",
+    webdav: "This is an remote file source plugin based on the WebDAV protocol.",
 };
 
 interface Props {

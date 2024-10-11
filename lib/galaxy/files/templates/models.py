@@ -121,6 +121,7 @@ class OnedataFileSourceConfiguration(StrictModel):
     disable_tls_certificate_validation: bool = False
     writable: bool = False
 
+
 class WebdavFileSourceTemplateConfiguration(StrictModel):
     type: Literal["webdav"]
     url: Union[str, TemplateExpansion]
