@@ -455,14 +455,14 @@ def files_contains(file1, file2, attributes=None):
 def _multiobject_intersection_over_union(
     mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray", repeat_reverse: bool = True
 ) -> List["numpy.floating"]:
-    iou_list = []
+    iou_list: List[numpy.floating] = []
     for label1 in numpy.unique(mask1):
         cc1 = mask1 == label1
-        cc1_iou_list = []
+        cc1_iou_list: List[numpy.floating] = []
         for label2 in numpy.unique(mask2[cc1]):
             cc2 = mask2 == label2
             cc1_iou_list.append(intersection_over_union(cc1, cc2))
-        iou_list.append(max(cc1_iou_list))
+        iou_list.append(max(cc1_iou_list))  # type: ignore[type-var, unused-ignore]  # https://github.com/python/typeshed/issues/12562
     if repeat_reverse:
         iou_list.extend(_multiobject_intersection_over_union(mask2, mask1, repeat_reverse=False))
     return iou_list
@@ -475,7 +475,7 @@ def intersection_over_union(mask1: "numpy.typing.NDArray", mask2: "numpy.typing.
     if mask1.dtype == bool:
         return numpy.logical_and(mask1, mask2).sum() / numpy.logical_or(mask1, mask2).sum()
     else:
-        return min(_multiobject_intersection_over_union(mask1, mask2))
+        return min(_multiobject_intersection_over_union(mask1, mask2))  # type: ignore[type-var, unused-ignore]  # https://github.com/python/typeshed/issues/12562
 
 
 def get_image_metric(
