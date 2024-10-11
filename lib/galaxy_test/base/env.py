@@ -10,7 +10,10 @@ from typing import (
     Tuple,
 )
 
+from galaxy.util import asbool
+
 DEFAULT_WEB_HOST = socket.gethostbyname("localhost")
+REQUIRE_ALL_NEEDED_TOOLS = asbool(os.environ.get("GALAXY_TEST_REQUIRE_ALL_NEEDED_TOOLS", "0"))
 
 GalaxyTarget = Tuple[str, Optional[str], str]
 

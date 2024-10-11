@@ -128,6 +128,7 @@ from .api import (
     HasAnonymousGalaxyInteractor,
 )
 from .api_util import random_name
+from .env import REQUIRE_ALL_NEEDED_TOOLS
 
 FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
@@ -180,7 +181,7 @@ def skip_without_tool(tool_id: str):
 
         @wraps(method)
         def wrapped_method(api_test_case, *args, **kwargs):
-            _raise_skip_if(tool_id not in get_tool_ids(api_test_case.anonymous_galaxy_interactor))
+            check_missing_tool(tool_id not in get_tool_ids(api_test_case.anonymous_galaxy_interactor))
             return method(api_test_case, *args, **kwargs)
 
         return wrapped_method
@@ -266,6 +267,16 @@ def summarize_instance_history_on_error(method):
 def _raise_skip_if(check, *args):
     if check:
         raise unittest.SkipTest(*args)
+
+
+def check_missing_tool(check):
+    if check:
+        if REQUIRE_ALL_NEEDED_TOOLS:
+            raise AssertionError("Test requires a missing tool and GALAXY_TEST_REQUIRE_ALL_NEEDED_TOOLS is enabled")
+        else:
+            raise unittest.SkipTest(
+                "Missing tool required to run test, skipping. If this is not intended, ensure GALAXY_TEST_TOOL_CONF if set contains the required tool_conf.xml target and the tool properly parses and loads in Galaxy's test configuration"
+            )
 
 
 def conformance_tests_gen(directory, filename="conformance_tests.yaml"):

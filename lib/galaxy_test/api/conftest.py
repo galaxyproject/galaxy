@@ -22,7 +22,7 @@ from galaxy_test.base.api_util import (
 )
 from galaxy_test.base.env import setup_keep_outdir
 from galaxy_test.base.populators import (
-    _raise_skip_if,
+    check_missing_tool,
     DatasetCollectionPopulator,
     DatasetPopulator,
     get_tool_ids,
@@ -148,7 +148,7 @@ def check_required_tools(anonymous_galaxy_interactor, request):
     for marker in request.node.iter_markers():
         if marker.name == "requires_tool_id":
             tool_id = marker.args[0]
-            _raise_skip_if(tool_id not in get_tool_ids(anonymous_galaxy_interactor))
+            check_missing_tool(tool_id not in get_tool_ids(anonymous_galaxy_interactor))
 
 
 @pytest.fixture
