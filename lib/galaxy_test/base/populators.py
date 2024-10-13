@@ -3609,6 +3609,34 @@ class RequiredTool:
         return execution
 
 
+class DescribeToolInputs:
+    _input_format: str = "legacy"
+    _inputs: Optional[Dict[str, Any]]
+
+    def __init__(self, input_format: str):
+        self._input_format = input_format
+        self._inputs = None
+
+    def any(self, inputs: Dict[str, Any]) -> Self:
+        self._inputs = inputs
+        return self
+
+    def flat(self, inputs: Dict[str, Any]) -> Self:
+        if self._input_format == "legacy":
+            self._inputs = inputs
+        return self
+
+    def nested(self, inputs: Dict[str, Any]) -> Self:
+        if self._input_format == "21.01":
+            self._inputs = inputs
+        return self
+
+    # aliases for self to create silly little English sentense... inputs.when.flat().when.legacy()
+    @property
+    def when(self) -> Self:
+        return self
+
+
 class DescribeToolExecution:
     _history_id: Optional[str] = None
     _execute_response: Optional[Response] = None
@@ -3627,8 +3655,13 @@ class DescribeToolExecution:
             self._history_id = has_history_id._history_id
         return self
 
-    def with_inputs(self, inputs: Dict[str, Any]) -> Self:
-        self._inputs = inputs
+    def with_inputs(self, inputs: Union[DescribeToolInputs, Dict[str, Any]]) -> Self:
+        if isinstance(inputs, DescribeToolInputs):
+            self._inputs = inputs._inputs or {}
+            self._input_format = inputs._input_format
+        else:
+            self._inputs = inputs
+            self._input_format = "legacy"
         return self
 
     def with_nested_inputs(self, inputs: Dict[str, Any]) -> Self:
