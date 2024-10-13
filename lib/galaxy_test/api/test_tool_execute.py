@@ -9,6 +9,7 @@ files, etc..).
 
 from galaxy_test.base.decorators import requires_tool_id
 from galaxy_test.base.populators import (
+    DescribeToolInputs,
     RequiredTool,
     TargetHistory,
 )
@@ -80,24 +81,13 @@ def test_identifier_in_multiple_reduce(target_history: TargetHistory, required_t
 
 
 @requires_tool_id("identifier_in_conditional")
-def test_identifier_map_over_multiple_input_in_conditional_legacy_format(
-    target_history: TargetHistory, required_tool: RequiredTool
+def test_identifier_map_over_multiple_input_in_conditional(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
 ):
     hdca = target_history.with_pair()
-    execute = required_tool.execute.with_inputs(
-        {
-            "outer_cond|input1": hdca.src_dict,
-        }
-    )
-    execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("forward\nreverse")
-
-
-@requires_tool_id("identifier_in_conditional")
-def test_identifier_map_over_multiple_input_in_conditional_21_01_format(
-    target_history: TargetHistory, required_tool: RequiredTool
-):
-    hdca = target_history.with_pair()
-    execute = required_tool.execute.with_nested_inputs(
+    inputs = tool_input_format.when.flat({
+        "outer_cond|input1": hdca.src_dict,
+    }).when.nested(
         {
             "outer_cond": {
                 "multi_input": True,
@@ -105,6 +95,7 @@ def test_identifier_map_over_multiple_input_in_conditional_21_01_format(
             },
         }
     )
+    execute = required_tool.execute.with_inputs(inputs)
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("forward\nreverse")
 
 

@@ -25,6 +25,7 @@ from galaxy_test.base.populators import (
     check_missing_tool,
     DatasetCollectionPopulator,
     DatasetPopulator,
+    DescribeToolInputs,
     get_tool_ids,
     RequiredTool,
     TargetHistory,
@@ -134,6 +135,11 @@ def required_tool(dataset_populator: DatasetPopulator, history_id: str, required
     tool_id = required_tool_ids[0]
     tool = RequiredTool(dataset_populator, tool_id, history_id)
     return tool
+
+
+@pytest.fixture(params=["legacy", "21.01"])
+def tool_input_format(request) -> Iterator[DescribeToolInputs]:
+    yield DescribeToolInputs(request.param)
 
 
 @pytest.fixture(autouse=True)
