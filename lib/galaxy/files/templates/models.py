@@ -25,7 +25,7 @@ from galaxy.util.config_templates import (
     UserDetailsDict,
 )
 
-FileSourceTemplateType = Literal["ftp", "posix", "s3fs", "azure", "onedata"]
+FileSourceTemplateType = Literal["ftp", "posix", "s3fs", "azure", "onedata", "webdav"]
 
 
 class PosixFileSourceTemplateConfiguration(StrictModel):
@@ -122,12 +122,33 @@ class OnedataFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
+class WebdavFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["webdav"]
+    url: Union[str, TemplateExpansion]
+    root: Union[str, TemplateExpansion]
+    login: Union[str, TemplateExpansion]
+    password: Union[str, TemplateExpansion]
+    writable: Union[bool, TemplateExpansion] = False
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class WebdavFileSourceConfiguration(StrictModel):
+    type: Literal["webdav"]
+    url: str
+    root: str
+    login: str
+    password: str
+    writable: bool = False
+
+
 FileSourceTemplateConfiguration = Union[
     PosixFileSourceTemplateConfiguration,
     S3FSFileSourceTemplateConfiguration,
     FtpFileSourceTemplateConfiguration,
     AzureFileSourceTemplateConfiguration,
     OnedataFileSourceTemplateConfiguration,
+    WebdavFileSourceTemplateConfiguration,
 ]
 FileSourceConfiguration = Union[
     PosixFileSourceConfiguration,
@@ -135,6 +156,7 @@ FileSourceConfiguration = Union[
     FtpFileSourceConfiguration,
     AzureFileSourceConfiguration,
     OnedataFileSourceConfiguration,
+    WebdavFileSourceConfiguration,
 ]
 
 
@@ -196,6 +218,7 @@ TypesToConfigurationClasses: Dict[FileSourceTemplateType, Type[FileSourceConfigu
     "s3fs": S3FSFileSourceConfiguration,
     "azure": AzureFileSourceConfiguration,
     "onedata": OnedataFileSourceConfiguration,
+    "webdav": WebdavFileSourceConfiguration,
 }
 
 
