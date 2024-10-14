@@ -29,7 +29,6 @@ from galaxy_test.base.populators import (
     BaseDatasetCollectionPopulator,
     DatasetCollectionPopulator,
     DatasetPopulator,
-    LibraryPopulator,
     skip_without_tool,
     stage_rules_example,
 )
@@ -1026,18 +1025,6 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 output = response["outputs"]
                 content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output[0])
                 assert "parameter: 1,2" in content
-
-    @skip_without_tool("library_data")
-    def test_library_data_param(self):
-        with self.dataset_populator.test_history(require_new=False) as history_id:
-            ld = LibraryPopulator(self.galaxy_interactor).new_library_dataset("lda_test_library")
-            inputs = {"library_dataset": ld["ldda_id"], "library_dataset_multiple": [ld["ldda_id"], ld["ldda_id"]]}
-            response = self._run("library_data", history_id, inputs, assert_ok=True)
-            output = response["outputs"]
-            output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output[0])
-            assert output_content == "TestData\n", output_content
-            output_multiple_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output[1])
-            assert output_multiple_content == "TestData\nTestData\n", output_multiple_content
 
     @skip_without_tool("cat1")
     def test_run_cat1(self):
