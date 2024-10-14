@@ -396,7 +396,15 @@ class ProvidesFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiab
     def role_names(self) -> Set[str]:
         """The set of role names of this user."""
         user = self.trans.user
-        return {ura.role.name for ura in user.roles} if user else set()
+        role_names = {ura.role.name for ura in user.roles} if user else set()
+        # Exclude generic role names
+        # TODO refactor to use Role.default_name (can't import Role)
+        sharing_role = "sharing role"
+        private_role = "private role"
+        role_names = role_names - {sharing_role, private_role}
+        # Add user email to identify their private role
+        role_names.add(user.email)
+        return role_names
 
     @property
     def group_names(self) -> Set[str]:

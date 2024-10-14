@@ -84,7 +84,6 @@ class LibraryFoldersService(ServiceBase):
         scope: Optional[LibraryPermissionScope] = LibraryPermissionScope.current,
         page: int = 1,
         page_limit: int = 10,
-        query: Optional[str] = None,
     ) -> Union[LibraryFolderCurrentPermissions, LibraryAvailablePermissions]:
         """
         Load all permissions for the given folder id and return it.
@@ -113,7 +112,7 @@ class LibraryFoldersService(ServiceBase):
             return LibraryFolderCurrentPermissions.model_construct(**current_permissions)
         #  Return roles that are available to select.
         elif scope == LibraryPermissionScope.available:
-            roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder, query, page, page_limit)
+            roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder, page, page_limit)
             return_roles = []
             for role in roles:
                 return_roles.append(BasicRoleModel(id=role.id, name=role.name, type=role.type))
