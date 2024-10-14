@@ -81,15 +81,9 @@ def anonymous_galaxy_interactor(api_test_config_object: ApiConfigObject) -> Anon
     return AnonymousGalaxyInteractor(api_test_config_object)
 
 
-_celery_app = None
-_celery_worker = None
-
-
 @pytest.fixture(autouse=True, scope="session")
 def request_celery_app(celery_session_app, celery_config):
     try:
-        global _celery_app
-        _celery_app = celery_session_app
         yield
     finally:
         if os.environ.get("GALAXY_TEST_EXTERNAL") is None:
@@ -101,8 +95,7 @@ def request_celery_app(celery_session_app, celery_config):
 
 @pytest.fixture(autouse=True, scope="session")
 def request_celery_worker(celery_session_worker, celery_config, celery_worker_parameters):
-    global _celery_worker
-    _celery_worker = celery_session_worker
+    yield
 
 
 @pytest.fixture(scope="session", autouse=True)
