@@ -71,21 +71,6 @@ class TestsTools:
         hdca_id = create_response.json()["outputs"][0]["id"]
         return hdca_id
 
-    def _run_and_check_simple_collection_mapping(self, history_id, inputs):
-        create = self._run_cat(history_id, inputs=inputs, assert_ok=True)
-        outputs = create["outputs"]
-        jobs = create["jobs"]
-        implicit_collections = create["implicit_collections"]
-        assert len(jobs) == 2
-        assert len(outputs) == 2
-        assert len(implicit_collections) == 1
-        output1 = outputs[0]
-        output2 = outputs[1]
-        output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
-        assert output1_content.strip() == "123"
-        assert output2_content.strip() == "456"
-
     def _run_cat(self, history_id, inputs, assert_ok=False, **kwargs):
         return self._run("cat", history_id, inputs, assert_ok=assert_ok, **kwargs)
 
@@ -1503,56 +1488,6 @@ class TestToolsApi(ApiTestCase, TestsTools):
         ]
         assert sorted(len(c.split("\n")) for c in outputs_contents) == [1, 2, 3]
 
-    @skip_without_tool("cat1")
-    def test_multirun_in_repeat(self):
-        history_id, common_dataset, repeat_datasets = self._setup_repeat_multirun()
-        inputs = {
-            "input1": common_dataset,
-            "queries_0|input2": {"batch": True, "values": repeat_datasets},
-        }
-        self._check_repeat_multirun(history_id, inputs)
-
-    @skip_without_tool("cat1")
-    def test_multirun_in_repeat_mismatch(self):
-        history_id, common_dataset, repeat_datasets = self._setup_repeat_multirun()
-        inputs = {
-            "input1": {"batch": False, "values": [common_dataset]},
-            "queries_0|input2": {"batch": True, "values": repeat_datasets},
-        }
-        self._check_repeat_multirun(history_id, inputs)
-
-    @skip_without_tool("cat1")
-    def test_multirun_on_multiple_inputs(self):
-        history_id, first_two, second_two = self._setup_two_multiruns()
-        inputs = {
-            "input1": {"batch": True, "values": first_two},
-            "queries_0|input2": {"batch": True, "values": second_two},
-        }
-        outputs = self._cat1_outputs(history_id, inputs=inputs)
-        assert len(outputs) == 2
-        outputs_contents = [
-            self.dataset_populator.get_history_dataset_content(history_id, dataset=o).strip() for o in outputs
-        ]
-        assert "123\n789" in outputs_contents
-        assert "456\n0ab" in outputs_contents
-
-    @skip_without_tool("cat1")
-    def test_multirun_on_multiple_inputs_unlinked(self):
-        history_id, first_two, second_two = self._setup_two_multiruns()
-        inputs = {
-            "input1": {"batch": True, "linked": False, "values": first_two},
-            "queries_0|input2": {"batch": True, "linked": False, "values": second_two},
-        }
-        outputs = self._cat1_outputs(history_id, inputs=inputs)
-        outputs_contents = [
-            self.dataset_populator.get_history_dataset_content(history_id, dataset=o).strip() for o in outputs
-        ]
-        assert len(outputs) == 4
-        assert "123\n789" in outputs_contents
-        assert "456\n0ab" in outputs_contents
-        assert "123\n0ab" in outputs_contents
-        assert "456\n789" in outputs_contents
-
     @skip_without_tool("dbkey_output_action")
     def test_dynamic_parameter_error_handling(self):
         # Run test with valid index once, then supply invalid dbkey and invalid table
@@ -1675,47 +1610,6 @@ class TestToolsApi(ApiTestCase, TestsTools):
             details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=object_id)
             for key, value in props.items():
                 assert details[key] == value
-
-    def _setup_repeat_multirun(self):
-        history_id = self.dataset_populator.new_history()
-        new_dataset1 = self.dataset_populator.new_dataset(history_id, content="123")
-        new_dataset2 = self.dataset_populator.new_dataset(history_id, content="456")
-        common_dataset = self.dataset_populator.new_dataset(history_id, content="Common")
-        return (
-            history_id,
-            dataset_to_param(common_dataset),
-            [dataset_to_param(new_dataset1), dataset_to_param(new_dataset2)],
-        )
-
-    def _check_repeat_multirun(self, history_id, inputs):
-        outputs = self._cat1_outputs(history_id, inputs=inputs)
-        assert len(outputs) == 2
-        output1 = outputs[0]
-        output2 = outputs[1]
-        output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
-        assert output1_content.strip() == "Common\n123"
-        assert output2_content.strip() == "Common\n456"
-
-    def _setup_two_multiruns(self):
-        history_id = self.dataset_populator.new_history()
-        new_dataset1 = self.dataset_populator.new_dataset(history_id, content="123")
-        new_dataset2 = self.dataset_populator.new_dataset(history_id, content="456")
-        new_dataset3 = self.dataset_populator.new_dataset(history_id, content="789")
-        new_dataset4 = self.dataset_populator.new_dataset(history_id, content="0ab")
-        return (
-            history_id,
-            [dataset_to_param(new_dataset1), dataset_to_param(new_dataset2)],
-            [dataset_to_param(new_dataset3), dataset_to_param(new_dataset4)],
-        )
-
-    @skip_without_tool("cat")
-    def test_map_over_collection(self, history_id):
-        hdca_id = self._build_pair(history_id, ["123", "456"])
-        inputs = {
-            "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
-        }
-        self._run_and_check_simple_collection_mapping(history_id, inputs)
 
     @skip_without_tool("output_filter_with_input")
     def test_map_over_with_output_filter_no_filtering(self, history_id):

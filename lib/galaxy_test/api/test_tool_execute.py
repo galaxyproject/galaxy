@@ -7,12 +7,17 @@ keep things like testing other tool APIs in ./test_tools.py (index, search, tool
 files, etc..).
 """
 
+from dataclasses import dataclass
 from typing import List
+
+import pytest
 
 from galaxy_test.base.decorators import requires_tool_id
 from galaxy_test.base.populators import (
+    DescribeToolExecution,
     DescribeToolInputs,
     RequiredTool,
+    SrcDict,
     TargetHistory,
 )
 
@@ -104,28 +109,43 @@ def test_identifier_map_over_multiple_input_in_conditional(
 
 
 @requires_tool_id("identifier_multiple_in_repeat")
-def test_identifier_multiple_reduce_in_repeat_new_payload_form(
-    target_history: TargetHistory, required_tool: RequiredTool
+def test_identifier_multiple_reduce_in_repeat(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
 ):
     hdca = target_history.with_pair()
-    execute = required_tool.execute.with_nested_inputs(
+    inputs = tool_input_format.when.nested(
         {
             "the_repeat": [{"the_data": {"input1": hdca.src_dict}}],
         }
+    ).when.flat(
+        {
+            "the_repeat_0|the_data|input1": hdca.src_dict,
+        }
     )
+    execute = required_tool.execute.with_inputs(inputs)
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("forward\nreverse")
 
 
 @requires_tool_id("output_action_change_format")
-def test_map_over_with_output_format_actions(target_history: TargetHistory, required_tool: RequiredTool):
+def test_map_over_with_output_format_actions(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
     hdca = target_history.with_pair()
     for use_action in ["do", "dont"]:
-        execute = required_tool.execute.with_inputs(
+        inputs = tool_input_format.when.flat(
             {
                 "input_cond|dispatch": use_action,
                 "input_cond|input": {"batch": True, "values": [hdca.src_dict]},
             }
+        ).when.nested(
+            {
+                "input_cond": {
+                    "dispatch": use_action,
+                    "input": {"batch": True, "values": [hdca.src_dict]},
+                }
+            }
         )
+        execute = required_tool.execute.with_inputs(inputs)
         execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
         expected_extension = "txt" if (use_action == "do") else "data"
         execute.assert_has_job(0).with_single_output.with_file_ext(expected_extension)
@@ -196,7 +216,7 @@ def test_identifier_with_multiple_normal_datasets(target_history: TargetHistory,
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("Normal HDA1\nNormal HDA2")
 
 
-@requires_tool_id("cat1")
+@requires_tool_id("cat|cat1")
 def test_map_over_empty_collection(target_history: TargetHistory, required_tool: RequiredTool):
     hdca = target_history.with_list([])
     inputs = {
@@ -204,7 +224,160 @@ def test_map_over_empty_collection(target_history: TargetHistory, required_tool:
     }
     execute = required_tool.execute.with_inputs(inputs)
     execute.assert_has_n_jobs(0)
-    execute.assert_creates_implicit_collection(0).named("Concatenate datasets on collection 1")
+    name = execute.assert_creates_implicit_collection(0).details["name"]
+    assert "Concatenate datasets" in name
+    assert "on collection 1" in name
+
+
+@dataclass
+class MultiRunInRepeatFixtures:
+    repeat_datasets: List[SrcDict]
+    common_dataset: SrcDict
+
+
+@pytest.fixture
+def multi_run_in_repeat_datasets(target_history: TargetHistory) -> MultiRunInRepeatFixtures:
+    dataset1 = target_history.with_dataset("123").src_dict
+    dataset2 = target_history.with_dataset("456").src_dict
+    common_dataset = target_history.with_dataset("Common").src_dict
+    return MultiRunInRepeatFixtures([dataset1, dataset2], common_dataset)
+
+
+@requires_tool_id("cat|cat1")
+def test_multi_run_in_repeat(
+    required_tool: RequiredTool,
+    multi_run_in_repeat_datasets: MultiRunInRepeatFixtures,
+    tool_input_format: DescribeToolInputs,
+):
+    inputs = tool_input_format.when.flat(
+        {
+            "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
+            "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+        }
+    ).when.nested(
+        {
+            "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
+            "queries": [
+                {
+                    "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+                }
+            ],
+        }
+    )
+    execute = required_tool.execute.with_inputs(inputs)
+    _check_multi_run_in_repeat(execute)
+
+
+@requires_tool_id("cat|cat1")
+def test_multi_run_in_repeat_mismatch(
+    required_tool: RequiredTool,
+    multi_run_in_repeat_datasets: MultiRunInRepeatFixtures,
+    tool_input_format: DescribeToolInputs,
+):
+    """Same test as above but without the batch wrapper around the common dataset shared between multirun."""
+    inputs = tool_input_format.when.flat(
+        {
+            "input1": multi_run_in_repeat_datasets.common_dataset,
+            "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+        }
+    ).when.nested(
+        {
+            "input1": multi_run_in_repeat_datasets.common_dataset,
+            "queries": [
+                {
+                    "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+                }
+            ],
+        }
+    )
+    execute = required_tool.execute.with_inputs(inputs)
+    _check_multi_run_in_repeat(execute)
+
+
+def _check_multi_run_in_repeat(execute: DescribeToolExecution):
+    execute.assert_has_n_jobs(2)
+    execute.assert_has_job(0).with_single_output.with_contents_stripped("Common\n123")
+    execute.assert_has_job(1).with_single_output.with_contents_stripped("Common\n456")
+
+
+@dataclass
+class TwoMultiRunsFixture:
+    first_two_datasets: List[SrcDict]
+    second_two_datasets: List[SrcDict]
+
+
+@pytest.fixture
+def two_multi_run_datasets(target_history: TargetHistory) -> TwoMultiRunsFixture:
+    dataset1 = target_history.with_dataset("123").src_dict
+    dataset2 = target_history.with_dataset("456").src_dict
+    dataset3 = target_history.with_dataset("789").src_dict
+    dataset4 = target_history.with_dataset("0ab").src_dict
+    return TwoMultiRunsFixture([dataset1, dataset2], [dataset3, dataset4])
+
+
+@requires_tool_id("cat|cat1")
+def test_multirun_on_multiple_inputs(
+    required_tool: RequiredTool,
+    two_multi_run_datasets: TwoMultiRunsFixture,
+    tool_input_format: DescribeToolInputs,
+):
+    inputs = tool_input_format.when.flat(
+        {
+            "input1": {"batch": True, "values": two_multi_run_datasets.first_two_datasets},
+            "queries_0|input2": {"batch": True, "values": two_multi_run_datasets.second_two_datasets},
+        }
+    ).when.nested(
+        {
+            "input1": {"batch": True, "values": two_multi_run_datasets.first_two_datasets},
+            "queries": [
+                {"input2": {"batch": True, "values": two_multi_run_datasets.second_two_datasets}},
+            ],
+        }
+    )
+    execute = required_tool.execute.with_inputs(inputs)
+    execute.assert_has_n_jobs(2)
+    execute.assert_has_job(0).with_single_output.with_contents_stripped("123\n789")
+    execute.assert_has_job(1).with_single_output.with_contents_stripped("456\n0ab")
+
+
+@requires_tool_id("cat|cat1")
+def test_multirun_on_multiple_inputs_unlinked(
+    required_tool: RequiredTool,
+    two_multi_run_datasets: TwoMultiRunsFixture,
+    tool_input_format: DescribeToolInputs,
+):
+    inputs = tool_input_format.when.flat(
+        {
+            "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
+            "queries_0|input2": {"batch": True, "linked": False, "values": two_multi_run_datasets.second_two_datasets},
+        }
+    ).when.nested(
+        {
+            "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
+            "queries": [
+                {"input2": {"batch": True, "linked": False, "values": two_multi_run_datasets.second_two_datasets}},
+            ],
+        }
+    )
+    execute = required_tool.execute.with_inputs(inputs)
+    execute.assert_has_n_jobs(4)
+    execute.assert_has_job(0).with_single_output.with_contents_stripped("123\n789")
+    execute.assert_has_job(1).with_single_output.with_contents_stripped("123\n0ab")
+    execute.assert_has_job(2).with_single_output.with_contents_stripped("456\n789")
+    execute.assert_has_job(3).with_single_output.with_contents_stripped("456\n0ab")
+
+
+@requires_tool_id("cat|cat1")
+def test_map_over_collection(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
+    hdca = target_history.with_pair(["123", "456"])
+    inputs = tool_input_format.when.any({"input1": {"batch": True, "values": [hdca.src_dict]}})
+    execute = required_tool.execute.with_inputs(inputs)
+    execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_has_dataset_element("forward").with_contents_stripped("123")
+    output_collection.assert_has_dataset_element("reverse").with_contents_stripped("456")
 
 
 @requires_tool_id("gx_repeat_boolean_min")
