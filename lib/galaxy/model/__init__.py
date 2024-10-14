@@ -8015,7 +8015,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
     type: Mapped[Optional[str]] = mapped_column(String(64))
     tool_id: Mapped[Optional[str]] = mapped_column(TEXT)
     tool_version: Mapped[Optional[str]] = mapped_column(TEXT)
-    tool_inputs: Mapped[Optional[bytes]] = mapped_column(JSONType)
+    tool_inputs: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONType)
     tool_errors: Mapped[Optional[bytes]] = mapped_column(JSONType)
     position: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     config: Mapped[Optional[bytes]] = mapped_column(JSONType)
@@ -8086,10 +8086,12 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         return self.dynamic_tool and self.dynamic_tool.uuid
 
     @property
+    def is_input_type(self) -> bool:
+        return bool(self.type and self.type in self.STEP_TYPE_TO_INPUT_TYPE)
+
+    @property
     def input_type(self):
-        assert (
-            self.type and self.type in self.STEP_TYPE_TO_INPUT_TYPE
-        ), "step.input_type can only be called on input step types"
+        assert self.is_input_type, "step.input_type can only be called on input step types"
         return self.STEP_TYPE_TO_INPUT_TYPE[self.type]
 
     @property
@@ -8309,6 +8311,17 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         return (
             f"WorkflowStep[index={self.order_index},type={self.type},label={self.label},uuid={self.uuid},id={self.id}]"
         )
+
+    @property
+    def effective_label(self) -> Optional[str]:
+        label = self.label
+        if label is not None:
+            return label
+        elif self.is_input_type:
+            tool_inputs = self.tool_inputs
+            if tool_inputs is not None:
+                return cast(Optional[str], tool_inputs.get("name"))
+        return None
 
     def clear_module_extras(self):
         # the module code adds random dynamic state to the step, this
@@ -9111,6 +9124,50 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             request_to_content.request = request
             attach_step(request_to_content)
             self.input_step_parameters.append(request_to_content)
+
+    def recover_inputs(self) -> Tuple[Dict[str, Any], str]:
+        inputs = {}
+        inputs_by = "name"
+
+        have_referenced_steps_by_order_index = False
+
+        def best_step_reference(workflow_step: "WorkflowStep") -> str:
+            label = workflow_step.effective_label
+            if label is not None:
+                return label
+            nonlocal have_referenced_steps_by_order_index
+            have_referenced_steps_by_order_index = True
+            return str(workflow_step.order_index)
+
+        def ensure_step(step: Optional["WorkflowStep"]) -> "WorkflowStep":
+            if step is None:
+                raise galaxy.exceptions.InconsistentDatabase(
+                    "workflow input found without step definition, this should not happen"
+                )
+            assert step
+            return step
+
+        for input_dataset_assoc in self.input_datasets:
+            workflow_step = ensure_step(input_dataset_assoc.workflow_step)
+            input_dataset = input_dataset_assoc.dataset
+            input_index = best_step_reference(workflow_step)
+            inputs[input_index] = input_dataset
+
+        for input_dataset_collection_assoc in self.input_dataset_collections:
+            workflow_step = ensure_step(input_dataset_collection_assoc.workflow_step)
+            input_dataset_collection = input_dataset_collection_assoc.dataset_collection
+            input_index = best_step_reference(workflow_step)
+            inputs[input_index] = input_dataset_collection
+
+        for input_step_parameter_assoc in self.input_step_parameters:
+            workflow_step = ensure_step(input_step_parameter_assoc.workflow_step)
+            value = input_step_parameter_assoc.parameter_value
+            input_index = best_step_reference(workflow_step)
+            inputs[input_index] = value
+
+        if have_referenced_steps_by_order_index:
+            inputs_by = "name|step_index"
+        return inputs, inputs_by
 
     def add_message(self, message: "InvocationMessageUnion"):
         self.messages.append(
