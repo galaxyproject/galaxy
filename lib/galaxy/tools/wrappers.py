@@ -802,6 +802,8 @@ class ElementIdentifierMapper:
             self.identifier_key_dict = {}
 
     def identifier(self, dataset_value: str, input_values: Dict[str, str]) -> Optional[str]:
+        if isinstance(dataset_value, list):
+            raise TypeError(f"Expected {dataset_value} to be hashable")
         element_identifier = None
         if identifier_key := self.identifier_key_dict.get(dataset_value, None):
             element_identifier = input_values.get(identifier_key, None)

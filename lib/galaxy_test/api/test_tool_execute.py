@@ -104,28 +104,39 @@ def test_identifier_map_over_multiple_input_in_conditional(
 
 
 @requires_tool_id("identifier_multiple_in_repeat")
-def test_identifier_multiple_reduce_in_repeat_new_payload_form(
-    target_history: TargetHistory, required_tool: RequiredTool
+def test_identifier_multiple_reduce_in_repeat(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
 ):
     hdca = target_history.with_pair()
-    execute = required_tool.execute.with_nested_inputs(
-        {
-            "the_repeat": [{"the_data": {"input1": hdca.src_dict}}],
-        }
-    )
+    inputs = tool_input_format.when.nested({
+        "the_repeat": [{"the_data": {"input1": hdca.src_dict}}],
+    }).when.flat({
+        "the_repeat_0|the_data|input1": hdca.src_dict,
+    })
+    execute = required_tool.execute.with_inputs(inputs)
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("forward\nreverse")
 
 
 @requires_tool_id("output_action_change_format")
-def test_map_over_with_output_format_actions(target_history: TargetHistory, required_tool: RequiredTool):
+def test_map_over_with_output_format_actions(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
     hdca = target_history.with_pair()
     for use_action in ["do", "dont"]:
-        execute = required_tool.execute.with_inputs(
+        inputs = tool_input_format.when.flat(
             {
                 "input_cond|dispatch": use_action,
                 "input_cond|input": {"batch": True, "values": [hdca.src_dict]},
             }
+        ).when.nested(
+            {
+                "input_cond": {
+                    "dispatch": use_action,
+                    "input": {"batch": True, "values": [hdca.src_dict]},
+                }
+            }
         )
+        execute = required_tool.execute.with_inputs(inputs)
         execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
         expected_extension = "txt" if (use_action == "do") else "data"
         execute.assert_has_job(0).with_single_output.with_file_ext(expected_extension)
