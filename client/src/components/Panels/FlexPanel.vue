@@ -138,14 +138,6 @@ $border-width: 6px;
         background-color: $border-color;
     }
 
-    &.show-hover {
-        border-color: $brand-info;
-
-        &::after {
-            background-color: $brand-info;
-        }
-    }
-
     &.left {
         border-right-style: solid;
 

@@ -149,7 +149,15 @@
                     @onChange="onChange"
                     @onRemove="onRemove"
                     @onUpdateStepPosition="onUpdateStepPosition">
-                    <NodeInspector v-if="activeStep" :step="activeStep"></NodeInspector>
+                    <NodeInspector
+                        v-if="activeStep"
+                        :step="activeStep"
+                        :datatypes="datatypes"
+                        @postJobActionsChanged="onChangePostJobActions"
+                        @annotationChanged="onAnnotation"
+                        @labelChanged="onLabel"
+                        @dataChanged="onSetData"
+                        @stepUpdated="updateStep"></NodeInspector>
                 </WorkflowGraph>
             </div>
             <!--FlexPanel side="right">
@@ -536,9 +544,6 @@ export default {
         },
         hasActiveNodeDefault() {
             return this.activeStep && this.activeStep?.type != "tool";
-        },
-        hasActiveNodeTool() {
-            return this.activeStep?.type == "tool";
         },
     },
     watch: {
