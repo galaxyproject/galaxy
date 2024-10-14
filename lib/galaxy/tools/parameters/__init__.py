@@ -62,6 +62,8 @@ def visit_input_values(
     context=None,
     no_replacement_value=REPLACE_ON_TRUTHY,
     replace_optional_connections=False,
+    allow_case_inference=False,
+    unset_value=None,
 ):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
@@ -158,7 +160,7 @@ def visit_input_values(
     """
 
     def callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None):
-        value = input_values.get(input.name)
+        value = input_values.get(input.name, unset_value)
         args = {
             "input": input,
             "parent": input_values,
@@ -182,13 +184,23 @@ def visit_input_values(
             input_values[input.name] = input.value
 
     def get_current_case(input, input_values):
+        test_parameter = input.test_param
+        test_parameter_name = test_parameter.name
         try:
-            return input.get_current_case(input_values[input.test_param.name])
+            if test_parameter_name not in input_values and allow_case_inference:
+                return input.get_current_case(test_parameter.get_initial_value(None, input_values))
+            else:
+                return input.get_current_case(input_values[test_parameter_name])
         except (KeyError, ValueError):
             return -1
 
     context = ExpressionContext(input_values, context)
-    payload = {"context": context, "no_replacement_value": no_replacement_value}
+    payload = {
+        "context": context,
+        "no_replacement_value": no_replacement_value,
+        "allow_case_inference": allow_case_inference,
+        "unset_value": unset_value,
+    }
     for input in inputs.values():
         if isinstance(input, Repeat) or isinstance(input, UploadDataset):
             values = input_values[input.name] = input_values.get(input.name, [])
@@ -411,16 +423,15 @@ def populate_state(
             group_state = state[input.name]
             if input.type == "repeat":
                 repeat_input = cast(Repeat, input)
-                if (
-                    len(incoming[repeat_input.name]) > repeat_input.max
-                    or len(incoming[repeat_input.name]) < repeat_input.min
+                repeat_name = repeat_input.name
+                repeat_incoming = incoming.get(repeat_name) or []
+                if repeat_incoming and (
+                    len(repeat_incoming) > repeat_input.max or len(repeat_incoming) < repeat_input.min
                 ):
-                    errors[repeat_input.name] = (
-                        "The number of repeat elements is outside the range specified by the tool."
-                    )
+                    errors[repeat_name] = "The number of repeat elements is outside the range specified by the tool."
                 else:
                     del group_state[:]
-                    for rep in incoming[repeat_input.name]:
+                    for rep in repeat_incoming:
                         new_state: ToolStateJobInstancePopulatedT = {}
                         group_state.append(new_state)
                         repeat_errors: ParameterValidationErrorsT = {}
@@ -454,10 +465,13 @@ def populate_state(
                         current_case = conditional_input.get_current_case(value)
                         group_state = state[conditional_input.name] = {}
                         cast_errors: ParameterValidationErrorsT = {}
+                        incoming_for_conditional = cast(
+                            ToolStateJobInstanceT, incoming.get(conditional_input.name) or {}
+                        )
                         populate_state(
                             request_context,
                             conditional_input.cases[current_case].inputs,
-                            cast(ToolStateJobInstanceT, incoming.get(conditional_input.name)),
+                            incoming_for_conditional,
                             group_state,
                             cast_errors,
                             context=context,
@@ -475,10 +489,11 @@ def populate_state(
             elif input.type == "section":
                 section_input = cast(Section, input)
                 section_errors: ParameterValidationErrorsT = {}
+                incoming_for_state = cast(ToolStateJobInstanceT, incoming.get(section_input.name) or {})
                 populate_state(
                     request_context,
                     section_input.inputs,
-                    cast(ToolStateJobInstanceT, incoming.get(section_input.name)),
+                    incoming_for_state,
                     group_state,
                     section_errors,
                     context=context,

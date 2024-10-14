@@ -25,6 +25,10 @@ from galaxy.tools.wrappers import (
     InputValueWrapper,
     SelectToolParameterWrapper,
 )
+from galaxy.util.permutations import (
+    looks_like_flattened_repeat_key,
+    split_flattened_repeat_key,
+)
 
 PARAMS_UNWRAPPED = object()
 
@@ -172,10 +176,9 @@ def process_key(incoming_key: str, incoming_value: Any, d: Dict[str, Any]):
             # In case we get an empty repeat after we already filled in a repeat element
             return
         d[incoming_key] = incoming_value
-    elif key_parts[0].rsplit("_", 1)[-1].isdigit():
+    elif looks_like_flattened_repeat_key(key_parts[0]):
         # Repeat
-        input_name, _index = key_parts[0].rsplit("_", 1)
-        index = int(_index)
+        input_name, index = split_flattened_repeat_key(key_parts[0])
         d.setdefault(input_name, [])
         newlist: List[Dict[Any, Any]] = [{} for _ in range(index + 1)]
         d[input_name].extend(newlist[len(d[input_name]) :])
