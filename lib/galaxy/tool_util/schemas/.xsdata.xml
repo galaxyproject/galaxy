@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Config xmlns="http://pypi.org/project/xsdata" version="23.6">
+  <Extensions>
+    <Extension type="class" class=".*" import=".config.BaseSetting" prepend="false" applyIfDerived="true"/>
+    <Extension type="class" class="TestOutput$" import=".config.ClassFileField" prepend="false" applyIfDerived="true"/>
+    <Extension type="class" class="TestOutputCollection" import=".config.ClassCollectionField" prepend="false" applyIfDerived="true"/>
+  </Extensions>
+</Config>
