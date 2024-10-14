@@ -1402,7 +1402,7 @@ class MinimalJobWrapper(HasResourceParameters):
         try:
             self.job_destination  # noqa: B018
         except JobMappingException as exc:
-            log.debug(
+            log.error(
                 "(%s) fail(): Job destination raised JobMappingException('%s'), caching fake '__fail__' "
                 "destination for completion of fail method",
                 self.get_id_tag(),
