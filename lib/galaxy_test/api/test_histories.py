@@ -545,7 +545,7 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             self.dataset_populator.import_history(import_data)
 
     def test_publish_non_alphanumeric(self):
-        history_name = f"تاریخچه"
+        history_name = "تاریخچه"
         history_id = self.dataset_populator.new_history(name=history_name)
         response = self.dataset_populator.make_public(history_id)
         assert response["username_and_slug"]
