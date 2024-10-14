@@ -15,7 +15,7 @@ const initialSlug = props.slug;
 function onChange(value: string) {
     const slugFormatted = value
         .replace(/\s+/g, "-")
-        .replace(/[^a-zA-Z0-9-]/g, "")
+        .replace(/[\/:?#]/g, "")
         .toLowerCase();
 
     emit("change", slugFormatted);

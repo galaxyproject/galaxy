@@ -1295,9 +1295,9 @@ def raise_filter_err(attr, op, val, msg):
 
 
 def is_valid_slug(slug):
-    """Returns true iff slug is valid."""
+    """Returns true if slug is valid."""
 
-    VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
+    VALID_SLUG_RE = re.compile(r"^[^/:?#]+$")
     return VALID_SLUG_RE.match(slug)
 
 
