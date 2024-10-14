@@ -324,6 +324,8 @@ class SharableModelManager(
         # Remove trailing '-'.
         if slug_base.endswith("-"):
             slug_base = slug_base[:-1]
+        if not slug_base:
+            slug_base = "unnamed"
         return slug_base
 
     def _default_slug_base(self, item):
