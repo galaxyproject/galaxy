@@ -1087,7 +1087,7 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
             # Sleep
             self._monitor_sleep(1)
 
-    def __delete(self, job, error_msg, session):
+    def __delete(self, job: model.Job, error_msg, session):
         final_state = job.states.DELETED
         if error_msg is not None:
             final_state = job.states.ERROR
@@ -1096,7 +1096,7 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
         session.add(job)
         session.flush()
 
-    def __stop(self, job, session):
+    def __stop(self, job: model.Job, session):
         job.set_state(job.states.STOPPED)
         session.add(job)
         session.flush()
@@ -1107,7 +1107,7 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
         """
         # Pull all new jobs from the queue at once
         jobs_to_check = []
-        with self.sa_session() as session, session.begin():
+        with self.sa_session() as session:
             self._add_newly_deleted_jobs(session, jobs_to_check)
             try:
                 self._pull_from_queue(session, jobs_to_check)
