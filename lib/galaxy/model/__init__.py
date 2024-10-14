@@ -7749,6 +7749,16 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
             raise galaxy.exceptions.RequestParameterInvalidException("Version does not exist")
         return list(reversed(self.workflows))[version]
 
+    def get_internal_version_by_id(self, workflow_instance_id: int):
+        sa_session = object_session(self)
+        assert sa_session
+        workflow = sa_session.get(Workflow, workflow_instance_id)
+        if not workflow:
+            raise galaxy.exceptions.ObjectNotFound()
+        elif workflow.stored_workflow != self:
+            raise galaxy.exceptions.RequestParameterInvalidException()
+        return workflow
+
     def version_of(self, workflow):
         for version, workflow_instance in enumerate(reversed(self.workflows)):
             if workflow_instance.id == workflow.id:
