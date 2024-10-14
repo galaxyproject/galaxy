@@ -16,10 +16,10 @@ jobs:
       - name: Update PR title
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TARGET_BRANCH: "${{ github.base_ref }}"
+          PR_TITLE: "${{ github.event.pull_request.title }}"
         run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          TARGET_BRANCH="${{ github.base_ref }}"
-          PR_TITLE="${{ github.event.pull_request.title }}"
           VERSION=$(echo $TARGET_BRANCH | grep -oP '\d+\.\d+')
           if [[ -n "$VERSION" && ! "$PR_TITLE" =~ ^\[$VERSION\] ]]; then
             NEW_TITLE="[$VERSION] $PR_TITLE"
