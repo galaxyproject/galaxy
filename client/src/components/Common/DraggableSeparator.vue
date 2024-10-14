@@ -14,12 +14,14 @@ const props = withDefaults(
         showDelay?: number;
         keyboardStepSize?: number;
         side: "left" | "right";
+        inner?: boolean;
     }>(),
     {
         showDelay: 100,
         keyboardStepSize: 50,
         min: 0,
         max: Infinity,
+        inner: false,
     }
 );
 
@@ -106,7 +108,7 @@ const style = computed(() => ({
     <button
         ref="draggable"
         class="drag-handle"
-        :class="[`side-${props.side}`, { show: showHover }]"
+        :class="[`side-${props.side}`, { show: showHover, inner: props.inner }]"
         :style="style"
         @mouseenter="hoverDraggable = true"
         @focusin="hoverDraggable = true"
@@ -134,6 +136,7 @@ $border-width: 6px;
     padding: 0;
     height: 100%;
     z-index: 10000;
+    top: 0;
 
     --hover-expand: 4px;
 
@@ -144,11 +147,21 @@ $border-width: 6px;
 
     &.side-left {
         left: var(--position);
+
+        &.inner {
+            left: min(var(--position), calc(100% + 1px));
+        }
+
         margin-left: -$border-width;
     }
 
     &.side-right {
         right: var(--position);
+
+        &.inner {
+            right: min(var(--position), calc(100% + 1px));
+        }
+
         margin-right: -$border-width;
     }
 
