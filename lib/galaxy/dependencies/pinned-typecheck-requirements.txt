@@ -30,3 +30,4 @@ types-setuptools==75.2.0.20241025
 types-six==1.16.21.20241009
 types-urllib3==1.26.25.14
 typing-extensions==4.12.2
+types-python-slugify==8.0.2.20240310
