@@ -57,6 +57,7 @@ from operator import itemgetter
 from typing import (
     Any,
     Callable,
+    cast,
     Dict,
     Generator,
     List,
@@ -80,7 +81,11 @@ from gxformat2.yaml import ordered_load
 from pydantic import UUID4
 from requests import Response
 from rocrate.rocrate import ROCrate
-from typing_extensions import Literal
+from typing_extensions import (
+    Literal,
+    Self,
+    TypedDict,
+)
 
 from galaxy.schema.schema import (
     CreateToolLandingRequestPayload,
@@ -118,10 +123,12 @@ from galaxy_test.base.decorators import (
 from galaxy_test.base.json_schema_utils import JsonSchemaValidator
 from . import api_asserts
 from .api import (
+    AnonymousGalaxyInteractor,
     ApiTestInteractor,
     HasAnonymousGalaxyInteractor,
 )
 from .api_util import random_name
+from .env import REQUIRE_ALL_NEEDED_TOOLS
 
 FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
@@ -155,6 +162,15 @@ def flakey(method):
     return wrapped_method
 
 
+def get_tool_ids(interactor: AnonymousGalaxyInteractor):
+    index = interactor.get("tools", data=dict(in_panel=False))
+    api_asserts.assert_status_code_is_ok(index, "Failed to fetch toolbox for target Galaxy.")
+    tools = index.json()
+    # In panels by default, so flatten out sections...
+    tool_ids = [itemgetter("id")(_) for _ in tools]
+    return tool_ids
+
+
 def skip_without_tool(tool_id: str):
     """Decorate an API test method as requiring a specific tool.
 
@@ -162,18 +178,10 @@ def skip_without_tool(tool_id: str):
     """
 
     def method_wrapper(method):
-        def get_tool_ids(api_test_case: HasAnonymousGalaxyInteractor):
-            interactor = api_test_case.anonymous_galaxy_interactor
-            index = interactor.get("tools", data=dict(in_panel=False))
-            api_asserts.assert_status_code_is_ok(index, "Failed to fetch toolbox for target Galaxy.")
-            tools = index.json()
-            # In panels by default, so flatten out sections...
-            tool_ids = [itemgetter("id")(_) for _ in tools]
-            return tool_ids
 
         @wraps(method)
         def wrapped_method(api_test_case, *args, **kwargs):
-            _raise_skip_if(tool_id not in get_tool_ids(api_test_case))
+            check_missing_tool(tool_id not in get_tool_ids(api_test_case.anonymous_galaxy_interactor))
             return method(api_test_case, *args, **kwargs)
 
         return wrapped_method
@@ -259,6 +267,16 @@ def summarize_instance_history_on_error(method):
 def _raise_skip_if(check, *args):
     if check:
         raise unittest.SkipTest(*args)
+
+
+def check_missing_tool(check):
+    if check:
+        if REQUIRE_ALL_NEEDED_TOOLS:
+            raise AssertionError("Test requires a missing tool and GALAXY_TEST_REQUIRE_ALL_NEEDED_TOOLS is enabled")
+        else:
+            raise unittest.SkipTest(
+                "Missing tool required to run test, skipping. If this is not intended, ensure GALAXY_TEST_TOOL_CONF if set contains the required tool_conf.xml target and the tool properly parses and loads in Galaxy's test configuration"
+            )
 
 
 def conformance_tests_gen(directory, filename="conformance_tests.yaml"):
@@ -684,6 +702,11 @@ class BaseDatasetPopulator(BasePopulator):
     def get_job_details(self, job_id: str, full: bool = False) -> Response:
         return self._get(f"jobs/{job_id}", {"full": full})
 
+    def job_outputs(self, job_id: str) -> List[Dict[str, Any]]:
+        outputs = self._get(f"jobs/{job_id}/outputs")
+        outputs.raise_for_status()
+        return outputs.json()
+
     def compute_hash(
         self,
         dataset_id: str,
@@ -851,19 +874,27 @@ class BaseDatasetPopulator(BasePopulator):
     @contextlib.contextmanager
     def test_history_for(self, method) -> Generator[str, None, None]:
         require_new_history = has_requirement(method, "new_history")
-        with self.test_history(require_new=require_new_history) as history_id:
+        name = f"API Test History for {method.__name__}"
+        with self.test_history(require_new=require_new_history, name=name) as history_id:
             yield history_id
 
     @contextlib.contextmanager
-    def test_history(self, require_new: bool = True) -> Generator[str, None, None]:
+    def test_history(self, require_new: bool = True, name: Optional[str] = None) -> Generator[str, None, None]:
         with self._test_history(require_new=require_new, cleanup_callback=self._cleanup_history) as history_id:
             yield history_id
 
     @contextlib.contextmanager
     def _test_history(
-        self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None
+        self,
+        require_new: bool = True,
+        cleanup_callback: Optional[Callable[[str], None]] = None,
+        name: Optional[str] = None,
     ) -> Generator[str, None, None]:
-        history_id = self.new_history()
+        if name is not None:
+            kwds = {"name": name}
+        else:
+            kwds = {}
+        history_id = self.new_history(**kwds)
         try:
             yield history_id
         except Exception:
@@ -982,6 +1013,9 @@ class BaseDatasetPopulator(BasePopulator):
     def tools_post(self, payload: dict, url="tools") -> Response:
         tool_response = self._post(url, data=payload)
         return tool_response
+
+    def describe_tool_execution(self, tool_id: str) -> "DescribeToolExecution":
+        return DescribeToolExecution(self, tool_id)
 
     def materialize_dataset_instance(
         self, history_id: str, id: str, source: str = "hda", validate_hashes: bool = False
@@ -1737,7 +1771,10 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
 
     @contextlib.contextmanager
     def _test_history(
-        self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None
+        self,
+        require_new: bool = True,
+        cleanup_callback: Optional[Callable[[str], None]] = None,
+        name: Optional[str] = None,
     ) -> Generator[str, None, None]:
         with self.galaxy_interactor.test_history(
             require_new=require_new, cleanup_callback=cleanup_callback
@@ -2917,6 +2954,32 @@ class BaseDatasetCollectionPopulator:
         )
         return self.__create(payload)
 
+    def example_list_of_pairs(self, history_id: str) -> str:
+        response = self.upload_collection(
+            history_id,
+            "list:paired",
+            elements=[
+                {
+                    "name": "test0",
+                    "elements": [
+                        {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "txt"},
+                        {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "txt"},
+                    ],
+                },
+                {
+                    "name": "test1",
+                    "elements": [
+                        {"src": "pasted", "paste_content": "789\n", "name": "forward", "ext": "txt"},
+                        {"src": "pasted", "paste_content": "0ab\n", "name": "reverse", "ext": "txt"},
+                    ],
+                },
+            ],
+            wait=True,
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        hdca_id = response.json()["outputs"][0]["id"]
+        return hdca_id
+
     def create_list_of_pairs_in_history(self, history_id, **kwds):
         return self.upload_collection(
             history_id,
@@ -3350,6 +3413,290 @@ def _store_payload(
     return payload
 
 
+class DescribeToolExecutionOutput:
+
+    def __init__(self, dataset_populator: BaseDatasetPopulator, history_id: str, hda_id: str):
+        self._dataset_populator = dataset_populator
+        self._history_id = history_id
+        self._hda_id = hda_id
+
+    @property
+    def details(self) -> Dict[str, Any]:
+        dataset_details = self._dataset_populator.get_history_dataset_details(self._history_id, dataset_id=self._hda_id)
+        return dataset_details
+
+    @property
+    def contents(self) -> str:
+        return self._dataset_populator.get_history_dataset_content(history_id=self._history_id, dataset_id=self._hda_id)
+
+    def with_contents(self, expected_contents: str) -> Self:
+        contents = self.contents
+        if contents != expected_contents:
+            raise AssertionError(f"Output dataset had contents {contents} but expected {expected_contents}")
+        return self
+
+    def with_contents_stripped(self, expected_contents: str) -> Self:
+        contents = self.contents
+        if contents.strip() != expected_contents:
+            raise AssertionError(f"Output dataset had contents {contents} but expected {expected_contents}")
+        return self
+
+    def containing(self, expected_contents: str) -> Self:
+        contents = self.contents
+        if expected_contents not in contents:
+            raise AssertionError(
+                f"Output dataset had contents {contents} which does not contain the expected text {expected_contents}"
+            )
+        return self
+
+    def with_file_ext(self, expected_ext: str) -> Self:
+        ext = self.details["file_ext"]
+        if ext != expected_ext:
+            raise AssertionError(f"Output dataset had file extension {ext}, not the expected extension {expected_ext}")
+        return self
+
+    # aliases that might help make tests more like English in particular cases. Declaring them explicitly
+    # instead quick little aliases because of https://github.com/python/mypy/issues/6700
+    def assert_contains(self, expected_contents: str) -> Self:
+        return self.containing(expected_contents)
+
+    def assert_has_contents(self, expected_contents: str) -> Self:
+        return self.with_contents(expected_contents)
+
+
+class DescribeToolExecutionOutputCollection:
+
+    def __init__(self, dataset_populator: BaseDatasetPopulator, history_id: str, hdca_id: str):
+        self._dataset_populator = dataset_populator
+        self._history_id = history_id
+        self._hdca_id = hdca_id
+
+    @property
+    def details(self) -> Dict[str, Any]:
+        collection_details = self._dataset_populator.get_history_collection_details(
+            self._history_id, content_id=self._hdca_id
+        )
+        return collection_details
+
+    @property
+    def elements(self) -> List[Dict[str, Any]]:
+        return self.details["elements"]
+
+    def with_n_elements(self, n: int) -> Self:
+        count = len(self.elements)
+        if count != n:
+            raise AssertionError("Collection contained {count} elements and not the expected {n} elements")
+        return self
+
+    def with_element_dict(self, index: Union[str, int]) -> Dict[str, Any]:
+        elements = self.elements
+        if isinstance(index, int):
+            element_dict = elements[index]
+        else:
+            element_dict = [e for e in elements if e["element_identifier"] == index][0]
+        return element_dict
+
+    def with_dataset_element(self, index: Union[str, int]) -> "DescribeToolExecutionOutput":
+        element_dict = self.with_element_dict(index)
+        element_object = element_dict["object"]
+        return DescribeToolExecutionOutput(self._dataset_populator, self._history_id, element_object["id"])
+
+    def named(self, expected_name: str) -> Self:
+        name = self.details["name"]
+        if name != expected_name:
+            raise AssertionError(f"Dataset collection named {name} did not have expected name {expected_name}.")
+        return self
+
+    # aliases that might help make tests more like English in particular cases.
+    def assert_has_dataset_element(self, index: Union[str, int]) -> "DescribeToolExecutionOutput":
+        return self.with_dataset_element(index)
+
+
+class DescribeJob:
+
+    def __init__(self, dataset_populator: BaseDatasetPopulator, history_id: str, job_id: str):
+        self._dataset_populator = dataset_populator
+        self._history_id = history_id
+        self._job_id = job_id
+        self._final_details: Optional[Dict[str, Any]] = None
+
+    def _wait_for(self):
+        if self._final_details is None:
+            self._dataset_populator.wait_for_job(self._job_id, assert_ok=False)
+            self._final_details = self._dataset_populator.get_job_details(self._job_id).json()
+
+    @property
+    def final_details(self) -> Dict[str, Any]:
+        self._wait_for()
+        final_details = self._final_details
+        assert final_details
+        return final_details
+
+    @property
+    def final_state(self) -> str:
+        final_state = self.final_details["state"]
+        assert final_state
+        return final_state
+
+    def with_final_state(self, expected_state: str) -> Self:
+        final_state = self.final_state
+        if final_state != expected_state:
+            raise AssertionError(
+                f"Expected job {self._job_id} to end with state {expected_state} but it ended with state {final_state}"
+            )
+        return self
+
+    @property
+    def with_single_output(self) -> DescribeToolExecutionOutput:
+        return self.with_output(0)
+
+    def with_output(self, output: Union[str, int]) -> DescribeToolExecutionOutput:
+        self.with_final_state("ok")
+        outputs = self._dataset_populator.job_outputs(self._job_id)
+        by_name = isinstance(output, str)
+        dataset_id: Optional[str] = None
+        if by_name:
+            for output_assoc in outputs:
+                if output_assoc["name"] == output:
+                    dataset_id = output_assoc["dataset"]["id"]
+        else:
+            assert isinstance(output, int)
+            dataset_id = outputs[output]["dataset"]["id"]
+        if dataset_id is None:
+            raise AssertionError(f"Could not find job output identified by {output}")
+        return DescribeToolExecutionOutput(self._dataset_populator, self._history_id, dataset_id)
+
+    # aliases that might help make tests more like English in particular cases.
+    def assert_has_output(self, output: Union[str, int]) -> DescribeToolExecutionOutput:
+        return self.with_output(output)
+
+    @property
+    def assert_has_single_output(self) -> DescribeToolExecutionOutput:
+        return self.with_single_output
+
+
+class DescribeFailure:
+    def __init__(self, response: Response):
+        self._response = response
+
+    def with_status_code(self, code: int) -> Self:
+        api_asserts.assert_status_code_is(self._response, code)
+        return self
+
+    def with_error_containing(self, message: str) -> Self:
+        assert message in self._response.text
+        return self
+
+
+class RequiredTool:
+
+    def __init__(self, dataset_populator: BaseDatasetPopulator, tool_id: str, default_history_id: Optional[str]):
+        self._dataset_populator = dataset_populator
+        self._tool_id = tool_id
+        self._default_history_id = default_history_id
+
+    @property
+    def execute(self) -> "DescribeToolExecution":
+        execution = DescribeToolExecution(self._dataset_populator, self._tool_id)
+        if self._default_history_id:
+            execution.in_history(self._default_history_id)
+        return execution
+
+
+class DescribeToolExecution:
+    _history_id: Optional[str] = None
+    _execute_response: Optional[Response] = None
+    _input_format: Optional[str] = None
+    _inputs: Dict[str, Any]
+
+    def __init__(self, dataset_populator: BaseDatasetPopulator, tool_id: str):
+        self._dataset_populator = dataset_populator
+        self._tool_id = tool_id
+        self._inputs = {}
+
+    def in_history(self, has_history_id: Union[str, "TargetHistory"]) -> Self:
+        if isinstance(has_history_id, str):
+            self._history_id = has_history_id
+        else:
+            self._history_id = has_history_id._history_id
+        return self
+
+    def with_inputs(self, inputs: Dict[str, Any]) -> Self:
+        self._inputs = inputs
+        return self
+
+    def with_nested_inputs(self, inputs: Dict[str, Any]) -> Self:
+        self._inputs = inputs
+        self._input_format = "21.01"
+        return self
+
+    def _execute(self):
+        kwds = {}
+        if self._input_format is not None:
+            kwds["input_format"] = self._input_format
+        history_id = self._ensure_history_id
+        self._execute_response = self._dataset_populator.run_tool_raw(
+            self._tool_id, self._inputs, history_id, assert_ok=False, **kwds
+        )
+
+    @property
+    def _ensure_history_id(self) -> str:
+        history_id = self._history_id
+        if history_id is None:
+            raise AssertionError("Problem building test execution - no history ID has been specified.")
+        return history_id
+
+    def _ensure_executed(self) -> None:
+        if self._execute_response is None:
+            self._execute()
+
+    def _assert_executed_ok(self) -> Dict[str, Any]:
+        self._ensure_executed()
+        execute_response = self._execute_response
+        assert execute_response is not None
+        api_asserts.assert_status_code_is_ok(execute_response)
+        return execute_response.json()
+
+    def assert_has_n_jobs(self, n: int) -> Self:
+        response = self._assert_executed_ok()
+        jobs = response["jobs"]
+        if len(jobs) != n:
+            raise AssertionError(f"Expected tool execution to produce {n} jobs but it produced {len(jobs)}")
+        return self
+
+    def assert_creates_n_implicit_collections(self, n: int) -> Self:
+        response = self._assert_executed_ok()
+        collections = response["implicit_collections"]
+        if len(collections) != n:
+            raise AssertionError(f"Expected tool execution to produce {n} implicit but it produced {len(collections)}")
+        return self
+
+    def assert_creates_implicit_collection(self, index: Union[str, int]) -> "DescribeToolExecutionOutputCollection":
+        response = self._assert_executed_ok()
+        collections = response["implicit_collections"]
+        assert isinstance(index, int)  # TODO: implement and then prefer str.
+        history_id = self._ensure_history_id
+        return DescribeToolExecutionOutputCollection(self._dataset_populator, history_id, collections[index]["id"])
+
+    @property
+    def assert_has_single_job(self) -> DescribeJob:
+        return self.assert_has_n_jobs(1).assert_has_job(0)
+
+    def assert_has_job(self, job_index: int = 0) -> DescribeJob:
+        response = self._assert_executed_ok()
+        job = response["jobs"][job_index]
+        history_id = self._ensure_history_id
+        return DescribeJob(self._dataset_populator, history_id, job["id"])
+
+    @property
+    def assert_fails(self) -> DescribeFailure:
+        self._ensure_executed()
+        execute_response = self._execute_response
+        assert execute_response is not None
+        api_asserts.assert_status_code_is_not_ok(execute_response)
+        return DescribeFailure(execute_response)
+
+
 class GiHttpMixin:
     """Mixin for adapting Galaxy testing populators helpers to bioblend."""
 
@@ -3428,6 +3775,95 @@ class GiWorkflowPopulator(GiHttpMixin, BaseWorkflowPopulator):
         """Construct a workflow populator from a bioblend GalaxyInstance."""
         self._gi = gi
         self.dataset_populator = GiDatasetPopulator(gi)
+
+
+ListContentsDescription = Union[List[str], List[Tuple[str, str]]]
+
+
+class TargetHistory:
+
+    def __init__(
+        self,
+        dataset_populator: DatasetPopulator,
+        dataset_collection_populator: DatasetCollectionPopulator,
+        history_id: str,
+    ):
+        self._dataset_populator = dataset_populator
+        self._dataset_collection_populator = dataset_collection_populator
+        self._history_id = history_id
+
+    @property
+    def id(self) -> str:
+        return self._history_id
+
+    def with_dataset(
+        self,
+        content: str,
+        named: Optional[str] = None,
+    ) -> "HasSrcDict":
+        kwd = {}
+        if named is not None:
+            kwd["name"] = named
+        new_dataset = self._dataset_populator.new_dataset(
+            history_id=self._history_id,
+            content=content,
+            assert_ok=True,
+            wait=True,
+            **kwd,
+        )
+        return HasSrcDict("hda", new_dataset)
+
+    def with_pair(self, contents: Optional[List[str]] = None) -> "HasSrcDict":
+        return self._fetch_response(
+            self._dataset_collection_populator.create_pair_in_history(
+                self._history_id, contents=contents, direct_upload=True, wait=True
+            )
+        )
+
+    def with_list(self, contents: Optional[ListContentsDescription] = None) -> "HasSrcDict":
+        return self._fetch_response(
+            self._dataset_collection_populator.create_list_in_history(
+                self._history_id, contents=contents, direct_upload=True, wait=True
+            )
+        )
+
+    def with_example_list_of_pairs(self) -> "HasSrcDict":
+        return HasSrcDict("hdca", self._dataset_collection_populator.example_list_of_pairs(self._history_id))
+
+    @classmethod
+    def _fetch_response(clz, response: Response) -> "HasSrcDict":
+        api_asserts.assert_status_code_is_ok(response)
+        hdca = response.json()["output_collections"][0]
+        return HasSrcDict("hdca", hdca)
+
+    def execute(self, tool_id: str) -> "DescribeToolExecution":
+        return self._dataset_populator.describe_tool_execution(tool_id).in_history(self)
+
+
+class SrcDict(TypedDict):
+    src: str
+    id: str
+
+
+class HasSrcDict:
+    api_object: Union[str, Dict[str, Any]]
+
+    def __init__(self, src_type: str, api_object: Union[str, Dict[str, Any]]):
+        self.src_type = src_type
+        self.api_object = api_object
+
+    @property
+    def id(self) -> str:
+        has_id = self.api_object
+        return has_id if isinstance(has_id, str) else cast(str, has_id["id"])
+
+    @property
+    def src_dict(self) -> SrcDict:
+        return SrcDict({"src": self.src_type, "id": self.id})
+
+    @property
+    def to_dict(self):
+        return self.api_object
 
 
 def wait_on(function: Callable, desc: str, timeout: timeout_type = DEFAULT_TIMEOUT):
