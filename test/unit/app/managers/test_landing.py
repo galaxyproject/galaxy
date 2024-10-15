@@ -4,6 +4,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
     InsufficientPermissionsException,
     ItemAlreadyClaimedException,
+    ItemMustBeClaimed,
     ObjectNotFound,
 )
 from galaxy.managers.landing import LandingRequestManager
@@ -44,7 +45,7 @@ class TestLanding(BaseTestCase):
         self.landing_manager = LandingRequestManager(
             self.trans.sa_session, self.app.security, self.workflow_contents_manager
         )
-        self.trans.app.trs_proxy = TrsProxy(GalaxyAppConfiguration())
+        self.trans.app.trs_proxy = TrsProxy(GalaxyAppConfiguration(override_tempdir=False))
 
     def test_tool_landing_requests_typical_flow(self):
         landing_request: ToolLandingRequest = self.landing_manager.create_tool_landing_request(self._tool_request)
@@ -71,14 +72,12 @@ class TestLanding(BaseTestCase):
         assert exception is not None
 
     def test_tool_landing_requests_get_requires_claim(self):
-        landing_request: ToolLandingRequest = self.landing_manager.create_tool_landing_request(
-            self._tool_request, user_id=123
-        )
+        landing_request: ToolLandingRequest = self.landing_manager.create_tool_landing_request(self._tool_request)
         uuid = landing_request.uuid
         exception = None
         try:
             self.landing_manager.get_tool_landing_request(self.trans, uuid)
-        except InsufficientPermissionsException as e:
+        except ItemMustBeClaimed as e:
             exception = e
         assert exception is not None
 
