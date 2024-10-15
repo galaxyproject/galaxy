@@ -20,6 +20,7 @@ from typing import (
     Type,
 )
 
+from slugify import slugify
 from sqlalchemy import (
     exists,
     false,
@@ -309,16 +310,6 @@ class SharableModelManager(
                 session.commit()
         return item
 
-    def _slugify(self, start_with):
-        # Replace whitespace with '-'
-        slug_base = re.sub(r"\s+", "-", start_with)
-        # Remove all /:?# characters.
-        slug_base = re.sub(r"[/:?#]", "", slug_base)
-        # Remove trailing '-'.
-        if slug_base.endswith("-"):
-            slug_base = slug_base[:-1]
-        return slug_base
-
     def _default_slug_base(self, item):
         # override in subclasses
         if hasattr(item, "title"):
@@ -334,7 +325,7 @@ class SharableModelManager(
 
         # Setup slug base.
         if cur_slug is None or cur_slug == "":
-            slug_base = self._slugify(self._default_slug_base(item))
+            slug_base = slugify(self._default_slug_base(item), allow_unicode=True)
         else:
             slug_base = cur_slug
 

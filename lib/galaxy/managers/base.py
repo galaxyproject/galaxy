@@ -46,6 +46,7 @@ from typing import (
 )
 
 import sqlalchemy
+from slugify import slugify
 from sqlalchemy.orm import Query
 from sqlalchemy.orm.scoping import scoped_session
 from typing_extensions import Protocol
@@ -1296,9 +1297,7 @@ def raise_filter_err(attr, op, val, msg):
 
 def is_valid_slug(slug):
     """Returns true if slug is valid."""
-
-    VALID_SLUG_RE = re.compile(r"^[^/:?#]+$")
-    return VALID_SLUG_RE.match(slug)
+    return slugify(slug, allow_unicode=True) == slug
 
 
 class SortableManager:
