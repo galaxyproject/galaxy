@@ -245,11 +245,10 @@ async function installDependenciesFromXML(xmlPath, pluginDir) {
                     );
 
                     if (installResult.status === 0) {
-                        const packagePath = path.join(pluginDir, "node_modules", pkgName);
-                        const defaultPath = path.join(packagePath, "static");
-                        const alternatePath = path.join(packagePath, "dist/static");
-                        const sourcePath = fs.existsSync(defaultPath) ? defaultPath : alternatePath;
-                        await fs.copy(sourcePath, path.join(pluginDir, "static"));
+                        await fs.copy(
+                            path.join(pluginDir, "node_modules", pkgName, "static"),
+                            path.join(pluginDir, "static")
+                        );
                         console.log(`Installed package ${pkgName}@${version} in ${pluginDir}`);
                     } else {
                         console.error(`Error installing package ${pkgName}@${version} in ${pluginDir}`);
