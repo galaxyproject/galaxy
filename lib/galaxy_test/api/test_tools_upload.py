@@ -2,12 +2,14 @@ import json
 import os
 import urllib.parse
 from base64 import b64encode
+from typing import cast
 
 import pytest
 from tusclient import client
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import UNKNOWN
+from galaxy.util.compression_utils import decompress_bytes_to_directory
 from galaxy.util.unittest_utils import (
     skip_if_github_down,
     skip_if_site_down,
@@ -638,6 +640,44 @@ class TestToolsUpload(ApiTestCase):
             dataset = run_response.json()["outputs"][0]
             details = self.dataset_populator.get_history_dataset_details(history_id, dataset=dataset, assert_ok=False)
             assert details["state"] == "error"
+
+    def test_upload_zip_directory_roundtrip(self, history_id):
+        testdir = TestDataResolver().get_filename("testdir1.zip")
+        with open(testdir, "rb") as fh:
+            details = self._upload_and_get_details(fh, api="fetch", history_id=history_id, ext="zip", assert_ok=True)
+        assert details["file_ext"] == "zip"
+
+        # Convert/unpack zip to directory.
+        payload = {
+            "src": "hda",
+            "id": details["id"],
+            "source_type": "zip",
+            "target_type": "directory",
+            "history_id": history_id,
+        }
+        create_response = self._post("tools/CONVERTER_archive_to_directory/convert", data=payload)
+        self.dataset_populator.wait_for_job(create_response.json()["jobs"][0]["id"], assert_ok=True)
+        create_response.raise_for_status()
+        directory_dataset = create_response.json()["outputs"][0]
+
+        # Download (compressed) directory and verify structure.
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id, dataset=directory_dataset, to_ext="directory", type="bytes"
+        )
+        dir_path = decompress_bytes_to_directory(cast(bytes, content))
+        expected_directory_structure = {
+            "file1": "File",
+            "file2": "File",
+            "dir1": "Directory",
+            "dir1/file3": "File",
+        }
+        assert dir_path.endswith("testdir1")
+        for path, entry_class in expected_directory_structure.items():
+            path = os.path.join(dir_path, path)
+            if entry_class == "Directory":
+                assert os.path.isdir(path)
+            else:
+                assert os.path.isfile(path)
 
     def test_upload_dbkey(self):
         with self.dataset_populator.test_history() as history_id:
