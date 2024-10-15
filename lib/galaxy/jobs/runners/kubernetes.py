@@ -772,7 +772,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # as probably this means that the k8s API server hasn't
             # had time to fill in the object status since the
             # job was created only too recently.
-            if len(job.obj["status"]) == 0:
+            # It is possible that k8s didn't account for the status of the pods
+            # and they are in the uncountedTerminatedPods status. In this
+            # case we also need to wait a moment
+            if len(job.obj["status"]) == 0 or 'uncountedTerminatedPods' in job.obj["status"]:
                 return job_state
             if "succeeded" in job.obj["status"]:
                 succeeded = job.obj["status"]["succeeded"]
