@@ -775,7 +775,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # It is possible that k8s didn't account for the status of the pods
             # and they are in the uncountedTerminatedPods status. In this
             # case we also need to wait a moment
-            if len(job.obj["status"]) == 0 or 'uncountedTerminatedPods' in job.obj["status"]:
+            if len(job.obj["status"]) == 0 or "uncountedTerminatedPods" in job.obj["status"]:
                 return job_state
             if "succeeded" in job.obj["status"]:
                 succeeded = job.obj["status"]["succeeded"]
