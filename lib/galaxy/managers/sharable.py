@@ -11,7 +11,6 @@ A sharable Galaxy object:
 """
 
 import logging
-import re
 from typing import (
     Any,
     List,
