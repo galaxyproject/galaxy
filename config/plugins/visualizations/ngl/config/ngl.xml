@@ -13,9 +13,9 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.6" package="galaxy-visualization-ngl"/>
+        <requirement type="npm" version="0.0.7" package="@galaxyproject/ngl"/>
     </requirements>
-    <entry_point entry_point_type="script" src="index.js" css="index.css" />
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>
         <input>
             <label>Quality</label>
