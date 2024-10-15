@@ -3,6 +3,7 @@ import flushPromises from "flush-promises";
 import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { OK_PLUGIN_STATUS } from "@/components/ConfigTemplates/test_fixtures";
 import { type ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
 import { type UserConcreteObjectStore } from "./types";
@@ -113,7 +114,10 @@ describe("UpgradeForm", () => {
             router,
         });
         server.use(
-            http.put("/api/object_store_instances/{user_object_store_id}", ({ response }) => {
+            http.post("/api/object_store_instances/{uuid}/test", ({ response }) => {
+                return response(200).json(OK_PLUGIN_STATUS);
+            }),
+            http.put("/api/object_store_instances/{uuid}", ({ response }) => {
                 return response(200).json(INSTANCE);
             })
         );
@@ -137,19 +141,21 @@ describe("UpgradeForm", () => {
             router,
         });
         server.use(
-            http.put("/api/object_store_instances/{user_object_store_id}", ({ response }) => {
+            http.post("/api/object_store_instances/{uuid}/test", ({ response }) => {
+                return response(200).json(OK_PLUGIN_STATUS);
+            }),
+            http.put("/api/object_store_instances/{uuid}", ({ response }) => {
                 return response("4XX").json({ err_msg: "problem upgrading", err_code: 400 }, { status: 400 });
             })
         );
-
         await flushPromises();
         const submitElement = wrapper.find("#submit");
-        expect(wrapper.find(".object-store-instance-upgrade-error").exists()).toBe(false);
+        expect(wrapper.find("[data-description='object-store-upgrade-error']").exists()).toBe(false);
         submitElement.trigger("click");
         await flushPromises();
         const emitted = wrapper.emitted("created") || [];
         expect(emitted).toHaveLength(0);
-        const errorEl = wrapper.find(".object-store-instance-upgrade-error");
+        const errorEl = wrapper.find("[data-description='object-store-upgrade-error']");
         expect(errorEl.exists()).toBe(true);
         expect(errorEl.html()).toContain("problem upgrading");
     });

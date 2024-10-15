@@ -2,16 +2,15 @@
 import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { GalaxyApi } from "@/api";
-import type { UserFileSourceModel } from "@/api/fileSources";
-import { editFormDataToPayload, editTemplateForm, type FormEntry } from "@/components/ConfigTemplates/formUtil";
-import { rethrowSimple } from "@/utils/simple-error";
+import { useConfigurationTemplateEdit } from "@/components/ConfigTemplates/useConfigurationTesting";
 
 import { useInstanceAndTemplate } from "./instance";
 import { useInstanceRouting } from "./routing";
 
 import EditSecrets from "./EditSecrets.vue";
-import InstanceForm from "@/components/ConfigTemplates/InstanceForm.vue";
+
+const editTestUrl = "/api/file_source_instances/{uuid}/test";
+const editUrl = "/api/file_source_instances/{uuid}";
 
 interface Props {
     instanceId: string;
@@ -20,52 +19,40 @@ interface Props {
 const props = defineProps<Props>();
 const { instance, template } = useInstanceAndTemplate(ref(props.instanceId));
 
-const inputs = computed<Array<FormEntry> | undefined>(() => {
-    if (template.value && instance.value) {
-        return editTemplateForm(template.value, "storage location", instance.value);
-    }
-    return undefined;
-});
+const title = computed(() => `Edit ${template.value?.name} settings for ${instance.value?.name}`);
+const errorDataDescription = "file-source-update-error";
 
-const title = computed(() => `Edit File Source ${instance.value?.name} Settings`);
-const hasSecrets = computed(() => instance.value?.secrets && instance.value?.secrets.length > 0);
-const submitTitle = "Update Settings";
-const loadingMessage = "Loading file source template and instance information";
-
-async function onSubmit(formData: any) {
-    if (template.value && instance.value) {
-        const payload = editFormDataToPayload(template.value, formData);
-        const user_file_source_id = instance.value.uuid;
-
-        const { data: fileSource, error } = await GalaxyApi().PUT("/api/file_source_instances/{user_file_source_id}", {
-            params: { path: { user_file_source_id } },
-            body: payload,
-        });
-
-        if (error) {
-            rethrowSimple(error);
-        }
-
-        await onUpdate(fileSource);
-    }
-}
-
-const { goToIndex } = useInstanceRouting();
-
-async function onUpdate(instance: UserFileSourceModel) {
-    const message = `Updated file source ${instance.name}`;
-    goToIndex({ message });
-}
+const {
+    error,
+    hasSecrets,
+    ActionSummary,
+    inputs,
+    InstanceForm,
+    loadingMessage,
+    onForceSubmit,
+    onSubmit,
+    testRunning,
+    testResults,
+    submitTitle,
+    showForceActionButton,
+} = useConfigurationTemplateEdit("file source", instance, template, editTestUrl, editUrl, useInstanceRouting);
 </script>
 <template>
     <div>
         <BTabs v-if="hasSecrets">
             <BTab title="Settings" active>
+                <ActionSummary
+                    :error-data-description="errorDataDescription"
+                    :test-results="testResults"
+                    :error="error" />
                 <InstanceForm
                     :inputs="inputs"
                     :title="title"
                     :submit-title="submitTitle"
                     :loading-message="loadingMessage"
+                    :busy="testRunning"
+                    :show-force-action-button="showForceActionButton"
+                    @onForceSubmit="onForceSubmit"
                     @onSubmit="onSubmit" />
             </BTab>
             <BTab title="Secrets">
@@ -74,12 +61,17 @@ async function onUpdate(instance: UserFileSourceModel) {
                 </div>
             </BTab>
         </BTabs>
-        <InstanceForm
-            v-else
-            :inputs="inputs"
-            :title="title"
-            :submit-title="submitTitle"
-            :loading-message="loadingMessage"
-            @onSubmit="onSubmit" />
+        <div v-else>
+            <ActionSummary :error-data-description="errorDataDescription" :test-results="testResults" :error="error" />
+            <InstanceForm
+                :inputs="inputs"
+                :title="title"
+                :submit-title="submitTitle"
+                :loading-message="loadingMessage"
+                :busy="testRunning"
+                :show-force-action-button="showForceActionButton"
+                @onForceSubmit="onForceSubmit"
+                @onSubmit="onSubmit" />
+        </div>
     </div>
 </template>

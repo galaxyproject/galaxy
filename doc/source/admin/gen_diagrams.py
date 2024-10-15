@@ -8,6 +8,8 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 from galaxy.files.templates.models import (
     AzureFileSourceConfiguration,
     AzureFileSourceTemplateConfiguration,
+    DropboxFileSourceConfiguration,
+    DropboxFileSourceTemplateConfiguration,
     FileSourceTemplate,
     FtpFileSourceConfiguration,
     FtpFileSourceTemplateConfiguration,
@@ -49,6 +51,8 @@ class_to_diagram = {
     FileSourceTemplate: "file_source_templates",
     AzureFileSourceTemplateConfiguration: "file_source_azure_configuration_template",
     AzureFileSourceConfiguration: "file_source_azure_configuration",
+    DropboxFileSourceTemplateConfiguration: "file_source_dropbox_configuration_template",
+    DropboxFileSourceConfiguration: "file_source_dropbox_configuration",
     PosixFileSourceTemplateConfiguration: "file_source_posix_configuration_template",
     PosixFileSourceConfiguration: "file_source_posix_configuration",
     S3FSFileSourceTemplateConfiguration: "file_source_s3fs_configuration_template",
