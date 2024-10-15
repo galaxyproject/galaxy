@@ -20,7 +20,7 @@ search_test = pytest.mark.skipif(
 
 
 def get_trs_proxy():
-    return TrsProxy(GalaxyAppConfiguration(trs_servers_config_file=None, fetch_url_allowlist_ips=[]))
+    return TrsProxy(GalaxyAppConfiguration(fetch_url_allowlist_ips=[], override_tempdir=False))
 
 
 def test_proxy():

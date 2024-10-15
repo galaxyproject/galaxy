@@ -44,7 +44,7 @@ class TestLanding(BaseTestCase):
         self.landing_manager = LandingRequestManager(
             self.trans.sa_session, self.app.security, self.workflow_contents_manager
         )
-        self.trans.app.trs_proxy = TrsProxy(GalaxyAppConfiguration())
+        self.trans.app.trs_proxy = TrsProxy(GalaxyAppConfiguration(override_tempdir=False))
 
     def test_tool_landing_requests_typical_flow(self):
         landing_request: ToolLandingRequest = self.landing_manager.create_tool_landing_request(self._tool_request)
