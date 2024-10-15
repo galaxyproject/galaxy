@@ -10,7 +10,7 @@
     "dependencies": {
         "webpack": "^5.94.0",
         "webpack-cli": "^5.1.4",
-        "astrovisjs": "0.9.7"
+        "astrovisjs": "0.9.8"
     },
     "scripts": {
         "build": "npx webpack build --config webpack.prod.js --output-path=./static"
