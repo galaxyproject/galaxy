@@ -2157,7 +2157,9 @@ class MinimalJobWrapper(HasResourceParameters):
                         if e.errno != errno.ENOENT:
                             raise
             if delete_files:
-                self.object_store.delete(self.get_job(), base_dir="job_work", entire_dir=True, obj_dir=True)
+                self.object_store.delete(
+                    self.get_job(), base_dir="job_work", entire_dir=True, dir_only=True, obj_dir=True
+                )
         except Exception:
             log.exception("Unable to cleanup job %d", self.job_id)
 
