@@ -53,7 +53,15 @@ def parse_config_xml(config_xml):
             _config_xml_error("auth")
         username = a_xml[0].get("username")
         password = a_xml[0].get("password")
-        sslfile = a_xml[0].get("sslfile", None)
+        # sslfile = a_xml[0].get("sslfile", None)
+        client_server_negotiation = a_xml[0].get("client_server_negotiation", None)
+        client_server_policy = a_xml[0].get("client_server_policy", None)
+        encryption_algorithm = a_xml[0].get("encryption_algorithm", None)
+        encryption_key_size = int(a_xml[0].get("encryption_key_size", None))
+        encryption_num_hash_rounds = int(a_xml[0].get("encryption_num_hash_rounds", None))
+        encryption_salt_size = int(a_xml[0].get("encryption_salt_size", None))
+        ssl_verify_server = a_xml[0].get("ssl_verify_server", None)
+        ssl_ca_certificate_file = a_xml[0].get("ssl_ca_certificate_file", None)
 
         r_xml = config_xml.findall("resource")
         if not r_xml:
@@ -91,7 +99,15 @@ def parse_config_xml(config_xml):
             "auth": {
                 "username": username,
                 "password": password,
-                "sslfile": sslfile,
+                # "sslfile": sslfile,
+                "client_server_negotiation": client_server_negotiation,
+                "client_server_policy": client_server_policy,
+                "encryption_algorithm": encryption_algorithm,
+                "encryption_key_size": encryption_key_size,
+                "encryption_num_hash_rounds": encryption_num_hash_rounds,
+                "encryption_salt_size": encryption_salt_size,
+                "ssl_verify_server": ssl_verify_server,
+                "ssl_ca_certificate_file": ssl_ca_certificate_file,
             },
             "resource": {
                 "name": resource_name,
@@ -142,7 +158,15 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         self.password = auth_dict.get("password")
         if self.password is None:
             _config_dict_error("auth->password")
-        self.sslfile = auth_dict.get("sslfile")
+        # self.sslfile = auth_dict.get("sslfile")
+        self.client_server_negotiation = auth_dict.get("client_server_negotiation")
+        self.client_server_policy = auth_dict.get("client_server_policy")
+        self.encryption_algorithm = auth_dict.get("encryption_algorithm")
+        self.encryption_key_size = auth_dict.get("encryption_key_size")
+        self.encryption_num_hash_rounds = auth_dict.get("encryption_num_hash_rounds")
+        self.encryption_salt_size = auth_dict.get("encryption_salt_size")
+        self.ssl_verify_server = auth_dict.get("ssl_verify_server")
+        self.ssl_ca_certificate_file = auth_dict.get("ssl_ca_certificate_file")
 
         resource_dict = config_dict["resource"]
         if resource_dict is None:
@@ -194,11 +218,11 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
 
-        self.home = f"/{self.zone}/home/{self.username}"
+        # self.home = f"/{self.zone}/home/{self.username}"
+        self.home = "/vsc_galaxy/home/t1_data_2024_04/ingress/dev-paul"
 
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
-        
 
         session_params = {
             'host': self.host,
@@ -207,17 +231,32 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             'password': self.password,
             'zone': self.zone,
             'refresh_time': self.refresh_time,
+            'client_server_negotiation': self.client_server_negotiation,
+            'client_server_policy': self.client_server_policy,
+            'encryption_algorithm': self.encryption_algorithm,
+            'encryption_key_size': self.encryption_key_size,
+            'encryption_num_hash_rounds': self.encryption_num_hash_rounds,
+            'encryption_salt_size': self.encryption_salt_size,
+            'ssl_verify_server': self.ssl_verify_server,
+            'ssl_ca_certificate_file': self.ssl_ca_certificate_file,
+            'ssl_context': ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH) 
         }
 
         # Add ssl parameters only if self.sslfile is not None
-        if self.sslfile is not None:
-            with open(self.sslfile, "r") as file:
-                ssl_settings = json.load(file)
+        # if self.sslfile is not None:
+        #     with open(self.sslfile, "r") as file:
+        #         ssl_settings = json.load(file)
 
-            ssl_settings['ssl_context'] = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH)
-            session_params.update(ssl_settings)
+        #     ssl_settings['ssl_context'] = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH)
+        #     session_params.update(ssl_settings)
 
         self.session = iRODSSession(**session_params)
+
+        log.debug("SESSION PARAMS: %s", session_params)
+
+        coll = self.session.collections.get("/vsc_galaxy/")
+        for col in coll.subcollections:
+            log.debug("COLLECTION: %s", col)
 
         # Set connection timeout
         self.session.connection_timeout = self.timeout
@@ -301,7 +340,15 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             "auth": {
                 "username": self.username,
                 "password": self.password,
-                "sslfile": self.sslfile,
+                # "sslfile": self.sslfile,
+                "client_server_negotiation": self.client_server_negotiation,
+                "client_server_policy": self.client_server_policy,
+                "encryption_algorithm": self.encryption_algorithm,
+                "encryption_key_size": self.encryption_key_size,
+                "encryption_num_hash_rounds": self.encryption_num_hash_rounds,
+                "encryption_salt_size": self.encryption_salt_size,
+                "ssl_verify_server": self.ssl_verify_server,
+                "ssl_ca_certificate_file": self.ssl_ca_certificate_file,
             },
             "resource": {
                 "name": self.resource,
