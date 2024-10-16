@@ -105,6 +105,7 @@ from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    DependsOnUser,
     IndexQueryTag,
     LandingUuidPathParam,
     Router,
@@ -1179,6 +1180,7 @@ class FastAPIWorkflows:
         trans: ProvidesUserContext = DependsOnTrans,
         uuid: UUID4 = LandingUuidPathParam,
         payload: Optional[ClaimLandingPayload] = Body(...),
+        user: model.User = DependsOnUser,
     ) -> WorkflowLandingRequest:
         return self.landing_manager.claim_workflow_landing_request(trans, uuid, payload)
 
@@ -1187,6 +1189,7 @@ class FastAPIWorkflows:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         uuid: UUID4 = LandingUuidPathParam,
+        user: model.User = DependsOnUser,
     ) -> WorkflowLandingRequest:
         return self.landing_manager.get_workflow_landing_request(trans, uuid)
 

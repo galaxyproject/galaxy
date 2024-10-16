@@ -11,6 +11,7 @@ from sqlalchemy import select
 from galaxy.exceptions import (
     InsufficientPermissionsException,
     ItemAlreadyClaimedException,
+    ItemMustBeClaimed,
     ObjectNotFound,
     RequestParameterMissingException,
 )
@@ -59,6 +60,7 @@ class LandingRequestManager:
         model.request_state = payload.request_state
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
+        model.public = payload.public
         if user_id:
             model.user_id = user_id
         self._save(model)
@@ -77,6 +79,7 @@ class LandingRequestManager:
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
         model.request_state = payload.request_state
+        model.public = payload.public
         self._save(model)
         return self._workflow_response(model)
 
@@ -201,6 +204,8 @@ class LandingRequestManager:
         return response_model
 
     def _check_ownership(self, trans: ProvidesUserContext, model: LandingRequestModel):
+        if not model.public and self._state(model) == LandingRequestState.UNCLAIMED:
+            raise ItemMustBeClaimed
         if model.user_id and model.user_id != trans.user.id:
             raise InsufficientPermissionsException()
 

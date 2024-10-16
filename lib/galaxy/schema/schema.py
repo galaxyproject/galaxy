@@ -3854,6 +3854,7 @@ class CreateToolLandingRequestPayload(Model):
     tool_version: Optional[str] = None
     request_state: Optional[Dict[str, Any]] = None
     client_secret: Optional[str] = None
+    public: bool = False
 
 
 class CreateWorkflowLandingRequestPayload(Model):
@@ -3861,6 +3862,10 @@ class CreateWorkflowLandingRequestPayload(Model):
     workflow_target_type: Literal["stored_workflow", "workflow", "trs_url"]
     request_state: Optional[Dict[str, Any]] = None
     client_secret: Optional[str] = None
+    public: bool = Field(
+        False,
+        description="If workflow landing request is public anyone with the uuid can use the landing request. If not public the request must be claimed before use and additional verification might occur.",
+    )
 
 
 class ClaimLandingPayload(Model):

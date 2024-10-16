@@ -7103,6 +7103,12 @@ export interface components {
         CreateWorkflowLandingRequestPayload: {
             /** Client Secret */
             client_secret?: string | null;
+            /**
+             * Public
+             * @description If workflow landing request is public anyone with the uuid can use the landing request. If not public the request must be claimed before use and additional verification might occur.
+             * @default false
+             */
+            public: boolean;
             /** Request State */
             request_state?: Record<string, never> | null;
             /** Workflow Id */
