@@ -66,12 +66,12 @@ PATHS.pluginBaseDir =
         : undefined) || "../config/plugins/";
 
 PATHS.pluginDirs = [
-    path.join(PATHS.pluginBaseDir, "{visualizations,welcome_page}/*/static/**/*"),
-    path.join(PATHS.pluginBaseDir, "{visualizations,welcome_page}/*/*/static/**/*"),
+    path.join(PATHS.pluginBaseDir, "visualizations/*/static/**/*"),
+    path.join(PATHS.pluginBaseDir, "visualizations/*/*/static/**/*"),
 ];
 
 PATHS.pluginBuildModules = [
-    path.join(PATHS.pluginBaseDir, `{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`),
+    path.join(PATHS.pluginBaseDir, `visualizations/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`),
 ];
 
 function stageLibs(callback) {
@@ -115,11 +115,7 @@ function buildPlugins(callback, forceRebuild) {
         const pluginDir = path.dirname(file);
         const pluginName = pluginDir.split(path.sep).pop();
 
-        const hashFilePath = path.join(
-            pluginDir,
-            DIST_PLUGIN_BUILD_IDS.indexOf(pluginName) > -1 ? "dist" : "static",
-            "plugin_build_hash.txt"
-        );
+        const hashFilePath = path.join(pluginDir, "static", "plugin_build_hash.txt");
 
         if (forceRebuild) {
             skipBuild = false;
@@ -244,8 +240,8 @@ async function installDependenciesFromXML(xmlPath, pluginDir) {
 
                     if (installResult.status === 0) {
                         await fs.copy(
-                            path.join(pluginDir, "node_modules", pkgName, "static"),
-                            path.join(pluginDir, "static")
+                            path.join(pluginDir, "node_modules", pkgName, "static", "dist"),
+                            path.join(pluginDir, "static", "dist")
                         );
                         console.log(`Installed package ${pkgName}@${version} in ${pluginDir}`);
                     } else {
@@ -268,7 +264,7 @@ function forceBuildPlugins(callback) {
 }
 
 function cleanPlugins() {
-    return del(["../static/plugins/{visualizations,welcome_page}/*"], { force: true });
+    return del(["../static/plugins/visualizations/*"], { force: true });
 }
 
 const client = parallel(fonts, stageLibs, icons);
@@ -277,7 +273,7 @@ const pluginsRebuild = series(forceBuildPlugins, installPlugins, cleanPlugins, s
 
 function watchPlugins() {
     const BUILD_PLUGIN_WATCH_GLOB = [
-        path.join(PATHS.pluginBaseDir, `{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`),
+        path.join(PATHS.pluginBaseDir, `{visualizations}/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`),
     ];
     watch(BUILD_PLUGIN_WATCH_GLOB, { queue: false }, plugins);
 }
