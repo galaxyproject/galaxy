@@ -161,6 +161,14 @@ def expand_workflow_inputs(param_inputs, inputs=None):
 ExpandedT = Tuple[List[ToolStateJobInstanceT], Optional[matching.MatchingCollections]]
 
 
+def expand_flat_parameters_to_nested(incoming_copy: ToolRequestT) -> Dict[str, Any]:
+    nested_dict: Dict[str, Any] = {}
+    for incoming_key, incoming_value in incoming_copy.items():
+        if not incoming_key.startswith("__"):
+            process_key(incoming_key, incoming_value=incoming_value, d=nested_dict)
+    return nested_dict
+
+
 def expand_meta_parameters(trans, tool, incoming: ToolRequestT) -> ExpandedT:
     """
     Take in a dictionary of raw incoming parameters and expand to a list
@@ -176,11 +184,7 @@ def expand_meta_parameters(trans, tool, incoming: ToolRequestT) -> ExpandedT:
     # order matters, so the following reorders incoming
     # according to tool.inputs (which is ordered).
     incoming_copy = incoming.copy()
-    nested_dict: Dict[str, Any] = {}
-    for incoming_key, incoming_value in incoming_copy.items():
-        if not incoming_key.startswith("__"):
-            process_key(incoming_key, incoming_value=incoming_value, d=nested_dict)
-
+    nested_dict = expand_flat_parameters_to_nested(incoming_copy)
     reordered_incoming = {}
 
     def visitor(input, value, prefix, prefixed_name, prefixed_label, error, **kwargs):
