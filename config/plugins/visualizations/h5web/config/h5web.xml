@@ -3,7 +3,7 @@
 <visualization name="H5Web" embeddable="false">
     <description>HDF5 data visualization and exploration</description>
     <requirements>
-        <requirement type="npm" version="0.3.0" package="@galaxyproject/h5web"/>
+        <requirement type="npm" version="0.4.0" package="@galaxyproject/h5web"/>
     </requirements>
     <data_sources>
         <data_source>
@@ -14,7 +14,7 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="chart" src="script.js" css="script.css"/>
+    <entry_point entry_point_type="chart" src="dist/script.js" css="dist/script.css"/>
     <settings>
         <input>
             <name>explorer</name>
