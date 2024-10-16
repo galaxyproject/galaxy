@@ -1,10 +1,16 @@
 <script setup lang="ts">
+import { faCog, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BButtonGroup } from "bootstrap-vue";
+//@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
+import { ArrowLeftFromLine } from "lucide-vue";
 import { computed, ref } from "vue";
 
 import type { Step } from "@/stores/workflowStepStore";
 
 import FormTool from "./Forms/FormTool.vue";
 import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 const props = defineProps<{
     step: Step;
@@ -26,6 +32,8 @@ const cssVars = computed(() => ({
 }));
 
 const isTool = computed(() => props.step.type === "tool");
+
+const title = computed(() => `${props.step.id + 1}: ${props.step.label ?? props.step.name}`);
 </script>
 
 <template>
@@ -37,6 +45,22 @@ const isTool = computed(() => props.step.type === "tool");
             :min="100"
             :max="1200"
             @positionChanged="(v) => (width = v)"></DraggableSeparator>
+
+        <div class="inspector-heading">
+            <Heading h2 inline size="sm"> {{ title }} </Heading>
+
+            <BButtonGroup>
+                <BButton variant="link" size="md">
+                    <ArrowLeftFromLine absolute-stroke-width size="17" />
+                </BButton>
+                <BButton variant="link" size="md">
+                    <FontAwesomeIcon :icon="faCog" fixed-width />
+                </BButton>
+                <BButton variant="link" size="md">
+                    <FontAwesomeIcon :icon="faTimes" fixed-width />
+                </BButton>
+            </BButtonGroup>
+        </div>
 
         <div class="inspector-content">
             <FormTool
@@ -77,10 +101,23 @@ const isTool = computed(() => props.step.type === "tool");
     border-style: solid;
     border-radius: 0.5rem 0 0 0.5rem;
 
+    .inspector-heading {
+        padding: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+
+        button {
+            padding: 0.4rem;
+            display: grid;
+            place-items: center;
+        }
+    }
+
     .inspector-content {
         overflow-y: auto;
         height: 100%;
         padding: 0.5rem 0.5rem;
+        padding-top: 0;
     }
 }
 </style>
