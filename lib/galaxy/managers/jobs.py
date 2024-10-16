@@ -486,6 +486,16 @@ class JobSearch:
 
         stmt = stmt.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
 
+        from sqlalchemy.dialects import postgresql
+
+        try:
+            log.debug(
+                "Job search query: %s",
+                stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}),
+            )
+        except Exception:
+            log.exception("Couldn't compile statement")
+
         for job in self.sa_session.execute(stmt):
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
             # but to be able to verify that the parameters match we need to modify all instances of
