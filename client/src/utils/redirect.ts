@@ -10,7 +10,7 @@ export function reloadPage() {
     window.location.reload();
 }
 
-const slashCleanup = /(\/)+/g;
+const slashCleanup = /(?<!:)(\/)+/g;
 /**
  * Prepends the configured app root to given url
  * @param path
