@@ -1539,6 +1539,7 @@ class JobIndexQueryPayload(Model):
     workflow_id: Optional[DecodedDatabaseIdField] = None
     invocation_id: Optional[DecodedDatabaseIdField] = None
     implicit_collection_jobs_id: Optional[DecodedDatabaseIdField] = None
+    tool_request_id: Optional[DecodedDatabaseIdField] = None
     order_by: JobIndexSortByEnum = JobIndexSortByEnum.update_time
     search: Optional[str] = None
     limit: int = 500
