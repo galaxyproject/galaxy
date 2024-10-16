@@ -532,6 +532,16 @@ class JobSearch:
         stmt = self._filter_jobs(stmt, tool_id, user.id, tool_version, job_state, wildcard_param_dump)
         stmt = self._exclude_jobs_with_deleted_outputs(stmt)
 
+        from sqlalchemy.dialects import postgresql
+
+        try:
+            log.debug(
+                "Job search query: %s",
+                stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}),
+            )
+        except Exception:
+            log.exception("Couldn't compile statement")
+
         for job in self.sa_session.execute(stmt):
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
             # but to be able to verify that the parameters match we need to modify all instances of
