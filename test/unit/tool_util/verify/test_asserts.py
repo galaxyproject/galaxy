@@ -1259,7 +1259,7 @@ def test_has_json_property_with_text_neg():
 if h5py is not None:
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         h5name = tmp.name
-        with h5py.File(tmp.name, "w") as h5fh:
+        with h5py.File(tmp.name, "w", locking=False) as h5fh:
             h5fh.attrs["myfileattr"] = "myfileattrvalue"
             h5fh.attrs["myfileattrint"] = 1
             dset = h5fh.create_dataset("myint", (100,), dtype="i")
