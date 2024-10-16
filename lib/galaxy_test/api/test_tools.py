@@ -16,11 +16,13 @@ from requests import (
     put,
 )
 
+from galaxy.exceptions import error_codes
 from galaxy.tool_util.verify.interactor import ValidToolTestDict
 from galaxy.util import galaxy_root_path
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.api_asserts import (
+    assert_error_code_is,
     assert_has_keys,
     assert_status_code_is,
 )
@@ -387,7 +389,10 @@ class TestToolsApi(ApiTestCase, TestsTools):
     @skip_without_tool("composite_output")
     def test_test_data_admin_security(self):
         test_data_response = self._get("tools/composite_output/test_data_path?filename=../CONTRIBUTORS.md")
-        assert test_data_response.status_code == 403, test_data_response.text
+        assert_status_code_is(test_data_response, 403)
+        error_json = test_data_response.json()
+        assert_has_keys(error_json, "err_msg", "err_code")
+        assert_error_code_is(error_json, error_codes.error_codes_by_name["ADMIN_REQUIRED"].code)
 
     @skip_without_tool("dbkey_filter_multi_input")
     def test_data_table_requirement_annotated(self):

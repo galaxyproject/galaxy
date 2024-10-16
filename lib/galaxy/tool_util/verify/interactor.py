@@ -429,7 +429,12 @@ class GalaxyInteractorApi:
     def test_data_path(self, tool_id, filename, tool_version=None):
         version_fragment = f"&tool_version={tool_version}" if tool_version else ""
         response = self._get(f"tools/{tool_id}/test_data_path?filename={filename}{version_fragment}", admin=True)
-        result = response.json()
+        try:
+            result = response.json()
+        except Exception:
+            raise Exception(
+                f"Failed to parse test_data_path from Galaxy. An admin key is required for this feature and it is probably not set or not a valid admin key. Status Code: {response.status_code}. Response: {response.text}."
+            )
         if response.status_code in [200, 404]:
             return result
         raise Exception(result["err_msg"])

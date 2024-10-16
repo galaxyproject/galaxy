@@ -147,7 +147,7 @@ class UsesApiTestCaseMixin:
         return user, self._post(f"users/{user['id']}/api_key", admin=True).json()
 
     @contextmanager
-    def _different_user(self, email=OTHER_USER, anon=False):
+    def _different_user(self, email=OTHER_USER, anon=False, invalid_admin_key=False):
         """Use in test cases to switch get/post operations to act as new user
 
         ..code-block:: python
@@ -157,6 +157,7 @@ class UsesApiTestCaseMixin:
 
         """
         original_api_key = self.user_api_key
+        original_admin_api_key = self.master_api_key
         original_interactor_key = self.galaxy_interactor.api_key
         original_cookies = self.galaxy_interactor.cookies
         if anon:
@@ -168,10 +169,12 @@ class UsesApiTestCaseMixin:
         try:
             self.user_api_key = new_key
             self.galaxy_interactor.api_key = new_key
+            self.galaxy_interactor.master_api_key = None if not invalid_admin_key else new_key
             yield
         finally:
             self.user_api_key = original_api_key
             self.galaxy_interactor.api_key = original_interactor_key
+            self.master_api_key = original_admin_api_key
             self.galaxy_interactor.cookies = original_cookies
 
     def _get(self, *args, **kwds):
