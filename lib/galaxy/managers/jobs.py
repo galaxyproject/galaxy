@@ -576,7 +576,7 @@ class JobSearch:
                 else:
                     return []
 
-            query = query.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
+        query = query.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
 
         for job in self.sa_session.execute(query):
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
