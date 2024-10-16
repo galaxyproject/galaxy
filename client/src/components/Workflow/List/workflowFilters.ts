@@ -1,4 +1,4 @@
-import Filtering, { contains, equals, expandNameTag, toBool } from "utils/filtering";
+import Filtering, { contains, equals, expandNameTag, toBool } from "@/utils/filtering";
 
 export function helpHtml(activeList = "my") {
     let extra = "";
@@ -71,7 +71,7 @@ export function helpHtml(activeList = "my") {
     return conditionalHelpHtml;
 }
 
-export function WorkflowFilters(activeList = "my") {
+export function getWorkflowFilters(activeList = "my") {
     const commonFilters = {
         name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
         n: { handler: contains("n"), menuItem: false },
@@ -82,7 +82,7 @@ export function WorkflowFilters(activeList = "my") {
             menuItem: true,
         },
         t: { type: "MultiTags", handler: contains("t", "t", expandNameTag), menuItem: false },
-    };
+    } as const;
 
     if (activeList === "my") {
         return new Filtering(

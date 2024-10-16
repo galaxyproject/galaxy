@@ -40,13 +40,14 @@ describe("ActivitySettings", () => {
 
     beforeEach(async () => {
         const pinia = createTestingPinia({ stubActions: false });
-        activityStore = useActivityStore();
+        activityStore = useActivityStore("default");
         activityStore.sync();
         wrapper = mount(mountTarget, {
             localVue,
             pinia,
             props: {
                 query: "",
+                activityBarScope: "default",
             },
             stubs: {
                 icon: { template: "<div></div>" },

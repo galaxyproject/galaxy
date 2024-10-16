@@ -3,7 +3,7 @@ import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
-import { WorkflowFilters } from "@/components/Workflow/List/WorkflowFilters";
+import { WorkflowFilters } from "@/components/Workflow/List/workflowFilters";
 import Filtering, { compare, contains, equals, toBool, toDate } from "@/utils/filtering";
 
 import FilterMenu from "./FilterMenu.vue";

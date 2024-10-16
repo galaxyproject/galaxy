@@ -45,7 +45,7 @@ describe("ActivityBar", () => {
 
     beforeEach(async () => {
         const pinia = createTestingPinia({ stubActions: false });
-        activityStore = useActivityStore();
+        activityStore = useActivityStore("default");
         eventStore = useEventStore();
         wrapper = shallowMount(mountTarget, {
             localVue,

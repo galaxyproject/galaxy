@@ -8,17 +8,17 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
-import { helpHtml, WorkflowFilters } from "@/components/Workflow/List/WorkflowFilters";
+import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
+import WorkflowCardList from "./WorkflowCardList.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
 import LoginRequired from "@/components/Common/LoginRequired.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import WorkflowCard from "@/components/Workflow/List/WorkflowCard.vue";
 import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.vue";
 
 library.add(faStar, faTrash);
@@ -77,7 +77,7 @@ const bookmarkButtonTitle = computed(() =>
 );
 
 // Filtering computed refs
-const workflowFilters = computed(() => WorkflowFilters(props.activeList));
+const workflowFilters = computed(() => getWorkflowFilters(props.activeList));
 const rawFilters = computed(() =>
     Object.fromEntries(workflowFilters.value.getFiltersForText(filterText.value, true, false))
 );
@@ -305,23 +305,14 @@ onMounted(() => {
             </BAlert>
         </span>
 
-        <BOverlay
-            v-else
-            id="workflow-cards"
-            :show="overlay"
-            rounded="sm"
-            class="cards-list mt-2"
-            :class="view === 'grid' ? 'd-flex flex-wrap' : ''">
-            <WorkflowCard
-                v-for="w in workflowsLoaded"
-                :key="w.id"
-                :workflow="w"
+        <BOverlay v-else id="workflow-cards" :show="overlay" rounded="sm" class="cards-list mt-2">
+            <WorkflowCardList
+                :workflows="workflowsLoaded"
                 :published-view="published"
                 :grid-view="view === 'grid'"
-                :class="view === 'grid' ? 'grid-view' : 'list-view'"
                 @refreshList="load"
                 @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
-                @update-filter="updateFilterValue" />
+                @updateFilter="updateFilterValue" />
 
             <BPagination
                 v-if="!loading && totalWorkflows > limit"
@@ -338,9 +329,6 @@ onMounted(() => {
 </template>
 
 <style lang="scss">
-@import "scss/mixins.scss";
-@import "breakpoints.scss";
-
 .workflows-list {
     overflow: auto;
     display: flex;
@@ -358,32 +346,13 @@ onMounted(() => {
     }
 
     .cards-list {
-        container: card-list / inline-size;
         scroll-behavior: smooth;
         min-height: 150px;
+        display: flex;
+        flex-direction: column;
 
         overflow-y: auto;
         overflow-x: hidden;
-
-        .list-view {
-            width: 100%;
-        }
-
-        .grid-view {
-            width: calc(100% / 3);
-        }
-
-        @container card-list (max-width: #{$breakpoint-xl}) {
-            .grid-view {
-                width: calc(100% / 2);
-            }
-        }
-
-        @container card-list (max-width: #{$breakpoint-sm}) {
-            .grid-view {
-                width: 100%;
-            }
-        }
     }
 }
 </style>

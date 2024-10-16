@@ -2,15 +2,16 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleDown, faAngleDoubleUp, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { watchImmediate } from "@vueuse/core";
 import { BButton, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
-import { onMounted, ref, watch } from "vue";
+import { ref, watch } from "vue";
 
 import localize from "@/utils/localization";
 
 library.add(faAngleDoubleDown, faAngleDoubleUp, faSpinner, faTimes);
 
 interface Props {
-    query?: string;
+    value?: string;
     delay?: number;
     loading?: boolean;
     placeholder?: string;
@@ -19,7 +20,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    query: "",
+    value: "",
     delay: 1000,
     loading: false,
     placeholder: "Enter your search term here.",
@@ -28,13 +29,13 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "change", query: string): void;
+    (e: "input", value: string): void;
+    (e: "change", value: string): void;
     (e: "onToggle", showAdvanced: boolean): void;
 }>();
 
 const queryInput = ref<string>();
-const queryCurrent = ref<string>();
-const queryTimer = ref<any>(null);
+const queryTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 const titleClear = ref("Clear Search (esc)");
 const titleAdvanced = ref("Toggle Advanced Search");
 const toolInput = ref<HTMLInputElement | null>(null);
@@ -57,16 +58,17 @@ function delayQuery(query: string) {
 }
 
 function setQuery(queryNew: string) {
-    clearTimer();
-
-    if (queryCurrent.value !== queryInput.value || queryCurrent.value !== queryNew) {
-        queryCurrent.value = queryInput.value = queryNew;
-        emit("change", queryCurrent.value);
-    }
+    emit("input", queryNew);
+    emit("change", queryNew);
 }
 
+watch(
+    () => queryInput.value,
+    () => delayQuery(queryInput.value ?? "")
+);
+
 function clearBox() {
-    setQuery("");
+    queryInput.value = "";
     toolInput.value?.focus();
 }
 
@@ -74,18 +76,12 @@ function onToggle() {
     emit("onToggle", !props.showAdvanced);
 }
 
-watch(
-    () => props.query,
+watchImmediate(
+    () => props.value,
     (newQuery) => {
-        setQuery(newQuery);
+        queryInput.value = newQuery;
     }
 );
-
-onMounted(() => {
-    if (props.query) {
-        setQuery(props.query);
-    }
-});
 </script>
 
 <template>
@@ -98,9 +94,7 @@ onMounted(() => {
             autocomplete="off"
             :placeholder="placeholder"
             data-description="filter text input"
-            @input="delayQuery"
-            @change="setQuery"
-            @keydown.esc="setQuery('')" />
+            @keydown.esc="clearBox" />
 
         <BInputGroupAppend>
             <BButton

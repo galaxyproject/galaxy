@@ -2,14 +2,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useDebounce, useDraggable } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
 
-import { useTimeoutThrottle } from "@/composables/throttle";
-
-import { determineWidth } from "./utilities";
-
-const { throttle } = useTimeoutThrottle(10);
+import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 
 library.add(faChevronLeft, faChevronRight);
 
@@ -28,26 +23,18 @@ const props = withDefaults(defineProps<Props>(), {
     defaultWidth: 300,
 });
 
-const draggable = ref<HTMLElement | null>(null);
-const root = ref<HTMLElement | null>(null);
-
 const panelWidth = ref(props.defaultWidth);
+
+const root = ref<HTMLElement | null>(null);
 const show = ref(true);
-
-const { position, isDragging } = useDraggable(draggable, {
-    preventDefault: true,
-    exact: true,
-});
-
-const hoverDraggable = ref(false);
-const hoverDraggableDebounced = useDebounce(hoverDraggable, 100);
-const showHover = computed(() => (hoverDraggable.value && hoverDraggableDebounced.value) || isDragging.value);
 
 const showToggle = ref(false);
 const hoverToggle = ref(false);
-const hoverDraggableOrToggle = computed(
-    () => (hoverDraggableDebounced.value || hoverToggle.value) && !isDragging.value
-);
+
+const isHoveringDragHandle = ref(false);
+const isDragging = ref(false);
+
+const hoverDraggableOrToggle = computed(() => (isHoveringDragHandle.value || hoverToggle.value) && !isDragging.value);
 
 const toggleLinger = 500;
 const toggleShowDelay = 600;
@@ -70,72 +57,6 @@ watch(
     }
 );
 
-/** Watch position changes and adjust width accordingly */
-watch(position, () => {
-    throttle(() => {
-        if (!root.value || !draggable.value) {
-            return;
-        }
-
-        const rectRoot = root.value.getBoundingClientRect();
-        const rectDraggable = draggable.value.getBoundingClientRect();
-        panelWidth.value = determineWidth(
-            rectRoot,
-            rectDraggable,
-            props.minWidth,
-            props.maxWidth,
-            props.side,
-            position.value.x
-        );
-    });
-});
-
-/** If the `maxWidth` changes, prevent the panel from exceeding it */
-watch(
-    () => props.maxWidth,
-    (newVal) => {
-        if (newVal && panelWidth.value > newVal) {
-            panelWidth.value = props.maxWidth;
-        }
-    },
-    { immediate: true }
-);
-
-/** If the `minWidth` changes, ensure the panel width is at least the `minWidth` */
-watch(
-    () => props.minWidth,
-    (newVal) => {
-        if (newVal && panelWidth.value < newVal) {
-            panelWidth.value = newVal;
-        }
-    },
-    { immediate: true }
-);
-
-function onKeyLeft() {
-    if (props.side === "left") {
-        decreaseWidth();
-    } else {
-        increaseWidth();
-    }
-}
-
-function onKeyRight() {
-    if (props.side === "left") {
-        increaseWidth();
-    } else {
-        decreaseWidth();
-    }
-}
-
-function increaseWidth(by = 50) {
-    panelWidth.value = Math.min(panelWidth.value + by, props.maxWidth);
-}
-
-function decreaseWidth(by = 50) {
-    panelWidth.value = Math.max(panelWidth.value - by, props.minWidth);
-}
-
 const sideClasses = computed(() => ({
     left: props.side === "left",
     right: props.side === "right",
@@ -148,19 +69,15 @@ const sideClasses = computed(() => ({
         :id="side"
         ref="root"
         class="flex-panel"
-        :class="{ ...sideClasses, 'show-hover': showHover }"
+        :class="{ ...sideClasses }"
         :style="`--width: ${panelWidth}px`">
-        <button
-            ref="draggable"
-            class="drag-handle"
-            @mouseenter="hoverDraggable = true"
-            @focusin="hoverDraggable = true"
-            @mouseout="hoverDraggable = false"
-            @focusout="hoverDraggable = false"
-            @keydown.left="onKeyLeft"
-            @keydown.right="onKeyRight">
-            <span class="sr-only"> Side panel drag handle </span>
-        </button>
+        <DraggableSeparator
+            :position="panelWidth"
+            :side="props.side"
+            :min="props.minWidth"
+            :max="props.maxWidth"
+            @positionChanged="(v) => (panelWidth = v)"
+            @visibilityChanged="(v) => (isHoveringDragHandle = v)"></DraggableSeparator>
 
         <button
             v-if="props.collapsible"
@@ -221,27 +138,11 @@ $border-width: 6px;
         background-color: $border-color;
     }
 
-    &.show-hover {
-        border-color: $brand-info;
-
-        &::after {
-            background-color: $brand-info;
-        }
-    }
-
     &.left {
         border-right-style: solid;
 
         &::after {
             right: -1px;
-        }
-
-        .drag-handle {
-            right: -$border-width;
-
-            &:hover {
-                right: calc(-1 * $border-width - var(--hover-expand) / 2);
-            }
         }
     }
 
@@ -251,32 +152,6 @@ $border-width: 6px;
         &::after {
             left: -1px;
         }
-
-        .drag-handle {
-            left: -$border-width;
-
-            &:hover {
-                left: calc(-1 * $border-width - var(--hover-expand) / 2);
-            }
-        }
-    }
-}
-
-.drag-handle {
-    background: none;
-    border: none;
-    border-radius: 0;
-    position: absolute;
-    width: $border-width;
-    padding: 0;
-    height: 100%;
-    z-index: 10000;
-
-    --hover-expand: 4px;
-
-    &:hover {
-        cursor: ew-resize;
-        width: calc($border-width + var(--hover-expand));
     }
 }
 

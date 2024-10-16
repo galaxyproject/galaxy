@@ -207,7 +207,7 @@ function updateFilterText(newFilterText: string) {
             v-if="props.menuType !== 'standalone'"
             v-show="props.menuType == 'linked' || (props.menuType == 'separate' && !props.showAdvanced)"
             ref="delayedInputField"
-            :query="props.filterText"
+            :value="props.filterText"
             :delay="props.debounceDelay"
             :loading="props.loading"
             :show-advanced="props.showAdvanced"

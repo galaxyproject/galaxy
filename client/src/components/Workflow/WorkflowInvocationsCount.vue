@@ -41,7 +41,7 @@ onMounted(initCounts);
 
 <template>
     <div class="workflow-invocations-count d-flex align-items-center flex-gapx-1">
-        <BBadge v-if="count != undefined && count === 0" pill class="list-view">
+        <BBadge v-if="count != undefined && count === 0" pill>
             <span>never run</span>
         </BBadge>
         <BBadge
@@ -49,7 +49,7 @@ onMounted(initCounts);
             v-b-tooltip.hover.noninteractive
             pill
             :title="localize('View workflow invocations')"
-            class="outline-badge cursor-pointer list-view"
+            class="outline-badge cursor-pointer"
             :to="`/workflows/${props.workflow.id}/invocations`">
             <FontAwesomeIcon :icon="faList" fixed-width />
 

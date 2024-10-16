@@ -96,11 +96,7 @@ function userTitle(title: string) {
 </script>
 
 <template>
-    <ActivityPanel
-        title="Select Histories"
-        go-to-all-title="Open History Multiview"
-        href="/histories/view_multiple"
-        :go-to-on-href="false">
+    <ActivityPanel title="Select Histories">
         <template v-slot:header-buttons>
             <BButtonGroup>
                 <BButton

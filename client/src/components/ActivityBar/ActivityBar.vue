@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { faEllipsisH, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { watchImmediate } from "@vueuse/core";
 import { storeToRefs } from "pinia";
-import { computed, type Ref, ref, watch } from "vue";
+import { computed, type Ref, ref } from "vue";
 import { useRoute } from "vue-router/composables";
 import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";
-import { useHashedUserId } from "@/composables/hashedUserId";
 import { convertDropData } from "@/stores/activitySetup";
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
@@ -24,6 +25,31 @@ import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 
+const props = withDefaults(
+    defineProps<{
+        defaultActivities?: Activity[];
+        activityBarId?: string;
+        specialActivities?: Activity[];
+        showAdmin?: boolean;
+        optionsTitle?: string;
+        optionsTooltip?: string;
+        optionsHeading?: string;
+        optionsIcon?: IconDefinition;
+        optionsSearchPlaceholder?: string;
+    }>(),
+    {
+        defaultActivities: undefined,
+        activityBarId: "default",
+        specialActivities: () => [],
+        showAdmin: true,
+        optionsTitle: "More",
+        optionsHeading: "Additional Activities",
+        optionsIcon: () => faEllipsisH,
+        optionsSearchPlaceholder: "Search Activities",
+        optionsTooltip: "View additional activities",
+    }
+);
+
 // require user to long click before dragging
 const DRAG_DELAY = 50;
 
@@ -32,13 +58,26 @@ const { config, isConfigLoaded } = useConfig();
 const route = useRoute();
 const userStore = useUserStore();
 
-const { hashedUserId } = useHashedUserId();
-
 const eventStore = useEventStore();
-const activityStore = useActivityStore();
+const activityStore = useActivityStore(props.activityBarId);
+
+watchImmediate(
+    () => props.defaultActivities,
+    (defaults) => {
+        if (defaults) {
+            activityStore.overrideDefaultActivities(defaults);
+        } else {
+            activityStore.resetDefaultActivities();
+        }
+    }
+);
+
 const { isAdmin, isAnonymous } = storeToRefs(userStore);
 
-const emit = defineEmits(["dragstart"]);
+const emit = defineEmits<{
+    (e: "dragstart", dragItem: Activity | null): void;
+    (e: "activityClicked", activityId: string): void;
+}>();
 
 // activities from store
 const { activities } = storeToRefs(activityStore);
@@ -50,13 +89,10 @@ const dragItem: Ref<Activity | null> = ref(null);
 // drag state
 const isDragging = ref(false);
 
-// sync built-in activities with cached activities
-activityStore.sync();
-
 /**
  * Checks if the route of an activity is currently being visited and panels are collapsed
  */
-function isActiveRoute(activityTo: string) {
+function isActiveRoute(activityTo?: string | null) {
     return route.path === activityTo && isActiveSideBar("");
 }
 
@@ -64,16 +100,19 @@ function isActiveRoute(activityTo: string) {
  * Checks if a panel has been expanded
  */
 function isActiveSideBar(menuKey: string) {
-    return userStore.toggledSideBar === menuKey;
+    return activityStore.toggledSideBar === menuKey;
 }
 
-const isSideBarOpen = computed(() => userStore.toggledSideBar !== "");
+const isSideBarOpen = computed(() => activityStore.toggledSideBar !== "");
 
 /**
  * Checks if an activity that has a panel should have the `is-active` prop
  */
 function panelActivityIsActive(activity: Activity) {
-    return isActiveSideBar(activity.id) || (activity.to !== null && isActiveRoute(activity.to));
+    return (
+        isActiveSideBar(activity.id) ||
+        (activity.to !== undefined && activity.to !== null && isActiveRoute(activity.to))
+    );
 }
 
 /**
@@ -123,25 +162,37 @@ function onDragOver(evt: MouseEvent) {
 /**
  * Tracks the state of activities which expand or collapse the sidepanel
  */
-function onToggleSidebar(toggle: string = "", to: string | null = null) {
+function toggleSidebar(toggle: string = "", to: string | null = null) {
     // if an activity's dedicated panel/sideBar is already active
     // but the route is different, don't collapse
     if (toggle && to && !(route.path === to) && isActiveSideBar(toggle)) {
         return;
     }
-    userStore.toggleSideBar(toggle);
+    activityStore.toggleSideBar(toggle);
 }
 
-watch(
-    () => hashedUserId.value,
-    () => {
-        activityStore.sync();
+function onActivityClicked(activity: Activity) {
+    if (activity.click) {
+        emit("activityClicked", activity.id);
+    } else {
+        toggleSidebar();
     }
-);
+}
+
+function setActiveSideBar(key: string) {
+    activityStore.toggledSideBar = key;
+}
+
+defineExpose({
+    isActiveSideBar,
+    setActiveSideBar,
+});
 </script>
 
 <template>
     <div class="d-flex">
+        <!-- while this warning is correct, it is hiding too many other errors -->
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
             class="activity-bar d-flex flex-column no-highlight"
             data-description="activity bar"
@@ -177,7 +228,7 @@ watch(
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
                                 :to="activity.to"
-                                @click="onToggleSidebar()" />
+                                @click="toggleSidebar()" />
                             <ActivityItem
                                 v-else-if="activity.id === 'admin' || activity.panel"
                                 :id="`activity-${activity.id}`"
@@ -187,17 +238,18 @@ watch(
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
                                 :to="activity.to || ''"
-                                @click="onToggleSidebar(activity.id, activity.to)" />
+                                @click="toggleSidebar(activity.id, activity.to)" />
                             <ActivityItem
-                                v-else-if="activity.to"
+                                v-else
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
                                 :is-active="isActiveRoute(activity.to)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
-                                :to="activity.to"
-                                @click="onToggleSidebar()" />
+                                :to="activity.to ?? undefined"
+                                :variant="activity.variant"
+                                @click="onActivityClicked(activity)" />
                         </div>
                     </div>
                 </draggable>
@@ -209,33 +261,63 @@ watch(
                     icon="bell"
                     :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
                     title="Notifications"
-                    @click="onToggleSidebar('notifications')" />
+                    @click="toggleSidebar('notifications')" />
                 <ActivityItem
                     id="activity-settings"
-                    icon="ellipsis-h"
+                    :icon="props.optionsIcon"
                     :is-active="isActiveSideBar('settings')"
-                    title="More"
-                    tooltip="View additional activities"
-                    @click="onToggleSidebar('settings')" />
+                    :title="props.optionsTitle"
+                    :tooltip="props.optionsTooltip"
+                    @click="toggleSidebar('settings')" />
                 <ActivityItem
-                    v-if="isAdmin"
+                    v-if="isAdmin && showAdmin"
                     id="activity-admin"
                     icon="user-cog"
                     :is-active="isActiveSideBar('admin')"
                     title="Admin"
                     tooltip="Administer this Galaxy"
                     variant="danger"
-                    @click="onToggleSidebar('admin')" />
+                    @click="toggleSidebar('admin')" />
+                <template v-for="activity in props.specialActivities">
+                    <ActivityItem
+                        v-if="activity.panel"
+                        :id="`activity-${activity.id}`"
+                        :key="activity.id"
+                        :icon="activity.icon"
+                        :is-active="panelActivityIsActive(activity)"
+                        :title="activity.title"
+                        :tooltip="activity.tooltip"
+                        :to="activity.to || ''"
+                        :variant="activity.variant"
+                        @click="toggleSidebar(activity.id, activity.to)" />
+                    <ActivityItem
+                        v-else
+                        :id="`activity-${activity.id}`"
+                        :key="activity.id"
+                        :icon="activity.icon"
+                        :is-active="isActiveRoute(activity.to)"
+                        :title="activity.title"
+                        :tooltip="activity.tooltip"
+                        :to="activity.to ?? undefined"
+                        :variant="activity.variant"
+                        @click="onActivityClicked(activity)" />
+                </template>
             </b-nav>
         </div>
         <FlexPanel v-if="isSideBarOpen" side="left" :collapsible="false">
             <ToolPanel v-if="isActiveSideBar('tools')" />
-            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
+            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" :activity-bar-id="props.activityBarId" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
-            <SettingsPanel v-else-if="isActiveSideBar('settings')" />
+            <SettingsPanel
+                v-else-if="isActiveSideBar('settings')"
+                :activity-bar-id="props.activityBarId"
+                :heading="props.optionsHeading"
+                :search-placeholder="props.optionsSearchPlaceholder"
+                @activityClicked="(id) => emit('activityClicked', id)" />
             <AdminPanel v-else-if="isActiveSideBar('admin')" />
+            <slot name="side-panel" :is-active-side-bar="isActiveSideBar"></slot>
         </FlexPanel>
     </div>
 </template>

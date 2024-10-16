@@ -56,14 +56,14 @@ describe("Activity Store", () => {
     });
 
     it("initialize store", () => {
-        const activityStore = useActivityStore();
+        const activityStore = useActivityStore("default");
         expect(activityStore.getAll().length).toBe(0);
         activityStore.sync();
         expect(activityStore.getAll().length).toBe(1);
     });
 
     it("add activity", () => {
-        const activityStore = useActivityStore();
+        const activityStore = useActivityStore("default");
         activityStore.sync();
         const initialActivities = activityStore.getAll();
         expect(initialActivities[0]?.visible).toBeTruthy();
@@ -81,7 +81,7 @@ describe("Activity Store", () => {
     });
 
     it("remove activity", () => {
-        const activityStore = useActivityStore();
+        const activityStore = useActivityStore("default");
         activityStore.sync();
         const initialActivities = activityStore.getAll();
         expect(initialActivities.length).toEqual(1);

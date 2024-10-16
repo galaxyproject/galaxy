@@ -130,6 +130,14 @@ function onInsertWorkflow(workflowId: string | undefined, workflowName: string) 
 function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | undefined) {
     emit("onInsertWorkflowSteps", workflowId, workflowStepCount);
 }
+
+function onFavorites(favorites: boolean) {
+    if (favorites) {
+        query.value = "#favorites";
+    } else {
+        query.value = "";
+    }
+}
 </script>
 
 <template>
@@ -169,7 +177,7 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
                     </template>
                 </PanelViewMenu>
                 <div v-if="!showAdvanced" class="panel-header-buttons">
-                    <FavoritesButton :query="query" @onFavorites="(q) => (query = q)" />
+                    <FavoritesButton :query="query" @toggleFavorites="onFavorites" />
                 </div>
             </div>
         </div>
