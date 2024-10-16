@@ -54,6 +54,9 @@ tool_shed:
   # options.
   #whoosh_index_dir: database/toolshed_whoosh_indexes
 
+  # Cache directory for Pydantic model objects.
+  #model_cache_dir: database/model_cache
+
   # For searching repositories at /api/repositories:
   #repo_name_boost: 0.9
 
@@ -426,4 +429,3 @@ tool_shed:
   # The value of this option will be resolved with respect to
   # <config_dir>.
   #datatypes_config_file: datatypes_conf.xml
-
