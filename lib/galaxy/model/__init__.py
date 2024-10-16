@@ -11264,6 +11264,7 @@ class ToolLandingRequest(Base):
     tool_version: Mapped[Optional[str]] = mapped_column(String(255), default=None)
     request_state: Mapped[Optional[Dict]] = mapped_column(JSONType)
     client_secret: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+    public: Mapped[bool] = mapped_column(Boolean)
 
     user: Mapped[Optional["User"]] = relationship()
 
@@ -11284,6 +11285,7 @@ class WorkflowLandingRequest(Base):
     client_secret: Mapped[Optional[str]] = mapped_column(String(255), default=None)
     workflow_source: Mapped[Optional[str]] = mapped_column(String(255), default=None)
     workflow_source_type: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+    public: Mapped[bool] = mapped_column(Boolean)
 
     user: Mapped[Optional["User"]] = relationship()
     stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship()

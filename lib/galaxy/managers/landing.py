@@ -59,6 +59,7 @@ class LandingRequestManager:
         model.request_state = payload.request_state
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
+        model.public = payload.public
         if user_id:
             model.user_id = user_id
         self._save(model)
@@ -77,6 +78,7 @@ class LandingRequestManager:
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
         model.request_state = payload.request_state
+        model.public = payload.public
         self._save(model)
         return self._workflow_response(model)
 
