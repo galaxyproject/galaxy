@@ -1,6 +1,6 @@
 {
     "name": "@galaxyproject/h5web",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "keywords": [
         "galaxy",
         "visualization",
@@ -15,10 +15,10 @@
         "react-dom": "18.3.1"
     },
     "files": [
-        "static"
+        "static/dist"
     ],
     "scripts": {
-        "build": "parcel build src/script.js --dist-dir static --no-source-maps"
+        "build": "parcel build src/script.js --dist-dir static/dist --no-source-maps"
     },
     "devDependencies": {
         "parcel": "^2.12.0",
