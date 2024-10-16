@@ -6896,6 +6896,7 @@ class HistoryDatasetCollectionAssociation(
     )
     copied_to_history_dataset_collection_association = relationship(
         "HistoryDatasetCollectionAssociation",
+        viewonly=True,
         back_populates="copied_from_history_dataset_collection_association",
     )
     implicit_input_collections: Mapped[List["ImplicitlyCreatedDatasetCollectionInput"]] = relationship(
