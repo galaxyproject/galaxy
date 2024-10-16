@@ -278,6 +278,7 @@ async function onTagClick(tag: string) {
 
         .workflow-card-header {
             display: grid;
+            position: relative;
 
             .workflow-count-actions {
                 display: flex;
