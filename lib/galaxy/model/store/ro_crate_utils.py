@@ -43,10 +43,10 @@ ATTRS_FILENAME_INVOCATIONS = "invocation_attrs.txt"
 
 
 class WorkflowRunCrateProfileBuilder:
-    from galaxy.tools import ToolBox
+    # from galaxy.tools import ToolBox
     def __init__(self, model_store: Any):
         self.model_store = model_store
-        self.toolbox: ToolBox
+        self.toolbox = self.model_store.app.toolbox
         self.invocation: WorkflowInvocation = model_store.included_invocations[0]
         self.workflow: Workflow = self.invocation.workflow
         self.param_type_mapping = {
@@ -228,40 +228,45 @@ class WorkflowRunCrateProfileBuilder:
             # Adding multiple creators if available
             if self.workflow.creator_metadata:
                 for creator_data in self.workflow.creator_metadata:
-                    if creator_data.get('class') == 'Person':
+                    if creator_data.get("class") == "Person":
                         # Create the person entity
                         creator_entity = crate.add(
                             ContextEntity(
                                 crate,
-                                creator_data.get('identifier', ''),  # Default to empty string if identifier is missing
+                                creator_data.get("identifier", ""),  # Default to empty string if identifier is missing
                                 properties={
                                     "@type": "Person",
-                                    "name": creator_data.get('name', ''),  # Default to empty string if name is missing
-                                    "orcid": creator_data.get('identifier', ''),  # Assuming identifier is ORCID, or adjust as needed
-                                    "url": creator_data.get('url', ''),  # Add URL if available, otherwise empty string
-                                    "email": creator_data.get('email', ''),  # Add email if available, otherwise empty string
+                                    "name": creator_data.get("name", ""),  # Default to empty string if name is missing
+                                    "orcid": creator_data.get(
+                                        "identifier", ""
+                                    ),  # Assuming identifier is ORCID, or adjust as needed
+                                    "url": creator_data.get("url", ""),  # Add URL if available, otherwise empty string
+                                    "email": creator_data.get(
+                                        "email", ""
+                                    ),  # Add email if available, otherwise empty string
                                 },
                             )
                         )
                         # Append the person creator entity to the mainEntity
                         crate.mainEntity.append_to("creator", creator_entity)
 
-                    elif creator_data.get('class') == 'Organization':
+                    elif creator_data.get("class") == "Organization":
                         # Create the organization entity
                         organization_entity = crate.add(
                             ContextEntity(
                                 crate,
-                                creator_data.get('url', ''),  # Use URL as identifier if available, otherwise empty string
+                                creator_data.get(
+                                    "url", ""
+                                ),  # Use URL as identifier if available, otherwise empty string
                                 properties={
                                     "@type": "Organization",
-                                    "name": creator_data.get('name', ''),  # Default to empty string if name is missing
-                                    "url": creator_data.get('url', ''),  # Add URL if available, otherwise empty string
+                                    "name": creator_data.get("name", ""),  # Default to empty string if name is missing
+                                    "url": creator_data.get("url", ""),  # Add URL if available, otherwise empty string
                                 },
                             )
                         )
                         # Append the organization entity to the mainEntity
                         crate.mainEntity.append_to("creator", organization_entity)
-
 
             # Add CWL workflow entity if exists
             crate.mainEntity["subjectOf"] = cwl_wf
@@ -282,7 +287,7 @@ class WorkflowRunCrateProfileBuilder:
 
     def _add_steps_recursive(self, steps, crate: ROCrate, step_entities, position):
         """
-        Recursively add HowToStep entities from workflow steps, ensuring that 
+        Recursively add HowToStep entities from workflow steps, ensuring that
         the position index is maintained across subworkflows.
         """
         for step in steps:
@@ -362,9 +367,9 @@ class WorkflowRunCrateProfileBuilder:
                                 "version": tool_version,
                                 "description": tool_description,
                                 "url": "https://toolshed.g2.bx.psu.edu",  # URL if relevant
-                                "citation": tool_metadata['citation'],
-                                "identifier": tool_metadata['xref'],
-                                "EDAM operation": tool_metadata['edam_operation'],
+                                "citation": tool_metadata["citations"],
+                                "identifier": tool_metadata["xrefs"],
+                                "EDAM operation": tool_metadata["edam_operations"],
                             },
                         )
                     )
@@ -383,7 +388,6 @@ class WorkflowRunCrateProfileBuilder:
                     self._add_tools_recursive(subworkflow.steps, crate, tool_entities)
 
     def _get_tool_metadata(self, tool_id: str):
-
         """
         Retrieve the tool metadata (citations, xrefs, EDAM operations) using the ToolBox.
 
@@ -394,21 +398,42 @@ class WorkflowRunCrateProfileBuilder:
         Returns:
             dict: A dictionary containing citations, xrefs, and EDAM operations for the tool.
         """
-        tool = toolbox.get_tool(tool_id)
+        tool = self.toolbox.get_tool(tool_id)
         if not tool:
             return None
 
         # Extracting relevant metadata from the tool object
-        citation = tool.citation if tool.citation else None
-        xref = tool.xref if tool.xref else None
-        edam_operation = tool.edam_operation if tool.edam_operation else None
+        citations = []
+        if tool.citations:
+            for citation in tool.citations:
+                citations.append(
+                    {
+                        "type": citation.type,  # e.g., "doi" or "bibtex"
+                        "value": citation.value,  # The actual DOI, BibTeX, etc.
+                    }
+                )
+
+        xrefs = []
+        if tool.xrefs:
+            for xref in tool.xrefs:
+                xrefs.append(
+                    {
+                        "type": xref.type,  # e.g., "registry", "repository", etc.
+                        "value": xref.value,  # The identifier or link
+                    }
+                )
+
+        # Handling EDAM operations, which are simple values in your XML
+        edam_operations = []
+        if tool.edam_operations:
+            for operation in tool.edam_operations:
+                edam_operations.append({"value": operation})  # Extract the operation code (e.g., "operation_3482")
 
         return {
-            "citation": citation,
-            "xref": xref,
-            "edam_operation": edam_operation,
+            "citations": citations,  # List of structured citation entries
+            "xrefs": xrefs,  # List of structured xref entries
+            "edam_operations": edam_operations,  # List of structured EDAM operations
         }
-
 
     def _add_create_action(self, crate: ROCrate):
         """
@@ -423,8 +448,8 @@ class WorkflowRunCrateProfileBuilder:
                     "name": self.workflow.name,
                     "startTime": self.invocation.workflow.create_time.isoformat(),
                     "endTime": self.invocation.workflow.update_time.isoformat(),
-                    "instrument": {"@id": crate.mainEntity["@id"]}
-                }
+                    "instrument": {"@id": crate.mainEntity["@id"]},
+                },
             )
         )
         crate.root_dataset.append_to("mentions", self.create_action)
