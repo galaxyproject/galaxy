@@ -1,16 +1,16 @@
 {
     "name": "@galaxyproject/msa",
-    "version": "0.2.1",
+    "version": "0.3.0",
     "keywords": [
         "galaxy",
         "visualization"
     ],
     "license": "AFL-3.0",
     "files": [
-        "static"
+        "static/dist"
     ],
     "scripts": {
-        "build": "parcel build src/script.js --dist-dir static --no-source-maps"
+        "build": "parcel build src/script.js --dist-dir static/dist --no-source-maps"
     },
     "devDependencies": {
         "babel-plugin-transform-export-extensions": "^6.22.0",
