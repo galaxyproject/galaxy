@@ -465,6 +465,7 @@ class Data(metaclass=DataMeta):
         composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
         composite_extensions.append("html")  # for archiving composite datatypes
         composite_extensions.append("data_manager_json")  # for downloading bundles if bundled.
+        composite_extensions.append("directory")  # for downloading directories.
 
         if data.extension in composite_extensions:
             return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get("do_action", "zip"))
@@ -1211,6 +1212,13 @@ class Text(Data):
 
 class Directory(Data):
     """Class representing a directory of files."""
+
+    def _archive_main_file(
+        self, archive: ZipstreamWrapper, display_name: str, data_filename: str
+    ) -> Tuple[bool, str, str]:
+        # We don't want extra files
+        error, msg, messagetype = False, "", ""
+        return (error, msg, messagetype)
 
 
 class GenericAsn1(Text):

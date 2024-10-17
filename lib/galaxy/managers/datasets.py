@@ -658,6 +658,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             "genome_build": lambda item, key, **context: str(item.dbkey) if item.dbkey is not None else None,
             # derived (not mapped) attributes
             "data_type": lambda item, key, **context: f"{item.datatype.__class__.__module__}.{item.datatype.__class__.__name__}",
+            "cwl_formats": lambda item, key, **context: item.cwl_formats,
             "converted": self.serialize_converted_datasets,
             # TODO: metadata/extra files
         }

@@ -374,6 +374,10 @@ class ToolSource(metaclass=ABCMeta):
         Return minimum python version that the tool template has been developed against.
         """
 
+    def parse_cores_min(self) -> Union[float, int, str]:
+        """Return minimum number of cores required to run this tool."""
+        return 1
+
     def parse_creator(self):
         """Return list of metadata relating to creator/author of tool.
 

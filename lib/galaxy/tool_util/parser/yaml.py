@@ -393,6 +393,9 @@ class YamlInputSource(InputSource):
         default_def = input_dict.get("default", None)
         return default_def
 
+    def parse_map_to(self):
+        return self.input_dict.get("mapTo")
+
 
 def _ensure_has(dict, defaults):
     for key, value in defaults.items():
