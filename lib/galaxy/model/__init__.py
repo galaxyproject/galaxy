@@ -6892,10 +6892,12 @@ class HistoryDatasetCollectionAssociation(
         primaryjoin=copied_from_history_dataset_collection_association_id == id,
         remote_side=[id],
         uselist=False,
+        viewonly=True,
         back_populates="copied_to_history_dataset_collection_association",
     )
     copied_to_history_dataset_collection_association = relationship(
         "HistoryDatasetCollectionAssociation",
+        viewonly=True,
         back_populates="copied_from_history_dataset_collection_association",
     )
     implicit_input_collections: Mapped[List["ImplicitlyCreatedDatasetCollectionInput"]] = relationship(
@@ -7177,7 +7179,7 @@ class HistoryDatasetCollectionAssociation(
             visible=self.visible,
             deleted=self.deleted,
             name=self.name,
-            copied_from_history_dataset_collection_association=self,
+            copied_from_history_dataset_collection_association_id=self.id,
         )
         if self.implicit_collection_jobs_id:
             hdca.implicit_collection_jobs_id = self.implicit_collection_jobs_id
