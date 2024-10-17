@@ -7179,7 +7179,7 @@ class HistoryDatasetCollectionAssociation(
             visible=self.visible,
             deleted=self.deleted,
             name=self.name,
-            copied_from_history_dataset_collection_association=self,
+            copied_from_history_dataset_collection_association_id=self.id,
         )
         if self.implicit_collection_jobs_id:
             hdca.implicit_collection_jobs_id = self.implicit_collection_jobs_id
