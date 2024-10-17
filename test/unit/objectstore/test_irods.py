@@ -50,8 +50,6 @@ def test_parse_config_xml_ssl():
     root = tree.getroot()
     config = parse_config_xml(root)
 
-    print(config)
-
     assert config["ssl"]["client_server_negotiation"] == "request_server_negotiation"
     assert config["ssl"]["client_server_policy"] == "CS_NEG_REQUIRE"
     assert config["ssl"]["encryption_algorithm"] == "AES-256-CBC"
