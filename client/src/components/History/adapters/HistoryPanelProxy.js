@@ -56,7 +56,7 @@ export class HistoryPanelProxy {
                 selectionContent.set(obj.id, obj);
             });
         }
-        const modalResult = await buildCollectionModal(collectionType, selectionContent, historyId, fromRulesInput);
+        const modalResult = await buildCollectionModal(collectionType, selectionContent, historyId, { fromRulesInput });
         if (modalResult) {
             console.debug("Submitting collection build request.", modalResult);
             await createDatasetCollection({ id: historyId }, modalResult);

@@ -392,7 +392,9 @@ export default {
             if (contents === undefined) {
                 contents = this.contentSelection;
             }
-            const modalResult = await buildCollectionModal(collectionType, contents, this.history.id);
+            const modalResult = await buildCollectionModal(collectionType, contents, this.history.id, {
+                fromSelection: true,
+            });
             await createDatasetCollection(this.history, modalResult);
 
             // have to hide the source items if that was requested

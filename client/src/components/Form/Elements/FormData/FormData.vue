@@ -1,26 +1,43 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCopy, faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
-import { faCaretDown, faCaretUp, faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCaretDown,
+    faCaretUp,
+    faExclamation,
+    faLink,
+    faPlus,
+    faSpinner,
+    faUnlink,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { isDatasetElement, isDCE } from "@/api";
 import { getGalaxyInstance } from "@/app";
+import { buildCollectionModal } from "@/components/History/adapters/buildCollectionModal";
+import { createDatasetCollection } from "@/components/History/model/queries";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
+import { useHistoryItemsForType } from "@/composables/useHistoryItemsForType";
+import { useUserHistories } from "@/composables/userHistories";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
+import { useUserStore } from "@/stores/userStore";
 import { orList } from "@/utils/strings";
 
 import type { DataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
+import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
-library.add(faCopy, faFile, faFolder, faCaretDown, faCaretUp, faExclamation, faLink, faUnlink);
+const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
+    list: "List",
+    "list:paired": "List of Dataset Pairs",
+    paired: "Dataset Pair",
+};
 
 type SelectOption = {
     label: string;
@@ -471,6 +488,46 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
+const { currentUser } = storeToRefs(useUserStore());
+const { currentHistoryId, currentHistory } = useUserHistories(currentUser);
+
+const { historyItems, isFetchingItems, errorMessage: historyItemsError } = useHistoryItemsForType(currentHistoryId);
+
+/** Excludes the `paired` collection type for now */
+const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) => collectionType !== "paired");
+
+/** Build a new collection and set it as the current value if valid */
+async function buildNewCollection(collectionType: string) {
+    if (!currentHistoryId.value || !currentHistory.value || isFetchingItems.value || historyItemsError.value) {
+        return;
+    }
+
+    if (collectionType === "list" || collectionType === "list:paired") {
+        const modalResult = await buildCollectionModal(collectionType, historyItems.value, currentHistoryId.value, {
+            extensions: props.extensions?.filter((ext) => ext !== "data"),
+            defaultHideSourceItems: false,
+            historyName: currentHistory.value?.name,
+        });
+        const collection = await createDatasetCollection(currentHistory.value, modalResult);
+        if (collection) {
+            // TODO: Commenting this out; should we allow `handleIncoming` to handle this or not?
+            // // remove the `elements` and `elements_datatypes` keys from the collection
+            // // to prevent `handleIncoming` from flagging the collection as invalid
+            // if ("elements" in collection) {
+            //     delete collection.elements;
+            // }
+            // if ("elements_datatypes" in collection) {
+            //     delete collection.elements_datatypes;
+            // }
+            handleIncoming(collection as any);
+        }
+    }
+    // else if (collectionType === "list:paired") { // TODO: Implement paired collection
+    else {
+        throw Error(`Unknown collection type: ${collectionType}`);
+    }
+}
+
 // Drag/Drop event handlers
 function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragData();
@@ -599,15 +656,27 @@ const noOptionsWarningMessage = computed(() => {
                     <FontAwesomeIcon :icon="['far', v.icon]" />
                 </BButton>
                 <BButton v-if="canBrowse" v-b-tooltip.hover.bottom title="Browse or Upload Datasets" @click="onBrowse">
-                    <FontAwesomeIcon v-if="loading" icon="fa-spinner" spin />
+                    <FontAwesomeIcon v-if="loading" :icon="faSpinner" spin />
                     <span v-else class="font-weight-bold">...</span>
                 </BButton>
+                <BButtonGroup v-if="effectiveCollectionTypes?.length > 0" size="sm" buttons>
+                    <ButtonSpinner
+                        v-for="collectionType in effectiveCollectionTypes"
+                        :key="collectionType"
+                        :tooltip="`Create a new ${COLLECTION_TYPE_TO_LABEL[collectionType]}`"
+                        :variant="formattedOptions.length === 0 ? 'warning' : 'secondary'"
+                        :disabled="isFetchingItems"
+                        :icon="faPlus"
+                        :wait="isFetchingItems"
+                        @onClick="buildNewCollection(collectionType)">
+                    </ButtonSpinner>
+                </BButtonGroup>
             </BButtonGroup>
             <div v-if="extensions && extensions.length > 0">
                 <BButton :id="formatsButtonId" class="ui-link" @click="formatsVisible = !formatsVisible">
                     accepted formats
-                    <FontAwesomeIcon v-if="formatsVisible" icon="fa-caret-up" />
-                    <FontAwesomeIcon v-else icon="fa-caret-down" />
+                    <FontAwesomeIcon v-if="formatsVisible" :icon="faCaretUp" />
+                    <FontAwesomeIcon v-else :icon="faCaretDown" />
                 </BButton>
                 <BCollapse v-model="formatsVisible">
                     <ul class="pl-3 m-0">
@@ -631,7 +700,7 @@ const noOptionsWarningMessage = computed(() => {
             :options="formattedOptions"
             :placeholder="`Select a ${placeholder}`">
             <template v-slot:no-options>
-                <BAlert variant="warning" show>
+                <BAlert class="w-100 align-items-center" variant="warning" show>
                     {{ noOptionsWarningMessage }}
                 </BAlert>
             </template>
@@ -650,18 +719,18 @@ const noOptionsWarningMessage = computed(() => {
                 class="checkbox no-highlight"
                 switch>
                 <span v-if="currentLinked">
-                    <FontAwesomeIcon icon="fa-link" />
+                    <FontAwesomeIcon :icon="faLink" />
                     <b v-localize class="mr-1">Linked:</b>
                     <span v-localize>Datasets will be run in matched order with other datasets.</span>
                 </span>
                 <span v-else>
-                    <FontAwesomeIcon icon="fa-unlink" />
+                    <FontAwesomeIcon :icon="faUnlink" />
                     <b v-localize class="mr-1">Unlinked:</b>
                     <span v-localize>Dataset will be run against *all* other datasets.</span>
                 </span>
             </BFormCheckbox>
             <div class="info text-info">
-                <FontAwesomeIcon icon="fa-exclamation" />
+                <FontAwesomeIcon :icon="faExclamation" />
                 <span v-if="props.type == 'data' && currentVariant.src == SOURCE.COLLECTION" class="ml-1">
                     The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
                     tool.

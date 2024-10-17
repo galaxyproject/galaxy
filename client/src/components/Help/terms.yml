@@ -54,6 +54,14 @@ galaxy:
       These lists will be gathered together in a nested list structured (collection type ``list:list``) where
       the outer element count and structure matches that of the input and the inner list for each of those
       is just the outputs of the tool for the corresponding element of the input.
+    collectionBuilder:
+      hideOriginalElements: |
+        Toggling this on means that the original history items that will become a part of the collection
+        will be hidden from the history panel (they will still be searchable via the 'visible: false' filter).
+      filteredExtensions: |
+        The history is filtered for the extensions that are required for this collection. You might see some
+        items with other extensions since those can still be valid inputs via implicit conversion.
+
   jobs:
     states:
       # upload, waiting, failed, paused, deleting, deleted, stop, stopped, skipped.
