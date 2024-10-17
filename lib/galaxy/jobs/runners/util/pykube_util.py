@@ -120,7 +120,7 @@ def delete_job(job, cleanup="always"):
     except ObjectDoesNotExist as e:
         # Okay, job does no longer exist
         log.info(e)
-        
+
     api_delete = cleanup == "always"
     if not api_delete and cleanup == "onsuccess" and not job_failed:
         api_delete = True
@@ -345,11 +345,12 @@ __all__ = (
     "parse_pvc_param_line",
 )
 
+
 def reload_job(job):
     try:
         job.reload()
     except HTTPError as e:
         if e.code == 404:
             pass
-        else: 
+        else:
             raise e

@@ -789,7 +789,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # It is possible that k8s didn't account for the status of the pods
             # and they are in the uncountedTerminatedPods status. In this
             # case we also need to wait a moment
-            if len(job.obj["status"]) == 0 or job.obj["status"].get("uncountedTerminatedPods"):
+            if len(k8s_job.obj["status"]) == 0 or k8s_job.obj["status"].get("uncountedTerminatedPods"):
                 return job_state
             if "succeeded" in k8s_job.obj["status"]:
                 succeeded = k8s_job.obj["status"]["succeeded"]
@@ -821,12 +821,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                         else:
                             pass
                     elif self.__check_job_pod_running(job_state):
-                        log.debug("Job set to running...")
+                        log.debug(f"Job {k8s_job.name} set to running...")
                         job_state.running = True
                         job_state.job_wrapper.change_state(model.Job.states.RUNNING)
                     else:
                         log.debug(
-                            f"Job id: {job_state.job_id} with k8s id: {job.name} scheduled and is waiting to start..."
+                            f"Job id: {job_state.job_id} with k8s id: {k8s_job.name} scheduled and is waiting to start..."
                         )
                 return job_state
             elif job_persisted_state == model.Job.states.DELETED:
