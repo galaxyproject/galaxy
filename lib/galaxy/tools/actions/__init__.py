@@ -20,6 +20,7 @@ from packaging.version import Version
 
 from galaxy import model
 from galaxy.exceptions import (
+    AuthenticationRequired,
     ItemAccessibilityException,
     RequestParameterInvalidException,
 )
@@ -37,6 +38,7 @@ from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.none_like import NoneDataset
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.execute import (
     DatasetCollectionElementsSliceT,
     DEFAULT_DATASET_COLLECTION_ELEMENTS,
@@ -45,7 +47,6 @@ from galaxy.tools.execute import (
     DEFAULT_RERUN_REMAP_JOB_ID,
     DEFAULT_SET_OUTPUT_HID,
     JobCallbackT,
-    ToolParameterRequestInstanceT,
 )
 from galaxy.tools.execution_helpers import (
     filter_output,
@@ -88,7 +89,7 @@ class ToolAction:
         self,
         tool,
         trans,
-        incoming: Optional[ToolParameterRequestInstanceT] = None,
+        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
         history: Optional[History] = None,
         job_params=None,
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
@@ -103,6 +104,21 @@ class ToolAction:
         skip: bool = False,
     ) -> ToolActionExecuteResult:
         """Perform target tool action."""
+
+    @abstractmethod
+    def get_output_name(
+        self,
+        output,
+        dataset=None,
+        tool=None,
+        on_text=None,
+        trans=None,
+        incoming=None,
+        history=None,
+        params=None,
+        job_params=None,
+    ) -> str:
+        """Get name to assign a tool output."""
 
 
 class DefaultToolAction(ToolAction):
@@ -401,7 +417,7 @@ class DefaultToolAction(ToolAction):
         self,
         tool,
         trans,
-        incoming: Optional[ToolParameterRequestInstanceT] = None,
+        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
         history: Optional[History] = None,
         job_params=None,
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
@@ -693,6 +709,7 @@ class DefaultToolAction(ToolAction):
                 output_collection.mark_as_populated()
             for hdca in output_collections.out_collection_instances.values():
                 hdca.visible = False
+                hdca.collection.mark_as_populated()
             object_store_populator = ObjectStorePopulator(trans.app, trans.user)
             for data in out_data.values():
                 data.set_skipped(object_store_populator)
@@ -710,14 +727,6 @@ class DefaultToolAction(ToolAction):
         # Remap any outputs if this is a rerun and the user chose to continue dependent jobs
         # This functionality requires tracking jobs in the database.
         if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
-            # Need to flush here so that referencing outputs by id works
-            session = trans.sa_session()
-            try:
-                session.expire_on_commit = False
-                with transaction(session):
-                    session.commit()
-            finally:
-                session.expire_on_commit = True
             self._remap_job_on_rerun(
                 trans=trans,
                 galaxy_session=galaxy_session,
@@ -758,7 +767,14 @@ class DefaultToolAction(ToolAction):
 
         return job, out_data, history
 
-    def _remap_job_on_rerun(self, trans, galaxy_session, rerun_remap_job_id, current_job, out_data):
+    def _remap_job_on_rerun(
+        self,
+        trans: ProvidesHistoryContext,
+        galaxy_session: Optional[model.GalaxySession],
+        rerun_remap_job_id: int,
+        current_job: Job,
+        out_data,
+    ):
         """
         Re-connect dependent datasets for a job that is being rerun (because it failed initially).
 
@@ -766,22 +782,39 @@ class DefaultToolAction(ToolAction):
         To be able to resume jobs that depend on this jobs output datasets we change the dependent's job
         input datasets to be those of the job that is being rerun.
         """
+        old_job = trans.sa_session.get(Job, rerun_remap_job_id)
+        if not old_job:
+            # I don't think that can really happen
+            raise RequestParameterInvalidException("rerun_remap_job_id parameter is invalid")
+        old_tool = trans.app.toolbox.get_tool(old_job.tool_id, exact=False)
+        new_tool = trans.app.toolbox.get_tool(current_job.tool_id, exact=False)
+        if old_tool and new_tool and old_tool.old_id != new_tool.old_id:
+            # If we currently only have the old or new tool installed we'll find the other tool anyway with `exact=False`.
+            # If we don't have the tool at all we'll fail anyway, no need to worry here.
+            raise RequestParameterInvalidException(
+                f"Old tool id ({old_job.tool_id}) does not match rerun tool id ({current_job.tool_id})"
+            )
+        if trans.user is not None:
+            if old_job.user_id != trans.user.id:
+                raise RequestParameterInvalidException(
+                    "Cannot remap job dependencies for job not created by current user."
+                )
+        elif trans.user is None and galaxy_session:
+            if old_job.session_id != galaxy_session.id:
+                raise RequestParameterInvalidException(
+                    "Cannot remap job dependencies for job not created by current user."
+                )
+        else:
+            raise AuthenticationRequired("Authentication required to remap job dependencies")
+        # Need to flush here so that referencing outputs by id works
+        session = trans.sa_session()
         try:
-            old_job = trans.sa_session.get(Job, rerun_remap_job_id)
-            assert old_job is not None, f"({rerun_remap_job_id}/{current_job.id}): Old job id is invalid"
-            assert (
-                old_job.tool_id == current_job.tool_id
-            ), f"({old_job.id}/{current_job.id}): Old tool id ({old_job.tool_id}) does not match rerun tool id ({current_job.tool_id})"
-            if trans.user is not None:
-                assert (
-                    old_job.user_id == trans.user.id
-                ), f"({old_job.id}/{current_job.id}): Old user id ({old_job.user_id}) does not match rerun user id ({trans.user.id})"
-            elif trans.user is None and isinstance(galaxy_session, trans.model.GalaxySession):
-                assert (
-                    old_job.session_id == galaxy_session.id
-                ), f"({old_job.id}/{current_job.id}): Old session id ({old_job.session_id}) does not match rerun session id ({galaxy_session.id})"
-            else:
-                raise Exception(f"({old_job.id}/{current_job.id}): Remapping via the API is not (yet) supported")
+            session.expire_on_commit = False
+            with transaction(session):
+                session.commit()
+        finally:
+            session.expire_on_commit = True
+        try:
             # Start by hiding current job outputs before taking over the old job's (implicit) outputs.
             current_job.hide_outputs(flush=False)
             # Duplicate PJAs before remap.
@@ -803,7 +836,7 @@ class DefaultToolAction(ToolAction):
             for jtod in old_job.output_datasets:
                 for job_to_remap, jtid in [(jtid.job, jtid) for jtid in jtod.dataset.dependent_jobs]:
                     if (trans.user is not None and job_to_remap.user_id == trans.user.id) or (
-                        trans.user is None and job_to_remap.session_id == galaxy_session.id
+                        trans.user is None and galaxy_session and job_to_remap.session_id == galaxy_session.id
                     ):
                         self.__remap_parameters(job_to_remap, jtid, jtod, out_data)
                         trans.sa_session.add(job_to_remap)
@@ -950,7 +983,7 @@ class DefaultToolAction(ToolAction):
         history=None,
         params=None,
         job_params=None,
-    ):
+    ) -> str:
         if output.label:
             params["tool"] = tool
             params["on_string"] = on_text

@@ -23,8 +23,8 @@ export async function getObjectStoreDetails(id: string) {
     if (id.startsWith("user_objects://")) {
         const userObjectStoreId = id.substring("user_objects://".length);
 
-        const { data, error } = await GalaxyApi().GET("/api/object_store_instances/{user_object_store_id}", {
-            params: { path: { user_object_store_id: userObjectStoreId } },
+        const { data, error } = await GalaxyApi().GET("/api/object_store_instances/{uuid}", {
+            params: { path: { uuid: userObjectStoreId } },
         });
 
         if (error) {

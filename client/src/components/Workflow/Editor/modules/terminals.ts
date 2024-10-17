@@ -551,7 +551,16 @@ export class InputParameterTerminal extends BaseInputTerminal {
         const effectiveThisType = this.effectiveType(this.type);
         const otherType = ("type" in other && other.type) || "data";
         const effectiveOtherType = this.effectiveType(otherType);
+        if (!this.optional && other.optional) {
+            return new ConnectionAcceptable(false, `Cannot attach an optional output to a required parameter`);
+        }
         const canAccept = effectiveThisType === effectiveOtherType;
+        if (!this.multiple && other.multiple) {
+            return new ConnectionAcceptable(
+                false,
+                `This output parameter represents multiple values but input only accepts a single value`
+            );
+        }
         return new ConnectionAcceptable(
             canAccept,
             canAccept ? null : `Cannot attach a ${effectiveOtherType} parameter to a ${effectiveThisType} input`
@@ -812,12 +821,14 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
 
 interface OutputParameterTerminalArgs extends Omit<BaseOutputTerminalArgs, "datatypes"> {
     type: ParameterOutput["type"];
+    multiple: ParameterOutput["multiple"];
 }
 
 export class OutputParameterTerminal extends BaseOutputTerminal {
     constructor(attr: OutputParameterTerminalArgs) {
         super({ ...attr, datatypes: [] });
         this.type = attr.type;
+        this.multiple = attr.multiple;
     }
 }
 
@@ -988,6 +999,7 @@ export function terminalFactory<T extends TerminalSourceAndInvalid>(
         if (isOutputParameterArg(terminalSource)) {
             return new OutputParameterTerminal({
                 ...outputArgs,
+                multiple: terminalSource.multiple,
                 type: terminalSource.type,
             }) as TerminalOf<T>;
         } else if (isOutputCollectionArg(terminalSource)) {

@@ -5,10 +5,12 @@ from datetime import (
     datetime,
 )
 from typing import (
+    Any,
     cast,
     Dict,
     List,
     Optional,
+    Union,
 )
 
 import sqlalchemy
@@ -41,7 +43,10 @@ from galaxy.job_metrics import (
     Safety,
 )
 from galaxy.managers.collections import DatasetCollectionManager
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
@@ -68,6 +73,10 @@ from galaxy.schema.schema import (
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
+from galaxy.tools._types import (
+    ToolStateDumpedToJsonInternalT,
+    ToolStateJobInstancePopulatedT,
+)
 from galaxy.util import (
     defaultdict,
     ExecutionTimer,
@@ -80,6 +89,9 @@ from galaxy.util.search import (
 )
 
 log = logging.getLogger(__name__)
+
+JobStateT = str
+JobStatesT = Union[JobStateT, List[JobStateT]]
 
 
 class JobLock(BaseModel):
@@ -311,7 +323,15 @@ class JobSearch:
         self.ldda_manager = ldda_manager
         self.decode_id = id_encoding_helper.decode_id
 
-    def by_tool_input(self, trans, tool_id, tool_version, param=None, param_dump=None, job_state="ok"):
+    def by_tool_input(
+        self,
+        trans: ProvidesHistoryContext,
+        tool_id: str,
+        tool_version: Optional[str],
+        param: ToolStateJobInstancePopulatedT,
+        param_dump: ToolStateDumpedToJsonInternalT,
+        job_state: Optional[JobStatesT] = "ok",
+    ):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
         user = trans.user
         input_data = defaultdict(list)
@@ -353,7 +373,14 @@ class JobSearch:
         )
 
     def __search(
-        self, tool_id, tool_version, user, input_data, job_state=None, param_dump=None, wildcard_param_dump=None
+        self,
+        tool_id: str,
+        tool_version: Optional[str],
+        user: model.User,
+        input_data,
+        job_state: Optional[JobStatesT],
+        param_dump: ToolStateDumpedToJsonInternalT,
+        wildcard_param_dump=None,
     ):
         search_timer = ExecutionTimer()
 
@@ -402,7 +429,7 @@ class JobSearch:
                 else:
                     return []
 
-            stmt = stmt.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
+        stmt = stmt.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
 
         for job in self.sa_session.execute(stmt):
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
@@ -462,7 +489,9 @@ class JobSearch:
         log.info("No equivalent jobs found %s", search_timer)
         return None
 
-    def _build_job_subquery(self, tool_id, user_id, tool_version, job_state, wildcard_param_dump):
+    def _build_job_subquery(
+        self, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump
+    ):
         """Build subquery that selects a job with correct job parameters."""
         stmt = select(model.Job.id).where(
             and_(
@@ -989,16 +1018,17 @@ def summarize_job_parameters(trans, job: Job):
                     or input.type == "data_collection"
                     or isinstance(input_value, model.HistoryDatasetAssociation)
                 ):
-                    value = []
+                    value: List[Union[Dict[str, Any], None]] = []
                     for element in listify(input_value):
-                        element_id = element.id
                         if isinstance(element, model.HistoryDatasetAssociation):
                             hda = element
-                            value.append({"src": "hda", "id": element_id, "hid": hda.hid, "name": hda.name})
+                            value.append({"src": "hda", "id": element.id, "hid": hda.hid, "name": hda.name})
                         elif isinstance(element, model.DatasetCollectionElement):
-                            value.append({"src": "dce", "id": element_id, "name": element.element_identifier})
+                            value.append({"src": "dce", "id": element.id, "name": element.element_identifier})
                         elif isinstance(element, model.HistoryDatasetCollectionAssociation):
-                            value.append({"src": "hdca", "id": element_id, "hid": element.hid, "name": element.name})
+                            value.append({"src": "hdca", "id": element.id, "hid": element.hid, "name": element.name})
+                        elif element is None:
+                            value.append(None)
                         else:
                             raise Exception(
                                 f"Unhandled data input parameter type encountered {element.__class__.__name__}"
@@ -1116,7 +1146,7 @@ def get_jobs_to_check_at_startup(session: galaxy_scoped_session, track_jobs_in_d
         # Filter out the jobs of inactive users.
         stmt = stmt.outerjoin(User).filter(or_((Job.user_id == null()), (User.active == true())))
 
-    return session.scalars(stmt)
+    return session.scalars(stmt).all()
 
 
 def get_job(session, *where_clauses):

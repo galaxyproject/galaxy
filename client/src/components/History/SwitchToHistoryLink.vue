@@ -6,8 +6,12 @@ import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type HistorySummary } from "@/api";
+import { type HistorySummary, userOwnsHistory } from "@/api";
+import { Toast } from "@/composables/toast";
+import { useEventStore } from "@/stores/eventStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -15,6 +19,7 @@ library.add(faArchive, faBurn);
 
 const router = useRouter();
 const historyStore = useHistoryStore();
+const userStore = useUserStore();
 
 interface Props {
     historyId: string;
@@ -25,7 +30,13 @@ const props = defineProps<Props>();
 
 const history = computed(() => historyStore.getHistoryById(props.historyId));
 
-const canSwitch = computed(() => !!history.value && !history.value.archived && !history.value.purged);
+const canSwitch = computed(
+    () =>
+        !!history.value &&
+        !history.value.archived &&
+        !history.value.purged &&
+        userOwnsHistory(userStore.currentUser, history.value)
+);
 
 const actionText = computed(() => {
     if (canSwitch.value) {
@@ -37,12 +48,18 @@ const actionText = computed(() => {
     return "View in new tab";
 });
 
-function onClick(history: HistorySummary) {
-    if (canSwitch.value) {
+async function onClick(event: MouseEvent, history: HistorySummary) {
+    const eventStore = useEventStore();
+    const ctrlKey = eventStore.isMac ? event.metaKey : event.ctrlKey;
+    if (!ctrlKey && canSwitch.value) {
         if (props.filters) {
             historyStore.applyFilters(history.id, props.filters);
         } else {
-            historyStore.setCurrentHistory(history.id);
+            try {
+                await historyStore.setCurrentHistory(history.id);
+            } catch (error) {
+                Toast.error(errorMessageAsString(error));
+            }
         }
         return;
     }
@@ -64,7 +81,7 @@ function viewHistoryInNewTab(history: HistorySummary) {
                 class="truncate"
                 href="#"
                 :title="`<b>${actionText}</b><br>${history.name}`"
-                @click.stop="onClick(history)">
+                @click.stop="onClick($event, history)">
                 {{ history.name }}
             </BLink>
 

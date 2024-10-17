@@ -220,7 +220,7 @@ def config_celery_app(config, celery_app):
     if config.celery_conf:
         celery_app.conf.update(config.celery_conf)
     # Handle special cases
-    if not celery_app.conf.broker_url:
+    if not config.celery_conf.get("broker_url"):
         celery_app.conf.broker_url = config.amqp_internal_connection
 
 

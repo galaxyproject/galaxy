@@ -5,6 +5,7 @@ tool execution code, and tool action code.
 """
 
 import logging
+from typing import Collection
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ def filter_output(tool, output, incoming):
     return False
 
 
-def on_text_for_names(input_names):
+def on_text_for_names(input_names: Collection[str]) -> str:
     # input_names may contain duplicates... this is because the first value in
     # multiple input dataset parameters will appear twice once as param_name
     # and once as param_name1.

@@ -5,7 +5,19 @@ from typing import (
     cast,
 )
 
+from ._types import (
+    Annotated,
+    AssertionParameter,
+    Output,
+)
+
 PropertyVisitor = Callable[[str, Any], Any]
+
+Property = Annotated[str, AssertionParameter("The property name to search the JSON document for.")]
+Text = Annotated[str, AssertionParameter("The expected text value of the target JSON attribute.")]
+Value = Annotated[
+    str, AssertionParameter("The expected JSON value of the target JSON attribute (as a JSON encoded string).")
+]
 
 
 def any_in_tree(f: PropertyVisitor, json_tree: Any):
@@ -25,13 +37,18 @@ def any_in_tree(f: PropertyVisitor, json_tree: Any):
 
 
 def assert_has_json_property_with_value(
-    output,
-    property: str,
-    value: str,
+    output: Output,
+    property: Property,
+    value: Value,
 ):
-    """Assert JSON tree contains the specified property with specified JSON-ified value."""
-    output_json = assert_json_and_load(output)
-    expected_value = assert_json_and_load(value)
+    """Asserts the JSON document contains a property or key with the specified JSON value.
+
+    ```xml
+    <has_json_property_with_value property="skipped_columns" value="[1, 3, 5]" />
+    ```
+    """
+    output_json = _assert_json_and_load(output)
+    expected_value = _assert_json_and_load(value)
 
     def is_property(key, value):
         return key == property and value == expected_value
@@ -40,12 +57,17 @@ def assert_has_json_property_with_value(
 
 
 def assert_has_json_property_with_text(
-    output,
-    property: str,
-    text: str,
+    output: Output,
+    property: Property,
+    text: Text,
 ):
-    """Assert JSON tree contains the specified property with specified JSON-ified value."""
-    output_json = assert_json_and_load(output)
+    """Asserts the JSON document contains a property or key with the specified text (i.e. string) value.
+
+    ```xml
+    <has_json_property_with_text property="color" text="red" />
+    ```
+    """
+    output_json = _assert_json_and_load(output)
 
     def is_property(key, value):
         return key == property and value == text
@@ -53,7 +75,7 @@ def assert_has_json_property_with_text(
     assert any_in_tree(is_property, output_json), f"Failed to find property [{property}] with text [{text}]"
 
 
-def assert_json_and_load(json_str: str):
+def _assert_json_and_load(json_str: str):
     try:
         return json.loads(json_str)
     except Exception:

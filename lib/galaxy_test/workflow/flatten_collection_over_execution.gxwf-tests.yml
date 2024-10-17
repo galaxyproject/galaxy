@@ -8,6 +8,8 @@
           content: "0 mycoolline\n1 mysecondline\n"
   outputs:
     out:
+      class: Collection
+      collection_type: list
       elements:
         'samp1-0':
           asserts:

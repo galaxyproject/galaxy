@@ -329,7 +329,7 @@ class MockTrans:
         self.security = self.app.security
         self.history = history
 
-        self.request: Any = Bunch(headers={}, is_body_readable=False, host="request.host")
+        self.request: Any = Bunch(headers={}, is_body_readable=False, host="request.host", url_path="mock/url/path")
         self.response: Any = Bunch(headers={}, set_content_type=lambda i: None)
 
     @property
@@ -430,8 +430,17 @@ class MockDir:
 
 
 class MockTemplateHelpers:
+    def css(*css_files):
+        pass
+
+    def dumps(*kwargs):
+        return {}
+
     def js(*js_files):
         pass
 
-    def css(*css_files):
-        pass
+    def is_url(*kwargs):
+        return True
+
+    def url_for(*kwargs):
+        return "/"

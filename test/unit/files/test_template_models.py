@@ -295,11 +295,14 @@ def test_examples_parse():
     _assert_example_parses("production_aws_private_bucket.yml")
     _assert_example_parses("production_aws_public_bucket.yml")
     _assert_example_parses("production_s3fs.yml")
+    _assert_example_parses("production_dropbox.yml")
     _assert_example_parses("s3fs_by_host_and_port.yml")
     _assert_example_parses("templating_override.yml")
     _assert_example_parses("admin_secrets.yml")
     _assert_example_parses("admin_secrets_with_defaults.yml")
     _assert_example_parses("testing_multi_version_with_secrets.yml")
+    _assert_example_parses("dropbox_client_secrets_in_vault.yml")
+    _assert_example_parses("dropbox_client_secrets_explicit.yml")
 
 
 def _assert_example_parses(filename: str):

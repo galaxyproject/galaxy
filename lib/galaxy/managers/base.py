@@ -503,18 +503,18 @@ class ModelManager(Generic[U]):
         """
         raise exceptions.NotImplemented("Abstract method")
 
-    def update(self, item, new_values, flush=True, **kwargs) -> U:
+    def update(self, item: U, new_values: Dict[str, Any], flush: bool = True, **kwargs) -> U:
         """
         Given a dictionary of new values, update `item` and return it.
 
         ..note: NO validation or deserialization occurs here.
         """
-        self.session().add(item)
         for key, value in new_values.items():
             if hasattr(item, key):
                 setattr(item, key, value)
+        session = self.session()
+        session.add(item)
         if flush:
-            session = self.session()
             with transaction(session):
                 session.commit()
         return item

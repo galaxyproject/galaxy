@@ -40,7 +40,7 @@ These are only examples. The security team will provide a severity classificatio
 
 ## Notification of Vulnerabilities
 
-For high severity issues, we will notify [the list of public Galaxy owners](https://lists.galaxyproject.org/listinfo/galaxy-public-servers) with:
+For high severity issues, we will notify [the list of public Galaxy owners](https://lists.galaxyproject.org/lists/galaxy-public-servers.lists.galaxyproject.org/) with:
 
 - A description of the issue
 - List of supported versions that are affected

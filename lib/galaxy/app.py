@@ -34,6 +34,7 @@ from galaxy.celery.base_task import (
     GalaxyTaskBeforeStartUserRateLimitPostgres,
     GalaxyTaskBeforeStartUserRateLimitStandard,
 )
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.datatypes.registry import Registry
 from galaxy.files import (
@@ -206,7 +207,7 @@ class HaltableContainer(Container):
 
 
 class SentryClientMixin:
-    config: config.GalaxyAppConfiguration
+    config: GalaxyAppConfiguration
     application_stack: ApplicationStack
 
     def configure_sentry_client(self):
@@ -263,7 +264,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     """Encapsulates the state of a minimal Galaxy application"""
 
     model: GalaxyModelMapping
-    config: config.GalaxyAppConfiguration
+    config: GalaxyAppConfiguration
     tool_cache: ToolCache
     job_config: jobs.JobConfiguration
     toolbox_search: ToolBoxSearch
@@ -287,7 +288,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.name = "galaxy"
         self.is_webapp = False
         # Read config file and check for errors
-        self.config = self._register_singleton(config.GalaxyAppConfiguration, config.GalaxyAppConfiguration(**kwargs))
+        self.config = self._register_singleton(GalaxyAppConfiguration, GalaxyAppConfiguration(**kwargs))
         self.config.check()
         config_file = kwargs.get("global_conf", {}).get("__file__", None)
         if config_file:
@@ -655,7 +656,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.model.security.HostAgent(
-            model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions
+            self.security_agent.sa_session, permitted_actions=self.security_agent.permitted_actions
         )
 
         # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
@@ -837,20 +838,20 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             )
             self.application_stack.register_postfork_function(self.prune_history_audit_task.start)
             self.haltables.append(("HistoryAuditTablePruneTask", self.prune_history_audit_task.shutdown))
-        # Start the job manager
-        self.application_stack.register_postfork_function(self.job_manager.start)
         self.proxy_manager = ProxyManager(self.config)
 
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
 
         self.trs_proxy = self._register_singleton(TrsProxy, TrsProxy(self.config))
+        # We need InteractiveToolManager before the job handler starts
+        self.interactivetool_manager = InteractiveToolManager(self)
+        # Start the job manager
+        self.application_stack.register_postfork_function(self.job_manager.start)
         # Must be initialized after any component that might make use of stack messaging is configured. Alternatively if
         # it becomes more commonly needed we could create a prefork function registration method like we do with
         # postfork functions.
         self.application_stack.init_late_prefork()
-
-        self.interactivetool_manager = InteractiveToolManager(self)
 
         # Configure handling of signals
         handlers = {}

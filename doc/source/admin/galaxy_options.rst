@@ -477,7 +477,7 @@
 :Description:
     conda channels to enable by default
     (https://conda.io/docs/user-guide/tasks/manage-channels.html)
-:Default: ``conda-forge,bioconda,defaults``
+:Default: ``conda-forge,bioconda``
 :Type: str
 
 
@@ -2112,10 +2112,31 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Map for interactivetool proxy.
+    Map for the interactivetool proxy. Mappings are stored in a SQLite
+    database file located on this path. As an alternative, you may
+    also store them in any other RDBMS supported by SQLAlchemy using
+    the option ``interactivetoolsproxy_map``, which overrides this
+    one.
     The value of this option will be resolved with respect to
     <data_dir>.
 :Default: ``interactivetools_map.sqlite``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetoolsproxy_map``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Use a database supported by SQLAlchemy as map for the
+    interactivetool proxy. When this option is set, the value of
+    ``interactivetools_map`` is ignored. The value of this option must
+    be a `SQLAlchemy database URL
+    <https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls>`_.
+    Mappings are written to the table "gxitproxy" within the database.
+    This value cannot match ``database_connection`` nor
+    ``install_database_connection``.
+:Default: ``None``
 :Type: str
 
 
@@ -5094,6 +5115,26 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_scheduling_separate_materialization_iteration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Workflows launched with URI/URL inputs that are not marked as
+    'deferred' are "materialized" (or undeferred) by the workflow
+    scheduler. This might be a lengthy process. Setting this to 'True'
+    will place the invocation back in the queue after materialization
+    before scheduling the workflow so it is less  likely to starve
+    other workflow scheduling. Ideally, Galaxy would allow more fine
+    grain control of handlers but until then, this provides a way to
+    tip the balance between "doing more work" and "being more fair".
+    The default here is pretty arbitrary - it has been to False to
+    optimize Galaxy for automated, single user applications where
+    "fairness" is mostly irrelevant.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ``cache_user_job_count``
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5581,3 +5622,42 @@
     This requires the help_forum_api_url to be set.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``file_source_temp_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Directory to store temporary files for file sources. This defaults
+    to new_file_path if not set.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``file_source_webdav_use_temp_files``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default value for use_temp_files for webdav plugins that don't
+    explicitly declare this.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``file_source_listings_expiry_time``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Number of seconds before file source content listings are
+    refreshed. Shorter times will result in more queries while
+    browsing a file sources. Longer times will result in fewer
+    requests to file sources but outdated contents might be displayed
+    to the user. Currently only affects s3fs file sources.
+:Default: ``60``
+:Type: int
+
+
+

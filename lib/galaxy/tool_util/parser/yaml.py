@@ -19,6 +19,7 @@ from galaxy.tool_util.parser.util import (
 from .interface import (
     AssertionDict,
     AssertionList,
+    HelpContent,
     InputSource,
     PageSource,
     PagesSource,
@@ -124,8 +125,12 @@ class YamlToolSource(ToolSource):
     def parse_stdio(self):
         return error_on_exit_code()
 
-    def parse_help(self):
-        return self.root_dict.get("help", None)
+    def parse_help(self) -> Optional[HelpContent]:
+        content = self.root_dict.get("help", None)
+        if content:
+            return HelpContent(format="markdown", content=content)
+        else:
+            return None
 
     def parse_outputs(self, tool):
         outputs = self.root_dict.get("outputs", {})
@@ -331,6 +336,9 @@ class YamlInputSource(InputSource):
         return self.input_dict.get(key, default)
 
     def get_bool(self, key, default):
+        return self.input_dict.get(key, default)
+
+    def get_bool_or_none(self, key, default):
         return self.input_dict.get(key, default)
 
     def parse_input_type(self):

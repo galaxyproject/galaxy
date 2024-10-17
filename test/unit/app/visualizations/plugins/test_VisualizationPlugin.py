@@ -74,7 +74,7 @@ class TestVisualizationsPlugin(VisualizationsBase_TestCase):
         render_vars = plugin._build_render_vars(config)
         assert render_vars["visualization_name"] == plugin.name
         assert render_vars["visualization_display_name"] == plugin.config["name"]
-        assert render_vars["title"] is None
+        assert render_vars["title"] == "Unnamed Visualization"
         assert render_vars["saved_visualization"] is None
         assert render_vars["visualization_id"] is None
         assert render_vars["query"] == {}

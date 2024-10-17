@@ -20,6 +20,7 @@ from pydantic import (
 from typing_extensions import (
     Annotated,
     Literal,
+    TypeAliasType,
 )
 
 from galaxy.schema import schema
@@ -253,7 +254,7 @@ InvocationWarningWorkflowOutputNotFoundResponseModel = GenericInvocationEvaluati
     EncodedDatabaseIdField
 ]
 
-InvocationMessageResponseUnion = Annotated[
+_InvocationMessageResponseUnion = Annotated[
     Union[
         InvocationCancellationReviewFailedResponseModel,
         InvocationCancellationHistoryDeletedResponseModel,
@@ -270,6 +271,8 @@ InvocationMessageResponseUnion = Annotated[
     Field(discriminator="reason"),
 ]
 
+InvocationMessageResponseUnion = TypeAliasType("InvocationMessageResponseUnion", _InvocationMessageResponseUnion)
+
 
 class InvocationMessageResponseModel(RootModel):
     root: InvocationMessageResponseUnion
@@ -278,6 +281,7 @@ class InvocationMessageResponseModel(RootModel):
 
 class InvocationState(str, Enum):
     NEW = "new"  # Brand new workflow invocation... maybe this should be same as READY
+    REQUIRES_MATERIALIZATION = "requires_materialization"  # an otherwise NEW or READY workflow that requires inputs to be materialized (undeferred)
     READY = "ready"  # Workflow ready for another iteration of scheduling.
     SCHEDULED = "scheduled"  # Workflow has been scheduled.
     CANCELLED = "cancelled"

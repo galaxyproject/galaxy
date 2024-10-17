@@ -75,10 +75,8 @@ def setup_data_table_manager(app):
 
 
 @lru_cache
-def cached_create_tool_from_representation(app, raw_tool_source):
-    return create_tool_from_representation(
-        app=app, raw_tool_source=raw_tool_source, tool_dir="", tool_source_class="XmlToolSource"
-    )
+def cached_create_tool_from_representation(app: MinimalManagerApp, raw_tool_source: str):
+    return create_tool_from_representation(app=app, raw_tool_source=raw_tool_source, tool_source_class="XmlToolSource")
 
 
 @galaxy_task(action="recalculate a user's disk usage")
@@ -305,7 +303,7 @@ def _fetch_data(setup_return):
     working_directory = Path(tool_job_working_directory) / "working"
     datatypes_registry = DatatypesRegistry()
     datatypes_registry.load_datatypes(
-        galaxy_directory,
+        galaxy_directory(),
         config=Path(tool_job_working_directory) / "metadata" / "registry.xml",
         use_build_sites=False,
         use_converters=False,

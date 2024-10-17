@@ -1,0 +1,16 @@
+- doc: |
+    Test to verify text parameter can be connected to data column param
+  job:
+    input:
+      type: File
+      value: 2.tabular
+      file_type: tabular
+    column:
+      value: [1, 2]
+      type: raw
+  outputs:
+    output:
+      class: File
+      asserts:
+        - that: has_text
+          text: "col 1,2"

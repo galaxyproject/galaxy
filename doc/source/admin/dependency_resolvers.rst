@@ -207,7 +207,7 @@ debug
 ensure_channels
     Conda channels to enable by default. See https://conda.io/docs/user-guide/tasks/manage-channels.html for more
     information about channels. This defaults to the value of the global ``conda_ensure_channels`` option or
-    ``iuc,conda-forge,bioconda,defaults`` otherwise.  This order should be consistent with the `Bioconda prescribed
+    ``conda-forge,bioconda`` otherwise.  This order should be consistent with the `Bioconda prescribed
     order <https://github.com/bioconda/bioconda-recipes/blob/master/config.yml>`__ if it includes ``bioconda``.
 
 auto_install

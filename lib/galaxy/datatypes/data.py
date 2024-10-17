@@ -207,6 +207,7 @@ class Data(metaclass=DataMeta):
     edam_data = "data_0006"
     edam_format = "format_1915"
     file_ext = "data"
+    is_subclass = False
     # Data is not chunkable by default.
     CHUNKABLE = False
 

@@ -28,9 +28,6 @@ echo 'parameter: $parameter' >> '$output'
         <!-- these parameters are not implicitly optional! -->
         <test expect_failure="true">
             <param name="ref_parameter" value="2.tabular" />
-            <expand macro="assert_output">
-                <has_line line="parameter: 1"/>
-            </expand>
         </test>
     </tests>
 </tool>

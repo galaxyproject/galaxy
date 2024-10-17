@@ -339,7 +339,7 @@ export interface paths {
         };
         /**
          * Displays information about and/or content of a dataset.
-         * @description **Note**: Due to the multipurpose nature of this endpoint, which can receive a wild variety of parameters
+         * @description **Note**: Due to the multipurpose nature of this endpoint, which can receive a wide variety of parameters
          *     and return different kinds of responses, the documentation here will be limited.
          *     To get more information please check the source code.
          */
@@ -906,7 +906,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/file_source_instances/{user_file_source_id}": {
+    "/api/file_source_instances/{uuid}": {
         parameters: {
             query?: never;
             header?: never;
@@ -925,6 +925,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/file_source_instances/{uuid}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Test a file source instance and return status. */
+        get: operations["file_sources__instances_test_instance"];
+        put?: never;
+        /** Test updating or upgrading user file source instance. */
+        post: operations["file_sources__test_instances_update"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/file_source_templates": {
         parameters: {
             query?: never;
@@ -934,6 +952,23 @@ export interface paths {
         };
         /** Get a list of file source templates available to build user defined file sources from */
         get: operations["file_sources__templates_index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/file_source_templates/{template_id}/{template_version}/oauth2": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Template Oauth2 */
+        get: operations["file_sources__template_oauth2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3028,6 +3063,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/libraries/{library_id}/contents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Return a list of library files and folders.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use GET /api/folders/{folder_id}/contents instead.
+         */
+        get: operations["index_api_libraries__library_id__contents_get"];
+        put?: never;
+        /**
+         * Create a new library file or folder.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use POST /api/folders/{folder_id} or POST /api/folders/{folder_id}/contents instead.
+         */
+        post: operations["create_form_api_libraries__library_id__contents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/libraries/{library_id}/contents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Return a library file or folder.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use GET /api/libraries/datasets/{library_id} instead.
+         */
+        get: operations["library_content_api_libraries__library_id__contents__id__get"];
+        /**
+         * Update a library file or folder.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{library_id} instead.
+         */
+        put: operations["update_api_libraries__library_id__contents__id__put"];
+        post?: never;
+        /**
+         * Delete a library file or folder.
+         * @deprecated
+         * @description This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{library_id} instead.
+         */
+        delete: operations["delete_api_libraries__library_id__contents__id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/licenses": {
         parameters: {
             query?: never;
@@ -3287,7 +3379,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/object_store_instances/{user_object_store_id}": {
+    "/api/object_store_instances/{uuid}": {
         parameters: {
             query?: never;
             header?: never;
@@ -3301,6 +3393,24 @@ export interface paths {
         post?: never;
         /** Purge user object store instance. */
         delete: operations["object_stores__instances_purge"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/object_store_instances/{uuid}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a persisted user object store instance. */
+        get: operations["object_stores__instances_test_instance"];
+        put?: never;
+        /** Test updating or upgrading user object source instance. */
+        post: operations["object_stores__test_instances_update"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4687,6 +4797,32 @@ export interface paths {
         /** Returns visualizations for the current user. */
         get: operations["index_api_visualizations_get"];
         put?: never;
+        /**
+         * Create a new visualization.
+         * @description Creates a new visualization using the given payload and does not require the import_id field.
+         *     If import_id given, it imports a copy of an existing visualization into the user's workspace and does not require the rest of the payload.
+         */
+        post: operations["create_api_visualizations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visualizations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a visualization by ID.
+         * @description Return the visualization.
+         */
+        get: operations["show_api_visualizations__id__get"];
+        /** Update a visualization. */
+        put: operations["update_api_visualizations__id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -4848,6 +4984,57 @@ export interface paths {
         get: operations["whoami_api_whoami_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflow_landings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Landing */
+        post: operations["create_landing_api_workflow_landings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflow_landings/{uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Landing */
+        get: operations["get_landing_api_workflow_landings__uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflow_landings/{uuid}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Landing */
+        post: operations["claim_landing_api_workflow_landings__uuid__claim_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5513,6 +5700,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/oauth2_callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Callback entry point for remote resource responses with OAuth2 authorization codes */
+        get: operations["oauth2_callback_oauth2_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5996,6 +6200,72 @@ export interface components {
             /** Name */
             name?: unknown;
         };
+        /** Body_create_form_api_libraries__library_id__contents_post */
+        Body_create_form_api_libraries__library_id__contents_post: {
+            /** Create Type */
+            create_type: unknown;
+            /**
+             * Dbkey
+             * @default ?
+             */
+            dbkey: unknown;
+            /** Extended Metadata */
+            extended_metadata?: unknown;
+            /** File Type */
+            file_type?: unknown;
+            /** Files */
+            files?: string[] | null;
+            /**
+             * Filesystem Paths
+             * @default
+             */
+            filesystem_paths: unknown;
+            /** Folder Id */
+            folder_id: unknown;
+            /** From Hda Id */
+            from_hda_id?: unknown;
+            /** From Hdca Id */
+            from_hdca_id?: unknown;
+            /**
+             * Ldda Message
+             * @default
+             */
+            ldda_message: unknown;
+            /**
+             * Link Data Only
+             * @default copy_files
+             */
+            link_data_only: unknown;
+            /**
+             * Roles
+             * @default
+             */
+            roles: unknown;
+            /**
+             * Server Dir
+             * @default
+             */
+            server_dir: unknown;
+            /**
+             * Tag Using Filenames
+             * @default false
+             */
+            tag_using_filenames: unknown;
+            /**
+             * Tags
+             * @default []
+             */
+            tags: unknown;
+            /** Upload Files */
+            upload_files?: unknown;
+            /**
+             * Upload Option
+             * @default upload_file
+             */
+            upload_option: unknown;
+            /** Uuid */
+            uuid?: unknown;
+        };
         /** Body_fetch_form_api_tools_fetch_post */
         Body_fetch_form_api_tools_fetch_post: {
             /** Files */
@@ -6244,6 +6514,11 @@ export interface components {
              */
             type: string;
         };
+        /** ClaimLandingPayload */
+        ClaimLandingPayload: {
+            /** Client Secret */
+            client_secret?: string | null;
+        };
         /** CleanableItemsSummary */
         CleanableItemsSummary: {
             /**
@@ -6304,6 +6579,12 @@ export interface components {
         CompositeDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -6334,6 +6615,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -6605,6 +6888,8 @@ export interface components {
             template_id: string;
             /** Template Version */
             template_version: number;
+            /** Uuid */
+            uuid?: string | null;
             /** Variables */
             variables: {
                 [key: string]: string | boolean | number;
@@ -6880,6 +7165,25 @@ export interface components {
              * @description The relative URL to get this particular Quota details from the rest API.
              */
             url: string;
+        };
+        /**
+         * CreateType
+         * @enum {string}
+         */
+        CreateType: "file" | "folder" | "collection";
+        /** CreateWorkflowLandingRequestPayload */
+        CreateWorkflowLandingRequestPayload: {
+            /** Client Secret */
+            client_secret?: string | null;
+            /** Request State */
+            request_state?: Record<string, never> | null;
+            /** Workflow Id */
+            workflow_id: string;
+            /**
+             * Workflow Target Type
+             * @enum {string}
+             */
+            workflow_target_type: "stored_workflow" | "workflow";
         };
         /** CreatedEntryResponse */
         CreatedEntryResponse: {
@@ -8642,10 +8946,26 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** FetchDatasetHash */
+        FetchDatasetHash: {
+            /**
+             * Hash Function
+             * @enum {string}
+             */
+            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+            /** Hash Value */
+            hash_value: string;
+        };
         /** FileDataElement */
         FileDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -8675,6 +8995,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -8785,7 +9107,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure";
+            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata" | "webdav" | "dropbox" | "googledrive";
             /** Variables */
             variables?:
                 | (
@@ -8940,6 +9262,12 @@ export interface components {
         FtpImportElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -8971,6 +9299,8 @@ export interface components {
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Ftp Path */
             ftp_path: string;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -9186,6 +9516,11 @@ export interface components {
              * @description TODO
              */
             api_type?: "file" | null;
+            /**
+             * Copied From History Dataset Association Id
+             * @description ID of HDA this HDA was copied from.
+             */
+            copied_from_history_dataset_association_id?: string | null;
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**
@@ -9431,6 +9766,11 @@ export interface components {
              * @enum {string}
              */
             api_type: "file";
+            /**
+             * Copied From History Dataset Association Id
+             * @description ID of HDA this HDA was copied from.
+             */
+            copied_from_history_dataset_association_id?: string | null;
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**
@@ -9883,6 +10223,142 @@ export interface components {
              */
             visible: boolean;
         };
+        /** HDCACustom */
+        HDCACustom: {
+            /**
+             * Dataset Collection ID
+             * @example 0123456789ABCDEF
+             */
+            collection_id?: string;
+            /**
+             * Collection Type
+             * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
+             */
+            collection_type?: string | null;
+            /**
+             * Contents URL
+             * @description The relative URL to access the contents of this History.
+             */
+            contents_url?: string | null;
+            /**
+             * Create Time
+             * @description The time and date this item was created.
+             */
+            create_time?: string | null;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted?: boolean | null;
+            /**
+             * Element Count
+             * @description The number of elements contained in the dataset collection. It may be None or undefined if the collection could not be populated.
+             */
+            element_count?: number | null;
+            /**
+             * Elements
+             * @description The summary information of each of the elements inside the dataset collection.
+             */
+            elements?: components["schemas"]["DCESummary"][] | null;
+            /**
+             * Elements Datatypes
+             * @description A set containing all the different element datatypes in the collection.
+             */
+            elements_datatypes?: string[] | null;
+            /**
+             * HID
+             * @description The index position of this item in the History.
+             */
+            hid?: number | null;
+            /**
+             * History Content Type
+             * @description This is always `dataset_collection` for dataset collections.
+             */
+            history_content_type?: "dataset_collection" | null;
+            /**
+             * History ID
+             * @example 0123456789ABCDEF
+             */
+            history_id?: string;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id?: string;
+            /**
+             * Implicit Collection Jobs Id
+             * @description Encoded ID for the ICJ object describing the collection of jobs corresponding to this collection
+             */
+            implicit_collection_jobs_id?: string | null;
+            /**
+             * Job Source ID
+             * @description The encoded ID of the Job that produced this dataset collection. Used to track the state of the job.
+             */
+            job_source_id?: string | null;
+            /**
+             * Job Source Type
+             * @description The type of job (model class) that produced this dataset collection. Used to track the state of the job.
+             */
+            job_source_type?: components["schemas"]["JobSourceType"] | null;
+            /**
+             * Job State Summary
+             * @description Overview of the job states working inside the dataset collection.
+             */
+            job_state_summary?: components["schemas"]["HDCJobStateSummary"] | null;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             */
+            model_class?: "HistoryDatasetCollectionAssociation";
+            /**
+             * Name
+             * @description The name of the item.
+             */
+            name?: string | null;
+            /**
+             * Populated
+             * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
+             */
+            populated?: boolean | null;
+            /**
+             * Populated State
+             * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
+             */
+            populated_state?: components["schemas"]["DatasetCollectionPopulatedState"] | null;
+            /**
+             * Populated State Message
+             * @description Optional message with further information in case the population of the dataset collection failed.
+             */
+            populated_state_message?: string | null;
+            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Type
+             * @description This is always `collection` for dataset collections.
+             */
+            type?: "collection" | null;
+            /**
+             * Type - ID
+             * @description The type and the encoded ID of this item. Used for caching.
+             */
+            type_id?: string | null;
+            /**
+             * Update Time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string | null;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url?: string | null;
+            /**
+             * Visible
+             * @description Whether this item is visible or hidden to the user by default.
+             */
+            visible?: boolean | null;
+        };
         /**
          * HDCADetailed
          * @description History Dataset Collection Association detailed information.
@@ -10064,6 +10540,11 @@ export interface components {
              * @description The number of elements contained in the dataset collection. It may be None or undefined if the collection could not be populated.
              */
             element_count?: number | null;
+            /**
+             * Elements Datatypes
+             * @description A set containing all the different element datatypes in the collection.
+             */
+            elements_datatypes: string[];
             /**
              * HID
              * @description The index position of this item in the History.
@@ -10358,17 +10839,17 @@ export interface components {
              * Avatar Template
              * @description The avatar template of the user.
              */
-            avatar_template: string;
+            avatar_template: string | null;
             /**
              * Blurb
              * @description The blurb of the post.
              */
-            blurb: string;
+            blurb: string | null;
             /**
              * Created At
              * @description The creation date of the post.
              */
-            created_at: string;
+            created_at: string | null;
             /**
              * Id
              * @description The ID of the post.
@@ -10378,27 +10859,27 @@ export interface components {
              * Like Count
              * @description The number of likes of the post.
              */
-            like_count: number;
+            like_count: number | null;
             /**
              * Name
              * @description The name of the post.
              */
-            name: string;
+            name: string | null;
             /**
              * Post Number
              * @description The post number of the post.
              */
-            post_number: number;
+            post_number: number | null;
             /**
              * Topic Id
              * @description The ID of the topic of the post.
              */
-            topic_id: number;
+            topic_id: number | null;
             /**
              * Username
              * @description The username of the post author.
              */
-            username: string;
+            username: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -10678,6 +11159,7 @@ export interface components {
             | components["schemas"]["HDADetailed"]
             | components["schemas"]["HDASummary"]
             | components["schemas"]["HDAInaccessible"]
+            | components["schemas"]["HDCACustom"]
             | components["schemas"]["HDCADetailed"]
             | components["schemas"]["HDCASummary"]
         )[];
@@ -10695,6 +11177,7 @@ export interface components {
                 | components["schemas"]["HDADetailed"]
                 | components["schemas"]["HDASummary"]
                 | components["schemas"]["HDAInaccessible"]
+                | components["schemas"]["HDCACustom"]
                 | components["schemas"]["HDCADetailed"]
                 | components["schemas"]["HDCASummary"]
             )[];
@@ -11027,8 +11510,7 @@ export interface components {
              */
             tool_version?: string | null;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "data_collection_input";
@@ -11070,8 +11552,7 @@ export interface components {
              */
             tool_version?: string | null;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "data_input";
@@ -11113,8 +11594,7 @@ export interface components {
              */
             tool_version?: string | null;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "parameter_input";
@@ -11486,6 +11966,18 @@ export interface components {
                 [key: string]: number;
             };
         };
+        InvocationMessageResponseUnion:
+            | components["schemas"]["InvocationCancellationReviewFailedResponse"]
+            | components["schemas"]["InvocationCancellationHistoryDeletedResponse"]
+            | components["schemas"]["InvocationCancellationUserRequestResponse"]
+            | components["schemas"]["InvocationFailureDatasetFailedResponse"]
+            | components["schemas"]["InvocationFailureCollectionFailedResponse"]
+            | components["schemas"]["InvocationFailureJobFailedResponse"]
+            | components["schemas"]["InvocationFailureOutputNotFoundResponse"]
+            | components["schemas"]["InvocationFailureExpressionEvaluationFailedResponse"]
+            | components["schemas"]["InvocationFailureWhenNotBooleanResponse"]
+            | components["schemas"]["InvocationUnexpectedFailureResponse"]
+            | components["schemas"]["InvocationEvaluationWarningWorkflowOutputNotFoundResponse"];
         /** InvocationOutput */
         InvocationOutput: {
             /**
@@ -11634,7 +12126,14 @@ export interface components {
          * InvocationState
          * @enum {string}
          */
-        InvocationState: "new" | "ready" | "scheduled" | "cancelled" | "cancelling" | "failed";
+        InvocationState:
+            | "new"
+            | "requires_materialization"
+            | "ready"
+            | "scheduled"
+            | "cancelled"
+            | "cancelling"
+            | "failed";
         /**
          * InvocationStep
          * @description Information about workflow invocation step
@@ -12413,7 +12912,12 @@ export interface components {
              * Value
              * @description The values of the job parameter
              */
-            value?: components["schemas"]["EncodedJobParameterHistoryItem"][] | number | boolean | string | null;
+            value?:
+                | (components["schemas"]["EncodedJobParameterHistoryItem"] | null)[]
+                | number
+                | boolean
+                | string
+                | null;
         };
         /**
          * JobSourceType
@@ -12563,6 +13067,11 @@ export interface components {
              */
             value: string;
         };
+        /**
+         * LandingRequestState
+         * @enum {string}
+         */
+        LandingRequestState: "unclaimed" | "claimed";
         /** LegacyLibraryPermissionsPayload */
         LegacyLibraryPermissionsPayload: {
             /**
@@ -12612,6 +13121,450 @@ export interface components {
              * @description Total number of items
              */
             total: number;
+        };
+        /** LibraryContentsCollectionCreatePayload */
+        LibraryContentsCollectionCreatePayload: {
+            /** the type of collection to create */
+            collection_type: string;
+            /**
+             * Copy Elements
+             * @description if True, copy the elements into the collection
+             * @default false
+             */
+            copy_elements: boolean;
+            /** @description the type of item to create */
+            create_type: components["schemas"]["CreateType"];
+            /** list of dictionaries containing the element identifiers for the collection */
+            element_identifiers: Record<string, never>[];
+            /**
+             * Extended Metadata
+             * @description sub-dictionary containing any extended metadata to associate with the item
+             */
+            extended_metadata?: Record<string, never> | null;
+            /**
+             * Folder Id
+             * @description the encoded id of the parent folder of the new item
+             * @example 0123456789ABCDEF
+             */
+            folder_id: string;
+            /**
+             * From Hda Id
+             * @description (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library
+             */
+            from_hda_id?: string | null;
+            /**
+             * From Hdca Id
+             * @description (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library
+             */
+            from_hdca_id?: string | null;
+            /**
+             * Hide Source Items
+             * @description if True, hide the source items in the collection
+             * @default false
+             */
+            hide_source_items: boolean;
+            /**
+             * Ldda Message
+             * @description the new message attribute of the LDDA created
+             * @default
+             */
+            ldda_message: string;
+            /** the name of the collection */
+            name?: string | null;
+            /**
+             * Tag Using Filenames
+             * @description create tags on datasets using the file's original name
+             * @default false
+             */
+            tag_using_filenames: boolean;
+            /**
+             * Tags
+             * @description create the given list of tags on datasets
+             * @default []
+             */
+            tags: string[];
+            /**
+             * @deprecated
+             * @description the method to use for uploading files
+             * @default upload_file
+             */
+            upload_option: components["schemas"]["UploadOption"];
+        };
+        /** LibraryContentsCreateDatasetCollectionResponse */
+        LibraryContentsCreateDatasetCollectionResponse: components["schemas"]["LibraryContentsCreateDatasetResponse"][];
+        /** LibraryContentsCreateDatasetResponse */
+        LibraryContentsCreateDatasetResponse: {
+            /** Created From Basename */
+            created_from_basename: string | null;
+            /** Data Type */
+            data_type: string;
+            /** Deleted */
+            deleted: boolean;
+            /** File Ext */
+            file_ext: string;
+            /** File Name */
+            file_name: string;
+            /** File Size */
+            file_size: number;
+            /** Genome Build */
+            genome_build: string;
+            /** Hda Ldda */
+            hda_ldda: string;
+            /** Id */
+            id: string;
+            /** Library Dataset Id */
+            library_dataset_id: string;
+            /** Misc Blurb */
+            misc_blurb: string | null;
+            /** Misc Info */
+            misc_info: string | null;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             * @enum {string}
+             */
+            model_class: "LibraryDatasetDatasetAssociation";
+            /** Name */
+            name: string;
+            /** Parent Library Id */
+            parent_library_id: string;
+            /** State */
+            state: string;
+            /** Update Time */
+            update_time: string;
+            /** Uuid */
+            uuid: string;
+            /** Visible */
+            visible: boolean;
+        } & {
+            [key: string]: unknown;
+        };
+        /** LibraryContentsCreateFileListResponse */
+        LibraryContentsCreateFileListResponse: components["schemas"]["LibraryContentsCreateFileResponse"][];
+        /** LibraryContentsCreateFileResponse */
+        LibraryContentsCreateFileResponse: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+        };
+        /** LibraryContentsCreateFolderListResponse */
+        LibraryContentsCreateFolderListResponse: components["schemas"]["LibraryContentsCreateFolderResponse"][];
+        /** LibraryContentsCreateFolderResponse */
+        LibraryContentsCreateFolderResponse: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+        };
+        /** LibraryContentsDeletePayload */
+        LibraryContentsDeletePayload: {
+            /**
+             * Purge
+             * @description if True, purge the library dataset
+             * @default false
+             */
+            purge: boolean;
+        };
+        /** LibraryContentsDeleteResponse */
+        LibraryContentsDeleteResponse: {
+            /** Deleted */
+            deleted: boolean;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+        };
+        /** LibraryContentsFileCreatePayload */
+        LibraryContentsFileCreatePayload: {
+            /** @description the type of item to create */
+            create_type: components["schemas"]["CreateType"];
+            /**
+             * database key
+             * @default ?
+             */
+            dbkey: string | unknown[];
+            /**
+             * Extended Metadata
+             * @description sub-dictionary containing any extended metadata to associate with the item
+             */
+            extended_metadata?: Record<string, never> | null;
+            /** file type */
+            file_type?: string | null;
+            /**
+             * Filesystem Paths
+             * @description (only if upload_option is 'upload_paths' and the user is an admin) file paths on the Galaxy server to upload to the library, one file per line
+             * @default
+             */
+            filesystem_paths: string;
+            /**
+             * Folder Id
+             * @description the encoded id of the parent folder of the new item
+             * @example 0123456789ABCDEF
+             */
+            folder_id: string;
+            /**
+             * From Hda Id
+             * @description (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library
+             */
+            from_hda_id?: string | null;
+            /**
+             * From Hdca Id
+             * @description (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library
+             */
+            from_hdca_id?: string | null;
+            /**
+             * Ldda Message
+             * @description the new message attribute of the LDDA created
+             * @default
+             */
+            ldda_message: string;
+            /**
+             * @description (only when upload_option is 'upload_directory' or 'upload_paths').Setting to 'link_to_files' symlinks instead of copying the files
+             * @default copy_files
+             */
+            link_data_only: components["schemas"]["LinkDataOnly"];
+            /**
+             * user selected roles
+             * @default
+             */
+            roles: string;
+            /**
+             * Server Dir
+             * @description (only if upload_option is 'upload_directory') relative path of the subdirectory of Galaxy ``library_import_dir`` (if admin) or ``user_library_import_dir`` (if non-admin) to upload. All and only the files (i.e. no subdirectories) contained in the specified directory will be uploaded.
+             * @default
+             */
+            server_dir: string;
+            /**
+             * Tag Using Filenames
+             * @description create tags on datasets using the file's original name
+             * @default false
+             */
+            tag_using_filenames: boolean;
+            /**
+             * Tags
+             * @description create the given list of tags on datasets
+             * @default []
+             */
+            tags: string[];
+            /** list of the uploaded files */
+            upload_files?: Record<string, never>[] | null;
+            /**
+             * @deprecated
+             * @description the method to use for uploading files
+             * @default upload_file
+             */
+            upload_option: components["schemas"]["UploadOption"];
+            /** UUID of the dataset to upload */
+            uuid?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** LibraryContentsFolderCreatePayload */
+        LibraryContentsFolderCreatePayload: {
+            /** @description the type of item to create */
+            create_type: components["schemas"]["CreateType"];
+            /**
+             * description of the folder to create
+             * @default
+             */
+            description: string;
+            /**
+             * Extended Metadata
+             * @description sub-dictionary containing any extended metadata to associate with the item
+             */
+            extended_metadata?: Record<string, never> | null;
+            /**
+             * Folder Id
+             * @description the encoded id of the parent folder of the new item
+             * @example 0123456789ABCDEF
+             */
+            folder_id: string;
+            /**
+             * From Hda Id
+             * @description (only if create_type is 'file') the encoded id of an accessible HDA to copy into the library
+             */
+            from_hda_id?: string | null;
+            /**
+             * From Hdca Id
+             * @description (only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library
+             */
+            from_hdca_id?: string | null;
+            /**
+             * Ldda Message
+             * @description the new message attribute of the LDDA created
+             * @default
+             */
+            ldda_message: string;
+            /**
+             * name of the folder to create
+             * @default
+             */
+            name: string;
+            /**
+             * Tag Using Filenames
+             * @description create tags on datasets using the file's original name
+             * @default false
+             */
+            tag_using_filenames: boolean;
+            /**
+             * Tags
+             * @description create the given list of tags on datasets
+             * @default []
+             */
+            tags: string[];
+            /**
+             * @deprecated
+             * @description the method to use for uploading files
+             * @default upload_file
+             */
+            upload_option: components["schemas"]["UploadOption"];
+        };
+        /** LibraryContentsIndexDatasetResponse */
+        LibraryContentsIndexDatasetResponse: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+            /** Url */
+            url: string;
+        };
+        /** LibraryContentsIndexFolderResponse */
+        LibraryContentsIndexFolderResponse: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+            /** Url */
+            url: string;
+        };
+        /** LibraryContentsIndexListResponse */
+        LibraryContentsIndexListResponse: (
+            | components["schemas"]["LibraryContentsIndexFolderResponse"]
+            | components["schemas"]["LibraryContentsIndexDatasetResponse"]
+        )[];
+        /** LibraryContentsShowDatasetResponse */
+        LibraryContentsShowDatasetResponse: {
+            /** Created From Basename */
+            created_from_basename: string | null;
+            /** Data Type */
+            data_type: string;
+            /** Date Uploaded */
+            date_uploaded: string;
+            /** File Ext */
+            file_ext: string;
+            /** File Name */
+            file_name: string;
+            /** File Size */
+            file_size: number;
+            /**
+             * Folder Id
+             * @example 0123456789ABCDEF
+             */
+            folder_id: string;
+            /** Genome Build */
+            genome_build: string | null;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Ldda Id
+             * @example 0123456789ABCDEF
+             */
+            ldda_id: string;
+            /** Message */
+            message: string | null;
+            /** Misc Blurb */
+            misc_blurb: string | null;
+            /** Misc Info */
+            misc_info: string | null;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             * @enum {string}
+             */
+            model_class: "LibraryDataset";
+            /** Name */
+            name: string;
+            /**
+             * Parent Library Id
+             * @example 0123456789ABCDEF
+             */
+            parent_library_id: string;
+            /** Peek */
+            peek: string | null;
+            /** State */
+            state: string;
+            tags: components["schemas"]["TagCollection"];
+            /** Update Time */
+            update_time: string;
+            /** Uploaded By */
+            uploaded_by: string | null;
+            /** Uuid */
+            uuid: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** LibraryContentsShowFolderResponse */
+        LibraryContentsShowFolderResponse: {
+            /** Deleted */
+            deleted: boolean;
+            /** Description */
+            description: string;
+            /** Genome Build */
+            genome_build: string | null;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Item Count */
+            item_count: number;
+            /** Library Path */
+            library_path: string[];
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             * @enum {string}
+             */
+            model_class: "LibraryFolder";
+            /** Name */
+            name: string;
+            /** Parent Id */
+            parent_id: string | null;
+            /**
+             * Parent Library Id
+             * @example 0123456789ABCDEF
+             */
+            parent_library_id: string;
+            /** Update Time */
+            update_time: string;
         };
         /** LibraryCurrentPermissions */
         LibraryCurrentPermissions: {
@@ -13069,6 +14022,11 @@ export interface components {
             name: string;
         };
         /**
+         * LinkDataOnly
+         * @enum {string}
+         */
+        LinkDataOnly: "copy_files" | "link_to_files";
+        /**
          * ListJstreeResponse
          * @deprecated
          * @description List of files in Jstree format.
@@ -13106,6 +14064,21 @@ export interface components {
              * @description The source of the content. Can be other history element to be copied or library elements.
              */
             source: components["schemas"]["DatasetSourceType"];
+            /**
+             * Validate hashes
+             * @description Set to true to enable dataset validation during materialization.
+             * @default false
+             */
+            validate_hashes: boolean;
+        };
+        /** MaterializeDatasetOptions */
+        MaterializeDatasetOptions: {
+            /**
+             * Validate hashes
+             * @description Set to true to enable dataset validation during materialization.
+             * @default false
+             */
+            validate_hashes: boolean;
         };
         /** MessageExceptionModel */
         MessageExceptionModel: {
@@ -13181,6 +14154,12 @@ export interface components {
         NestedElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -13223,6 +14202,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -13533,6 +14514,11 @@ export interface components {
              */
             updated_count: number;
         };
+        /** OAuth2Info */
+        OAuth2Info: {
+            /** Authorize Url */
+            authorize_url: string;
+        };
         /** ObjectExportTaskResponse */
         ObjectExportTaskResponse: {
             /**
@@ -13593,7 +14579,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3";
+            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3" | "onedata";
             /** Variables */
             variables?:
                 | (
@@ -13825,6 +14811,12 @@ export interface components {
         PastedDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -13854,6 +14846,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -13885,6 +14879,12 @@ export interface components {
         PathDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -13914,6 +14914,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Link Data Only */
@@ -13975,8 +14977,7 @@ export interface components {
              */
             tool_version?: string | null;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "pause";
@@ -14057,6 +15058,7 @@ export interface components {
         /** PluginStatus */
         PluginStatus: {
             connection?: components["schemas"]["PluginAspectStatus"] | null;
+            oauth2_access_token_generation?: components["schemas"]["PluginAspectStatus"] | null;
             template_definition: components["schemas"]["PluginAspectStatus"];
             template_settings?: components["schemas"]["PluginAspectStatus"] | null;
         };
@@ -14607,6 +15609,12 @@ export interface components {
         ServerDirElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -14636,6 +15644,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Link Data Only */
@@ -15421,8 +16431,7 @@ export interface components {
              */
             tool_version?: string | null;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "subworkflow";
@@ -15584,6 +16593,26 @@ export interface components {
              */
             type: "string";
         };
+        /** TestUpdateInstancePayload */
+        TestUpdateInstancePayload: {
+            /** Variables */
+            variables?: {
+                [key: string]: string | boolean | number;
+            } | null;
+        };
+        /** TestUpgradeInstancePayload */
+        TestUpgradeInstancePayload: {
+            /** Secrets */
+            secrets: {
+                [key: string]: string;
+            };
+            /** Template Version */
+            template_version: number;
+            /** Variables */
+            variables: {
+                [key: string]: string | boolean | number;
+            };
+        };
         /** ToolDataDetails */
         ToolDataDetails: {
             /**
@@ -15699,8 +16728,7 @@ export interface components {
              */
             tool_version?: string | null;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "tool";
@@ -16249,10 +17277,21 @@ export interface components {
             /** Tool Version */
             tool_version?: string | null;
         };
+        /**
+         * UploadOption
+         * @enum {string}
+         */
+        UploadOption: "upload_file" | "upload_paths" | "upload_directory";
         /** UrlDataElement */
         UrlDataElement: {
             /** Md5 */
             MD5?: string | null;
+            /** Sha-1 */
+            "SHA-1"?: string | null;
+            /** Sha-256 */
+            "SHA-256"?: string | null;
+            /** Sha-512 */
+            "SHA-512"?: string | null;
             /**
              * Auto Decompress
              * @description Decompress compressed data before sniffing?
@@ -16282,6 +17321,8 @@ export interface components {
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
+            /** Hashes */
+            hashes?: components["schemas"]["FetchDatasetHash"][] | null;
             /** Info */
             info?: string | null;
             /** Name */
@@ -16348,7 +17389,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3";
+            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3" | "onedata";
             /**
              * Uuid
              * Format: uuid4
@@ -16423,7 +17464,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure";
+            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata" | "webdav" | "dropbox" | "googledrive";
             /** Uri Root */
             uri_root: string;
             /**
@@ -16649,6 +17690,232 @@ export interface components {
         };
         /** Visualization */
         Visualization: Record<string, never>;
+        /** VisualizationCreatePayload */
+        VisualizationCreatePayload: {
+            /**
+             * Annotation
+             * @description The annotation of the visualization.
+             */
+            annotation?: string | null;
+            /**
+             * Config
+             * @description The config of the visualization.
+             * @default {}
+             */
+            config: Record<string, never> | null;
+            /**
+             * DbKey
+             * @description The database key of the visualization.
+             */
+            dbkey?: string | null;
+            /**
+             * Slug
+             * @description The slug of the visualization.
+             */
+            slug?: string | null;
+            /**
+             * Title
+             * @description The name of the visualization.
+             * @default Untitled Visualization
+             */
+            title: string | null;
+            /**
+             * Type
+             * @description The type of the visualization.
+             */
+            type: string;
+        };
+        /** VisualizationCreateResponse */
+        VisualizationCreateResponse: {
+            /**
+             * ID
+             * @description Encoded ID of the Visualization.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+        };
+        /** VisualizationPluginResponse */
+        VisualizationPluginResponse: {
+            /**
+             * Description
+             * @description The description of the plugin.
+             */
+            description: string;
+            /**
+             * Embeddable
+             * @description Whether the plugin is embeddable.
+             */
+            embeddable: boolean;
+            /**
+             * Entry Point
+             * @description The entry point of the plugin.
+             */
+            entry_point: Record<string, never>;
+            /**
+             * Groups
+             * @description The groups of the plugin.
+             */
+            groups?: Record<string, never>[] | null;
+            /**
+             * Href
+             * @description The href of the plugin.
+             */
+            href: string;
+            /**
+             * HTML
+             * @description The HTML of the plugin.
+             */
+            html: string;
+            /**
+             * Logo
+             * @description The logo of the plugin.
+             */
+            logo?: string | null;
+            /**
+             * Name
+             * @description The name of the plugin.
+             */
+            name: string;
+            /**
+             * Settings
+             * @description The settings of the plugin.
+             */
+            settings: Record<string, never>[];
+            /**
+             * Specs
+             * @description The specs of the plugin.
+             */
+            specs?: Record<string, never> | null;
+            /**
+             * Target
+             * @description The target of the plugin.
+             */
+            target: string;
+            /**
+             * Title
+             * @description The title of the plugin.
+             */
+            title?: string | null;
+        };
+        /** VisualizationRevisionResponse */
+        VisualizationRevisionResponse: {
+            /**
+             * Config
+             * @description The config of the visualization revision.
+             */
+            config: Record<string, never>;
+            /**
+             * DbKey
+             * @description The database key of the visualization.
+             */
+            dbkey?: string | null;
+            /**
+             * ID
+             * @description Encoded ID of the Visualization Revision.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             * @enum {string}
+             */
+            model_class: "VisualizationRevision";
+            /**
+             * Title
+             * @description The name of the visualization revision.
+             */
+            title: string;
+            /**
+             * Visualization ID
+             * @description Encoded ID of the Visualization.
+             * @example 0123456789ABCDEF
+             */
+            visualization_id: string;
+        };
+        /** VisualizationShowResponse */
+        VisualizationShowResponse: {
+            /**
+             * Annotation
+             * @description The annotation of this Visualization.
+             */
+            annotation?: string | null;
+            /**
+             * DbKey
+             * @description The database key of the visualization.
+             */
+            dbkey?: string | null;
+            /**
+             * Email Hash
+             * @description The hash of the email of the user owning this Visualization.
+             */
+            email_hash: string;
+            /**
+             * ID
+             * @description Encoded ID of the Visualization.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Latest Revision
+             * @description The latest revision of this Visualization.
+             */
+            latest_revision: components["schemas"]["VisualizationRevisionResponse"];
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             * @enum {string}
+             */
+            model_class: "Visualization";
+            /**
+             * Plugin
+             * @description The plugin of this Visualization.
+             */
+            plugin?: components["schemas"]["VisualizationPluginResponse"] | null;
+            /**
+             * Revisions
+             * @description A list of encoded IDs of the revisions of this Visualization.
+             */
+            revisions: string[];
+            /**
+             * Slug
+             * @description The slug of the visualization.
+             */
+            slug?: string | null;
+            /**
+             * Tags
+             * @description A list of tags to add to this item.
+             */
+            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Title
+             * @description The name of the visualization.
+             */
+            title: string;
+            /**
+             * Type
+             * @description The type of the visualization.
+             */
+            type: string;
+            /**
+             * URL
+             * @description The URL of the visualization.
+             */
+            url: string;
+            /**
+             * User ID
+             * @description The ID of the user owning this Visualization.
+             * @example 0123456789ABCDEF
+             */
+            user_id: string;
+            /**
+             * Username
+             * @description The name of the user owning this Visualization.
+             */
+            username: string;
+        };
         /** VisualizationSummary */
         VisualizationSummary: {
             /**
@@ -16720,6 +17987,46 @@ export interface components {
          * @default []
          */
         VisualizationSummaryList: components["schemas"]["VisualizationSummary"][];
+        /** VisualizationUpdatePayload */
+        VisualizationUpdatePayload: {
+            /**
+             * Config
+             * @description The config of the visualization.
+             * @default {}
+             */
+            config: Record<string, never> | string | null;
+            /**
+             * DbKey
+             * @description The database key of the visualization.
+             */
+            dbkey?: string | null;
+            /**
+             * Deleted
+             * @description Whether this Visualization has been deleted.
+             * @default false
+             */
+            deleted: boolean | null;
+            /**
+             * Title
+             * @description The name of the visualization.
+             */
+            title?: string | null;
+        };
+        /** VisualizationUpdateResponse */
+        VisualizationUpdateResponse: {
+            /**
+             * ID
+             * @description Encoded ID of the Visualization.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Revision
+             * @description Encoded ID of the Visualization Revision.
+             * @example 0123456789ABCDEF
+             */
+            revision: string;
+        };
         /** WorkflowInput */
         WorkflowInput: {
             /**
@@ -16826,19 +18133,7 @@ export interface components {
              * Messages
              * @description A list of messages about why the invocation did not succeed.
              */
-            messages: (
-                | components["schemas"]["InvocationCancellationReviewFailedResponse"]
-                | components["schemas"]["InvocationCancellationHistoryDeletedResponse"]
-                | components["schemas"]["InvocationCancellationUserRequestResponse"]
-                | components["schemas"]["InvocationFailureDatasetFailedResponse"]
-                | components["schemas"]["InvocationFailureCollectionFailedResponse"]
-                | components["schemas"]["InvocationFailureJobFailedResponse"]
-                | components["schemas"]["InvocationFailureOutputNotFoundResponse"]
-                | components["schemas"]["InvocationFailureExpressionEvaluationFailedResponse"]
-                | components["schemas"]["InvocationFailureWhenNotBooleanResponse"]
-                | components["schemas"]["InvocationUnexpectedFailureResponse"]
-                | components["schemas"]["InvocationEvaluationWarningWorkflowOutputNotFoundResponse"]
-            )[];
+            messages: components["schemas"]["InvocationMessageResponseUnion"][];
             /**
              * Model class
              * @description The name of the database model class.
@@ -16922,6 +18217,25 @@ export interface components {
             states: {
                 [key: string]: number;
             };
+        };
+        /** WorkflowLandingRequest */
+        WorkflowLandingRequest: {
+            /** Request State */
+            request_state: Record<string, never>;
+            state: components["schemas"]["LandingRequestState"];
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier for this dataset.
+             */
+            uuid: string;
+            /** Workflow Id */
+            workflow_id: string;
+            /**
+             * Workflow Target Type
+             * @enum {string}
+             */
+            workflow_target_type: "stored_workflow" | "workflow";
         };
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
@@ -17567,7 +18881,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HDCADetailed"] | components["schemas"]["HDCASummary"];
+                    "application/json":
+                        | components["schemas"]["HDCACustom"]
+                        | components["schemas"]["HDCADetailed"]
+                        | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
@@ -17863,6 +19180,7 @@ export interface operations {
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDAInaccessible"]
+                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                     )[];
@@ -17940,6 +19258,10 @@ export interface operations {
                 hda_ldda?: components["schemas"]["DatasetSourceType"];
                 /** @description The type of information about the dataset to be requested. Each of these values may require additional parameters in the request and may return different responses. */
                 data_type?: components["schemas"]["RequestDataType"] | null;
+                /** @description Maximum number of items to return. Currently only applies to `data_type=raw_data` requests */
+                limit?: number | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item. Currently only applies to `data_type=raw_data` requests */
+                offset?: number | null;
                 /** @description View to be passed to the serializer */
                 view?: string | null;
                 /** @description Comma-separated list of keys to be passed to the serializer */
@@ -18021,6 +19343,7 @@ export interface operations {
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDAInaccessible"]
+                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -19519,7 +20842,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID index for a persisted UserFileSourceStore object. */
-                user_file_source_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -19563,7 +20886,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID index for a persisted UserFileSourceStore object. */
-                user_file_source_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -19614,7 +20937,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID index for a persisted UserFileSourceStore object. */
-                user_file_source_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -19626,6 +20949,100 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    file_sources__instances_test_instance: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID index for a persisted UserFileSourceStore object. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    file_sources__test_instances_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID index for a persisted UserFileSourceStore object. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json":
+                    | components["schemas"]["TestUpgradeInstancePayload"]
+                    | components["schemas"]["TestUpdateInstancePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
             };
             /** @description Request Error */
             "4XX": {
@@ -19666,6 +21083,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FileSourceTemplateSummaries"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    file_sources__template_oauth2: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The template ID of the target file source template. */
+                template_id: string;
+                /** @description The template version of the target file source template. */
+                template_version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OAuth2 authorization url to redirect user to prior to creation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuth2Info"];
                 };
             };
             /** @description Request Error */
@@ -22584,6 +24047,7 @@ export interface operations {
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDAInaccessible"]
+                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                         | (
@@ -22591,6 +24055,7 @@ export interface operations {
                               | components["schemas"]["HDADetailed"]
                               | components["schemas"]["HDASummary"]
                               | components["schemas"]["HDAInaccessible"]
+                              | components["schemas"]["HDCACustom"]
                               | components["schemas"]["HDCADetailed"]
                               | components["schemas"]["HDCASummary"]
                           )[];
@@ -22851,7 +24316,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MaterializeDatasetOptions"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -23411,6 +24880,7 @@ export interface operations {
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDAInaccessible"]
+                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -23474,6 +24944,7 @@ export interface operations {
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDAInaccessible"]
+                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -23755,6 +25226,7 @@ export interface operations {
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDAInaccessible"]
+                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                         | (
@@ -23762,6 +25234,7 @@ export interface operations {
                               | components["schemas"]["HDADetailed"]
                               | components["schemas"]["HDASummary"]
                               | components["schemas"]["HDAInaccessible"]
+                              | components["schemas"]["HDCACustom"]
                               | components["schemas"]["HDCADetailed"]
                               | components["schemas"]["HDCASummary"]
                           )[];
@@ -23824,6 +25297,7 @@ export interface operations {
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDAInaccessible"]
+                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -23887,6 +25361,7 @@ export interface operations {
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDAInaccessible"]
+                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -24182,6 +25657,7 @@ export interface operations {
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDAInaccessible"]
+                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                     )[];
@@ -26959,6 +28435,241 @@ export interface operations {
             };
         };
     };
+    index_api_libraries__library_id__contents_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryContentsIndexListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_form_api_libraries__library_id__contents_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_form_api_libraries__library_id__contents_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json":
+                        | components["schemas"]["LibraryContentsCreateFolderListResponse"]
+                        | components["schemas"]["LibraryContentsCreateFileListResponse"]
+                        | components["schemas"]["LibraryContentsCreateDatasetCollectionResponse"]
+                        | components["schemas"]["LibraryContentsCreateDatasetResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    library_content_api_libraries__library_id__contents__id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+                /** @example F0123456789ABCDEF */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json":
+                        | components["schemas"]["LibraryContentsShowFolderResponse"]
+                        | components["schemas"]["LibraryContentsShowDatasetResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_api_libraries__library_id__contents__id__put: {
+        parameters: {
+            query: {
+                payload: unknown;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_api_libraries__library_id__contents__id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                library_id: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LibraryContentsDeletePayload"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryContentsDeleteResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     index_api_licenses_get: {
         parameters: {
             query?: never;
@@ -27841,7 +29552,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID used to identify a persisted UserObjectStore object. */
-                user_object_store_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -27885,7 +29596,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID used to identify a persisted UserObjectStore object. */
-                user_object_store_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -27936,7 +29647,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID used to identify a persisted UserObjectStore object. */
-                user_object_store_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -27948,6 +29659,100 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    object_stores__instances_test_instance: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted UserObjectStore object. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    object_stores__test_instances_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted UserObjectStore object. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json":
+                    | components["schemas"]["TestUpgradeInstancePayload"]
+                    | components["schemas"]["TestUpdateInstancePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
             };
             /** @description Request Error */
             "4XX": {
@@ -32135,6 +33940,146 @@ export interface operations {
             };
         };
     };
+    create_api_visualizations_post: {
+        parameters: {
+            query?: {
+                /** @description The encoded database identifier of the Visualization to import. */
+                import_id?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisualizationCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualizationCreateResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    show_api_visualizations__id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Visualization. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualizationShowResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_api_visualizations__id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Visualization. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisualizationUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualizationUpdateResponse"] | null;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     disable_link_access_api_visualizations__id__disable_link_access_put: {
         parameters: {
             query?: never;
@@ -32490,6 +34435,143 @@ export interface operations {
             };
         };
     };
+    create_landing_api_workflow_landings_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWorkflowLandingRequestPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_landing_api_workflow_landings__uuid__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted landing request. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    claim_landing_api_workflow_landings__uuid__claim_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted landing request. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimLandingPayload"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     index_api_workflows_get: {
         parameters: {
             query?: {
@@ -32537,8 +34619,17 @@ export interface operations {
                  *     `is:published`
                  *     : Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.
                  *
-                 *     `is:share_with_me`
+                 *     `is:importable`
+                 *     : Include only importable workflows in the final result.
+                 *
+                 *     `is:deleted`
+                 *     : Include only deleted workflows in the final result.
+                 *
+                 *     `is:shared_with_me`
                  *     : Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.
+                 *
+                 *     `is:bookmarked`
+                 *     : Include only workflows bookmarked by the requesting user.
                  *
                  *     ## Free Text
                  *
@@ -34678,6 +36769,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Service"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    oauth2_callback_oauth2_callback_get: {
+        parameters: {
+            query: {
+                /** @description Base-64 encoded JSON used to route request within Galaxy. */
+                state: string;
+                code?: string | null;
+                error?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Request Error */

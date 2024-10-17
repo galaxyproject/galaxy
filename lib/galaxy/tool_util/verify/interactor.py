@@ -38,10 +38,10 @@ from galaxy import util
 from galaxy.tool_util.parser.interface import (
     AssertionList,
     TestCollectionDef,
-    TestCollectionDefDict,
     TestCollectionOutputDef,
     TestSourceTestOutputColllection,
     ToolSourceTestOutputs,
+    XmlTestCollectionDefDict,
 )
 from galaxy.util import requests
 from galaxy.util.bunch import Bunch
@@ -390,14 +390,17 @@ class GalaxyInteractorApi:
 
     @contextlib.contextmanager
     def test_history(
-        self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None
+        self,
+        require_new: bool = True,
+        cleanup_callback: Optional[Callable[[str], None]] = None,
+        name: Optional[str] = None,
     ) -> Generator[str, None, None]:
         history_id = None
         if not require_new:
             history_id = DEFAULT_TARGET_HISTORY
 
         cleanup = CLEANUP_TEST_HISTORIES
-        history_id = history_id or self.new_history()
+        history_id = history_id or self.new_history(name)
         try:
             yield history_id
         except Exception:
@@ -407,7 +410,8 @@ class GalaxyInteractorApi:
             if cleanup and cleanup_callback is not None:
                 cleanup_callback(history_id)
 
-    def new_history(self, history_name: str = "test_history", publish_history: bool = False) -> str:
+    def new_history(self, history_name: Optional[str] = None, publish_history: bool = False) -> str:
+        history_name = history_name or "test_history"
         create_response = self._post("histories", {"name": history_name})
         try:
             create_response.raise_for_status()
@@ -588,7 +592,9 @@ class GalaxyInteractorApi:
             raise ValueError(f"Invalid `location` URL: `{location}`")
         return location
 
-    def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
+    def run_tool(
+        self, testdef: "ToolTestDescription", history_id: str, resource_parameters: Optional[Dict[str, Any]] = None
+    ) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         resource_parameters = resource_parameters or {}
@@ -1130,7 +1136,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
             raise AssertionError(message)
 
     expected_element_count = output_collection_def.count
-    if expected_element_count:
+    if expected_element_count is not None:
         actual_element_count = len(data_collection["elements"])
         if expected_element_count != actual_element_count:
             message = f"Output collection '{name}': expected to have {expected_element_count} elements, but it had {actual_element_count}."
@@ -1183,7 +1189,8 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
                     message = f"Output collection '{name}': identifier '{identifier}' found out of order, expected order of {expected_sort_order} for the tool generated collection elements {eo_ids}"
                     raise AssertionError(message)
 
-    verify_elements(data_collection["elements"], output_collection_def.element_tests)
+    if output_collection_def.element_tests:
+        verify_elements(data_collection["elements"], output_collection_def.element_tests)
 
 
 def _verify_composite_datatype_file_content(
@@ -1754,7 +1761,7 @@ def expanded_inputs_from_json(expanded_inputs_json: ExpandedToolInputsJsonified)
     loaded_inputs: ExpandedToolInputs = {}
     for key, value in expanded_inputs_json.items():
         if isinstance(value, dict) and value.get("model_class"):
-            collection_def_dict = cast(TestCollectionDefDict, value)
+            collection_def_dict = cast(XmlTestCollectionDefDict, value)
             loaded_inputs[key] = TestCollectionDef.from_dict(collection_def_dict)
         else:
             loaded_inputs[key] = value

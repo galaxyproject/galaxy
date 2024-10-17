@@ -14,6 +14,7 @@ from galaxy.tool_util.parser.interface import (
     PagesSource,
     ToolSource,
 )
+from galaxy.tool_util.parser.util import parse_profile_version
 from galaxy.util import string_as_bool
 from .models import (
     BaseUrlParameterModel,
@@ -64,7 +65,7 @@ def get_color_value(input_source: InputSource) -> str:
     return input_source.get("value", "#000000")
 
 
-def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
+def _from_input_source_galaxy(input_source: InputSource, profile: float) -> ToolParameterT:
     input_type = input_source.parse_input_type()
     if input_type == "param":
         param_type = input_source.get("type")
@@ -84,11 +85,11 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
             return IntegerParameterModel(name=input_source.parse_name(), optional=optional, value=int_value)
         elif param_type == "boolean":
             nullable = input_source.parse_optional()
-            checked = input_source.get_bool("checked", None if nullable else False)
+            value = input_source.get_bool_or_none("checked", None if nullable else False)
             return BooleanParameterModel(
                 name=input_source.parse_name(),
                 optional=nullable,
-                value=checked,
+                value=value,
             )
         elif param_type == "text":
             optional = input_source.parse_optional()
@@ -213,7 +214,8 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
     elif input_type == "conditional":
         test_param_input_source = input_source.parse_test_input_source()
         test_parameter = cast(
-            Union[BooleanParameterModel, SelectParameterModel], _from_input_source_galaxy(test_param_input_source)
+            Union[BooleanParameterModel, SelectParameterModel],
+            _from_input_source_galaxy(test_param_input_source, profile),
         )
         whens = []
         default_test_value = cond_test_parameter_default_value(test_parameter)
@@ -224,12 +226,14 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
             else:
                 typed_value = value
 
-            tool_parameter_models = input_models_for_page(case_inputs_sources)
+            tool_parameter_models = input_models_for_page(case_inputs_sources, profile)
             is_default_when = False
             if typed_value == default_test_value:
                 is_default_when = True
             whens.append(
-                ConditionalWhen(discriminator=value, parameters=tool_parameter_models, is_default_when=is_default_when)
+                ConditionalWhen(
+                    discriminator=typed_value, parameters=tool_parameter_models, is_default_when=is_default_when
+                )
             )
         return ConditionalParameterModel(
             name=input_source.parse_name(),
@@ -241,7 +245,7 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
         # title = input_source.get("title")
         # help = input_source.get("help", None)
         instance_sources = input_source.parse_nested_inputs_source()
-        instance_tool_parameter_models = input_models_for_page(instance_sources)
+        instance_tool_parameter_models = input_models_for_page(instance_sources, profile)
         min_raw = input_source.get("min", None)
         max_raw = input_source.get("max", None)
         min = int(min_raw) if min_raw is not None else None
@@ -255,7 +259,7 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
     elif input_type == "section":
         name = input_source.get("name")
         instance_sources = input_source.parse_nested_inputs_source()
-        instance_tool_parameter_models = input_models_for_page(instance_sources)
+        instance_tool_parameter_models = input_models_for_page(instance_sources, profile)
         return SectionParameterModel(
             name=name,
             parameters=instance_tool_parameter_models,
@@ -319,7 +323,7 @@ def _from_input_source_cwl(input_source: CwlInputSource) -> ToolParameterT:
 
 
 def input_models_from_json(json: List[Dict[str, Any]]) -> ToolParameterBundle:
-    return ToolParameterBundleModel(input_models=json)
+    return ToolParameterBundleModel(parameters=json)
 
 
 def tool_parameter_bundle_from_json(json: Dict[str, Any]) -> ToolParameterBundleModel:
@@ -328,34 +332,35 @@ def tool_parameter_bundle_from_json(json: Dict[str, Any]) -> ToolParameterBundle
 
 def input_models_for_tool_source(tool_source: ToolSource) -> ToolParameterBundleModel:
     pages = tool_source.parse_input_pages()
-    return ToolParameterBundleModel(input_models=input_models_for_pages(pages))
+    profile = parse_profile_version(tool_source)
+    return ToolParameterBundleModel(parameters=input_models_for_pages(pages, profile))
 
 
-def input_models_for_pages(pages: PagesSource) -> List[ToolParameterT]:
+def input_models_for_pages(pages: PagesSource, profile: float) -> List[ToolParameterT]:
     input_models = []
     if pages.inputs_defined:
         for page_source in pages.page_sources:
-            input_models.extend(input_models_for_page(page_source))
+            input_models.extend(input_models_for_page(page_source, profile))
 
     return input_models
 
 
-def input_models_for_page(page_source: PageSource) -> List[ToolParameterT]:
+def input_models_for_page(page_source: PageSource, profile: float) -> List[ToolParameterT]:
     input_models = []
     for input_source in page_source.parse_input_sources():
         input_type = input_source.parse_input_type()
         if input_type == "display":
             # not a real input... just skip this. Should this be handled in the parser layer better?
             continue
-        tool_parameter_model = from_input_source(input_source)
+        tool_parameter_model = from_input_source(input_source, profile)
         input_models.append(tool_parameter_model)
     return input_models
 
 
-def from_input_source(input_source: InputSource) -> ToolParameterT:
+def from_input_source(input_source: InputSource, profile: float) -> ToolParameterT:
     tool_parameter: ToolParameterT
     if isinstance(input_source, CwlInputSource):
         tool_parameter = _from_input_source_cwl(input_source)
     else:
-        tool_parameter = _from_input_source_galaxy(input_source)
+        tool_parameter = _from_input_source_galaxy(input_source, profile)
     return tool_parameter

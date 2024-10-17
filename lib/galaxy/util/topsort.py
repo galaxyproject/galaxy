@@ -37,6 +37,8 @@ many methods to help analyze and break the cycles.  This requires
 a good deal more code than topsort itself!
 """
 
+from random import choice
+
 
 class CycleError(Exception):
     def __init__(self, sofar, numpreds, succs):
@@ -112,7 +114,6 @@ class CycleError(Exception):
         # crawl backward over the preds until we hit a duplicate, then
         # reverse the path.
         preds = self.get_preds()
-        from random import choice
 
         x = choice(remaining_elts)
         answer = []

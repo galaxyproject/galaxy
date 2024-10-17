@@ -4,11 +4,11 @@ import { computed } from "vue";
 
 import type { UserConcreteObjectStore } from "@/api/objectStores";
 import { DESCRIPTION_FIELD, NAME_FIELD, TEMPLATE_FIELD, TYPE_FIELD } from "@/components/ConfigTemplates/fields";
+import { useInstanceTesting } from "@/components/ConfigTemplates/useConfigurationTesting";
 import { useFiltering } from "@/components/ConfigTemplates/useInstanceFiltering";
 import { useObjectStoreInstancesStore } from "@/stores/objectStoreInstancesStore";
 import _l from "@/utils/localization";
 
-import InstanceDropdown from "./InstanceDropdown.vue";
 import ManageIndexHeader from "@/components/ConfigTemplates/ManageIndexHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
@@ -39,6 +39,11 @@ objectStoreInstancesStore.fetchInstances();
 function reload() {
     objectStoreInstancesStore.fetchInstances();
 }
+
+const testInstanceUrl = "/api/object_store_instances/{uuid}/test";
+
+const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testingError } =
+    useInstanceTesting(testInstanceUrl);
 </script>
 
 <template>
@@ -48,6 +53,7 @@ function reload() {
             create-button-id="object-store-create"
             create-route="/object_store_instances/create">
         </ManageIndexHeader>
+        <ConfigurationTestSummaryModal v-model="showTestResults" :error="testingError" :test-results="testResults" />
         <BTable
             id="user-object-stores-index"
             no-sort-reset
@@ -68,7 +74,7 @@ function reload() {
                 <ObjectStoreBadges size="1x" :badges="row.item.badges" />
             </template>
             <template v-slot:cell(name)="row">
-                <InstanceDropdown :object-store="row.item" @entryRemoved="reload" />
+                <InstanceDropdown :object-store="row.item" @entryRemoved="reload" @test="test(row.item)" />
             </template>
             <template v-slot:cell(type)="row">
                 <ObjectStoreTypeSpan :type="row.item.type" />

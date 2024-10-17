@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
+import { isDatasetElement, isDCE } from "@/api";
 import { getGalaxyInstance } from "@/app";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
@@ -17,6 +18,7 @@ import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
+import HelpText from "@/components/Help/HelpText.vue";
 
 library.add(faCopy, faFile, faFolder, faCaretDown, faCaretUp, faExclamation, faLink, faUnlink);
 
@@ -317,11 +319,21 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
             const incomingValues: Array<DataOption> = [];
             values.forEach((v) => {
                 // Map incoming objects to data option values
+                let newSrc;
+                if (isDCE(v)) {
+                    if (isDatasetElement(v)) {
+                        newSrc = SOURCE.DATASET;
+                        v = v.object;
+                    } else {
+                        newSrc = SOURCE.COLLECTION_ELEMENT;
+                    }
+                } else {
+                    newSrc =
+                        v.src || (v.history_content_type === "dataset_collection" ? SOURCE.COLLECTION : SOURCE.DATASET);
+                }
                 const newHid = v.hid;
                 const newId = v.id;
                 const newName = v.name ? v.name : newId;
-                const newSrc =
-                    v.src || (v.history_content_type === "dataset_collection" ? SOURCE.COLLECTION : SOURCE.DATASET);
                 const newValue: DataOption = {
                     id: newId,
                     src: newSrc,
@@ -399,7 +411,7 @@ function onBrowse() {
 }
 
 function canAcceptDatatype(itemDatatypes: string | Array<string>) {
-    if (!(props.extensions?.length > 0)) {
+    if (!(props.extensions?.length > 0) || props.extensions.includes("data")) {
         return true;
     }
     let datatypes: Array<string>;
@@ -650,7 +662,11 @@ const noOptionsWarningMessage = computed(() => {
             </BFormCheckbox>
             <div class="info text-info">
                 <FontAwesomeIcon icon="fa-exclamation" />
-                <span v-localize class="ml-1">
+                <span v-if="props.type == 'data' && currentVariant.src == SOURCE.COLLECTION" class="ml-1">
+                    The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
+                    tool.
+                </span>
+                <span v-else v-localize class="ml-1">
                     This is a batch mode input field. Individual jobs will be triggered for each dataset.
                 </span>
             </div>

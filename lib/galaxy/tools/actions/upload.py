@@ -11,6 +11,7 @@ from galaxy.model import (
 from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import UninitializedTree
+from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import upload_common
 from galaxy.tools.execute import (
     DatasetCollectionElementsSliceT,
@@ -20,7 +21,6 @@ from galaxy.tools.execute import (
     DEFAULT_RERUN_REMAP_JOB_ID,
     DEFAULT_SET_OUTPUT_HID,
     JobCallbackT,
-    ToolParameterRequestInstanceT,
 )
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.util import ExecutionTimer
@@ -40,7 +40,7 @@ class BaseUploadToolAction(ToolAction):
         self,
         tool,
         trans,
-        incoming: Optional[ToolParameterRequestInstanceT] = None,
+        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
         history: Optional[History] = None,
         job_params=None,
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,

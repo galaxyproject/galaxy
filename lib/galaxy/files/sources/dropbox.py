@@ -30,6 +30,8 @@ class DropboxFilesSource(PyFilesystem2FilesSource):
         # accessToken has been renamed to access_token in fs.dropboxfs 1.0
         if "accessToken" in props:
             props["access_token"] = props.pop("accessToken")
+        if "oauth2_access_token" in props:
+            props["access_token"] = props.pop("oauth2_access_token")
 
         try:
             handle = DropboxFS(**{**props, **extra_props})

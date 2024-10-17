@@ -21,6 +21,7 @@ from galaxy.jobs.runners import (
 )
 from galaxy.jobs.runners.util.pykube_util import (
     deduplicate_entries,
+    DEFAULT_INGRESS_API_VERSION,
     DEFAULT_JOB_API_VERSION,
     delete_ingress,
     delete_job,
@@ -35,6 +36,7 @@ from galaxy.jobs.runners.util.pykube_util import (
     HTTPError,
     Ingress,
     ingress_object_dict,
+    is_pod_running,
     is_pod_unschedulable,
     Job,
     job_object_dict,
@@ -54,16 +56,18 @@ log = logging.getLogger(__name__)
 
 __all__ = ("KubernetesJobRunner",)
 
+
 @dataclass
 class RetryableDeleteJobState(JobState):
-    def __init__ (self, job_state, k8s_job, max_retries=5, attempts=0):
+    def __init__(self, job_state, k8s_job, max_retries=5, attempts=0):
         self.__dict__ = job_state.__dict__.copy()
         self.init_retryable_job(max_retries, attempts)
         self.k8s_job = k8s_job
-    
+
     def init_retryable_job(self, max_retries, attempts):
         self.max_retries: int = max_retries
         self.attempts: int = attempts
+
 
 class KubernetesJobRunner(AsynchronousJobRunner):
     """
@@ -121,6 +125,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_interactivetools_use_ssl=dict(map=bool, default=False),
             k8s_interactivetools_ingress_annotations=dict(map=str),
             k8s_interactivetools_ingress_class=dict(map=str, default=None),
+            k8s_interactivetools_tls_secret=dict(map=str, default=None),
+            k8s_ingress_api_version=dict(map=str, default=DEFAULT_INGRESS_API_VERSION),
         )
 
         if "runner_param_specs" not in kwargs:
@@ -261,6 +267,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         service = Service(self._pykube_api, k8s_service_obj)
         service.create()
         ingress = Ingress(self._pykube_api, k8s_ingress_obj)
+        ingress.version = self.runner_params["k8s_ingress_api_version"]
         ingress.create()
 
     def __get_overridable_params(self, job_wrapper, param_key):
@@ -441,6 +448,54 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         }
         return k8s_spec_template
 
+    def __get_k8s_ingress_rules_spec(self, ajs, entry_points):
+        """This represents the template for the "rules" portion of the Ingress spec."""
+        if "v1beta1" in self.runner_params["k8s_ingress_api_version"]:
+            rules_spec = [
+                {
+                    "host": ep["domain"],
+                    "http": {
+                        "paths": [
+                            {
+                                "backend": {
+                                    "serviceName": self.__get_k8s_job_name(
+                                        self.__produce_k8s_job_prefix(), ajs.job_wrapper
+                                    ),
+                                    "servicePort": int(ep["tool_port"]),
+                                },
+                                "path": ep.get("entry_path", "/"),
+                                "pathType": "Prefix",
+                            }
+                        ]
+                    },
+                }
+                for ep in entry_points
+            ]
+        else:
+            rules_spec = [
+                {
+                    "host": ep["domain"],
+                    "http": {
+                        "paths": [
+                            {
+                                "backend": {
+                                    "service": {
+                                        "name": self.__get_k8s_job_name(
+                                            self.__produce_k8s_job_prefix(), ajs.job_wrapper
+                                        ),
+                                        "port": {"number": int(ep["tool_port"])},
+                                    }
+                                },
+                                "path": ep.get("entry_path", "/"),
+                                "pathType": "ImplementationSpecific",
+                            }
+                        ]
+                    },
+                }
+                for ep in entry_points
+            ]
+        return rules_spec
+
     def __get_k8s_ingress_spec(self, ajs):
         """The k8s spec template is nothing but a Ingress spec, except that it is nested and does not have an apiversion
         nor kind."""
@@ -478,39 +533,22 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 },
                 "annotations": {"app.galaxyproject.org/tool_id": ajs.job_wrapper.tool.id},
             },
-            "spec": {
-                "rules": [
-                    {
-                        "host": ep["domain"],
-                        "http": {
-                            "paths": [
-                                {
-                                    "backend": {
-                                        "service": {
-                                            "name": self.__get_k8s_job_name(
-                                                self.__produce_k8s_job_prefix(), ajs.job_wrapper
-                                            ),
-                                            "port": {"number": int(ep["tool_port"])},
-                                        }
-                                    },
-                                    "path": ep.get("entry_path", "/"),
-                                    "pathType": "Prefix",
-                                }
-                            ]
-                        },
-                    }
-                    for ep in entry_points
-                ],
-            },
+            "spec": {"rules": self.__get_k8s_ingress_rules_spec(ajs, entry_points)},
         }
         default_ingress_class = self.runner_params.get("k8s_interactivetools_ingress_class")
         if default_ingress_class:
             k8s_spec_template["spec"]["ingressClassName"] = default_ingress_class
         if self.runner_params.get("k8s_interactivetools_use_ssl"):
             domains = list({e["domain"] for e in entry_points})
-            k8s_spec_template["spec"]["tls"] = [
-                {"hosts": [domain], "secretName": re.sub("[^a-z0-9-]", "-", domain)} for domain in domains
-            ]
+            override_secret = self.runner_params.get("k8s_interactivetools_tls_secret")
+            if override_secret:
+                k8s_spec_template["spec"]["tls"] = [
+                    {"hosts": [domain], "secretName": override_secret} for domain in domains
+                ]
+            else:
+                k8s_spec_template["spec"]["tls"] = [
+                    {"hosts": [domain], "secretName": re.sub("[^a-z0-9-]", "-", domain)} for domain in domains
+                ]
         if self.runner_params.get("k8s_interactivetools_ingress_annotations"):
             new_ann = yaml.safe_load(self.runner_params.get("k8s_interactivetools_ingress_annotations"))
             k8s_spec_template["metadata"]["annotations"].update(new_ann)
@@ -748,7 +786,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # as probably this means that the k8s API server hasn't
             # had time to fill in the object status since the
             # job was created only too recently.
-            if len(k8s_job.obj["status"]) == 0:
+            # It is possible that k8s didn't account for the status of the pods
+            # and they are in the uncountedTerminatedPods status. In this
+            # case we also need to wait a moment
+            if len(job.obj["status"]) == 0 or job.obj["status"].get("uncountedTerminatedPods"):
                 return job_state
             if "succeeded" in k8s_job.obj["status"]:
                 succeeded = k8s_job.obj["status"]["succeeded"]
@@ -779,10 +820,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                                 pass
                         else:
                             pass
-                    else:
-                        log.debug(f"Job {job_state.job_id} set to running...")
+                    elif self.__check_job_pod_running(job_state):
+                        log.debug("Job set to running...")
                         job_state.running = True
                         job_state.job_wrapper.change_state(model.Job.states.RUNNING)
+                    else:
+                        log.debug(
+                            f"Job id: {job_state.job_id} with k8s id: {job.name} scheduled and is waiting to start..."
+                        )
                 return job_state
             elif job_persisted_state == model.Job.states.DELETED:
                 # Job has been deleted via stop_job and job has not been deleted,
@@ -890,13 +935,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __cleanup_k8s_job(self, retryable_delete_k8s_job_state: RetryableDeleteJobState):
         k8s_job = retryable_delete_k8s_job_state.k8s_job
-        log.debug(f"Cleaning up job with K8s id {k8s_job.name} (attempt {retryable_delete_k8s_job_state.attempts + 1}).")
+        log.debug(
+            f"Cleaning up job with K8s id {k8s_job.name} (attempt {retryable_delete_k8s_job_state.attempts + 1})."
+        )
         k8s_cleanup_job = self.runner_params["k8s_cleanup_job"]
         try:
             delete_job(k8s_job, k8s_cleanup_job)
         except HTTPError as exc:
-            # If job not found, then previous deletion was successful 
-            if exc.code == 404 and retryable_delete_k8s_job_state.attempts >= 1: 
+            # If job not found, then previous deletion was successful
+            if exc.code == 404 and retryable_delete_k8s_job_state.attempts >= 1:
                 log.warning(
                     f"Cleanup job with K8s id {k8s_job.name} skipped as it is no longer available (404) and a previous deletion was triggered."
                 )
@@ -960,6 +1007,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             return True
 
         return False
+
+    def __check_job_pod_running(self, job_state):
+        """
+        checks the state of the pod to see if it is running.
+        """
+        pods = find_pod_object_by_name(self._pykube_api, job_state.job_id, self.runner_params["k8s_namespace"])
+        if not pods.response["items"]:
+            return False
+
+        pod = Pod(self._pykube_api, pods.response["items"][0])
+        return is_pod_running(self._pykube_api, pod, self.runner_params["k8s_namespace"])
 
     def __job_pending_due_to_unschedulable_pod(self, job_state):
         """
@@ -1034,7 +1092,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     log.debug(f"Job {gxy_job.id} ({gxy_job.job_runner_external_id}) has guest ports, cleaning them up")
                     self.__cleanup_k8s_guest_ports(job_wrapper, k8s_job)
                 # Wrap the k8s job before we put it in the work queue so it can be retried a few times
-                self.work_queue.put((self.__cleanup_k8s_job, RetryableDeleteJobState(job_state=JobState(job_wrapper=job_wrapper,job_destination=job_wrapper.job_destination),k8s_job=k8s_job)))
+                self.work_queue.put(
+                    (
+                        self.__cleanup_k8s_job,
+                        RetryableDeleteJobState(
+                            job_state=JobState(job_wrapper=job_wrapper, job_destination=job_wrapper.job_destination),
+                            k8s_job=k8s_job,
+                        ),
+                    )
+                )
             else:
                 log.debug(f"Could not find job with id {gxy_job.get_job_runner_external_id()} to delete")
             # TODO assert whether job parallelism == 0

@@ -131,16 +131,16 @@ class ToolRecommendations:
         Create model and associated dictionaries for recommendations
         """
         self.tool_recommendation_model_path = self.__download_model(remote_model_url)
-        model_file = h5py.File(self.tool_recommendation_model_path, "r")
-        self.reverse_dictionary = json.loads(model_file["reverse_dict"][()].decode("utf-8"))
-        self.loaded_model = self.create_transformer_model(len(self.reverse_dictionary) + 1)
-        self.loaded_model.load_weights(self.tool_recommendation_model_path)
+        with h5py.File(self.tool_recommendation_model_path, "r", locking=False) as model_file:
+            self.reverse_dictionary = json.loads(model_file["reverse_dict"][()].decode("utf-8"))
+            self.loaded_model = self.create_transformer_model(len(self.reverse_dictionary) + 1)
+            self.loaded_model.load_weights(self.tool_recommendation_model_path)
 
-        self.model_data_dictionary = {v: k for k, v in self.reverse_dictionary.items()}
-        # set the list of compatible tools
-        self.compatible_tools = json.loads(model_file["compatible_tools"][()].decode("utf-8"))
-        tool_weights = json.loads(model_file["class_weights"][()].decode("utf-8"))
-        self.standard_connections = json.loads(model_file["standard_connections"][()].decode("utf-8"))
+            self.model_data_dictionary = {v: k for k, v in self.reverse_dictionary.items()}
+            # set the list of compatible tools
+            self.compatible_tools = json.loads(model_file["compatible_tools"][()].decode("utf-8"))
+            tool_weights = json.loads(model_file["class_weights"][()].decode("utf-8"))
+            self.standard_connections = json.loads(model_file["standard_connections"][()].decode("utf-8"))
         # sort the tools' usage dictionary
         tool_pos_sorted = [int(key) for key in tool_weights.keys()]
         for k in tool_pos_sorted:

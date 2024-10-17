@@ -104,9 +104,14 @@ class MaterializeDatasetInstanceTaskRequest(Model):
         title="Content",
         description=(
             "Depending on the `source` it can be:\n"
-            "- The encoded id of the source library dataset\n"
-            "- The encoded id of the HDA\n"
+            "- The decoded id of the source library dataset\n"
+            "- The decoded id of the HDA\n"
         ),
+    )
+    validate_hashes: bool = Field(
+        False,
+        title="Validate hashes",
+        description="Set to true to enable dataset validation during materialization.",
     )
 
 

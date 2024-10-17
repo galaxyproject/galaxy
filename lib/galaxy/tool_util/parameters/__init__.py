@@ -1,7 +1,10 @@
 from .case import test_case_state
 from .convert import (
     decode,
+    dereference,
     encode,
+    encode_test,
+    fill_static_defaults,
 )
 from .factory import (
     from_input_source,
@@ -26,7 +29,12 @@ from .models import (
     CwlStringParameterModel,
     CwlUnionParameterModel,
     DataCollectionParameterModel,
+    DataCollectionRequest,
     DataParameterModel,
+    DataRequest,
+    DataRequestHda,
+    DataRequestInternalHda,
+    DataRequestUri,
     FloatParameterModel,
     HiddenParameterModel,
     IntegerParameterModel,
@@ -42,6 +50,7 @@ from .models import (
     validate_against_model,
     validate_internal_job,
     validate_internal_request,
+    validate_internal_request_dereferenced,
     validate_request,
     validate_test_case,
     validate_workflow_step,
@@ -49,6 +58,7 @@ from .models import (
 )
 from .state import (
     JobInternalToolState,
+    RequestInternalDereferencedToolState,
     RequestInternalToolState,
     RequestToolState,
     TestCaseToolState,
@@ -62,6 +72,7 @@ from .visitor import (
     repeat_inputs_to_array,
     validate_explicit_conditional_test_value,
     visit_input_values,
+    VISITOR_NO_REPLACEMENT,
 )
 
 __all__ = (
@@ -74,6 +85,11 @@ __all__ = (
     "JobInternalToolState",
     "ToolParameterBundle",
     "ToolParameterBundleModel",
+    "DataRequest",
+    "DataRequestInternalHda",
+    "DataRequestHda",
+    "DataRequestUri",
+    "DataCollectionRequest",
     "ToolParameterModel",
     "IntegerParameterModel",
     "BooleanParameterModel",
@@ -100,6 +116,7 @@ __all__ = (
     "validate_against_model",
     "validate_internal_job",
     "validate_internal_request",
+    "validate_internal_request_dereferenced",
     "validate_request",
     "validate_test_case",
     "validate_workflow_step",
@@ -112,12 +129,17 @@ __all__ = (
     "test_case_state",
     "RequestToolState",
     "RequestInternalToolState",
+    "RequestInternalDereferencedToolState",
     "flat_state_path",
     "keys_starting_with",
     "visit_input_values",
     "repeat_inputs_to_array",
+    "VISITOR_NO_REPLACEMENT",
     "decode",
     "encode",
+    "encode_test",
+    "fill_static_defaults",
+    "dereference",
     "WorkflowStepToolState",
     "WorkflowStepLinkedToolState",
 )

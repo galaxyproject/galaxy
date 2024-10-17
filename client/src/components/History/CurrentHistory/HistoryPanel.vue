@@ -3,21 +3,20 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
 
-import { type HistoryItemSummary, type HistorySummaryExtended, isHistoryItem, userOwnsHistory } from "@/api";
-import { copyDataset } from "@/api/datasets";
+import { type HistoryItemSummary, type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import SelectedItems from "@/components/History/Content/SelectedItems";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
-import { Toast } from "@/composables/toast";
 import { useActiveElement } from "@/composables/useActiveElement";
 import { startWatchingHistory } from "@/store/historyStore/model/watchHistory";
-import { useEventStore } from "@/stores/eventStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
-import { setDrag } from "@/utils/setDrag";
+import { setItemDragstart } from "@/utils/setDrag";
+
+import { useHistoryDragDrop } from "../../../composables/historyDragDrop";
 
 import HistoryCounter from "./HistoryCounter.vue";
 import HistoryDetails from "./HistoryDetails.vue";
@@ -70,11 +69,9 @@ const isLoading = ref(false);
 const offsetQueryParam = ref(0);
 const searchError = ref<BackendFilterError | undefined>(undefined);
 const showAdvanced = ref(false);
-const showDropZone = ref(false);
 const operationRunning = ref<string | null>(null);
 const operationError = ref(null);
 const querySelectionBreak = ref(false);
-const dragTarget = ref<EventTarget | null>(null);
 const contentItemRefs = computed(() => {
     return historyItems.value.reduce((acc: ContentItemRef, item) => {
         acc[itemUniqueKey(item)] = ref(null);
@@ -90,6 +87,9 @@ const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistor
 const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
 const { currentUser } = storeToRefs(useUserStore());
+
+const historyIdComputed = computed(() => props.history.id);
+const { showDropZone, onDragEnter, onDragLeave, onDragOver, onDrop } = useHistoryDragDrop(historyIdComputed);
 
 const currentUserOwnsHistory = computed(() => {
     return userOwnsHistory(currentUser.value, props.history);
@@ -260,19 +260,6 @@ watch(
     }
 );
 
-function dragSameHistory() {
-    return getDragData().sameHistory;
-}
-
-function getDragData() {
-    const eventStore = useEventStore();
-    const dragItems = eventStore.getDragItems();
-    // Filter out any non-history items
-    const historyItems = dragItems?.filter((item: any) => isHistoryItem(item)) as HistoryItemSummary[];
-    const historyId = historyItems?.[0]?.history_id;
-    return { data: historyItems, sameHistory: historyId === props.history.id, multiple: historyItems?.length > 1 };
-}
-
 function getHighlight(item: HistoryItemSummary) {
     if (unref(isLoading)) {
         return undefined;
@@ -386,70 +373,6 @@ function onOperationError(error: any) {
     operationError.value = error;
 }
 
-function onDragEnter(e: DragEvent) {
-    if (dragSameHistory()) {
-        return;
-    }
-    dragTarget.value = e.target;
-    showDropZone.value = true;
-}
-
-function onDragOver(e: DragEvent) {
-    if (dragSameHistory()) {
-        return;
-    }
-    e.preventDefault();
-}
-
-function onDragLeave(e: DragEvent) {
-    if (dragSameHistory()) {
-        return;
-    }
-    if (dragTarget.value === e.target) {
-        showDropZone.value = false;
-    }
-}
-
-async function onDrop() {
-    showDropZone.value = false;
-    const { data, sameHistory, multiple } = getDragData();
-    if (!data || sameHistory) {
-        return;
-    }
-
-    let datasetCount = 0;
-    let collectionCount = 0;
-    try {
-        // iterate over the data array and copy each item to the current history
-        for (const item of data) {
-            const dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
-            await copyDataset(item.id, props.history.id, item.history_content_type, dataSource);
-
-            if (item.history_content_type === "dataset") {
-                datasetCount++;
-                if (!multiple) {
-                    Toast.info("Dataset copied to history");
-                }
-            } else {
-                collectionCount++;
-                if (!multiple) {
-                    Toast.info("Collection copied to history");
-                }
-            }
-        }
-
-        if (multiple && datasetCount > 0) {
-            Toast.info(`${datasetCount} dataset${datasetCount > 1 ? "s" : ""} copied to new history`);
-        }
-        if (multiple && collectionCount > 0) {
-            Toast.info(`${collectionCount} collection${collectionCount > 1 ? "s" : ""} copied to new history`);
-        }
-        historyStore.loadHistoryById(props.history.id);
-    } catch (error) {
-        Toast.error(`${error}`);
-    }
-}
-
 function updateFilterValue(filterKey: string, newValue: any) {
     const currentFilterText = filterText.value;
     filterText.value = filterClass.setFilterValue(currentFilterText, filterKey, newValue);
@@ -491,24 +414,6 @@ function arrowNavigate(item: HistoryItemSummary, eventKey: string) {
         itemElement?.focus();
     }
     return nextItem;
-}
-
-function setItemDragstart(
-    item: HistoryItemSummary,
-    itemIsSelected: boolean,
-    selectedItems: Map<string, HistoryItemSummary>,
-    selectionSize: number,
-    event: DragEvent
-) {
-    if (itemIsSelected && selectionSize > 1) {
-        const selectedItemsObj: any = {};
-        for (const [key, value] of selectedItems) {
-            selectedItemsObj[key] = value;
-        }
-        setDrag(event, selectedItemsObj, true);
-    } else {
-        setDrag(event, item as any);
-    }
 }
 </script>
 
@@ -670,10 +575,10 @@ function setItemDragstart(
                                     @drag-start="
                                         setItemDragstart(
                                             item,
+                                            $event,
                                             showSelection && isSelected(item),
-                                            selectedItems,
                                             selectionSize,
-                                            $event
+                                            selectedItems
                                         )
                                     "
                                     @hide-selection="setShowSelection(false)"
@@ -691,7 +596,22 @@ function setItemDragstart(
                                     @view-collection="$emit('view-collection', item, currentOffset)"
                                     @delete="onDelete"
                                     @undelete="onUndelete(item)"
-                                    @unhide="onUnhide(item)" />
+                                    @unhide="onUnhide(item)">
+                                    <template v-slot:sub_items="slotProps">
+                                        <div v-if="slotProps.subItemsVisible" class="pl-2 sub-items-content">
+                                            <ContentItem
+                                                v-for="subItem in item.sub_items"
+                                                :id="subItem.hid"
+                                                :key="subItem.id"
+                                                :item="subItem"
+                                                :name="subItem.name"
+                                                :expand-dataset="isExpanded(subItem)"
+                                                :is-dataset="isDataset(subItem)"
+                                                :is-sub-item="true"
+                                                @update:expand-dataset="setExpanded(subItem, $event)" />
+                                        </div>
+                                    </template>
+                                </ContentItem>
                             </template>
                         </ListingLayout>
                     </div>
@@ -700,3 +620,11 @@ function setItemDragstart(
         </SelectedItems>
     </ExpandedItems>
 </template>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.sub-items-content {
+    background: $body-bg;
+}
+</style>

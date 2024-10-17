@@ -10,6 +10,17 @@ History
 
 
 -------------------
+24.1.2 (2024-09-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Retry container monitor POST if it fails (don't assume it succeeded) by `@natefoo <https://github.com/natefoo>`_ in `#18863 <https://github.com/galaxyproject/galaxy/pull/18863>`_
+
+-------------------
 24.1.1 (2024-07-02)
 -------------------
 

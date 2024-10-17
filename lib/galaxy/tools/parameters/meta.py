@@ -22,6 +22,10 @@ from galaxy.model.dataset_collections import (
 from galaxy.util import permutations
 from . import visit_input_values
 from .wrapped import process_key
+from .._types import (
+    ToolRequestT,
+    ToolStateJobInstanceT,
+)
 
 log = logging.getLogger(__name__)
 
@@ -154,10 +158,10 @@ def expand_workflow_inputs(param_inputs, inputs=None):
     return WorkflowParameterExpansion(param_combinations, params_keys, input_combinations)
 
 
-ExpandedT = Tuple[List[Dict[str, Any]], Optional[matching.MatchingCollections]]
+ExpandedT = Tuple[List[ToolStateJobInstanceT], Optional[matching.MatchingCollections]]
 
 
-def expand_meta_parameters(trans, tool, incoming) -> ExpandedT:
+def expand_meta_parameters(trans, tool, incoming: ToolRequestT) -> ExpandedT:
     """
     Take in a dictionary of raw incoming parameters and expand to a list
     of expanded incoming parameters (one set of parameters per tool

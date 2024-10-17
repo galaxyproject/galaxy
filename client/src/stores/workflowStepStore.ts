@@ -50,6 +50,7 @@ export declare const ParameterTypes: "text" | "integer" | "float" | "boolean" | 
 export interface ParameterOutput extends Omit<DataOutput, "type" | "extensions"> {
     type: typeof ParameterTypes;
     parameter: true;
+    multiple: boolean;
 }
 
 interface BaseStepInput {
