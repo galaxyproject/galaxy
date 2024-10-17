@@ -62,6 +62,7 @@ const props = defineProps<{
     parentNode: HTMLElement | null;
     readonly: boolean;
     blank: boolean;
+    ignoreErrors?: boolean;
 }>();
 
 const emit = defineEmits(["pan-by", "stopDragging", "onDragConnector"]);
@@ -127,7 +128,7 @@ const label = computed(() => {
 
 const rowClass = computed(() => {
     const classes = ["form-row", "dataRow", "output-data-row"];
-    if ("valid" in props.output && props.output?.valid === false) {
+    if (!props.ignoreErrors && "valid" in props.output && props.output?.valid === false) {
         classes.push("form-row-error");
     }
     return classes;
