@@ -157,7 +157,8 @@
                         @annotationChanged="onAnnotation"
                         @labelChanged="onLabel"
                         @dataChanged="onSetData"
-                        @stepUpdated="updateStep"></NodeInspector>
+                        @stepUpdated="updateStep"
+                        @close="activeNodeId = null"></NodeInspector>
                 </WorkflowGraph>
             </div>
             <!--FlexPanel side="right">
