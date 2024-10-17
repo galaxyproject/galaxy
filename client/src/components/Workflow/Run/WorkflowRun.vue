@@ -31,6 +31,7 @@ interface Props {
     simpleFormTargetHistory?: string;
     simpleFormUseJobCache?: boolean;
     requestState?: Record<string, never>;
+    instance?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -39,6 +40,7 @@ const props = withDefaults(defineProps<Props>(), {
     simpleFormTargetHistory: "current",
     simpleFormUseJobCache: false,
     requestState: undefined,
+    instance: false,
 });
 
 const loading = ref(true);
@@ -80,7 +82,7 @@ function handleSubmissionError(error: string) {
 
 async function loadRun() {
     try {
-        const runData = await getRunData(props.workflowId, props.version || undefined);
+        const runData = await getRunData(props.workflowId, props.version || undefined, props.instance);
         const incomingModel = new WorkflowRunModel(runData);
 
         simpleForm.value = props.preferSimpleForm;

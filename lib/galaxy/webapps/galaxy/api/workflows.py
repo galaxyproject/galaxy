@@ -1171,11 +1171,7 @@ class FastAPIWorkflows:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_landing_request: CreateWorkflowLandingRequestPayload = Body(...),
     ) -> WorkflowLandingRequest:
-        try:
-            return self.landing_manager.create_workflow_landing_request(workflow_landing_request)
-        except Exception:
-            log.exception("Problem...")
-            raise
+        return self.landing_manager.create_workflow_landing_request(workflow_landing_request)
 
     @router.post("/api/workflow_landings/{uuid}/claim")
     def claim_landing(
@@ -1184,11 +1180,7 @@ class FastAPIWorkflows:
         uuid: UUID4 = LandingUuidPathParam,
         payload: Optional[ClaimLandingPayload] = Body(...),
     ) -> WorkflowLandingRequest:
-        try:
-            return self.landing_manager.claim_workflow_landing_request(trans, uuid, payload)
-        except Exception:
-            log.exception("claiim problem...")
-            raise
+        return self.landing_manager.claim_workflow_landing_request(trans, uuid, payload)
 
     @router.get("/api/workflow_landings/{uuid}")
     def get_landing(

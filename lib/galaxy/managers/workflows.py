@@ -30,6 +30,9 @@ from pydantic import (
     WrapSerializer,
 )
 from sqlalchemy import (
+    and_,
+    Cast,
+    ColumnElement,
     desc,
     false,
     func,
@@ -37,6 +40,7 @@ from sqlalchemy import (
     select,
     true,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     aliased,
     joinedload,
@@ -85,6 +89,7 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
@@ -2010,6 +2015,39 @@ class WorkflowContentsManager(UsesAnnotations):
             elif step.type == "subworkflow":
                 tools.extend(self.get_all_tools(step.subworkflow))
         return tools
+
+    def get_workflow_by_trs_id_and_version(
+        self, sa_session: galaxy_scoped_session, trs_id: str, trs_version: str, user_id: Optional[int] = None
+    ) -> Optional[model.Workflow]:
+        def to_json(column, keys: List[str]):
+            assert sa_session.bind
+            if sa_session.bind.dialect.name == "postgresql":
+                cast: Union[ColumnElement[Any], Cast[Any]] = func.cast(func.convert_from(column, "UTF8"), JSONB)
+                for key in keys:
+                    cast = cast.__getitem__(key)
+                return cast.astext
+            else:
+                for key in keys:
+                    column = column.__getitem__(key)
+                return column
+
+        stmnt = (
+            select(model.Workflow)
+            .join(model.StoredWorkflow, model.Workflow.stored_workflow_id == model.StoredWorkflow.id)
+            .filter(
+                and_(
+                    to_json(model.Workflow.source_metadata, ["trs_tool_id"]) == trs_id,
+                    to_json(model.Workflow.source_metadata, ["trs_version_id"]) == trs_version,
+                )
+            )
+        )
+        if user_id:
+            stmnt = stmnt.filter(
+                model.StoredWorkflow.user_id == user_id, model.StoredWorkflow.latest_workflow_id == model.Workflow.id
+            )
+        else:
+            stmnt = stmnt.filter(model.StoredWorkflow.importable == true())
+        return sa_session.execute(stmnt).scalar()
 
 
 class RefactorRequest(RefactorActions):
