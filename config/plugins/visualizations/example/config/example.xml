@@ -20,13 +20,13 @@
             <type>setting_type</type>
         </input>
     </settings>
-    <groups>
+    <tracks>
         <input>
-            <name>group_input</name>
-            <help>group help</help>
-            <type>group_type</type>
+            <name>track_input</name>
+            <help>track help</help>
+            <type>track_type</type>
         </input>
-    </groups>
+    </tracks>
     <specs>
         <spec_name>spec_value</spec_name>
     </specs>
