@@ -548,7 +548,7 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         history_name = "تاریخچه"
         history_id = self.dataset_populator.new_history(name=history_name)
         response = self.dataset_populator.make_public(history_id)
-        assert response["username_and_slug"]
+        assert history_name in response["username_and_slug"]
 
     def test_immutable_history_update_fails(self):
         history_id = self._create_history("TestHistoryForImmutability")["id"]
