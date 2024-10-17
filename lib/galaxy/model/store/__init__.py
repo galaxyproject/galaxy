@@ -412,6 +412,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self._import_libraries(object_import_tracker)
         self._import_collection_instances(object_import_tracker, collections_attrs, history, new_history)
         self._import_collection_implicit_input_associations(object_import_tracker, collections_attrs)
+        self._flush()
         self._import_collection_copied_associations(object_import_tracker, collections_attrs)
         self._import_implicit_dataset_conversions(object_import_tracker)
         self._reassign_hids(object_import_tracker, history)
@@ -999,14 +1000,12 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             # sense.
             hdca_copied_from_sinks = object_import_tracker.hdca_copied_from_sinks
             if copied_from_object_key in object_import_tracker.hdcas_by_key:
-                hdca.copied_from_history_dataset_collection_association = object_import_tracker.hdcas_by_key[
-                    copied_from_object_key
-                ]
+                copied_hdca = object_import_tracker.hdcas_by_key[copied_from_object_key]
+                hdca.copied_from_history_dataset_collection_association_id = copied_hdca.id
             else:
                 if copied_from_object_key in hdca_copied_from_sinks:
-                    hdca.copied_from_history_dataset_collection_association = object_import_tracker.hdcas_by_key[
-                        hdca_copied_from_sinks[copied_from_object_key]
-                    ]
+                    copied_hdca = object_import_tracker.hdcas_by_key[hdca_copied_from_sinks[copied_from_object_key]]
+                    hdca.copied_from_history_dataset_collection_association_id = copied_hdca.id
                 else:
                     hdca_copied_from_sinks[copied_from_object_key] = dataset_collection_key
 
