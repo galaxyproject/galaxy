@@ -92,10 +92,10 @@ object_store_instances:
       create_button: '#object-store-create'
       _: '#user-object-stores-index'
 
-  create: 
+  create:
     selectors:
       select: '.object-store-template-select-button[data-template-id="${template_id}"]'
-      _: '#create-object-store-landing'      
+      _: '#create-object-store-landing'
       submit: '#submit'
 
 file_source_instances:
@@ -104,10 +104,10 @@ file_source_instances:
       create_button: '#file-source-create'
       _: '#user-file-sources-index'
 
-  create: 
+  create:
     selectors:
       select: '.file-source-template-select-button[data-template-id="${template_id}"]'
-      _: '#create-file-source-landing'      
+      _: '#create-file-source-landing'
       submit: '#submit'
 
 toolbox_filters:
@@ -375,8 +375,8 @@ edit_collection_attributes:
 tool_panel:
   selectors:
     tool_box: '[data-description="panel toolbox"]'
-    tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
-    outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
+    tool_link: 'a[href$$="?tool_id=${tool_id}"]'
+    outer_tool_link: '.toolTitle a[href$$="?tool_id=${tool_id}"]'
     data_source_tool_link: 'a[href$$="tool_runner/data_source_redirect?tool_id=${tool_id}"]'
     search: '.search-query'
     workflow_names: '#internal-workflows .toolTitle'
