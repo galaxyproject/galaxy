@@ -544,6 +544,12 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             }
             self.dataset_populator.import_history(import_data)
 
+    def test_publish_non_alphanumeric(self):
+        history_name = "تاریخچه"
+        history_id = self.dataset_populator.new_history(name=history_name)
+        response = self.dataset_populator.make_public(history_id)
+        assert history_name in response["username_and_slug"]
+
     def test_immutable_history_update_fails(self):
         history_id = self._create_history("TestHistoryForImmutability")["id"]
 

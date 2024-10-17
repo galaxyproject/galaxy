@@ -1123,6 +1123,11 @@ class SharableMixin:
     @web.expose
     def display_by_username_and_slug(self, trans, username, slug, **kwargs):
         """Display item by username and slug."""
+        # Ensure slug is in the correct format.
+        slug = slug.encode("latin1").decode("utf-8")
+        self._display_by_username_and_slug(trans, username, slug, **kwargs)
+
+    def _display_by_username_and_slug(self, trans, username, slug, **kwargs):
         raise NotImplementedError()
 
     def get_item(self, trans, id):
