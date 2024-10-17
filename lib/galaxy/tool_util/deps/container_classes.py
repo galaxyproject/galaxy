@@ -185,6 +185,10 @@ class Volume:
         ('A', 'B', 'rw')
         >>> Volume.parse_volume_str('A:ro')
         ('A', 'A', 'ro')
+        >>> Volume.parse_volume_str('A:z')
+        ('A', 'A', 'z')
+        >>> Volume.parse_volume_str('A:Z')
+        ('A', 'A', 'Z')
         >>> Volume.parse_volume_str('A')
         ('A', 'A', 'rw')
         >>> Volume.parse_volume_str(' ')
@@ -207,7 +211,7 @@ class Volume:
             target = volume_parts[1]
             mode = volume_parts[2]
         elif len(volume_parts) == 2:
-            if volume_parts[1] not in ("rw", "ro", "default_ro"):
+            if volume_parts[1] not in ("rw", "ro", "default_ro", "z", "Z"):
                 source = volume_parts[0]
                 target = volume_parts[1]
                 mode = "rw"
