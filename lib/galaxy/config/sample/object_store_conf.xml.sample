@@ -195,6 +195,10 @@
 
 <!--
     Sample iRODS Object Store
+
+    The ssl section is optional
+    The logical section is optional and is meant for defining the remote path
+    if not defined the default path is: /zone_name/home/username
 -->
 <!--
 <object_store type="irods">
