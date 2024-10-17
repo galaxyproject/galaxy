@@ -43,6 +43,7 @@ from galaxy.jobs.runners.util.pykube_util import (
     produce_k8s_job_prefix,
     pull_policy,
     pykube_client_from_dict,
+    reload_job,
     Service,
     service_object_dict,
 )
@@ -53,13 +54,16 @@ log = logging.getLogger(__name__)
 
 __all__ = ("KubernetesJobRunner",)
 
-
 @dataclass
-class RetryableDeleteJob:
-    k8s_job: Job
-    retries: int = 5  # Max number of retries
-    attempts: int = 0  # Current number of attempts
-
+class RetryableDeleteJobState(JobState):
+    def __init__ (self, job_state, k8s_job, max_retries=5, attempts=0):
+        self.__dict__ = job_state.__dict__.copy()
+        self.init_retryable_job(max_retries, attempts)
+        self.k8s_job = k8s_job
+    
+    def init_retryable_job(self, max_retries, attempts):
+        self.max_retries: int = max_retries
+        self.attempts: int = attempts
 
 class KubernetesJobRunner(AsynchronousJobRunner):
     """
@@ -839,7 +843,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             if self.__has_guest_ports(job_state.job_wrapper):
                 self.__cleanup_k8s_guest_ports(job_state.job_wrapper, k8s_job)
             # Wrap the k8s job before we put it in the work queue so it can be retried a few times
-            self.work_queue.put((self.__cleanup_k8s_job, RetryableDeleteJob(k8s_job=k8s_job)))
+            self.work_queue.put((self.__cleanup_k8s_job, RetryableDeleteJobState(job_state=job_state, k8s_job=k8s_job)))
         except Exception:
             log.exception("Could not clean up an unschedulable k8s batch job. Ignoring...")
         return None
@@ -879,33 +883,40 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             if self.__has_guest_ports(job_state.job_wrapper):
                 self.__cleanup_k8s_guest_ports(job_state.job_wrapper, k8s_job)
             # Wrap the k8s job before we put it in the work queue so it can be retried a few times
-            self.work_queue.put((self.__cleanup_k8s_job, RetryableDeleteJob(k8s_job=k8s_job)))
+            self.work_queue.put((self.__cleanup_k8s_job, RetryableDeleteJobState(job_state=job_state, k8s_job=k8s_job)))
         except Exception:
             log.exception("Could not clean up a failed k8s batch job. Ignoring...")
         return mark_failed
 
-    def __cleanup_k8s_job(self, retryable_delete_k8s_job: RetryableDeleteJob):
-        k8s_job = retryable_delete_k8s_job.k8s_job
-        log.debug(f"Cleaning up job with K8s id {k8s_job.name} (attempt {retryable_delete_k8s_job.attempts + 1}).")
+    def __cleanup_k8s_job(self, retryable_delete_k8s_job_state: RetryableDeleteJobState):
+        k8s_job = retryable_delete_k8s_job_state.k8s_job
+        log.debug(f"Cleaning up job with K8s id {k8s_job.name} (attempt {retryable_delete_k8s_job_state.attempts + 1}).")
         k8s_cleanup_job = self.runner_params["k8s_cleanup_job"]
         try:
             delete_job(k8s_job, k8s_cleanup_job)
         except HTTPError as exc:
-            if retryable_delete_k8s_job.retries < 1:
+            # If job not found, then previous deletion was successful 
+            if exc.code == 404 and retryable_delete_k8s_job_state.attempts >= 1: 
+                log.warning(
+                    f"Cleanup job with K8s id {k8s_job.name} skipped as it is no longer available (404) and a previous deletion was triggered."
+                )
+                return
+            if retryable_delete_k8s_job_state.max_retries <= retryable_delete_k8s_job_state.attempts:
                 log.error(
-                    f"Failed to cleanup job with K8s id {k8s_job.name} after {retryable_delete_k8s_job.attempts} attempts; giving up."
+                    f"Failed to cleanup job with K8s id {k8s_job.name} after {retryable_delete_k8s_job_state.attempts} of {retryable_delete_k8s_job_state.max_retries} attempts; giving up."
                 )
                 raise exc
             else:
                 # Refresh the job to resolve object & cluster conflicts
-                k8s_job.reload()
+                reload_job(k8s_job)
                 # Try the cleanup again
-                new_retryable_job = RetryableDeleteJob(
+                new_retryable_job_state = RetryableDeleteJobState(
+                    job_state=retryable_delete_k8s_job_state,
                     k8s_job=k8s_job,
-                    retries=retryable_delete_k8s_job.retries - 1,
-                    attempts=retryable_delete_k8s_job.attempts + 1,
+                    max_retries=retryable_delete_k8s_job_state.max_retries,
+                    attempts=retryable_delete_k8s_job_state.attempts + 1,
                 )
-                self.work_queue.put((self.__cleanup_k8s_job, new_retryable_job))
+                self.work_queue.put((self.__cleanup_k8s_job, new_retryable_job_state))
 
     def __cleanup_k8s_ingress(self, ingress, job_failed=False):
         k8s_cleanup_job = self.runner_params["k8s_cleanup_job"]
@@ -1023,7 +1034,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     log.debug(f"Job {gxy_job.id} ({gxy_job.job_runner_external_id}) has guest ports, cleaning them up")
                     self.__cleanup_k8s_guest_ports(job_wrapper, k8s_job)
                 # Wrap the k8s job before we put it in the work queue so it can be retried a few times
-                self.work_queue.put((self.__cleanup_k8s_job, RetryableDeleteJob(k8s_job=k8s_job)))
+                self.work_queue.put((self.__cleanup_k8s_job, RetryableDeleteJobState(job_state=JobState(job_wrapper=job_wrapper,job_destination=job_wrapper.job_destination),k8s_job=k8s_job)))
             else:
                 log.debug(f"Could not find job with id {gxy_job.get_job_runner_external_id()} to delete")
             # TODO assert whether job parallelism == 0
@@ -1156,4 +1167,4 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             if self.__has_guest_ports(job_state.job_wrapper):
                 self.__cleanup_k8s_guest_ports(job_state.job_wrapper, k8s_job)
             # Wrap the k8s job before we put it in the work queue so it can be retried a few times
-            self.work_queue.put((self.__cleanup_k8s_job, RetryableDeleteJob(k8s_job=k8s_job)))
+            self.work_queue.put((self.__cleanup_k8s_job, RetryableDeleteJobState(job_state=job_state, k8s_job=k8s_job)))
