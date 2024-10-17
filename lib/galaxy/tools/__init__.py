@@ -3977,21 +3977,24 @@ class RelabelFromFileTool(DatabaseOperationTool):
         if how_type == "tabular":
             # We have a tabular file, where the first column is an existing element identifier,
             # and the second column is the new element identifier.
+            from_index = int(incoming["how"]["from"]) - 1
+            to_index = int(incoming["how"]["to"]) - 1
+            if from_index < 0 or to_index < 0:
+                raise exceptions.MessageException("Column < 1 specified for relabel mapping file. Column count starts at 1.")
             new_labels_dict = {}
-            source_new_label = (line.strip().split("\t") for line in new_labels)
-            for i, label_pair in enumerate(source_new_label):
-                if not len(label_pair) == 2:
-                    raise exceptions.MessageException(
-                        f"Relabel mapping file line {i + 1} contains {len(label_pair)} columns, but 2 are required"
-                    )
-                new_labels_dict[label_pair[0]] = label_pair[1]
+            try:
+                for i, line in enumerate(new_labels, 1):
+                    cols = line.strip().split("\t")
+                    new_labels_dict[cols[from_index]] = cols[to_index]
+            except IndexError:
+                raise exceptions.MessageException(f"Specified column number > number of columns [{len(cols)}] on line {i} of relabel mapping file.")
             for dce in hdca.collection.elements:
                 dce_object = dce.element_object
                 element_identifier = dce.element_identifier
                 default = None if strict else element_identifier
                 new_label = new_labels_dict.get(element_identifier, default)
                 if not new_label:
-                    raise exceptions.MessageException(f"Failed to find new label for identifier [{element_identifier}]")
+                    raise exceptions.MessageException(f"Failed to find original identifier [{element_identifier}]")
                 add_copied_value_to_new_elements(new_label, dce_object)
         else:
             # If new_labels_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset

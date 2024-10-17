@@ -1,6 +1,6 @@
 <tool id="__RELABEL_FROM_FILE__"
       name="Relabel identifiers"
-      version="1.0.0"
+      version="1.1.0"
       tool_type="relabel_from_file">
     <description></description>
     <type class="RelabelFromFileTool" module="galaxy.tools" />
@@ -21,7 +21,9 @@
                 <param name="strict" type="boolean" label="Ensure strict mapping" help="If selected, the target file must contain exactly the correct number of lines." truevalue="true" falsevalue="false" />
             </when>
             <when value="tabular">
-                <param type="data" name="labels" format="tabular" label="New Identifiers" />
+                <param type="data" name="labels" format="tabular" label="Identifier mapping" />
+                <param name="from" type="data_column" data_ref="labels" value="1" label="Column with current identifiers"/>
+                <param name="to" type="data_column" data_ref="labels" value="2" label="Column with new identifiers"/>
                 <param name="strict" type="boolean" label="Ensure strict mapping" help="If checked, the target file must contain exactly the correct number of lines and each input identifier must match exactly one element of the input collection." truevalue="true" falsevalue="false" />
             </when>
         </conditional>
