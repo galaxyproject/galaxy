@@ -1,5 +1,9 @@
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faFilter, faUnlockAlt, faUser } from "@fortawesome/free-solid-svg-icons";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
+
+library.add(faFilter, faUnlockAlt, faUser);
 
 export const getUserPreferencesModel = (user_id) => {
     const Galaxy = getGalaxyInstance();
