@@ -66,7 +66,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
 
     const hasLoadingCollectionElementsError = computed(() => {
         return (collection: CollectionEntry) => {
-            return loadingCollectionElementsErrors.value[getCollectionKey(collection) ?? false];
+            return loadingCollectionElementsErrors.value[getCollectionKey(collection)] ?? false;
         };
     });
 
