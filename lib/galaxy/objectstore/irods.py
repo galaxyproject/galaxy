@@ -55,14 +55,24 @@ def parse_config_xml(config_xml):
         password = a_xml[0].get("password")
 
         s_xml = config_xml.findall("ssl")
-        client_server_negotiation = s_xml[0].get("client_server_negotiation", None)
-        client_server_policy = s_xml[0].get("client_server_policy", None)
-        encryption_algorithm = s_xml[0].get("encryption_algorithm", None)
-        encryption_key_size = int(s_xml[0].get("encryption_key_size", None))
-        encryption_num_hash_rounds = int(s_xml[0].get("encryption_num_hash_rounds", None))
-        encryption_salt_size = int(s_xml[0].get("encryption_salt_size", None))
-        ssl_verify_server = s_xml[0].get("ssl_verify_server", None)
-        ssl_ca_certificate_file = s_xml[0].get("ssl_ca_certificate_file", None)
+        if s_xml:
+            client_server_negotiation = s_xml[0].get("client_server_negotiation", None)
+            client_server_policy = s_xml[0].get("client_server_policy", None)
+            encryption_algorithm = s_xml[0].get("encryption_algorithm", None)
+            encryption_key_size = int(s_xml[0].get("encryption_key_size", None))
+            encryption_num_hash_rounds = int(s_xml[0].get("encryption_num_hash_rounds", None))
+            encryption_salt_size = int(s_xml[0].get("encryption_salt_size", None))
+            ssl_verify_server = s_xml[0].get("ssl_verify_server", None)
+            ssl_ca_certificate_file = s_xml[0].get("ssl_ca_certificate_file", None)
+        else:
+            client_server_negotiation = None
+            client_server_policy = None
+            encryption_algorithm = None
+            encryption_key_size = None
+            encryption_num_hash_rounds = None
+            encryption_salt_size = None
+            ssl_verify_server = None
+            ssl_ca_certificate_file = None
 
         r_xml = config_xml.findall("resource")
         if not r_xml:
@@ -84,9 +94,10 @@ def parse_config_xml(config_xml):
         connection_pool_monitor_interval = int(c_xml[0].get("connection_pool_monitor_interval", -1))
 
         l_xml = config_xml.findall("logical")
-        if not l_xml:
-            _config_xml_error("logical")
-        logical_path = l_xml[0].get("path", None)
+        if l_xml:
+            logical_path = l_xml[0].get("path", None)
+        else:
+            logical_path = None
 
         c_xml = config_xml.findall("cache")
         if not c_xml:
