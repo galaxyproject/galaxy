@@ -19,10 +19,18 @@ from galaxy.model.dataset_collections import (
     matching,
     subcollections,
 )
-from galaxy.util import permutations
+from galaxy.tool_util.parameters import (
+    RequestInternalDereferencedToolState,
+    ToolParameterBundle,
+)
+from galaxy.util.permutations import (
+    build_combos,
+    input_classification,
+)
 from . import visit_input_values
 from .wrapped import process_key
 from .._types import (
+    InputFormatT,
     ToolRequestT,
     ToolStateJobInstanceT,
 )
@@ -161,7 +169,15 @@ def expand_workflow_inputs(param_inputs, inputs=None):
 ExpandedT = Tuple[List[ToolStateJobInstanceT], Optional[matching.MatchingCollections]]
 
 
-def expand_meta_parameters(trans, tool, incoming: ToolRequestT) -> ExpandedT:
+def expand_flat_parameters_to_nested(incoming_copy: ToolRequestT) -> Dict[str, Any]:
+    nested_dict: Dict[str, Any] = {}
+    for incoming_key, incoming_value in incoming_copy.items():
+        if not incoming_key.startswith("__"):
+            process_key(incoming_key, incoming_value=incoming_value, d=nested_dict)
+    return nested_dict
+
+
+def expand_meta_parameters(trans, tool, incoming: ToolRequestT, input_format: InputFormatT) -> ExpandedT:
     """
     Take in a dictionary of raw incoming parameters and expand to a list
     of expanded incoming parameters (one set of parameters per tool
@@ -176,33 +192,24 @@ def expand_meta_parameters(trans, tool, incoming: ToolRequestT) -> ExpandedT:
     # order matters, so the following reorders incoming
     # according to tool.inputs (which is ordered).
     incoming_copy = incoming.copy()
-    nested_dict: Dict[str, Any] = {}
-    for incoming_key, incoming_value in incoming_copy.items():
-        if not incoming_key.startswith("__"):
-            process_key(incoming_key, incoming_value=incoming_value, d=nested_dict)
+    if input_format == "legacy":
+        nested_dict = expand_flat_parameters_to_nested(incoming_copy)
+    else:
+        nested_dict = incoming_copy
 
-    reordered_incoming = {}
+    collections_to_match = matching.CollectionsToMatch()
 
-    def visitor(input, value, prefix, prefixed_name, prefixed_label, error, **kwargs):
-        if prefixed_name in incoming_copy:
-            reordered_incoming[prefixed_name] = incoming_copy[prefixed_name]
-            del incoming_copy[prefixed_name]
-
-    visit_input_values(inputs=tool.inputs, input_values=nested_dict, callback=visitor)
-    reordered_incoming.update(incoming_copy)
-
-    def classifier(input_key):
-        value = incoming[input_key]
+    def classifier_from_value(value, input_key):
         if isinstance(value, dict) and "values" in value:
             # Explicit meta wrapper for inputs...
             is_batch = value.get("batch", False)
             is_linked = value.get("linked", True)
             if is_batch and is_linked:
-                classification = permutations.input_classification.MATCHED
+                classification = input_classification.MATCHED
             elif is_batch:
-                classification = permutations.input_classification.MULTIPLIED
+                classification = input_classification.MULTIPLIED
             else:
-                classification = permutations.input_classification.SINGLE
+                classification = input_classification.SINGLE
             if __collection_multirun_parameter(value):
                 collection_value = value["values"][0]
                 values = __expand_collection_parameter(
@@ -211,17 +218,41 @@ def expand_meta_parameters(trans, tool, incoming: ToolRequestT) -> ExpandedT:
             else:
                 values = value["values"]
         else:
-            classification = permutations.input_classification.SINGLE
+            classification = input_classification.SINGLE
             values = value
         return classification, values
 
-    collections_to_match = matching.CollectionsToMatch()
+    nested = input_format != "legacy"
+    if not nested:
+        reordered_incoming = {}
 
-    # Stick an unexpanded version of multirun keys so they can be replaced,
-    # by expand_mult_inputs.
-    incoming_template = reordered_incoming
+        def visitor(input, value, prefix, prefixed_name, prefixed_label, error, **kwargs):
+            if prefixed_name in incoming_copy:
+                reordered_incoming[prefixed_name] = incoming_copy[prefixed_name]
+                del incoming_copy[prefixed_name]
 
-    expanded_incomings = permutations.expand_multi_inputs(incoming_template, classifier)
+        visit_input_values(inputs=tool.inputs, input_values=nested_dict, callback=visitor)
+        reordered_incoming.update(incoming_copy)
+
+        # Stick an unexpanded version of multirun keys so they can be replaced,
+        # by expand_mult_inputs.
+        incoming_template = reordered_incoming
+
+        def classifier_flat(input_key):
+            return classifier_from_value(incoming[input_key], input_key)
+
+        single_inputs, matched_multi_inputs, multiplied_multi_inputs = split_inputs_flat(
+            incoming_template, classifier_flat
+        )
+    else:
+        # TODO: This needs to be re-ordered (see notes above about why) and this needs to contain
+        # non-tool declared parameters (above code does this by removing things from incoming and readding
+        # everything left at the end).
+        single_inputs, matched_multi_inputs, multiplied_multi_inputs = split_inputs_nested(
+            tool.inputs, nested_dict, classifier_from_value
+        )
+
+    expanded_incomings = build_combos(single_inputs, matched_multi_inputs, multiplied_multi_inputs, nested=nested)
     if collections_to_match.has_collections():
         collection_info = trans.app.dataset_collection_manager.match_collections(collections_to_match)
     else:
@@ -229,8 +260,93 @@ def expand_meta_parameters(trans, tool, incoming: ToolRequestT) -> ExpandedT:
     return expanded_incomings, collection_info
 
 
+def split_inputs_flat(inputs: Dict[str, Any], classifier):
+    single_inputs: Dict[str, Any] = {}
+    matched_multi_inputs: Dict[str, Any] = {}
+    multiplied_multi_inputs: Dict[str, Any] = {}
+
+    for input_key in inputs:
+        input_type, expanded_val = classifier(input_key)
+        if input_type == input_classification.SINGLE:
+            single_inputs[input_key] = expanded_val
+        elif input_type == input_classification.MATCHED:
+            matched_multi_inputs[input_key] = expanded_val
+        elif input_type == input_classification.MULTIPLIED:
+            multiplied_multi_inputs[input_key] = expanded_val
+
+    return (single_inputs, matched_multi_inputs, multiplied_multi_inputs)
+
+
+def split_inputs_nested(inputs, nested_dict, classifier):
+    single_inputs: Dict[str, Any] = {}
+    matched_multi_inputs: Dict[str, Any] = {}
+    multiplied_multi_inputs: Dict[str, Any] = {}
+    unset_value = object()
+
+    def visitor(input, value, prefix, prefixed_name, prefixed_label, error, **kwargs):
+        if value is unset_value:
+            # don't want to inject extra nulls into state
+            return
+
+        input_type, expanded_val = classifier(value, prefixed_name)
+        if input_type == input_classification.SINGLE and value is not None:
+            single_inputs[prefixed_name] = expanded_val
+        elif input_type == input_classification.MATCHED:
+            matched_multi_inputs[prefixed_name] = expanded_val
+        elif input_type == input_classification.MULTIPLIED:
+            multiplied_multi_inputs[prefixed_name] = expanded_val
+
+    visit_input_values(
+        inputs=inputs, input_values=nested_dict, callback=visitor, allow_case_inference=True, unset_value=unset_value
+    )
+    single_inputs_nested = expand_flat_parameters_to_nested(single_inputs)
+    return (single_inputs_nested, matched_multi_inputs, multiplied_multi_inputs)
+
+
+Expanded2T = Tuple[List[ToolStateJobInstanceT], Optional[matching.MatchingCollections]]
+
+
+def expand_meta_parameters_async(
+    app, tool: ToolParameterBundle, incoming: RequestInternalDereferencedToolState
+) -> Expanded2T:
+    # TODO: Tool State 2.0 Follow Up: rework this to only test permutation at actual input value roots.
+
+    def classifier(input_key):
+        value = incoming.input_state[input_key]
+        if isinstance(value, dict) and "values" in value:
+            # Explicit meta wrapper for inputs...
+            is_batch = value.get("__class__", "Batch")
+            is_linked = value.get("linked", True)
+            if is_batch and is_linked:
+                classification = input_classification.MATCHED
+            elif is_batch:
+                classification = input_classification.MULTIPLIED
+            else:
+                classification = input_classification.SINGLE
+            if __collection_multirun_parameter(value):
+                collection_value = value["values"][0]
+                values = __expand_collection_parameter_async(
+                    app, input_key, collection_value, collections_to_match, linked=is_linked
+                )
+            else:
+                values = value["values"]
+        else:
+            classification = input_classification.SINGLE
+            values = value
+        return classification, values
+
+    collections_to_match = matching.CollectionsToMatch()
+    # TODO: fix this...
+    expanded_incoming_dicts = [incoming.input_state]  # expand_multi_inputs(incoming.input_state, classifier)
+    if collections_to_match.has_collections():
+        collection_info = app.dataset_collection_manager.match_collections(collections_to_match)
+    else:
+        collection_info = None
+    return expanded_incoming_dicts, collection_info
+
+
 def __expand_collection_parameter(trans, input_key, incoming_val, collections_to_match, linked=False):
-    # If subcollectin multirun of data_collection param - value will
+    # If subcollection multirun of data_collection param - value will
     # be "hdca_id|subcollection_type" else it will just be hdca_id
     if "|" in incoming_val:
         encoded_hdc_id, subcollection_type = incoming_val.split("|", 1)
@@ -261,8 +377,34 @@ def __expand_collection_parameter(trans, input_key, incoming_val, collections_to
         return hdas
 
 
+def __expand_collection_parameter_async(app, input_key, incoming_val, collections_to_match, linked=False):
+    # If subcollection multirun of data_collection param - value will
+    # be "hdca_id|subcollection_type" else it will just be hdca_id
+    try:
+        src = incoming_val["src"]
+        if src != "hdca":
+            raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
+        hdc_id = incoming_val["id"]
+        subcollection_type = incoming_val.get("map_over_type", None)
+    except TypeError:
+        hdc_id = incoming_val
+        subcollection_type = None
+    hdc = app.model.context.get(HistoryDatasetCollectionAssociation, hdc_id)
+    collections_to_match.add(input_key, hdc, subcollection_type=subcollection_type, linked=linked)
+    if subcollection_type is not None:
+        subcollection_elements = subcollections.split_dataset_collection_instance(hdc, subcollection_type)
+        return subcollection_elements
+    else:
+        hdas = []
+        for element in hdc.collection.dataset_elements:
+            hda = element.dataset_instance
+            hda.element_identifier = element.element_identifier
+            hdas.append(hda)
+        return hdas
+
+
 def __collection_multirun_parameter(value):
-    is_batch = value.get("batch", False)
+    is_batch = value.get("batch", False) or value.get("__class__", None) == "Batch"
     if not is_batch:
         return False
 
