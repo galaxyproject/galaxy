@@ -12,7 +12,7 @@ const xml2js = require("xml2js");
  * un-built visualizations in the repository; for performance and
  * simplicity just add them one at a time until we upgrade older viz's.
  */
-const STATIC_PLUGIN_BUILD_IDS = [
+const PLUGIN_BUILD_IDS = [
     "annotate_image",
     "chiraviz",
     "cytoscape",
@@ -40,9 +40,6 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "venn",
 ];
 const INSTALL_PLUGIN_BUILD_IDS = ["msa"]; // todo: derive from XML
-const DIST_PLUGIN_BUILD_IDS = ["new_user"];
-const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
-
 const failOnError =
     process.env.GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR && process.env.GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR !== "0"
         ? true
@@ -54,12 +51,9 @@ const PATHS = {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
         // not be necessary.
-        backbone: ["backbone.js", "backbone.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
         "jquery-migrate": ["dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
         "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
-        requirejs: ["require.js", "require.js"],
-        underscore: ["underscore.js", "underscore.js"],
     },
 };
 
@@ -118,11 +112,7 @@ function buildPlugins(callback, forceRebuild) {
         const pluginDir = path.dirname(file);
         const pluginName = pluginDir.split(path.sep).pop();
 
-        const hashFilePath = path.join(
-            pluginDir,
-            DIST_PLUGIN_BUILD_IDS.indexOf(pluginName) > -1 ? "dist" : "static",
-            "plugin_build_hash.txt"
-        );
+        const hashFilePath = path.join(pluginDir, "static", "plugin_build_hash.txt");
 
         if (forceRebuild) {
             skipBuild = false;
