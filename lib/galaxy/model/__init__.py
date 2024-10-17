@@ -194,6 +194,7 @@ from galaxy.util import (
 )
 from galaxy.util.config_templates import (
     EnvironmentDict,
+    ImplicitConfigurationParameters,
     SecretsDict,
     Template as ConfigTemplate,
     TemplateEnvironment,
@@ -6048,7 +6049,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         self.library_dataset = library_dataset
         self.user = user
 
-    def to_history_dataset_association(self, target_history, parent_id=None, add_to_history=False, visible=None):
+    def to_history_dataset_association(
+        self, target_history, parent_id=None, add_to_history=False, visible=None, commit=True
+    ):
         sa_session = object_session(self)
         hda = HistoryDatasetAssociation(
             name=self.name,
@@ -6072,9 +6075,12 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         sa_session.add(hda)
         hda.metadata = self.metadata
         if add_to_history and target_history:
-            target_history.add_dataset(hda)
-        with transaction(sa_session):
-            sa_session.commit()
+            target_history.stage_addition(hda)
+            if commit:
+                target_history.add_pending_items()
+        if commit:
+            with transaction(sa_session):
+                sa_session.commit()
         return hda
 
     def copy(self, parent_id=None, target_folder=None, flush=True):
@@ -11071,6 +11077,10 @@ class HasConfigSecrets(RepresentById):
     uuid: Mapped[Union[UUID, str]]
     user: Mapped["User"]
 
+    @classmethod
+    def vault_key_from_uuid(clazz, uuid: Union[str, UUID], secret: str, app_config: UsesTemplatesAppConfig) -> str:
+        return f"{clazz.secret_config_type}/{str(get_uuid(uuid))}/{secret}"
+
     def vault_id_prefix(self, app_config: UsesTemplatesAppConfig) -> str:
         id_str = str(self.uuid)
         user_vault_id_prefix = f"{self.secret_config_type}/{id_str}"
@@ -11225,7 +11235,11 @@ class UserFileSource(Base, HasConfigTemplate):
         return FileSourceTemplate(**self.template_definition or {})
 
     def file_source_configuration(
-        self, secrets: SecretsDict, environment: EnvironmentDict, templates: Optional[List[FileSourceTemplate]] = None
+        self,
+        secrets: SecretsDict,
+        environment: EnvironmentDict,
+        implicit: ImplicitConfigurationParameters,
+        templates: Optional[List[FileSourceTemplate]] = None,
     ) -> FileSourceConfiguration:
         if templates is None:
             templates = [self.template]
@@ -11240,6 +11254,7 @@ class UserFileSource(Base, HasConfigTemplate):
                     secrets=secrets,
                     user_details=user_details,
                     environment=environment,
+                    implicit=implicit,
                 )
             except Exception as e:
                 if first_exception is None:

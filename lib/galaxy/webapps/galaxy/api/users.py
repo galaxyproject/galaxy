@@ -814,7 +814,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             "username": username,
         }
         is_galaxy_app = trans.webapp.name == "galaxy"
-        if trans.app.config.enable_account_interface or not is_galaxy_app:
+        if (trans.app.config.enable_account_interface and not trans.app.config.use_remote_user) or not is_galaxy_app:
             inputs.append(
                 {
                     "id": "email_input",
@@ -826,7 +826,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 }
             )
         if is_galaxy_app:
-            if trans.app.config.enable_account_interface:
+            if trans.app.config.enable_account_interface and not trans.app.config.use_remote_user:
                 inputs.append(
                     {
                         "id": "name_input",

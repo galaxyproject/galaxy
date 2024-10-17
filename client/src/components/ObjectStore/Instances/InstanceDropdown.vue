@@ -23,8 +23,8 @@ const isUpgradable = computed(() =>
 );
 
 async function onRemove() {
-    const { error } = await GalaxyApi().PUT("/api/object_store_instances/{user_object_store_id}", {
-        params: { path: { user_object_store_id: props.objectStore.uuid } },
+    const { error } = await GalaxyApi().PUT("/api/object_store_instances/{uuid}", {
+        params: { path: { uuid: props.objectStore.uuid } },
         body: { hidden: true },
     });
 
@@ -37,6 +37,7 @@ async function onRemove() {
 
 const emit = defineEmits<{
     (e: "entryRemoved"): void;
+    (e: "test"): void;
 }>();
 </script>
 
@@ -47,5 +48,6 @@ const emit = defineEmits<{
         :is-upgradable="isUpgradable"
         :route-upgrade="routeUpgrade"
         :route-edit="routeEdit"
+        @test="emit('test')"
         @remove="onRemove" />
 </template>

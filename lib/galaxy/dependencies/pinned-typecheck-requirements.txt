@@ -1,8 +1,8 @@
 --extra-index-url https://wheels.galaxyproject.org/simple
 
 annotated-types==0.7.0 ; python_version >= "3.8" and python_version < "3.13"
-boto3-stubs[s3]==1.35.34 ; python_version >= "3.8" and python_version < "3.13"
-botocore-stubs==1.35.34 ; python_version >= "3.8" and python_version < "3.13"
+boto3-stubs[s3]==1.35.39 ; python_version >= "3.8" and python_version < "3.13"
+botocore-stubs==1.35.39 ; python_version >= "3.8" and python_version < "3.13"
 cffi==1.17.1 ; python_version >= "3.8" and python_version < "3.13" and platform_python_implementation != "PyPy"
 cryptography==43.0.1 ; python_version >= "3.8" and python_version < "3.13"
 lxml-stubs==0.5.1 ; python_version >= "3.8" and python_version < "3.13"
@@ -25,8 +25,8 @@ types-paramiko==3.5.0.20240928 ; python_version >= "3.8" and python_version < "3
 types-python-dateutil==2.9.0.20241003 ; python_version >= "3.8" and python_version < "3.13"
 types-pyyaml==6.0.12.20240917 ; python_version >= "3.8" and python_version < "3.13"
 types-requests==2.31.0.6 ; python_version >= "3.8" and python_version < "3.13"
-types-s3transfer==0.10.2 ; python_version >= "3.8" and python_version < "3.13"
+types-s3transfer==0.10.3 ; python_version >= "3.8" and python_version < "3.13"
 types-setuptools==75.1.0.20240917 ; python_version >= "3.8" and python_version < "3.13"
-types-six==1.16.21.20240513 ; python_version >= "3.8" and python_version < "3.13"
+types-six==1.16.21.20241009 ; python_version >= "3.8" and python_version < "3.13"
 types-urllib3==1.26.25.14 ; python_version >= "3.8" and python_version < "3.13"
 typing-extensions==4.12.2 ; python_version >= "3.8" and python_version < "3.13"

@@ -1,5 +1,6 @@
 """This module contains general pydantic models and common schema field annotations for them."""
 
+import base64
 from datetime import (
     date,
     datetime,
@@ -3823,6 +3824,18 @@ GenerateTimeField = Field(
     title="Galaxy Version",
     description="The version of Galaxy this object was generated with.",
 )
+
+
+class OAuth2State(BaseModel):
+    route: str
+    nonce: str
+
+    def encode(self) -> str:
+        return base64.b64encode(self.model_dump_json().encode("utf-8")).decode("utf-8")
+
+    @staticmethod
+    def decode(base64_param: str) -> "OAuth2State":
+        return OAuth2State.model_validate_json(base64.b64decode(base64_param.encode("utf-8")))
 
 
 class PageDetails(PageSummary):

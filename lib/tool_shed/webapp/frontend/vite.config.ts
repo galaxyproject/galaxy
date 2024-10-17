@@ -23,11 +23,9 @@ export default defineConfig({
     server: {
         proxy: {
             "/api": {
-                // This is the URL of the backend server
-                // The address is the default when running `make run_test_backend`
-                target: "http://127.0.0.1:9009/",
-                changeOrigin: true,
-                secure: false,
+                target: process.env.TOOL_SHED_URL || "http://127.0.0.1:9009",
+                changeOrigin: process.env.CHANGE_ORIGIN ? !process.env.CHANGE_ORIGIN : true,
+                secure: !process.env.CHANGE_ORIGIN,
             },
         },
     },

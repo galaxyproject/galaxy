@@ -17,6 +17,9 @@ class GoogleDriveFilesSource(PyFilesystem2FilesSource):
 
     def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
         props = self._serialization_props(user_context)
+        access_token = props.pop("oauth2_access_token")
+        if access_token:
+            props["token"] = access_token
         credentials = Credentials(**props)
         handle = GoogleDriveFS(credentials)
         return handle
