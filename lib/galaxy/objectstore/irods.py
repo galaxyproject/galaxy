@@ -2,7 +2,6 @@
 Object Store plugin for the Integrated Rule-Oriented Data System (iRODS)
 """
 
-import json
 import logging
 import os
 import shutil
@@ -42,7 +41,7 @@ def _config_xml_error(tag):
 
 
 def _config_dict_error(key):
-    msg = "No {key} key in config dictionary".format(key=key)
+    msg = f"No {key} key in config dictionary"
     raise Exception(msg)
 
 
