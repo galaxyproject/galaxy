@@ -95,6 +95,7 @@ from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
 from galaxy.tool_util.toolbox import (
     AbstractToolBox,
     AbstractToolTagManager,
+    ToolLoadError,
     ToolSection,
 )
 from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
@@ -380,7 +381,10 @@ def create_tool_from_source(app, tool_source: ToolSource, config_file: Optional[
     elif tool_type := tool_source.parse_tool_type():
         ToolClass = tool_types.get(tool_type)
         if not ToolClass:
-            raise ValueError(f"Unrecognized tool type: {tool_type}")
+            if tool_type == "cwl":
+                raise ToolLoadError("Runtime support for CWL tools is not implemented currently")
+            else:
+                raise ToolLoadError(f"Parsed unrecognized tool type ({tool_type}) from tool")
     else:
         # Normal tool
         root = getattr(tool_source, "root", None)
@@ -3227,9 +3231,8 @@ class InteractiveTool(Tool):
     produces_entry_points = True
 
     def __init__(self, config_file, tool_source, app, **kwd):
-        assert app.config.interactivetools_enable, ValueError(
-            "Trying to load an InteractiveTool, but InteractiveTools are not enabled."
-        )
+        if not app.config.interactivetools_enable:
+            raise ToolLoadError("Trying to load an InteractiveTool, but InteractiveTools are not enabled.")
         super().__init__(config_file, tool_source, app, **kwd)
 
     def __remove_interactivetool_by_job(self, job):
