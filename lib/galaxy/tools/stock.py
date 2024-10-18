@@ -26,7 +26,7 @@ def stock_tool_sources():
 
 
 def _walk_directory_for_tools(path):
-    if path.is_file() and path.name.endswith(".xml"):
+    if path.is_file() and path.name.endswith(".xml") and "macros" not in path.name and "_conf.xml" not in path.name:
         yield path
     elif path.is_dir():
         for directory in path.iterdir():

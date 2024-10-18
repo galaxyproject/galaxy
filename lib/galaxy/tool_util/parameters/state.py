@@ -15,6 +15,8 @@ from typing_extensions import Literal
 
 from .models import (
     create_job_internal_model,
+    create_landing_request_internal_model,
+    create_landing_request_model,
     create_request_internal_dereferenced_model,
     create_request_internal_model,
     create_request_model,
@@ -82,6 +84,22 @@ class RequestInternalToolState(ToolState):
     @classmethod
     def _parameter_model_for(cls, parameters: ToolParameterBundle) -> Type[BaseModel]:
         return create_request_internal_model(parameters)
+
+
+class LandingRequestToolState(ToolState):
+    state_representation: Literal["landing_request"] = "landing_request"
+
+    @classmethod
+    def _parameter_model_for(cls, parameters: ToolParameterBundle) -> Type[BaseModel]:
+        return create_landing_request_model(parameters)
+
+
+class LandingRequestInternalToolState(ToolState):
+    state_representation: Literal["landing_request_internal"] = "landing_request_internal"
+
+    @classmethod
+    def _parameter_model_for(cls, parameters: ToolParameterBundle) -> Type[BaseModel]:
+        return create_landing_request_internal_model(parameters)
 
 
 class RequestInternalDereferencedToolState(ToolState):
