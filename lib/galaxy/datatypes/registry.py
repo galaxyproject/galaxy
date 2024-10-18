@@ -72,6 +72,7 @@ class Registry:
         self.config = config
         self.edam = edam
         self.datatypes_by_extension: Dict[str, Data] = {}
+        self.datatypes_by_format = {}
         self.datatypes_by_suffix_inferences = {}
         self.mimetypes_by_extension = {}
         self.datatype_converters = {}
@@ -269,13 +270,25 @@ class Registry:
                             upload_warning_template = Template(upload_warning_el.text or "")
                         datatype_instance = datatype_class()
                         self.datatypes_by_extension[extension] = datatype_instance
+                        if not datatype_class.is_subclass:
+                            edam_format = datatype_class.edam_format
+                            prefixed_format = f"edam:{edam_format}"
+                            if prefixed_format not in self.datatypes_by_format:
+                                register_datatype_by_format = True
+                                for super_klass in datatype_class.__mro__[1:-1]:
+                                    super_edam_format = getattr(super_klass, "edam_format", None)
+                                    if super_edam_format == edam_format:
+                                        register_datatype_by_format = False
+                                        break
+                                if register_datatype_by_format:
+                                    self.datatypes_by_format[prefixed_format] = datatype_instance
                         if mimetype is None:
                             # Use default mimetype per datatype specification.
                             mimetype = self.datatypes_by_extension[extension].get_mime()
                         self.mimetypes_by_extension[extension] = mimetype
                         if datatype_class.track_type:
                             self.available_tracks.append(extension)
-                        if display_in_upload and extension not in self.upload_file_formats:
+                        if display_in_upload:
                             self.upload_file_formats.append(extension)
                         # Max file size cut off for setting optional metadata.
                         self.datatypes_by_extension[extension].max_optional_metadata_filesize = elem.get(
@@ -413,6 +426,7 @@ class Registry:
                 override=override,
                 compressed_sniffers=compressed_sniffers,
             )
+            self.upload_file_formats = list(set(self.upload_file_formats))
             self.upload_file_formats.sort()
             # Load build sites
             if use_build_sites:
@@ -612,6 +626,20 @@ class Registry:
     def get_datatype_by_extension(self, ext) -> Optional["Data"]:
         """Returns a datatype object based on an extension"""
         return self.datatypes_by_extension.get(ext, None)
+
+    def get_datatype_by_format_ontology(self, ontology: str):
+        """Returns a datatype by format ontology"""
+        if "edamontology.org/" in ontology:
+            ontology = f"edam:{ontology.split('edamontology.org/')[1]}"
+        return self.datatypes_by_format.get(ontology)
+
+    def get_datatype_ext_by_format_ontology(self, ontology: str, only_uploadable: bool = False) -> Optional[str]:
+        """Returns a datatype by format ontology"""
+        datatype = self.get_datatype_by_format_ontology(ontology)
+        if datatype:
+            if not only_uploadable or datatype.file_ext in self.upload_file_formats:
+                return datatype.file_ext
+        return None
 
     def change_datatype(self, data, ext):
         if data.extension != ext:

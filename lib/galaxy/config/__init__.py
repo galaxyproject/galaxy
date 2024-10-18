@@ -914,6 +914,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             else None
         )
 
+        # TODO: migrate to schema.
+        # Should CWL artifacts be loaded with strict validation enabled.
+        self.strict_cwl_validation = string_as_bool(kwargs.get("strict_cwl_validation", "True"))
         # These are not even beta - just experiments - don't use them unless
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get("enable_beta_tool_formats", "False"))
