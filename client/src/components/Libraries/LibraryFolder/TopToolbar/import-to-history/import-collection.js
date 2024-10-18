@@ -115,8 +115,12 @@ var ImportCollectionModal = Backbone.View.extend({
                 models: collectionElements,
             };
         }
-        const Galaxy = getGalaxyInstance();
-        Galaxy.currHistoryPanel.buildCollection(collectionType, selection, historyId);
+        if (collectionType === "rules") {
+            const Galaxy = getGalaxyInstance();
+            Galaxy.currHistoryPanel.buildCollectionFromRules(selection, historyId);
+        } else if (this.options.onCollectionImport) {
+            this.options.onCollectionImport(collectionType, selection, historyId);
+        }
     },
     templateCollectionSelectModal: function () {
         return _.template(

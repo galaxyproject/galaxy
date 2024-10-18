@@ -3,14 +3,16 @@ import { faCheck, faMinus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref, watch } from "vue";
 
+import type { HDASummary } from "@/api";
 import localize from "@/utils/localization";
 
 import ClickToEdit from "@/components/Collections/common/ClickToEdit.vue";
 
 interface Props {
-    element: any;
+    element: HDASummary;
     selected?: boolean;
     hasActions?: boolean;
+    notEditable?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -21,7 +23,7 @@ const emit = defineEmits<{
     (event: "element-is-discarded", element: any): void;
 }>();
 
-const elementName = ref(props.element.name);
+const elementName = ref(props.element.name || "...");
 
 watch(elementName, () => {
     emit("onRename", elementName.value);
@@ -43,13 +45,16 @@ function clickDiscard() {
         <span class="d-flex flex-gapx-1">
             {{ element.hid }}:
             <strong>
-                <ClickToEdit v-model="elementName" :title="localize('Click to rename')" />
+                <ClickToEdit v-if="!notEditable" v-model="elementName" :title="localize('Click to rename')" />
+                <span v-else>{{ elementName }}</span>
             </strong>
-            <i> ({{ element.extension }}) </i>
+            <i v-if="element.extension"> ({{ element.extension }}) </i>
         </span>
 
         <div v-if="hasActions" class="float-right">
-            <i v-if="!selected" class="mr-2"><FontAwesomeIcon :icon="faCheck" class="text-success" /> Added to list</i>
+            <i v-if="!selected" class="mr-2">
+                <FontAwesomeIcon :icon="faCheck" class="text-success" /> Added to collection
+            </i>
             <i v-else class="text-secondary">Selected</i>
             <button class="btn-sm" :title="localize('Remove this dataset from the list')" @click="clickDiscard">
                 <FontAwesomeIcon :icon="faMinus" fixed-width />

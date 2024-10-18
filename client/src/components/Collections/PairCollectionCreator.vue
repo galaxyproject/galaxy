@@ -1,32 +1,46 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
+import { faArrowsAltV } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
-import type { HDCADetailed, HistoryItemSummary } from "@/api";
+import type { HDASummary, HistoryItemSummary } from "@/api";
 import STATES from "@/mvc/dataset/states";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import localize from "@/utils/localization";
 
+import type { DatasetPair } from "../History/adapters/buildCollectionModal";
+
+import DatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
+interface SelectedDatasetPair {
+    forward: HDASummary | undefined;
+    reverse: HDASummary | undefined;
+}
+
 interface Props {
-    initialElements: Array<any>;
-    oncancel: () => void;
-    oncreate: () => void;
-    creationFn: (workingElements: HDCADetailed[], collectionName: string, hideSourceItems: boolean) => any;
+    initialElements: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
+    fromSelection?: boolean;
+    extensions?: string[];
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (event: "clicked-create", workingElements: HDCADetailed[], collectionName: string, hideSourceItems: boolean): void;
+    (event: "clicked-create", selectedPair: DatasetPair, collectionName: string, hideSourceItems: boolean): void;
+    (event: "on-cancel"): void;
 }>();
 
 const state = ref("build");
 const removeExtensions = ref(true);
 const initialSuggestedName = ref("");
 const invalidElements = ref<string[]>([]);
-const workingElements = ref<HDCADetailed[]>([]);
+const workingElements = ref<HDASummary[]>([]);
+
+/** If not `fromSelection`, the manually added elements that will become the pair */
+const inListElements = ref<SelectedDatasetPair>({ forward: undefined, reverse: undefined });
 
 const allElementsAreInvalid = computed(() => {
     return props.initialElements.length == invalidElements.value.length;
@@ -35,9 +49,26 @@ const noElementsSelected = computed(() => {
     return props.initialElements.length == 0;
 });
 const exactlyTwoValidElements = computed(() => {
-    return workingElements.value.length == 2;
+    return pairElements.value.forward && pairElements.value.reverse;
 });
 const hideSourceItems = ref(props.defaultHideSourceItems || false);
+const pairElements = computed<SelectedDatasetPair>(() => {
+    if (props.fromSelection) {
+        return {
+            forward: workingElements.value[0],
+            reverse: workingElements.value[1],
+        };
+    } else {
+        return inListElements.value;
+    }
+});
+
+// variables for datatype mapping and then filtering
+const datatypesMapperStore = useDatatypesMapperStore();
+const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
+
+/** Are we filtering by datatype? */
+const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
 
 function _elementsSetUp() {
     /** a list of invalid elements and the reasons they aren't valid */
@@ -96,23 +127,59 @@ function _isElementInvalid(element: HistoryItemSummary) {
         return localize("has been deleted or purged");
     }
 
+    // is the element's extension not a subtype of any of the required extensions?
+    if (
+        filterExtensions.value &&
+        element.extension &&
+        !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
+    ) {
+        return localize(`has an invalid extension: ${element.extension}`);
+    }
     return null;
 }
 
+function getPairElement(key: string) {
+    return pairElements.value[key as "forward" | "reverse"];
+}
+
+function removeElement(key: string) {
+    pairElements.value[key as "forward" | "reverse"] = undefined;
+}
+
+function selectElement(element: HDASummary) {
+    if (pairElements.value.forward?.id === element.id) {
+        pairElements.value.forward = undefined;
+    } else if (pairElements.value.reverse?.id === element.id) {
+        pairElements.value.reverse = undefined;
+    } else if (pairElements.value.forward === undefined) {
+        pairElements.value.forward = element;
+    } else if (pairElements.value.reverse === undefined) {
+        pairElements.value.reverse = element;
+    }
+}
+
 function swapButton() {
-    workingElements.value = [workingElements.value[1], workingElements.value[0]] as HDCADetailed[];
+    if (!exactlyTwoValidElements.value) {
+        return;
+    }
+    if (props.fromSelection) {
+        workingElements.value = [workingElements.value[1], workingElements.value[0]] as HDASummary[];
+    } else {
+        inListElements.value = {
+            forward: inListElements.value.reverse,
+            reverse: inListElements.value.forward,
+        };
+    }
 }
 
 function clickedCreate(collectionName: string) {
-    if (state.value !== "error") {
-        emit("clicked-create", workingElements.value, collectionName, hideSourceItems.value);
-
-        return props
-            .creationFn(workingElements.value, collectionName, hideSourceItems.value)
-            .done(props.oncreate)
-            .fail(() => {
-                state.value = "error";
-            });
+    if (state.value !== "error" && exactlyTwoValidElements.value) {
+        const returnedPair = {
+            forward: pairElements.value.forward as HDASummary,
+            reverse: pairElements.value.reverse as HDASummary,
+            name: collectionName,
+        };
+        emit("clicked-create", returnedPair, collectionName, hideSourceItems.value);
     }
 }
 
@@ -120,13 +187,13 @@ function removeExtensionsToggle() {
     removeExtensions.value = !removeExtensions.value;
 
     initialSuggestedName.value = _guessNameForPair(
-        workingElements.value[0] as HDCADetailed,
-        workingElements.value[1] as HDCADetailed,
+        workingElements.value[0] as HDASummary,
+        workingElements.value[1] as HDASummary,
         removeExtensions.value
     );
 }
 
-function _guessNameForPair(fwd: HDCADetailed, rev: HDCADetailed, removeExtensions: boolean) {
+function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: boolean) {
     removeExtensions = removeExtensions ? removeExtensions : removeExtensions;
 
     var fwdName = fwd.name ?? "";
@@ -203,9 +270,10 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
 onMounted(() => {
     _elementsSetUp();
 
+    // TODO: fix this, now either of those will almost always be empty
     initialSuggestedName.value = _guessNameForPair(
-        workingElements.value[0] as HDCADetailed,
-        workingElements.value[1] as HDCADetailed,
+        workingElements.value[0] as HDASummary,
+        workingElements.value[1] as HDASummary,
         removeExtensions.value
     );
 });
@@ -223,20 +291,35 @@ onMounted(() => {
                 <BAlert show variant="warning" dismissible>
                     {{ localize("No datasets were selected.") }}
                     {{ localize("Exactly two elements needed for the collection. You may need to") }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                         {{ localize("cancel") }}
                     </a>
                     {{ localize("and reselect new elements.") }}
                 </BAlert>
 
                 <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
+                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
                         {{ localize("Cancel") }}
                     </button>
                 </div>
             </div>
             <div v-else-if="allElementsAreInvalid">
-                <BAlert show variant="warning" dismissible>
+                <BAlert v-if="!fromSelection" show variant="warning">
+                    {{
+                        localize(
+                            "No elements in your history are valid for this pair. You may need to switch to a different history."
+                        )
+                    }}
+                    <span v-if="extensions?.length">
+                        {{ localize("The following extensions are required for this pair: ") }}
+                        <ul>
+                            <li v-for="extension in extensions" :key="extension">
+                                {{ extension }}
+                            </li>
+                        </ul>
+                    </span>
+                </BAlert>
+                <BAlert v-else show variant="warning" dismissible>
                     {{ localize("The following selections could not be included due to problems:") }}
                     <ul>
                         <li v-for="problem in invalidElements" :key="problem">
@@ -244,46 +327,20 @@ onMounted(() => {
                         </li>
                     </ul>
                     {{ localize("Exactly two elements needed for the collection. You may need to") }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                         {{ localize("cancel") }}
                     </a>
                     {{ localize("and reselect new elements.") }}
                 </BAlert>
 
                 <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
-                        {{ localize("Cancel") }}
-                    </button>
-                </div>
-            </div>
-            <div v-else-if="!exactlyTwoValidElements">
-                <div v-if="invalidElements.length">
-                    <BAlert show variant="warning" dismissible>
-                        {{ localize("The following selections could not be included due to problems:") }}
-                        <ul>
-                            <li v-for="problem in invalidElements" :key="problem">
-                                {{ problem }}
-                            </li>
-                        </ul>
-                    </BAlert>
-                </div>
-
-                <BAlert show variant="warning" dismissible>
-                    {{ localize("Two (and only two) elements are needed for the pair. You may need to ") }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
-                        {{ localize("cancel") }}
-                    </a>
-                    {{ localize("and reselect new elements.") }}
-                </BAlert>
-
-                <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
+                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
                         {{ localize("Cancel") }}
                     </button>
                 </div>
             </div>
             <div v-else>
-                <div v-if="invalidElements.length">
+                <div v-if="fromSelection && invalidElements.length">
                     <BAlert show variant="warning" dismissible>
                         {{ localize("The following selections could not be included due to problems:") }}
                         <ul>
@@ -293,9 +350,26 @@ onMounted(() => {
                         </ul>
                     </BAlert>
                 </div>
+                <div v-if="!exactlyTwoValidElements">
+                    <BAlert show variant="warning" dismissible>
+                        {{ localize("Exactly two elements are needed for the pair.") }}
+                        <span v-if="fromSelection">
+                            <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
+                                {{ localize("Cancel") }}
+                            </a>
+                            {{ localize("and reselect new elements.") }}
+                        </span>
+                    </BAlert>
+
+                    <div v-if="fromSelection" class="float-left">
+                        <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
+                            {{ localize("Cancel") }}
+                        </button>
+                    </div>
+                </div>
 
                 <CollectionCreator
-                    :oncancel="oncancel"
+                    :oncancel="() => emit('on-cancel')"
                     :hide-source-items="hideSourceItems"
                     :suggested-name="initialSuggestedName"
                     :extensions-toggle="removeExtensions"
@@ -303,6 +377,7 @@ onMounted(() => {
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle">
                     <template v-slot:help-content>
+                        <!-- TODO: Update help content for case where `fromSelection` is false -->
                         <p>
                             {{
                                 localize(
@@ -353,21 +428,46 @@ onMounted(() => {
 
                     <template v-slot:middle-content>
                         <div class="collection-elements-controls">
-                            <a
+                            <BButton
                                 class="swap"
-                                href="javascript:void(0);"
-                                title="l('Swap forward and reverse datasets')"
+                                size="sm"
+                                :disabled="!exactlyTwoValidElements"
+                                :title="localize('Swap forward and reverse datasets')"
                                 @click="swapButton">
+                                <FontAwesomeIcon :icon="faArrowsAltV" fixed-width />
                                 {{ localize("Swap") }}
-                            </a>
+                            </BButton>
                         </div>
 
-                        <div class="collection-elements scroll-container flex-row">
-                            <div
-                                v-for="(element, index) in workingElements"
-                                :key="element.id"
-                                class="collection-element">
-                                {{ index == 0 ? localize("forward") : localize("reverse") }}: {{ element.name }}
+                        <div class="collection-elements flex-row mb-3">
+                            <div v-for="dataset in ['forward', 'reverse']" :key="dataset">
+                                {{ localize(dataset) }}:
+                                <DatasetCollectionElementView
+                                    v-if="getPairElement(dataset)"
+                                    :key="getPairElement(dataset)?.id"
+                                    :element="getPairElement(dataset)"
+                                    has-actions
+                                    @element-is-discarded="removeElement(dataset)" />
+                                <div v-else class="collection-element alert-info">
+                                    <i>{{ localize("No dataset selected") }}</i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="!fromSelection">
+                            {{ localize("Manually select a forward and reverse dataset to create a pair collection:") }}
+                            <div class="collection-elements">
+                                <DatasetCollectionElementView
+                                    v-for="element in workingElements"
+                                    :key="element.id"
+                                    :class="{
+                                        selected: [pairElements.forward, pairElements.reverse].includes(element),
+                                    }"
+                                    :element="element"
+                                    not-editable
+                                    :selected="[pairElements.forward, pairElements.reverse].includes(element)"
+                                    @element-is-selected="selectElement"
+                                    @onRename="(name) => (element.name = name)" />
                             </div>
                         </div>
                     </template>
@@ -381,10 +481,6 @@ onMounted(() => {
 .pair-collection-creator {
     .footer {
         margin-top: 8px;
-    }
-
-    .main-help {
-        cursor: pointer;
     }
 
     .collection-elements-controls {
@@ -432,6 +528,15 @@ onMounted(() => {
         .name {
             &:hover {
                 text-decoration: none;
+            }
+        }
+
+        &.selected {
+            border-color: black;
+            background: rgb(118, 119, 131);
+            color: white;
+            a {
+                color: white;
             }
         }
     }

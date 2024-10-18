@@ -8,10 +8,10 @@ import Vue, { computed, ref } from "vue";
 
 import { UploadQueue } from "@/utils/upload-queue.js";
 
-import { collectionBuilder } from "./builders.js";
 import { defaultModel } from "./model.js";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
+import CollectionCreatorModal from "../Collections/CollectionCreatorModal.vue";
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
 import UploadSelect from "./UploadSelect.vue";
@@ -72,6 +72,8 @@ const props = defineProps({
 
 const emit = defineEmits(["dismiss", "progress"]);
 
+const collectionModalShow = ref(false);
+const collectionSelection = ref([]);
 const collectionType = ref("list");
 const counterAnnounce = ref(0);
 const counterError = ref(0);
@@ -147,8 +149,24 @@ function eventAnnounce(index, file) {
 }
 
 /** Populates collection builder with uploaded files */
-function eventBuild() {
-    collectionBuilder(historyId, collectionType.value, uploadValues.value);
+async function eventBuild() {
+    try {
+        collectionSelection.value = [];
+        uploadValues.value.forEach((model) => {
+            const outputs = model.outputs;
+            if (outputs) {
+                Object.entries(outputs).forEach((output) => {
+                    const outputDetails = output[1];
+                    collectionSelection.value.push(outputDetails);
+                });
+            } else {
+                console.debug("Warning, upload response does not contain outputs.", model);
+            }
+        });
+        collectionModalShow.value = true;
+    } catch (err) {
+        console.error(err);
+    }
     counterRunning.value = 0;
     eventReset();
     emit("dismiss");
@@ -457,5 +475,12 @@ defineExpose({
                 <span v-else v-localize>Close</span>
             </BButton>
         </div>
+        <CollectionCreatorModal
+            v-if="isCollection && historyId"
+            :history-id="historyId"
+            :collection-type="collectionType"
+            :selected-items="collectionSelection"
+            :show-modal.sync="collectionModalShow"
+            default-hide-source-items />
     </div>
 </template>

@@ -19,9 +19,6 @@ import DatasetCollectionElementView from "@/components/Collections/ListDatasetCo
 
 interface Props {
     initialElements: HistoryItemSummary[];
-    oncancel: () => void;
-    oncreate: () => void;
-    creationFn: (workingElements: HDASummary[], collectionName: string, hideSourceItems: boolean) => any;
     defaultHideSourceItems?: boolean;
     fromSelection?: boolean;
     extensions?: string[];
@@ -31,6 +28,7 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "clicked-create", workingElements: HDASummary[], collectionName: string, hideSourceItems: boolean): void;
+    (e: "on-cancel"): void;
 }>();
 
 const state = ref("build");
@@ -152,7 +150,7 @@ function _isElementInvalid(element: HistoryItemSummary): string | null {
         element.extension &&
         !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
     ) {
-        return localize("has an invalid extension");
+        return localize(`has an invalid extension: ${element.extension}`);
     }
     return null;
 }
@@ -231,13 +229,6 @@ function clickedCreate(collectionName: string) {
 
     if (state.value !== "error") {
         emit("clicked-create", returnedElements, collectionName, hideSourceItems.value);
-
-        return props
-            .creationFn(returnedElements, collectionName, hideSourceItems.value)
-            .done(props.oncreate)
-            .fail(() => {
-                state.value = "error";
-            });
     }
 }
 
@@ -339,14 +330,14 @@ function renameElement(element: any, name: string) {
                 <BAlert show variant="warning" dismissible>
                     {{ localize("No datasets were selected") }}
                     {{ localize("At least one element is needed for the collection. You may need to") }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                         {{ localize("cancel") }}
                     </a>
                     {{ localize("and reselect new elements.") }}
                 </BAlert>
 
                 <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
+                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
                         {{ localize("Cancel") }}
                     </button>
                 </div>
@@ -375,14 +366,14 @@ function renameElement(element: any, name: string) {
                         </li>
                     </ul>
                     {{ localize("At least one element is needed for the collection. You may need to") }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                         {{ localize("cancel") }}
                     </a>
                     {{ localize("and reselect new elements.") }}
                 </BAlert>
 
                 <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
+                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
                         {{ localize("Cancel") }}
                     </button>
                 </div>
@@ -414,7 +405,7 @@ function renameElement(element: any, name: string) {
                 </div>
 
                 <CollectionCreator
-                    :oncancel="oncancel"
+                    :oncancel="() => emit('on-cancel')"
                     :hide-source-items="hideSourceItems"
                     :extensions="extensions"
                     @on-update-datatype-toggle="changeDatatypeFilter"

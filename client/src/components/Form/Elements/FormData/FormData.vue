@@ -15,28 +15,24 @@ import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { isDatasetElement, isDCE } from "@/api";
 import { getGalaxyInstance } from "@/app";
-import { buildCollectionModal } from "@/components/History/adapters/buildCollectionModal";
-import { createDatasetCollection } from "@/components/History/model/queries";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
-import { useHistoryItemsForType } from "@/composables/useHistoryItemsForType";
-import { useUserHistories } from "@/composables/userHistories";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
-import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { orList } from "@/utils/strings";
 
 import type { DataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
-import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
+import CollectionCreatorModal from "@/components/Collections/CollectionCreatorModal.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
 const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
-    list: "List",
-    "list:paired": "List of Dataset Pairs",
-    paired: "Dataset Pair",
+    list: "list",
+    "list:paired": "list of dataset pairs",
+    paired: "dataset pair",
 };
 
 type SelectOption = {
@@ -89,6 +85,11 @@ const currentHighlighting: Ref<string | null> = ref(null);
 // Drag/Drop related values
 const dragData: Ref<EventData | null> = ref(null);
 const dragTarget: Ref<EventTarget | null> = ref(null);
+
+// Collection creator modal settings
+const collectionModalShow = ref(false);
+const collectionModalType = ref<"list" | "list:paired" | "paired">("list");
+const { currentHistoryId } = storeToRefs(useHistoryStore());
 
 /** Store options which need to be preserved **/
 const keepOptions: Record<string, SelectOption> = {};
@@ -488,44 +489,21 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
-const { currentUser } = storeToRefs(useUserStore());
-const { currentHistoryId, currentHistory } = useUserHistories(currentUser);
+/** Allowed collection types for collection creation */
+const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) =>
+    ["list", "list:paired", "paired"].includes(collectionType)
+);
 
-const { historyItems, isFetchingItems, errorMessage: historyItemsError } = useHistoryItemsForType(currentHistoryId);
-
-/** Excludes the `paired` collection type for now */
-const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) => collectionType !== "paired");
-
-/** Build a new collection and set it as the current value if valid */
-async function buildNewCollection(collectionType: string) {
-    if (!currentHistoryId.value || !currentHistory.value || isFetchingItems.value || historyItemsError.value) {
-        return;
-    }
-
-    if (collectionType === "list" || collectionType === "list:paired") {
-        const modalResult = await buildCollectionModal(collectionType, historyItems.value, currentHistoryId.value, {
-            extensions: props.extensions?.filter((ext) => ext !== "data"),
-            defaultHideSourceItems: false,
-            historyName: currentHistory.value?.name,
-        });
-        const collection = await createDatasetCollection(currentHistory.value, modalResult);
-        if (collection) {
-            // TODO: Commenting this out; should we allow `handleIncoming` to handle this or not?
-            // // remove the `elements` and `elements_datatypes` keys from the collection
-            // // to prevent `handleIncoming` from flagging the collection as invalid
-            // if ("elements" in collection) {
-            //     delete collection.elements;
-            // }
-            // if ("elements_datatypes" in collection) {
-            //     delete collection.elements_datatypes;
-            // }
-            handleIncoming(collection as any);
-        }
-    }
-    // else if (collectionType === "list:paired") { // TODO: Implement paired collection
-    else {
+function buildNewCollection(collectionType: string) {
+    if (!["list", "list:paired", "paired"].includes(collectionType)) {
         throw Error(`Unknown collection type: ${collectionType}`);
     }
+    collectionModalType.value = collectionType as "list" | "list:paired" | "paired";
+    collectionModalShow.value = true;
+}
+
+function createdCollection(collection: any) {
+    handleIncoming(collection);
 }
 
 // Drag/Drop event handlers
@@ -660,16 +638,15 @@ const noOptionsWarningMessage = computed(() => {
                     <span v-else class="font-weight-bold">...</span>
                 </BButton>
                 <BButtonGroup v-if="effectiveCollectionTypes?.length > 0" size="sm" buttons>
-                    <ButtonSpinner
+                    <BButton
                         v-for="collectionType in effectiveCollectionTypes"
                         :key="collectionType"
-                        :tooltip="`Create a new ${COLLECTION_TYPE_TO_LABEL[collectionType]}`"
+                        v-b-tooltip.hover.bottom
+                        :title="`Create a new ${COLLECTION_TYPE_TO_LABEL[collectionType]}`"
                         :variant="formattedOptions.length === 0 ? 'warning' : 'secondary'"
-                        :disabled="isFetchingItems"
-                        :icon="faPlus"
-                        :wait="isFetchingItems"
-                        @onClick="buildNewCollection(collectionType)">
-                    </ButtonSpinner>
+                        @click="buildNewCollection(collectionType)">
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
+                    </BButton>
                 </BButtonGroup>
             </BButtonGroup>
             <div v-if="extensions && extensions.length > 0">
@@ -711,6 +688,14 @@ const noOptionsWarningMessage = computed(() => {
             :data="formattedOptions"
             optional
             multiple />
+
+        <CollectionCreatorModal
+            v-if="currentHistoryId && effectiveCollectionTypes?.length > 0"
+            :history-id="currentHistoryId"
+            :collection-type="collectionModalType"
+            :extensions="props.extensions.filter((ext) => ext !== 'data')"
+            :show-modal.sync="collectionModalShow"
+            @created-collection="createdCollection" />
 
         <template v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
             <BFormCheckbox

@@ -1,4 +1,5 @@
 /**
+ * TODO: Update this description...
  * Temporary adapter to launch bootstrap modals from Vue components, for use with
  * the collection assembly modals. i.e. With selected..... create dataset collection,
  * create paired collection, etc.
@@ -10,54 +11,35 @@
 
 import jQuery from "jquery";
 
-import type { HistoryItemSummary } from "@/api";
-import LIST_COLLECTION_CREATOR from "@/components/Collections/ListCollectionCreatorModal";
-import PAIR_COLLECTION_CREATOR from "@/components/Collections/PairCollectionCreatorModal";
-import LIST_OF_PAIRS_COLLECTION_CREATOR from "@/components/Collections/PairedListCollectionCreatorModal";
+import type { HDASummary, HistoryItemSummary } from "@/api";
 import RULE_BASED_COLLECTION_CREATOR from "@/components/Collections/RuleBasedCollectionCreatorModal";
 
 export type CollectionType = "list" | "paired" | "list:paired" | "rules";
-export interface BuildCollectionOptions {
-    fromRulesInput?: boolean;
-    fromSelection?: boolean;
-    extensions?: string[];
-    title?: string;
-    defaultHideSourceItems?: boolean;
-    historyId?: string;
-    historyName?: string;
-}
+export type DatasetPair = {
+    forward: HDASummary;
+    reverse: HDASummary;
+    name: string;
+};
 
 // stand-in for buildCollection from history-view-edit.js
-export async function buildCollectionModal(
-    collectionType: CollectionType,
+export async function buildRuleCollectionModal(
     selectedContent: HistoryItemSummary[],
     historyId: string,
-    options: BuildCollectionOptions = {}
+    fromRulesInput = false,
+    defaultHideSourceItems = true
 ) {
     // select legacy function
-    const { fromRulesInput = false } = options;
-    let createFunc;
-    if (collectionType == "list") {
-        createFunc = LIST_COLLECTION_CREATOR.createListCollection;
-    } else if (collectionType == "paired") {
-        createFunc = PAIR_COLLECTION_CREATOR.createPairCollection;
-    } else if (collectionType == "list:paired") {
-        createFunc = LIST_OF_PAIRS_COLLECTION_CREATOR.createPairedListCollection;
-    } else if (collectionType.startsWith("rules")) {
-        createFunc = RULE_BASED_COLLECTION_CREATOR.createCollectionViaRules;
-    } else {
-        throw new Error(`Unknown collectionType encountered ${collectionType}`);
-    }
+    const createFunc = RULE_BASED_COLLECTION_CREATOR.createCollectionViaRules;
     // pull up cached content by type_ids;
     if (fromRulesInput) {
         return await createFunc(selectedContent);
     } else {
-        const fakeBackboneContent = createBackboneContent(historyId, selectedContent, options);
+        const fakeBackboneContent = createBackboneContent(historyId, selectedContent, defaultHideSourceItems);
         return await createFunc(fakeBackboneContent);
     }
 }
 
-const createBackboneContent = (historyId: string, selection: HistoryItemSummary[], options: BuildCollectionOptions) => {
+const createBackboneContent = (historyId: string, selection: HistoryItemSummary[], defaultHideSourceItems: boolean) => {
     const selectionJson = Array.from(selection.values());
     return {
         historyId,
@@ -80,9 +62,6 @@ const createBackboneContent = (historyId: string, selection: HistoryItemSummary[
                 options,
             });
         },
-        fromSelection: options.fromSelection,
-        extensions: options.extensions,
-        defaultHideSourceItems: options.defaultHideSourceItems === undefined ? true : options.defaultHideSourceItems,
-        historyName: options.historyName,
+        defaultHideSourceItems,
     };
 };

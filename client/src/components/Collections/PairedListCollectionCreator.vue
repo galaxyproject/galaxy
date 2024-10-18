@@ -18,6 +18,8 @@ import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import localize from "@/utils/localization";
 import { naturalSort } from "@/utils/naturalSort";
 
+import type { DatasetPair } from "../History/adapters/buildCollectionModal";
+
 import Heading from "../Common/Heading.vue";
 import PairedElementView from "./PairedElementView.vue";
 import UnpairedDatasetElementView from "./UnpairedDatasetElementView.vue";
@@ -40,23 +42,19 @@ const INVALID_HEADER = localize("The following selections could not be included 
 const ALL_INVALID_ELEMENTS_PART_ONE = localize("At least two elements are needed for the collection. You may need to");
 const CANCEL_TEXT = localize("Cancel");
 
-type DatasetPair = {
-    forward: HDASummary;
-    reverse: HDASummary;
-    name: string;
-};
-
 interface Props {
     initialElements: HistoryItemSummary[];
-    oncancel: () => void;
-    oncreate: () => void;
-    creationFn: (elements: DatasetPair[], collectionName: string, hideSourceItems: boolean) => any;
     defaultHideSourceItems?: boolean;
     fromSelection?: boolean;
     extensions?: string[];
 }
 
 const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "clicked-create", workingElements: DatasetPair[], collectionName: string, hideSourceItems: boolean): void;
+    (e: "on-cancel"): void;
+}>();
 
 // Titles and help text computed
 const noElementsHeader = props.fromSelection ? localize("No elements selected") : localize("No elements available");
@@ -273,7 +271,7 @@ function _isElementInvalid(element: HistoryItemSummary) {
         element.extension &&
         !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
     ) {
-        return localize("has an invalid extension");
+        return localize(`has an invalid extension: ${element.extension}`);
     }
     return null;
 }
@@ -723,12 +721,7 @@ function changeFilters(filter: keyof typeof COMMON_FILTERS) {
 async function clickedCreate(collectionName: string) {
     checkForDuplicates();
     if (state.value == "build") {
-        await props
-            .creationFn(generatedPairs.value, collectionName, hideSourceItems.value)
-            .then(props.oncreate)
-            .catch((e: any) => {
-                state.value = "error";
-            });
+        emit("clicked-create", generatedPairs.value, collectionName, hideSourceItems.value);
     }
 }
 
@@ -797,13 +790,13 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                 <BAlert show variant="warning" dismissible>
                     {{ noElementsHeader }}
                     {{ ALL_INVALID_ELEMENTS_PART_ONE }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                         {{ CANCEL_TEXT }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
                 </BAlert>
                 <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
+                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
                         {{ CANCEL_TEXT }}
                     </button>
                 </div>
@@ -832,13 +825,13 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         </li>
                     </ul>
                     {{ ALL_INVALID_ELEMENTS_PART_ONE }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                         {{ CANCEL_TEXT }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
                 </BAlert>
                 <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
+                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
                         {{ CANCEL_TEXT }}
                     </button>
                 </div>
@@ -856,13 +849,13 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                 </div>
                 <BAlert show variant="warning" dismissible>
                     {{ ALL_INVALID_ELEMENTS_PART_ONE }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                         {{ CANCEL_TEXT }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
                 </BAlert>
                 <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
+                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
                         {{ CANCEL_TEXT }}
                     </button>
                 </div>
@@ -886,7 +879,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                             )
                         }}
                         <span v-if="fromSelection">
-                            <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                            <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                                 {{ CANCEL_TEXT }}
                             </a>
                             {{ allInvalidElementsPartTwo }}
@@ -907,7 +900,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                     </BAlert>
                 </div>
                 <CollectionCreator
-                    :oncancel="oncancel"
+                    :oncancel="() => emit('on-cancel')"
                     :hide-source-items="hideSourceItems"
                     render-extensions-toggle
                     :extensions-toggle="removeExtensions"
