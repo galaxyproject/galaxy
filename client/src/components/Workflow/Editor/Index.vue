@@ -158,37 +158,11 @@
                         @labelChanged="onLabel"
                         @dataChanged="onSetData"
                         @stepUpdated="updateStep"
+                        @editSubworkflow="onEditSubworkflow"
+                        @attemptRefactor="onAttemptRefactor"
                         @close="activeNodeId = null"></NodeInspector>
                 </WorkflowGraph>
             </div>
-            <!--FlexPanel side="right">
-                <div class="unified-panel bg-white">
-                    <div ref="rightPanelElement" class="unified-panel-body workflow-right p-2">
-                        <div v-if="!initialLoading" class="position-relative h-100">
-                            <FormTool
-                                v-if="hasActiveNodeTool"
-                                :key="activeStep.id"
-                                :step="activeStep"
-                                :datatypes="datatypes"
-                                @onChangePostJobActions="onChangePostJobActions"
-                                @onAnnotation="onAnnotation"
-                                @onLabel="onLabel"
-                                @onSetData="onSetData"
-                                @onUpdateStep="updateStep" />
-                            <FormDefault
-                                v-else-if="hasActiveNodeDefault"
-                                :step="activeStep"
-                                :datatypes="datatypes"
-                                @onAnnotation="onAnnotation"
-                                @onLabel="onLabel"
-                                @onEditSubworkflow="onEditSubworkflow"
-                                @onAttemptRefactor="onAttemptRefactor"
-                                @onSetData="onSetData"
-                                @onUpdateStep="updateStep" />
-                        </div>
-                    </div>
-                </div>
-            </FlexPanel-->
         </template>
     </div>
 </template>
