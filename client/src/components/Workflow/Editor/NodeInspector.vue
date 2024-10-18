@@ -9,6 +9,7 @@ import { computed } from "vue";
 import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";
 import type { Step } from "@/stores/workflowStepStore";
 
+import FormDefault from "./Forms/FormDefault.vue";
 import FormTool from "./Forms/FormTool.vue";
 import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -25,6 +26,8 @@ const emit = defineEmits<{
     (e: "labelChanged", id: string, label: string): void;
     (e: "dataChanged", id: string, data: unknown): void;
     (e: "stepUpdated", id: string, step: Step): void;
+    (e: "editSubworkflow", id: string): void;
+    (e: "attemptRefactor", ...args: any[]): void;
     (e: "close"): void;
 }>();
 
@@ -115,6 +118,16 @@ function close() {
                     @onChangePostJobActions="(id, a) => emit('postJobActionsChanged', id, a)"
                     @onAnnotation="(id, a) => emit('annotationChanged', id, a)"
                     @onLabel="(id, l) => emit('labelChanged', id, l)"></FormTool>
+                <FormDefault
+                    v-else
+                    :step="props.step"
+                    :datatypes="datatypes"
+                    @onSetData="(id, d) => emit('dataChanged', id, d)"
+                    @onUpdateStep="(id, s) => emit('stepUpdated', id, s)"
+                    @onAnnotation="(id, a) => emit('annotationChanged', id, a)"
+                    @onLabel="(id, l) => emit('labelChanged', id, l)"
+                    @onEditSubworkflow="(id) => emit('editSubworkflow', id)"
+                    @onAttemptRefactor="(...args) => emit('attemptRefactor', ...args)" />
             </IdleLoad>
         </div>
     </section>
@@ -179,6 +192,7 @@ function close() {
 
     .inspector-content {
         overflow-y: auto;
+        overflow-x: hidden;
         padding: 0.5rem 0.5rem;
         padding-top: 0;
     }
