@@ -441,6 +441,31 @@ class CompressedZipArchive(CompressedArchive):
         return False
 
 
+class CompressedZarrZipArchive(CompressedZipArchive):
+    file_ext = "zarr.zip"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "Compressed zarr file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def sniff(self, filename: str) -> bool:
+        with zipfile.ZipFile(filename) as zf:
+            zf_files = zf.infolist()
+            for f in zf_files:
+                if f.file_size > 0 and (
+                    f.filename.endswith("meta")
+                    or f.filename.endswith(".zarray")
+                    or f.filename.endswith(".zgroup")
+                    or f.filename.endswith("zarr.json")
+                ):
+                    return True
+        return False
+
+
 class GenericAsn1Binary(Binary):
     """Class for generic ASN.1 binary format"""
 

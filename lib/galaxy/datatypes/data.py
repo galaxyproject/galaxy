@@ -1,3 +1,4 @@
+import json
 import logging
 import mimetypes
 import os
@@ -466,6 +467,7 @@ class Data(metaclass=DataMeta):
         composite_extensions.append("html")  # for archiving composite datatypes
         composite_extensions.append("data_manager_json")  # for downloading bundles if bundled.
         composite_extensions.append("directory")  # for downloading directories.
+        composite_extensions.append("zarr")  # for downloading zarr directories.
 
         if data.extension in composite_extensions:
             return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get("do_action", "zip"))
@@ -1225,21 +1227,97 @@ class Directory(Data):
         error, msg, messagetype = False, "", ""
         return error, msg, messagetype
 
-    @classmethod
-    def get_root_folder(cls, path: str) -> str:
-        items_in_path = os.listdir(path)
-        root_folder_name = items_in_path[0]
-        if len(items_in_path) != 1 or not os.path.isdir(os.path.join(path, root_folder_name)):
-            return ""
-        return root_folder_name
 
+class ZarrDirectory(Directory):
+    """Class representing a zarr-format structure with general-purpose numeric content."""
 
-class GenericZarr(Directory):
-    """Class representing a zarr-format file structure with general-purpose numeric content."""
+    edam_format = "format_3915"
+    file_ext = "zarr"
+
+    MetadataElement(
+        name="store_root",
+        default=None,
+        desc="Name of the root folder where the zarr store is located",
+        readonly=True,
+        optional=False,
+        visible=False,
+    )
+
+    MetadataElement(
+        name="zarr_format",
+        default=None,
+        desc="Zarr format version",
+        readonly=True,
+        optional=False,
+        visible=False,
+    )
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.blurb = f"Format v{dataset.metadata.zarr_format}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        store_root_folder = self._get_store_root_folder(dataset)
+        if not store_root_folder:
+            log.debug("Directory structure does not look like Zarr format")
+            return
+        dataset.metadata.store_root = store_root_folder
+
+        root_directory = os.path.join(dataset.extra_files_path, store_root_folder)
+        format_version = self._get_format_version(root_directory)
+        if not format_version:
+            log.debug("Could not determine Zarr format version")
+            return
+        dataset.metadata.zarr_format = format_version
 
     def sniff(self, filename: str) -> bool:
-        # TO DO: base this on the content of the .zgroup file in extra_files path
+        # TO DO: Can we access extra files path from here? Otherwise it cannot be auto-detected.
         return False
+
+    def _get_store_root_folder(self, dataset: DatasetProtocol) -> str:
+        """Returns the name of the root folder in the Zarr where the store is located."""
+        path = dataset.extra_files_path
+        items_in_path = os.listdir(path)
+        store_root_folder = items_in_path[0]
+        if len(items_in_path) != 1 or not os.path.isdir(os.path.join(path, store_root_folder)):
+            return ""
+        return store_root_folder
+
+    def _get_zarr_metadata_file(self, store_root_path: str) -> Optional[Dict[str, Any]]:
+        """Returns the path to the metadata file in the Zarr store."""
+        meta_file = None
+        files_in_store = os.listdir(store_root_path)
+
+        # Depending on the Zarr version, the metadata file can in different locations
+        # In v1 the metadata is in a file named "meta" https://zarr-specs.readthedocs.io/en/latest/v1/v1.0.html
+        if "meta" in files_in_store:
+            meta_file = os.path.join(store_root_path, "meta")
+
+        # In v2 it can be in .zarray or .zgroup https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
+        if ".zarray" in files_in_store:
+            meta_file = os.path.join(store_root_path, ".zarray")
+
+        if ".zgroup" in files_in_store:
+            meta_file = os.path.join(store_root_path, ".zgroup")
+
+        # In v3 the metadata is in a file named "zarr.json" https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html
+        if "zarr.json" in files_in_store:
+            meta_file = os.path.join(store_root_path, "zarr.json")
+
+        if meta_file and os.path.isfile(meta_file):
+            with open(meta_file) as f:
+                return json.load(f)
+        return None
+
+    def _get_format_version(self, store_root_path: str) -> Optional[str]:
+        """Returns the Zarr format version from the metadata file in the Zarr store."""
+        metadata_file = self._get_zarr_metadata_file(store_root_path)
+        if metadata_file:
+            return metadata_file.get("zarr_format")
+        return None
 
 
 class GenericAsn1(Text):
