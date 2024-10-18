@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import type { ToolSectionLabel } from "@/stores/toolStore";
+import type { ToolSectionLabel } from "@/stores/toolStoreTypes";
 
 import ToolPanelLinks from "./ToolPanelLinks.vue";
 

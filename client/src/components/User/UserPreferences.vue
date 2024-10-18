@@ -57,7 +57,7 @@
         <UserPreferencesElement
             v-if="isConfigLoaded && config.enable_oidc && !config.fixed_delegated_auth"
             id="manage-third-party-identities"
-            icon="fa-id-card-o"
+            icon="fa-id-card-alt"
             title="Manage Third-Party Identities"
             description="Connect or disconnect access to your third-party identities."
             to="/user/external_ids" />
@@ -114,12 +114,19 @@
             :user-id="userId">
         </UserDeletion>
         <UserPreferencesElement
+            icon="fa-laptop"
+            title="Local Preferences"
+            description="All settings specific to this client device."
+            to="/user/local_preferences">
+        </UserPreferencesElement>
+        <UserPreferencesElement
             v-if="hasLogout"
             id="edit-preferences-sign-out"
-            icon="fa-sign-out"
+            icon="fa-sign-out-alt"
             title="Sign Out"
             description="Click here to sign out of all sessions."
             @click="showLogoutModal = true" />
+
         <b-modal v-model="showDataPrivateModal" title="Datasets are now private" title-class="font-weight-bold" ok-only>
             <span v-localize>
                 All of your histories and datasets have been made private. If you'd like to make all *future* histories
@@ -140,10 +147,23 @@
 </template>
 
 <script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import {
+    faBell,
+    faCloud,
+    faCubes,
+    faHdd,
+    faIdCardAlt,
+    faKey,
+    faLaptop,
+    faLock,
+    faPalette,
+    faSignOutAlt,
+    faUsers,
+} from "@fortawesome/free-solid-svg-icons";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import { mapActions, mapState } from "pinia";
 import _l from "utils/localization";
 import { userLogoutAll } from "utils/logout";
@@ -151,17 +171,19 @@ import QueryStringParsing from "utils/query-string-parsing";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
+import { getUserPreferencesModel } from "@/components/User/UserPreferencesModel";
 import { useConfig } from "@/composables/config";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 import { useUserStore } from "@/stores/userStore";
 
-import UserBeaconSettings from "./UserBeaconSettings";
-import UserDeletion from "./UserDeletion";
-import UserPreferencesElement from "./UserPreferencesElement";
-import UserPreferredObjectStore from "./UserPreferredObjectStore";
-
 import ThemeSelector from "./ThemeSelector.vue";
+import UserBeaconSettings from "./UserBeaconSettings.vue";
+import UserDeletion from "./UserDeletion.vue";
+import UserPreferencesElement from "./UserPreferencesElement.vue";
+import UserPreferredObjectStore from "./UserPreferredObjectStore.vue";
+
+library.add(faBell, faCloud, faCubes, faHdd, faIdCardAlt, faKey, faLaptop, faLock, faPalette, faSignOutAlt, faUsers);
 
 Vue.use(BootstrapVue);
 
