@@ -47,8 +47,11 @@ export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNes
     if (options.maintainSelectionOrder) {
         const selectedValuesArray = Array.from(selectedValues);
         selectedOptionsFiltered.sort((a, b) => {
-            const aIndex = selectedValuesArray.findIndex((v) => v === stringifyObject(a.value));
-            const bIndex = selectedValuesArray.findIndex((v) => v === stringifyObject(b.value));
+            const aAsString = stringifyObject(a.value);
+            const bAsString = stringifyObject(b.value);
+
+            const aIndex = selectedValuesArray.findIndex((v) => v === aAsString);
+            const bIndex = selectedValuesArray.findIndex((v) => v === bAsString);
             return aIndex - bIndex;
         });
     }
