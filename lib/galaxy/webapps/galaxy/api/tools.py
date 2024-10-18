@@ -249,8 +249,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user)
         return tool.to_json(trans, kwd.get("inputs", kwd), history=history)
 
-    @web.require_admin
     @expose_api
+    @web.require_admin
     def test_data_path(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/tools/{tool_id}/test_data_path?tool_version={tool_version}
@@ -347,8 +347,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             test_defs.extend([t.to_dict() for t in tool.tests])
         return test_defs
 
-    @web.require_admin
     @expose_api
+    @web.require_admin
     def reload(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/tools/{tool_id}/reload
@@ -360,8 +360,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             raise exceptions.MessageException(message)
         return {"message": message}
 
-    @web.require_admin
     @expose_api
+    @web.require_admin
     def all_requirements(self, trans: GalaxyWebTransaction, **kwds):
         """
         GET /api/tools/all_requirements
@@ -370,8 +370,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         return trans.app.toolbox.all_requirements
 
-    @web.require_admin
     @expose_api
+    @web.require_admin
     def requirements(self, trans: GalaxyWebTransaction, id, **kwds):
         """
         GET /api/tools/{tool_id}/requirements
@@ -381,8 +381,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         tool = self.service._get_tool(trans, id, user=trans.user)
         return tool.tool_requirements_status
 
-    @web.require_admin
     @expose_api
+    @web.require_admin
     def install_dependencies(self, trans: GalaxyWebTransaction, id, **kwds):
         """
         POST /api/tools/{tool_id}/dependencies
@@ -409,8 +409,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         # _view.install_dependencies should return a dict with stdout, stderr and success status
         return tool.tool_requirements_status
 
-    @web.require_admin
     @expose_api
+    @web.require_admin
     def uninstall_dependencies(self, trans: GalaxyWebTransaction, id, **kwds):
         """
         DELETE /api/tools/{tool_id}/dependencies
@@ -431,8 +431,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         # TODO: rework resolver install system to log and report what has been done.
         return tool.tool_requirements_status
 
-    @web.require_admin
     @expose_api
+    @web.require_admin
     def build_dependency_cache(self, trans: GalaxyWebTransaction, id, **kwds):
         """
         POST /api/tools/{tool_id}/build_dependency_cache
@@ -446,8 +446,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         # TODO: Should also have a more meaningful return.
         return tool.tool_requirements_status
 
-    @web.require_admin
     @expose_api
+    @web.require_admin
     def diagnostics(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/tools/{tool_id}/diagnostics
@@ -563,8 +563,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         trans.response.headers["language"] = tool.tool_source.language
         return tool.tool_source.to_string()
 
-    @web.require_admin
     @expose_api
+    @web.require_admin
     def error_stack(self, trans: GalaxyWebTransaction, **kwd):
         """
         GET /api/tools/error_stack
