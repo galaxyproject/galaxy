@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.12']
+        python-version: ['3.8', '3.13']
         shed-api: ['v1', 'v2']
         test-install-client: ['galaxy_api', 'standalone']
     services:
@@ -45,6 +45,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
           cache: 'pip'
           cache-dependency-path: 'galaxy root/requirements.txt'
       - name: Get full Python version
