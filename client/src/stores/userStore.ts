@@ -146,6 +146,12 @@ export const useUserStore = defineStore("userStore", () => {
         };
     }
 
+    function untoggleToolbarIfNeeded() {
+        if (toggledSideBar.value == "tools") {
+            toggledSideBar.value = "";
+        }
+    }
+
     return {
         currentUser,
         currentPreferences,
@@ -163,6 +169,7 @@ export const useUserStore = defineStore("userStore", () => {
         addFavoriteTool,
         removeFavoriteTool,
         toggleSideBar,
+        untoggleToolbarIfNeeded,
         $reset,
     };
 });

@@ -11,6 +11,8 @@ from typing import (
 )
 
 import pytest
+from jsonschema import validate
+from jsonschema.exceptions import ValidationError
 from requests import (
     get,
     put,
@@ -29,7 +31,6 @@ from galaxy_test.base.populators import (
     BaseDatasetCollectionPopulator,
     DatasetCollectionPopulator,
     DatasetPopulator,
-    LibraryPopulator,
     skip_without_tool,
     stage_rules_example,
 )
@@ -260,6 +261,31 @@ class TestToolsApi(ApiTestCase, TestsTools):
         xref = get_json["xrefs"][0]
         assert xref["reftype"] == "bio.tools"
         assert xref["value"] == "bwa"
+
+    @skip_without_tool("gx_int")
+    def test_tool_schemas(self):
+        tool_id = "gx_int"
+
+        def get_jsonschema(state_type: str):
+            schema_url = self._api_url(f"tools/{tool_id}/parameter_{state_type}_schema")
+            schema_response = get(schema_url)
+            schema_response.raise_for_status()
+            return schema_response.json()
+
+        request_schema = get_jsonschema("request")
+        validate(instance={"parameter": 5}, schema=request_schema)
+        with pytest.raises(ValidationError):
+            validate(instance={"parameter": "Foobar"}, schema=request_schema)
+
+        test_case_schema = get_jsonschema("test_case_xml")
+        validate(instance={"parameter": 5}, schema=test_case_schema)
+        with pytest.raises(ValidationError):
+            validate(instance={"parameter": "Foobar"}, schema=test_case_schema)
+
+        landing_schema = get_jsonschema("landing_request")
+        validate(instance={"parameter": 5}, schema=landing_schema)
+        with pytest.raises(ValidationError):
+            validate(instance={"parameter": "Foobar"}, schema=landing_schema)
 
     @skip_without_tool("test_data_source")
     @skip_if_github_down
@@ -879,57 +905,6 @@ class TestToolsApi(ApiTestCase, TestsTools):
             output_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, wait=True)
             assert not output_details["visible"]
 
-    @skip_without_tool("gx_select")
-    def test_select_first_by_default(self):
-        # we have a tool test for this but I wanted to verify it wasn't just the
-        # tool test framework filling in a default. Creating a raw request here
-        # verifies that currently select parameters don't require a selection.
-        with self.dataset_populator.test_history(require_new=False) as history_id:
-            inputs: Dict[str, Any] = {}
-            response = self._run("gx_select", history_id, inputs, assert_ok=True)
-            output = response["outputs"][0]
-            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
-            assert output1_content.strip() == "--ex1"
-
-            inputs = {
-                "parameter": None,
-            }
-            response = self._run("gx_select", history_id, inputs, assert_ok=False)
-            self._assert_status_code_is(response, 400)
-            assert "an invalid option" in response.text
-
-    @skip_without_tool("gx_select_multiple")
-    @skip_without_tool("gx_select_multiple_optional")
-    def test_select_multiple_null_handling(self):
-        with self.dataset_populator.test_history(require_new=False) as history_id:
-            inputs: Dict[str, Any] = {}
-            response = self._run("gx_select_multiple", history_id, inputs, assert_ok=True)
-            output = response["outputs"][0]
-            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
-            assert output1_content.strip() == "None"
-
-            inputs = {}
-            response = self._run("gx_select_multiple_optional", history_id, inputs, assert_ok=True)
-            output = response["outputs"][0]
-            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
-            assert output1_content.strip() == "None"
-
-            inputs = {
-                "parameter": None,
-            }
-            response = self._run("gx_select_multiple", history_id, inputs, assert_ok=True)
-            output = response["outputs"][0]
-            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
-            assert output1_content.strip() == "None"
-
-            inputs = {
-                "parameter": None,
-            }
-            response = self._run("gx_select_multiple_optional", history_id, inputs, assert_ok=True)
-            output = response["outputs"][0]
-            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
-            assert output1_content.strip() == "None"
-
     @skip_without_tool("gx_drill_down_exact")
     @skip_without_tool("gx_drill_down_exact_multiple")
     @skip_without_tool("gx_drill_down_recurse")
@@ -1026,18 +1001,6 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 output = response["outputs"]
                 content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output[0])
                 assert "parameter: 1,2" in content
-
-    @skip_without_tool("library_data")
-    def test_library_data_param(self):
-        with self.dataset_populator.test_history(require_new=False) as history_id:
-            ld = LibraryPopulator(self.galaxy_interactor).new_library_dataset("lda_test_library")
-            inputs = {"library_dataset": ld["ldda_id"], "library_dataset_multiple": [ld["ldda_id"], ld["ldda_id"]]}
-            response = self._run("library_data", history_id, inputs, assert_ok=True)
-            output = response["outputs"]
-            output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output[0])
-            assert output_content == "TestData\n", output_content
-            output_multiple_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output[1])
-            assert output_multiple_content == "TestData\nTestData\n", output_multiple_content
 
     @skip_without_tool("cat1")
     def test_run_cat1(self):

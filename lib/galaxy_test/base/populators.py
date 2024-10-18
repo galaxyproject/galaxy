@@ -792,12 +792,16 @@ class BaseDatasetPopulator(BasePopulator):
         return self._get(dataset_url)
 
     def create_tool_landing(self, payload: CreateToolLandingRequestPayload) -> ToolLandingRequest:
-        create_url = "tool_landings"
-        json = payload.model_dump(mode="json")
-        create_response = self._post(create_url, json, json=True, anon=True)
+        create_response = self.create_tool_landing_raw(payload)
         api_asserts.assert_status_code_is(create_response, 200)
         create_response.raise_for_status()
         return ToolLandingRequest.model_validate(create_response.json())
+
+    def create_tool_landing_raw(self, payload: CreateToolLandingRequestPayload) -> Response:
+        create_url = "tool_landings"
+        json = payload.model_dump(mode="json")
+        create_response = self._post(create_url, json, json=True, anon=True)
+        return create_response
 
     def create_workflow_landing(self, payload: CreateWorkflowLandingRequestPayload) -> WorkflowLandingRequest:
         create_url = "workflow_landings"
@@ -1515,8 +1519,38 @@ class BaseDatasetPopulator(BasePopulator):
         wait_on(is_ready, "waiting for download to become ready")
         assert is_ready()
 
+    def wait_on_tool_request(self, tool_request_id: str):
+        # should this to defer to interactor's copy of this method?
+
+        def state():
+            state_response = self._get(f"tool_requests/{tool_request_id}/state")
+            state_response.raise_for_status()
+            return state_response.json()
+
+        def is_ready():
+            is_complete = state() in ["submitted", "failed"]
+            return True if is_complete else None
+
+        wait_on(is_ready, "waiting for tool request to submit")
+        return state() == "submitted"
+
+    def get_tool_request(self, tool_request_id: str) -> Dict[str, Any]:
+        response = self._get(f"tool_requests/{tool_request_id}")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
+    def get_history_tool_requests(self, history_id: str) -> List[Dict[str, Any]]:
+        response = self._get(f"histories/{history_id}/tool_requests")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
     def wait_on_task(self, async_task_response: Response):
-        task_id = async_task_response.json()["id"]
+        response_json = async_task_response.json()
+        self.wait_on_task_object(response_json)
+
+    def wait_on_task_object(self, async_task_json: Dict[str, Any]):
+        assert "id" in async_task_json, f"Task response {async_task_json} does not contain expected 'id' field."
+        task_id = async_task_json["id"]
         return self.wait_on_task_id(task_id)
 
     def wait_on_task_id(self, task_id: str):
@@ -3455,6 +3489,17 @@ class DescribeToolExecutionOutput:
             raise AssertionError(f"Output dataset had file extension {ext}, not the expected extension {expected_ext}")
         return self
 
+    @property
+    def json(self) -> Any:
+        contents = self.contents
+        return json.loads(contents)
+
+    def with_json(self, expected_json: Any) -> Self:
+        json = self.json
+        if json != expected_json:
+            raise AssertionError(f"Output dataset contianed JSON {json}, not {expected_json} as expected")
+        return self
+
     # aliases that might help make tests more like English in particular cases. Declaring them explicitly
     # instead quick little aliases because of https://github.com/python/mypy/issues/6700
     def assert_contains(self, expected_contents: str) -> Self:
@@ -3579,6 +3624,9 @@ class DescribeFailure:
     def __init__(self, response: Response):
         self._response = response
 
+    def __call__(self) -> Self:
+        return self
+
     def with_status_code(self, code: int) -> Self:
         api_asserts.assert_status_code_is(self._response, code)
         return self
@@ -3603,6 +3651,34 @@ class RequiredTool:
         return execution
 
 
+class DescribeToolInputs:
+    _input_format: str = "legacy"
+    _inputs: Optional[Dict[str, Any]]
+
+    def __init__(self, input_format: str):
+        self._input_format = input_format
+        self._inputs = None
+
+    def any(self, inputs: Dict[str, Any]) -> Self:
+        self._inputs = inputs
+        return self
+
+    def flat(self, inputs: Dict[str, Any]) -> Self:
+        if self._input_format == "legacy":
+            self._inputs = inputs
+        return self
+
+    def nested(self, inputs: Dict[str, Any]) -> Self:
+        if self._input_format == "21.01":
+            self._inputs = inputs
+        return self
+
+    # aliases for self to create silly little English sentense... inputs.when.flat().when.legacy()
+    @property
+    def when(self) -> Self:
+        return self
+
+
 class DescribeToolExecution:
     _history_id: Optional[str] = None
     _execute_response: Optional[Response] = None
@@ -3621,8 +3697,13 @@ class DescribeToolExecution:
             self._history_id = has_history_id._history_id
         return self
 
-    def with_inputs(self, inputs: Dict[str, Any]) -> Self:
-        self._inputs = inputs
+    def with_inputs(self, inputs: Union[DescribeToolInputs, Dict[str, Any]]) -> Self:
+        if isinstance(inputs, DescribeToolInputs):
+            self._inputs = inputs._inputs or {}
+            self._input_format = inputs._input_format
+        else:
+            self._inputs = inputs
+            self._input_format = "legacy"
         return self
 
     def with_nested_inputs(self, inputs: Dict[str, Any]) -> Self:
@@ -3689,12 +3770,24 @@ class DescribeToolExecution:
         return DescribeJob(self._dataset_populator, history_id, job["id"])
 
     @property
-    def assert_fails(self) -> DescribeFailure:
+    def that_fails(self) -> DescribeFailure:
         self._ensure_executed()
         execute_response = self._execute_response
         assert execute_response is not None
-        api_asserts.assert_status_code_is_not_ok(execute_response)
-        return DescribeFailure(execute_response)
+        if execute_response.status_code != 200:
+            return DescribeFailure(execute_response)
+        else:
+            response = self._assert_executed_ok()
+            jobs = response["jobs"]
+            for job in jobs:
+                final_state = self._dataset_populator.wait_for_job(job["id"])
+                assert final_state == "error"
+            return DescribeFailure(execute_response)
+
+    # alternative assert_ syntax for cases where it reads better.
+    @property
+    def assert_fails(self) -> DescribeFailure:
+        return self.that_fails
 
 
 class GiHttpMixin:
