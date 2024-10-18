@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
-import { onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
+import { ref, watch } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
-import { type ClaimLandingPayload } from "@/api/landings";
+import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -21,41 +23,53 @@ const props = withDefaults(defineProps<Props>(), {
 const workflowId = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
 const requestState = ref<Record<string, never> | null>(null);
+const instance = ref<boolean>(false);
+const userStore = useUserStore();
+const router = useRouter();
 
-onMounted(async () => {
-    const payload: ClaimLandingPayload = {};
-    if (props.secret) {
-        payload["client_secret"] = props.secret;
-    }
+userStore.loadUser(false);
+const { isAnonymous, currentUser } = storeToRefs(userStore);
 
-    const { data, error } = await GalaxyApi().POST("/api/workflow_landings/{uuid}/claim", {
-        params: {
-            path: { uuid: props.uuid },
-        },
-        body: payload,
-    });
-    if (data) {
-        workflowId.value = data.workflow_id;
-        requestState.value = data.request_state;
-    } else {
-        errorMessage.value = errorMessageAsString(error);
-    }
-    console.log(data);
-});
+watch(
+    currentUser,
+    async () => {
+        if (isAnonymous.value) {
+            router.push(`/login/start?redirect=/workflow_landings/${props.uuid}`);
+        } else if (currentUser.value) {
+            const { data, error } = await GalaxyApi().GET("/api/workflow_landings/{uuid}", {
+                params: {
+                    path: { uuid: props.uuid },
+                },
+            });
+            if (data) {
+                workflowId.value = data.workflow_id;
+                instance.value = data.workflow_target_type === "workflow";
+                requestState.value = data.request_state;
+            } else {
+                errorMessage.value = errorMessageAsString(error);
+            }
+        }
+    },
+    { immediate: true }
+);
 </script>
 
 <template>
     <div>
-        <div v-if="!workflowId">
-            <LoadingSpan message="Loading workflow parameters" />
-        </div>
-        <div v-else-if="errorMessage">
+        <div v-if="errorMessage">
             <BAlert variant="danger" show>
                 {{ errorMessage }}
             </BAlert>
         </div>
+        <div v-else-if="!workflowId">
+            <LoadingSpan message="Loading workflow parameters" />
+        </div>
         <div v-else>
-            <WorkflowRun :workflow-id="workflowId" :prefer-simple-form="true" :request-state="requestState" />
+            <WorkflowRun
+                :workflow-id="workflowId"
+                :prefer-simple-form="true"
+                :request-state="requestState"
+                :instance="instance" />
         </div>
     </div>
 </template>

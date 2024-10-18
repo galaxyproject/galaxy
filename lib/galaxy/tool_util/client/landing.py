@@ -65,7 +65,10 @@ def generate_claim_url(request: Request) -> Response:
         landing_request_url,
         json=template,
     )
-    raw_response.raise_for_status()
+    try:
+        raw_response.raise_for_status()
+    except Exception:
+        raise Exception("Request failed: %s", raw_response.text)
     response = raw_response.json()
     url = f"{galaxy_url}/{template_type}_landings/{response['uuid']}"
     if client_secret:
