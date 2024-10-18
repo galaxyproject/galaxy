@@ -47,7 +47,7 @@ const userOwned = computed(() => {
 
 <template>
     <aside class="workflow-information">
-        <hgroup>
+        <hgroup v-if="props.embedded">
             <Heading h2 size="xl" class="mb-0">About This Workflow</Heading>
             <span class="ml-2">
                 <span data-description="workflow name"> {{ workflowInfo.name }} </span> - Version
