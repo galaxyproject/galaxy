@@ -144,6 +144,8 @@ function close() {
     border-width: 1px;
     border-style: solid;
     border-radius: 0.5rem 0 0 0.5rem;
+    display: flex;
+    flex-direction: column;
 
     &.maximized {
         border-radius: 0.5rem;
@@ -177,7 +179,6 @@ function close() {
 
     .inspector-content {
         overflow-y: auto;
-        height: 100%;
         padding: 0.5rem 0.5rem;
         padding-top: 0;
     }
