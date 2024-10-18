@@ -65,3 +65,33 @@ class TestHistoryPanel(SeleniumTestCase):
 
         assert annotation_component.wait_for_value() == TEST_ANNOTATION
         assert info_component.wait_for_value() == TEST_INFO
+
+    @selenium_test
+    @managed_history
+    def test_history_dataset_auto_detect_datatype(self):
+        expected_datatype = "txt"
+        provided_datatype = "tabular"
+        history_entry = self.perform_single_upload(self.get_filename("1.txt"), ext=provided_datatype)
+        hid = history_entry.hid
+        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(hid)
+        self.history_panel_item_edit(hid=hid)
+        edit_dataset_attributes = self.components.edit_dataset_attributes
+        datatypes_tab = edit_dataset_attributes.datatypes_tab
+        datatype_component = edit_dataset_attributes.datatype_dropdown
+        datatypes_tab.wait_for_and_click()
+        assert datatype_component.wait_for_text() == provided_datatype
+
+        # click auto detect datatype button
+        edit_dataset_attributes.auto_detect_datatype_button.wait_for_and_click()
+        edit_dataset_attributes.alert.wait_for_visible()
+
+        assert edit_dataset_attributes.alert.has_class("alert-success")
+
+        # reopen and check that datatype is updated
+        self.home()
+        self.history_panel_wait_for_hid_ok(hid)
+        self.history_panel_item_edit(hid=hid)
+        datatypes_tab.wait_for_and_click()
+
+        assert datatype_component.wait_for_text() == expected_datatype
