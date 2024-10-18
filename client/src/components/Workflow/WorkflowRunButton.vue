@@ -13,6 +13,7 @@ interface Props {
     title?: string;
     disabled?: boolean;
     version?: number;
+    force?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -20,6 +21,12 @@ const props = defineProps<Props>();
 const runPath = computed(
     () => `/workflows/run?id=${props.id}${props.version !== undefined ? `&version=${props.version}` : ""}`
 );
+
+function forceRunPath() {
+    if (props.force) {
+        window.open(runPath.value);
+    }
+}
 </script>
 
 <template>
@@ -31,7 +38,8 @@ const runPath = computed(
         variant="primary"
         size="sm"
         :disabled="disabled"
-        :to="runPath">
+        :to="runPath"
+        @click="forceRunPath">
         <FontAwesomeIcon :icon="faPlay" fixed-width />
 
         <span v-if="full" v-localize>Run</span>

@@ -32,6 +32,8 @@ const props = withDefaults(defineProps<Props>(), {
     limit: 20,
 });
 
+const emit = defineEmits(["invocation-clicked"]);
+
 library.add(faEye, faArrowDown, faInfoCircle);
 
 const stateClasses: Record<string, string> = {
@@ -97,6 +99,7 @@ function cardClicked(invocation: WorkflowInvocation) {
     let path = `/workflows/invocations/${invocation.id}`;
     if (props.inPanel) {
         path += "?from_panel=true";
+        emit("invocation-clicked");
     }
     router.push(path);
 }
