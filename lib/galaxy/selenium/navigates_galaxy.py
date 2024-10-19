@@ -299,6 +299,13 @@ class NavigatesGalaxy(HasDriver):
         except SeleniumTimeoutException as e:
             raise ClientBuildException(e)
 
+    def go_to_workflow_landing(self, uuid: str, public: Literal["false", "true"], client_secret: Optional[str]):
+        path = f"workflow_landings/{uuid}?public={public}"
+        if client_secret:
+            path = f"{path}&client_secret={client_secret}"
+        self.driver.get(self.build_url(path))
+        self.components.workflow_run.run_workflow.wait_for_visible()
+
     def go_to_trs_search(self) -> None:
         self.driver.get(self.build_url("workflows/trs_search"))
         self.components.masthead._.wait_for_visible()

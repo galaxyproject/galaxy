@@ -506,7 +506,7 @@ export function getRouter(Galaxy) {
                         component: WorkflowLanding,
                         props: (route) => ({
                             uuid: route.params.uuid,
-                            public: !!route.query.public,
+                            public: route.query.public.toLowerCase() === "true",
                             secret: route.query.client_secret,
                         }),
                     },
