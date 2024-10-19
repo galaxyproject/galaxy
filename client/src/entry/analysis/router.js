@@ -504,7 +504,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflow_landings/:uuid",
                         component: WorkflowLanding,
-                        props: true,
+                        props: (route) => ({
+                            uuid: route.params.uuid,
+                            public: !!route.query.public,
+                            secret: route.query.client_secret,
+                        }),
                     },
                     {
                         path: "user",
