@@ -1,16 +1,26 @@
 <script setup lang="ts">
-import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormCheckbox, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BAlert, BButton, BFormCheckbox, BFormGroup, BFormInput, BTab, BTabs } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
 import HelpText from "@/components/Help/HelpText.vue";
+import DefaultBox from "@/components/Upload/DefaultBox.vue";
+
+const Tabs = {
+    create: 0,
+    upload: 1,
+};
 
 interface Props {
     oncancel: () => void;
+    historyId: string;
     hideSourceItems: boolean;
     suggestedName?: string;
     renderExtensionsToggle?: boolean;
@@ -32,12 +42,34 @@ const emit = defineEmits<{
 }>();
 
 const isExpanded = ref(false);
+const currentTab = ref(Tabs.create);
 const collectionName = ref(props.suggestedName);
 const localHideSourceItems = ref(props.hideSourceItems);
 
 const validInput = computed(() => {
     return collectionName.value.length > 0;
 });
+
+// Upload properties
+const { config, isConfigLoaded } = useConfig();
+
+const { currentUser } = storeToRefs(useUserStore());
+
+const configOptions = computed(() =>
+    isConfigLoaded.value
+        ? {
+              chunkUploadSize: config.value.chunk_upload_size,
+              fileSourcesConfigured: config.value.file_sources_configured,
+              ftpUploadSite: config.value.ftp_upload_site,
+              defaultDbKey: config.value.default_genome,
+              defaultExtension: config.value.default_extension,
+          }
+        : {}
+);
+
+const ftpUploadSite = computed(() =>
+    currentUser.value && "id" in currentUser.value ? configOptions.value.ftpUploadSite : null
+);
 
 function clickForHelp() {
     isExpanded.value = !isExpanded.value;
@@ -57,104 +89,126 @@ watch(
 </script>
 
 <template>
-    <div class="collection-creator">
-        <div class="header flex-row no-flex">
-            <div class="main-help well clear" :class="{ expanded: isExpanded }">
-                <a
-                    class="more-help"
-                    href="javascript:void(0);"
-                    role="button"
-                    :title="localize('Expand or Close Help')"
-                    @click="clickForHelp">
-                    <div v-if="!isExpanded">
-                        <FontAwesomeIcon :icon="faChevronDown" />
-                        <span class="sr-only">{{ localize("Expand Help") }}</span>
-                    </div>
-                    <div v-else>
-                        <FontAwesomeIcon :icon="faChevronUp" />
-                        <span class="sr-only">{{ localize("Close Help") }}</span>
-                    </div>
-                </a>
-
-                <div class="help-content">
-                    <!-- each collection that extends this will add their own help content -->
-                    <slot name="help-content"></slot>
-
+    <BTabs v-model="currentTab" fill justified>
+        <BTab class="collection-creator" :title="localize('Create Collection')">
+            <div class="header flex-row no-flex">
+                <div class="main-help well clear" :class="{ expanded: isExpanded }">
                     <a
                         class="more-help"
                         href="javascript:void(0);"
                         role="button"
                         :title="localize('Expand or Close Help')"
                         @click="clickForHelp">
-                        <span class="sr-only">{{ localize("Expand Help") }}</span>
+                        <div v-if="!isExpanded">
+                            <FontAwesomeIcon :icon="faChevronDown" />
+                            <span class="sr-only">{{ localize("Expand Help") }}</span>
+                        </div>
+                        <div v-else>
+                            <FontAwesomeIcon :icon="faChevronUp" />
+                            <span class="sr-only">{{ localize("Close Help") }}</span>
+                        </div>
                     </a>
+
+                    <div class="help-content">
+                        <!-- each collection that extends this will add their own help content -->
+                        <slot name="help-content"></slot>
+
+                        <a
+                            class="more-help"
+                            href="javascript:void(0);"
+                            role="button"
+                            :title="localize('Expand or Close Help')"
+                            @click="clickForHelp">
+                            <span class="sr-only">{{ localize("Expand Help") }}</span>
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="middle flex-row flex-row-container">
-            <slot name="middle-content"></slot>
-        </div>
+            <div class="middle flex-row flex-row-container">
+                <slot name="middle-content"></slot>
+            </div>
 
-        <div class="footer flex-row">
-            <div class="vertically-spaced">
-                <div class="d-flex align-items-center justify-content-between">
-                    <BAlert v-if="extensions?.length" class="w-100 py-0" variant="secondary" show>
-                        <HelpText
-                            uri="galaxy.collections.collectionBuilder.filteredExtensions"
-                            :text="localize('Filtered extensions: ')" />
-                        <strong>{{ orList(extensions) }}</strong>
-                    </BAlert>
-                </div>
-
-                <div class="d-flex align-items-center justify-content-between">
-                    <BFormGroup class="inputs-form-group">
-                        <BFormCheckbox
-                            v-if="renderExtensionsToggle"
-                            name="remove-extensions"
-                            switch
-                            :checked="extensionsToggle"
-                            @input="emit('remove-extensions-toggle')">
-                            {{ localize("Remove file extensions?") }}
-                        </BFormCheckbox>
-
-                        <BFormCheckbox v-model="localHideSourceItems" name="hide-originals" switch>
+            <div class="footer flex-row">
+                <div class="vertically-spaced">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <BAlert v-if="extensions?.length" class="w-100 py-0" variant="secondary" show>
                             <HelpText
-                                uri="galaxy.collections.collectionBuilder.hideOriginalElements"
-                                :text="localize('Hide original elements')" />
-                        </BFormCheckbox>
-                    </BFormGroup>
+                                uri="galaxy.collections.collectionBuilder.filteredExtensions"
+                                :text="localize('Filtered extensions: ')" />
+                            <strong>{{ orList(extensions) }}</strong>
+                        </BAlert>
+                    </div>
 
-                    <BFormGroup
-                        class="flex-gapx-1 d-flex align-items-center w-50 inputs-form-group"
-                        :label="localize('Name:')"
-                        label-for="collection-name">
-                        <BFormInput
-                            id="collection-name"
-                            v-model="collectionName"
-                            :placeholder="localize('Enter a name for your new collection')"
-                            size="sm"
-                            required
-                            :state="!collectionName ? false : null" />
-                    </BFormGroup>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <BFormGroup class="inputs-form-group">
+                            <BFormCheckbox
+                                v-if="renderExtensionsToggle"
+                                name="remove-extensions"
+                                switch
+                                :checked="extensionsToggle"
+                                @input="emit('remove-extensions-toggle')">
+                                {{ localize("Remove file extensions?") }}
+                            </BFormCheckbox>
+
+                            <BFormCheckbox v-model="localHideSourceItems" name="hide-originals" switch>
+                                <HelpText
+                                    uri="galaxy.collections.collectionBuilder.hideOriginalElements"
+                                    :text="localize('Hide original elements')" />
+                            </BFormCheckbox>
+                        </BFormGroup>
+
+                        <BFormGroup
+                            class="flex-gapx-1 d-flex align-items-center w-50 inputs-form-group"
+                            :label="localize('Name:')"
+                            label-for="collection-name">
+                            <BFormInput
+                                id="collection-name"
+                                v-model="collectionName"
+                                :placeholder="localize('Enter a name for your new collection')"
+                                size="sm"
+                                required
+                                :state="!collectionName ? false : null" />
+                        </BFormGroup>
+                    </div>
+                </div>
+
+                <div class="actions vertically-spaced d-flex justify-content-between">
+                    <BButton tabindex="-1" @click="cancelCreate">
+                        {{ localize("Cancel") }}
+                    </BButton>
+
+                    <BButton
+                        class="create-collection"
+                        variant="primary"
+                        :disabled="!validInput"
+                        @click="emit('clicked-create', collectionName)">
+                        {{ localize("Create collection") }}
+                    </BButton>
                 </div>
             </div>
-
-            <div class="actions vertically-spaced d-flex justify-content-between">
-                <BButton tabindex="-1" @click="cancelCreate">
-                    {{ localize("Cancel") }}
-                </BButton>
-
-                <BButton
-                    class="create-collection"
-                    variant="primary"
-                    :disabled="!validInput"
-                    @click="emit('clicked-create', collectionName)">
-                    {{ localize("Create collection") }}
-                </BButton>
-            </div>
-        </div>
-    </div>
+        </BTab>
+        <BTab>
+            <template v-slot:title>
+                <FontAwesomeIcon :icon="faUpload" fixed-width />
+                <span>{{ localize("Upload Files to Add to Collection") }}</span>
+            </template>
+            <!-- TODO: This is incomplete; need to return uploadValues to parent -->
+            <DefaultBox
+                v-if="configOptions"
+                :chunk-upload-size="configOptions.chunkUploadSize"
+                :default-db-key="configOptions.defaultDbKey"
+                :default-extension="configOptions.defaultExtension"
+                :effective-extensions="extensions"
+                :file-sources-configured="configOptions.fileSourcesConfigured"
+                :ftp-upload-site="ftpUploadSite"
+                :has-callback="false"
+                :history-id="historyId"
+                :is-collection="true"
+                :list-db-keys="listDbKeys"
+                @dismiss="currentTab = Tabs.create" />
+        </BTab>
+    </BTabs>
 </template>
 
 <style lang="scss">

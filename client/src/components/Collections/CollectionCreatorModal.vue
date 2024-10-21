@@ -38,7 +38,6 @@ const emit = defineEmits<{
     (e: "update:show-modal", showModal: boolean): void;
 }>();
 
-// Computed refs
 /** Computed toggle that handles opening and closing the modal */
 const localShowToggle = computed({
     get: () => props.showModal,
@@ -58,13 +57,6 @@ const collectionItemsStore = useCollectionBuilderItemsStore();
 const historyStore = useHistoryStore();
 const history = computed(() => historyStore.getHistoryById(props.historyId));
 const historyId = computed(() => props.historyId);
-
-/** Whether a list of items was selected to create a collection from */
-const fromSelection = computed(() => !!props.selectedItems?.length);
-
-/** Items to create the collection from */
-const creatorItems = computed(() => (fromSelection.value ? props.selectedItems : historyDatasets.value));
-
 const localFilterText = computed(() => props.filterText || "");
 const historyUpdateTime = computed(() => history.value?.update_time);
 const isFetchingItems = computed(() => collectionItemsStore.isFetching[localFilterText.value]);
@@ -76,11 +68,23 @@ const historyDatasets = computed(() => {
     }
 });
 
+/** Flag for the initial fetch of history items */
+const initialFetch = ref(false);
+
+/** Whether a list of items was selected to create a collection from */
+const fromSelection = computed(() => !!props.selectedItems?.length);
+
+/** Items to create the collection from */
+const creatorItems = computed(() => (fromSelection.value ? props.selectedItems : historyDatasets.value));
+
 watch(
     () => localShowToggle.value,
     async (show) => {
         if (show) {
             await fetchHistoryDatasets();
+            if (!initialFetch.value) {
+                initialFetch.value = true;
+            }
         }
     },
     { immediate: true }
@@ -250,7 +254,7 @@ function resetModal() {
                 </div>
             </Heading>
         </template>
-        <BAlert v-if="isFetchingItems" variant="info" show>
+        <BAlert v-if="isFetchingItems && !initialFetch" variant="info" show>
             <LoadingSpan :message="localize('Loading items')" />
         </BAlert>
         <BAlert v-else-if="!fromSelection && historyItemsError" variant="danger" show>
@@ -284,6 +288,7 @@ function resetModal() {
         </div>
         <ListCollectionCreator
             v-else-if="props.collectionType === 'list'"
+            :history-id="props.historyId"
             :initial-elements="creatorItems"
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
@@ -292,6 +297,7 @@ function resetModal() {
             @on-cancel="hideModal" />
         <PairedListCollectionCreator
             v-else-if="props.collectionType === 'list:paired'"
+            :history-id="props.historyId"
             :initial-elements="creatorItems"
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
@@ -300,6 +306,7 @@ function resetModal() {
             @on-cancel="hideModal" />
         <PairCollectionCreator
             v-else-if="props.collectionType === 'paired'"
+            :history-id="props.historyId"
             :initial-elements="creatorItems"
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"

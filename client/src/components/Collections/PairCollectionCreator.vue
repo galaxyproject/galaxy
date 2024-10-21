@@ -20,6 +20,7 @@ interface SelectedDatasetPair {
 }
 
 interface Props {
+    historyId: string;
     initialElements: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
     fromSelection?: boolean;
@@ -370,6 +371,7 @@ onMounted(() => {
 
                 <CollectionCreator
                     :oncancel="() => emit('on-cancel')"
+                    :history-id="props.historyId"
                     :hide-source-items="hideSourceItems"
                     :suggested-name="initialSuggestedName"
                     :extensions-toggle="removeExtensions"

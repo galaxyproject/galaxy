@@ -18,6 +18,7 @@ import CollectionCreator from "@/components/Collections/common/CollectionCreator
 import DatasetCollectionElementView from "@/components/Collections/ListDatasetCollectionElementView.vue";
 
 interface Props {
+    historyId: string;
     initialElements: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
     fromSelection?: boolean;
@@ -73,6 +74,15 @@ const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
 
 /** Are we filtering by datatype? */
 const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
+
+// TODO: This needs to be done in the other creators as well
+watch(
+    () => props.initialElements,
+    () => {
+        // for any new/removed elements, add them to working elements
+        _elementsSetUp();
+    }
+);
 
 /** set up instance vars function */
 function _instanceSetUp() {
@@ -275,6 +285,7 @@ function onUpdateHideSourceItems(newHideSourceItems: boolean) {
     hideSourceItems.value = newHideSourceItems;
 }
 
+// TODO: No need to use `onMounted` here, this can be done in the `setup`
 onMounted(() => {
     _instanceSetUp();
     _elementsSetUp();
@@ -406,6 +417,7 @@ function renameElement(element: any, name: string) {
 
                 <CollectionCreator
                     :oncancel="() => emit('on-cancel')"
+                    :history-id="props.historyId"
                     :hide-source-items="hideSourceItems"
                     :extensions="extensions"
                     @on-update-datatype-toggle="changeDatatypeFilter"

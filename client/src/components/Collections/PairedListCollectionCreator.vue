@@ -43,6 +43,7 @@ const ALL_INVALID_ELEMENTS_PART_ONE = localize("At least two elements are needed
 const CANCEL_TEXT = localize("Cancel");
 
 interface Props {
+    historyId: string;
     initialElements: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
     fromSelection?: boolean;
@@ -901,6 +902,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                 </div>
                 <CollectionCreator
                     :oncancel="() => emit('on-cancel')"
+                    :history-id="props.historyId"
                     :hide-source-items="hideSourceItems"
                     render-extensions-toggle
                     :extensions-toggle="removeExtensions"
