@@ -110,7 +110,7 @@ Routes = "*"
 schema-salad = "!=8.3.20220721194857"  # https://github.com/common-workflow-language/schema_salad/issues/575
 social-auth-core = ">=4.5.0"  # to drop dependency on abandoned python-jose
 sortedcontainers = "*"
-SQLAlchemy = "^2.0"
+SQLAlchemy = ">=2.0,<2.1,!=2.0.36"  # https://github.com/sqlalchemy/sqlalchemy/issues/12019
 sqlitedict = "*"
 sqlparse = "*"
 starlette = "*"
