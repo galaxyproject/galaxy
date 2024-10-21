@@ -1421,3 +1421,34 @@ class FormattedDensity(Text):
             (lines[9].strip() == end_header and lines[10].strip() == grid_points)
             or (lines[9].strip() == end_header_spin and lines[10].strip() == grid_points_spin)
         )
+
+
+class ZarrRemoteS3Bucket(Text):
+    """Zarr remote S3 bucket
+
+    It is a text file containing a single line with the path (without https://) to a remote S3 bucket containing the Zarr store.
+    The bucket name must end with '.zarr'.
+    """
+
+    file_ext = "zarr_s3"
+
+    def sniff(self, filename: str) -> bool:
+        # Must have a single line and end with '.zarr'
+        with open(filename, "r") as f:
+            lines = f.readlines()
+            if len(lines) != 1:
+                return False
+            return lines[0].strip().endswith(".zarr")
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            try:
+                with open(dataset.get_file_name()) as f:
+                    dataset.peek = f.read().strip()
+                    dataset.info = "Zarr remote S3 bucket"
+                    dataset.blurb = nice_size(dataset.get_size())
+            except Exception:
+                dataset.peek = "Could not read file"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
