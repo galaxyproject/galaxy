@@ -120,6 +120,7 @@ function close() {
                     @onLabel="(id, l) => emit('labelChanged', id, l)"></FormTool>
                 <FormDefault
                     v-else
+                    class="w-100"
                     :step="props.step"
                     :datatypes="datatypes"
                     @onSetData="(id, d) => emit('dataChanged', id, d)"
