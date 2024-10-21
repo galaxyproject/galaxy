@@ -395,17 +395,16 @@ class FastAPIUsers:
         user = self.service.get_user(trans, user_id)
         favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
         if object_type.value == "tools":
-            if "tools" in favorites:
-                favorite_tools = favorites["tools"]
-                if object_id in favorite_tools:
-                    del favorite_tools[favorite_tools.index(object_id)]
-                    favorites["tools"] = favorite_tools
-                    user.preferences["favorites"] = json.dumps(favorites)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
-                else:
-                    raise exceptions.ObjectNotFound("Given object is not in the list of favorites")
-        return favorites
+            favorite_tools = favorites.get("tools", [])
+            if object_id in favorite_tools:
+                del favorite_tools[favorite_tools.index(object_id)]
+                favorites["tools"] = favorite_tools
+                user.preferences["favorites"] = json.dumps(favorites)
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
+            else:
+                raise exceptions.ObjectNotFound("Given object is not in the list of favorites")
+        return FavoriteObjectsSummary.model_validate(favorites)
 
     @router.put(
         "/api/users/{user_id}/favorites/{object_type}",
@@ -428,17 +427,14 @@ class FastAPIUsers:
                 raise exceptions.ObjectNotFound(f"Could not find tool with id '{tool_id}'.")
             if not tool.allow_user_access(user):
                 raise exceptions.AuthenticationFailed(f"Access denied for tool with id '{tool_id}'.")
-            if "tools" in favorites:
-                favorite_tools = favorites["tools"]
-            else:
-                favorite_tools = []
+            favorite_tools = favorites.get("tools", [])
             if tool_id not in favorite_tools:
                 favorite_tools.append(tool_id)
                 favorites["tools"] = favorite_tools
                 user.preferences["favorites"] = json.dumps(favorites)
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()
-        return favorites
+        return FavoriteObjectsSummary.model_validate(favorites)
 
     @router.put(
         "/api/users/{user_id}/theme/{theme}",
