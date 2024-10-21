@@ -26,11 +26,13 @@ interface Props {
     workflow: any;
     published?: boolean;
     editor?: boolean;
+    current?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     published: false,
     editor: false,
+    current: false,
 });
 
 const emit = defineEmits<{
@@ -151,7 +153,7 @@ const runPath = computed(
                 </template>
 
                 <BDropdownItem
-                    v-if="!isAnonymous && !shared && !props.workflow.deleted"
+                    v-if="!isAnonymous && !shared && !props.workflow.deleted && !props.current"
                     class="workflow-delete-button"
                     title="Delete workflow"
                     size="sm"
