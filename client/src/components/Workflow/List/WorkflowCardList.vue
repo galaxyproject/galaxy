@@ -15,6 +15,7 @@ interface Props {
     filterable?: boolean;
     publishedView?: boolean;
     editorView?: boolean;
+    currentWorkflowId?: string;
 }
 
 const props = defineProps<Props>();
@@ -78,6 +79,7 @@ function onInsertSteps(workflow: Workflow) {
             :filterable="props.filterable"
             :published-view="props.publishedView"
             :editor-view="props.editorView"
+            :current="workflow.id === props.currentWorkflowId"
             class="workflow-card"
             @tagClick="(...args) => emit('tagClick', ...args)"
             @refreshList="(...args) => emit('refreshList', ...args)"
