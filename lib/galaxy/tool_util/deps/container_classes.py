@@ -211,7 +211,9 @@ class Volume:
             target = volume_parts[1]
             mode = volume_parts[2]
         elif len(volume_parts) == 2:
-            if volume_parts[1] not in ("rw", "ro", "default_ro", "z", "Z"):
+            # not really parsing/checking mode here, just figuring out if the 2nd component is target or mode
+            mode_parts = volume_parts[1].split(",")
+            if any([mode_part not in ("rw", "ro", "default_ro", "z", "Z") for mode_part in mode_parts]):
                 source = volume_parts[0]
                 target = volume_parts[1]
                 mode = "rw"
