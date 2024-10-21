@@ -66,6 +66,7 @@
                 <UndoRedoStack v-else-if="isActiveSideBar('workflow-undo-redo')" :store-id="id" />
                 <WorkflowPanel
                     v-else-if="isActiveSideBar('workflow-editor-workflows')"
+                    :current-workflow-id="id"
                     @insertWorkflow="onInsertWorkflow"
                     @insertWorkflowSteps="onInsertWorkflowSteps" />
                 <WorkflowAttributes

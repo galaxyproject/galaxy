@@ -28,11 +28,13 @@ interface Props {
     workflow: any;
     published?: boolean;
     editor?: boolean;
+    current?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     published: false,
     editor: false,
+    current: false,
 });
 
 const emit = defineEmits<{
@@ -161,8 +163,10 @@ const { copyPublicLink, copyWorkflow, downloadUrl, importWorkflow } = useWorkflo
         </BButtonGroup>
 
         <div>
+            <i v-if="props.current" class="mr-2"> current workflow </i>
+
             <BButton
-                v-if="!isAnonymous && !shared"
+                v-if="!isAnonymous && !shared && !props.current"
                 v-b-tooltip.hover.noninteractive
                 :disabled="workflow.deleted"
                 size="sm"
@@ -175,7 +179,7 @@ const { copyPublicLink, copyWorkflow, downloadUrl, importWorkflow } = useWorkflo
             </BButton>
 
             <AsyncButton
-                v-else
+                v-else-if="!props.current"
                 v-b-tooltip.hover.noninteractive
                 size="sm"
                 :disabled="isAnonymous"
@@ -203,6 +207,7 @@ const { copyPublicLink, copyWorkflow, downloadUrl, importWorkflow } = useWorkflo
                 </BButton>
 
                 <BButton
+                    v-if="!props.current"
                     v-b-tooltip.hover.noninteractive
                     size="sm"
                     title="Insert as sub-workflow"

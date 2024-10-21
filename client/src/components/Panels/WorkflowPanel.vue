@@ -11,6 +11,10 @@ import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
 import WorkflowCardList from "@/components/Workflow/List/WorkflowCardList.vue";
 
+const props = defineProps<{
+    currentWorkflowId: string;
+}>();
+
 const emit = defineEmits<{
     (e: "insertWorkflow", id: string, name: string): void;
     (e: "insertWorkflowSteps", id: string, stepCount: number): void;
@@ -124,6 +128,7 @@ function scrollToTop() {
                 :hide-runs="true"
                 :workflows="workflows"
                 :filterable="false"
+                :current-workflow-id="props.currentWorkflowId"
                 editor-view
                 @insertWorkflow="(...args) => emit('insertWorkflow', ...args)"
                 @insertWorkflowSteps="(...args) => emit('insertWorkflowSteps', ...args)" />

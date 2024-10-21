@@ -22,6 +22,7 @@ interface Props {
     filterable?: boolean;
     publishedView?: boolean;
     editorView?: boolean;
+    current?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -30,6 +31,7 @@ const props = withDefaults(defineProps<Props>(), {
     hideRuns: false,
     filterable: true,
     editorView: false,
+    current: false,
 });
 
 const emit = defineEmits<{
@@ -145,6 +147,7 @@ const dropdownOpen = ref(false);
                     :workflow="workflow"
                     :published="publishedView"
                     :editor="editorView"
+                    :current="props.current"
                     @refreshList="emit('refreshList', true)"
                     @insert="(...args) => emit('insert', ...args)"
                     @insertSteps="(...args) => emit('insertSteps', ...args)" />
