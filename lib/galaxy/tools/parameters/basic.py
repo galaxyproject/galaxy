@@ -1403,7 +1403,7 @@ class ColumnListParameter(SelectToolParameter):
         if self.accept_default:
             self.optional = True
         self.data_ref = input_source.get("data_ref", None)
-        assert self.data_ref is not None, f'data_column parameter {self.name} requires a valid data_ref attribute'
+        assert self.data_ref is not None, f"data_column parameter {self.name} requires a valid data_ref attribute"
         self.ref_input = None
         # Legacy style default value specification...
         self.default_value = input_source.get("default_value", None)

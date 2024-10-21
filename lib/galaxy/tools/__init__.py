@@ -1665,7 +1665,9 @@ class Tool(UsesDictVisibleKeys):
         # form when it changes
         for name in param.get_dependencies():
             # Let it throw exception, but give some hint what the problem might be
-            assert name in context, f"Tool with id '{self.id}': Could not find dependency '{name}' of parameter '{param.name}'"
+            assert (
+                name in context
+            ), f"Tool with id '{self.id}': Could not find dependency '{name}' of parameter '{param.name}'"
             context[name].refresh_on_change = True
         return param
 
