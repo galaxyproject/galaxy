@@ -34,8 +34,8 @@ def upgrade():
     with transaction():
         add_column(workflow_table_name, sa.Column("workflow_source", sa.String(255), nullable=True))
         add_column(workflow_table_name, sa.Column("workflow_source_type", sa.String(255), nullable=True))
-        add_column(workflow_table_name, sa.Column("public", sa.Boolean, nullable=False))
-        add_column(tool_table_name, sa.Column("public", sa.Boolean, nullable=False))
+        add_column(workflow_table_name, sa.Column("public", sa.Boolean, nullable=False, server_default=sa.false()))
+        add_column(tool_table_name, sa.Column("public", sa.Boolean, nullable=False, server_default=sa.false()))
 
 
 def downgrade():
