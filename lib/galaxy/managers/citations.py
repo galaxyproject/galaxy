@@ -1,14 +1,26 @@
 import functools
 import logging
+from typing import (
+    Dict,
+    Optional,
+    Type,
+    Union,
+)
 
-import requests
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
 from galaxy.structured_app import BasicSharedApp
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.tool_util.parser.interface import Citation
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 
 log = logging.getLogger(__name__)
+
+CitationT = Union["BibtexCitation", "DoiCitation"]
+OptionalCitationT = Optional[CitationT]
 
 
 class CitationsManager:
@@ -27,8 +39,8 @@ class CitationsManager:
                 citation_collection.add(citation)
         return citation_collection.citations
 
-    def parse_citation(self, citation_elem):
-        return parse_citation(citation_elem, self)
+    def parse_citation(self, citation_model: Citation) -> OptionalCitationT:
+        return parse_citation(citation_model, self)
 
     def _get_tool(self, tool_id):
         tool = self.app.toolbox.get_tool(tool_id)
@@ -55,6 +67,7 @@ class DoiCache:
         # content encoding from the Content-Type header (res.encoding), and if
         # that fails, falls back to guessing from the content itself (res.apparent_encoding).
         # The guessed encoding is sometimes wrong, better to default to utf-8.
+        res.raise_for_status()
         if res.encoding is None:
             res.encoding = "utf-8"
         return res.text
@@ -64,19 +77,19 @@ class DoiCache:
         return self._cache.get(key=doi, createfunc=createfunc)
 
 
-def parse_citation(elem, citation_manager):
+def parse_citation(citation_model: Citation, citation_manager) -> OptionalCitationT:
     """
     Parse an abstract citation entry from the specified XML element.
     """
-    citation_type = elem.attrib.get("type", None)
+    citation_type = citation_model.type
     citation_class = CITATION_CLASSES.get(citation_type, None)
     if not citation_class:
         log.warning(f"Unknown or unspecified citation type: {citation_type}")
         return None
     try:
-        citation = citation_class(elem, citation_manager)
+        citation = citation_class(citation_model, citation_manager)
     except Exception as e:
-        raise Exception(f"Invalid citation of type '{citation_type}' with content '{elem.text}': {e}")
+        raise Exception(f"Invalid citation of type '{citation_type}' with content '{citation_model.content}': {e}")
     return citation
 
 
@@ -123,20 +136,22 @@ class BaseCitation:
 
 
 class BibtexCitation(BaseCitation):
-    def __init__(self, elem, citation_manager):
-        self.raw_bibtex = elem.text.strip()
+    def __init__(self, citation_model: Citation, citation_manager: CitationsManager):
+        self.raw_bibtex = citation_model.content
 
-    def to_bibtex(self):
+    def to_bibtex(self) -> str:
         return self.raw_bibtex
 
 
-class DoiCitation(BaseCitation):
-    BIBTEX_UNSET = object()
+BIBTEX_UNSET = object()
 
-    def __init__(self, elem, citation_manager):
-        self.__doi = elem.text.strip()
+
+class DoiCitation(BaseCitation):
+
+    def __init__(self, citation_model: Citation, citation_manager: CitationsManager):
+        self.__doi = citation_model.content
         self.doi_cache = citation_manager.doi_cache
-        self.raw_bibtex = DoiCitation.BIBTEX_UNSET
+        self.raw_bibtex = BIBTEX_UNSET
 
     def has_doi(self):
         return True
@@ -144,23 +159,23 @@ class DoiCitation(BaseCitation):
     def doi(self):
         return self.__doi
 
-    def to_bibtex(self):
-        if self.raw_bibtex is DoiCitation.BIBTEX_UNSET:
+    def to_bibtex(self) -> str:
+        if self.raw_bibtex is BIBTEX_UNSET:
             try:
                 self.raw_bibtex = self.doi_cache.get_bibtex(self.__doi)
             except Exception:
-                log.exception("Failed to fetch bibtex for DOI %s", self.__doi)
+                log.debug("Failed to fetch bibtex for DOI %s", self.__doi)
 
-        if self.raw_bibtex is DoiCitation.BIBTEX_UNSET:
+        if self.raw_bibtex is BIBTEX_UNSET:
             return f"""@MISC{{{self.__doi},
                 DOI = {{{self.__doi}}},
                 note = {{Failed to fetch BibTeX for DOI.}}
             }}"""
         else:
-            return self.raw_bibtex
+            return str(self.raw_bibtex)
 
 
-CITATION_CLASSES = dict(
+CITATION_CLASSES: Dict[str, Type[CitationT]] = dict(
     bibtex=BibtexCitation,
     doi=DoiCitation,
 )

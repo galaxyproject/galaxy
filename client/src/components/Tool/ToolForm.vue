@@ -1,7 +1,10 @@
 <template>
-    <div v-if="currentUser && currentHistoryId">
+    <div v-if="currentUser && currentHistoryId && isConfigLoaded">
         <b-alert :show="messageShow" :variant="messageVariant">
             {{ messageText }}
+        </b-alert>
+        <b-alert v-if="!showLoading && !canMutateHistory" show variant="warning">
+            {{ immutableHistoryMessage }}
         </b-alert>
         <LoadingSpan v-if="showLoading" message="Loading Tool" />
         <div v-if="showEntryPoints">
@@ -87,6 +90,7 @@
                 <ButtonSpinner
                     id="execute"
                     title="Run Tool"
+                    :disabled="!canMutateHistory"
                     class="btn-sm"
                     :wait="showExecuting"
                     :tooltip="tooltip"
@@ -96,6 +100,7 @@
                 <ButtonSpinner
                     title="Run Tool"
                     class="mt-3 mb-3"
+                    :disabled="!canMutateHistory"
                     :wait="showExecuting"
                     :tooltip="tooltip"
                     @onClick="onExecute(config, currentHistoryId)" />
@@ -117,6 +122,7 @@ import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 import { refreshContentsWrapper } from "utils/data";
 
+import { canMutateHistory } from "@/api";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -196,11 +202,13 @@ export default {
                 { label: "populate", value: "populate" },
                 { label: "bundle", value: "bundle" },
             ],
+            immutableHistoryMessage:
+                "This history is immutable and you cannot run tools in it. Please switch to a different history.",
         };
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
-        ...mapState(useHistoryStore, ["currentHistoryId"]),
+        ...mapState(useHistoryStore, ["currentHistoryId", "currentHistory"]),
         ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
         toolName() {
             return this.formConfig.name;
@@ -212,6 +220,9 @@ export default {
             return id.endsWith(version) ? id : `${id}/${version}`;
         },
         tooltip() {
+            if (!this.canMutateHistory) {
+                return this.immutableHistoryMessage;
+            }
             return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
         },
         errorContentPretty() {
@@ -233,6 +244,12 @@ export default {
         },
         initialized() {
             return this.formData !== undefined;
+        },
+        canMutateHistory() {
+            return this.currentHistory && canMutateHistory(this.currentHistory);
+        },
+        runButtonTitle() {
+            return "Run Tool";
         },
     },
     watch: {

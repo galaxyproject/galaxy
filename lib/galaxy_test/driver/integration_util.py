@@ -233,13 +233,19 @@ class ConfiguresObjectStores:
     _test_driver: GalaxyTestDriver
 
     @classmethod
+    def write_object_store_config_file(cls, filename: str, contents: str) -> str:
+        temp_directory = cls.object_stores_parent
+        config_path = os.path.join(temp_directory, filename)
+        with open(config_path, "w") as f:
+            f.write(contents)
+        return config_path
+
+    @classmethod
     def _configure_object_store(cls, template, config):
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
-        config_path = os.path.join(temp_directory, "object_store_conf.xml")
         xml = template.safe_substitute({"temp_directory": temp_directory})
-        with open(config_path, "w") as f:
-            f.write(xml)
+        config_path = cls.write_object_store_config_file("object_store_conf.xml", xml)
         config["object_store_config_file"] = config_path
         for path in re.findall(r'files_dir path="([^"]*)"', xml):
             assert path.startswith(temp_directory)
@@ -247,6 +253,38 @@ class ConfiguresObjectStores:
             os.path.join(temp_directory, dir_name)
             safe_makedirs(path)
             setattr(cls, f"{dir_name}_path", path)
+
+    @classmethod
+    def _configure_object_store_template_catalog(cls, catalog, config):
+        template = catalog.replace("/data", cls.object_stores_parent)
+        template_config_path = cls.write_object_store_config_file("templates.yml", template)
+        config["object_store_templates_config_file"] = template_config_path
+
+
+class ConfiguresFileSourceTemplates:
+    _test_driver: GalaxyTestDriver
+
+    @classmethod
+    def _configure_file_source_template_catalog(cls, catalog: str, config):
+        temp_directory = cls._test_driver.mkdtemp()
+        template_config_path = os.path.join(temp_directory, "file_source_templates.yml")
+        with open(template_config_path, "w") as f:
+            f.write(catalog)
+
+        config["file_source_templates_config_file"] = template_config_path
+
+
+class ConfiguresObjectStoreTemplates:
+    _test_driver: GalaxyTestDriver
+
+    @classmethod
+    def _configure_object_Store_template_catalog(cls, catalog: str, config):
+        temp_directory = cls._test_driver.mkdtemp()
+        template_config_path = os.path.join(temp_directory, "object_store_templates.yml")
+        with open(template_config_path, "w") as f:
+            f.write(catalog)
+
+        config["object_store_templates_config_file"] = template_config_path
 
 
 class ConfiguresDatabaseVault:

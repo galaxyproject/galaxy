@@ -1,8 +1,12 @@
-import { readonly, ref } from "vue";
+import { readonly, ref, watch } from "vue";
 
-import { fetcher } from "@/api/schema";
-import { ExportParams, StoreExportPayload } from "@/components/Common/models/exportRecordModel";
+import { type StoreExportPayload } from "@/api";
+import { GalaxyApi } from "@/api";
+import { type ExportParams } from "@/components/Common/models/exportRecordModel";
 import { withPrefix } from "@/utils/redirect";
+import { rethrowSimple } from "@/utils/simple-error";
+
+import { useShortTermStorageMonitor } from "./shortTermStorageMonitor";
 
 export const DEFAULT_EXPORT_PARAMS: ExportParams = {
     modelStoreFormat: "rocrate.zip",
@@ -22,54 +26,57 @@ interface StorageRequestResponse {
 
 type StartPreparingDownloadCallback = (objectId: string, params: StoreExportPayload) => Promise<StorageRequestResponse>;
 
-const DEFAULT_POLL_DELAY = 1000;
+const DEFAULT_POLL_DELAY = 3000;
 const DEFAULT_OPTIONS: Options = { exportParams: DEFAULT_EXPORT_PARAMS, pollDelayInMs: DEFAULT_POLL_DELAY };
-
-const startPreparingHistoryDownload = fetcher
-    .path("/api/histories/{history_id}/prepare_store_download")
-    .method("post")
-    .create();
-const startPreparingInvocationDownload = fetcher
-    .path("/api/invocations/{invocation_id}/prepare_store_download")
-    .method("post")
-    .create();
-const getTempStorageRequestReady = fetcher
-    .path("/api/short_term_storage/{storage_request_id}/ready")
-    .method("get")
-    .create();
 
 /**
  * Composable to simplify and reuse the logic for downloading objects using Galaxy's Short Term Storage system.
  */
 export function useShortTermStorage() {
-    let timeout: NodeJS.Timeout | null = null;
-    let pollDelay = DEFAULT_POLL_DELAY;
+    const { waitForTask, isRunning } = useShortTermStorageMonitor();
 
     const isPreparing = ref(false);
 
+    watch(isRunning, (running) => {
+        if (!running) {
+            isPreparing.value = false;
+        }
+    });
+
     const forHistory: StartPreparingDownloadCallback = async (id: string, params: StoreExportPayload) => {
-        const { data } = await startPreparingHistoryDownload({ history_id: id, ...params });
+        const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/prepare_store_download", {
+            params: { path: { history_id: id } },
+            body: params,
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
         return data;
     };
 
     const forInvocation: StartPreparingDownloadCallback = async (id: string, params: StoreExportPayload) => {
-        const { data } = await startPreparingInvocationDownload({ invocation_id: id, ...params });
+        const { data, error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/prepare_store_download", {
+            params: { path: { invocation_id: id } },
+            body: {
+                ...params,
+                bco_merge_history_metadata: false,
+            },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
         return data;
     };
 
     async function prepareHistoryDownload(historyId: string, options = DEFAULT_OPTIONS) {
-        return prepareObjectDownload(forHistory, historyId, options, false);
-    }
-    async function downloadHistory(historyId: string, options = DEFAULT_OPTIONS) {
-        return prepareObjectDownload(forHistory, historyId, options, true);
+        return prepareObjectDownload(forHistory, historyId, options);
     }
 
     async function prepareWorkflowInvocationDownload(invocationId: string, options = DEFAULT_OPTIONS) {
-        return prepareObjectDownload(forInvocation, invocationId, options, false);
-    }
-
-    async function downloadWorkflowInvocation(invocationId: string, options = DEFAULT_OPTIONS) {
-        return prepareObjectDownload(forInvocation, invocationId, options, true);
+        return prepareObjectDownload(forInvocation, invocationId, options);
     }
 
     function getDownloadObjectUrl(storageRequestId: string) {
@@ -85,13 +92,10 @@ export function useShortTermStorage() {
     async function prepareObjectDownload(
         startPreparingDownloadAsync: StartPreparingDownloadCallback,
         objectId: string,
-        options = DEFAULT_OPTIONS,
-        downloadWhenReady = true
+        options = DEFAULT_OPTIONS
     ) {
-        resetTimeout();
         isPreparing.value = true;
         const finalOptions = Object.assign(DEFAULT_OPTIONS, options);
-        pollDelay = finalOptions.pollDelayInMs;
         const exportParams: StoreExportPayload = {
             model_store_format: finalOptions.exportParams.modelStoreFormat,
             include_files: finalOptions.exportParams.includeFiles,
@@ -102,43 +106,9 @@ export function useShortTermStorage() {
         try {
             const response = await startPreparingDownloadAsync(objectId, exportParams);
             const storageRequestId = response.storage_request_id;
-            pollStorageRequestId(storageRequestId, downloadWhenReady);
+            waitForTask(storageRequestId, finalOptions.pollDelayInMs);
         } catch (err) {
-            stopPreparing();
-        }
-    }
-
-    async function pollStorageRequestId(storageRequestId: string, downloadWhenReady: boolean) {
-        try {
-            const { data: ready } = await getTempStorageRequestReady({ storage_request_id: storageRequestId });
-            if (ready) {
-                isPreparing.value = false;
-                if (downloadWhenReady) {
-                    downloadObjectByRequestId(storageRequestId);
-                }
-            } else {
-                pollAfterDelay(storageRequestId, downloadWhenReady);
-            }
-        } catch (err) {
-            stopPreparing();
-        }
-    }
-
-    function stopPreparing() {
-        isPreparing.value = false;
-    }
-
-    function pollAfterDelay(storageRequestId: string, downloadWhenReady: boolean) {
-        resetTimeout();
-        timeout = setTimeout(() => {
-            pollStorageRequestId(storageRequestId, downloadWhenReady);
-        }, pollDelay);
-    }
-
-    function resetTimeout() {
-        if (timeout) {
-            clearTimeout(timeout);
-            timeout = null;
+            isPreparing.value = false;
         }
     }
 
@@ -150,23 +120,11 @@ export function useShortTermStorage() {
          */
         prepareHistoryDownload,
         /**
-         * Prepares a history download file in the short term storage and starts the download when ready.
-         * @param {String} historyId The ID of the history to be downloaded
-         * @param {Object} options Options for the download preparation
-         */
-        downloadHistory,
-        /**
          * Starts preparing a workflow invocation download file in the short term storage.
          * @param {String} invocationId The ID of the workflow invocation to be prepared for download
          * @param {Object} options Options for the download preparation
          */
         prepareWorkflowInvocationDownload,
-        /**
-         * Starts preparing a workflow invocation download file in the short term storage and starts the download when ready.
-         * @param {String} invocationId The ID of the workflow invocation to be downloaded
-         * @param {Object} options Options for the download preparation
-         */
-        downloadWorkflowInvocation,
         /**
          * Starts a direct download of the object associated with the given `storageRequestId`.
          * For the download to succeed, the associated `storageRequestId` must be `ready` and not in failure state.

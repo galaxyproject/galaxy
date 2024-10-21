@@ -7,6 +7,7 @@ export const URI_PREFIXES = [
     "gxfiles://",
     "gximport://",
     "gxuserimport://",
+    "gxuserfiles://",
     "gxftp://",
     "drs://",
     "invenio://",

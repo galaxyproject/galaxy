@@ -10,9 +10,8 @@ from string import Template
 from typing import ClassVar
 from urllib import parse
 
-import requests
-
 from galaxy.model.base import transaction
+from galaxy.util import requests
 from galaxy_test.base.api import ApiTestInteractor
 from galaxy_test.driver import integration_util
 

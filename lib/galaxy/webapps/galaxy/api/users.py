@@ -8,7 +8,6 @@ import logging
 import re
 from typing import (
     Any,
-    Dict,
     List,
     Optional,
     Union,
@@ -56,12 +55,12 @@ from galaxy.schema.schema import (
     FavoriteObjectsSummary,
     FavoriteObjectType,
     FlexibleUserIdType,
-    LimitedUserModel,
+    MaybeLimitedUserModel,
     RemoteUserCreationPayload,
     UserBeaconSetting,
     UserCreationPayload,
     UserDeletionPayload,
-    UserModel,
+    UserUpdatePayload,
 )
 from galaxy.security.validate_user_input import (
     validate_email,
@@ -203,7 +202,7 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
-    ) -> List[Union[UserModel, LimitedUserModel]]:
+    ) -> List[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.post(
@@ -651,7 +650,7 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
-    ) -> List[Union[UserModel, LimitedUserModel]]:
+    ) -> List[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.get(
@@ -675,13 +674,14 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-        payload: Dict[Any, Any] = UserUpdateBody,
+        payload: UserUpdatePayload = UserUpdateBody,
         deleted: Optional[bool] = UserDeletedQueryParam,
     ) -> DetailedUserModel:
         deleted = deleted or False
         current_user = trans.user
         user_to_update = self.service.get_non_anonymous_user_full(trans, user_id, deleted=deleted)
-        self.service.user_deserializer.deserialize(user_to_update, payload, user=current_user, trans=trans)
+        data = payload.model_dump(exclude_unset=True)
+        self.service.user_deserializer.deserialize(user_to_update, data, user=current_user, trans=trans)
         return self.service.user_to_detailed_model(user_to_update)
 
     @router.delete(
@@ -814,7 +814,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             "username": username,
         }
         is_galaxy_app = trans.webapp.name == "galaxy"
-        if trans.app.config.enable_account_interface or not is_galaxy_app:
+        if (trans.app.config.enable_account_interface and not trans.app.config.use_remote_user) or not is_galaxy_app:
             inputs.append(
                 {
                     "id": "email_input",
@@ -826,7 +826,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 }
             )
         if is_galaxy_app:
-            if trans.app.config.enable_account_interface:
+            if trans.app.config.enable_account_interface and not trans.app.config.use_remote_user:
                 inputs.append(
                     {
                         "id": "name_input",

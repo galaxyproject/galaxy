@@ -1,24 +1,35 @@
-from typing import (
-    Optional,
-    Union,
+from ._types import (
+    Annotated,
+    AssertionParameter,
+    Delta,
+    Max,
+    Min,
+    Negate,
+    NEGATE_DEFAULT,
+    OptionalXmlInt,
+    OutputBytes,
 )
-
 from ._util import _assert_number
 
 
 def assert_has_size(
-    output_bytes: bytes,
-    value: Optional[Union[int, str]] = None,
-    size: Optional[Union[int, str]] = None,
-    delta: Union[int, str] = 0,
-    min: Optional[Union[int, str]] = None,
-    max: Optional[Union[int, str]] = None,
-    negate: Union[bool, str] = False,
+    output_bytes: OutputBytes,
+    value: Annotated[OptionalXmlInt, AssertionParameter("Deprecated alias for `size`", xml_type="Bytes")] = None,
+    size: Annotated[
+        OptionalXmlInt,
+        AssertionParameter(
+            "Desired size of the output (in bytes), can be suffixed by ``(k|M|G|T|P|E)i?``", xml_type="Bytes"
+        ),
+    ] = None,
+    delta: Delta = 0,
+    min: Min = None,
+    max: Max = None,
+    negate: Negate = NEGATE_DEFAULT,
 ) -> None:
-    """
-    Asserts the specified output has a size of the specified value
-    (size and value or synonyms),
-    allowing for absolute (delta) and relative (delta_frac) difference.
+    """Asserts the specified output has a size of the specified value
+
+    Attributes size and value or synonyms though value is considered deprecated.
+    The size optionally allows for absolute (``delta``) difference.
     """
     output_size = len(output_bytes)
     if size is None:

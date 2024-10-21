@@ -60,15 +60,16 @@ edam-ontology = "*"
 fastapi-slim = ">=0.111.0"
 fs = "*"
 future = ">=1.0.0"  # Python 3.12 support
-galaxy_sequence_utils = "*"
-graphene-sqlalchemy = "3.0.0rc1"  # need a beta release to be compat. with starlette plugin
+graphene = "*"
+graphene-sqlalchemy = ">=3.0.0rc1"  # need a beta release to be compat. with starlette plugin
+graphql-core = "*"
 gravity = ">=1.0.4"
 gunicorn = "*"
 gxformat2 = "*"
 h5grove = ">=1.2.1"
 h5py = "*"
 importlib-resources = { version = "*", python = "<3.9" }  # for importlib.{abc.Traversable,resources.{files, Package}}
-isa-rwval = ">=0.10.10"
+isa-rwval = { git = "https://github.com/nsoranzo/isa-rwval.git", branch = "master" }  # https://github.com/ISA-tools/isa-rwval/pull/17
 jinja2 = "*"
 kombu = ">=5.3"  # for importlib-metadata fix
 isal = "*"
@@ -90,7 +91,7 @@ pillow = "*"
 psutil = "*"
 pulsar-galaxy-lib = ">=0.15.0.dev0"
 pycryptodome = "*"
-pydantic = {version = ">=2.7.0", extras = ["email"]}  # https://github.com/pydantic/pydantic/issues/8760
+pydantic = {version = ">=2.7.4", extras = ["email"]}  # https://github.com/pydantic/pydantic/pull/9639
 PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
@@ -124,7 +125,7 @@ uvloop = "*"
 WebOb = "*"
 Whoosh = "*"
 zipstream-new = "*"
-s3fs = "*"
+s3fs = ">=2023.1.0"
 
 [tool.poetry.group.dev.dependencies]
 ase = ">=3.18.1"
@@ -141,6 +142,7 @@ isort = "*"
 lxml = "!=4.2.2"
 markdown-it-reporter = "*"
 myst-parser = "*"
+onedatafilerestclient = "==21.2.5.2"
 pkce = "*"
 playwright = "*"
 pytest = "*"
@@ -170,8 +172,9 @@ Werkzeug = "*"
 
 [tool.poetry.group.typecheck.dependencies]
 mypy = "*"
+boto3-stubs = {version = "*", extras = ["s3"]}
 lxml-stubs = "*"
-pydantic = ">=2, !=2.6.0, !=2.6.1"  # for pydantic.mypy plugin
+pydantic = ">=2.7.4"  # for pydantic.mypy plugin
 types-bleach = "*"
 types-boto = "*"
 types-contextvars = "*"
@@ -179,12 +182,11 @@ types-dataclasses = "*"
 types-docutils = "*"
 types-Markdown = "*"
 types-paramiko = "*"
-types-pkg-resources = "*"
 types-python-dateutil = "*"
 types-PyYAML = "*"
 types-requests = "*"
+types-setuptools = "*"
 types-six = "*"
-"boto3-stubs[s3]" = "*"
 
 [tool.ruff]
 target-version = "py38"
@@ -196,7 +198,7 @@ exclude = [
 # Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),
 # flake8-comprehensions (C4), flake8-logging-format (G),
 # flake8-implicit-str-concat (ISC) and pyupgrade (UP)
-select = ["E", "F", "B", "C4", "G", "ISC", "UP"]
+select = ["E", "F", "B", "C4", "G", "ISC", "NPY", "UP"]
 # Exceptions:
 # B008 Do not perform function calls in argument defaults (for FastAPI Depends and Body)
 # B9 flake8-bugbear opinionated warnings
@@ -213,6 +215,10 @@ allow-dict-calls-with-keyword-arguments = true
 # options we need is not complete, but these are the one currently implemented.
 combine-as-imports = true
 relative-imports-order = "closest-to-furthest"
+
+[tool.ruff.lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+keep-runtime-typing = true
 
 [tool.ruff.lint.per-file-ignores]
 # Don't check pyupgrade rules on tool scripts, which may use different Python versions

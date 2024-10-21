@@ -4,10 +4,43 @@ History
 .. to_doc
 
 ---------
-24.1.dev0
+24.2.dev0
 ---------
 
 
+
+-------------------
+24.1.2 (2024-09-25)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.1.1 (2024-07-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix (I think) a transiently failing selenium error. by `@jmchilton <https://github.com/jmchilton>`_ in `#18065 <https://github.com/galaxyproject/galaxy/pull/18065>`_
+
+============
+Enhancements
+============
+
+* Add admin activity to activity bar by `@guerler <https://github.com/guerler>`_ in `#17877 <https://github.com/galaxyproject/galaxy/pull/17877>`_
+* Add galaxy to user agent by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18003 <https://github.com/galaxyproject/galaxy/pull/18003>`_
+* Consolidate Visualization container, avoid using default iframe by `@guerler <https://github.com/guerler>`_ in `#18016 <https://github.com/galaxyproject/galaxy/pull/18016>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#18063 <https://github.com/galaxyproject/galaxy/pull/18063>`_
+* Empower users to bring their own storage and file sources by `@jmchilton <https://github.com/jmchilton>`_ in `#18127 <https://github.com/galaxyproject/galaxy/pull/18127>`_
+
+-------------------
+24.0.3 (2024-06-28)
+-------------------
+
+No recorded changes since last release
 
 -------------------
 24.0.2 (2024-05-07)

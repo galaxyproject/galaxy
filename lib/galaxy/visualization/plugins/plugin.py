@@ -125,8 +125,8 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             "embeddable": self.config.get("embeddable"),
             "entry_point": self.config.get("entry_point"),
             "settings": self.config.get("settings"),
-            "groups": self.config.get("groups"),
             "specs": self.config.get("specs"),
+            "tracks": self.config.get("tracks"),
             "href": self._get_url(),
         }
 
@@ -161,7 +161,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         render_vars.update(
             visualization_name=self.name,
             visualization_display_name=self.config["name"],
-            title=kwargs.get("title", None),
+            title=kwargs.get("title", "Unnamed Visualization"),
             saved_visualization=None,
             visualization_id=None,
             visualization_plugin=self.to_dict(),

@@ -1,6 +1,8 @@
 from typing import (
+    cast,
     List,
     Optional,
+    Type,
     TYPE_CHECKING,
 )
 
@@ -22,6 +24,9 @@ class FileSourcePluginsConfig:
     user_library_import_dir: Optional[str]
     ftp_upload_dir: Optional[str]
     ftp_upload_purge: bool
+    tmp_dir: Optional[str]
+    webdav_use_temp_files: Optional[bool]
+    listings_expiry_time: Optional[int]
 
     def __init__(
         self,
@@ -31,6 +36,9 @@ class FileSourcePluginsConfig:
         user_library_import_dir=None,
         ftp_upload_dir=None,
         ftp_upload_purge=True,
+        tmp_dir=None,
+        webdav_use_temp_files=None,
+        listings_expiry_time=None,
     ):
         symlink_allowlist = symlink_allowlist or []
         fetch_url_allowlist = fetch_url_allowlist or []
@@ -40,6 +48,9 @@ class FileSourcePluginsConfig:
         self.user_library_import_dir = user_library_import_dir
         self.ftp_upload_dir = ftp_upload_dir
         self.ftp_upload_purge = ftp_upload_purge
+        self.tmp_dir = tmp_dir
+        self.webdav_use_temp_files = webdav_use_temp_files
+        self.listings_expiry_time = listings_expiry_time
 
     @staticmethod
     def from_app_config(config):
@@ -52,6 +63,10 @@ class FileSourcePluginsConfig:
         kwds["user_library_import_dir"] = config.user_library_import_dir
         kwds["ftp_upload_dir"] = config.ftp_upload_dir
         kwds["ftp_upload_purge"] = config.ftp_upload_purge
+        kwds["tmp_dir"] = config.file_source_temp_dir
+        kwds["webdav_use_temp_files"] = config.file_source_webdav_use_temp_files
+        kwds["listings_expiry_time"] = config.file_source_listings_expiry_time
+
         return FileSourcePluginsConfig(**kwds)
 
     def to_dict(self):
@@ -62,6 +77,9 @@ class FileSourcePluginsConfig:
             "user_library_import_dir": self.user_library_import_dir,
             "ftp_upload_dir": self.ftp_upload_dir,
             "ftp_upload_purge": self.ftp_upload_purge,
+            "tmp_dir": self.tmp_dir,
+            "webdav_use_temp_files": self.webdav_use_temp_files,
+            "listings_expiry_time": self.listings_expiry_time,
         }
 
     @staticmethod
@@ -73,6 +91,10 @@ class FileSourcePluginsConfig:
             user_library_import_dir=as_dict["user_library_import_dir"],
             ftp_upload_dir=as_dict["ftp_upload_dir"],
             ftp_upload_purge=as_dict["ftp_upload_purge"],
+            # Always provided for new jobs, remove in 25.0
+            tmp_dir=as_dict.get("tmp_dir"),
+            webdav_use_temp_files=as_dict.get("webdav_use_temp_files"),
+            listings_expiry_time=as_dict.get("listings_expiry_time"),
         )
 
 
@@ -85,6 +107,9 @@ class FileSourcePluginLoader:
         import galaxy.files.sources
 
         return plugins_dict(galaxy.files.sources, "plugin_type")
+
+    def get_plugin_type_class(self, plugin_type: str) -> Type["BaseFilesSource"]:
+        return cast(Type["BaseFilesSource"], self._plugin_classes[plugin_type])
 
     def load_plugins(
         self, plugin_source: PluginConfigSource, file_source_plugin_config: FileSourcePluginsConfig

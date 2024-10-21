@@ -4,10 +4,9 @@ API operations allowing clients to manage container resolution.
 
 import logging
 
-import requests
-
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_util.deps import views
+from galaxy.util import requests
 from galaxy.web import (
     expose_api,
     require_admin,

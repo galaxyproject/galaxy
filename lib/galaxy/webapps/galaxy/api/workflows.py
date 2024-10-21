@@ -21,8 +21,7 @@ from fastapi import (
     Response,
     status,
 )
-from gxformat2._yaml import ordered_dump
-from markupsafe import escape
+from gxformat2.yaml import ordered_dump
 from pydantic import (
     UUID1,
     UUID4,
@@ -43,6 +42,7 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.landing import LandingRequestManager
 from galaxy.managers.workflows import (
     MissingToolsException,
     RefactorRequest,
@@ -69,12 +69,15 @@ from galaxy.schema.invocation import (
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
+    ClaimLandingPayload,
+    CreateWorkflowLandingRequestPayload,
     InvocationSortByEnum,
     InvocationsStateCounts,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+    WorkflowLandingRequest,
     WorkflowSortByEnum,
 )
 from galaxy.schema.workflows import (
@@ -84,9 +87,9 @@ from galaxy.schema.workflows import (
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
+from galaxy.tools._types import ParameterValidationErrorsT
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
     expose_api,
     expose_api_raw_anonymous_and_sessionless,
@@ -103,6 +106,7 @@ from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     IndexQueryTag,
+    LandingUuidPathParam,
     Router,
     search_query_param,
 )
@@ -245,7 +249,9 @@ class WorkflowsAPIController(
                     trs_version_id = None
                     import_source = None
                     if "trs_url" in payload:
-                        parts = self.app.trs_proxy.match_url(payload["trs_url"])
+                        parts = self.app.trs_proxy.match_url(
+                            payload["trs_url"], trans.app.config.fetch_url_allowlist_ips
+                        )
                         if parts:
                             server = self.app.trs_proxy.server_from_url(parts["trs_base_url"])
                             trs_tool_id = parts["tool_id"]
@@ -253,7 +259,7 @@ class WorkflowsAPIController(
                             payload["trs_tool_id"] = trs_tool_id
                             payload["trs_version_id"] = trs_version_id
                         else:
-                            raise exceptions.MessageException("Invalid TRS URL.")
+                            raise exceptions.RequestParameterInvalidException(f"Invalid TRS URL {payload['trs_url']}.")
                     else:
                         trs_server = payload.get("trs_server")
                         server = self.app.trs_proxy.get_server(trs_server)
@@ -268,7 +274,7 @@ class WorkflowsAPIController(
                         )
                         import_source = "URL"
                     except Exception:
-                        raise exceptions.MessageException(f"Failed to open URL '{escape(archive_source)}'.")
+                        raise exceptions.MessageException(f"Failed to open URL '{archive_source}'.")
             elif hasattr(archive_file, "file"):
                 uploaded_file = archive_file.file
                 uploaded_file_name = uploaded_file.name
@@ -448,7 +454,7 @@ class WorkflowsAPIController(
             name_updated = new_workflow_name and new_workflow_name != stored_workflow.name
             steps_updated = "steps" in workflow_dict
             if name_updated and not steps_updated:
-                sanitized_name = sanitize_html(new_workflow_name or old_workflow.name)
+                sanitized_name = new_workflow_name or old_workflow.name
                 if not sanitized_name:
                     raise exceptions.MessageException("Workflow must have a valid name.")
                 workflow = old_workflow.copy(user=trans.user)
@@ -472,7 +478,7 @@ class WorkflowsAPIController(
                 require_flush = True
 
             if "annotation" in workflow_dict and not steps_updated:
-                newAnnotation = sanitize_html(workflow_dict["annotation"])
+                newAnnotation = workflow_dict["annotation"]
                 self.add_item_annotation(trans.sa_session, trans.user, stored_workflow, newAnnotation)
                 require_flush = True
 
@@ -539,7 +545,7 @@ class WorkflowsAPIController(
         module = module_factory.from_dict(trans, payload, from_tool_form=True)
         if "tool_state" not in payload:
             module_state: Dict[str, Any] = {}
-            errors: Dict[str, str] = {}
+            errors: ParameterValidationErrorsT = {}
             populate_state(trans, module.get_inputs(), inputs, module_state, errors=errors, check=True)
             module.recover_state(module_state, from_tool_form=True)
             module.check_and_update_state()
@@ -599,7 +605,7 @@ class WorkflowsAPIController(
         workflow = workflow.latest_workflow
 
         response = {
-            "message": f"Workflow '{escape(workflow.name)}' imported successfully.",
+            "message": f"Workflow '{workflow.name}' imported successfully.",
             "status": "success",
             "id": trans.security.encode_id(workflow_id),
         }
@@ -857,8 +863,20 @@ query_tags = [
         "Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.",
     ),
     IndexQueryTag(
-        "is:share_with_me",
+        "is:importable",
+        "Include only importable workflows in the final result.",
+    ),
+    IndexQueryTag(
+        "is:deleted",
+        "Include only deleted workflows in the final result.",
+    ),
+    IndexQueryTag(
+        "is:shared_with_me",
         "Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.",
+    ),
+    IndexQueryTag(
+        "is:bookmarked",
+        "Include only workflows bookmarked by the requesting user.",
     ),
 ]
 
@@ -896,6 +914,7 @@ RefactorWorkflowBody = Annotated[
 @router.cbv
 class FastAPIWorkflows:
     service: WorkflowsService = depends(WorkflowsService)
+    landing_manager: LandingRequestManager = depends(LandingRequestManager)
 
     @router.get(
         "/api/workflows",
@@ -1145,6 +1164,39 @@ class FastAPIWorkflows:
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> StoredWorkflowDetailed:
         return self.service.show_workflow(trans, workflow_id, instance, legacy, version)
+
+    @router.post("/api/workflow_landings", public=True, allow_cors=True)
+    def create_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_landing_request: CreateWorkflowLandingRequestPayload = Body(...),
+    ) -> WorkflowLandingRequest:
+        try:
+            return self.landing_manager.create_workflow_landing_request(workflow_landing_request)
+        except Exception:
+            log.exception("Problem...")
+            raise
+
+    @router.post("/api/workflow_landings/{uuid}/claim")
+    def claim_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        uuid: UUID4 = LandingUuidPathParam,
+        payload: Optional[ClaimLandingPayload] = Body(...),
+    ) -> WorkflowLandingRequest:
+        try:
+            return self.landing_manager.claim_workflow_landing_request(trans, uuid, payload)
+        except Exception:
+            log.exception("claiim problem...")
+            raise
+
+    @router.get("/api/workflow_landings/{uuid}")
+    def get_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        uuid: UUID4 = LandingUuidPathParam,
+    ) -> WorkflowLandingRequest:
+        return self.landing_manager.get_workflow_landing_request(trans, uuid)
 
 
 StepDetailQueryParam = Annotated[

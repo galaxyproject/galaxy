@@ -12,7 +12,10 @@ from typing import (
     Union,
 )
 
-from sqlalchemy import select
+from sqlalchemy import (
+    and_,
+    select,
+)
 
 from galaxy import (
     model,
@@ -115,10 +118,10 @@ class QuotaManager:
             return False
 
     def rename_quota(self, quota, params) -> str:
-        stmt = select(Quota).where(Quota.name == params.name).limit(1)
+        stmt = select(Quota).where(and_(Quota.name == params.name, Quota.id != quota.id)).limit(1)
         if not params.name:
             raise ActionInputError("Enter a valid name.")
-        elif params.name != quota.name and self.sa_session.scalars(stmt).first():
+        elif self.sa_session.scalars(stmt).first():
             raise ActionInputError("A quota with that name already exists.")
         else:
             old_name = quota.name

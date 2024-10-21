@@ -31,7 +31,9 @@ function generateBroadcastNotification(overwrites: Partial<BroadcastNotification
         expiration_time: toApiDate(inTwoMonths),
         source: "testing",
         variant: "info",
+        category: "broadcast",
         content: {
+            category: "broadcast",
             subject: `Test subject ${overwrites.id ?? id}`,
             message: `Test message ${overwrites.id ?? id}`,
         },

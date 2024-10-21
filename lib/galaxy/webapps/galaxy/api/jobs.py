@@ -71,7 +71,7 @@ from galaxy.webapps.galaxy.services.jobs import (
     JobIndexViewEnum,
     JobsService,
 )
-from galaxy.work.context import WorkRequestContext
+from galaxy.work.context import proxy_work_context_for_history
 
 log = logging.getLogger(__name__)
 
@@ -98,7 +98,7 @@ UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
 )
 
 ViewQueryParam: JobIndexViewEnum = Query(
-    default="collection",
+    default=JobIndexViewEnum.collection,
     title="View",
     description="Determines columns to return. Defaults to 'collection'.",
 )
@@ -478,10 +478,8 @@ class FastAPIJobs:
         for k, v in payload.__annotations__.items():
             if k.startswith("files_") or k.startswith("__files_"):
                 inputs[k] = v
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
-        all_params, all_errors, _, _ = tool.expand_incoming(
-            trans=trans, incoming=inputs, request_context=request_context
-        )
+        request_context = proxy_work_context_for_history(trans)
+        all_params, all_errors, _, _ = tool.expand_incoming(request_context, incoming=inputs)
         if any(all_errors):
             return []
         params_dump = [tool.params_to_strings(param, trans.app, nested=True) for param in all_params]

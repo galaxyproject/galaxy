@@ -3,9 +3,9 @@ import "./worker/__mocks__/selectMany";
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
-import { PropType } from "vue";
+import { type PropType } from "vue";
 
-import type { SelectOption } from "./worker/selectMany";
+import { type SelectOption } from "./worker/selectMany";
 
 import FormSelectMany from "./FormSelectMany.vue";
 

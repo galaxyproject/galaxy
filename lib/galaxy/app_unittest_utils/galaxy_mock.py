@@ -29,7 +29,10 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.managers.jobs import JobSearch
 from galaxy.managers.users import UserManager
 from galaxy.managers.workflows import WorkflowsManager
-from galaxy.model import tags
+from galaxy.model import (
+    tags,
+    User,
+)
 from galaxy.model.base import (
     ModelMapping,
     SharedModelMapping,
@@ -42,6 +45,11 @@ from galaxy.model.unittest_utils import (
     GalaxyDataTestConfig,
 )
 from galaxy.security import idencoding
+from galaxy.security.vault import (
+    UserVaultWrapper,
+    Vault,
+    VaultFactory,
+)
 from galaxy.short_term_storage import (
     ShortTermStorageAllocator,
     ShortTermStorageConfiguration,
@@ -170,6 +178,19 @@ class MockApp(di.Container, GalaxyDataTestApp):
 
     def reindex_tool_search(self) -> None:
         raise NotImplementedError
+
+    def setup_test_vault(self):
+        config = {
+            "encryption_keys": [
+                "5RrT94ji178vQwha7TAmEix7DojtsLlxVz8Ef17KWgg=",
+                "iNdXd7tRjLnSqRHxuhqQ98GTLU8HUbd5_Xx38iF8nZ0=",
+                "IK83IXhE4_7W7xCFEtD9op0BAs11pJqYN236Spppp7g=",
+            ],
+        }
+        vault = VaultFactory.from_vault_type(self, "database", config)
+        # Ignored because of https://github.com/python/mypy/issues/4717
+        self[Vault] = vault  # type: ignore[type-abstract]
+        self.vault = vault
 
 
 class MockLock:
@@ -308,7 +329,7 @@ class MockTrans:
         self.security = self.app.security
         self.history = history
 
-        self.request: Any = Bunch(headers={}, is_body_readable=False, host="request.host")
+        self.request: Any = Bunch(headers={}, is_body_readable=False, host="request.host", url_path="mock/url/path")
         self.response: Any = Bunch(headers={}, set_content_type=lambda i: None)
 
     @property
@@ -352,6 +373,26 @@ class MockTrans:
         kwargs.update(h=MockTemplateHelpers())
         return template.render(**kwargs)
 
+    @property
+    def username(self):
+        return "testuser"
+
+    @property
+    def email(self):
+        return "testuser@example.com"
+
+    def init_user_in_database(self):
+        u = User(email=self.email, password="password", username=self.username)
+        session = self.model.session
+        session.add(u)
+        session.commit()
+        self.set_user(u)
+
+    @property
+    def user_vault(self):
+        """Provide access to a user's personal vault."""
+        return UserVaultWrapper(self.app.vault, self.user)
+
 
 class MockVisualizationsRegistry:
     BUILT_IN_VISUALIZATIONS = ["trackster"]
@@ -389,8 +430,17 @@ class MockDir:
 
 
 class MockTemplateHelpers:
+    def css(*css_files):
+        pass
+
+    def dumps(*kwargs):
+        return {}
+
     def js(*js_files):
         pass
 
-    def css(*css_files):
-        pass
+    def is_url(*kwargs):
+        return True
+
+    def url_for(*kwargs):
+        return "/"

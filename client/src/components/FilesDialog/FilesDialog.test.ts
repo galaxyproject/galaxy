@@ -1,10 +1,10 @@
-import { mount, Wrapper } from "@vue/test-utils";
+import { createTestingPinia } from "@pinia/testing";
+import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
-import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
-import { SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
+import { useServerMock } from "@/api/client/__mocks__";
+import { SELECTION_STATES, type SelectionItem, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
 
 /**
  * The following imports mock a remote file resource directory structure,
@@ -26,6 +26,7 @@ import { SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
  * |-- file1
  * |-- file2
  */
+import { type RemoteFilesList } from "./testingData";
 import {
     directory1RecursiveResponse,
     directory1Response,
@@ -33,7 +34,6 @@ import {
     directoryId,
     ftpId,
     pdbResponse,
-    RemoteFilesList,
     rootId,
     rootResponse,
     someErrorText,
@@ -46,7 +46,6 @@ import FilesDialog from "./FilesDialog.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 jest.mock("app");
-jest.mock("@/api/schema");
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({
@@ -55,51 +54,62 @@ jest.mock("@/composables/config", () => ({
     })),
 }));
 
-interface RemoteFilesParams {
-    target: string;
-    recursive: boolean;
-    writeable?: boolean;
-}
+const { server, http } = useServerMock();
 
 interface RowElement extends SelectionItem, Element {
-    _rowVariant: string;
+    _rowVariant: SelectionState;
 }
 
-function paramsToKey(params: RemoteFilesParams) {
-    params.writeable = false;
-    return JSON.stringify(params);
+function paramsToKey(query: { target?: string | null; recursive?: string | null; writeable?: string | null }): string {
+    return `${query.target}?recursive=${query.recursive}&writeable=${query.writeable ?? "false"}`;
 }
 
 const mockedOkApiRoutesMap = new Map<string, RemoteFilesList>([
-    [paramsToKey({ target: "gxfiles://pdb-gzip", recursive: false }), pdbResponse],
-    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: false }), directory1Response],
-    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: true }), directory1RecursiveResponse],
-    [paramsToKey({ target: "gxfiles://pdb-gzip/directory2", recursive: true }), directory2RecursiveResponse],
-    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1/subdirectory1", recursive: false }), subsubdirectoryResponse],
+    [paramsToKey({ target: "gxfiles://pdb-gzip", recursive: "false" }), pdbResponse],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: "false" }), directory1Response],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: "true" }), directory1RecursiveResponse],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory2", recursive: "true" }), directory2RecursiveResponse],
+    [
+        paramsToKey({ target: "gxfiles://pdb-gzip/directory1/subdirectory1", recursive: "false" }),
+        subsubdirectoryResponse,
+    ],
 ]);
 
 const mockedErrorApiRoutesMap = new Map<string, RemoteFilesList>([
-    [paramsToKey({ target: "gxfiles://empty-dir", recursive: false }), []],
+    [paramsToKey({ target: "gxfiles://empty-dir", recursive: "false" }), []],
 ]);
-
-function getMockedBrowseResponse(param: RemoteFilesParams) {
-    const responseKey = paramsToKey(param);
-    if (mockedErrorApiRoutesMap.has(responseKey)) {
-        throw Error(someErrorText);
-    }
-    const result = mockedOkApiRoutesMap.get(responseKey);
-    return { data: result };
-}
 
 const initComponent = async (props: { multiple: boolean; mode?: string }) => {
     const localVue = getLocalVue();
 
-    mockFetcher.path("/api/remote_files/plugins").method("get").mock({ data: rootResponse });
-    mockFetcher.path("/api/remote_files").method("get").mock(getMockedBrowseResponse);
+    server.use(
+        http.get("/api/remote_files/plugins", ({ response }) => {
+            return response(200).json(rootResponse);
+        }),
 
+        http.get("/api/remote_files", ({ response, query }) => {
+            const responseKey = paramsToKey({
+                target: query.get("target"),
+                recursive: query.get("recursive"),
+                writeable: query.get("writeable"),
+            });
+            if (mockedErrorApiRoutesMap.has(responseKey)) {
+                return response("4XX").json({ err_msg: someErrorText, err_code: 400 }, { status: 400 });
+            }
+            const mockedResponse = mockedOkApiRoutesMap.get(responseKey);
+            const mockedTotalMatches = mockedResponse?.length.toString() ?? "0";
+            if (!mockedResponse) {
+                return response("5XX").json({ err_msg: "No mocked response found", err_code: 500 }, { status: 500 });
+            }
+            return response(200).json(mockedResponse, { headers: { total_matches: mockedTotalMatches } });
+        })
+    );
+
+    const testingPinia = createTestingPinia({ stubActions: false });
     const wrapper = mount(FilesDialog, {
         localVue,
         propsData: { ...props, modalStatic: true },
+        pinia: testingPinia,
     });
 
     await flushPromises();
@@ -382,7 +392,7 @@ class Utils {
     }
 
     expectSelectAllIconStatusToBe(status: string) {
-        expect(this.getSelectionDialog().props("selectAllIcon")).toBe(status);
+        expect(this.getSelectionDialog().props("selectAllVariant")).toBe(status);
     }
 
     expectNoErrorMessage() {

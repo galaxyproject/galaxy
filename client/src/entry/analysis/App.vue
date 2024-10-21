@@ -10,9 +10,7 @@
                     :logo-url="config.logo_url"
                     :logo-src="theme?.['--masthead-logo-img'] ?? config.logo_src"
                     :logo-src-secondary="theme?.['--masthead-logo-img-secondary'] ?? config.logo_src_secondary"
-                    :tabs="tabs"
-                    :window-tab="windowTab"
-                    @open-url="openUrl" />
+                    :window-tab="windowTab" />
                 <Alert
                     v-if="config.message_box_visible && config.message_box_content"
                     id="messagebox"
@@ -55,16 +53,16 @@ import Toast from "components/Toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
 import { setToastComponentRef } from "composables/toast";
-import { fetchMenu } from "entry/analysis/menu";
 import { WindowManager } from "layout/window-manager";
 import Modal from "mvc/ui/ui-modal";
 import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
-import { withPrefix } from "utils/redirect";
 import { ref, watch } from "vue";
+import { useRoute } from "vue-router/composables";
 
 import short from "@/components/plugins/short";
 import { useRouteQueryBool } from "@/composables/route";
+import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useUserStore } from "@/stores/userStore";
@@ -116,7 +114,21 @@ export default {
             { immediate: true }
         );
 
+        const confirmation = ref(null);
+        const route = useRoute();
+        watch(
+            () => route.fullPath,
+            (newVal, oldVal) => {
+                // sometimes, the confirmation is not cleared when the route changes
+                // and the confirmation alert is shown needlessly
+                if (confirmation.value) {
+                    confirmation.value = null;
+                }
+            }
+        );
+
         return {
+            confirmation,
             toastRef,
             confirmDialogRef,
             uploadModal,
@@ -128,15 +140,11 @@ export default {
     data() {
         return {
             config: getGalaxyInstance().config,
-            confirmation: null,
             resendUrl: `${getAppRoot()}user/resend_verification`,
             windowManager: null,
         };
     },
     computed: {
-        tabs() {
-            return fetchMenu(this.config);
-        },
         showMasthead() {
             const masthead = this.$route.query.hide_masthead;
             if (masthead !== undefined) {
@@ -167,7 +175,9 @@ export default {
             this.$router.confirmation = this.confirmation;
         },
         currentHistory() {
-            this.Galaxy.currHistoryPanel.syncCurrentHistoryModel(this.currentHistory);
+            if (!this.embedded) {
+                this.Galaxy.currHistoryPanel.syncCurrentHistoryModel(this.currentHistory);
+            }
         },
     },
     mounted() {
@@ -176,6 +186,9 @@ export default {
             this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
             this.Galaxy.modal = new Modal.View();
             this.Galaxy.frame = this.windowManager;
+            if (this.Galaxy.config.interactivetools_enable) {
+                this.startWatchingEntryPoints();
+            }
             if (this.Galaxy.config.enable_notification_system) {
                 this.startWatchingNotifications();
             }
@@ -193,21 +206,13 @@ export default {
         }
     },
     methods: {
+        startWatchingEntryPoints() {
+            const entryPointStore = useEntryPointStore();
+            entryPointStore.startWatchingEntryPoints();
+        },
         startWatchingNotifications() {
             const notificationsStore = useNotificationsStore();
             notificationsStore.startWatchingNotifications();
-        },
-        openUrl(urlObj) {
-            if (!urlObj.target) {
-                this.$router.push(urlObj.url);
-            } else {
-                const url = withPrefix(urlObj.url);
-                if (urlObj.target == "_blank") {
-                    window.open(url);
-                } else {
-                    window.location = url;
-                }
-            }
         },
     },
 };

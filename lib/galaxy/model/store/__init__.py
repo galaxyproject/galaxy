@@ -186,8 +186,6 @@ class ImportDiscardedDataType(Enum):
 
 class DatasetAttributeImportModel(BaseModel):
     state: Optional[DatasetStateField] = None
-    deleted: Optional[bool] = None
-    purged: Optional[bool] = None
     external_filename: Optional[str] = None
     _extra_files_path: Optional[str] = None
     file_size: Optional[int] = None
@@ -473,6 +471,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 )
                 for attribute, value in dataset_attributes.items():
                     setattr(dataset_instance.dataset, attribute, value)
+                if dataset_instance.dataset.purged:
+                    dataset_instance.dataset.full_delete()
                 self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
                 self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
                 if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
@@ -578,10 +578,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 self._attach_raw_id_if_editing(dataset_instance, dataset_attrs)
 
                 # Older style...
-                if "uuid" in dataset_attrs:
-                    dataset_instance.dataset.uuid = dataset_attrs["uuid"]
-                if "dataset_uuid" in dataset_attrs:
-                    dataset_instance.dataset.uuid = dataset_attrs["dataset_uuid"]
+                if self.import_options.allow_edit:
+                    if "uuid" in dataset_attrs:
+                        dataset_instance.dataset.uuid = dataset_attrs["uuid"]
+                    if "dataset_uuid" in dataset_attrs:
+                        dataset_instance.dataset.uuid = dataset_attrs["dataset_uuid"]
 
                 self._session_add(dataset_instance)
 
@@ -657,19 +658,20 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         dataset_instance.state = dataset_state
                         if not self.object_store:
                             raise Exception(f"self.object_store is missing from {self}.")
-                        self.object_store.update_from_file(
-                            dataset_instance.dataset, file_name=temp_dataset_file_name, create=True
-                        )
+                        if not dataset_instance.dataset.purged:
+                            self.object_store.update_from_file(
+                                dataset_instance.dataset, file_name=temp_dataset_file_name, create=True
+                            )
 
-                        # Import additional files if present. Histories exported previously might not have this attribute set.
-                        dataset_extra_files_path = dataset_attrs.get("extra_files_path", None)
-                        if dataset_extra_files_path:
-                            assert file_source_root
-                            dataset_extra_files_path = os.path.join(file_source_root, dataset_extra_files_path)
-                            persist_extra_files(self.object_store, dataset_extra_files_path, dataset_instance)
-                        # Don't trust serialized file size
-                        dataset_instance.dataset.file_size = None
-                        dataset_instance.dataset.set_total_size()  # update the filesize record in the database
+                            # Import additional files if present. Histories exported previously might not have this attribute set.
+                            dataset_extra_files_path = dataset_attrs.get("extra_files_path", None)
+                            if dataset_extra_files_path:
+                                assert file_source_root
+                                dataset_extra_files_path = os.path.join(file_source_root, dataset_extra_files_path)
+                                persist_extra_files(self.object_store, dataset_extra_files_path, dataset_instance)
+                            # Only trust file size if the dataset is purged. If we keep the data we should check the file size.
+                            dataset_instance.dataset.file_size = None
+                            dataset_instance.dataset.set_total_size()  # update the filesize record in the database
 
                     if dataset_instance.deleted:
                         dataset_instance.dataset.deleted = True
@@ -1021,7 +1023,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
             if object_import_tracker.copy_hid_for:
                 # in an if to avoid flush if unneeded
-                for from_dataset, to_dataset in object_import_tracker.copy_hid_for.items():
+                for from_dataset, to_dataset in object_import_tracker.copy_hid_for:
                     to_dataset.hid = from_dataset.hid
                     self._session_add(to_dataset)
                 self._flush()
@@ -1274,18 +1276,24 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             metadata_safe = False
             idc = model.ImplicitlyConvertedDatasetAssociation(metadata_safe=metadata_safe, for_import=True)
             idc.type = idc_attrs["file_type"]
-            if idc_attrs.get("parent_hda"):
-                idc.parent_hda = object_import_tracker.hdas_by_key[idc_attrs["parent_hda"]]
+            # We may not have exported the parent, so only set the parent_hda attribute if we did.
+            if (parent_hda_id := idc_attrs.get("parent_hda")) and (
+                parent_hda := object_import_tracker.hdas_by_key.get(parent_hda_id)
+            ):
+                # exports created prior to 24.2 may not have a parent if the parent had been purged
+                idc.parent_hda = parent_hda
             if idc_attrs.get("hda"):
                 idc.dataset = object_import_tracker.hdas_by_key[idc_attrs["hda"]]
 
-            # we have a the dataset and the parent, lets ensure they land up with the same HID
-            if idc.dataset and idc.parent_hda and idc.parent_hda in object_import_tracker.requires_hid:
+            # we have the dataset and the parent, lets ensure they land up with the same HID
+            if idc.dataset and idc.parent_hda:
                 try:
                     object_import_tracker.requires_hid.remove(idc.dataset)
                 except ValueError:
                     pass  # we wanted to remove it anyway.
-                object_import_tracker.copy_hid_for[idc.parent_hda] = idc.dataset
+                # A HDA can be the parent of multiple implicitly converted dataset,
+                # that's thy we use [(source, target)] here
+                object_import_tracker.copy_hid_for.append((idc.parent_hda, idc.dataset))
 
             self._session_add(idc)
 
@@ -1368,7 +1376,7 @@ class ObjectImportTracker:
     hdca_copied_from_sinks: Dict[ObjectKeyType, ObjectKeyType]
     jobs_by_key: Dict[ObjectKeyType, model.Job]
     requires_hid: List["HistoryItem"]
-    copy_hid_for: Dict["HistoryItem", "HistoryItem"]
+    copy_hid_for: List[Tuple["HistoryItem", "HistoryItem"]]
 
     def __init__(self) -> None:
         self.libraries_by_key = {}
@@ -1386,7 +1394,7 @@ class ObjectImportTracker:
         self.implicit_collection_jobs_by_key: Dict[str, ImplicitCollectionJobs] = {}
         self.workflows_by_key: Dict[str, model.Workflow] = {}
         self.requires_hid = []
-        self.copy_hid_for = {}
+        self.copy_hid_for = []
 
         self.new_history: Optional[model.History] = None
 
@@ -2299,6 +2307,14 @@ class DirectoryModelExportStore(ModelExportStore):
         include_files: bool,
         conversion: model.ImplicitlyConvertedDatasetAssociation,
     ) -> None:
+        parent_hda = conversion.parent_hda
+        if parent_hda and parent_hda not in self.included_datasets:
+            # We should always include the parent of an implicit conversion
+            # to avoid holes in the provenance.
+            self.included_datasets[parent_hda] = (parent_hda, include_files)
+            grand_parent_association = parent_hda.implicitly_converted_parent_datasets
+            if grand_parent_association and (grand_parent_hda := grand_parent_association[0].parent_hda):
+                self.add_implicit_conversion_dataset(grand_parent_hda, include_files, grand_parent_association[0])
         self.included_datasets[dataset] = (dataset, include_files)
         self.dataset_implicit_conversions[dataset] = conversion
 

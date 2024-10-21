@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BForm, BFormGroup, BFormSelect, BInputGroup } from "bootstrap-vue";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useSelectableObjectStores } from "@/composables/useObjectStores";
@@ -27,7 +27,7 @@ import FilterObjectStoreLink from "@/components/Common/FilterObjectStoreLink.vue
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();
-const { getHistoryNameById } = useHistoryStore();
+const { getHistoryNameById, getHistoryById } = useHistoryStore();
 
 interface Props {
     historyId: string;
@@ -51,9 +51,14 @@ const { isLoading, loadDataOnMount } = useDataLoading();
 const { isAdvanced, toggleAdvanced, inputGroupClasses, faAngleDoubleDown, faAngleDoubleUp } = useAdvancedFiltering();
 const { selectableObjectStores, hasSelectableObjectStores } = useSelectableObjectStores();
 
-const objectStore = ref<string | null>(null);
+const objectStore = ref<string>();
 
-function onChangeObjectStore(value: string | null) {
+const canEditHistory = computed(() => {
+    const history = getHistoryById(props.historyId);
+    return (history && !history.purged && !history.archived) ?? false;
+});
+
+function onChangeObjectStore(value?: string) {
     objectStore.value = value;
     reloadDataFromServer();
 }
@@ -185,11 +190,11 @@ function onUndelete(datasetId: string) {
                                 </BFormSelect>
                             </BFormGroup>
                             <BFormGroup
-                                v-if="hasSelectableObjectStores"
+                                v-if="selectableObjectStores && hasSelectableObjectStores"
                                 id="input-group-object-store"
                                 label="Storage location:"
                                 label-for="input-object-store"
-                                description="This will constrain history size calculations to a particular object store.">
+                                description="This will constrain history size calculations to a particular storage location.">
                                 <FilterObjectStoreLink
                                     :object-stores="selectableObjectStores"
                                     :value="objectStore"
@@ -209,6 +214,7 @@ function onUndelete(datasetId: string) {
                         :data="data"
                         item-type="dataset"
                         :is-recoverable="isRecoverableDataPoint(data)"
+                        :can-edit="canEditHistory"
                         @view-item="onViewDataset"
                         @undelete-item="onUndelete"
                         @permanently-delete-item="onPermDelete" />

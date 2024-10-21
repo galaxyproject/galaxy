@@ -1,8 +1,10 @@
-<tool id="interactive_tool_qiskit_jupyter_notebook" tool_type="interactive" name="Qiskit Jupyter notebook" version="0.0.1" profile="22.01">
+<tool id="interactive_tool_qiskit_jupyter_notebook" tool_type="interactive" name="Qiskit Jupyter notebook" version="@VERSION@" profile="22.01">
     <description>interactive tool</description>
+    <macros>
+        <token name="@VERSION@">0.2</token>
+    </macros>
     <requirements>
-        <container type="docker">thepineapplepirate/qiskit_galaxy:1.0.0</container>
-     	<!-- files for this docker image can be found at https://github.com/thepineapplepirate/qiskit-jupyter-galaxy_docker.git -->
+        <container type="docker">thepineapplepirate/qiskit_galaxy:1.1.0</container>
     </requirements>
     <entry_points>
         <entry_point name="Qiskit Jupyter Notebook" requires_domain="True">
@@ -99,13 +101,16 @@ except FileNotFoundError:
     GALAXY_INPUTS = {}
         ]]>
     </configfile>
-    <configfile name="qiskitrc"><![CDATA[
-[ibmq]
-token = $__user__.extra_preferences.get('ibmq_account|token', "TOKEN_NOT_SET")
-url = $__user__.extra_preferences.get('ibmq_account|url', "https://auth.quantum-computing.ibm.com/api")
-verify = True
-                ]]>
-            </configfile>
+        <configfile name="qiskitjson"><![CDATA[
+            {
+            "default-ibm-quantum": {
+                "channel": "ibm_quantum",
+                "token": "$__user__.extra_preferences.get('ibmq_account|token', "TOKEN_NOT_SET")",
+                "url": "https://auth.quantum-computing.ibm.com/api",
+                "verify": true
+            }}
+        ]]>
+        </configfile>
     </configfiles>
     <command><![CDATA[
         python staging_script.py &&
@@ -119,7 +124,7 @@ verify = True
         export PATH=/home/jovyan/.local/bin:\$PATH &&
         cp '${galaxy_input_startup_script}' /home/jovyan/.ipython/profile_default/startup/01-load.py &&
 
-        mkdir -p /home/jovyan/.qiskit && cp '${qiskitrc}' /home/jovyan/.qiskit/qiskitrc &&
+        mkdir -p /home/jovyan/.qiskit && cp '${qiskitjson}' /home/jovyan/.qiskit/qiskit-ibm.json &&
         mkdir -p Qiskit_Resources &&
         ln -s /home/jovyan/qiskit Qiskit_Resources/ &&
 
@@ -283,7 +288,7 @@ verify = True
     Welcome to the **Qiskit JupyTool**! This tool incorporates the entire Qiskit stack, including tutorials and supplemental resources. This tool is an extension
     of the standard **JupyTool**, so a full functionality of Jupyter lab is also included. You can create, run, and share custom Galaxy tools based upon Jupyter Notebooks.
 
-    Qiskit is a python based, open-source software stack for quantum computing on IBM quantum systems. When run, the Jupyter lab instance includes directories
+    Qiskit is a Python based, open-source software stack for quantum computing on IBM quantum systems. When run, the Jupyter lab instance includes directories
     for many resources and relevant tutorials, including the introductory materials for building quantum circuits, to using quantum algorithms like Variational Quantum Eigensolvers (VQE), 
     Quantum Approximate Optimization Algorithm (QAOA), as well as Grover's algorithm. The associated docker image contains most relevant Qiskit modules including:
     qiskit-aer, qiskit-dynamics, qiskit-experiments, qiskit-finance, qiskit-ibm-experiment, qiskit-ibm-provider, qiskit-ibm-runtime, qiskit-ibmq-provider,

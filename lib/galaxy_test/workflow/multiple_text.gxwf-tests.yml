@@ -1,0 +1,15 @@
+- doc: |
+    Test that workflows can run with multiple text parameter fed into a multi select parameter.
+  job:
+    input:
+      value:
+        - --ex1
+        - ex2
+        - --ex3
+      type: raw
+  outputs:
+    output:
+      class: File
+      asserts:
+        - that: has_line
+          line: '--ex1,ex2,--ex3'

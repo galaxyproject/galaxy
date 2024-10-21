@@ -5,246 +5,755 @@
 
 export interface paths {
     "/api/authenticate/baseauth": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** Returns returns an API key for authenticated user based on BaseAuth headers. */
         get: operations["authenticate__baseauth"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/categories": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Index
          * @description index category
          */
         get: operations["categories__index"]
+        put?: never
         /**
          * Create
          * @description create a category
          */
         post: operations["categories__create"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/categories/{encoded_category_id}": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Show
          * @description show category
          */
         get: operations["categories__show"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/categories/{encoded_category_id}/repositories": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Repositories
          * @description display repositories by category
          */
         get: operations["categories__repositories"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/ga4gh/trs/v2/service-info": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** Service Info */
         get: operations["tools_trs_service_info"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/ga4gh/trs/v2/toolClasses": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** Tool Classes */
         get: operations["tools__trs_tool_classes"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/ga4gh/trs/v2/tools": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** Trs Index */
         get: operations["tools__trs_index"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/ga4gh/trs/v2/tools/{tool_id}": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** Trs Get */
         get: operations["tools__trs_get"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/ga4gh/trs/v2/tools/{tool_id}/versions": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** Trs Get Versions */
         get: operations["tools__trs_get_versions"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Index
          * @description Get a list of repositories or perform a search.
          */
         get: operations["repositories__index"]
+        put?: never
         /**
          * Create
          * @description create a new repository
          */
         post: operations["repositories__create"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/get_ordered_installable_revisions": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Get Ordered Installable Revisions
          * @description Get an ordered list of the repository changeset revisions that are installable
          */
         get: operations["repositories__get_ordered_installable_revisions"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/get_repository_revision_install_info": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Legacy Install Info
          * @description Get information used by the install client to install this repository.
          */
         get: operations["repositories__legacy_install_info"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/install_info": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Install Info
          * @description Get information used by the install client to install this repository.
          */
         get: operations["repositories__install_info"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/reset_metadata_on_repository": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
         /**
          * Reset Metadata On Repository Legacy
          * @description reset metadata on a repository
          */
         post: operations["repositories__reset_legacy"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/updates": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** Updates */
         get: operations["repositories__update"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/{encoded_repository_id}": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** Show */
         get: operations["repositories__show"]
+        /** Update Repository */
+        put: operations["repositories__update_repository"]
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/{encoded_repository_id}/allow_push": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** Show Allow Push */
         get: operations["repositories__show_allow_push"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/{encoded_repository_id}/allow_push/{username}": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
         /** Add Allow Push */
         post: operations["repositories__add_allow_push"]
         /** Remove Allow Push */
         delete: operations["repositories__remove_allow_push"]
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/{encoded_repository_id}/changeset_revision": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
         /**
          * Create Changeset Revision
          * @description upload new revision to the repository
          */
         post: operations["repositories__create_revision"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/{encoded_repository_id}/deprecated": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
         /** Set Deprecated */
         put: operations["repositories__set_deprecated"]
+        post?: never
         /** Unset Deprecated */
         delete: operations["repositories__unset_deprecated"]
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/{encoded_repository_id}/metadata": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Metadata
          * @description Get information about repository metadata
          */
         get: operations["repositories__metadata"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/{encoded_repository_id}/permissions": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** Permissions */
         get: operations["repositories__permissions"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/{encoded_repository_id}/reset_metadata": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
         /**
          * Reset Metadata On Repository
          * @description reset metadata on a repository
          */
         post: operations["repositories__reset"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/malicious": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
         /** Set Malicious */
         put: operations["repositories__set_malicious"]
+        post?: never
         /** Unset Malicious */
         delete: operations["repositories__unset_malicious"]
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Get Readmes
          * @description fetch readmes for repository revision
          */
         get: operations["repositories__readmes"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/tools": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** Index */
         get: operations["tools__index"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/tools/build_search_index": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
         /**
          * Build Search Index
          * @description Not part of the stable API, just something to simplify
-         * bootstrapping tool sheds, scripting, testing, etc...
+         *     bootstrapping tool sheds, scripting, testing, etc...
          */
         put: operations["tools__build_search_index"]
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/api/tools/{tool_id}/versions/{tool_version}": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Return Galaxy's meta model description of the tool's inputs */
+        get: operations["tools__parameter_model"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/api/tools/{tool_id}/versions/{tool_version}/parameter_request_schema": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /**
+         * Return a JSON schema description of the tool's inputs for the tool request API that will be added to Galaxy at some point
+         * @description The tool request schema includes validation of map/reduce concepts that can be consumed by the tool execution API and not just the request for a single execution.
+         */
+        get: operations["tools__parameter_request_model"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/users": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Index
          * @description index users
          */
         get: operations["users__index"]
+        put?: never
         /**
          * Create
          * @description create a user
          */
         post: operations["users__create"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/users/current": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Current
          * @description show current user
          */
         get: operations["users__current"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/users/{encoded_user_id}": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Show
          * @description show a user
          */
         get: operations["users__show"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/users/{encoded_user_id}/api_key": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** Return the user's API key */
         get: operations["users__get_or_create_api_key"]
+        put?: never
         /** Creates a new API key for the user */
         post: operations["users__create_api_key"]
         /** Delete the current API key of the user */
         delete: operations["users__delete_api_key"]
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api/version": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** Version */
         get: operations["configuration__version"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api_internal/change_password": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
         /**
          * Change Password
          * @description reset a user
          */
         put: operations["users__internal_change_password"]
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api_internal/login": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
         /**
          * Internal Login
          * @description login to web UI
          */
         put: operations["users__internal_login"]
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api_internal/logout": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
         /**
          * Internal Logout
          * @description logout of web UI
          */
         put: operations["users__internal_logout"]
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api_internal/register": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
         /**
          * Register
          * @description register a user
          */
         post: operations["users__internal_register"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
     "/api_internal/repositories/{encoded_repository_id}/metadata": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Metadata Internal
          * @description Get information about repository metadata
          */
         get: operations["repositories__internal_metadata"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
     }
 }
-
 export type webhooks = Record<string, never>
-
 export interface components {
     schemas: {
         /** APIKeyResponse */
@@ -252,12 +761,87 @@ export interface components {
             /** Api Key */
             api_key: string
         }
+        /** BaseUrlParameterModel */
+        BaseUrlParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_baseurl
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_baseurl"
+        }
         /** Body_repositories__create_revision */
         Body_repositories__create_revision: {
             /** Commit Message */
-            commit_message?: Record<string, never>
+            commit_message?: unknown
             /** Files */
             files?: string[] | null
+        }
+        /** BooleanParameterModel */
+        BooleanParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Falsevalue */
+            falsevalue?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_boolean
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_boolean"
+            /** Truevalue */
+            truevalue?: string | null
+            /**
+             * Value
+             * @default false
+             */
+            value: boolean | null
         }
         /** BuildSearchIndexResponse */
         BuildSearchIndexResponse: {
@@ -289,11 +873,129 @@ export interface components {
             /**
              * Type
              * @description The digest method used to create the checksum.
-             * The value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in the https://github.com/ga4gh-discovery/ga4gh-checksum/blob/master/hash-alg.csv[GA4GH Checksum Hash Algorithm Registry].
-             * Other values MAY be used, as long as implementers are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].
-             * GA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future.
+             *     The value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in the https://github.com/ga4gh-discovery/ga4gh-checksum/blob/master/hash-alg.csv[GA4GH Checksum Hash Algorithm Registry].
+             *     Other values MAY be used, as long as implementers are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].
+             *     GA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future.
              */
             type: string
+        }
+        /** Citation */
+        Citation: {
+            /** Content */
+            content: string
+            /** Type */
+            type: string
+        }
+        /** ColorParameterModel */
+        ColorParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_color
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_color"
+            /** Value */
+            value?: string | null
+        }
+        /** ConditionalParameterModel */
+        ConditionalParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_conditional
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_conditional"
+            /** Test Parameter */
+            test_parameter:
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+            /** Whens */
+            whens: components["schemas"]["ConditionalWhen"][]
+        }
+        /** ConditionalWhen */
+        ConditionalWhen: {
+            /** Discriminator */
+            discriminator: boolean | string
+            /** Is Default When */
+            is_default_when: boolean
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
+            )[]
         }
         /** CreateCategoryRequest */
         CreateCategoryRequest: {
@@ -321,7 +1023,7 @@ export interface components {
              * @default unrestricted
              * @enum {string}
              */
-            type?: "repository_suite_definition" | "tool_dependency_definition" | "unrestricted"
+            type: "repository_suite_definition" | "tool_dependency_definition" | "unrestricted"
         }
         /** CreateUserRequest */
         CreateUserRequest: {
@@ -331,6 +1033,283 @@ export interface components {
             password: string
             /** Username */
             username: string
+        }
+        /** CwlBooleanParameterModel */
+        CwlBooleanParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_boolean
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_boolean"
+        }
+        /** CwlDirectoryParameterModel */
+        CwlDirectoryParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default cwl_directory
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_directory"
+        }
+        /** CwlFileParameterModel */
+        CwlFileParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default cwl_file
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_file"
+        }
+        /** CwlFloatParameterModel */
+        CwlFloatParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_float
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_float"
+        }
+        /** CwlIntegerParameterModel */
+        CwlIntegerParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_integer
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_integer"
+        }
+        /** CwlNullParameterModel */
+        CwlNullParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_null
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_null"
+        }
+        /** CwlStringParameterModel */
+        CwlStringParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_string
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_string"
+        }
+        /** CwlUnionParameterModel */
+        CwlUnionParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_union
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_union"
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+            )[]
+        }
+        /** DataCollectionParameterModel */
+        DataCollectionParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Collection Type */
+            collection_type?: string | null
+            /**
+             * Extensions
+             * @default [
+             *       "data"
+             *     ]
+             */
+            extensions: string[]
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_data_collection
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_data_collection"
+            /** Value */
+            value: Record<string, never> | null
+        }
+        /** DataColumnParameterModel */
+        DataColumnParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Multiple */
+            multiple: boolean
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_data_column
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_data_column"
+        }
+        /** DataParameterModel */
+        DataParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /**
+             * Extensions
+             * @default [
+             *       "data"
+             *     ]
+             */
+            extensions: string[]
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Max */
+            max?: number | null
+            /** Min */
+            min?: number | null
+            /**
+             * Multiple
+             * @default false
+             */
+            multiple: boolean
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_data
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_data"
         }
         /**
          * DescriptorType
@@ -375,15 +1354,283 @@ export interface components {
             /** User Id */
             user_id: string
         }
+        /** DirectoryUriParameterModel */
+        DirectoryUriParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_directory_uri
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_directory_uri"
+        }
+        /** DrillDownOptionsDict */
+        DrillDownOptionsDict: {
+            /** Name */
+            name: string | null
+            /** Options */
+            options: components["schemas"]["DrillDownOptionsDict"][]
+            /** Selected */
+            selected: boolean
+            /** Value */
+            value: string
+        }
+        /** DrillDownParameterModel */
+        DrillDownParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Hierarchy
+             * @enum {string}
+             */
+            hierarchy: "recurse" | "exact"
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Multiple */
+            multiple: boolean
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /** Options */
+            options?: components["schemas"]["DrillDownOptionsDict"][] | null
+            /**
+             * Parameter Type
+             * @default gx_drill_down
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_drill_down"
+        }
         /** FailedRepositoryUpdateMessage */
         FailedRepositoryUpdateMessage: {
             /** Err Msg */
             err_msg: string
         }
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][]
+        /** FilePatternDatasetCollectionDescription */
+        FilePatternDatasetCollectionDescription: {
+            /** Assign Primary Output */
+            assign_primary_output: boolean
+            /** Directory */
+            directory: string | null
+            /**
+             * Discover Via
+             * @constant
+             * @enum {string}
+             */
+            discover_via: "pattern"
+            /** Format */
+            format: string | null
+            /** Match Relative Path */
+            match_relative_path: boolean
+            /** Pattern */
+            pattern: string
+            /** Recurse */
+            recurse: boolean
+            /**
+             * Sort Comp
+             * @enum {string}
+             */
+            sort_comp: "lexical" | "numeric"
+            /**
+             * Sort Key
+             * @enum {string}
+             */
+            sort_key: "filename" | "name" | "designation" | "dbkey"
+            /** Visible */
+            visible: boolean
+        }
+        /** FloatParameterModel */
+        FloatParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Max */
+            max?: number | null
+            /** Min */
+            min?: number | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_float
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_float"
+            /** Value */
+            value?: number | null
+        }
+        /** GenomeBuildParameterModel */
+        GenomeBuildParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Multiple */
+            multiple: boolean
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_genomebuild
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_genomebuild"
+        }
+        /** GroupTagParameterModel */
+        GroupTagParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Multiple */
+            multiple: boolean
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_group_tag
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_group_tag"
+        }
+        /** HelpContent */
+        HelpContent: {
+            /** Content */
+            content: string
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "restructuredtext" | "plain_text" | "markdown"
+        }
+        /** HiddenParameterModel */
+        HiddenParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_hidden
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_hidden"
+            /** Value */
+            value: string | null
         }
         /** ImageData */
         ImageData: {
@@ -424,6 +1671,58 @@ export interface components {
             metadata_info?: components["schemas"]["RepositoryMetadataInstallInfo"] | null
             repo_info?: components["schemas"]["RepositoryExtraInstallInfo"] | null
         }
+        /** IntegerParameterModel */
+        IntegerParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Max */
+            max?: number | null
+            /** Min */
+            min?: number | null
+            /** Name */
+            name: string
+            /** Optional */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_integer
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_integer"
+            /** Value */
+            value?: number | null
+        }
+        /** LabelValue */
+        LabelValue: {
+            /** Label */
+            label: string
+            /** Selected */
+            selected: boolean
+            /** Value */
+            value: string
+        }
+        /** MessageExceptionModel */
+        MessageExceptionModel: {
+            /** Err Code */
+            err_code: number
+            /** Err Msg */
+            err_msg: string
+        }
         /** Organization */
         Organization: {
             /**
@@ -437,6 +1736,136 @@ export interface components {
              * @description URL of the website of the organization (RFC 3986 format)
              */
             url: string
+        }
+        /** ParsedTool */
+        ParsedTool: {
+            /** Citations */
+            citations: components["schemas"]["Citation"][]
+            /** Description */
+            description: string | null
+            /** Edam Operations */
+            edam_operations: string[]
+            /** Edam Topics */
+            edam_topics: string[]
+            help: components["schemas"]["HelpContent"] | null
+            /** Id */
+            id: string
+            /** Inputs */
+            inputs: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
+            )[]
+            /** License */
+            license: string | null
+            /** Name */
+            name: string
+            /** Outputs */
+            outputs: (
+                | components["schemas"]["ToolOutputDataset"]
+                | components["schemas"]["ToolOutputCollection"]
+                | components["schemas"]["ToolOutputText"]
+                | components["schemas"]["ToolOutputInteger"]
+                | components["schemas"]["ToolOutputFloat"]
+                | components["schemas"]["ToolOutputBoolean"]
+            )[]
+            /** Profile */
+            profile: string | null
+            /** Version */
+            version: string | null
+            /** Xrefs */
+            xrefs: components["schemas"]["XrefDict"][]
+        }
+        /** RepeatParameterModel */
+        RepeatParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Max */
+            max?: number | null
+            /** Min */
+            min?: number | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_repeat
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_repeat"
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
+            )[]
         }
         /** RepositoriesByCategory */
         RepositoriesByCategory: {
@@ -537,7 +1966,7 @@ export interface components {
         }
         /** RepositoryMetadata */
         RepositoryMetadata: {
-            [key: string]: components["schemas"]["RepositoryRevisionMetadata"] | undefined
+            [key: string]: components["schemas"]["RepositoryRevisionMetadata"]
         }
         /** RepositoryMetadataInstallInfo */
         RepositoryMetadataInstallInfo: {
@@ -609,7 +2038,7 @@ export interface components {
         }
         /** RepositoryRevisionReadmes */
         RepositoryRevisionReadmes: {
-            [key: string]: string | undefined
+            [key: string]: string
         }
         /** RepositorySearchHit */
         RepositorySearchHit: {
@@ -670,7 +2099,7 @@ export interface components {
             /** Name */
             name: string
             /** Requirements */
-            requirements: Record<string, never>[]
+            requirements: unknown[]
             /** Tool Config */
             tool_config: string
             /** Tool Type */
@@ -692,6 +2121,139 @@ export interface components {
             status: string
             /** Stop Time */
             stop_time: string
+        }
+        /** RulesParameterModel */
+        RulesParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_rules
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_rules"
+        }
+        /** SectionParameterModel */
+        SectionParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_section
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_section"
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
+            )[]
+        }
+        /** SelectParameterModel */
+        SelectParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Multiple */
+            multiple: boolean
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /** Options */
+            options?: components["schemas"]["LabelValue"][] | null
+            /**
+             * Parameter Type
+             * @default gx_select
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_select"
         }
         /** Service */
         Service: {
@@ -762,14 +2324,59 @@ export interface components {
              */
             version: string
         }
+        /** TextParameterModel */
+        TextParameterModel: {
+            /**
+             * Area
+             * @default false
+             */
+            area: boolean
+            /** Argument */
+            argument?: string | null
+            /**
+             * Default Options
+             * @default []
+             */
+            default_options: components["schemas"]["LabelValue"][]
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_text
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_text"
+            /** Value */
+            value?: string | null
+        }
         /** Tool */
         Tool: {
             /**
              * Aliases
              * @description Support for this parameter is optional for tool registries that support aliases.
-             * A list of strings that can be used to identify this tool which could be  straight up URLs.
-             * This can be used to expose alternative ids (such as GUIDs) for a tool
-             * for registries. Can be used to match tools across registries.
+             *     A list of strings that can be used to identify this tool which could be  straight up URLs.
+             *     This can be used to expose alternative ids (such as GUIDs) for a tool
+             *     for registries. Can be used to match tools across registries.
              */
             aliases?: string[] | null
             /**
@@ -837,6 +2444,143 @@ export interface components {
              */
             name?: string | null
         }
+        /** ToolOutputBoolean */
+        ToolOutputBoolean: {
+            /** Hidden */
+            hidden: boolean
+            /** Label */
+            label: string | null
+            /** Name */
+            name: string
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "boolean"
+        }
+        /** ToolOutputCollection */
+        ToolOutputCollection: {
+            /** Hidden */
+            hidden: boolean
+            /** Label */
+            label: string | null
+            /** Name */
+            name: string
+            structure: components["schemas"]["ToolOutputCollectionStructure"]
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "collection"
+        }
+        /** ToolOutputCollectionStructure */
+        ToolOutputCollectionStructure: {
+            /** Collection Type */
+            collection_type: string | null
+            /** Collection Type From Rules */
+            collection_type_from_rules: string | null
+            /** Collection Type Source */
+            collection_type_source: string | null
+            /** Discover Datasets */
+            discover_datasets:
+                | (
+                      | components["schemas"]["FilePatternDatasetCollectionDescription"]
+                      | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
+                  )[]
+                | null
+            /** Structured Like */
+            structured_like: string | null
+        }
+        /** ToolOutputDataset */
+        ToolOutputDataset: {
+            /** Discover Datasets */
+            discover_datasets:
+                | (
+                      | components["schemas"]["FilePatternDatasetCollectionDescription"]
+                      | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
+                  )[]
+                | null
+            /** Format */
+            format: string
+            /** Format Source */
+            format_source: string | null
+            /** Hidden */
+            hidden: boolean
+            /** Label */
+            label: string | null
+            /** Metadata Source */
+            metadata_source: string | null
+            /** Name */
+            name: string
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "data"
+        }
+        /** ToolOutputFloat */
+        ToolOutputFloat: {
+            /** Hidden */
+            hidden: boolean
+            /** Label */
+            label: string | null
+            /** Name */
+            name: string
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "float"
+        }
+        /** ToolOutputInteger */
+        ToolOutputInteger: {
+            /** Hidden */
+            hidden: boolean
+            /** Label */
+            label: string | null
+            /** Name */
+            name: string
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "integer"
+        }
+        /** ToolOutputText */
+        ToolOutputText: {
+            /** Hidden */
+            hidden: boolean
+            /** Label */
+            label: string | null
+            /** Name */
+            name: string
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "text"
+        }
+        /** ToolProvidedMetadataDatasetCollection */
+        ToolProvidedMetadataDatasetCollection: {
+            /** Assign Primary Output */
+            assign_primary_output: boolean
+            /** Directory */
+            directory: string | null
+            /**
+             * Discover Via
+             * @constant
+             * @enum {string}
+             */
+            discover_via: "tool_provided_metadata"
+            /** Format */
+            format: string | null
+            /** Match Relative Path */
+            match_relative_path: boolean
+            /** Recurse */
+            recurse: boolean
+            /** Visible */
+            visible: boolean
+        }
         /** ToolVersion */
         ToolVersion: {
             /**
@@ -859,7 +2603,7 @@ export interface components {
              * @description A map providing information about the language versions used in this tool. The keys should be the same values used in the `descriptor_type` field, and the value should be an array of all the language versions used for the given `descriptor_type`. Depending on the `descriptor_type` (e.g. CWL) multiple version values may be used in a single tool.
              */
             descriptor_type_version?: {
-                [key: string]: components["schemas"]["DescriptorTypeVersion"][] | undefined
+                [key: string]: components["schemas"]["DescriptorTypeVersion"][]
             } | null
             /**
              * Id
@@ -936,7 +2680,7 @@ export interface components {
              * Logout All
              * @default false
              */
-            logout_all?: boolean
+            logout_all: boolean
             /** Session Csrf Token */
             session_csrf_token: string
         }
@@ -959,16 +2703,33 @@ export interface components {
              * Activation Error
              * @default false
              */
-            activation_error?: boolean
+            activation_error: boolean
             /**
              * Activation Sent
              * @default false
              */
-            activation_sent?: boolean
+            activation_sent: boolean
             /** Contact Email */
             contact_email?: string | null
             /** Email */
             email: string
+        }
+        /** UpdateRepositoryRequest */
+        UpdateRepositoryRequest: {
+            /** Category IDs */
+            category_ids?: string[] | null
+            /** Description */
+            description?: string | null
+            /** Homepage Url */
+            homepage_url?: string | null
+            /** Name */
+            name?: string | null
+            /** Remote Repository Url */
+            remote_repository_url?: string | null
+            /** Synopsis */
+            synopsis?: string | null
+            /** Type */
+            type?: ("repository_suite_definition" | "tool_dependency_definition" | "unrestricted") | null
         }
         /** UserV2 */
         UserV2: {
@@ -997,9 +2758,9 @@ export interface components {
             /** Name */
             name: string
             /** Requirements */
-            requirements: Record<string, never>[]
+            requirements: unknown[]
             /** Tests */
-            tests: Record<string, never>[]
+            tests: unknown[]
             /** Tool Config */
             tool_config: string
             /** Tool Type */
@@ -1009,26 +2770,24 @@ export interface components {
             /** Version String Cmd */
             version_string_cmd?: string | null
         }
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[]
-            /** Message */
-            msg: string
-            /** Error Type */
-            type: string
-        }
         /** Version */
         Version: {
             /**
              * Api Version
              * @default v1
              */
-            api_version?: string
+            api_version: string
             /** Version */
             version: string
             /** Version Major */
             version_major: string
+        }
+        /** XrefDict */
+        XrefDict: {
+            /** Reftype */
+            reftype: string
+            /** Value */
+            value: string
         }
     }
     responses: never
@@ -1037,40 +2796,91 @@ export interface components {
     headers: never
     pathItems: never
 }
-
-export type external = Record<string, never>
-
+export type $defs = Record<string, never>
 export interface operations {
     authenticate__baseauth: {
-        /** Returns returns an API key for authenticated user based on BaseAuth headers. */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["APIKeyResponse"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     categories__index: {
-        /**
-         * Index
-         * @description index category
-         */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["Category"][]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     categories__create: {
-        /**
-         * Create
-         * @description create a category
-         */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CreateCategoryRequest"]
@@ -1079,49 +2889,75 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["Category"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     categories__show: {
-        /**
-         * Show
-         * @description show category
-         */
         parameters: {
-            /** @description The encoded database identifier of the category. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the category. */
                 encoded_category_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["Category"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     categories__repositories: {
-        /**
-         * Repositories
-         * @description display repositories by category
-         */
         parameters: {
             query?: {
                 installable?: boolean
@@ -1129,111 +2965,242 @@ export interface operations {
                 sort_order?: string
                 page?: number | null
             }
-            /** @description The encoded database identifier of the category. */
+            header?: never
             path: {
+                /** @description The encoded database identifier of the category. */
                 encoded_category_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["RepositoriesByCategory"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     tools_trs_service_info: {
-        /** Service Info */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["Service"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     tools__trs_tool_classes: {
-        /** Tool Classes */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["ToolClass"][]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     tools__trs_index: {
-        /** Trs Index */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": Record<string, never>
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     tools__trs_get: {
-        /** Trs Get */
         parameters: {
-            /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+            query?: never
+            header?: never
             path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
                 tool_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["Tool"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     tools__trs_get_versions: {
-        /** Trs Get Versions */
         parameters: {
-            /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+            query?: never
+            header?: never
             path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
                 tool_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["ToolVersion"][]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__index: {
-        /**
-         * Index
-         * @description Get a list of repositories or perform a search.
-         */
-        parameters?: {
+        parameters: {
             query?: {
                 q?: string | null
                 page?: number | null
@@ -1242,29 +3209,50 @@ export interface operations {
                 owner?: string | null
                 name?: string | null
             }
+            header?: never
+            path?: never
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json":
                         | components["schemas"]["RepositorySearchResults"]
                         | components["schemas"]["Repository"][]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__create: {
-        /**
-         * Create
-         * @description create a new repository
-         */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CreateRepositoryRequest"]
@@ -1273,121 +3261,204 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["Repository"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__get_ordered_installable_revisions: {
-        /**
-         * Get Ordered Installable Revisions
-         * @description Get an ordered list of the repository changeset revisions that are installable
-         */
-        parameters?: {
+        parameters: {
             query?: {
                 owner?: string | null
                 name?: string | null
                 tsr_id?: string | null
             }
+            header?: never
+            path?: never
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": string[]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__legacy_install_info: {
-        /**
-         * Legacy Install Info
-         * @description Get information used by the install client to install this repository.
-         */
         parameters: {
-            /** @description Name of the target repository. */
-            /** @description Owner of the target repository. */
-            /** @description Changeset of the target repository. */
             query: {
+                /** @description Name of the target repository. */
                 name: string
+                /** @description Owner of the target repository. */
                 owner: string
+                /** @description Changeset of the target repository. */
                 changeset_revision: string
             }
+            header?: never
+            path?: never
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": Record<string, never>[]
+                    "application/json": unknown[]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__install_info: {
-        /**
-         * Install Info
-         * @description Get information used by the install client to install this repository.
-         */
         parameters: {
-            /** @description Name of the target repository. */
-            /** @description Owner of the target repository. */
-            /** @description Changeset of the target repository. */
             query: {
+                /** @description Name of the target repository. */
                 name: string
+                /** @description Owner of the target repository. */
                 owner: string
+                /** @description Changeset of the target repository. */
                 changeset_revision: string
             }
+            header?: never
+            path?: never
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["InstallInfo"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__reset_legacy: {
-        /**
-         * Reset Metadata On Repository Legacy
-         * @description reset metadata on a repository
-         */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["ResetMetadataOnRepositoryResponse"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__update: {
-        /** Updates */
         parameters: {
             query: {
                 owner?: string | null
@@ -1395,132 +3466,266 @@ export interface operations {
                 changeset_revision: string
                 hexlify?: boolean | null
             }
+            header?: never
+            path?: never
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": Record<string, never>
+                    "application/json": unknown
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__show: {
-        /** Show */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["DetailedRepository"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    repositories__update_repository: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description The encoded database identifier of the repository. */
+                encoded_repository_id: string
+            }
+            cookie?: never
+        }
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRepositoryRequest"]
             }
         }
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["DetailedRepository"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__show_allow_push: {
-        /** Show Allow Push */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": string[]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__add_allow_push: {
-        /** Add Allow Push */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
-            /** @description The target username. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
+                /** @description The target username. */
                 username: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": string[]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__remove_allow_push: {
-        /** Remove Allow Push */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
-            /** @description The target username. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
+                /** @description The target username. */
                 username: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": string[]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__create_revision: {
-        /**
-         * Create Changeset Revision
-         * @description upload new revision to the repository
-         */
         parameters: {
-            /** @description Set commit message as a query parameter. */
             query?: {
+                /** @description Set commit message as a query parameter. */
                 commit_message?: string | null
             }
-            /** @description The encoded database identifier of the repository. */
+            header?: never
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
+            cookie?: never
         }
         requestBody?: {
             content: {
@@ -1530,263 +3735,573 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["RepositoryUpdate"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__set_deprecated: {
-        /** Set Deprecated */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
-            204: never
-            /** @description Validation Error */
-            422: {
+            204: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content?: never
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__unset_deprecated: {
-        /** Unset Deprecated */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
-            204: never
-            /** @description Validation Error */
-            422: {
+            204: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content?: never
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__metadata: {
-        /**
-         * Metadata
-         * @description Get information about repository metadata
-         */
         parameters: {
-            /** @description Include only downloadable repositories. */
             query?: {
+                /** @description Include only downloadable repositories. */
                 downloadable_only?: boolean
             }
-            /** @description The encoded database identifier of the repository. */
+            header?: never
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": Record<string, never>
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__permissions: {
-        /** Permissions */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["RepositoryPermissions"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__reset: {
-        /**
-         * Reset Metadata On Repository
-         * @description reset metadata on a repository
-         */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["ResetMetadataOnRepositoryResponse"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__set_malicious: {
-        /** Set Malicious */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
-            /** @description The changeset revision corresponding to the target revision of the target repository. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
+                /** @description The changeset revision corresponding to the target revision of the target repository. */
                 changeset_revision: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
-            204: never
-            /** @description Validation Error */
-            422: {
+            204: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content?: never
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__unset_malicious: {
-        /** Unset Malicious */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
-            /** @description The changeset revision corresponding to the target revision of the target repository. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
+                /** @description The changeset revision corresponding to the target revision of the target repository. */
                 changeset_revision: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
-            204: never
-            /** @description Validation Error */
-            422: {
+            204: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content?: never
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__readmes: {
-        /**
-         * Get Readmes
-         * @description fetch readmes for repository revision
-         */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
-            /** @description The changeset revision corresponding to the target revision of the target repository. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
+                /** @description The changeset revision corresponding to the target revision of the target repository. */
                 changeset_revision: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["RepositoryRevisionReadmes"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     tools__index: {
-        /** Index */
         parameters: {
             query: {
                 q: string
                 page?: number
                 page_size?: number
             }
+            header?: never
+            path?: never
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": Record<string, never>
+                    "application/json": unknown
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     tools__build_search_index: {
-        /**
-         * Build Search Index
-         * @description Not part of the stable API, just something to simplify
-         * bootstrapping tool sheds, scripting, testing, etc...
-         */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["BuildSearchIndexResponse"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    tools__parameter_model: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+                tool_id: string
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["ParsedTool"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    tools__parameter_request_model: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+                tool_id: string
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     users__index: {
-        /**
-         * Index
-         * @description index users
-         */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["UserV2"][]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     users__create: {
-        /**
-         * Create
-         * @description create a user
-         */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CreateUserRequest"]
@@ -1795,139 +4310,278 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["UserV2"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     users__current: {
-        /**
-         * Current
-         * @description show current user
-         */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["UserV2"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     users__show: {
-        /**
-         * Show
-         * @description show a user
-         */
         parameters: {
-            /** @description The encoded database identifier of the user. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the user. */
                 encoded_user_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["UserV2"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     users__get_or_create_api_key: {
-        /** Return the user's API key */
         parameters: {
-            /** @description The encoded database identifier of the user. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the user. */
                 encoded_user_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": string
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     users__create_api_key: {
-        /** Creates a new API key for the user */
         parameters: {
-            /** @description The encoded database identifier of the user. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the user. */
                 encoded_user_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": string
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     users__delete_api_key: {
-        /** Delete the current API key of the user */
         parameters: {
-            /** @description The encoded database identifier of the user. */
+            query?: never
+            header?: never
             path: {
+                /** @description The encoded database identifier of the user. */
                 encoded_user_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
-            204: never
-            /** @description Validation Error */
-            422: {
+            204: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content?: never
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     configuration__version: {
-        /** Version */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["Version"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     users__internal_change_password: {
-        /**
-         * Change Password
-         * @description reset a user
-         */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UiChangePasswordRequest"]
@@ -1935,20 +4589,39 @@ export interface operations {
         }
         responses: {
             /** @description Successful Response */
-            204: never
-            /** @description Validation Error */
-            422: {
+            204: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content?: never
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     users__internal_login: {
-        /**
-         * Internal Login
-         * @description login to web UI
-         */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UiLoginRequest"]
@@ -1957,23 +4630,40 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["UiLoginResponse"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     users__internal_logout: {
-        /**
-         * Internal Logout
-         * @description logout of web UI
-         */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UiLogoutRequest"]
@@ -1982,23 +4672,40 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["UiLogoutResponse"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     users__internal_register: {
-        /**
-         * Register
-         * @description register a user
-         */
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UiRegisterRequest"]
@@ -2007,44 +4714,73 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["UiRegisterResponse"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
     }
     repositories__internal_metadata: {
-        /**
-         * Metadata Internal
-         * @description Get information about repository metadata
-         */
         parameters: {
-            /** @description Include only downloadable repositories. */
             query?: {
+                /** @description Include only downloadable repositories. */
                 downloadable_only?: boolean
             }
-            /** @description The encoded database identifier of the repository. */
+            header?: never
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
+            cookie?: never
         }
+        requestBody?: never
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
                     "application/json": components["schemas"]["RepositoryMetadata"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }

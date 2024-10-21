@@ -14,6 +14,7 @@ from typing import (
     Any,
     Dict,
     Optional,
+    Tuple,
 )
 from urllib.parse import urlparse
 
@@ -119,7 +120,7 @@ class WebApplication(base.WebApplication):
 
         # We need this to set the REQUEST_ID contextvar in model.base *BEFORE* a GalaxyWebTransaction is created.
         # This will ensure a SQLAlchemy session is request-scoped for legacy (non-fastapi) endpoints.
-        self._model = galaxy_app.model
+        self.session_factories.append(galaxy_app.model)
 
     def build_apispec(self):
         """
@@ -325,6 +326,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.galaxy_session = None
         self.error_message = None
         self.host = self.request.host
+        self._short_term_cache: Dict[Tuple[str, ...], Any] = {}
 
         # set any cross origin resource sharing headers if configured to do so
         self.set_cors_headers()
@@ -948,6 +950,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 if history.empty:
                     self.set_history(history)
                     return history
+
+        # Don't create new history if login required and user is anonymous
+        if self.app.config.require_login and not self.user:
+            return None
 
         # No suitable history found, create a new one.
         return self.new_history()

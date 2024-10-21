@@ -531,6 +531,9 @@ class WorkflowRefactorExecutor:
                 if upgrade_input["name"] == input_name:
                     matching_input = upgrade_input
                     break
+                elif step.when_expression and f"inputs.{input_name}" in step.when_expression:
+                    # TODO: eventually track step inputs more formally
+                    matching_input = upgrade_input
 
             # In the future check parameter type, format, mapping status...
             if matching_input is None:

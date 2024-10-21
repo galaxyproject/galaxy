@@ -254,48 +254,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-options {
-    .ui-options-list {
-        @extend .ui-input;
-        height: 100% !important;
-        input[type="checkbox"],
-        input[type="radio"] {
-            display: none;
-        }
-        label {
-            margin: 0px;
-            cursor: pointer;
-        }
-        .ui-drilldown-button {
-            float: left;
-            cursor: pointer;
-            font-size: 1.2em;
-            margin-right: 5px;
-            margin-top: 3px;
-        }
-        .ui-drilldown-subgroup {
-            display: none;
-            margin-left: 25px;
-        }
-        input[type="checkbox"] + label:before {
-            @extend .far;
-            margin-right: 5px;
-            content: fa-content($fa-var-square);
-        }
-        input[type="checkbox"]:checked + label:before {
-            content: fa-content($fa-var-check-square);
-        }
-        input[type="radio"] + label:before {
-            @extend .far;
-            margin-right: 5px;
-            content: fa-content($fa-var-circle);
-        }
-        input[type="radio"]:checked + label:before {
-            content: fa-content($fa-var-check-circle);
-        }
-    }
-}
-
 .ui-select {
     position: relative;
     .icon-dropdown {

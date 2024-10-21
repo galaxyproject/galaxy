@@ -145,6 +145,16 @@
         "message": "Action requires account activation."
     },
     {
+        "name": "ITEM_IS_CLAIMED",
+        "code": 403008,
+        "message": "This item has already been claimed and cannot be re-claimed."
+    },
+    {
+        "name": "USER_REQUIRED",
+        "code": 403008,
+        "message": "Action requires user authentication."
+    },
+    {
         "name": "USER_OBJECT_NOT_FOUND",
         "code": 404001,
         "message": "No such object found."
@@ -188,6 +198,11 @@
         "name": "REFERENCE_DATA_ERROR",
         "code": 500006,
         "message": "Reference data required for program execution failed to load."
+    },
+    {
+        "name": "INCONSISTENT_APPLICATION_STATE",
+        "code": 500007,
+        "message": "Inconsistent application state (likely not dbms related) prevented fulfilling the request."
     },
     {
         "name": "NOT_IMPLEMENTED",

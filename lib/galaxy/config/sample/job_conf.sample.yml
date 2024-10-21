@@ -513,13 +513,13 @@ execution:
       # trust tool's specified container - a destination wide override
       # can be set. This will cause all jobs on this destination to use
       # that docker image.
-      #docker_container_id_override: busybox:ubuntu-14.04
+      #docker_container_id_override: busybox:1.36.1-glibc
 
       # Likewise, if deployer wants to use docker for isolation and
       # does trust tool's specified container - but also wants tool's not
       # configured to run in a container the following option can provide
       # a fallback. -->
-      #docker_default_container_id: busybox:ubuntu-14.04
+      #docker_default_container_id: busybox:1.36.1-glibc
 
       # If the destination should be secured to only allow containerized jobs
       # the following parameter may be set for the job destination. Some tools
@@ -633,7 +633,7 @@ execution:
         - type: docker
           shell: '/bin/sh'
           resolve_dependencies: false
-          identifier: 'busybox:ubuntu-14.04'
+          identifier: 'busybox:1.36.1-glibc'
         - type: singularity
           shell: '/bin/sh'
           resolve_dependencies: false
@@ -642,7 +642,7 @@ execution:
         - type: docker
           shell: '/bin/sh'
           resolve_dependencies: false
-          identifier: 'busybox:ubuntu-14.04'
+          identifier: 'busybox:1.36.1-glibc'
         - type: singularity
           shell: '/bin/sh'
           resolve_dependencies: false

@@ -50,8 +50,6 @@ from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     target_url_parts,
 )
-from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
-from tool_shed.webapp.fast_app import initialize_fast_app as init_tool_shed_fast_app
 from .test_logging import logging_config_file
 
 galaxy_root = galaxy_directory()
@@ -71,9 +69,8 @@ DEFAULT_LOCALES = "en"
 log = logging.getLogger("test_driver")
 
 
-# Global variables to pass database contexts around - only needed for older
+# Global variable to pass database contexts around - only needed for older
 # Tool Shed twill tests that didn't utilize the API for such interactions.
-tool_shed_context = None
 install_context = None
 
 
@@ -583,26 +580,6 @@ def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
     return app
 
 
-def build_shed_app(simple_kwargs):
-    """Build a Galaxy app object from a simple keyword arguments.
-
-    Construct paste style complex dictionary. Also setup "global" reference
-    to sqlalchemy database context for tool shed database.
-    """
-    log.info("Tool shed database connection: %s", simple_kwargs["database_connection"])
-    # TODO: Simplify global_conf to match Galaxy above...
-    simple_kwargs["__file__"] = "tool_shed_wsgi.yml.sample"
-    simple_kwargs["global_conf"] = get_webapp_global_conf()
-
-    app = ToolshedUniverseApplication(**simple_kwargs)
-    log.info("Embedded Toolshed application started")
-
-    global tool_shed_context
-    tool_shed_context = app.model.context
-
-    return app
-
-
 def explicitly_configured_host_and_port(prefix, config_object):
     host_env_key = f"{prefix}_TEST_HOST"
     port_env_key = f"{prefix}_TEST_PORT"
@@ -758,7 +735,14 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
     )
 
 
-def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=None, config_object=None):
+def launch_server(
+    app_factory,
+    webapp_factory,
+    prefix=DEFAULT_CONFIG_PREFIX,
+    galaxy_config=None,
+    config_object=None,
+    init_fast_app=init_galaxy_fast_app,
+):
     name = prefix.lower()
     host, port = explicitly_configured_host_and_port(prefix, config_object)
     port = attempt_ports(port)
@@ -792,12 +776,7 @@ def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, gal
         static_enabled=True,
         register_shutdown_at_exit=False,
     )
-    if name == "galaxy":
-        asgi_app = init_galaxy_fast_app(wsgi_webapp, app)
-    elif name == "tool_shed":
-        asgi_app = init_tool_shed_fast_app(wsgi_webapp, app)
-    else:
-        raise NotImplementedError(f"Launching {name} not implemented")
+    asgi_app = init_fast_app(wsgi_webapp, app)
 
     server, port, thread = uvicorn_serve(asgi_app, host=host, port=port)
     set_and_wait_for_http_target(prefix, host, port, url_prefix=url_prefix)
@@ -820,7 +799,7 @@ class TestDriver:
         self.server_wrappers: List[ServerWrapper] = []
         self.temp_directories: List[str] = []
 
-    def setup(self, config_object=None) -> None:
+    def setup(self) -> None:
         """Called before tests are built."""
 
     def tear_down(self) -> None:
@@ -871,7 +850,8 @@ class GalaxyTestDriver(TestDriver):
 
         default_tool_conf: Optional[str]
         datatypes_conf_override: Optional[str]
-        if getattr(config_object, "framework_tool_and_types", False):
+        framework_tools_and_types = getattr(config_object, "framework_tool_and_types", False)
+        if framework_tools_and_types:
             default_tool_conf = FRAMEWORK_SAMPLE_TOOLS_CONF
             datatypes_conf_override = FRAMEWORK_DATATYPES_CONF
         else:

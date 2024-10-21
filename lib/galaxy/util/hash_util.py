@@ -6,7 +6,6 @@ introduced hashlib which replaced sha in Python 2.4 and previous versions.
 import hashlib
 import hmac
 import logging
-import os
 from enum import Enum
 from typing import (
     Any,
@@ -19,6 +18,7 @@ from typing import (
 )
 
 from . import smart_str
+from .path import StrPath
 
 log = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ def memory_bound_hexdigest(
         file.close()
 
 
-def md5_hash_file(path: Union[str, os.PathLike]) -> Optional[str]:
+def md5_hash_file(path: StrPath) -> Optional[str]:
     """
     Return a md5 hashdigest for a file or None if path could not be read.
     """
@@ -151,6 +151,14 @@ def parse_checksum_hash(checksum: str) -> Tuple[HashFunctionNameEnum, str]:
     if hash_name not in HASH_NAMES:
         raise ValueError(f"Unsupported hash function '{hash_name}'. Supported functions: [{','.join(HASH_NAMES)}]")
     return HashFunctionNameEnum(hash_name), hash_value
+
+
+def verify_hash(path: str, hash_func_name: HashFunctionNameEnum, hash_value: str, what: str = "path"):
+    calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_func_name, path=path)
+    if calculated_hash_value != hash_value:
+        raise Exception(
+            f"Failed to validate {what} with [{hash_func_name}] - expected [{hash_value}] got [{calculated_hash_value}]"
+        )
 
 
 __all__ = (

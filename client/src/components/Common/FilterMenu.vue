@@ -4,7 +4,7 @@ import { faAngleDoubleUp, faQuestion, faSearch } from "@fortawesome/free-solid-s
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BModal, BPopover } from "bootstrap-vue";
 import { kebabCase } from "lodash";
-import { computed, ref } from "vue";
+import { computed, ref, set } from "vue";
 
 import type Filtering from "@/utils/filtering";
 import { type Alias, type ErrorType, getOperatorForAlias, type ValidFilter } from "@/utils/filtering";
@@ -91,6 +91,8 @@ const toggleMenuButton = computed(() => {
 // Boolean for showing the help modal for the whole filter menu (if provided)
 const showHelp = ref(false);
 
+const isDisabled = ref<Record<string, boolean>>({});
+
 const formattedSearchError = computed<ErrorType | null>(() => {
     if (props.searchError) {
         const { column, col, operation, op, value, val, err_msg, ValueError } = props.searchError;
@@ -144,6 +146,8 @@ function getValidFilter(filter: string): ValidFilter<any> {
 function onOption(filter: string, value: any) {
     filters.value[filter] = value;
 
+    setDisabled(filter, value);
+
     // for the compact view, we want to immediately search
     if (props.view === "compact") {
         onSearch();
@@ -175,6 +179,21 @@ function onSearch() {
 
 function onToggle() {
     emit("update:show-advanced", !props.showAdvanced);
+}
+
+function setDisabled(filter: string, newVal: any) {
+    const disablesFilters = validFilters.value[filter]?.disablesFilters;
+    const type = validFilters.value[filter]?.type;
+    if (disablesFilters && type !== Boolean) {
+        for (const [disabledFilter, disablingValues] of Object.entries(disablesFilters)) {
+            if (newVal && (disablingValues === null || disablingValues.includes(newVal))) {
+                set(isDisabled.value, disabledFilter, true);
+                filters.value[disabledFilter] = undefined;
+            } else {
+                set(isDisabled.value, disabledFilter, false);
+            }
+        }
+    }
 }
 
 function updateFilterText(newFilterText: string) {
@@ -243,6 +262,7 @@ function updateFilterText(newFilterText: string) {
                             :filters="filters"
                             :error="formattedSearchError || undefined"
                             :identifier="identifier"
+                            :disabled="isDisabled[filter] || false"
                             @change="onOption"
                             @on-enter="onSearch"
                             @on-esc="onToggle" />
@@ -269,6 +289,7 @@ function updateFilterText(newFilterText: string) {
                             :filter="getValidFilter(filter)"
                             :filters="filters"
                             :identifier="identifier"
+                            :disabled="isDisabled[filter] || false"
                             @change="onOption" />
                         <FilterMenuInput
                             v-else-if="validFilters[filter]?.type !== Boolean"
@@ -277,6 +298,7 @@ function updateFilterText(newFilterText: string) {
                             :filters="filters"
                             :error="errorForField(filter) || undefined"
                             :identifier="identifier"
+                            :disabled="isDisabled[filter] || false"
                             @change="onOption"
                             @on-enter="onSearch"
                             @on-esc="onToggle" />

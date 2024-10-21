@@ -4,10 +4,80 @@ History
 .. to_doc
 
 ---------
-24.1.dev0
+24.2.dev0
 ---------
 
 
+
+-------------------
+24.1.2 (2024-09-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Handle all requests error in ``ApiBiotoolsMetadataSource._raw_get_metadata`` by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18510 <https://github.com/galaxyproject/galaxy/pull/18510>`_
+* xsd: allow `change_format` and `actions` also in statically defined collection elements, and break recursion by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18605 <https://github.com/galaxyproject/galaxy/pull/18605>`_
+
+============
+Enhancements
+============
+
+* Make `default_panel_view` a `_by_host` option by `@natefoo <https://github.com/natefoo>`_ in `#18471 <https://github.com/galaxyproject/galaxy/pull/18471>`_
+
+-------------------
+24.1.1 (2024-07-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix bug in galaxy.xsd by `@kostrykin <https://github.com/kostrykin>`_ in `#17752 <https://github.com/galaxyproject/galaxy/pull/17752>`_
+* Fix bug in `assert_has_image_n_labels` by `@kostrykin <https://github.com/kostrykin>`_ in `#17754 <https://github.com/galaxyproject/galaxy/pull/17754>`_
+* Remove linter for unstripped text content for tool xml leaves by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18252 <https://github.com/galaxyproject/galaxy/pull/18252>`_
+
+============
+Enhancements
+============
+
+* Add test and doc showing how dynamic selects are used by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16885 <https://github.com/galaxyproject/galaxy/pull/16885>`_
+* Add content assertion XML tags for test output verification using images by `@kostrykin <https://github.com/kostrykin>`_ in `#17581 <https://github.com/galaxyproject/galaxy/pull/17581>`_
+* Set minimal metadata also for empty bed datasets by `@wm75 <https://github.com/wm75>`_ in `#17586 <https://github.com/galaxyproject/galaxy/pull/17586>`_
+* Automatically bind `galaxy_data_manager_data_path` in containers by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17596 <https://github.com/galaxyproject/galaxy/pull/17596>`_
+* Type annotation improvements by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17601 <https://github.com/galaxyproject/galaxy/pull/17601>`_
+* Type annotation and CWL-related improvements by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17630 <https://github.com/galaxyproject/galaxy/pull/17630>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#17653 <https://github.com/galaxyproject/galaxy/pull/17653>`_
+* Code cleanups from ruff and pyupgrade by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17654 <https://github.com/galaxyproject/galaxy/pull/17654>`_
+* Tool linter: check for valid bio.tools entries by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17655 <https://github.com/galaxyproject/galaxy/pull/17655>`_
+* Tool linter: check for leaf nodes with unstripped text content by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17656 <https://github.com/galaxyproject/galaxy/pull/17656>`_
+* Issue #17631: Make it possible to use custom invfile.lua if needed by `@martin-g <https://github.com/martin-g>`_ in `#17693 <https://github.com/galaxyproject/galaxy/pull/17693>`_
+* SQLAlchemy 2.0 by `@jdavcs <https://github.com/jdavcs>`_ in `#17778 <https://github.com/galaxyproject/galaxy/pull/17778>`_
+* Add support for floating point TIFF files in verification of image-based tool outputs by `@kostrykin <https://github.com/kostrykin>`_ in `#17797 <https://github.com/galaxyproject/galaxy/pull/17797>`_
+* Add tool linting for valid EDAM terms by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17839 <https://github.com/galaxyproject/galaxy/pull/17839>`_
+* Add `pin_labels` attribute for `image_diff` comparison method by `@kostrykin <https://github.com/kostrykin>`_ in `#17866 <https://github.com/galaxyproject/galaxy/pull/17866>`_
+* Enable ``warn_unused_ignores`` mypy option by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17991 <https://github.com/galaxyproject/galaxy/pull/17991>`_
+* Add galaxy to user agent by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18003 <https://github.com/galaxyproject/galaxy/pull/18003>`_
+* Document syntax for accessing nested parameters in `change_format` - `when` tags by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18018 <https://github.com/galaxyproject/galaxy/pull/18018>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#18063 <https://github.com/galaxyproject/galaxy/pull/18063>`_
+* Enable flake8-implicit-str-concat ruff rules by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18067 <https://github.com/galaxyproject/galaxy/pull/18067>`_
+
+-------------------
+24.0.3 (2024-06-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Allow purge query param, deprecate purge body param by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18105 <https://github.com/galaxyproject/galaxy/pull/18105>`_
+* Make sure that all Linter subclasses are imported for listing them by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18339 <https://github.com/galaxyproject/galaxy/pull/18339>`_
+* Assign default ``data`` extension on discovered collection output  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18389 <https://github.com/galaxyproject/galaxy/pull/18389>`_
+* Allow in_range validator for selects by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18403 <https://github.com/galaxyproject/galaxy/pull/18403>`_
 
 -------------------
 24.0.2 (2024-05-07)

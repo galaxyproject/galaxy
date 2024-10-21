@@ -1,11 +1,10 @@
 import logging
 
-import requests
-
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ServerNotConfiguredForRequest
 from galaxy.schema.help import HelpForumSearchResponse
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.util import requests
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)

@@ -4,10 +4,71 @@ History
 .. to_doc
 
 ---------
-24.1.dev0
+24.2.dev0
 ---------
 
 
+
+-------------------
+24.1.2 (2024-09-25)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.1.1 (2024-07-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix file source search query with empty string value by `@davelopez <https://github.com/davelopez>`_ in `#18191 <https://github.com/galaxyproject/galaxy/pull/18191>`_
+* Small bug fixes for user data plugins by `@jmchilton <https://github.com/jmchilton>`_ in `#18246 <https://github.com/galaxyproject/galaxy/pull/18246>`_
+* Fix check for anonymous by `@jdavcs <https://github.com/jdavcs>`_ in `#18364 <https://github.com/galaxyproject/galaxy/pull/18364>`_
+
+============
+Enhancements
+============
+
+* Add onedata objectstore by `@bwalkowi <https://github.com/bwalkowi>`_ in `#17540 <https://github.com/galaxyproject/galaxy/pull/17540>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#17653 <https://github.com/galaxyproject/galaxy/pull/17653>`_
+* Code cleanups from ruff and pyupgrade by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17654 <https://github.com/galaxyproject/galaxy/pull/17654>`_
+* Enable ``warn_unused_ignores`` mypy option by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17991 <https://github.com/galaxyproject/galaxy/pull/17991>`_
+* Add galaxy to user agent by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18003 <https://github.com/galaxyproject/galaxy/pull/18003>`_
+* Add Zenodo integration by `@davelopez <https://github.com/davelopez>`_ in `#18022 <https://github.com/galaxyproject/galaxy/pull/18022>`_
+* More typing in galaxy.files. by `@jmchilton <https://github.com/jmchilton>`_ in `#18037 <https://github.com/galaxyproject/galaxy/pull/18037>`_
+* Refactor galaxy.files plugin loading + config handling. by `@jmchilton <https://github.com/jmchilton>`_ in `#18049 <https://github.com/galaxyproject/galaxy/pull/18049>`_
+* Add stronger type annotations in file sources + refactoring by `@davelopez <https://github.com/davelopez>`_ in `#18050 <https://github.com/galaxyproject/galaxy/pull/18050>`_
+* Add pagination support to Files Source plugins by `@davelopez <https://github.com/davelopez>`_ in `#18059 <https://github.com/galaxyproject/galaxy/pull/18059>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#18063 <https://github.com/galaxyproject/galaxy/pull/18063>`_
+* Overhaul Azure storage infrastructure. by `@jmchilton <https://github.com/jmchilton>`_ in `#18087 <https://github.com/galaxyproject/galaxy/pull/18087>`_
+* Empower users to bring their own storage and file sources by `@jmchilton <https://github.com/jmchilton>`_ in `#18127 <https://github.com/galaxyproject/galaxy/pull/18127>`_
+* Display DOIs in Archived Histories by `@davelopez <https://github.com/davelopez>`_ in `#18134 <https://github.com/galaxyproject/galaxy/pull/18134>`_
+* Update s3fs dependency. by `@jmchilton <https://github.com/jmchilton>`_ in `#18135 <https://github.com/galaxyproject/galaxy/pull/18135>`_
+* Onedada object store and files source stability fixes by `@bwalkowi <https://github.com/bwalkowi>`_ in `#18372 <https://github.com/galaxyproject/galaxy/pull/18372>`_
+
+=============
+Other changes
+=============
+
+* Fix #18316 (anonymous file sources) by `@jmchilton <https://github.com/jmchilton>`_ in `#18352 <https://github.com/galaxyproject/galaxy/pull/18352>`_
+
+-------------------
+24.0.3 (2024-06-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix listing possibly untitled records in Invenio Plugin by `@davelopez <https://github.com/davelopez>`_ in `#18130 <https://github.com/galaxyproject/galaxy/pull/18130>`_
+* Raise ``RequestParameterInvalidException`` when url is invalid by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18155 <https://github.com/galaxyproject/galaxy/pull/18155>`_
+* Fix error message when accessing restricted Zenodo records by `@davelopez <https://github.com/davelopez>`_ in `#18169 <https://github.com/galaxyproject/galaxy/pull/18169>`_
+* Raise ``RequestParameterInvalidException`` if url can't be verified by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18230 <https://github.com/galaxyproject/galaxy/pull/18230>`_
+* Fix Invenio credentials handling by `@davelopez <https://github.com/davelopez>`_ in `#18255 <https://github.com/galaxyproject/galaxy/pull/18255>`_
 
 -------------------
 24.0.2 (2024-05-07)

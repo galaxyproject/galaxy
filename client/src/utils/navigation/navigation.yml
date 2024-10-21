@@ -9,9 +9,11 @@
 _:  # global stuff
 
   selectors:
+    center_panel: '#center'
     editable_text: '.editable-text'
     tooltip_balloon: '.tooltip'
     tooltip_inner: .tooltip-inner
+    left_panel: '#left'
     left_panel_drag: '.flex-panel.left .drag-handle'
     left_panel_collapse: '.collapse-button.left'
     right_panel_drag: '.flex-panel.right .drag-handle'
@@ -38,46 +40,28 @@ masthead:
   selectors:
     _: '#masthead'
 
-    # bootstrap-vue a tag doesn't work as link target, need to hit span inside
-    user: '#user.loggedin-only > a.nav-link.dropdown-toggle > span'
-    register_or_login: '#user.loggedout-only > .nav-link'
-
-    user_menu: '#user .dropdown-menu a'
-    workflow: '#workflow .nav-link'
-
-    username:
-      type: xpath
-      selector: '//a[contains(text(), "Signed in as")]'
-
+    help: '#help'
+    home: '#analysis'
+    login: '#user'
+    logout: '.dropdown-menu > li > a > .fa-sign-out-alt'
     logged_in_only: '.loggedin-only'
     logged_out_only: '.loggedout-only'
+    preferences: '.dropdown-menu > li > a > .fa-gear'
+    register_or_login: '#user.loggedout-only > .nav-link'
     storage_dashboard_link:
       selector: 'storage dashboard link'
       type: data-description
-
-  labels:
-    # top-level menus
-    admin: 'Admin'
-    analyze: 'Analyze Data'
-    data: 'Data'
-    help: 'Help'
-    user: 'User'
-    visualization: 'Visualization'
-    workflow: 'Workflow'
-
-    # user menu
-    logout: 'Sign Out'
-    preferences: 'Preferences'
-
-    # data menu
-    libraries: 'Data Libraries'
-    histories: 'Histories'
-    invocations: 'Workflow Invocations'
-    pages: 'Pages'
-    workflows: 'Workflows'
+    user: '#user.loggedin-only > a.nav-link > .fa'
+    username:
+      type: xpath
+      selector: '//a[contains(text(), "Signed in as")]'
+    window_manager: '#enable-window-manager'
+    workflow: '#workflow .nav-link'
 
 preferences:
   selectors:
+    activity: "#activity-settings"
+    activity_expand: ".activity-panel-footer"
     sign_out: "#edit-preferences-sign-out"
     change_password: "#edit-preferences-password"
     manage_information: '#edit-preferences-information'
@@ -94,11 +78,37 @@ preferences:
     email_input: "input[id='email']"
     username_input: "input[id='username']"
     preferred_storage: '.preferred-storage'
+    manage_object_stores: '#manage-object-stores'
+    manage_file_sources: '#manage-file-sources'
 
   object_store_selection:
     selectors:
       option_buttons: '.preferred-object-store-select-button'
       option_button: '.preferred-object-store-select-button[data-object-store-id="${object_store_id}"]'
+
+object_store_instances:
+  index:
+    selectors:
+      create_button: '#object-store-create'
+      _: '#user-object-stores-index'
+
+  create: 
+    selectors:
+      select: '.object-store-template-select-button[data-template-id="${template_id}"]'
+      _: '#create-object-store-landing'      
+      submit: '#submit'
+
+file_source_instances:
+  index:
+    selectors:
+      create_button: '#file-source-create'
+      _: '#user-file-sources-index'
+
+  create: 
+    selectors:
+      select: '.file-source-template-select-button[data-template-id="${template_id}"]'
+      _: '#create-file-source-landing'      
+      submit: '#submit'
 
 toolbox_filters:
   selectors:
@@ -364,6 +374,7 @@ edit_collection_attributes:
 
 tool_panel:
   selectors:
+    tool_box: '[data-description="panel toolbox"]'
     tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
     data_source_tool_link: 'a[href$$="tool_runner/data_source_redirect?tool_id=${tool_id}"]'
@@ -431,6 +442,7 @@ collection_builders:
 
 histories:
   selectors:
+    activity: '#activity-histories'
     advanced_search_toggle: '#histories-grid [data-description="toggle advanced search"]'
     advanced_search_name_input: '#histories-advanced-filter-name'
     advanced_search_tag_area: '#histories-advanced-filter-tag .stateless-tags button'
@@ -506,6 +518,7 @@ history_import:
 
 pages:
   selectors:
+    activity: "#activity-pages"
     create: '#page-create'
     submit: '#submit'
     create_title_input: '#form-element-title input'
@@ -567,13 +580,14 @@ tool_form:
     storage_options: '.tool-storage'
     drilldown_select_all: 'div.ui-form-element[id="form-element-${parameter}"] div.select-all-checkbox'
     drilldown_option: '.drilldown-option'
-    drilldown_expand: '.fa-plus-square'
+    drilldown_expand: '.fa-caret-down'
 
   labels:
     generate_tour: 'Generate Tour'
 
 workflows:
   selectors:
+    activity: '#activity-workflows'
     shared_with_me_tab: '#shared-with-me'
     published_tab: '#published a'
     new_button: '#workflow-create'
@@ -592,13 +606,6 @@ workflows:
     workflow_cards: '#workflow-cards'
     external_link: '.workflow-external-link'
     trs_icon: '.workflow-trs-icon'
-    pager: '.gx-workflows-grid-pager'
-    pager_page: '.gx-workflows-grid-pager .gx-grid-pager-page [aria-posinset=${page}]'
-    pager_page_next: '.gx-workflows-grid-pager .gx-grid-pager-next button'
-    pager_page_first: '.gx-workflows-grid-pager .gx-grid-pager-first button'
-    pager_page_last: '.gx-workflows-grid-pager .gx-grid-pager-last button'
-    pager_page_previous: '.gx-workflows-grid-pager .gx-grid-pager-prev button'
-    pager_page_active: '.gx-workflows-grid-pager .gx-grid-pager-page.active button'
     dropdown: '[data-workflow-actions-dropdown="${id}"]'
     share_button: '#workflow-share-button'
     download_button: '#workflow-download-button'
@@ -607,7 +614,7 @@ workflows:
     rename_input: '#workflow-name-input'
     workflow_drop_down: '[data-workflow-actions-dropdown]'
     delete_button: '.workflow-delete-button'
-    view_button: '.workflow-view-button'
+    view_button: '.workflow-name-preview'
     workflow_preview_container: '.workflow-card-preview-modal .workflow-published .published-workflow'
     workflow_preview_information: '.workflow-information'
     view_external_link: ".workflow-view-external-link-button"
@@ -631,6 +638,7 @@ workflows:
 visualization:
   selectors:
     _: '#center div.plugin-list'
+    activity: '#activity-visualizations'
     plugin_item: '[data-plugin-name*="${id}"]'
 
 trs_search:
@@ -836,17 +844,19 @@ workflow_show:
 
 invocations:
   selectors:
-    invocations_table: '.invocations-list table'
-    invocations_table_rows: '.invocations-list table tbody tr:not(.b-table-empty-row, [style*="display: none"])'
-    pager: '.gx-invocations-grid-pager'
-    pager_page: '.gx-invocations-grid-pager .gx-grid-pager-page [aria-posinset=${page}]'
-    pager_page_next: '.gx-invocations-grid-pager .gx-grid-pager-next button'
-    pager_page_last: '.gx-invocations-grid-pager .gx-grid-pager-last button'
-    pager_page_first: '.gx-invocations-grid-pager .gx-grid-pager-first button'
-    pager_page_previous: '.gx-invocations-grid-pager .gx-grid-pager-prev button'
-    pager_page_active: '.gx-invocations-grid-pager .gx-grid-pager-page.active button'
+    activity: "#activity-invocation"
+    activity_expand: ".activity-panel-footer"
+    invocations_table: '#invocations-grid .grid-table'
+    invocations_table_rows: '#invocations-grid .grid-table [data-description="grid item"]'
+    pager: '[data-description="grid pager"]'
+    pager_page: '[data-description="grid pager"] .gx-grid-pager-page [aria-posinset=${page}]'
+    pager_page_next: '[data-description="grid pager"] .gx-grid-pager-next button'
+    pager_page_last: '[data-description="grid pager"] .gx-grid-pager-last button'
+    pager_page_first: '[data-description="grid pager"] .gx-grid-pager-first button'
+    pager_page_previous: '[data-description="grid pager"] .gx-grid-pager-prev button'
+    pager_page_active: '[data-description="grid pager"] .gx-grid-pager-page.active button'
     state_details: '.workflow-invocation-state-component'
-    toggle_invocation_details: '.toggle-invocation-details'
+    toggle_invocation_details: '[data-description="toggle row details"]'
     progress_steps_note: '.workflow-invocation-state-component .steps-progress .progressNote'
     progress_jobs_note: '.workflow-invocation-state-component .jobs-progress .progressNote'
     hide_invocation_graph: '.workflow-invocation-state-component [data-description="hide invocation graph"]'
@@ -880,6 +890,15 @@ tour:
       content: '${_} .tour-content'
       next: '${_} .tour-next'
       end: '${_} .tour-end'
+
+tools:
+  selectors:
+    activity: '#activity-tools'
+    body: '#center #tool-card-body'
+    execute: '#execute'
+    help: 'div.form-help'
+    search: '.search-query'
+    title: '.toolSectionTitle'
 
 admin:
   allowlist:
@@ -989,6 +1008,7 @@ libraries:
 
   selectors:
     _: '#libraries_list'
+    activity: '#activity-libraries'
     create_new_library_btn: '#create-new-lib'
     permission_library_btn: '.permission_library_btn'
     toolbtn_save_permissions: '.toolbtn_save_permissions'
@@ -1012,17 +1032,30 @@ libraries:
       add_to_history_collection: '.add-to-history-collection'
       # TODO: Most of these aren't very good selectors but the same DOM elements
       # are reused without adding specific classes, IDs, or roles to anything.
-      import_modal: '.modal'
-      import_datasets_ok_button: '.modal-footer .buttons #button-0'
-      import_datasets_cancel_button: '.modal-footer .buttons #button-1'
+      import_modal: '.directory-dataset-picker'
+      import_datasets_from_history_modal: '.selection-dialog-modal'
+      import_datasets_from_history_modal_history_search: '.selection-dialog-modal .search-query'
+      import_datasets_from_history_modal_dataset_search: '.selection-dialog-modal input[placeholder="search datasets"]'
+      import_datasets_from_history_modal_list_is_ready: '.selection-dialog-modal .selection-dialog-table[aria-busy="false"]'
+      import_datasets_from_history_modal_select_list_items: '.selection-dialog-modal table tbody tr'
+      import_datasets_from_history_modal_select_list_item_by_index: '.selection-dialog-modal table tbody tr[aria-rowindex="${row_index}"] td[aria-colindex="1"]'
+      import_datasets_from_history_modal_ok: '.selection-dialog-modal [data-description="selection dialog ok"]'
+      import_datasets_from_history_modal_cancel: '.selection-dialog-modal [data-description="selection dialog cancel"]'
+      add_to_history_as_collection:
+        type: xpath
+        selector: '//button[contains(text(), "Continue")]'
+      import_datasets_ok_button:
+        type: xpath
+        selector: '//button[contains(text(), "Import")]'
+      import_datasets_cancel_button:
+        type: xpath
+        selector: '//button[contains(text(), "Close")]'
       export_to_history_options: '#library-collection-type-select'
       export_to_history_paired_option: 'option[value="${collection_option}"]'
       export_to_history_collection_name: '.collection-name'
       export_to_history_new_history: 'input[name=history_name]'
       clear_filters: '.clear-filters-link'
       import_progress_bar: '.progress-bar-import'
-      import_history_content: '.library_selected_history_content'
-      import_history_contents_items: '.library_selected_history_content tbody > tr'
       import_from_path_textarea: '#import_paths'
       select_all: '#select-all-checkboxes'
       select_one: '.lib-folder-checkbox'
@@ -1040,8 +1073,10 @@ libraries:
       download_button: '#download-btn'
       delete_btn: '.toolbtn-bulk-delete'
       toast_msg: '.b-toast'
-      toast_warning: '.b-toast-warning'
-      select_import_dir_item: 'li[full_path="${name}"] .jstree-anchor'
+      alert_not_exists_user_import_dir:
+        type: xpath
+        selector: //div[contains(@class, "alert-danger") and contains(normalize-space(text()), "Your user import directory does not exist")]
+      select_import_dir_item: '[for="drilldown-option-${name}"]'
       import_dir_btn:
         type: xpath
         selector: '//button[contains(text(), "Import")]'
@@ -1051,7 +1086,6 @@ libraries:
       private_dataset_icon: '.fa-key'
       open_location_details_btn: '.details-btn'
       location_details_ok_btn: '#details-modal .btn-primary'
-      add_history_items: '#dataset_add_bulk'
 
     labels:
       from_history: 'from History'
@@ -1109,6 +1143,7 @@ upload:
     source_button: '#upload-row-${n} .upload-source'
     start: '#activity-upload'
     start_button: '#btn-start'
+    local_button: '#btn-local'
 
 new_user_welcome:
   selectors:

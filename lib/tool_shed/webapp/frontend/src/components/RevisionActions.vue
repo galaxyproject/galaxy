@@ -1,16 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { RevisionMetadata } from "@/schema"
-import { fetcher } from "@/schema"
+import { ToolShedApi } from "@/schema"
 import { notify, notifyOnCatch } from "@/util"
-const setMaliciousFetcher = fetcher
-    .path("/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/malicious")
-    .method("put")
-    .create()
-const unsetMaliciousFetcher = fetcher
-    .path("/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/malicious")
-    .method("delete")
-    .create()
 
 interface RevisionActionsProps {
     repositoryId: string
@@ -20,27 +12,39 @@ interface RevisionActionsProps {
 const props = defineProps<RevisionActionsProps>()
 
 async function setMalicious() {
-    setMaliciousFetcher({
-        encoded_repository_id: props.repositoryId,
-        changeset_revision: props.currentMetadata.changeset_revision,
-    })
+    ToolShedApi()
+        .PUT("/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/malicious", {
+            params: {
+                path: {
+                    encoded_repository_id: props.repositoryId,
+                    changeset_revision: props.currentMetadata.changeset_revision,
+                },
+            },
+        })
         .catch(notifyOnCatch)
         .then(() => {
             notify("Marked repository as malicious")
             emits("update")
         })
 }
+
 async function unsetMalicious() {
-    unsetMaliciousFetcher({
-        encoded_repository_id: props.repositoryId,
-        changeset_revision: props.currentMetadata.changeset_revision,
-    })
+    ToolShedApi()
+        .DELETE("/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/malicious", {
+            params: {
+                path: {
+                    encoded_repository_id: props.repositoryId,
+                    changeset_revision: props.currentMetadata.changeset_revision,
+                },
+            },
+        })
         .catch(notifyOnCatch)
         .then(() => {
             notify("Un-marked repository as malicious")
             emits("update")
         })
 }
+
 const malicious = computed(() => props.currentMetadata.malicious)
 type Emits = {
     (eventName: "update"): void

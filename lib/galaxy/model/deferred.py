@@ -4,6 +4,7 @@ import os
 import shutil
 from typing import (
     cast,
+    List,
     NamedTuple,
     Optional,
     Union,
@@ -25,7 +26,9 @@ from galaxy.model import (
     Dataset,
     DatasetCollection,
     DatasetCollectionElement,
+    DatasetHash,
     DatasetSource,
+    DescribesHash,
     History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
@@ -36,6 +39,7 @@ from galaxy.objectstore import (
     ObjectStore,
     ObjectStorePopulator,
 )
+from galaxy.util.hash_util import verify_hash
 
 log = logging.getLogger(__name__)
 
@@ -95,6 +99,8 @@ class DatasetInstanceMaterializer:
         self,
         dataset_instance: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation],
         target_history: Optional[History] = None,
+        validate_hashes: bool = False,
+        in_place: bool = False,
     ) -> HistoryDatasetAssociation:
         """Create a new detached dataset instance from the supplied instance.
 
@@ -106,15 +112,21 @@ class DatasetInstanceMaterializer:
         if dataset.state != Dataset.states.DEFERRED and isinstance(dataset_instance, HistoryDatasetAssociation):
             return dataset_instance
 
-        materialized_dataset = Dataset()
-        materialized_dataset.state = Dataset.states.OK
-        materialized_dataset.deleted = False
-        materialized_dataset.purged = False
-        materialized_dataset.sources = [s.copy() for s in dataset.sources]
-        materialized_dataset.hashes = [h.copy() for h in dataset.hashes]
-
+        materialized_dataset_hashes = [h.copy() for h in dataset.hashes]
+        if in_place:
+            materialized_dataset = dataset_instance.dataset
+            materialized_dataset.state = Dataset.states.OK
+        else:
+            materialized_dataset = Dataset()
+            materialized_dataset.state = Dataset.states.OK
+            materialized_dataset.deleted = False
+            materialized_dataset.purged = False
+            materialized_dataset.sources = [s.copy() for s in dataset.sources]
+            materialized_dataset.hashes = materialized_dataset_hashes
         target_source = self._find_closest_dataset_source(dataset)
         transient_paths = None
+
+        exception_materializing: Optional[Exception] = None
         if attached:
             object_store_populator = self._object_store_populator
             assert object_store_populator
@@ -130,17 +142,28 @@ class DatasetInstanceMaterializer:
                 with transaction(sa_session):
                     sa_session.commit()
             object_store_populator.set_dataset_object_store_id(materialized_dataset)
-            path = self._stream_source(target_source, datatype=dataset_instance.datatype)
-            object_store.update_from_file(materialized_dataset, file_name=path)
+            try:
+                path = self._stream_source(
+                    target_source, dataset_instance.datatype, validate_hashes, materialized_dataset_hashes
+                )
+                object_store.update_from_file(materialized_dataset, file_name=path)
+                materialized_dataset.set_size()
+            except Exception as e:
+                exception_materializing = e
         else:
             transient_path_mapper = self._transient_path_mapper
             assert transient_path_mapper
             transient_paths = transient_path_mapper.transient_paths_for(dataset)
             # TODO: optimize this by streaming right to this path...
             # TODO: take into acount transform and ensure we are and are not modifying the file as appropriate.
-            path = self._stream_source(target_source, datatype=dataset_instance.datatype)
-            shutil.move(path, transient_paths.external_filename)
-            materialized_dataset.external_filename = transient_paths.external_filename
+            try:
+                path = self._stream_source(
+                    target_source, dataset_instance.datatype, validate_hashes, materialized_dataset_hashes
+                )
+                shutil.move(path, transient_paths.external_filename)
+                materialized_dataset.external_filename = transient_paths.external_filename
+            except Exception as e:
+                exception_materializing = e
 
         history = target_history
         if history is None and isinstance(dataset_instance, HistoryDatasetAssociation):
@@ -148,19 +171,31 @@ class DatasetInstanceMaterializer:
                 history = dataset_instance.history
             except DetachedInstanceError:
                 history = None
-        materialized_dataset_instance = HistoryDatasetAssociation(
-            create_dataset=False,  # is the default but lets make this really clear...
-            history=history,
-        )
+
+        materialized_dataset_instance: HistoryDatasetAssociation
+        if not in_place:
+            materialized_dataset_instance = HistoryDatasetAssociation(
+                create_dataset=False,  # is the default but lets make this really clear...
+                history=history,
+            )
+        else:
+            assert isinstance(dataset_instance, HistoryDatasetAssociation)
+            materialized_dataset_instance = cast(HistoryDatasetAssociation, dataset_instance)
+        if exception_materializing is not None:
+            materialized_dataset.state = Dataset.states.ERROR
+            materialized_dataset_instance.info = (
+                f"Failed to materialize deferred dataset with exception: {exception_materializing}"
+            )
         if attached:
             sa_session = self._sa_session
             if sa_session is None:
                 sa_session = object_session(dataset_instance)
             assert sa_session
             sa_session.add(materialized_dataset_instance)
-        materialized_dataset_instance.copy_from(
-            dataset_instance, new_dataset=materialized_dataset, include_tags=attached, include_metadata=True
-        )
+        if not in_place:
+            materialized_dataset_instance.copy_from(
+                dataset_instance, new_dataset=materialized_dataset, include_tags=attached, include_metadata=True
+            )
         require_metadata_regeneration = (
             materialized_dataset_instance.has_metadata_files or materialized_dataset_instance.metadata_deferred
         )
@@ -176,8 +211,17 @@ class DatasetInstanceMaterializer:
             materialized_dataset_instance.metadata_deferred = False
         return materialized_dataset_instance
 
-    def _stream_source(self, target_source: DatasetSource, datatype) -> str:
-        path = stream_url_to_file(target_source.source_uri, file_sources=self._file_sources)
+    def _stream_source(
+        self, target_source: DatasetSource, datatype, validate_hashes: bool, dataset_hashes: List[DatasetHash]
+    ) -> str:
+        source_uri = target_source.source_uri
+        if source_uri is None:
+            raise Exception("Cannot stream from dataset source without specified source_uri")
+        path = stream_url_to_file(source_uri, file_sources=self._file_sources)
+        if validate_hashes and target_source.hashes:
+            for source_hash in target_source.hashes:
+                _validate_hash(path, source_hash, "downloaded file")
+
         transform = target_source.transform or []
         to_posix_lines = False
         spaces_to_tabs = False
@@ -199,6 +243,11 @@ class DatasetInstanceMaterializer:
             path = convert_result.converted_path
         if datatype_groom:
             datatype.groom_dataset_content(path)
+
+        if validate_hashes and dataset_hashes:
+            for dataset_hash in dataset_hashes:
+                _validate_hash(path, dataset_hash, "dataset contents")
+
         return path
 
     def _find_closest_dataset_source(self, dataset: Dataset) -> DatasetSource:
@@ -295,3 +344,9 @@ def materializer_factory(
         file_sources=file_sources,
         sa_session=sa_session,
     )
+
+
+def _validate_hash(path: str, describes_hash: DescribesHash, what: str) -> None:
+    hash_value = describes_hash.hash_value
+    if hash_value is not None:
+        verify_hash(path, hash_func_name=describes_hash.hash_func_name, hash_value=hash_value)

@@ -9,9 +9,7 @@ from io import (
     StringIO,
 )
 from typing import (
-    Any,
     cast,
-    Dict,
     List,
     Optional,
 )
@@ -29,6 +27,7 @@ from starlette.responses import (
 )
 from typing_extensions import Annotated
 
+from galaxy.datatypes.dataproviders.base import MAX_LIMIT
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
@@ -40,7 +39,6 @@ from galaxy.schema.schema import (
     AsyncTaskResultSummary,
     DatasetAssociationRoles,
     DatasetSourceType,
-    UpdateDatasetPermissionsPayload,
 )
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.webapps.base.api import GalaxyFileResponse
@@ -52,10 +50,11 @@ from galaxy.webapps.galaxy.api import (
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
     get_query_parameters_from_request_excluding,
-    get_update_permission_payload,
     HistoryDatasetIDPathParam,
     HistoryIDPathParam,
+    normalize_permission_payload,
     query_serialization_params,
+    UpdateDatasetPermissionsBody,
 )
 from galaxy.webapps.galaxy.services.datasets import (
     ComputeDatasetHashPayload,
@@ -145,6 +144,7 @@ class FastAPIDatasets:
     )
     def index(
         self,
+        response: Response,
         trans=DependsOnTrans,
         history_id: Optional[DecodedDatabaseIdField] = Query(
             default=None,
@@ -153,7 +153,9 @@ class FastAPIDatasets:
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
     ) -> List[AnyHistoryContentItem]:
-        return self.service.index(trans, history_id, serialization_params, filter_query_params)
+        entries, total_matches = self.service.index(trans, history_id, serialization_params, filter_query_params)
+        response.headers["total_matches"] = str(total_matches)
+        return entries
 
     @router.get(
         "/api/datasets/{dataset_id}/storage",
@@ -235,15 +237,11 @@ class FastAPIDatasets:
     def update_permissions(
         self,
         dataset_id: HistoryDatasetIDPathParam,
+        payload: UpdateDatasetPermissionsBody,
         trans=DependsOnTrans,
-        # Using a generic Dict here as an attempt on supporting multiple aliases for the permissions params.
-        payload: Dict[str, Any] = Body(
-            default=...,
-            examples=[UpdateDatasetPermissionsPayload()],
-        ),
     ) -> DatasetAssociationRoles:
         """Set permissions of the given history dataset to the given role ids."""
-        update_payload = get_update_permission_payload(payload)
+        update_payload = normalize_permission_payload(payload)
         return self.service.update_permissions(trans, dataset_id, update_payload)
 
     @router.get(
@@ -432,18 +430,35 @@ class FastAPIDatasets:
                 "may return different responses."
             ),
         ),
+        limit: Annotated[
+            Optional[int],
+            Query(
+                ge=1,
+                le=MAX_LIMIT,
+                description="Maximum number of items to return. Currently only applies to `data_type=raw_data` requests",
+            ),
+        ] = MAX_LIMIT,
+        offset: Annotated[
+            Optional[int],
+            Query(
+                ge=0,
+                description="Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item. Currently only applies to `data_type=raw_data` requests",
+            ),
+        ] = 0,
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ):
         """
-        **Note**: Due to the multipurpose nature of this endpoint, which can receive a wild variety of parameters
+        **Note**: Due to the multipurpose nature of this endpoint, which can receive a wide variety of parameters
         and return different kinds of responses, the documentation here will be limited.
         To get more information please check the source code.
         """
-        exclude_params = {"hda_ldda", "data_type"}
+        exclude_params = {"hda_ldda", "data_type", "limit", "offset"}
         exclude_params.update(SerializationParams.model_fields.keys())
         extra_params = get_query_parameters_from_request_excluding(request, exclude_params)
 
-        return self.service.show(trans, dataset_id, hda_ldda, serialization_params, data_type, **extra_params)
+        return self.service.show(
+            trans, dataset_id, hda_ldda, serialization_params, data_type, limit=limit, offset=offset, **extra_params
+        )
 
     @router.get(
         "/api/datasets/{dataset_id}/content/{content_type}",

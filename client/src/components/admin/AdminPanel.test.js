@@ -14,6 +14,10 @@ jest.mock("@/composables/config", () => ({
     })),
 }));
 
+jest.mock("vue-router/composables", () => ({
+    useRoute: jest.fn(() => ({})),
+}));
+
 function createTarget(propsData = {}) {
     return mount(MountTarget, {
         localVue,

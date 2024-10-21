@@ -5,8 +5,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { RouterLink } from "vue-router";
 
-import { getAppRoot } from "@/onload/loadConfig";
+import { type WorkflowSummary } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
+import { getFullAppUrl } from "@/utils/utils";
 
 import Heading from "@/components/Common/Heading.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
@@ -16,19 +17,8 @@ import UtcDate from "@/components/UtcDate.vue";
 
 library.add(faBuilding, faUser);
 
-interface WorkflowInformation {
-    name: string;
-    [key: string]: unknown;
-    update_time: string;
-    license?: string;
-    tags?: string[];
-    creator?: {
-        [key: string]: unknown;
-    }[];
-}
-
 interface Props {
-    workflowInfo: WorkflowInformation;
+    workflowInfo: WorkflowSummary;
     embedded?: boolean;
 }
 
@@ -42,25 +32,16 @@ const gravatarSource = computed(
 
 const publishedByUser = computed(() => `/workflows/list_published?owner=${props.workflowInfo?.owner}`);
 
-const root = computed(() => {
-    const port = window.location.port ? `:${window.location.port}` : "";
-    return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}`;
-});
-
 const relativeLink = computed(() => {
     return `/published/workflow?id=${props.workflowInfo.id}`;
 });
 
 const fullLink = computed(() => {
-    return `${root.value}${relativeLink.value.substring(1)}`;
+    return getFullAppUrl(relativeLink.value.substring(1));
 });
 
 const userOwned = computed(() => {
-    if (userStore.currentUser) {
-        return userStore.currentUser.username === props.workflowInfo.owner;
-    } else {
-        return false;
-    }
+    return userStore.matchesCurrentUsername(props.workflowInfo.owner);
 });
 </script>
 

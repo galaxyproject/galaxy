@@ -359,7 +359,7 @@ mapping:
 
       conda_ensure_channels:
         type: str
-        default: conda-forge,bioconda,defaults
+        default: conda-forge,bioconda
         required: false
         desc: |
           conda channels to enable by default
@@ -550,6 +550,61 @@ mapping:
           - type: any
         desc: |
           FileSource plugins described embedded into Galaxy's config.
+
+      object_store_templates_config_file:
+        type: str
+        default: object_store_templates.yml
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Configured Object Store templates configuration file.
+
+      object_store_templates:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          Configured Object Store templates embedded into Galaxy's config.
+
+      file_source_templates_config_file:
+        type: str
+        default: file_source_templates.yml
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Configured user file source templates configuration file.
+
+      file_source_templates:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          Configured user file source templates embedded into Galaxy's config.
+
+      user_config_templates_use_saved_configuration:
+        type: str
+        default: 'fallback'
+        required: false
+        enum: ['fallback', 'preferred', 'never']
+        desc: |
+          User defined object stores and file sources are saved in the database with
+          their last valid configuration. It may be the case that the admin changes
+          file source and object store templates over time such that the variables
+          and secrets an instance is saved with no longer match the configuration's
+          expected values. For this reason, admins should always add new versions of
+          templates instead of just changing them - however people take shortcuts and
+          divergences might happen. If a template is changed in such a way it breaks
+          or if a template disappears from the library of templates this parameter controls
+          how and if the database version will be used.
+
+          By default, it will simply be used as a 'fallback' if a configuration cannot
+          be resolved against the template version in the configuration file. Using 'preferred'
+          instead will mean the stored database version is always used. This ensures a greater
+          degree of reproducibility without effort on the part of the admin but also means
+          that small issues are not easy to fix. Using 'never' instead will ensure the
+          config templates are always only loaded from the template library files - this
+          might make sense for admins who want to disable templates without worrying about
+          the contents of the database.
 
       enable_mulled_containers:
         type: bool
@@ -1091,8 +1146,8 @@ mapping:
         default: -1
         required: false
         desc: |
-          Default cache size for caching object stores if cache not configured for
-          that object store entry.
+          Default cache size, in GB, for caching object stores if the cache is not
+          configured for that object store entry.
 
       object_store_always_respect_user_selection:
         type: bool
@@ -1419,7 +1474,7 @@ mapping:
           This is used to make carbon emissions estimates more accurate as the location effects the
           carbon intensity values used in the estimate calculation. This defaults to "GLOBAL" if not set or the
           `geographical_server_location_code` value is invalid or unsupported. To see a full list of supported locations,
-          visit https://galaxyproject.org/admin/carbon_emissions
+          visit https://docs.galaxyproject.org/en/master/admin/carbon_emissions.html
 
       power_usage_effectiveness:
         type: float
@@ -1465,7 +1520,21 @@ mapping:
         default: interactivetools_map.sqlite
         path_resolves_to: data_dir
         desc: |
-          Map for interactivetool proxy.
+          Map for the interactivetool proxy. Mappings are stored in a SQLite database file
+          located on this path. As an alternative, you may also store them in any other RDBMS
+          supported by SQLAlchemy using the option ``interactivetoolsproxy_map``, which
+          overrides this one.
+
+      interactivetoolsproxy_map:
+        type: str
+        required: false
+        desc: |
+          Use a database supported by SQLAlchemy as map for the interactivetool proxy.
+          When this option is set, the value of ``interactivetools_map`` is ignored. The
+          value of this option must be a
+          `SQLAlchemy database URL <https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls>`_.
+          Mappings are written to the table "gxitproxy" within the database. This value cannot match
+          ``database_connection`` nor ``install_database_connection``.
 
       interactivetools_prefix:
         type: str
@@ -2848,6 +2917,7 @@ mapping:
         type: str
         default: default
         required: false
+        per_host: true
         desc: |
           Default tool panel view for the current Galaxy configuration. This should refer to an id of
           a panel view defined using the panel_views or panel_views_dir configuration options or an
@@ -3668,6 +3738,21 @@ mapping:
           Optional configuration file similar to `job_config_file` to specify
           which Galaxy processes should schedule workflows.
 
+      workflow_scheduling_separate_materialization_iteration:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Workflows launched with URI/URL inputs that are not marked as 'deferred'
+          are "materialized" (or undeferred) by the workflow scheduler. This might be
+          a lengthy process. Setting this to 'True' will place the invocation back in
+          the queue after materialization before scheduling the workflow so it is less
+          likely to starve other workflow scheduling. Ideally, Galaxy would allow more
+          fine grain control of handlers but until then, this provides a way to tip the
+          balance between "doing more work" and "being more fair". The default here is
+          pretty arbitrary - it has been to False to optimize Galaxy for automated,
+          single user applications where "fairness" is mostly irrelevant.
+
       cache_user_job_count:
         type: bool
         default: false
@@ -3773,7 +3858,7 @@ mapping:
           `result_backend` option in the `celery_conf` option to a valid Celery result
           backend URL. By default, Galaxy uses an SQLite database at '<data_dir>/results.sqlite' for storing task results.
           For details, see https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks
-          
+
       celery_conf:
         type: any
         required: false
@@ -4019,3 +4104,23 @@ mapping:
         per_host: true
         desc: |
           Enable the integration of the Galaxy Help Forum in the tool panel. This requires the help_forum_api_url to be set.
+
+      file_source_temp_dir:
+        type: str
+        required: false
+        desc: |
+          Directory to store temporary files for file sources. This defaults to new_file_path if not set.
+
+      file_source_webdav_use_temp_files:
+        type: bool
+        default: true
+        desc: |
+          Default value for use_temp_files for webdav plugins that don't explicitly declare this.
+
+      file_source_listings_expiry_time:
+        type: int
+        default: 60
+        desc: |
+          Number of seconds before file source content listings are refreshed. Shorter times will result in more
+          queries while browsing a file sources. Longer times will result in fewer requests to file sources but
+          outdated contents might be displayed to the user. Currently only affects s3fs file sources.

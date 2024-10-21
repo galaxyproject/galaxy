@@ -28,6 +28,7 @@ from sqlalchemy import (
     not_,
     String,
     Table,
+    text,
     TEXT,
     true,
     UniqueConstraint,
@@ -35,6 +36,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
+    object_session,
     registry,
     relationship,
 )
@@ -97,7 +99,7 @@ class APIKeys(Base):
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     key: Mapped[Optional[str]] = mapped_column(TrimmedString(32), index=True, unique=True)
     user = relationship("User", back_populates="api_keys")
-    deleted: Mapped[Optional[bool]] = mapped_column(Boolean, index=True, default=False)
+    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False, nullable=False)
 
 
 class User(Base, Dictifiable):
@@ -147,6 +149,11 @@ class User(Base, Dictifiable):
         self.deleted = False
         self.purged = False
         self.new_repo_alert = False
+
+    @property
+    def current_galaxy_session(self):
+        if self.galaxy_sessions:
+            return self.galaxy_sessions[0]
 
     def all_roles(self):
         roles = [ura.role for ura in self.roles]
@@ -423,12 +430,13 @@ class Repository(Base, Dictifiable):
     ]
     file_states = Bunch(NORMAL="n", NEEDS_MERGING="m", MARKED_FOR_REMOVAL="r", MARKED_FOR_ADDITION="a", NOT_TRACKED="?")
 
-    def __init__(self, private=False, times_downloaded=0, deprecated=False, **kwd):
+    def __init__(self, private=False, times_downloaded=0, deprecated=False, user=None, **kwd):
         super().__init__(**kwd)
         self.private = private
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
         self.name = self.name or "Unnamed repository"
+        self.user = user
 
     @property
     def hg_repo(self):
@@ -514,7 +522,22 @@ class Repository(Base, Dictifiable):
 
     def repo_path(self, app=None):
         # Keep app argument for compatibility with tool_shed_install Repository model
-        return hgweb_config_manager.get_entry(os.path.join("repos", self.user.username, self.name))
+        return hgweb_config_manager.get_entry(
+            os.path.join(hgweb_config_manager.hgweb_repo_prefix, self.user.username, self.name)
+        )
+
+    def hg_repository_path(self, repositories_directory: str) -> str:
+        if self.id is None:
+            raise Exception("Attempting to call hg_repository_path before id has been set on repository object")
+        dir = os.path.join(repositories_directory, *util.directory_hash_id(self.id))
+        final_repository_path = os.path.join(dir, "repo_%d" % self.id)
+        return final_repository_path
+
+    def ensure_hg_repository_path(self, repositories_directory: str) -> str:
+        final_repository_path = self.hg_repository_path(repositories_directory)
+        if not os.path.exists(final_repository_path):
+            os.makedirs(final_repository_path)
+        return final_repository_path
 
     def revision(self):
         repo = self.hg_repo
@@ -597,6 +620,22 @@ class Category(Base, Dictifiable):
     dict_collection_visible_keys = ["id", "name", "description", "deleted"]
     dict_element_visible_keys = ["id", "name", "description", "deleted"]
 
+    def active_repository_count(self, session=None) -> int:
+        statement = """
+SELECT count(*) as count
+FROM repository r
+INNER JOIN repository_category_association rca on rca.repository_id = r.id
+WHERE
+    rca.category_id = :category_id
+    AND r.private = false
+    AND r.deleted = false
+    and r.deprecated = false
+"""
+        if session is None:
+            session = object_session(self)
+        params = {"category_id": self.id}
+        return session.execute(text(statement), params).scalar()
+
     def __init__(self, deleted=False, **kwd):
         super().__init__(**kwd)
         self.deleted = deleted
@@ -636,6 +675,8 @@ class Tag(Base):
 
 
 class RepositoryMetadata(Dictifiable):
+    repository: "Repository"
+
     # Once the class has been mapped, all Column items in this table will be available
     # as instrumented class attributes on RepositoryMetadata.
     table = Table(

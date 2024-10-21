@@ -79,7 +79,7 @@ async function submit() {
             Toast.info(response.data.message);
         }
 
-        window.location.href = props.redirect || withPrefix("/");
+        window.location.href = props.redirect ? withPrefix(props.redirect) : withPrefix("/");
     } catch (error: any) {
         disableCreate.value = false;
         messageText.value = errorMessageAsString(error, "Registration failed for an unknown reason.");
@@ -144,6 +144,7 @@ async function submit() {
                                         v-model="password"
                                         name="password"
                                         type="password"
+                                        autocomplete="new-password"
                                         required />
                                 </BFormGroup>
 
@@ -153,6 +154,7 @@ async function submit() {
                                         v-model="confirm"
                                         name="confirm"
                                         type="password"
+                                        autocomplete="new-password"
                                         required />
                                 </BFormGroup>
 

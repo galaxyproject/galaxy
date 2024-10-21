@@ -9,7 +9,7 @@
 python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
     ]]></command>
     <!-- The URL where Galaxy will forwards the user when this tool is accessed from the Get Data menu -->
-    <inputs action="https://www.ebi.ac.uk/ena/data/search" check_values="false" method="get">
+    <inputs action="https://www.ebi.ac.uk/ena/browser/search" check_values="false" method="get">
         <display>go to EBI SRA server $GALAXY_URL</display>
     </inputs>
     <uihints minwidth="800"/>

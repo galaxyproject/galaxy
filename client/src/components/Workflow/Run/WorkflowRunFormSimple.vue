@@ -1,11 +1,17 @@
 <template>
     <div>
         <div v-if="isConfigLoaded" class="h4 clearfix mb-3">
-            <b>Workflow: {{ model.name }}</b>
+            <BAlert v-if="!canRunOnHistory" variant="warning" show>
+                <span v-localize>
+                    The workflow cannot run because the current history is immutable. Please select a different history
+                    or send the results to a new one using the run settings ⚙️
+                </span>
+            </BAlert>
+            <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
             <ButtonSpinner
                 id="run-workflow"
                 :wait="waitingForRequest"
-                :disabled="hasValidationErrors"
+                :disabled="hasValidationErrors || !canRunOnHistory"
                 class="float-right"
                 title="Run Workflow"
                 @onClick="onExecute" />
@@ -89,6 +95,14 @@ export default {
             type: Boolean,
             default: false,
         },
+        canMutateCurrentHistory: {
+            type: Boolean,
+            required: true,
+        },
+        requestState: {
+            type: Object,
+            required: false,
+        },
     },
     setup() {
         const { config, isConfigLoaded } = useConfig(true);
@@ -125,6 +139,7 @@ export default {
                 if (isWorkflowInput(step.step_type)) {
                     const stepName = new String(step.step_index);
                     const stepLabel = step.step_label || new String(step.step_index + 1);
+                    const stepType = step.step_type;
                     const help = step.annotation;
                     const longFormInput = step.inputs[0];
                     const stepAsInput = Object.assign({}, longFormInput, {
@@ -132,16 +147,23 @@ export default {
                         help: help,
                         label: stepLabel,
                     });
+                    if (this.requestState && this.requestState[stepLabel]) {
+                        const value = this.requestState[stepLabel];
+                        stepAsInput.value = value;
+                    }
                     // disable collection mapping...
                     stepAsInput.flavor = "module";
                     inputs.push(stepAsInput);
-                    this.inputTypes[stepName] = step.step_type;
+                    this.inputTypes[stepName] = stepType;
                 }
             });
             return inputs;
         },
         hasValidationErrors() {
             return Boolean(Object.values(this.stepValidations).find((value) => value !== null && value !== undefined));
+        },
+        canRunOnHistory() {
+            return this.canMutateCurrentHistory || this.sendToNewHistory;
         },
     },
     methods: {
@@ -187,6 +209,7 @@ export default {
                 batch: true,
                 use_cached_job: this.useCachedJobs,
                 require_exact_tool_versions: false,
+                version: this.model.runData.version,
             };
             if (this.sendToNewHistory) {
                 data.new_history_name = this.model.name;

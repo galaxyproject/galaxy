@@ -26,6 +26,7 @@ const validFilters = {
             { value: "dataset_collection", text: "Collections Only" },
         ],
         menuItem: true,
+        disablesFilters: { state: ["dataset_collection"] },
     },
     tag: { placeholder: "tag", type: String, handler: contains("tags", "tag", expandNameTag), menuItem: true },
     state: {
@@ -35,6 +36,7 @@ const validFilters = {
         datalist: states,
         helpInfo: StatesInfo,
         menuItem: true,
+        disablesFilters: { history_content_type: null },
     },
     genome_build: { placeholder: "database", type: String, handler: contains("genome_build"), menuItem: true },
     genome_build_eq: { handler: equals("genome_build"), menuItem: false },

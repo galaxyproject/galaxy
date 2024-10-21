@@ -4,10 +4,57 @@ History
 .. to_doc
 
 ---------
-24.1.dev0
+24.2.dev0
 ---------
 
 
+
+-------------------
+24.1.2 (2024-09-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Retry container monitor POST if it fails (don't assume it succeeded) by `@natefoo <https://github.com/natefoo>`_ in `#18863 <https://github.com/galaxyproject/galaxy/pull/18863>`_
+
+-------------------
+24.1.1 (2024-07-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Add input extra files to `get_input_fnames` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18462 <https://github.com/galaxyproject/galaxy/pull/18462>`_
+
+============
+Enhancements
+============
+
+* Enable ``warn_unused_ignores`` mypy option by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17991 <https://github.com/galaxyproject/galaxy/pull/17991>`_
+* Add galaxy to user agent by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18003 <https://github.com/galaxyproject/galaxy/pull/18003>`_
+* Refactor galaxy.files plugin loading + config handling. by `@jmchilton <https://github.com/jmchilton>`_ in `#18049 <https://github.com/galaxyproject/galaxy/pull/18049>`_
+* Add stronger type annotations in file sources + refactoring by `@davelopez <https://github.com/davelopez>`_ in `#18050 <https://github.com/galaxyproject/galaxy/pull/18050>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#18063 <https://github.com/galaxyproject/galaxy/pull/18063>`_
+
+-------------------
+24.0.3 (2024-06-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Include traceback when logging email PJA exception by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18122 <https://github.com/galaxyproject/galaxy/pull/18122>`_
+* Don't commit in ``DeleteIntermediatesAction`` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18131 <https://github.com/galaxyproject/galaxy/pull/18131>`_
+* Don't fail metadata if we only have an extra output files dir by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18179 <https://github.com/galaxyproject/galaxy/pull/18179>`_
+* Don't set dataset peek for errored jobs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18231 <https://github.com/galaxyproject/galaxy/pull/18231>`_
+* Do not copy purged outputs to object store by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18342 <https://github.com/galaxyproject/galaxy/pull/18342>`_
 
 -------------------
 24.0.2 (2024-05-07)

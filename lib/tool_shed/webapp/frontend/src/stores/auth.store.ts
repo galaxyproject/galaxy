@@ -1,11 +1,7 @@
 import { defineStore } from "pinia"
-import { ensureCookie, notifyOnCatch } from "@/util"
-import { getCurrentUser } from "@/apiUtil"
+import { ensureCookie, errorMessageAsString, notifyOnCatch } from "@/util"
 
-import { fetcher } from "@/schema"
-
-const loginFetcher = fetcher.path("/api_internal/login").method("put").create()
-const logoutFetcher = fetcher.path("/api_internal/logout").method("put").create()
+import { ToolShedApi } from "@/schema"
 
 export const useAuthStore = defineStore({
     id: "auth",
@@ -16,19 +12,25 @@ export const useAuthStore = defineStore({
     }),
     actions: {
         async setup() {
-            const user = await getCurrentUser()
-            this.user = user
-            // store user details and jwt in local storage to keep user logged in between page refreshes
-            localStorage.setItem("user", user ? JSON.stringify(user) : "null")
+            try {
+                const { data: user } = await ToolShedApi().GET("/api/users/current")
+                this.user = user
+                // store user details and jwt in local storage to keep user logged in between page refreshes
+                localStorage.setItem("user", user ? JSON.stringify(user) : "null")
+            } catch (e) {
+                console.debug(`Failed to get current user: ${errorMessageAsString(e)}`)
+            }
         },
         async login(username: string, password: string) {
             const token = ensureCookie("session_csrf_token")
-            console.log(token)
-            loginFetcher({
-                login: username,
-                password: password,
-                session_csrf_token: token,
-            })
+            ToolShedApi()
+                .PUT("/api_internal/login", {
+                    body: {
+                        login: username,
+                        password: password,
+                        session_csrf_token: token,
+                    },
+                })
                 .then(async () => {
                     // We need to do this outside the router to get updated
                     // cookies and hence csrf token.
@@ -38,9 +40,13 @@ export const useAuthStore = defineStore({
         },
         async logout() {
             const token = ensureCookie("session_csrf_token")
-            logoutFetcher({
-                session_csrf_token: token,
-            })
+            ToolShedApi()
+                .PUT("/api_internal/logout", {
+                    body: {
+                        session_csrf_token: token,
+                        logout_all: false,
+                    },
+                })
                 .then(async () => {
                     this.user = null
                     localStorage.removeItem("user")

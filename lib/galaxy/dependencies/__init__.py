@@ -265,6 +265,9 @@ class ConditionalDependencies:
     def check_google_cloud_storage(self):
         return "googlecloudstorage" in self.file_sources
 
+    def check_onedatafilerestclient(self):
+        return "onedata" in self.object_stores
+
     def check_fs_onedatarestfs(self):
         return "onedata" in self.file_sources
 
@@ -288,6 +291,10 @@ class ConditionalDependencies:
         return asbool(self.config["enable_tool_recommendations"])
 
     def check_weasyprint(self):
+        # See notes in ./conditional-requirements.txt for more information.
+        return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
+
+    def check_pydyf(self):
         # See notes in ./conditional-requirements.txt for more information.
         return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
 

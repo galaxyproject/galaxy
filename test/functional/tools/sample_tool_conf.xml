@@ -8,10 +8,10 @@
     <tool file="param_text_option.xml" />
     <tool file="column_param.xml" />
   </section>
-  <tool file="image_diff.xml"/>
-  <tool file="output_format_input.xml"/>
-  <tool file="ucsc_tablebrowser.xml"/>
-  <tool file="test_data_source.xml"/>
+  <tool file="image_diff.xml" />
+  <tool file="output_format_input.xml" />
+  <tool file="ucsc_tablebrowser.xml" />
+  <tool file="test_data_source.xml" />
   <tool file="simple_constructs.xml" />
   <tool file="color_param.xml" />
   <tool file="inheritance_simple.xml" />
@@ -24,6 +24,8 @@
   <tool file="multi_repeats.xml" />
   <tool file="remove_value.xml" />
   <tool file="bibtex.xml" />
+  <tool file="help_features_rst.xml" />
+  <tool file="help_features_markdown.xml" />
   <tool file="select_from_url.xml" />
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
@@ -89,7 +91,7 @@
   <tool file="sim_size_delta.xml" />
   <tool file="composite_shapefile.xml" />
   <tool file="is_valid_xml.xml" />
-  <tool file="expression_tools/parse_values_from_file.xml"/>
+  <tool file="expression_tools/parse_values_from_file.xml" />
   <tool file="expression_tools/pick_value.xml" />
   <!--
   TODO: Figure out why this transiently fails on Jenkins.
@@ -137,8 +139,9 @@
   <tool file="column_param_configfile.xml" />
   <tool file="column_param_list.xml" />
   <tool file="column_multi_param.xml" />
-  <tool file="select_optional.xml"/>
-  <tool file="select_dynamic.xml"/>
+  <tool file="select_optional_legacy.xml" />
+  <tool file="select_optional.xml" />
+  <tool file="select_dynamic.xml" />
   <tool file="hidden_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />
@@ -152,10 +155,10 @@
   <tool file="validation_default.xml" />
   <tool file="validation_sanitizer.xml" />
   <tool file="validation_repeat.xml" />
-  <tool file="validation_metadata_in_range.xml"/>
-  <tool file="validation_metadata_in_datatable.xml"/>
-  <tool file="validation_dataset_metadata_in_file.xml"/>
-  <tool file="validation_value_in_datatable.xml"/>
+  <tool file="validation_metadata_in_range.xml" />
+  <tool file="validation_metadata_in_datatable.xml" />
+  <tool file="validation_dataset_metadata_in_file.xml" />
+  <tool file="validation_value_in_datatable.xml" />
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
   <tool file="implicit_conversion.xml" />
@@ -172,10 +175,11 @@
   <tool file="identifier_multiple_in_conditional.xml" />
   <tool file="identifier_multiple_in_repeat.xml" />
   <tool file="identifier_collection.xml" />
-  <tool file="identifier_all_collection_types.xml"/>
+  <tool file="identifier_all_collection_types.xml" />
   <tool file="identifier_in_actions.xml" />
   <tool file="fail_identifier.xml" />
   <tool file="fail_writing_work_dir_file.xml" />
+  <tool file="legacy_interpreter.xml" />
   <tool file="tool_directory.xml" />
   <tool file="tool_directory_docker.xml" />
   <tool file="output_action_change_format.xml" />
@@ -208,6 +212,7 @@
   <tool file="collection_cat_group_tag.xml" />
   <tool file="collection_cat_group_tag_multiple.xml" />
   <tool file="discover_sort_by.xml" />
+  <tool file="discover_default_ext.xml" />
   <tool file="expression_forty_two.xml" />
   <tool file="expression_pick_larger_file.xml" />
   <tool file="expression_parse_int.xml" />
@@ -226,7 +231,7 @@
   <tool file="expect_num_outputs.xml" />
   <tool file="text_repeat.xml" />
   <tool file="integer_default.xml" />
-
+  <tool file="all_output_types.xml" />
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v01galaxy6.xml" />
   <tool file="multiple_versions_v02.xml" />
@@ -265,6 +270,8 @@
   <tool file="for_workflows/create_input_collection.xml" />
   <tool file="for_workflows/randomlines.xml" />
 
+  <tool_dir dir="parameters/" />
+
   <section id="filter" name="For Tours">
     <tool file="for_tours/filtering.xml" />
   </section>
@@ -296,6 +303,7 @@
   <tool file="${model_tools_path}/filter_failed_collection.xml" />
   <tool file="${model_tools_path}/keep_success_collection.xml" />
   <tool file="${model_tools_path}/filter_empty_collection.xml" />
+  <tool file="${model_tools_path}/filter_null.xml" />
   <tool file="${model_tools_path}/flatten_collection.xml" />
   <tool file="${model_tools_path}/sort_collection_list.xml" />
   <tool file="${model_tools_path}/harmonize_two_collections_list.xml" />

@@ -229,9 +229,12 @@
   public_name: ${user.preferences['zenodo_sandbox|public_name']}
   writable: true
 
+# Note for developers: you can easily set up a minimal, dockerized Onedata environment
+# using the so-called "demo-mode": https://onedata.org/#/home/documentation/topic/stable/demo-mode
 - type: onedata
   id: onedata1
   label: Onedata
   doc: Your Onedata files - configure an access token via user preferences
-  accessToken: ${user.preferences['onedata|access_token']}
-  onezoneDomain: ${user.preferences['onedata|onezone_domain']}
+  access_token: ${user.preferences['onedata|access_token']}
+  onezone_domain: ${user.preferences['onedata|onezone_domain']}
+  disable_tls_certificate_validation: ${user.preferences['onedata|disable_tls_certificate_validation']}

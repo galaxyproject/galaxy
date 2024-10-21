@@ -61,6 +61,7 @@ class GalaxyDataTestConfig(Bunch):
         self.object_store = "disk"
         self.object_store_check_old_style = False
         self.object_store_cache_path = "/tmp/cache"
+        self.object_store_cache_size = -1
         self.object_store_store_by = "uuid"
 
         self.umask = os.umask(0o77)
@@ -77,6 +78,10 @@ class GalaxyDataTestConfig(Bunch):
         self.user_library_import_dir = None
         self.ftp_upload_dir = None
         self.ftp_upload_purge = False
+
+        self.file_source_temp_dir = None
+        self.file_source_webdav_use_temp_files = False
+        self.file_source_listings_expiry_time = 60
 
     def __del__(self):
         if self._remove_root:
@@ -96,7 +101,8 @@ class GalaxyDataTestApp:
         self.config = config
         self.security = config.security
         self.object_store = objectstore.build_object_store_from_config(self.config)
-        self.model = init("/tmp", self.config.database_connection, create_tables=True, object_store=self.object_store)
+        self.model = init("/tmp", self.config.database_connection, create_tables=True)
+        model.setup_global_object_store_for_models(self.object_store)
         self.security_agent = self.model.security_agent
         self.tag_handler = GalaxyTagHandler(self.model.session)
         self.init_datatypes()

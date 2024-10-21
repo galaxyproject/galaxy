@@ -239,7 +239,7 @@ defineExpose({
                 class="mb-4">
                 <BFormSelect v-model="selectedSharingOption">
                     <BFormSelectOption value="make_public"> Make datasets public </BFormSelectOption>
-                    <BFormSelectOption value="make_accessible_and_shared">
+                    <BFormSelectOption value="make_accessible_to_shared">
                         Make datasets private to me and users this {{ modelClass }} is shared with
                     </BFormSelectOption>
                     <BFormSelectOption value="no_changes"> Share {{ modelClass }} anyways </BFormSelectOption>

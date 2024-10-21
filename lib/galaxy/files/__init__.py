@@ -23,6 +23,7 @@ from galaxy.util.plugin_config import (
     plugin_source_from_dict,
     plugin_source_from_path,
     PluginConfigSource,
+    PluginConfigsT,
 )
 from .plugins import (
     FileSourcePluginLoader,
@@ -46,29 +47,111 @@ class NoMatchingFileSource(Exception):
     pass
 
 
+class UserDefinedFileSources(Protocol):
+    """Entry-point for Galaxy to inject user-defined object stores.
+
+    Supplied object of this class is used to write out concrete
+    description of file sources when serializing all file sources
+    available to a user.
+    """
+
+    def validate_uri_root(self, uri: str, user_context: "FileSourcesUserContext") -> None:
+        pass
+
+    def find_best_match(self, url: str) -> Optional[FileSourceScore]:
+        pass
+
+    def user_file_sources_to_dicts(
+        self,
+        for_serialization: bool,
+        user_context: "FileSourcesUserContext",
+        browsable_only: Optional[bool] = False,
+        include_kind: Optional[Set[PluginKind]] = None,
+        exclude_kind: Optional[Set[PluginKind]] = None,
+    ) -> List[FilesSourceProperties]:
+        """Write out user file sources as list of config dictionaries."""
+        # config_dicts: List[FilesSourceProperties] = []
+        # for file_source in self.user_file_sources():
+        #     as_dict = file_source.to_dict(for_serialization=for_serialization, user_context=user_context)
+        #     config_dicts.append(as_dict)
+        # return config_dicts
+
+
+class NullUserDefinedFileSources(UserDefinedFileSources):
+
+    def validate_uri_root(self, uri: str, user_context: "FileSourcesUserContext") -> None:
+        return None
+
+    def find_best_match(self, url: str) -> Optional[FileSourceScore]:
+        return None
+
+    def user_file_sources_to_dicts(
+        self,
+        for_serialization: bool,
+        user_context: "FileSourcesUserContext",
+        browsable_only: Optional[bool] = False,
+        include_kind: Optional[Set[PluginKind]] = None,
+        exclude_kind: Optional[Set[PluginKind]] = None,
+    ) -> List[FilesSourceProperties]:
+        return []
+
+
+def _ensure_user_defined_file_sources(
+    user_defined_file_sources: Optional[UserDefinedFileSources] = None,
+) -> UserDefinedFileSources:
+    if user_defined_file_sources is not None:
+        return user_defined_file_sources
+    else:
+        return NullUserDefinedFileSources()
+
+
+class ConfiguredFileSourcesConf:
+    conf_dict: Optional[PluginConfigsT]
+    conf_file: Optional[str]
+
+    def __init__(self, conf_dict: Optional[PluginConfigsT] = None, conf_file: Optional[str] = None):
+        self.conf_dict = conf_dict
+        self.conf_file = conf_file
+
+    @staticmethod
+    def from_app_config(config):
+        config_file = config.file_sources_config_file
+        config_dict = None
+        if not config_file or not os.path.exists(config_file):
+            config_file = None
+            config_dict = config.file_sources
+        return ConfiguredFileSourcesConf(config_dict, config_file)
+
+
 class ConfiguredFileSources:
     """Load plugins and resolve Galaxy URIs to FileSource objects."""
 
     _file_sources: List[BaseFilesSource]
+    _plugin_loader: FileSourcePluginLoader
+    _user_defined_file_sources: UserDefinedFileSources
 
     def __init__(
         self,
         file_sources_config: FileSourcePluginsConfig,
-        conf_file=None,
-        conf_dict=None,
-        load_stock_plugins=False,
+        configured_file_source_conf: Optional[ConfiguredFileSourcesConf] = None,
+        load_stock_plugins: bool = False,
+        plugin_loader: Optional[FileSourcePluginLoader] = None,
+        user_defined_file_sources: Optional[UserDefinedFileSources] = None,
     ):
         self._file_sources_config = file_sources_config
-        self._plugin_loader = FileSourcePluginLoader()
+        self._plugin_loader = plugin_loader or FileSourcePluginLoader()
+        self._user_defined_file_sources = _ensure_user_defined_file_sources(user_defined_file_sources)
         file_sources: List[BaseFilesSource] = []
-        if conf_file is not None:
-            file_sources = self._load_plugins_from_file(conf_file)
-        elif conf_dict is not None:
-            plugin_source = plugin_source_from_dict(conf_dict)
+        if configured_file_source_conf is None:
+            configured_file_source_conf = ConfiguredFileSourcesConf(conf_dict=[])
+        if configured_file_source_conf.conf_file is not None:
+            file_sources = self._load_plugins_from_file(configured_file_source_conf.conf_file)
+        elif configured_file_source_conf.conf_dict is not None:
+            plugin_source = plugin_source_from_dict(configured_file_source_conf.conf_dict)
             file_sources = self._parse_plugin_source(plugin_source)
         else:
             file_sources = []
-        custom_sources_configured = len(file_sources) > 0
+        custom_sources_configured = len(file_sources) > 0 or (user_defined_file_sources is not None)
         if load_stock_plugins:
             stock_file_source_conf_dict = []
 
@@ -110,6 +193,9 @@ class ConfiguredFileSources:
         """Returns the best matching file source for handling a particular url. Each filesource scores its own
         ability to match a particular url, and the highest scorer with a score > 0 is selected."""
         scores = [FileSourceScore(file_source, file_source.score_url_match(url)) for file_source in self._file_sources]
+        user_best_score = self._user_defined_file_sources.find_best_match(url)
+        if user_best_score is not None:
+            scores.append(user_best_score)
         scores.sort(key=lambda f: f.score, reverse=True)
         return next((fsscore.file_source for fsscore in scores if fsscore.score > 0), None)
 
@@ -134,6 +220,8 @@ class ConfiguredFileSources:
                 raise exceptions.ConfigDoesNotAllowException(
                     "The configuration of this Galaxy instance does not allow upload from user directories."
                 )
+            if user_login is None:
+                raise exceptions.AuthenticationRequired("Must be logged in to use this feature.")
             full_import_dir = os.path.join(user_base_dir, user_login)
             if not os.path.exists(full_import_dir):
                 raise exceptions.ObjectNotFound("Your user import directory does not exist.")
@@ -154,6 +242,7 @@ class ConfiguredFileSources:
                 raise exceptions.ObjectNotFound(
                     "Your FTP directory does not exist, attempting to upload files to it may cause it to be created."
                 )
+        self._user_defined_file_sources.validate_uri_root(uri, user_context)
 
     def looks_like_uri(self, path_or_uri):
         # is this string a URI this object understands how to realize
@@ -183,6 +272,16 @@ class ConfiguredFileSources:
                 continue
             el = file_source.to_dict(for_serialization=for_serialization, user_context=user_context)
             rval.append(el)
+        if user_context:
+            rval.extend(
+                self._user_defined_file_sources.user_file_sources_to_dicts(
+                    for_serialization,
+                    user_context,
+                    browsable_only=browsable_only,
+                    include_kind=include_kind,
+                    exclude_kind=exclude_kind,
+                )
+            )
         return rval
 
     def to_dict(self, for_serialization: bool = False, user_context: "OptionalUserContext" = None) -> Dict[str, Any]:
@@ -190,18 +289,6 @@ class ConfiguredFileSources:
             "file_sources": self.plugins_to_dict(for_serialization=for_serialization, user_context=user_context),
             "config": self._file_sources_config.to_dict(),
         }
-
-    @staticmethod
-    def from_app_config(config):
-        config_file = config.file_sources_config_file
-        config_dict = None
-        if not config_file or not os.path.exists(config_file):
-            config_file = None
-            config_dict = config.file_sources
-        file_sources_config = FileSourcePluginsConfig.from_app_config(config)
-        return ConfiguredFileSources(
-            file_sources_config, conf_file=config_file, conf_dict=config_dict, load_stock_plugins=True
-        )
 
     @staticmethod
     def from_dict(as_dict, load_stock_plugins=False):
@@ -212,8 +299,9 @@ class ConfiguredFileSources:
         else:
             sources_as_dict = []
             file_sources_config = FileSourcePluginsConfig()
+        configured_file_sources_conf = ConfiguredFileSourcesConf(conf_dict=sources_as_dict)
         return ConfiguredFileSources(
-            file_sources_config, conf_dict=sources_as_dict, load_stock_plugins=load_stock_plugins
+            file_sources_config, configured_file_sources_conf, load_stock_plugins=load_stock_plugins
         )
 
 
@@ -221,7 +309,7 @@ class NullConfiguredFileSources(ConfiguredFileSources):
     def __init__(
         self,
     ):
-        super().__init__(FileSourcePluginsConfig())
+        super().__init__(FileSourcePluginsConfig(), ConfiguredFileSourcesConf(conf_dict=[]))
 
 
 class DictifiableFilesSourceContext(Protocol):
@@ -252,13 +340,13 @@ class FileSourceDictifiable(Dictifiable, DictifiableFilesSourceContext):
 class FileSourcesUserContext(DictifiableFilesSourceContext, Protocol):
 
     @property
-    def email(self) -> str: ...
+    def email(self) -> Optional[str]: ...
 
     @property
-    def username(self) -> str: ...
+    def username(self) -> Optional[str]: ...
 
     @property
-    def ftp_dir(self) -> str: ...
+    def ftp_dir(self) -> Optional[str]: ...
 
     @property
     def preferences(self) -> Dict[str, Any]: ...
@@ -272,6 +360,9 @@ class FileSourcesUserContext(DictifiableFilesSourceContext, Protocol):
     @property
     def app_vault(self) -> Dict[str, Any]: ...
 
+    @property
+    def anonymous(self) -> bool: ...
+
 
 OptionalUserContext = Optional[FileSourcesUserContext]
 
@@ -283,12 +374,12 @@ class ProvidesFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiab
         self.trans = trans
 
     @property
-    def email(self):
+    def email(self) -> Optional[str]:
         user = self.trans.user
         return user and user.email
 
     @property
-    def username(self):
+    def username(self) -> Optional[str]:
         user = self.trans.user
         return user and user.username
 
@@ -334,6 +425,10 @@ class ProvidesFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiab
     def file_sources(self):
         return self.trans.app.file_sources
 
+    @property
+    def anonymous(self) -> bool:
+        return self.trans.anonymous
+
 
 class DictFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
     def __init__(self, **kwd):
@@ -344,7 +439,7 @@ class DictFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
         return self._kwd.get("email")
 
     @property
-    def username(self):
+    def username(self) -> Optional[str]:
         return self._kwd.get("username")
 
     @property
@@ -378,3 +473,7 @@ class DictFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
     @property
     def file_sources(self):
         return self._kwd.get("file_sources")
+
+    @property
+    def anonymous(self) -> bool:
+        return not bool(self._kwd.get("username"))

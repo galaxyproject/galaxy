@@ -26,8 +26,7 @@ from galaxy.webapps.base.webapp import (
     GalaxyWebTransaction,
 )
 from galaxy.webapps.util import wrap_if_allowed
-
-SHED_API_VERSION = os.environ.get("TOOL_SHED_API_VERSION", "v1")
+from .config import SHED_API_VERSION
 
 log = logging.getLogger(__name__)
 

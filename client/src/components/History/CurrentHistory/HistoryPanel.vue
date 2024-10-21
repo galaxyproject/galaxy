@@ -3,20 +3,20 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
 
-import type { HistoryItemSummary, HistorySummaryExtended } from "@/api";
-import { copyDataset } from "@/api/datasets";
+import { type HistoryItemSummary, type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import SelectedItems from "@/components/History/Content/SelectedItems";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
-import { Toast } from "@/composables/toast";
 import { useActiveElement } from "@/composables/useActiveElement";
 import { startWatchingHistory } from "@/store/historyStore/model/watchHistory";
-import { useEventStore } from "@/stores/eventStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
-import { setDrag } from "@/utils/setDrag";
+import { setItemDragstart } from "@/utils/setDrag";
+
+import { useHistoryDragDrop } from "../../../composables/historyDragDrop";
 
 import HistoryCounter from "./HistoryCounter.vue";
 import HistoryDetails from "./HistoryDetails.vue";
@@ -49,7 +49,6 @@ interface Props {
     listOffset?: number;
     history: HistorySummaryExtended;
     filter?: string;
-    canEditHistory?: boolean;
     filterable?: boolean;
     isMultiViewItem?: boolean;
 }
@@ -59,7 +58,6 @@ type ContentItemRef = Record<string, Ref<InstanceType<typeof ContentItem> | null
 const props = withDefaults(defineProps<Props>(), {
     listOffset: 0,
     filter: "",
-    canEditHistory: true,
     filterable: false,
     isMultiViewItem: false,
 });
@@ -71,11 +69,9 @@ const isLoading = ref(false);
 const offsetQueryParam = ref(0);
 const searchError = ref<BackendFilterError | undefined>(undefined);
 const showAdvanced = ref(false);
-const showDropZone = ref(false);
 const operationRunning = ref<string | null>(null);
 const operationError = ref(null);
 const querySelectionBreak = ref(false);
-const dragTarget = ref<EventTarget | null>(null);
 const contentItemRefs = computed(() => {
     return historyItems.value.reduce((acc: ContentItemRef, item) => {
         acc[itemUniqueKey(item)] = ref(null);
@@ -85,11 +81,22 @@ const contentItemRefs = computed(() => {
 const currItemFocused = useActiveElement();
 const lastItemId = ref<string | null>(null);
 
-const { currentFilterText, currentHistoryId } = storeToRefs(useHistoryStore());
+const { currentFilterText, currentHistoryId, pinnedHistories, storedHistories } = storeToRefs(useHistoryStore());
 const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistoryItemsStore());
 
 const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
+const { currentUser } = storeToRefs(useUserStore());
+
+const historyIdComputed = computed(() => props.history.id);
+const { showDropZone, onDragEnter, onDragLeave, onDragOver, onDrop } = useHistoryDragDrop(historyIdComputed);
+
+const currentUserOwnsHistory = computed(() => {
+    return userOwnsHistory(currentUser.value, props.history);
+});
+const canEditHistory = computed(() => {
+    return currentUserOwnsHistory.value && !props.history.deleted && !props.history.archived;
+});
 
 const historyUpdateTime = computed(() => {
     return props.history.update_time;
@@ -134,6 +141,47 @@ const formattedSearchError = computed(() => {
         msg: err_msg,
         typeError: ValueError,
     };
+});
+
+/** Returns a string that indicates whether all the pinned histories have annotations,
+ * tags, both, or none of them.
+ * This is used to format the `DetailsLayout` header uniformly for multi-view histories.
+ */
+const detailsSummarized = computed(() => {
+    if (!props.isMultiViewItem) {
+        return undefined;
+    }
+    if (pinnedHistories.value.length === 0) {
+        return "hidden";
+    }
+
+    let annotation = false;
+    let tags = false;
+    let loaded = true;
+
+    for (const h of pinnedHistories.value) {
+        const history = storedHistories.value[h.id];
+        if (!history) {
+            loaded = false;
+            break;
+        }
+        if (history.annotation) {
+            annotation = true;
+        }
+        if (history.tags.length > 0) {
+            tags = true;
+        }
+    }
+
+    if (!loaded || (annotation && tags)) {
+        return "both";
+    } else if (annotation) {
+        return "annotation";
+    } else if (tags) {
+        return "tags";
+    } else {
+        return "none";
+    }
 });
 
 const storeFilterText = computed(() => {
@@ -211,36 +259,6 @@ watch(
         }
     }
 );
-
-function dragSameHistory() {
-    return getDragData().sameHistory;
-}
-
-function getDragData() {
-    const eventStore = useEventStore();
-    const multiple = eventStore.multipleDragData;
-    let data: HistoryItemSummary[] | undefined;
-    let historyId: string | undefined;
-    try {
-        if (multiple) {
-            const dragData = eventStore.getDragData() as Record<string, HistoryItemSummary>;
-            // set historyId to the first history_id in the multiple drag data
-            const firstItem = Object.values(dragData)[0];
-            if (firstItem) {
-                historyId = firstItem.history_id;
-            }
-            data = Object.values(dragData);
-        } else {
-            data = [eventStore.getDragData() as HistoryItemSummary];
-            if (data[0]) {
-                historyId = data[0].history_id;
-            }
-        }
-    } catch (error) {
-        // this was not a valid object for this dropzone, ignore
-    }
-    return { data, sameHistory: historyId === props.history.id, multiple };
-}
 
 function getHighlight(item: HistoryItemSummary) {
     if (unref(isLoading)) {
@@ -355,77 +373,13 @@ function onOperationError(error: any) {
     operationError.value = error;
 }
 
-function onDragEnter(e: DragEvent) {
-    if (dragSameHistory()) {
-        return;
-    }
-    dragTarget.value = e.target;
-    showDropZone.value = true;
-}
-
-function onDragOver(e: DragEvent) {
-    if (dragSameHistory()) {
-        return;
-    }
-    e.preventDefault();
-}
-
-function onDragLeave(e: DragEvent) {
-    if (dragSameHistory()) {
-        return;
-    }
-    if (dragTarget.value === e.target) {
-        showDropZone.value = false;
-    }
-}
-
-async function onDrop() {
-    showDropZone.value = false;
-    const { data, sameHistory, multiple } = getDragData();
-    if (!data || sameHistory) {
-        return;
-    }
-
-    let datasetCount = 0;
-    let collectionCount = 0;
-    try {
-        // iterate over the data array and copy each item to the current history
-        for (const item of data) {
-            const dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
-            await copyDataset(item.id, props.history.id, item.history_content_type, dataSource);
-
-            if (item.history_content_type === "dataset") {
-                datasetCount++;
-                if (!multiple) {
-                    Toast.info("Dataset copied to history");
-                }
-            } else {
-                collectionCount++;
-                if (!multiple) {
-                    Toast.info("Collection copied to history");
-                }
-            }
-        }
-
-        if (multiple && datasetCount > 0) {
-            Toast.info(`${datasetCount} dataset${datasetCount > 1 ? "s" : ""} copied to new history`);
-        }
-        if (multiple && collectionCount > 0) {
-            Toast.info(`${collectionCount} collection${collectionCount > 1 ? "s" : ""} copied to new history`);
-        }
-        historyStore.loadHistoryById(props.history.id);
-    } catch (error) {
-        Toast.error(`${error}`);
-    }
-}
-
 function updateFilterValue(filterKey: string, newValue: any) {
     const currentFilterText = filterText.value;
     filterText.value = filterClass.setFilterValue(currentFilterText, filterKey, newValue);
 }
 
 function getItemKey(item: HistoryItemSummary) {
-    return item.type_id;
+    return itemUniqueKey(item);
 }
 
 function itemUniqueKey(item: HistoryItemSummary) {
@@ -460,24 +414,6 @@ function arrowNavigate(item: HistoryItemSummary, eventKey: string) {
         itemElement?.focus();
     }
     return nextItem;
-}
-
-function setItemDragstart(
-    item: HistoryItemSummary,
-    itemIsSelected: boolean,
-    selectedItems: Map<string, HistoryItemSummary>,
-    selectionSize: number,
-    event: DragEvent
-) {
-    if (itemIsSelected && selectionSize > 1) {
-        const selectedItemsObj: any = {};
-        for (const [key, value] of selectedItems) {
-            selectedItemsObj[key] = value;
-        }
-        setDrag(event, selectedItemsObj, true);
-    } else {
-        setDrag(event, item as any);
-    }
 }
 </script>
 
@@ -519,6 +455,7 @@ function setItemDragstart(
 
                 <FilterMenu
                     v-if="filterable"
+                    :key="props.history.id"
                     class="content-operations-filters mx-3"
                     name="History Items"
                     placeholder="search datasets"
@@ -532,23 +469,24 @@ function setItemDragstart(
                     <HistoryDetails
                         :history="history"
                         :writeable="canEditHistory"
-                        :summarized="isMultiViewItem"
+                        :summarized="detailsSummarized"
                         @update:history="historyStore.updateHistory($event)" />
 
-                    <HistoryMessages :history="history" />
+                    <HistoryMessages v-if="!isMultiViewItem" :history="history" :current-user="currentUser" />
 
                     <HistoryCounter
                         :history="history"
                         :is-watching="isWatching"
                         :last-checked="lastCheckedTime"
                         :show-controls="canEditHistory"
+                        :owned-by-current-user="userOwnsHistory(currentUser, history)"
                         :filter-text.sync="filterText"
                         :hide-reload="isMultiViewItem"
                         @reloadContents="reloadContents" />
 
                     <HistoryOperations
-                        v-if="canEditHistory"
                         :history="history"
+                        :editable="canEditHistory"
                         :is-multi-view-item="isMultiViewItem"
                         :show-selection="showSelection"
                         :expanded-count="expandedCount"
@@ -637,10 +575,10 @@ function setItemDragstart(
                                     @drag-start="
                                         setItemDragstart(
                                             item,
+                                            $event,
                                             showSelection && isSelected(item),
-                                            selectedItems,
                                             selectionSize,
-                                            $event
+                                            selectedItems
                                         )
                                     "
                                     @hide-selection="setShowSelection(false)"
@@ -658,7 +596,22 @@ function setItemDragstart(
                                     @view-collection="$emit('view-collection', item, currentOffset)"
                                     @delete="onDelete"
                                     @undelete="onUndelete(item)"
-                                    @unhide="onUnhide(item)" />
+                                    @unhide="onUnhide(item)">
+                                    <template v-slot:sub_items="slotProps">
+                                        <div v-if="slotProps.subItemsVisible" class="pl-2 sub-items-content">
+                                            <ContentItem
+                                                v-for="subItem in item.sub_items"
+                                                :id="subItem.hid"
+                                                :key="subItem.id"
+                                                :item="subItem"
+                                                :name="subItem.name"
+                                                :expand-dataset="isExpanded(subItem)"
+                                                :is-dataset="isDataset(subItem)"
+                                                :is-sub-item="true"
+                                                @update:expand-dataset="setExpanded(subItem, $event)" />
+                                        </div>
+                                    </template>
+                                </ContentItem>
                             </template>
                         </ListingLayout>
                     </div>
@@ -667,3 +620,11 @@ function setItemDragstart(
         </SelectedItems>
     </ExpandedItems>
 </template>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.sub-items-content {
+    background: $body-bg;
+}
+</style>

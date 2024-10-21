@@ -3,11 +3,11 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Tuple,
 )
 
 from typing_extensions import Unpack
 
-from galaxy.exceptions import AuthenticationRequired
 from galaxy.files import OptionalUserContext
 from galaxy.files.sources import (
     BaseFilesSource,
@@ -60,8 +60,16 @@ class RDMRepositoryInteractor:
         If a filename is provided, the URI will reference the specific file in the record."""
         raise NotImplementedError()
 
-    def get_records(self, writeable: bool, user_context: OptionalUserContext = None) -> List[RemoteDirectory]:
-        """Returns the list of records in the repository.
+    def get_records(
+        self,
+        writeable: bool,
+        user_context: OptionalUserContext = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[RemoteDirectory], int]:
+        """Returns the list of records in the repository and the total count of records.
 
         If writeable is True, only records that the user can write to will be returned.
         The user_context might be required to authenticate the user in the repository.
@@ -192,15 +200,11 @@ class RDMFilesSource(BaseFilesSource):
             effective_props[key] = self._evaluate_prop(val, user_context=user_context)
         return effective_props
 
-    def get_authorization_token(self, user_context: OptionalUserContext) -> str:
+    def get_authorization_token(self, user_context: OptionalUserContext) -> Optional[str]:
         token = None
         if user_context:
             effective_props = self._serialization_props(user_context)
             token = effective_props.get("token")
-        if not token:
-            raise AuthenticationRequired(
-                f"Please provide a personal access token in your user's preferences for '{self.label}'"
-            )
         return token
 
     def get_public_name(self, user_context: OptionalUserContext) -> Optional[str]:

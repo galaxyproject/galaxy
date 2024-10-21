@@ -2,8 +2,8 @@
 import { ref } from "vue"
 import ModalForm from "@/components/ModalForm.vue"
 import { AUTH_FORM_INPUT_PROPS } from "@/constants"
-import { fetcher } from "@/schema"
-import { errorMessage } from "@/util"
+import { ToolShedApi } from "@/schema"
+import { errorMessageAsString } from "@/util"
 import ErrorBanner from "@/components/ErrorBanner.vue"
 import router from "@/router"
 
@@ -11,18 +11,20 @@ const current = ref("")
 const password = ref("")
 const confirm = ref("")
 const error = ref<string | null>(null)
-const changePasswordFetcher = fetcher.path("/api_internal/change_password").method("put").create()
 
 async function onChange() {
-    changePasswordFetcher({
-        current: current.value,
-        password: password.value,
-    })
+    ToolShedApi()
+        .PUT("/api_internal/change_password", {
+            body: {
+                current: current.value,
+                password: password.value,
+            },
+        })
         .then(() => {
             router.push("/")
         })
-        .catch((e: Error) => {
-            error.value = errorMessage(e)
+        .catch((e) => {
+            error.value = errorMessageAsString(e)
         })
 }
 

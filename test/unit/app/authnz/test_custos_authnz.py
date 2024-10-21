@@ -15,7 +15,6 @@ from urllib.parse import (
 )
 
 import jwt
-import requests
 
 from galaxy.app_unittest_utils.galaxy_mock import MockTrans
 from galaxy.authnz import custos_authnz
@@ -23,7 +22,10 @@ from galaxy.model import (
     CustosAuthnzToken,
     User,
 )
-from galaxy.util import unicodify
+from galaxy.util import (
+    requests,
+    unicodify,
+)
 from galaxy.util.unittest import TestCase
 
 
@@ -629,7 +631,12 @@ class TestCustosAuthnz(TestCase):
         provider = custos_authnz_token.provider
         email = custos_authnz_token.user.email
 
-        success, message, redirect_uri = self.custos_authnz.disconnect(provider, self.trans, email, "/")
+        success, message, redirect_uri = self.custos_authnz.disconnect(
+            provider,
+            self.trans,
+            disconnect_redirect_url="/",
+            email=email,
+        )
 
         assert 1 == len(self.trans.sa_session.deleted)
         deleted_token = self.trans.sa_session.deleted[0]

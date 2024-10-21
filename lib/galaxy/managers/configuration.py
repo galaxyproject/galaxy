@@ -104,8 +104,8 @@ class ConfigSerializer(base.ModelSerializer):
         self.default_view = "all"
         self.add_view("all", list(self.serializers.keys()))
 
-    def default_serializer(self, config, key):
-        return getattr(config, key, None)
+    def default_serializer(self, item, key, **context):
+        return getattr(item, key, None)
 
     def add_serializers(self):
         def _defaults_to(default) -> base.Serializer:
@@ -183,8 +183,8 @@ class ConfigSerializer(base.ModelSerializer):
             "interactivetools_enable": _use_config,
             "aws_estimate": _use_config,
             "carbon_emission_estimates": _defaults_to(True),
-            "carbon_intensity": _use_config,
-            "geographical_server_location_name": _use_config,
+            "carbon_intensity": lambda item, key, **context: self.app.carbon_intensity,
+            "geographical_server_location_name": lambda item, key, **context: self.app.geographical_server_location_name,
             "geographical_server_location_code": _use_config,
             "power_usage_effectiveness": _use_config,
             "message_box_content": _use_config,

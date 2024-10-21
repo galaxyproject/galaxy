@@ -188,6 +188,8 @@ class CompressedFile:
             self.file_type = "tar"
         elif zipfile.is_zipfile(file_path) and not file_path_str.endswith(".jar"):
             self.file_type = "zip"
+        else:
+            raise Exception("File must be valid zip or tar file.")
         self.file_name = os.path.splitext(os.path.basename(file_path))[0]
         if self.file_name.endswith(".tar"):
             self.file_name = os.path.splitext(self.file_name)[0]

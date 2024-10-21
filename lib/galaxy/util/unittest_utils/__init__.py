@@ -7,8 +7,8 @@ from typing import (
 from unittest import SkipTest
 
 import pytest
-import requests
 
+from galaxy.util import requests
 from galaxy.util.commands import which
 
 

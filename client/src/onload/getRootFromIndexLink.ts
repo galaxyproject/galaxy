@@ -9,6 +9,9 @@ import { serverPath } from "@/utils/serverPath";
  * @returns {string}
  */
 export function getRootFromIndexLink(defaultRoot = "/"): string {
+    if (typeof document === "undefined") {
+        return defaultRoot;
+    }
     const links = document.getElementsByTagName("link");
     const indexLink = Array.from(links).find((link) => link.rel == "index");
     return indexLink && indexLink.href ? serverPath(indexLink.href) : defaultRoot;

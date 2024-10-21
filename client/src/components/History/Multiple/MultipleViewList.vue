@@ -6,15 +6,14 @@ import { computed, type Ref, ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
 
-import { HistoryItemSummary } from "@/api";
-import { copyDataset } from "@/api/datasets";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { Toast } from "@/composables/toast";
-import { useEventStore } from "@/stores/eventStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
+
+import { useHistoryDragDrop } from "../../../composables/historyDragDrop";
 
 import HistoryDropZone from "../CurrentHistory/HistoryDropZone.vue";
 import MultipleViewItem from "./MultipleViewItem.vue";
@@ -65,83 +64,7 @@ async function createAndPin() {
     }
 }
 
-const showDropZone = ref(false);
-const processingDrop = ref(false);
-async function onDrop(evt: any) {
-    const eventStore = useEventStore();
-    if (processingDrop.value) {
-        showDropZone.value = false;
-        return;
-    }
-    processingDrop.value = true;
-    showDropZone.value = false;
-    let data: HistoryItemSummary[] | undefined;
-    let originalHistoryId: string | undefined;
-    const multiple = eventStore.multipleDragData;
-    try {
-        if (multiple) {
-            const dragData = eventStore.getDragData() as Record<string, HistoryItemSummary>;
-            // set originalHistoryId to the first history_id in the multiple drag data
-            const firstItem = Object.values(dragData)[0];
-            if (firstItem) {
-                originalHistoryId = firstItem.history_id;
-            }
-            data = Object.values(dragData);
-        } else {
-            data = [eventStore.getDragData() as HistoryItemSummary];
-            if (data[0]) {
-                originalHistoryId = data[0].history_id;
-            }
-        }
-    } catch (error) {
-        // this was not a valid object for this dropzone, ignore
-    }
-
-    if (data && originalHistoryId) {
-        await historyStore.createNewHistory();
-        const currentHistoryId = historyStore.currentHistoryId;
-
-        let datasetCount = 0;
-        let collectionCount = 0;
-        if (currentHistoryId) {
-            // iterate over the data array and copy each item to the new history
-            for (const item of data) {
-                const dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
-                await copyDataset(item.id, currentHistoryId, item.history_content_type, dataSource)
-                    .then(() => {
-                        if (item.history_content_type === "dataset") {
-                            datasetCount++;
-                            if (!multiple) {
-                                Toast.info(localize("Dataset copied to new history"));
-                            }
-                        } else {
-                            collectionCount++;
-                            if (!multiple) {
-                                Toast.info(localize("Collection copied to new history"));
-                            }
-                        }
-                    })
-                    .catch((error) => {
-                        Toast.error(errorMessageAsString(error));
-                    });
-            }
-            if (multiple && datasetCount > 0) {
-                Toast.info(`${datasetCount} dataset${datasetCount > 1 ? "s" : ""} copied to new history`);
-            }
-            if (multiple && collectionCount > 0) {
-                Toast.info(`${collectionCount} collection${collectionCount > 1 ? "s" : ""} copied to new history`);
-            }
-
-            if (historyStore.pinnedHistories.length > 0) {
-                // pin the newly created history via the drop
-                historyStore.pinHistory(currentHistoryId);
-                // also pin the original history where the item came from
-                historyStore.pinHistory(originalHistoryId);
-            }
-        }
-        processingDrop.value = false;
-    }
-}
+const { showDropZone, onDragEnter, onDragLeave, onDragOver, onDrop } = useHistoryDragDrop(undefined, true, true);
 
 async function onKeyDown(evt: KeyboardEvent) {
     if (evt.key === "Enter" || evt.key === " ") {
@@ -175,9 +98,9 @@ async function onKeyDown(evt: KeyboardEvent) {
             <div
                 class="history-picker"
                 @drop.prevent="onDrop"
-                @dragenter.prevent="showDropZone = true"
-                @dragover.prevent
-                @dragleave.prevent="showDropZone = false">
+                @dragenter.prevent="onDragEnter"
+                @dragover="onDragOver"
+                @dragleave.prevent="onDragLeave">
                 <span v-if="!showDropZone" class="d-flex flex-column h-100">
                     <div
                         class="history-picker-box top-picker text-primary"

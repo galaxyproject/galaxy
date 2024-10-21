@@ -8,7 +8,7 @@
   <inputs>
     <param name="input" type="data" format="tabular" label="Dataset">
       <validator type="unspecified_build"/>
-      <validator type="dataset_metadata_in_file" filename="sift_db.loc" metadata_name="dbkey" metadata_column="0" message="Data is currently not available for the specified build."/>
+      <validator type="dataset_metadata_in_data_table" table_name="sift_db" metadata_name="dbkey" metadata_column="0" message="Data is currently not available for the specified build."/>
     </param>
     <param name="chrom_col"  type="data_column" data_ref="input" label="Column with chromosome"/>
     <param name="pos_col"    type="data_column" data_ref="input" numerical="true" label="Column with position"/>

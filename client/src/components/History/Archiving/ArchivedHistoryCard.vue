@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCopy, faEye, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faExchangeAlt, faEye, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BButtonGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { ArchivedHistorySummary } from "@/api/histories.archived";
+import { type ArchivedHistorySummary } from "@/api/histories.archived";
 import localize from "@/utils/localization";
 
 import ExportRecordDOILink from "@/components/Common/ExportRecordDOILink.vue";
@@ -23,14 +23,19 @@ const canImportCopy = computed(() => props.history.export_record_data?.target_ur
 
 const emit = defineEmits<{
     (e: "onView", history: ArchivedHistorySummary): void;
+    (e: "onSwitch", history: ArchivedHistorySummary): void;
     (e: "onRestore", history: ArchivedHistorySummary): void;
     (e: "onImportCopy", history: ArchivedHistorySummary): void;
 }>();
 
-library.add(faUndo, faCopy, faEye);
+library.add(faExchangeAlt, faUndo, faCopy, faEye);
 
 function onViewHistoryInCenterPanel() {
     emit("onView", props.history);
+}
+
+function onSetAsCurrentHistory() {
+    emit("onSwitch", props.history);
 }
 
 async function onRestoreHistory() {
@@ -83,6 +88,15 @@ async function onImportCopy() {
                     @click.stop="onViewHistoryInCenterPanel">
                     <FontAwesomeIcon :icon="faEye" size="lg" />
                     View
+                </BButton>
+                <BButton
+                    v-b-tooltip
+                    :title="localize('Set as current history')"
+                    variant="link"
+                    class="p-0 px-1"
+                    @click.stop="onSetAsCurrentHistory">
+                    <FontAwesomeIcon :icon="faExchangeAlt" size="lg" />
+                    Switch
                 </BButton>
                 <BButton
                     v-b-tooltip

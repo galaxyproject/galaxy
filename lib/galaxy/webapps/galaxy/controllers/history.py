@@ -123,7 +123,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             )
         )
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_login("changing default permissions")
     def permissions(self, trans, payload=None, **kwd):
         """
@@ -131,7 +131,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         """
         history_id = kwd.get("id")
         if not history_id:
-            return self.message_exception(trans, f"Invalid history id ({str(history_id)}) received")
+            raise exceptions.RequestParameterMissingException("No history id received")
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         if trans.request.method == "GET":
             inputs = []
@@ -166,7 +166,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             trans.app.security_agent.history_set_default_permissions(history, permissions)
             return {"message": f"Default history '{history.name}' dataset permissions have been changed."}
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_login("make datasets private")
     def make_private(self, trans, history_id=None, all_histories=False, **kwd):
         """
@@ -184,7 +184,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             if history:
                 histories.append(history)
         if not histories:
-            return self.message_exception(trans, "Invalid history or histories specified.")
+            raise exceptions.RequestParameterMissingException("No history or histories specified.")
         private_role = trans.app.security_agent.get_private_user_role(trans.user)
         user_roles = trans.user.all_roles()
         private_permissions = {
@@ -192,7 +192,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             trans.app.security_agent.permitted_actions.DATASET_ACCESS: [private_role],
         }
         for history in histories:
-            self.history_manager.error_unless_mutable(history)
             # Set default role for history to private
             trans.app.security_agent.history_set_default_permissions(history, private_permissions)
             # Set private role for all datasets
@@ -204,8 +203,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 ):
                     # If it's not private to me, and I can manage it, set fixed private permissions.
                     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
-                    if not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset):
-                        raise exceptions.InternalServerError("An error occurred and the dataset is NOT private.")
         return {
             "message": f"Success, requested permissions have been changed in {'all histories' if all_histories else history.name}."
         }
@@ -240,28 +237,24 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             )
         return trans.show_error_message("Cannot purge deleted datasets from this session.")
 
-    @web.expose
+    @web.expose_api_anonymous
     def resume_paused_jobs(self, trans, current=False, ids=None, **kwargs):
-        """Resume paused jobs the active history -- this does not require a logged in user."""
+        """Resume paused jobs for the active history -- this does not require a logged in user."""
         if not ids and string_as_bool(current):
-            histories = [trans.get_history()]
-            refresh_frames = ["history"]
-        else:
-            raise NotImplementedError("You can currently only resume all the datasets of the current history.")
-        for history in histories:
-            history.resume_paused_jobs()
-            trans.sa_session.add(history)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return trans.show_ok_message("Your jobs have been resumed.", refresh_frames=refresh_frames)
-        # TODO: used in index.mako
+            history = trans.get_history()
+            if history:
+                history.resume_paused_jobs()
+                return {"message": "Your jobs have been resumed.", "status": "success"}
+        raise exceptions.RequestParameterInvalidException(
+            "You can currently only resume all the datasets of the current history."
+        )
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_login("rename histories")
     def rename(self, trans, payload=None, **kwd):
         id = kwd.get("id")
         if not id:
-            return self.message_exception(trans, "No history id received for renaming.")
+            raise exceptions.RequestParameterMissingException("No history id received for renaming.")
         user = trans.get_user()
         id = listify(id)
         histories = []
@@ -325,7 +318,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def set_as_current(self, trans, id, **kwargs):
         """Change the current user's current history to one with `id`."""
         try:
-            history = self.history_manager.get_mutable(self.decode_id(id), trans.user, current_history=trans.history)
+            history = self.history_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
             trans.set_history(history)
             return self.history_data(trans, history)
         except exceptions.MessageException as msg_exc:

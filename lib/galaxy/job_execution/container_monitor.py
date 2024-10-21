@@ -9,10 +9,11 @@ import traceback
 from functools import partial
 from typing import Callable
 
-import requests
-
 from galaxy.tool_util.deps import docker_util
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from galaxy.util.sockets import get_ip
 
 GetIpCallable = Callable[[], str]
@@ -74,7 +75,8 @@ def main():
                         if ports[key]["host"] == "0.0.0.0":
                             ports[key]["host"] = host_ip
                 if callback_url:
-                    requests.post(callback_url, json={"container_runtime": ports}, timeout=DEFAULT_SOCKET_TIMEOUT)
+                    r = requests.post(callback_url, json={"container_runtime": ports}, timeout=DEFAULT_SOCKET_TIMEOUT)
+                    r.raise_for_status()
                 else:
                     with open("container_runtime.json", "w") as f:
                         json.dump(ports, f)

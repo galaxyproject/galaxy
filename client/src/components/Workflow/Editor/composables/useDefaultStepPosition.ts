@@ -1,6 +1,6 @@
-import type { UseElementBoundingReturn } from "@vueuse/core";
-import type { ZoomTransform } from "d3-zoom";
-import type { UnwrapRef } from "vue";
+import { type UseElementBoundingReturn } from "@vueuse/core";
+import { type ZoomTransform } from "d3-zoom";
+import { type UnwrapRef } from "vue";
 
 type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
 

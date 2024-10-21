@@ -19,7 +19,8 @@
         "extensions": [
           "input"
         ],
-        "optional": false
+        "optional": false,
+        "multiple": false
       }
     ],
     "annotation": "",
@@ -199,7 +200,7 @@
     "content_id": null,
     "name": "Input parameter",
     "tool_state": {
-      "parameter_definition": "{\"__current_case__\": 1, \"optional\": {\"__current_case__\": 1, \"optional\": \"false\"}, \"parameter_type\": \"integer\"}",
+      "parameter_definition": "{\"__current_case__\": 1, \"optional\": {\"__current_case__\": 1, \"optional\": \"false\"}, \"parameter_type\": \"integer\", \"multiple\": \"false\",}",
       "__page__": null,
       "__rerun_remap_job_id__": null
     },
@@ -211,7 +212,8 @@
         "label": "integer parameter input",
         "type": "integer",
         "optional": false,
-        "parameter": true
+        "parameter": true,
+        "multiple": false
       }
     ],
     "annotation": "",
@@ -427,7 +429,7 @@
     "content_id": null,
     "name": "Input parameter",
     "tool_state": {
-      "parameter_definition": "{\"__current_case__\": 0, \"optional\": {\"__current_case__\": 1, \"optional\": \"false\"}, \"parameter_type\": \"text\", \"restrictions\": {\"__current_case__\": 0, \"how\": \"none\"}}",
+      "parameter_definition": "{\"__current_case__\": 0, \"optional\": {\"__current_case__\": 1, \"optional\": \"false\"}, \"parameter_type\": \"text\", \"multiple\": \"false\", \"restrictions\": {\"__current_case__\": 0, \"how\": \"none\"}}",
       "__page__": null,
       "__rerun_remap_job_id__": null
     },
@@ -439,7 +441,8 @@
         "label": "text parameter input",
         "type": "text",
         "optional": false,
-        "parameter": true
+        "parameter": true,
+        "multiple": false
       }
     ],
     "annotation": "",
@@ -746,7 +749,8 @@
           "txt"
         ],
         "type": "data",
-        "optional": false
+        "optional": false,
+        "multiple": false
       },
       {
         "name": "out2",
@@ -754,7 +758,8 @@
           "txt"
         ],
         "type": "data",
-        "optional": false
+        "optional": false,
+        "multiple": false
       }
     ],
     "annotation": "",
@@ -905,6 +910,72 @@
     "position": {
       "left": 12.8729248046875,
       "top": 501.7839660644531
+    }
+  },
+  "19": {
+    "id": 19,
+    "type": "parameter_input",
+    "label": "optional text parameter input",
+    "content_id": null,
+    "name": "Input parameter",
+    "tool_state": {
+      "parameter_definition": "{\"__current_case__\": 0, \"optional\": {\"__current_case__\": 1, \"optional\": \"true\"}, \"parameter_type\": \"text\", \"restrictions\": {\"__current_case__\": 0, \"how\": \"none\"}}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "label": "optional text parameter input",
+        "type": "text",
+        "optional": true,
+        "parameter": true,
+        "multiple": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "uuid": "71c030ff-a29f-4e32-a735-37471e7a3f12",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 95.0506591796875,
+      "top": 867.0427551269531
+    }
+  },
+  "20": {
+    "id": 20,
+    "type": "parameter_input",
+    "label": "optional integer parameter input",
+    "content_id": null,
+    "name": "Input parameter",
+    "tool_state": {
+      "parameter_definition": "{\"__current_case__\": 1, \"optional\": {\"__current_case__\": 1, \"optional\": \"true\"}, \"parameter_type\": \"integer\"}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "label": "integer parameter input",
+        "type": "integer",
+        "optional": true,
+        "parameter": true,
+        "multiple": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "uuid": "634f06f1-b279-4160-9390-a004018e92ce",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 148.72970581054688,
+      "top": 620.5069274902344
     }
   }
 }

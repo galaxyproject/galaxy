@@ -155,6 +155,45 @@
 -->
 
 <!--
+    Sample Onedata Object Store
+
+    Note for developers: you can easily set up a minimal, dockerized Onedata environment
+    using the so-called "demo-mode": https://onedata.org/#/home/documentation/topic/stable/demo-mode
+
+    Onedata specific options:
+    //auth/@access_token -
+        an access token suitable for data access (allowing calls to the Oneprovider REST API).
+
+    //connection/@onezone_domain -
+        the domain of the Onezone service (e.g. datahub.egi.eu), or its IP address for
+        devel instances (see above). The minimal supported Onezone version is 21.02.4.
+
+    //connection/@disable_tls_certificate_validation - 
+        Allows connection to Onedata servers that do not present trusted SSL certificates. 
+        SHOULD NOT be used unless you really know what you are doing.
+
+    //space/@name -
+        the name of the Onedata space where the Galaxy data will be stored.
+        If there is more than one space with the same name, you can explicitly
+        specify which one to select by using the format <space_name>@<space_id>
+        (e.g. demo@7285220ecc636075ae5759aec7ad65d3cha8f9).
+
+    //space/@galaxy_root_dir -
+        the relative directory path in the space at which the Galaxy data will be stored.
+        Optional, if not provided, the data will be stored in the root of space.
+-->
+<!--
+<object_store type="onedata">
+    <auth access_token="..." />
+    <connection onezone_domain="datahub.egi.eu" disable_tls_certificate_validation="False"/>
+    <space name="demo-space" galaxy_root_dir="galaxy-data" />
+    <cache path="database/object_store_cache" size="1000" cache_updated_data="True" />
+    <extra_dir type="job_work" path="database/job_working_directory_onedata"/>
+    <extra_dir type="temp" path="database/tmp_onedata"/>
+</object_store>
+-->
+
+<!--
     Sample iRODS Object Store
 -->
 <!--

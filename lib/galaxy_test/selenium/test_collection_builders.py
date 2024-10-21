@@ -34,18 +34,6 @@ class TestCollectionBuilders(SeleniumTestCase):
 
     @selenium_test
     @managed_history
-    def test_build_pair_simple_hidden(self):
-        self.perform_upload(self.get_filename("1.tabular"))
-        self.perform_upload(self.get_filename("2.tabular"))
-        self._wait_for_and_select([1, 2])
-        self._collection_dropdown("build pair")
-        self.collection_builder_set_name("my awesome pair")
-        self.screenshot("collection_builder_pair")
-        self.collection_builder_create()
-        self._wait_for_hid_visible(5)
-
-    @selenium_test
-    @managed_history
     def test_build_paired_list_simple(self):
         self.perform_upload(self.get_filename("1.tabular"))
         self.perform_upload(self.get_filename("2.tabular"))

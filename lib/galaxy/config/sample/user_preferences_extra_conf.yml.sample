@@ -141,10 +141,15 @@ preferences:
         description: Your Onedata account
         inputs:
             - name: onezone_domain
-              label: Domain of the Onezone service (e.g. "demo.onedata.org")
+              label: Domain of the Onezone service (e.g. datahub.egi.eu). The minimal supported Onezone version is 21.02.4.
               type: text
               required: False
             - name: access_token
               label: Your access token, suitable for REST API access in a Oneprovider service
               type: password
               required: False
+            - name: disable_tls_certificate_validation
+              label: Allow connection to Onedata servers that do not present trusted SSL certificates. SHOULD NOT be used unless you really know what you are doing.
+              type: boolean
+              required: False
+              value: False

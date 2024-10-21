@@ -10,7 +10,7 @@
  */
 
 import { isEqual, omit } from "lodash";
-import type { DefineComponent } from "vue";
+import { type DefineComponent } from "vue";
 
 export type Converter<T> = (value: T) => T;
 type Handler<T> = (v: T, q: T) => boolean;
@@ -85,6 +85,12 @@ export type ValidFilter<T> = {
     helpInfo?: DefineComponent | string;
     /** A default value (will make this a default filter for an empty `filterText`) */
     default?: T;
+    /** A dict of filters and corresponding values for this filter that disable them.
+     * Note: if value is null, the filter is disabled for any value of this filter.
+     */
+    disablesFilters?: {
+        [filter: string]: T[] | null;
+    };
 };
 
 /** Converts user input to backend compatible date

@@ -8,8 +8,9 @@ from typing import (
     Dict,
 )
 
-import requests
 import yaml
+
+from galaxy.util import requests
 
 DESCRIPTION = """Load a Galaxy model store into a running Galaxy instance.
 

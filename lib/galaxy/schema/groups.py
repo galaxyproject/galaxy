@@ -9,6 +9,7 @@ from pydantic import (
 )
 from typing_extensions import Literal
 
+from galaxy.schema import partial_model
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
@@ -67,5 +68,23 @@ class GroupCreatePayload(Model):
     )
     role_ids: List[DecodedDatabaseIdField] = Field(
         [],
+        title="role IDs",
+    )
+
+
+@partial_model()
+class GroupUpdatePayload(Model):
+    """Payload schema for updating a group."""
+
+    name: str = Field(
+        ...,
+        title="name of the group",
+    )
+    user_ids: Optional[List[DecodedDatabaseIdField]] = Field(
+        None,
+        title="user IDs",
+    )
+    role_ids: Optional[List[DecodedDatabaseIdField]] = Field(
+        None,
         title="role IDs",
     )

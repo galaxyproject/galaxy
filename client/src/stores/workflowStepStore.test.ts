@@ -1,7 +1,6 @@
 import { createPinia, setActivePinia } from "pinia";
 
-import type { NewStep, StepInputConnection } from "@/stores/workflowStepStore";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { type NewStep, type StepInputConnection, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import { useConnectionStore } from "./workflowConnectionStore";
 

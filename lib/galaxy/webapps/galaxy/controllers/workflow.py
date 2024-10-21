@@ -9,8 +9,10 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.managers.histories import HistoryManager
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.model.item_attrs import UsesItemRatings
+from galaxy.structured_app import StructuredApp
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.web import url_for
@@ -24,12 +26,17 @@ from galaxy.workflow.extract import (
     summarize,
 )
 from galaxy.workflow.modules import load_module_sections
+from ..api import depends
 
 log = logging.getLogger(__name__)
 
 
 class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesItemRatings):
+    history_manager: HistoryManager = depends(HistoryManager)
     slug_builder = SlugBuilder()
+
+    def __init__(self, app: StructuredApp):
+        super().__init__(app)
 
     @web.expose
     def display_by_username_and_slug(self, trans, username, slug, format="html", **kwargs):
@@ -304,14 +311,19 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         workflow_name=None,
         dataset_names=None,
         dataset_collection_names=None,
+        history_id=None,
         **kwargs,
     ):
         user = trans.get_user()
-        history = trans.get_history()
+        history = trans.history
+        if history_id:
+            # Optionally target a different history than the current one.
+            history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=history)
         if not user:
+            trans.response.status = 403
             return trans.show_error_message("Must be logged in to create workflows")
         if (job_ids is None and dataset_ids is None) or workflow_name is None:
-            jobs, warnings = summarize(trans)
+            jobs, warnings = summarize(trans, history)
             # Render
             return trans.fill_template(
                 "workflow/build_from_current_history.mako", jobs=jobs, warnings=warnings, history=history
@@ -324,6 +336,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             stored_workflow = extract_workflow(
                 trans,
                 user=user,
+                history=history,
                 job_ids=job_ids,
                 dataset_ids=dataset_ids,
                 dataset_collection_ids=dataset_collection_ids,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { components } from "@/api/schema";
+import { type components } from "@/api/schema";
 
 import ObjectStoreBadge from "./ObjectStoreBadge.vue";
 

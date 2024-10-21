@@ -22,6 +22,13 @@ export const useEventStore = defineStore("eventStore", () => {
         return dragData.value;
     }
 
+    function getDragItems(): EventData[] {
+        if (!dragData.value) {
+            return [];
+        }
+        return multipleDragData.value ? (Object.values(dragData.value) as EventData[]) : [dragData.value];
+    }
+
     function setDragData(data: EventData, multiple = false) {
         dragData.value = data;
         multipleDragData.value = multiple;
@@ -32,6 +39,7 @@ export const useEventStore = defineStore("eventStore", () => {
         multipleDragData,
         clearDragData,
         getDragData,
+        getDragItems,
         setDragData,
     };
 });

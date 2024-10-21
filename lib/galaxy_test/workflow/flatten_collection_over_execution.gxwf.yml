@@ -1,0 +1,17 @@
+class: GalaxyWorkflow
+inputs:
+  input_fastqs: collection
+outputs:
+  out:
+    outputSource: flatten/output
+steps:
+  split_up:
+    tool_id: collection_split_on_column
+    in:
+      input1: input_fastqs
+  flatten:
+    tool_id: '__FLATTEN__'
+    state:
+      join_identifier: '-'
+    in:
+      input: split_up/split_output

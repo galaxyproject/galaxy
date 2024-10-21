@@ -1,0 +1,21 @@
+- doc: | 
+    Test that workflows can run with multiple versions of tools and the version specified matches the one run.
+  job:
+    input:
+      value: 1
+      type: raw
+  outputs:
+    output_1:
+      class: File
+      asserts:
+        - that: has_text
+          text: 'Version 0.1'
+        - that: not_has_text
+          text: 'Version 0.2'
+    output_2:
+      class: File
+      asserts:
+        - that: has_text
+          text: 'Version 0.2'
+        - that: not_has_text
+          text: 'Version 0.1'

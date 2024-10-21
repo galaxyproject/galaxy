@@ -2,7 +2,7 @@
 import axios from "axios";
 import { ref, watch } from "vue";
 
-import { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
+import { type BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 import { useFileSources } from "@/composables/fileSources";
 
 import DOILink from "./DOILink.vue";

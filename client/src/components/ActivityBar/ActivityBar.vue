@@ -11,6 +11,7 @@ import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
 
+import InvocationsPanel from "../Panels/InvocationsPanel.vue";
 import VisualizationPanel from "../Panels/VisualizationPanel.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
@@ -178,7 +179,7 @@ watch(
                                 :to="activity.to"
                                 @click="onToggleSidebar()" />
                             <ActivityItem
-                                v-else-if="['admin', 'tools', 'visualizations', 'multiview'].includes(activity.id)"
+                                v-else-if="activity.id === 'admin' || activity.panel"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
@@ -211,10 +212,10 @@ watch(
                     @click="onToggleSidebar('notifications')" />
                 <ActivityItem
                     id="activity-settings"
-                    icon="cog"
+                    icon="ellipsis-h"
                     :is-active="isActiveSideBar('settings')"
-                    title="Settings"
-                    tooltip="Edit preferences"
+                    title="More"
+                    tooltip="View additional activities"
                     @click="onToggleSidebar('settings')" />
                 <ActivityItem
                     v-if="isAdmin"
@@ -229,6 +230,7 @@ watch(
         </div>
         <FlexPanel v-if="isSideBarOpen" side="left" :collapsible="false">
             <ToolPanel v-if="isActiveSideBar('tools')" />
+            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />

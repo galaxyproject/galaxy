@@ -1,9 +1,12 @@
 /**
  * Helper to configure datatransfer for drag & drop operations
  */
-import { useEventStore } from "@/stores/eventStore";
+import { type DCESummary, isDCE } from "@/api";
+import { type EventData, useEventStore } from "@/stores/eventStore";
 
-export function setDrag(evt: DragEvent, data = null, multiple = false) {
+type NamedDCESummary = DCESummary & { name: string };
+
+export function setDrag(evt: DragEvent, data?: EventData, multiple = false) {
     const eventStore = useEventStore();
     if (data) {
         evt.dataTransfer?.setData("text", JSON.stringify([data]));
@@ -24,4 +27,30 @@ export function setDrag(evt: DragEvent, data = null, multiple = false) {
 export function clearDrag() {
     const eventStore = useEventStore();
     eventStore.clearDragData();
+}
+
+export function setItemDragstart<T>(
+    item: T,
+    event: DragEvent,
+    itemIsSelected = false,
+    selectionSize = 0,
+    selectedItems?: Map<string, T>
+) {
+    if (selectedItems && itemIsSelected && selectionSize > 1) {
+        const selectedItemsObj: Record<string, T> = {};
+        for (const [key, value] of selectedItems) {
+            setCollectionElementName(value as any);
+            selectedItemsObj[key] = value;
+        }
+        setDrag(event, selectedItemsObj, true);
+    } else {
+        setCollectionElementName(item as any);
+        setDrag(event, item as any);
+    }
+}
+
+function setCollectionElementName<T extends NamedDCESummary>(obj: T) {
+    if (isDCE(obj as object)) {
+        obj["name"] = obj.element_identifier;
+    }
 }

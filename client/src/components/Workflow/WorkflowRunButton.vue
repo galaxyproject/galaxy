@@ -3,6 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlay } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
+import { computed } from "vue";
 
 library.add(faPlay);
 
@@ -11,21 +12,26 @@ interface Props {
     full?: boolean;
     title?: string;
     disabled?: boolean;
+    version?: number;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
+
+const runPath = computed(
+    () => `/workflows/run?id=${props.id}${props.version !== undefined ? `&version=${props.version}` : ""}`
+);
 </script>
 
 <template>
     <BButton
         id="workflow-run-button"
-        v-b-tooltip.hover.top.noninteractive
+        v-b-tooltip.hover.top.html.noninteractive
         :title="title ?? 'Run workflow'"
         :data-workflow-run="id"
         variant="primary"
         size="sm"
         :disabled="disabled"
-        :to="`/workflows/run?id=${id}`">
+        :to="runPath">
         <FontAwesomeIcon :icon="faPlay" fixed-width />
 
         <span v-if="full" v-localize>Run</span>

@@ -4,6 +4,7 @@ import shutil
 from typing import (
     List,
     Optional,
+    Tuple,
 )
 
 from typing_extensions import Unpack
@@ -59,7 +60,11 @@ class PosixFilesSource(BaseFilesSource):
         recursive=True,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
-    ) -> List[AnyRemoteEntry]:
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[AnyRemoteEntry], int]:
         if not self.root:
             raise exceptions.ItemAccessibilityException("Listing files at file:// URLs has been disabled.")
         dir_path = self._to_native_path(path, user_context=user_context)
@@ -73,11 +78,11 @@ class PosixFilesSource(BaseFilesSource):
                 to_dict = functools.partial(self._resource_info_to_dict, rel_dir, user_context=user_context)
                 res.extend(map(to_dict, dirs))
                 res.extend(map(to_dict, files))
-            return res
+            return res, len(res)
         else:
             res = os.listdir(dir_path)
             to_dict = functools.partial(self._resource_info_to_dict, path, user_context=user_context)
-            return list(map(to_dict, res))
+            return list(map(to_dict, res)), len(res)
 
     def _realize_to(
         self,

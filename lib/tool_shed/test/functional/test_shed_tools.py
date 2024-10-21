@@ -62,9 +62,17 @@ class TestShedToolsApi(ShedApiTestCase):
         repository = populator.setup_column_maker_repo(prefix="toolstrsindex")
         tool_id = populator.tool_guid(self, repository, "Add_a_column1")
         tool_shed_base, encoded_tool_id = encode_identifier(tool_id)
-        print(encoded_tool_id)
         url = f"ga4gh/trs/v2/tools/{encoded_tool_id}"
-        print(url)
         tool_response = self.api_interactor.get(url)
         tool_response.raise_for_status()
         assert Tool(**tool_response.json())
+
+    @skip_if_api_v1
+    def test_trs_tool_parameter_json_schema(self):
+        populator = self.populator
+        repository = populator.setup_column_maker_repo(prefix="toolsparameterschema")
+        tool_id = populator.tool_guid(self, repository, "Add_a_column1")
+        tool_shed_base, encoded_tool_id = encode_identifier(tool_id)
+        url = f"tools/{encoded_tool_id}/versions/1.1.0/parameter_request_schema"
+        tool_response = self.api_interactor.get(url)
+        tool_response.raise_for_status()

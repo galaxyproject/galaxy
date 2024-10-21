@@ -57,10 +57,9 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         extra_dir=None,
         extra_dir_at_root=False,
         alt_name=None,
-        obj_dir=False,
-        in_cache=False,
-        **kwargs,
-    ):
+        obj_dir: bool = False,
+        in_cache: bool = False,
+    ) -> str:
         # extra_dir should never be constructed from provided data but just
         # make sure there are no shenannigans afoot
         if extra_dir and extra_dir != os.path.normpath(extra_dir):
@@ -112,7 +111,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         cache_path = self._get_cache_path(rel_path)
         return os.path.exists(cache_path)
 
-    def _pull_into_cache(self, rel_path) -> bool:
+    def _pull_into_cache(self, rel_path, **kwargs) -> bool:
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
         if not os.path.exists(self._get_cache_path(rel_path_dir)):
@@ -129,7 +128,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         rel_path = self._construct_path(obj, **kwargs)
         # Check cache first and get file if not there
         if not self._in_cache(rel_path):
-            self._pull_into_cache(rel_path)
+            self._pull_into_cache(rel_path, **kwargs)
         # Read the file content from cache
         data_file = open(self._get_cache_path(rel_path))
         data_file.seek(start)
@@ -137,7 +136,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         data_file.close()
         return content
 
-    def _exists(self, obj, **kwargs):
+    def _exists(self, obj, **kwargs) -> bool:
         in_cache = exists_remotely = False
         rel_path = self._construct_path(obj, **kwargs)
         dir_only = kwargs.get("dir_only", False)
@@ -248,17 +247,20 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             )
             return success
 
-    def _empty(self, obj, **kwargs):
+    def _empty(self, obj, **kwargs) -> bool:
         if self._exists(obj, **kwargs):
             return self._size(obj, **kwargs) == 0
         else:
             raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
 
-    def _size(self, obj, **kwargs):
+    def _get_size_in_cache(self, rel_path):
+        return os.path.getsize(self._get_cache_path(rel_path))
+
+    def _size(self, obj, **kwargs) -> int:
         rel_path = self._construct_path(obj, **kwargs)
         if self._in_cache(rel_path):
             try:
-                return os.path.getsize(self._get_cache_path(rel_path))
+                return self._get_size_in_cache(rel_path)
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try Azure. Error: %s", rel_path, ex)
         elif self._exists_remotely(rel_path):
@@ -266,11 +268,10 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
         return 0
 
-    def _get_filename(self, obj, **kwargs):
+    def _get_filename(self, obj, sync_cache: bool = True, **kwargs) -> str:
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)
         obj_dir = kwargs.get("obj_dir", False)
-        sync_cache = kwargs.get("sync_cache", True)
 
         rel_path = self._construct_path(obj, **kwargs)
 
@@ -295,7 +296,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 self._download_directory_into_cache(rel_path, cache_path)
                 return cache_path
             else:
-                if self._pull_into_cache(rel_path):
+                if self._pull_into_cache(rel_path, **kwargs):
                     return cache_path
         raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}")
 
@@ -310,7 +311,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         # object stores should definitely override this.
         pass
 
-    def _delete(self, obj, entire_dir=False, **kwargs):
+    def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         rel_path = self._construct_path(obj, **kwargs)
         extra_dir = kwargs.get("extra_dir", None)
         base_dir = kwargs.get("base_dir", None)
@@ -339,7 +340,9 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             log.exception("%s delete error", self._get_filename(obj, **kwargs))
         return False
 
-    def _update_from_file(self, obj, file_name=None, create=False, **kwargs):
+    def _update_from_file(
+        self, obj, file_name=None, create: bool = False, preserve_symlinks: bool = False, **kwargs
+    ) -> None:
         if create:
             self._create(obj, **kwargs)
 

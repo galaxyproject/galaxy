@@ -41,6 +41,7 @@ from galaxy.datatypes.sniff import (
     get_headers,
     iter_headers,
 )
+from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util import (
     compression_utils,
     nice_size,
@@ -316,6 +317,34 @@ class Sequence(data.Text):
         cmd += f' > "{output_name}"'
 
         return [cmd]
+
+    def display_data(
+        self,
+        trans,
+        dataset: DatasetHasHidProtocol,
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        **kwd,
+    ):
+        headers = kwd.get("headers", {})
+        if preview:
+            with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
+                max_peek_size = 100000
+                try:
+                    chunk = fh.read(max_peek_size + 1)
+                except UnicodeDecodeError:
+                    raise InvalidFileFormatError("Dataset appears to contain binary data, cannot display.")
+                if len(chunk) <= max_peek_size:
+                    mime = "text/plain"
+                    self._clean_and_set_mime_type(trans, mime, headers)
+                    return chunk[:-1], headers
+                return (
+                    trans.fill_template_mako("/dataset/large_file.mako", truncated_data=chunk[:-1], data=dataset),
+                    headers,
+                )
+        else:
+            return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
 
 
 class Alignment(data.Text):
@@ -763,32 +792,6 @@ class BaseFastq(Sequence):
             return False
         return self.check_first_block(file_prefix)
 
-    def display_data(
-        self,
-        trans,
-        dataset: DatasetHasHidProtocol,
-        preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
-        **kwd,
-    ):
-        headers = kwd.get("headers", {})
-        if preview:
-            with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
-                max_peek_size = 1000000  # 1 MB
-                if os.stat(dataset.get_file_name()).st_size < max_peek_size:
-                    mime = "text/plain"
-                    self._clean_and_set_mime_type(trans, mime, headers)
-                    return fh.read(), headers
-                return (
-                    trans.fill_template_mako(
-                        "/dataset/large_file.mako", truncated_data=fh.read(max_peek_size), data=dataset
-                    ),
-                    headers,
-                )
-        else:
-            return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
-
     @classmethod
     def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
@@ -1205,26 +1208,30 @@ class Axt(data.Text):
         >>> fname = get_test_fname( 'alignment.lav' )
         >>> Axt().sniff( fname )
         False
+        >>> fname = get_test_fname( '2.chain' )
+        >>> Axt().sniff( fname )
+        False
         """
-        headers = get_headers(file_prefix, None)
-        if len(headers) < 4:
+        headers = get_headers(file_prefix, None, count=4, comment_designator="#")
+        if not (
+            len(headers) >= 3
+            and len(headers[0]) == 9
+            and headers[0][0] == "0"
+            and headers[0][2].isdecimal()
+            and headers[0][3].isdecimal()
+            and headers[0][5].isdecimal()
+            and headers[0][6].isdecimal()
+            and headers[0][7] in data.valid_strand
+            and headers[0][8].isdecimal()
+            and len(headers[1]) == 1
+            and len(headers[2]) == 1
+        ):
             return False
-        for hdr in headers:
-            if len(hdr) > 0 and hdr[0].startswith("##matrix=axt"):
-                return True
-            if len(hdr) > 0 and not hdr[0].startswith("#"):
-                if len(hdr) != 9:
-                    return False
-                try:
-                    for _ in (hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]):
-                        int(_)
-                except ValueError:
-                    return False
-                if hdr[7] not in data.valid_strand:
-                    return False
-                else:
-                    return True
-        return False
+        # the optional fourth non-comment line has to be empty
+        if len(headers) == 4 and not headers[3] == []:
+            return False
+        else:
+            return True
 
 
 @build_sniff_from_prefix

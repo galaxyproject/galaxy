@@ -173,6 +173,7 @@ class PlaywrightShedBrowser(ShedBrowser):
         logout_locator = self._page.locator(Locators.toolbar_logout)
         if logout_locator.is_visible():
             logout_locator.click()
+            self._page.wait_for_load_state("networkidle")
         if assert_logged_out:
             self.expect_not_logged_in()
 

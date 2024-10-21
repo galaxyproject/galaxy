@@ -1178,7 +1178,6 @@ steps:
           location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
 """
 
-
 WORKFLOW_FLAT_CROSS_PRODUCT = """
 class: GalaxyWorkflow
 inputs:
@@ -1198,3 +1197,43 @@ outputs:
   output_b:
     outputSource: cross_product/output_b
 """
+
+WORKFLOW_WITH_DATA_TAG_FILTER = r"""{
+    "a_galaxy_workflow": "true",
+    "annotation": null,
+    "comments": [],
+    "format-version": "0.1",
+    "name": "Export WF4 Assembly HiC (imported from URL) (imported from uploaded file)",
+    "steps": {
+        "0": {
+            "annotation": "With dataset tag : genomescope_model ",
+            "content_id": null,
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "With dataset tag : genomescope_model ",
+                    "name": "Genomescope Model"
+                }
+            ],
+            "label": "Genomescope Model",
+            "name": "Input dataset",
+            "outputs": [],
+            "position": {
+                "left": 0,
+                "top": 0
+            },
+            "tool_id": null,
+            "tool_state": "{\"optional\": false, \"format\": [\"txt\"], \"tag\": \"genomescope_model\"}",
+            "tool_version": null,
+            "type": "data_input",
+            "uuid": "a165c531-371f-4073-9cdd-85ce3506586f",
+            "when": null,
+            "workflow_outputs": []
+        }
+    },
+    "tags": [],
+    "uuid": "03a95ebe-af1e-4628-ac2f-e7553babfb2f",
+    "version": 3
+}"""

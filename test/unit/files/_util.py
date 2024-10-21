@@ -2,9 +2,11 @@
 
 import os
 import tempfile
+from typing import Optional
 
 from galaxy.files import (
     ConfiguredFileSources,
+    ConfiguredFileSourcesConf,
     DictFileSourcesUserContext,
     OptionalUserContext,
 )
@@ -42,7 +44,7 @@ def list_root(
 ):
     file_source_pair = file_sources.get_file_source_path(uri)
     file_source = file_source_pair.file_source
-    res = file_source.list("/", recursive=recursive, user_context=user_context)
+    res, _ = file_source.list("/", recursive=recursive, user_context=user_context)
     return res
 
 
@@ -56,7 +58,7 @@ def list_dir(
     file_source = file_source_pair.file_source
     print(file_source_pair.path)
     print(uri)
-    res = file_source.list(file_source_pair.path, recursive=recursive, user_context=user_context)
+    res, _ = file_source.list(file_source_pair.path, recursive=recursive, user_context=user_context)
     return res
 
 
@@ -155,13 +157,14 @@ def write_from(
         file_source_path.file_source.write_from(file_source_path.path, f.name, user_context=user_context)
 
 
-def configured_file_sources(conf_file):
-    file_sources_config = FileSourcePluginsConfig()
+def configured_file_sources(conf_file, file_sources_config: Optional[FileSourcePluginsConfig] = None):
+    file_sources_config = file_sources_config or FileSourcePluginsConfig()
+    assert file_sources_config
     if isinstance(conf_file, str):
-        conf = ConfiguredFileSources(file_sources_config, conf_file=conf_file)
+        conf = ConfiguredFileSourcesConf(conf_file=conf_file)
     else:
-        conf = ConfiguredFileSources(file_sources_config, conf_dict=conf_file)
-    return conf
+        conf = ConfiguredFileSourcesConf(conf_dict=conf_file)
+    return ConfiguredFileSources(file_sources_config, conf)
 
 
 def assert_can_write_and_read_to_conf(conf: dict):
@@ -190,7 +193,7 @@ def assert_simple_file_realize(conf_file, recursive=False, filename="a", content
 
     assert file_source_pair.path == "/"
     file_source = file_source_pair.file_source
-    res = file_source.list("/", recursive=recursive, user_context=user_context)
+    res, _ = file_source.list("/", recursive=recursive, user_context=user_context)
     a_file = find(res, class_="File", name=filename)
     assert a_file
 

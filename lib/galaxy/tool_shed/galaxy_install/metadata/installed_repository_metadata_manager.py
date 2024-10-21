@@ -192,7 +192,9 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
             status = "error"
         return message, status
 
-    def set_repository(self, repository):
+    def set_repository(
+        self, repository, relative_install_dir: Optional[str] = None, changeset_revision: Optional[str] = None
+    ):
         super().set_repository(repository)
         self.repository_clone_url = common_util.generate_clone_url_for_installed_repository(self.app, repository)
 

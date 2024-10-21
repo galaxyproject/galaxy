@@ -42,9 +42,9 @@ __status__ = "beta"
 fake_sff_name = "fake_sff_name"
 
 # readname as key: lines with matches from SSAHA, one best match
-ssahapematches = {}  # type: ignore
+ssahapematches = {}  # type: ignore[var-annotated]
 # linker readname as key: length of linker sequence
-linkerlengths = {}  # type: ignore
+linkerlengths = {}  # type: ignore[var-annotated]
 
 # set to true if something really fishy is going on with the sequences
 stern_warning = False

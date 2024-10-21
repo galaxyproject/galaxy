@@ -2,17 +2,17 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBug } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { AxiosError } from "axios";
 import { BAlert, BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { type HDADetailed } from "@/api";
+import { GalaxyApi, type HDADetailed } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
-import { fetchJobCommonProblems, fetchJobDetails, JobDetails, JobInputSummary, postJobErrorReport } from "@/api/jobs";
+import { type JobDetails, type JobInputSummary } from "@/api/jobs";
 import { useMarkdown } from "@/composables/markdown";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import DatasetErrorDetails from "@/components/DatasetInformation/DatasetErrorDetails.vue";
 import FormElement from "@/components/Form/FormElement.vue";
@@ -37,7 +37,7 @@ const datasetLoading = ref(false);
 const jobDetails = ref<JobDetails>();
 const jobProblems = ref<JobInputSummary>();
 const resultMessages = ref<string[][]>([]);
-const dataset = ref<HDADetailed | null>(null);
+const dataset = ref<HDADetailed>();
 
 const showForm = computed(() => {
     const noResult = !resultMessages.value.length;
@@ -48,72 +48,89 @@ const showForm = computed(() => {
 
 async function getDatasetDetails() {
     datasetLoading.value = true;
-
     try {
         const data = await fetchDatasetDetails({ id: props.datasetId });
-
         dataset.value = data;
     } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
-
-        errorMessage.value = error.response?.data?.err_msg || "Unable to fetch available dataset details.";
+        errorMessage.value = errorMessageAsString(e) || "Unable to fetch available dataset details.";
     } finally {
         datasetLoading.value = false;
     }
 }
 
-async function getJobDetails() {
+async function getJobDetails(jobId: string) {
     jobLoading.value = true;
-
     try {
-        const { data } = await fetchJobDetails({ job_id: dataset.value?.creating_job as string, full: true });
+        const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}", {
+            params: {
+                path: { job_id: jobId },
+                query: { full: true },
+            },
+        });
+
+        if (error) {
+            errorMessage.value = errorMessageAsString(error) || "Unable to fetch job details.";
+            return;
+        }
 
         jobDetails.value = data;
-    } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
-
-        errorMessage.value = error.response?.data?.err_msg || "Unable to fetch available dataset details.";
     } finally {
         jobLoading.value = false;
     }
 }
 
-async function getJobProblems() {
-    try {
-        const { data } = await fetchJobCommonProblems({ job_id: dataset.value?.creating_job as string });
-
-        jobProblems.value = data;
-    } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
-
-        errorMessage.value = error.response?.data?.err_msg || "Unable to fetch available dataset details.";
+async function getJobProblems(jobId: string) {
+    const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}/common_problems", {
+        params: {
+            path: { job_id: jobId },
+        },
+    });
+    if (error) {
+        errorMessage.value = errorMessageAsString(error) || "Unable to fetch job problems.";
+        return;
     }
+    jobProblems.value = data;
 }
 
-async function submit(dataset: HDADetailed, userEmailJob?: string | null) {
-    const email = userEmailJob;
+async function submit(dataset?: HDADetailed, userEmailJob?: string | null) {
+    if (!dataset) {
+        errorMessage.value = "No dataset found.";
+        return;
+    }
 
-    try {
-        const { data } = await postJobErrorReport({
-            job_id: dataset.creating_job,
+    const { data, error } = await GalaxyApi().POST("/api/jobs/{job_id}/error", {
+        params: {
+            path: { job_id: dataset.creating_job },
+        },
+        body: {
             dataset_id: dataset.id,
             message: message.value,
-            email,
-        });
+            email: userEmailJob,
+        },
+    });
 
-        resultMessages.value = data.messages;
-    } catch (error: any) {
-        resultMessages.value = error;
+    if (error) {
+        errorMessage.value = errorMessageAsString(error);
+        return;
     }
+
+    resultMessages.value = data.messages;
+}
+
+function onMissingJobId() {
+    errorMessage.value = "No job ID found for this dataset.";
 }
 
 onMounted(async () => {
     await getDatasetDetails();
 
-    if (dataset.value?.creating_job !== null) {
-        await getJobDetails();
-        await getJobProblems();
+    const creatingJobId = dataset.value?.creating_job;
+    if (!creatingJobId) {
+        onMissingJobId();
+        return;
     }
+    await getJobDetails(creatingJobId);
+    await getJobProblems(creatingJobId);
 });
 </script>
 
@@ -192,7 +209,7 @@ onMounted(async () => {
                     id="dataset-error-submit"
                     variant="primary"
                     class="mt-3"
-                    @click="submit(dataset, jobDetails.user_email)">
+                    @click="submit(dataset, jobDetails?.user_email)">
                     <FontAwesomeIcon :icon="faBug" class="mr-1" />
                     Report
                 </BButton>

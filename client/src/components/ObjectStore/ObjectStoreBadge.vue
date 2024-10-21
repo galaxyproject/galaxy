@@ -4,7 +4,7 @@ import "./badgeIcons";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import type { components } from "@/api/schema";
+import { type components } from "@/api/schema";
 
 import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 
@@ -64,8 +64,8 @@ const shrink = computed(() => {
     return { transform: "shrink-6" };
 });
 
-const message = computed(() => {
-    return props.badge.message;
+const message = computed<string>(() => {
+    return props.badge.message || "";
 });
 </script>
 
@@ -74,9 +74,7 @@ const message = computed(() => {
         <span ref="iconTarget" class="object-store-badge-wrapper">
             <FontAwesomeLayers :class="layerClasses" :data-badge-type="badgeType">
                 <FontAwesomeIcon v-if="badgeType == 'restricted'" icon="user-lock" :class="disadvantage" />
-                <!--
                 <FontAwesomeIcon v-if="badgeType == 'user_defined'" icon="plug" :class="neutral" />
-                -->
                 <FontAwesomeIcon v-if="badgeType == 'quota'" icon="chart-line" :class="disadvantage" />
                 <FontAwesomeIcon v-if="badgeType == 'no_quota'" icon="chart-line" :class="neutral" v-bind="shrink" />
                 <FontAwesomeIcon v-if="badgeType == 'no_quota'" icon="ban" :class="[transparent, advantage]" />

@@ -38,6 +38,10 @@ from galaxy.util import (
 from galaxy.util.hash_util import HASH_NAME_MAP
 
 if TYPE_CHECKING:
+    from galaxy.job_execution.output_collect import (
+        DatasetCollector,
+        ToolMetadataDatasetCollector,
+    )
     from galaxy.model.store import ModelExportStore
 
 log = logging.getLogger(__name__)
@@ -50,7 +54,7 @@ class MaxDiscoveredFilesExceededError(ValueError):
     pass
 
 
-CollectorT = Any  # TODO: setup an interface for these file collectors data classes.
+CollectorT = Union["DatasetCollector", "ToolMetadataDatasetCollector"]
 
 
 class ModelPersistenceContext(metaclass=abc.ABCMeta):
@@ -91,6 +95,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         creating_job_id=None,
         output_name=None,
         storage_callbacks=None,
+        purged=False,
     ):
         tag_list = tag_list or []
         sources = sources or []
@@ -127,11 +132,6 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 )
                 self.persist_object(primary_data)
 
-                if init_from:
-                    self.permission_provider.copy_dataset_permissions(init_from, primary_data)
-                    primary_data.state = init_from.state
-                else:
-                    self.permission_provider.set_default_hda_permissions(primary_data)
             else:
                 ld = galaxy.model.LibraryDataset(folder=library_folder, name=name)
                 ldda = galaxy.model.LibraryDatasetDatasetAssociation(
@@ -190,7 +190,11 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
         if info is not None:
             primary_data.info = info
-        if filename:
+
+        if purged:
+            primary_data.dataset.purged = True
+            primary_data.purged = True
+        if filename and not purged:
             if storage_callbacks is None:
                 self.finalize_storage(
                     primary_data=primary_data,
@@ -199,6 +203,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                     filename=filename,
                     link_data=link_data,
                     output_name=output_name,
+                    init_from=init_from,
                 )
             else:
                 storage_callbacks.append(
@@ -209,11 +214,19 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                         filename=filename,
                         link_data=link_data,
                         output_name=output_name,
+                        init_from=init_from,
                     )
                 )
         return primary_data
 
-    def finalize_storage(self, primary_data, dataset_attributes, extra_files, filename, link_data, output_name):
+    def finalize_storage(
+        self, primary_data, dataset_attributes, extra_files, filename, link_data, output_name, init_from
+    ):
+        if primary_data.dataset.purged:
+            # metadata won't be set, maybe we should do that, then purge ?
+            primary_data.dataset.file_size = 0
+            primary_data.dataset.total_size = 0
+            return
         # Move data from temp location to dataset location
         if not link_data:
             dataset = primary_data.dataset
@@ -229,6 +242,12 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         else:
             # We are sure there are no extra files, so optimize things that follow by settting total size also.
             primary_data.set_size(no_extra_files=True)
+
+        if init_from:
+            self.permission_provider.copy_dataset_permissions(init_from, primary_data)
+        else:
+            self.permission_provider.set_default_hda_permissions(primary_data)
+
         # TODO: this might run set_meta after copying the file to the object store, which could be inefficient if job working directory is closer to the node.
         self.set_datasets_metadata(datasets=[primary_data], datasets_attributes=[dataset_attributes])
 
@@ -1048,19 +1067,21 @@ class JsonCollectedDatasetMatch:
         return self.as_dict.get("name")
 
     @property
-    def dbkey(self):
-        return self.as_dict.get("dbkey", getattr(self.collector, "default_dbkey", "?"))
+    def dbkey(self) -> str:
+        return self.as_dict.get("dbkey", self.collector and self.collector.default_dbkey or "?")
 
     @property
-    def ext(self):
-        return self.as_dict.get("ext", getattr(self.collector, "default_ext", "data"))
+    def ext(self) -> str:
+        return self.as_dict.get("ext", self.collector and self.collector.default_ext or "data")
 
     @property
-    def visible(self):
+    def visible(self) -> bool:
         try:
             return self.as_dict["visible"].lower() == "visible"
         except KeyError:
-            return getattr(self.collector, "default_visible", True)
+            if self.collector and self.collector.default_visible is not None:
+                return self.collector.default_visible
+            return True
 
     @property
     def link_data(self):

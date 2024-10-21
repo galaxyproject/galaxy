@@ -6,7 +6,13 @@ import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
-import { DataOutput, Step, Steps, type TerminalSource, useWorkflowStepStore } from "@/stores/workflowStepStore";
+import {
+    type DataOutput,
+    type Step,
+    type Steps,
+    type TerminalSource,
+    useWorkflowStepStore,
+} from "@/stores/workflowStepStore";
 
 import { advancedSteps, simpleSteps } from "../test_fixtures";
 import {
@@ -296,6 +302,16 @@ describe("canAccept", () => {
         expect(integerInputParam.canAccept(textOutputParam).canAccept).toBe(false);
         expect(integerInputParam.canAccept(textOutputParam).reason).toBe(
             "Cannot attach a text parameter to a integer input"
+        );
+    });
+    it("rejects optional integer to required parameter connection", () => {
+        const integerInputParam = terminals["multi data"]!["advanced|advanced_threshold"] as InputParameterTerminal;
+        const optionalIntegerOutputParam = terminals["optional integer parameter input"]![
+            "output"
+        ] as OutputParameterTerminal;
+        expect(integerInputParam.canAccept(optionalIntegerOutputParam).canAccept).toBe(false);
+        expect(integerInputParam.canAccept(optionalIntegerOutputParam).reason).toBe(
+            "Cannot attach an optional output to a required parameter"
         );
     });
     it("rejects data to parameter connection", () => {

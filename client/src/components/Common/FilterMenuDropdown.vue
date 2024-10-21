@@ -4,21 +4,17 @@ import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BDropdown, BDropdownItem, BInputGroup, BInputGroupAppend, BModal } from "bootstrap-vue";
 import { capitalize } from "lodash";
-import { computed, onMounted, ref, type UnwrapRef, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
-import { QuotaUsage } from "@/components/User/DiskUsage/Quota/model";
+import { fetchCurrentUserQuotaUsages, type QuotaUsage } from "@/api/users";
 import { type FilterType, type ValidFilter } from "@/utils/filtering";
 import { errorMessageAsString } from "@/utils/simple-error";
-
-import { fetch } from "../User/DiskUsage/Quota/services";
 
 import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 
 library.add(faQuestion);
 
-type QuotaUsageUnwrapped = UnwrapRef<QuotaUsage>;
-
-type FilterValue = QuotaUsageUnwrapped | string | boolean | undefined;
+type FilterValue = QuotaUsage | string | boolean | undefined;
 
 type DatalistItem = { value: string; text: string };
 
@@ -31,6 +27,7 @@ interface Props {
         [k: string]: FilterValue;
     };
     identifier: string;
+    disabled?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -76,15 +73,17 @@ const helpToggle = ref(false);
 const modalTitle = `${capitalize(props.filter.placeholder)} Help`;
 function onHelp(_: string, value: string) {
     helpToggle.value = false;
-    localValue.value = value;
+    if (!props.disabled) {
+        localValue.value = value;
+    }
 }
 
 // Quota Source refs and operations
-const quotaUsages = ref<QuotaUsage[]>([] as QuotaUsage[]);
+const quotaUsages = ref<QuotaUsage[]>([]);
 const errorMessage = ref<string>();
 async function loadQuotaUsages() {
     try {
-        quotaUsages.value = await fetch();
+        quotaUsages.value = await fetchCurrentUserQuotaUsages();
 
         // if the propValue is a string, find the corresponding QuotaUsage object and update the localValue
         if (propValue.value && typeof propValue.value === "string") {
@@ -96,20 +95,23 @@ async function loadQuotaUsages() {
         errorMessage.value = errorMessageAsString(e);
     }
 }
+
 const hasMultipleQuotaSources = computed<boolean>(() => {
     return !!(quotaUsages.value && quotaUsages.value.length > 1);
 });
+
 onMounted(async () => {
     if (props.type === "QuotaSource") {
         await loadQuotaUsages();
     }
 });
-function isQuotaUsageVal(value: FilterValue): value is QuotaUsageUnwrapped {
+
+function isQuotaUsage(value: FilterValue): value is QuotaUsage {
     return !!(value && value instanceof Object && "rawSourceLabel" in value);
 }
 
 const dropDownText = computed<string>(() => {
-    if (props.type === "QuotaSource" && isQuotaUsageVal(localValue.value)) {
+    if (props.type === "QuotaSource" && isQuotaUsage(localValue.value)) {
         return localValue.value.sourceLabel;
     }
     if (localValue.value) {
@@ -124,7 +126,7 @@ const dropDownText = computed<string>(() => {
     return "(any)";
 });
 
-function setValue(val: string | QuotaUsage | undefined) {
+function setValue(val: FilterValue) {
     localValue.value = val;
 }
 </script>
@@ -140,6 +142,7 @@ function setValue(val: string | QuotaUsage | undefined) {
                 menu-class="w-100"
                 size="sm"
                 boundary="window"
+                :disabled="props.disabled"
                 :toggle-class="props.error ? 'text-danger' : ''">
                 <BDropdownItem href="#" @click="setValue(undefined)"><i>(any)</i></BDropdownItem>
 
@@ -164,7 +167,7 @@ function setValue(val: string | QuotaUsage | undefined) {
                 <span v-else-if="props.type === 'QuotaSource'">
                     <BDropdownItem
                         v-for="quotaUsage in quotaUsages"
-                        :key="quotaUsage.id"
+                        :key="quotaUsage.sourceLabel"
                         href="#"
                         @click="setValue(quotaUsage)">
                         {{ quotaUsage.sourceLabel }}

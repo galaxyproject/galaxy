@@ -34,7 +34,6 @@ from urllib.parse import urlparse
 
 import yaml
 
-from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
@@ -598,7 +597,7 @@ class CommonConfigurationMixin:
     @admin_users.setter
     def admin_users(self, value):
         self._admin_users = value
-        self.admin_users_list = listify(value)
+        self.admin_users_list = listify(value, do_strip=True)
 
     def is_admin_user(self, user: Optional["User"]) -> bool:
         """Determine if the provided user is listed in `admin_users`."""
@@ -700,15 +699,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     allowed_origin_hostnames: List[str]
     builds_file_path: str
-    carbon_intensity: float
     container_resolvers_config_file: str
     database_connection: str
     drmaa_external_runjob_script: str
     email_from: Optional[str]
     enable_tool_shed_check: bool
+    file_source_temp_dir: str
     galaxy_data_manager_data_path: str
     galaxy_infrastructure_url: str
-    geographical_server_location_name: str
     hours_between_check: int
     integrated_tool_panel_config: str
     involucro_path: str
@@ -813,11 +811,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             log.error("Error loading Galaxy extra version JSON file %s - details not loaded.", json_file)
         else:
             self.version_extra = extra_info
-
-        # Carbon emissions configuration
-        carbon_intensity_entry = get_carbon_intensity_entry(kwargs.get("geographical_server_location_code", ""))
-        self.carbon_intensity = carbon_intensity_entry["carbon_intensity"]
-        self.geographical_server_location_name = carbon_intensity_entry["location_name"]
 
         # Database related configuration
         self.check_migrate_databases = string_as_bool(kwargs.get("check_migrate_databases", True))
@@ -1111,10 +1104,46 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.proxy_session_map = self.dynamic_proxy_session_map
         self.manage_dynamic_proxy = self.dynamic_proxy_manage  # Set to false if being launched externally
 
-        # InteractiveTools propagator mapping file
-        self.interactivetools_map = self._in_root_dir(
-            kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
-        )
+        # Interactive tools proxy mapping
+        if self.interactivetoolsproxy_map is None:
+            self.interactivetools_map = "sqlite:///" + self._in_root_dir(
+                kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
+            )
+        else:
+            self.interactivetools_map = None  # overridden by `self.interactivetoolsproxy_map`
+
+            # ensure the database URL for the SQLAlchemy map does not match that of a Galaxy DB
+            urls = {
+                setting: urlparse(value)
+                for setting, value in (
+                    ("interactivetoolsproxy_map", self.interactivetoolsproxy_map),
+                    ("database_connection", self.database_connection),
+                    ("install_database_connection", self.install_database_connection),
+                )
+                if value is not None
+            }
+
+            def is_in_conflict(url1, url2):
+                return all(
+                    (
+                        url1.scheme == url2.scheme,
+                        url1.hostname == url2.hostname,
+                        url1.port == url2.port,
+                        url1.path == url2.path,
+                    )
+                )
+
+            conflicting_settings = {
+                setting
+                for setting, url in tuple(urls.items())[1:]  # exclude "interactivetoolsproxy_map"
+                if is_in_conflict(url, list(urls.values())[0])  # compare with "interactivetoolsproxy_map"
+            }
+
+            if conflicting_settings:
+                raise ConfigurationError(
+                    f"Option `{tuple(urls)[0]}` cannot take the same value as: %s"
+                    % ", ".join(f"`{setting}`" for setting in conflicting_settings)
+                )
 
         # Compliance/Policy variables
         self.redact_username_during_deletion = False
@@ -1208,6 +1237,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         else:
             _load_theme(self.themes_config_file, self.themes)
 
+        if self.file_source_temp_dir:
+            self.file_source_temp_dir = os.path.abspath(self.file_source_temp_dir)
+
     def _process_celery_config(self):
         if self.celery_conf and self.celery_conf.get("result_backend") is None:
             # If the result_backend is not set, use a SQLite database in the data directory
@@ -1235,6 +1267,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         try_parsing(self.database_connection, "database_connection")
         try_parsing(self.install_database_connection, "install_database_connection")
+        if self.interactivetoolsproxy_map is not None:
+            try_parsing(self.interactivetoolsproxy_map, "interactivetoolsproxy_map")
         try_parsing(self.amqp_internal_connection, "amqp_internal_connection")
 
     def _configure_dataset_storage(self):
@@ -1318,6 +1352,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.template_cache_path,
             self.tool_data_path,
             self.user_library_import_dir,
+            self.file_source_temp_dir,
         ]
         for path in paths_to_check:
             self._ensure_directory(path)

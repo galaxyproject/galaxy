@@ -332,7 +332,7 @@ class TestAdvancedJobConfXmlParser(BaseJobConfXmlParserTestCase):
         assert len(container) == 2
         container0 = container[0]
         assert container0["type"] == "docker"
-        assert container0["identifier"] == "busybox:ubuntu-14.04"
+        assert container0["identifier"] == "busybox:1.36.1-glibc"
 
         container_override = container_dest.params["container_override"]
         assert len(container_override) == 2

@@ -26,7 +26,8 @@ const props = defineProps<Props>();
 const historyStore = useHistoryStore();
 
 const loading = ref(false);
-const messageText = ref("");
+const loadingFailed = ref(false);
+const messageText = ref<string>();
 const messageVariant = ref("danger");
 const formData = ref<Record<string, any>>({});
 const datasetAttributes = ref<Record<string, any>>({});
@@ -76,7 +77,7 @@ async function loadDatasetAttributes() {
         datasetAttributes.value = data;
     } catch (e) {
         const error = e as AxiosError<{ err_msg?: string }>;
-
+        loadingFailed.value = true;
         onError(error.response?.data?.err_msg || "Unable to fetch available dataset attributes.");
     } finally {
         loading.value = false;
@@ -101,7 +102,7 @@ onMounted(async () => {
         <BAlert v-if="loading" variant="info" show>
             <LoadingSpan message="Loading dataset attributes..." />
         </BAlert>
-        <div v-else class="mt-3">
+        <div v-else-if="!loadingFailed" class="mt-3">
             <BTabs>
                 <BTab v-if="!datasetAttributes['attribute_disable']">
                     <template v-slot:title>

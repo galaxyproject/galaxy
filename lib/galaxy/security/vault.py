@@ -81,6 +81,19 @@ class Vault(abc.ABC):
                  Note that only immediate subkeys are returned.
         """
 
+    def delete_secret(self, key: str) -> None:
+        """
+        Eliminate a secret from the target vault.
+
+        Ideally the entry in the target source if removed, but by default the secret is
+        simply overwritten with the empty string as its value.
+
+        :param key: The key to write to. Typically a hierarchical path such as `/galaxy/user/1/preferences/editor`
+        :param value: The value to write, such as 'vscode'
+        :return:
+        """
+        self.write_secret(key, "")
+
 
 class NullVault(Vault):
     def read_secret(self, key: str) -> Optional[str]:
@@ -160,6 +173,11 @@ class DatabaseVault(Vault):
         f = self._get_multi_fernet()
         token = f.encrypt(value.encode("utf-8"))
         self._update_or_create(key=key, value=token.decode("utf-8"))
+
+    def delete_secret(self, key: str) -> None:
+        vault_entry = self.sa_session.query(model.Vault).filter_by(key=key).first()
+        self.sa_session.delete(vault_entry)
+        self.sa_session.flush()
 
     def list_secrets(self, key: str) -> List[str]:
         raise NotImplementedError()
@@ -299,3 +317,7 @@ class VaultFactory:
             return VaultFactory.from_vault_type(app, vault_config.get("type", None), vault_config)
         log.warning("No vault configured. We recommend defining the vault_config_file setting in galaxy.yml")
         return NullVault()
+
+
+def is_vault_configured(vault: Vault) -> bool:
+    return not isinstance(vault, NullVault)

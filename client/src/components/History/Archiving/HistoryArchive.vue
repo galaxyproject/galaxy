@@ -3,15 +3,13 @@ import { BAlert, BListGroup, BListGroupItem, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import {
-    ArchivedHistorySummary,
-    fetchArchivedHistories,
-    reimportArchivedHistoryFromExportRecord,
-} from "@/api/histories.archived";
+import { GalaxyApi } from "@/api";
+import { type ArchivedHistorySummary, fetchArchivedHistories } from "@/api/histories.archived";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ArchivedHistoryCard from "@/components/History/Archiving/ArchivedHistoryCard.vue";
@@ -50,20 +48,32 @@ async function updateSearchQuery(query: string) {
 
 async function loadArchivedHistories() {
     isLoading.value = true;
-    const result = await fetchArchivedHistories({
-        query: searchText.value,
-        currentPage: currentPage.value,
-        pageSize: perPage.value,
-        sortBy: sortBy.value,
-        sortDesc: sortDesc.value,
-    });
-    totalRows.value = result.totalMatches;
-    archivedHistories.value = result.histories;
-    isLoading.value = false;
+    try {
+        const result = await fetchArchivedHistories({
+            query: searchText.value,
+            currentPage: currentPage.value,
+            pageSize: perPage.value,
+            sortBy: sortBy.value,
+            sortDesc: sortDesc.value,
+        });
+        totalRows.value = result.totalMatches;
+        archivedHistories.value = result.histories;
+    } catch (error) {
+        toast.error(
+            localize(`Failed to load archived histories with reason: ${errorMessageAsString(error)}`),
+            localize("Loading Failed")
+        );
+    } finally {
+        isLoading.value = false;
+    }
 }
 
 function onViewHistoryInCenterPanel(history: ArchivedHistorySummary) {
     router.push(`/histories/view?id=${history.id}`);
+}
+
+function onSetAsCurrentHistory(history: ArchivedHistorySummary) {
+    historyStore.setCurrentHistory(history.id);
 }
 
 async function onRestoreHistory(history: ArchivedHistorySummary) {
@@ -106,20 +116,35 @@ async function onImportCopy(history: ArchivedHistorySummary) {
         return;
     }
 
-    try {
-        await reimportArchivedHistoryFromExportRecord(history);
-        toast.success(
-            localize(
-                `The History '${history.name}' it's being imported. This process may take a while. Check your histories list after a few minutes.`
-            ),
-            localize("Importing History in background...")
+    if (!history.export_record_data) {
+        toast.error(
+            localize(`Failed to import history '${history.name}' because it does not have an export record.`),
+            localize("History Import Failed")
         );
-    } catch (error) {
+        return;
+    }
+
+    const { error } = await GalaxyApi().POST("/api/histories/from_store_async", {
+        body: {
+            model_store_format: history.export_record_data?.model_store_format,
+            store_content_uri: history.export_record_data?.target_uri,
+        },
+    });
+
+    if (error) {
         toast.error(
             localize(`Failed to import history '${history.name}' with reason: ${error}`),
             localize("History Import Failed")
         );
+        return;
     }
+
+    toast.success(
+        localize(
+            `The History '${history.name}' it's being imported. This process may take a while. Check your histories list after a few minutes.`
+        ),
+        localize("Importing History in background...")
+    );
 }
 </script>
 <template>
@@ -145,6 +170,7 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                     <ArchivedHistoryCard
                         :history="history"
                         @onView="onViewHistoryInCenterPanel"
+                        @onSwitch="onSetAsCurrentHistory"
                         @onRestore="onRestoreHistory"
                         @onImportCopy="onImportCopy" />
                 </BListGroupItem>

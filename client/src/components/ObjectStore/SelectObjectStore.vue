@@ -2,7 +2,7 @@
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import { ConcreteObjectStoreModel } from "@/api";
+import { type ConcreteObjectStoreModel } from "@/api";
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
@@ -27,6 +27,17 @@ const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
 const store = useObjectStoreStore();
 const { isLoading, loadErrorMessage, selectableObjectStores } = storeToRefs(store);
 const { isOnlyPreference } = useStorageLocationConfiguration();
+
+const selectableAndVisibleObjectStores = computed(() => {
+    const allSelectableObjectStores = selectableObjectStores.value;
+    if (allSelectableObjectStores != null) {
+        return allSelectableObjectStores.filter((item) => {
+            return "hidden" in item ? !item.hidden : true;
+        });
+    } else {
+        return [];
+    }
+});
 
 const loadingObjectStoreInfoMessage = ref("Loading storage location information");
 const whyIsSelectionPreferredText = ref(`
@@ -78,7 +89,7 @@ async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | nul
                             ><i>{{ defaultOptionTitle | localize }}</i></b-button
                         >
                         <ObjectStoreSelectButton
-                            v-for="objectStore in selectableObjectStores"
+                            v-for="objectStore in selectableAndVisibleObjectStores"
                             :key="objectStore.object_store_id"
                             id-prefix="preferred"
                             :object-store="objectStore"
@@ -97,7 +108,7 @@ async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | nul
                 <span v-localize>{{ defaultOptionDescription }}</span>
             </ObjectStoreSelectButtonPopover>
             <ObjectStoreSelectButtonDescribePopover
-                v-for="objectStore in selectableObjectStores"
+                v-for="objectStore in selectableAndVisibleObjectStores"
                 :key="objectStore.object_store_id"
                 id-prefix="preferred"
                 :what="forWhat"

@@ -39,7 +39,7 @@ function onViewItem() {
                 variant="outline-primary"
                 size="sm"
                 class="mx-2"
-                :title="localize(`Go to the details of this object store`)"
+                :title="localize(`Go to the details of this storage location`)"
                 @click="onViewItem">
                 <FontAwesomeIcon :icon="viewDetailsIcon" />
             </BButton>

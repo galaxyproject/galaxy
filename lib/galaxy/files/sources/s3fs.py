@@ -5,9 +5,13 @@ from typing import (
     cast,
     List,
     Optional,
+    Tuple,
 )
 
-from typing_extensions import Unpack
+from typing_extensions import (
+    NotRequired,
+    Unpack,
+)
 
 from galaxy.files import OptionalUserContext
 from . import (
@@ -34,6 +38,7 @@ class S3FsFilesSourceProperties(FilesSourceProperties, total=False):
     endpoint_url: int
     user: str
     passwd: str
+    listings_expiry_time: NotRequired[Optional[int]]
     client_kwargs: dict  # internally computed. Should not be specified in config file
 
 
@@ -44,6 +49,14 @@ class S3FsFilesSource(BaseFilesSource):
         if s3fs is None:
             raise Exception("Package s3fs unavailable but required for this file source plugin.")
         props: S3FsFilesSourceProperties = cast(S3FsFilesSourceProperties, self._parse_common_config_opts(kwd))
+        file_sources_config = self._file_sources_config
+        if (
+            props.get("listings_expiry_time") is None
+            and file_sources_config
+            and file_sources_config.listings_expiry_time
+        ):
+            if file_sources_config.listings_expiry_time:
+                props["listings_expiry_time"] = file_sources_config.listings_expiry_time
         # There is a possibility that the bucket name could be parameterized: e.g.
         # bucket: ${user.preferences['generic_s3|bucket']}
         # that's ok, because we evaluate the bucket name again later. The bucket property here will only
@@ -61,7 +74,11 @@ class S3FsFilesSource(BaseFilesSource):
         recursive=True,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
-    ) -> List[AnyRemoteEntry]:
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[AnyRemoteEntry], int]:
         _props = self._serialization_props(user_context)
         # we need to pop the 'bucket' here, because the argument is not recognised in a downstream function
         _bucket_name = _props.pop("bucket", "")
@@ -73,12 +90,12 @@ class S3FsFilesSource(BaseFilesSource):
                 to_dict = functools.partial(self._resource_info_to_dict, p)
                 res.extend(map(to_dict, dirs.values()))
                 res.extend(map(to_dict, files.values()))
-            return res
+            return res, len(res)
         else:
             bucket_path = self._bucket_path(_bucket_name, path)
             res = fs.ls(bucket_path, detail=True)
             to_dict = functools.partial(self._resource_info_to_dict, path)
-            return list(map(to_dict, res))
+            return list(map(to_dict, res)), len(res)
 
     def _realize_to(
         self,

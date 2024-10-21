@@ -14,11 +14,11 @@ from galaxy.exceptions import (
     ObjectNotFound,
     ReferenceDataError,
 )
-from galaxy.managers.users import get_user_by_username
 from galaxy.model import (
     HistoryDatasetAssociation,
     User,
 )
+from galaxy.model.db.user import get_user_by_username
 from galaxy.structured_app import StructuredApp
 from galaxy.util.bunch import Bunch
 

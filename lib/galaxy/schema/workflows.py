@@ -11,6 +11,7 @@ from pydantic import (
     Field,
     field_validator,
 )
+from typing_extensions import Annotated
 
 from galaxy.schema.schema import (
     AnnotationField,
@@ -53,6 +54,11 @@ class GetTargetHistoryPayload(Model):
 
 class InvokeWorkflowPayload(GetTargetHistoryPayload):
     # TODO - Are the descriptions correct?
+    version: Optional[int] = Field(
+        None,
+        title="Version",
+        description="The version of the workflow to invoke.",
+    )
     instance: Optional[bool] = Field(
         False,
         title="Is instance",
@@ -189,19 +195,21 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
     )
     steps: Dict[
         int,
-        Union[
-            InputDataStep,
-            InputDataCollectionStep,
-            InputParameterStep,
-            PauseStep,
-            ToolStep,
-            SubworkflowStep,
+        Annotated[
+            Union[
+                InputDataStep,
+                InputDataCollectionStep,
+                InputParameterStep,
+                PauseStep,
+                ToolStep,
+                SubworkflowStep,
+            ],
+            Field(discriminator="type"),
         ],
     ] = Field(
         {},
         title="Steps",
         description="A dictionary with information about all the steps of the workflow.",
-        discriminator="type",
     )
     importable: Optional[bool] = Field(
         ...,

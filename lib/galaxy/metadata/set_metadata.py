@@ -96,7 +96,7 @@ def push_if_necessary(object_store: ObjectStore, dataset: DatasetInstance, exter
     # or a remote object store from its cache path.
     # empty files could happen when outputs are discovered from working dir,
     # empty file check needed for e.g. test/integration/test_extended_metadata_outputs_to_working_directory.py::test_tools[multi_output_assign_primary]
-    if os.path.getsize(external_filename):
+    if not dataset.dataset.purged and os.path.getsize(external_filename):
         object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
 
 
@@ -409,15 +409,30 @@ def set_metadata_portable(
                 external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
                 if not os.path.exists(external_filename):
                     matches = glob.glob(external_filename)
-                    assert len(matches) == 1, f"{len(matches)} file(s) matched by output glob '{external_filename}'"
-                    external_filename = matches[0]
-                    assert safe_contains(
-                        tool_job_working_directory, external_filename
-                    ), f"Cannot collect output '{external_filename}' from outside of working directory"
-                    created_from_basename = os.path.relpath(
-                        external_filename, os.path.join(tool_job_working_directory, "working")
-                    )
-                    dataset.dataset.created_from_basename = created_from_basename
+                    if matches:
+                        assert len(matches) == 1, f"{len(matches)} file(s) matched by output glob '{external_filename}'"
+                        external_filename = matches[0]
+                        assert safe_contains(
+                            tool_job_working_directory, external_filename
+                        ), f"Cannot collect output '{external_filename}' from outside of working directory"
+                        created_from_basename = os.path.relpath(
+                            external_filename, os.path.join(tool_job_working_directory, "working")
+                        )
+                        dataset.dataset.created_from_basename = created_from_basename
+                    elif os.path.exists(dataset_path_to_extra_path(external_filename)):
+                        # Only output is extra files dir, but no primary output file, that's fine,
+                        # but make sure we create an empty primary output file. It's a little
+                        # weird to do this, but it does indicate that there's nothing wrong with the file,
+                        # as opposed to perhaps a storage issue.
+                        with open(external_filename, "wb"):
+                            pass
+                    elif not os.path.exists(dataset_filename_override):
+                        # purged output ?
+                        dataset.purged = True
+                        dataset.dataset.purged = True
+                    else:
+                        raise Exception(f"Output file '{external_filename}' not found")
+
                 # override filename if we're dealing with outputs to working directory and dataset is not linked to
                 link_data_only = metadata_params.get("link_data_only")
                 if not link_data_only:
@@ -466,7 +481,7 @@ def set_metadata_portable(
                     object_store_update_actions.append(partial(reset_external_filename, dataset))
                 object_store_update_actions.append(partial(dataset.set_total_size))
                 object_store_update_actions.append(partial(export_store.add_dataset, dataset))
-                if dataset_instance_id not in unnamed_id_to_path:
+                if dataset_instance_id not in unnamed_id_to_path and not dataset.dataset.purged:
                     object_store_update_actions.append(partial(collect_extra_files, object_store, dataset, "."))
                     dataset_state = "deferred" if (is_deferred and final_job_state == "ok") else final_job_state
                     if not dataset.state == dataset.states.ERROR:
@@ -474,7 +489,8 @@ def set_metadata_portable(
                         dataset.state = dataset.dataset.state = dataset_state
                     # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
                     # so only run set_meta for fixed outputs
-                    set_meta(dataset, file_dict)
+                    if not dataset.dataset.purged:
+                        set_meta(dataset, file_dict)
                 # TODO: merge expression_context into tool_provided_metadata so we don't have to special case this (here and in _finish_dataset)
                 meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
                 if meta:
@@ -495,18 +511,13 @@ def set_metadata_portable(
                     dataset.dataset.uuid = context["uuid"]
                 if not final_job_state == Job.states.ERROR:
                     line_count = context.get("line_count", None)
-                    try:
-                        # Certain datatype's set_peek methods contain a line_count argument
-                        dataset.set_peek(line_count=line_count)
-                    except TypeError:
-                        # ... and others don't
-                        dataset.set_peek()
+                    dataset.set_peek(line_count=line_count)
                 for context_key in TOOL_PROVIDED_JOB_METADATA_KEYS:
                     if context_key in context:
                         context_value = context[context_key]
                         setattr(dataset, context_key, context_value)
             else:
-                if dataset_instance_id not in unnamed_id_to_path:
+                if dataset_instance_id not in unnamed_id_to_path and not dataset.dataset.purged:
                     # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
                     # so only run set_meta for fixed outputs
                     set_meta(dataset, file_dict)

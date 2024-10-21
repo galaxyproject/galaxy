@@ -209,6 +209,11 @@ class UserCannotRunAsException(MessageException):
     err_code = error_codes_by_name["USER_CANNOT_RUN_AS"]
 
 
+class UserRequiredException(MessageException):
+    status_code = 403
+    err_code = error_codes_by_name["USER_REQUIRED"]
+
+
 class AdminRequiredException(MessageException):
     status_code = 403
     err_code = error_codes_by_name["ADMIN_REQUIRED"]
@@ -217,6 +222,11 @@ class AdminRequiredException(MessageException):
 class UserActivationRequiredException(MessageException):
     status_code = 403
     err_code = error_codes_by_name["USER_ACTIVATION_REQUIRED"]
+
+
+class ItemAlreadyClaimedException(MessageException):
+    status_code = 403
+    err_code = error_codes_by_name["ITEM_IS_CLAIMED"]
 
 
 class ObjectNotFound(MessageException):
@@ -248,6 +258,11 @@ class ConfigurationError(Exception):
 class InconsistentDatabase(MessageException):
     status_code = 500
     err_code = error_codes_by_name["INCONSISTENT_DATABASE"]
+
+
+class InconsistentApplicationState(MessageException):
+    status_code = 500
+    err_code = error_codes_by_name["INCONSISTENT_APPLICATION_STATE"]
 
 
 class InternalServerError(MessageException):

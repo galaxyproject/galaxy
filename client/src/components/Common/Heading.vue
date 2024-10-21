@@ -81,6 +81,7 @@ const element = computed(() => {
             props.bold ? 'font-weight-bold' : '',
             props.inline ? 'inline' : '',
             collapsible ? 'collapsible' : '',
+            props.truncate ? 'truncate' : '',
         ]"
         @click="$emit('click')">
         <b-button v-if="collapsible" variant="link" size="sm">
@@ -94,6 +95,10 @@ const element = computed(() => {
 
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
+
+.heading {
+    word-break: break-all;
+}
 
 .heading:deep(svg) {
     font-size: 0.75em;

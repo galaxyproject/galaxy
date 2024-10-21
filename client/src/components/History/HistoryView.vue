@@ -1,9 +1,5 @@
 <template>
     <div v-if="currentUser && history" class="d-flex flex-column h-100">
-        <b-alert v-if="showHistoryStateInfo" variant="info" show data-description="history state info">
-            {{ historyStateInfoMessage }}
-        </b-alert>
-
         <div class="flex-row flex-grow-0 pb-3">
             <b-button
                 v-if="userOwnsHistory"
@@ -26,7 +22,7 @@
         </div>
 
         <b-alert :show="copySuccess">
-            History imported and is now your active history. <b-link to="/histories/list">View here</b-link>.
+            History imported and is now your active history. <b-link :to="importedHistoryLink">View here</b-link>.
         </b-alert>
 
         <CollectionPanel
@@ -35,12 +31,7 @@
             :selected-collections.sync="selectedCollections"
             :show-controls="false"
             @view-collection="onViewCollection" />
-        <HistoryPanel
-            v-else
-            :history="history"
-            :can-edit-history="canEditHistory"
-            filterable
-            @view-collection="onViewCollection" />
+        <HistoryPanel v-else :history="history" filterable @view-collection="onViewCollection" />
 
         <CopyModal id="copy-history-modal" :history="history" @ok="copyOkay" />
     </div>
@@ -49,6 +40,7 @@
 <script>
 import { mapActions, mapState } from "pinia";
 
+import { isAnonymousUser } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -87,41 +79,19 @@ export default {
             return this.currentHistory?.id == this.history?.id;
         },
         isSetAsCurrentDisabled() {
-            return this.isCurrentHistory || this.history.archived || this.history.purged;
+            return this.isCurrentHistory;
         },
         setAsCurrentTitle() {
             if (this.isCurrentHistory) {
                 return "This history is already your current history.";
             }
-            if (this.history.archived) {
-                return "This history has been archived and cannot be set as your current history. Unarchive it first.";
-            }
-            if (this.history.purged) {
-                return "This history has been purged and cannot be set as your current history.";
-            }
             return "Switch to this history";
-        },
-        canEditHistory() {
-            return this.userOwnsHistory && !this.history.archived && !this.history.purged;
-        },
-        showHistoryArchived() {
-            return this.history.archived && this.userOwnsHistory;
-        },
-        showHistoryStateInfo() {
-            return this.showHistoryArchived || this.history.purged;
-        },
-        historyStateInfoMessage() {
-            if (this.showHistoryArchived && this.history.purged) {
-                return "This history has been archived and purged.";
-            } else if (this.showHistoryArchived) {
-                return "This history has been archived.";
-            } else if (this.history.purged) {
-                return "This history has been purged.";
-            }
-            return "";
         },
         canImportHistory() {
             return !this.userOwnsHistory && !this.history.purged;
+        },
+        importedHistoryLink() {
+            return isAnonymousUser(this.currentUser) ? "/" : "/histories/list";
         },
     },
     created() {

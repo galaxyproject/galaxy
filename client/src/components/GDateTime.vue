@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BFormInput, BInputGroup } from "bootstrap-vue";
-import { Tuple } from "types/utilityTypes";
+import { type Tuple } from "types/utilityTypes";
 import { computed } from "vue";
 
 const props = defineProps<{

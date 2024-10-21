@@ -19,10 +19,10 @@ import localize from "@/utils/localization";
 import { HistoriesFilters } from "./HistoriesFilters";
 
 import TextSummary from "../Common/TextSummary.vue";
+import HistoryIndicators from "./HistoryIndicators.vue";
 import Heading from "@/components/Common/Heading.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
-import UtcDate from "@/components/UtcDate.vue";
 
 type AdditionalOptions = "set-current" | "multi" | "center";
 type PinnedHistory = { id: string };
@@ -235,7 +235,7 @@ async function loadMore(noScroll = false) {
         </div>
 
         <div
-            class="history-list-container"
+            class="scroll-list-container"
             :class="{
                 'in-panel': isMultiviewPanel,
                 'scrolled-top': scrolledTop,
@@ -245,7 +245,7 @@ async function loadMore(noScroll = false) {
                 v-show="!showAdvanced"
                 ref="scrollableDiv"
                 :class="{
-                    'history-scroll-list': !hasNoResults,
+                    'scroll-list': !hasNoResults,
                     'in-panel': isMultiviewPanel,
                     'in-modal': props.inModal,
                     toolMenuContainer: isMultiviewPanel,
@@ -277,18 +277,7 @@ async function loadMore(noScroll = false) {
                                     </i>
                                 </div>
                                 <TextSummary v-else component="h4" :description="history.name" one-line-summary />
-                                <div class="d-flex align-items-center flex-gapx-1">
-                                    <BBadge pill :title="localize('Amount of items in history')">
-                                        {{ history.count }} {{ localize("items") }}
-                                    </BBadge>
-                                    <BBadge
-                                        v-if="history.update_time"
-                                        v-b-tooltip.noninteractive.hover
-                                        pill
-                                        :title="localize('Last edited')">
-                                        <UtcDate :date="history.update_time" mode="elapsed" />
-                                    </BBadge>
-                                </div>
+                                <HistoryIndicators :history="history" include-count />
                             </div>
 
                             <p v-if="!isMultiviewPanel && history.annotation" class="my-1">{{ history.annotation }}</p>
@@ -381,111 +370,3 @@ async function loadMore(noScroll = false) {
         </div>
     </div>
 </template>
-
-<style lang="scss" scoped>
-@import "theme/blue.scss";
-
-.flex-column-overflow {
-    display: flex;
-    flex-direction: column;
-    overflow: auto;
-}
-
-.history-list-container {
-    position: relative;
-
-    &.in-panel {
-        flex-grow: 1;
-    }
-
-    &:not(&.in-panel) {
-        @extend .flex-column-overflow;
-    }
-
-    &:before,
-    &:after {
-        position: absolute;
-        content: "";
-        pointer-events: none;
-        z-index: 10;
-        height: 30px;
-        width: 100%;
-        opacity: 0;
-
-        background-repeat: no-repeat;
-        transition: opacity 0.4s;
-    }
-
-    &:before {
-        top: 0;
-        background-image: linear-gradient(to bottom, rgba(3, 0, 48, 0.1), rgba(3, 0, 48, 0.02), rgba(3, 0, 48, 0));
-    }
-
-    &:not(.scrolled-top) {
-        &:before {
-            opacity: 1;
-        }
-    }
-
-    &:after {
-        bottom: 0;
-        background-image: linear-gradient(to top, rgba(3, 0, 48, 0.1), rgba(3, 0, 48, 0.02), rgba(3, 0, 48, 0));
-    }
-
-    &:not(.scrolled-bottom) {
-        &:after {
-            opacity: 1;
-        }
-    }
-}
-
-.history-scroll-list {
-    overflow-x: hidden;
-    overflow-y: scroll;
-    scroll-behavior: smooth;
-
-    &.in-panel {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-    }
-
-    .list-group {
-        .list-group-item {
-            display: flex;
-            border-radius: 0;
-
-            &.current {
-                border-left: 0.25rem solid $brand-primary;
-            }
-
-            &.panel-item {
-                justify-content: space-between;
-                align-items: center;
-                &:not(&.active) {
-                    background: $panel-bg-color;
-                }
-            }
-
-            &:not(&.panel-item) {
-                &:first-child {
-                    border-top-left-radius: inherit;
-                    border-top-right-radius: inherit;
-                }
-
-                &:last-child {
-                    border-bottom-left-radius: inherit;
-                    border-bottom-right-radius: inherit;
-                }
-            }
-        }
-    }
-    .list-end {
-        width: 100%;
-        text-align: center;
-        color: $text-light;
-    }
-}
-</style>

@@ -23,6 +23,7 @@ from tool_shed_client.schema import (
     Category,
     CreateCategoryRequest,
     CreateRepositoryRequest,
+    DetailedRepository,
     from_legacy_install_info,
     GetInstallInfoRequest,
     GetOrderedInstallableRevisionsRequest,
@@ -41,6 +42,7 @@ from tool_shed_client.schema import (
     ResetMetadataOnRepositoryResponse,
     ToolSearchRequest,
     ToolSearchResults,
+    UpdateRepositoryRequest,
     Version,
 )
 from .api_util import (
@@ -189,7 +191,7 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(revisions_response)
         return from_legacy_install_info(revisions_response.json())
 
-    def update_column_maker_repo(self, repository: HasRepositoryId) -> requests.Response:
+    def update_column_maker_repo(self, repository: HasRepositoryId) -> RepositoryUpdate:
         response = self.upload_revision(
             repository,
             COLUMN_MAKER_1_1_1_PATH,
@@ -209,9 +211,20 @@ class ToolShedPopulator:
         )
         return response
 
+    def update_raw(self, repository: HasRepositoryId, request: UpdateRepositoryRequest) -> requests.Response:
+        repository_id = self._repository_id(repository)
+        body_json = request.model_dump(exclude_unset=True, by_alias=True)
+        put_response = self._api_interactor.put(f"repositories/{repository_id}", json=body_json)
+        return put_response
+
+    def update(self, repository: HasRepositoryId, request: UpdateRepositoryRequest) -> Repository:
+        response = self.update_raw(repository, request)
+        api_asserts.assert_status_code_is_ok(response)
+        return Repository(**response.json())
+
     def upload_revision(
         self, repository: HasRepositoryId, path: Traversable, commit_message: str = DEFAULT_COMMIT_MESSAGE
-    ):
+    ) -> RepositoryUpdate:
         response = self.upload_revision_raw(repository, path, commit_message=commit_message)
         if response.status_code != 200:
             response_json = None
@@ -358,11 +371,14 @@ class ToolShedPopulator:
         delete_response = self._api_interactor.delete(f"repositories/{repository_id}/deprecated")
         delete_response.raise_for_status()
 
-    def is_deprecated(self, repository: HasRepositoryId) -> bool:
+    def get_repository(self, repository: HasRepositoryId) -> DetailedRepository:
         repository_id = self._repository_id(repository)
         repository_response = self._api_interactor.get(f"repositories/{repository_id}")
         repository_response.raise_for_status()
-        return Repository(**repository_response.json()).deprecated
+        return DetailedRepository(**repository_response.json())
+
+    def is_deprecated(self, repository: HasRepositoryId) -> bool:
+        return self.get_repository(repository).deprecated
 
     def get_metadata(self, repository: HasRepositoryId, downloadable_only=True) -> RepositoryMetadata:
         repository_id = self._repository_id(repository)

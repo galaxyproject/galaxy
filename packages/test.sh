@@ -49,7 +49,7 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
 
     # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
-        pip install '.[template,jstree]'
+        pip install '.[template,jstree,config_template]'
     elif [ "$package_dir" = "tool_util" ]; then
         pip install '.[cwl,mulled,edam,extended-assertions]'
     else
@@ -63,11 +63,8 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
     else
         marker_args=()
     fi
-    # Prevent execution of alembic/env.py at test collection stage (alembic.context not set)
-    # Also ignore functional tests (galaxy_test/ and tool_shed/test/).
-    unit_extra=(--doctest-modules --ignore=galaxy/model/migrations/alembic/ --ignore=galaxy_test/ --ignore=tool_shed/test/ --ignore=tool_shed/webapp/model/migrations/alembic/ "${marker_args[@]}")
     # Ignore exit code 5 (no tests ran)
-    pytest "${unit_extra[@]}" . || test $? -eq 5
+    pytest "${marker_args[@]}" . || test $? -eq 5
     if [ $FOR_PULSAR -eq 0 ]; then
         make mypy
     fi

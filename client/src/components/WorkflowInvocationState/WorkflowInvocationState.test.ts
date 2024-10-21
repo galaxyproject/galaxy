@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { mount, shallowMount, Wrapper } from "@vue/test-utils";
+import { shallowMount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
@@ -13,6 +13,10 @@ localVue.use(PiniaVuePlugin);
 
 const selectors = {
     invocationSummary: ".invocation-overview",
+    bAlertStub: "balert-stub",
+    spanElement: "span",
+    invocationReportTab: "btab-stub[title='Report']",
+    fullPageHeading: "anonymous-stub[h1='true']",
 };
 
 /** Invocation data to be expected in the store */
@@ -51,7 +55,11 @@ const invocationJobsSummaryById = {
 // Mock the invocation store to return the expected invocation data given the invocation ID
 jest.mock("@/stores/invocationStore", () => {
     const originalModule = jest.requireActual("@/stores/invocationStore");
-    const mockFetchInvocationForId = jest.fn();
+    const mockFetchInvocationForId = jest.fn().mockImplementation((fetchParams) => {
+        if (fetchParams.id === "error-invocation") {
+            throw new Error("User does not own specified item.");
+        }
+    });
     const mockFetchInvocationJobsSummaryForId = jest.fn();
     return {
         ...originalModule,
@@ -71,32 +79,42 @@ jest.mock("@/stores/invocationStore", () => {
     };
 });
 
+// Mock the workflow store to return a workflow for `getStoredWorkflowByInstanceId`
+jest.mock("@/stores/workflowStore", () => {
+    const originalModule = jest.requireActual("@/stores/workflowStore");
+    return {
+        ...originalModule,
+        useWorkflowStore: () => ({
+            ...originalModule.useWorkflowStore(),
+            getStoredWorkflowByInstanceId: jest.fn().mockImplementation(() => {
+                return {
+                    id: "workflow-id",
+                    name: "Test Workflow",
+                    version: 0,
+                };
+            }),
+        }),
+    };
+});
+
 /** Mount the WorkflowInvocationState component with the given invocation ID
  * @param invocationId The invocation ID to be passed as a prop
+ * @param shallow Whether to use shallowMount or mount
+ * @param fullPage Whether to render the header as well or just the invocation state tabs
  * @returns The mounted wrapper
  */
-async function mountWorkflowInvocationState(invocationId: string, shallow = true) {
+async function mountWorkflowInvocationState(invocationId: string, isFullPage = false) {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
-    let wrapper;
-    if (shallow) {
-        wrapper = shallowMount(WorkflowInvocationState as object, {
-            propsData: {
-                invocationId,
-            },
-            pinia,
-            localVue,
-        });
-    } else {
-        wrapper = mount(WorkflowInvocationState as object, {
-            propsData: {
-                invocationId,
-            },
-            pinia,
-            localVue,
-        });
-    }
+    const wrapper = shallowMount(WorkflowInvocationState as object, {
+        propsData: {
+            invocationId,
+            isFullPage,
+        },
+        pinia,
+        localVue,
+    });
     await flushPromises();
     return wrapper;
 }
@@ -106,8 +124,8 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         const wrapper = await mountWorkflowInvocationState(invocationData.id);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(true);
 
-        // Neither the invocation nor the jobs summary should be fetched for terminal invocations
-        assertInvocationFetched(0);
+        // Invocation is fetched once and the jobs summary isn't fetched at all for terminal invocations
+        assertInvocationFetched(1);
         assertJobsSummaryFetched(0);
     });
 
@@ -115,17 +133,23 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         const wrapper = await mountWorkflowInvocationState("not-fetched-invocation");
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
-        // Both, the invocation and jobs summary should be fetched once if the invocation is not in the store
+        // Invocation is fetched once and the jobs summary is then never fetched if the invocation is not in the store
         assertInvocationFetched(1);
-        assertJobsSummaryFetched(1);
+        assertJobsSummaryFetched(0);
+
+        // expect there to be an alert for the missing invocation
+        const alert = wrapper.find(selectors.bAlertStub);
+        expect(alert.attributes("variant")).toBe("info");
+        const span = alert.find(selectors.spanElement);
+        expect(span.text()).toBe("Invocation not found.");
     });
 
     it("determines that invocation is not terminal with non-terminal state", async () => {
         const wrapper = await mountWorkflowInvocationState("non-terminal-id");
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
-        // Only the invocation should be fetched for non-terminal invocations
-        assertInvocationFetched(1);
+        // Only the invocation is fetched for non-terminal invocations; once for the initial fetch and then for the polling
+        assertInvocationFetched(2);
         assertJobsSummaryFetched(0);
     });
 
@@ -133,22 +157,36 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         const wrapper = await mountWorkflowInvocationState("non-terminal-jobs");
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
-        // Only the jobs summary should be fetched, not the invocation since it is in scheduled/terminal state
-        assertInvocationFetched(0);
+        // Only the jobs summary should be polled, the invocation is initially fetched only since it is in scheduled/terminal state
+        assertInvocationFetched(1);
         assertJobsSummaryFetched(1);
+    });
+
+    it("determines that errored invocation fetches are handled correctly", async () => {
+        const wrapper = await mountWorkflowInvocationState("error-invocation");
+        expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
+
+        // Invocation is fetched once and the jobs summary isn't fetched at all for errored invocations
+        assertInvocationFetched(1);
+        assertJobsSummaryFetched(0);
+
+        // expect there to be an alert for the handled error
+        const alert = wrapper.find(selectors.bAlertStub);
+        expect(alert.attributes("variant")).toBe("danger");
+        expect(alert.text()).toBe("User does not own specified item.");
     });
 });
 
-describe("WorkflowInvocationState check 'Report' tab disabled state", () => {
+describe("WorkflowInvocationState check 'Report' tab disabled state and header", () => {
     it("determines that 'Report' tab is disabled for non-terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState("non-terminal-id", false);
-        const reportTab = wrapper.find(".invocation-report-tab").find(".nav-link");
-        expect(reportTab.classes()).toContain("disabled");
+        const wrapper = await mountWorkflowInvocationState("non-terminal-id");
+        const reportTab = wrapper.find(selectors.invocationReportTab);
+        expect(reportTab.attributes("disabled")).toBe("true");
     });
     it("determines that 'Report' tab is not disabled for terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState(invocationData.id, false);
-        const reportTab = wrapper.find(".invocation-report-tab").find(".nav-link");
-        expect(reportTab.classes()).not.toContain("disabled");
+        const wrapper = await mountWorkflowInvocationState(invocationData.id);
+        const reportTab = wrapper.find(selectors.invocationReportTab);
+        expect(reportTab.attributes("disabled")).toBeUndefined();
     });
 });
 

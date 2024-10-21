@@ -9,6 +9,10 @@ import random
 import string
 import time
 from abc import abstractmethod
+from dataclasses import (
+    dataclass,
+    field,
+)
 from functools import (
     partial,
     wraps,
@@ -18,13 +22,13 @@ from typing import (
     cast,
     Dict,
     List,
+    Literal,
     NamedTuple,
     Optional,
     Tuple,
     Union,
 )
 
-import requests
 import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -36,7 +40,10 @@ from galaxy.navigation.components import (
     HasText,
 )
 from galaxy.navigation.data import load_root_component
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from . import sizzle
 from .has_driver import (
     exception_indicates_click_intercepted,
@@ -176,6 +183,29 @@ def edit_details(f, scope=".history-index"):
         return result
 
     return func_wrapper
+
+
+@dataclass
+class ConfigTemplateParameter:
+    form_element_type: Literal["string", "boolean", "integer"]
+    name: str
+    value: Any
+
+
+@dataclass
+class FileSourceInstance:
+    template_id: str
+    name: str
+    description: Optional[str]
+    parameters: List[ConfigTemplateParameter] = field(default_factory=list)
+
+
+@dataclass
+class ObjectStoreInstance:
+    template_id: str
+    name: str
+    description: Optional[str]
+    parameters: List[ConfigTemplateParameter] = field(default_factory=list)
 
 
 class NavigatesGalaxy(HasDriver):
@@ -755,31 +785,6 @@ class NavigatesGalaxy(HasDriver):
         elif assert_valid:
             self.wait_for_logged_in()
 
-            # Code below previously was needed because there was a bug that would prevent the masthead from changing,
-            # the bug seems maybe to be fixed though - so we could consider eliminating these extra checks to speed
-            # up tests.
-            self.home()
-            self.wait_for_logged_in()
-            self.click_masthead_user()
-            # Make sure the user menu was dropped down
-            user_menu = self.components.masthead.user_menu.wait_for_visible()
-            try:
-                username_element = self.components.masthead.username.wait_for_visible()
-            except SeleniumTimeoutException as e:
-                menu_items = user_menu.find_elements(By.CSS_SELECTOR, "li a")
-                menu_text = [mi.text for mi in menu_items]
-                message = f"Failed to find logged in message in menu items {', '.join(menu_text)}"
-                raise self.prepend_timeout_message(e, message)
-
-            text = username_element.text
-            assert username in text
-            user_object = self.get_logged_in_user()
-            assert user_object and "email" in user_object
-            assert user_object["email"] == email
-
-            # clicking away no longer closes menu post Masthead -> VueJS
-            self.click_masthead_user()
-
     def wait_for_logged_in(self):
         try:
             self.components.masthead.logged_in_only.wait_for_visible()
@@ -984,6 +989,26 @@ class NavigatesGalaxy(HasDriver):
 
         textarea = self.wait_for_selector(f"{tab_locator} .upload-row:last-of-type .upload-text-content")
         textarea.send_keys(pasted_content)
+
+    def upload_uri(self, uri, wait=False):
+        upload = self.components.upload
+        upload.start.wait_for_and_click()
+        upload.file_dialog.wait_for_and_click()
+        scheme, uri_rest = uri.split("://", 1)
+        parts = uri_rest.split("/")
+
+        root = f"{scheme}://{parts[0]}"
+        upload.file_source_selector(path=root).wait_for_and_click()
+        rest_parts = parts[1:]
+        path = root
+        for part in rest_parts:
+            path = f"{path}/{part}"
+            upload.file_source_selector(path=path).wait_for_and_click()
+        upload.file_dialog_ok.wait_for_and_click()
+        self.upload_start()
+        if wait:
+            self.sleep_for(self.wait_types.UX_RENDER)
+            self.wait_for_history()
 
     def upload_rule_start(self):
         self.upload_start_click()
@@ -1212,47 +1237,41 @@ class NavigatesGalaxy(HasDriver):
 
     def navigate_to_histories_page(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.histories.wait_for_and_click()
+        self.components.histories.activity.wait_for_and_click()
         self.components.histories.histories.wait_for_present()
 
     def navigate_to_histories_shared_with_me_page(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.histories.wait_for_and_click()
+        self.components.histories.activity.wait_for_and_click()
         self.components.shared_histories.tab.wait_for_and_click()
 
     def navigate_to_user_preferences(self):
         self.home()
-        self.click_masthead_user()
+        self.components.masthead.user.wait_for_and_click()
         self.components.masthead.preferences.wait_for_and_click()
 
     def navigate_to_invocations(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.invocations.wait_for_and_click()
+        self.components.invocations.activity.wait_for_and_click()
+        self.components.invocations.activity_expand.wait_for_and_click()
 
     def navigate_to_pages(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.pages.wait_for_and_click()
+        self.components.pages.activity.wait_for_and_click()
 
     def navigate_to_published_workflows(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.workflows.wait_for_and_click()
+        self.components.workflows.activity.wait_for_and_click()
         self.components.workflows.published_tab.wait_for_and_click()
 
     def navigate_to_published_histories(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.histories.wait_for_and_click()
+        self.components.histories.activity.wait_for_and_click()
         self.components.published_histories.tab.wait_for_and_click()
 
-    def navigate_to_published_pages(self):
+    def navigate_to_tools(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.pages.wait_for_and_click()
+        self.components.tools.activity.wait_for_and_click()
 
     def admin_open(self):
         self.components.admin.activity.wait_for_and_click()
@@ -1304,8 +1323,7 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_open(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.libraries.wait_for_and_click()
+        self.components.libraries.activity.wait_for_and_click()
         self.components.libraries.selector.wait_for_visible()
 
     def libraries_open_with_name(self, name):
@@ -1377,25 +1395,36 @@ class NavigatesGalaxy(HasDriver):
         self.libraries_click_dataset_import()
         self.wait_for_and_click(btn)
 
+    def libraries_dataset_import_from_history_search_for(self, search_term=None):
+        return self._inline_search_for(
+            self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_history_search,
+            search_term,
+        )
+
     def libraries_dataset_import_from_history_select(self, to_select_items):
-        self.wait_for_visible(self.navigation.libraries.folder.selectors.import_history_content)
-        history_elements = self.find_elements(self.navigation.libraries.folder.selectors.import_history_contents_items)
+        self.wait_for_visible(
+            self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_list_is_ready
+        )
         for to_select_item in to_select_items:
             found = False
-            for history_element in history_elements:
-                if to_select_item in history_element.text:
-                    history_element.find_element(By.CSS_SELECTOR, "input").click()
-                    found = True
-                    break
-
-            if not found:
-                raise Exception(f"Failed to find history item [{to_select_item}] to select")
+            self._inline_search_for(
+                self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_dataset_search,
+                to_select_item,
+            )
+            self.components.libraries.folder.import_datasets_from_history_modal_select_list_item_by_index(
+                row_index=1
+            ).wait_for_and_click()
+            found = True
+        if not found:
+            raise Exception(f"Failed to find history item [{to_select_item}] to select")
 
     def libraries_dataset_import_from_history_click_ok(self, wait=True):
-        self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_ok_button)
+        self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_ok)
         if wait:
             # Let the progress bar disappear...
-            self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_progress_bar)
+            self.wait_for_absent_or_hidden(
+                self.navigation.libraries.folder.selectors.import_datasets_from_history_modal
+            )
 
     def libraries_table_elements(self):
         tbody_element = self.wait_for_selector_visible("#folder_list_body > tbody")
@@ -1428,7 +1457,7 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_index_open(self):
         self.home()
-        self.click_masthead_workflow()
+        self.click_activity_workflow()
 
     def workflow_shared_with_me_open(self):
         self.workflow_index_open()
@@ -1688,14 +1717,8 @@ class NavigatesGalaxy(HasDriver):
     def tool_form_execute(self):
         self.components.tool_form.execute.wait_for_and_click()
 
-    def click_masthead_user(self):
-        self.components.masthead.user.wait_for_and_click()
-
-    def click_masthead_data(self):
-        self.components.masthead.data.wait_for_and_click()
-
-    def click_masthead_workflow(self):
-        self.components.masthead.workflow.wait_for_and_click()
+    def click_activity_workflow(self):
+        self.components.workflows.activity.wait_for_and_click()
 
     def click_button_new_workflow(self):
         self.wait_for_and_click(self.navigation.workflows.selectors.new_button)
@@ -1977,7 +2000,7 @@ class NavigatesGalaxy(HasDriver):
 
     def logout(self):
         self.components.masthead.logged_in_only.wait_for_visible()
-        self.click_masthead_user()
+        self.components.masthead.user.wait_for_and_click()
         self.components.masthead.logout.wait_for_and_click()
         try:
             self.components.masthead.logged_out_only.wait_for_visible()
@@ -2033,10 +2056,26 @@ class NavigatesGalaxy(HasDriver):
         )
         return element
 
+    def _clear_tooltip(self, tooltip_component):
+        last_timeout: Optional[SeleniumTimeoutException] = None
+        for _ in range(2):
+            if not tooltip_component.is_absent:
+                move_away_chain = self.action_chains()
+                move_away_chain.move_by_offset(100, 100)
+                move_away_chain.perform()
+            try:
+                tooltip_component.wait_for_absent()
+                return
+            except SeleniumTimeoutException as e:
+                last_timeout = e
+
+        assert last_timeout
+        message = "Failed to force current tool tip off screen, cannot test next tooltip."
+        raise self.prepend_timeout_message(last_timeout, message)
+
     def get_tooltip_text(self, element, sleep=0, click_away=True):
         tooltip_balloon = self.components._.tooltip_balloon
-        tooltip_balloon.wait_for_absent()
-
+        self._clear_tooltip(tooltip_balloon)
         action_chains = self.action_chains()
         action_chains.move_to_element(element)
         action_chains.perform()
@@ -2300,6 +2339,78 @@ class NavigatesGalaxy(HasDriver):
             xpath = f'//span[contains(text(), "{user_email}")]'
             self.wait_for_xpath_visible(xpath)
         self.screenshot_if(screenshot_after_submit)
+
+    def create_file_source_template(self, instance: FileSourceInstance) -> str:
+        self.navigate_to_user_preferences()
+        template_id = instance.template_id
+        preferences = self.components.preferences
+        preferences.manage_file_sources.wait_for_and_click()
+        file_source_instances = self.components.file_source_instances
+        file_source_instances.index.create_button.wait_for_and_click()
+
+        select_template = file_source_instances.create.select(template_id=template_id)
+        select_template.wait_for_present()
+        self.screenshot(f"user_file_source_select_{template_id}")
+        select_template.wait_for_and_click()
+
+        file_source_instances.create._.wait_for_present()
+        self.screenshot(f"user_file_source_form_empty_{template_id}")
+        self._fill_configuration_template(instance.name, instance.description, instance.parameters)
+        self.screenshot(f"user_file_source_form_full_{template_id}")
+        file_source_instances.create.submit.wait_for_and_click()
+
+        file_source_instances = self.components.file_source_instances
+        file_source_instances.index._.wait_for_present()
+        self.screenshot(f"user_file_source_created_{template_id}")
+        instances = self.api_get("file_source_instances")
+        newest_instance = instances[-1]
+        uri_root = newest_instance["uri_root"]
+        return uri_root
+
+    def create_object_store_template(self, instance: ObjectStoreInstance) -> str:
+        self.navigate_to_user_preferences()
+        template_id = instance.template_id
+        preferences = self.components.preferences
+        preferences.manage_object_stores.wait_for_and_click()
+        object_store_instances = self.components.object_store_instances
+        object_store_instances.index.create_button.wait_for_and_click()
+
+        select_template = object_store_instances.create.select(template_id=template_id)
+        select_template.wait_for_present()
+        self.screenshot(f"user_object_store_select_{template_id}")
+        select_template.wait_for_and_click()
+
+        object_store_instances.create._.wait_for_present()
+        self.screenshot(f"user_object_store_form_empty_{template_id}")
+        self._fill_configuration_template(instance.name, instance.description, instance.parameters)
+        self.screenshot(f"user_object_store_form_full_{template_id}")
+        object_store_instances.create.submit.wait_for_and_click()
+        object_store_instances.index._.wait_for_present()
+        self.screenshot(f"user_object_store_created_{template_id}")
+        instances = self.api_get("object_store_instances")
+        newest_instance = instances[-1]
+        object_store_id = newest_instance["object_store_id"]
+        return object_store_id
+
+    def _fill_configuration_template(
+        self, name: str, description: Optional[str], parameters: List[ConfigTemplateParameter]
+    ):
+        self.components.tool_form.parameter_input(parameter="_meta_name").wait_for_and_send_keys(
+            name,
+        )
+        if description:
+            self.components.tool_form.parameter_input(parameter="_meta_description").wait_for_and_send_keys(
+                description,
+            )
+
+        for parameter in parameters:
+            form_type = parameter.form_element_type
+            if form_type in ["integer", "string"]:
+                self.components.tool_form.parameter_input(parameter=parameter.name).wait_for_and_send_keys(
+                    str(parameter.value),
+                )
+            else:
+                raise NotImplementedError("Configuration templates of type {form_type} not yet implemented")
 
     def tutorial_mode_activate(self):
         search_selector = "#gtn a"

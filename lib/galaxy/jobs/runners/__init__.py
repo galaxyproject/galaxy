@@ -10,11 +10,17 @@ import sys
 import threading
 import time
 import traceback
-import typing
 import uuid
 from queue import (
     Empty,
     Queue,
+)
+from typing import (
+    Any,
+    Dict,
+    Optional,
+    TYPE_CHECKING,
+    Union,
 )
 
 from sqlalchemy import select
@@ -58,7 +64,7 @@ from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
 from .state_handler_factory import build_state_handlers
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from galaxy.app import GalaxyManagerApplication
     from galaxy.jobs import (
         JobDestination,
@@ -183,7 +189,7 @@ class BaseJobRunner:
                         # Prevent fail_job cycle in the work_queue
                         self.work_queue.put((self.fail_job, job_state))
 
-    def _ensure_db_session(self, arg: typing.Union["JobWrapper", "JobState"]) -> None:
+    def _ensure_db_session(self, arg: Union["JobWrapper", "JobState"]) -> None:
         """Ensure Job object belongs to current session."""
         try:
             job_wrapper = arg.job_wrapper  # type: ignore[union-attr]
@@ -264,7 +270,7 @@ class BaseJobRunner:
         """
         return galaxy.jobs.JobDestination(runner=url.split(":")[0])
 
-    def parse_destination_params(self, params: typing.Dict[str, typing.Any]):
+    def parse_destination_params(self, params: Dict[str, Any]):
         """Parse the JobDestination ``params`` dict and return the runner's native representation of those params."""
         raise NotImplementedError()
 
@@ -347,8 +353,8 @@ class BaseJobRunner:
     def get_work_dir_outputs(
         self,
         job_wrapper: "MinimalJobWrapper",
-        job_working_directory: typing.Optional[str] = None,
-        tool_working_directory: typing.Optional[str] = None,
+        job_working_directory: Optional[str] = None,
+        tool_working_directory: Optional[str] = None,
     ):
         """
         Returns list of pairs (source_file, destination) describing path
@@ -380,6 +386,13 @@ class BaseJobRunner:
         job_tool = job_wrapper.tool
         for joda, dataset in self._walk_dataset_outputs(job):
             if joda and job_tool:
+                if dataset.dataset.purged:
+                    log.info(
+                        "Output dataset %s for job %s purged before job completed, skipping output collection.",
+                        joda.name,
+                        job.id,
+                    )
+                    continue
                 hda_tool_output = job_tool.find_output_def(joda.name)
                 if hda_tool_output and hda_tool_output.from_work_dir:
                     # Copy from working dir to HDA.
@@ -495,6 +508,7 @@ class BaseJobRunner:
             env_setup_commands.append(env_to_statement(env))
         command_line = job_wrapper.runner_command_line
         tmp_dir_creation_statement = job_wrapper.tmp_dir_creation_statement
+        assert job_wrapper.tool
         options = dict(
             tmp_dir_creation_statement=tmp_dir_creation_statement,
             job_instrumenter=job_instrumenter,
@@ -519,10 +533,10 @@ class BaseJobRunner:
     def _find_container(
         self,
         job_wrapper: "MinimalJobWrapper",
-        compute_working_directory: typing.Optional[str] = None,
-        compute_tool_directory: typing.Optional[str] = None,
-        compute_job_directory: typing.Optional[str] = None,
-        compute_tmp_directory: typing.Optional[str] = None,
+        compute_working_directory: Optional[str] = None,
+        compute_tool_directory: Optional[str] = None,
+        compute_job_directory: Optional[str] = None,
+        compute_tmp_directory: Optional[str] = None,
     ):
         job_directory_type = "galaxy" if compute_working_directory is None else "pulsar"
         if not compute_working_directory:
@@ -531,13 +545,14 @@ class BaseJobRunner:
         if not compute_job_directory:
             compute_job_directory = job_wrapper.working_directory
 
+        tool = job_wrapper.tool
+        assert tool
         if not compute_tool_directory:
-            compute_tool_directory = job_wrapper.tool.tool_dir
+            compute_tool_directory = str(tool.tool_dir) if tool.tool_dir is not None else None
 
         if not compute_tmp_directory:
             compute_tmp_directory = job_wrapper.tmp_directory()
 
-        tool = job_wrapper.tool
         guest_ports = job_wrapper.guest_ports
         tool_info = ToolInfo(
             tool.containers,
@@ -591,7 +606,7 @@ class BaseJobRunner:
                 fail_message, tool_stdout=tool_stdout, tool_stderr=tool_stderr, exception=exception
             )
 
-    def mark_as_resubmitted(self, job_state: "JobState", info: typing.Optional[str] = None):
+    def mark_as_resubmitted(self, job_state: "JobState", info: Optional[str] = None):
         job_state.job_wrapper.mark_as_resubmitted(info=info)
         if not self.app.config.track_jobs_in_database:
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)
@@ -618,10 +633,23 @@ class BaseJobRunner:
 
             tool_stdout_path = os.path.join(outputs_directory, "tool_stdout")
             tool_stderr_path = os.path.join(outputs_directory, "tool_stderr")
-            with open(tool_stdout_path, "rb") as stdout_file:
-                tool_stdout = self._job_io_for_db(stdout_file)
-            with open(tool_stderr_path, "rb") as stderr_file:
-                tool_stderr = self._job_io_for_db(stderr_file)
+            try:
+                with open(tool_stdout_path, "rb") as stdout_file:
+                    tool_stdout = self._job_io_for_db(stdout_file)
+                with open(tool_stderr_path, "rb") as stderr_file:
+                    tool_stderr = self._job_io_for_db(stderr_file)
+            except FileNotFoundError:
+                if job.state in (model.Job.states.DELETING, model.Job.states.DELETED):
+                    # We killed the job, so we may not even have the tool stdout / tool stderr
+                    tool_stdout = ""
+                    tool_stderr = "Job cancelled"
+                else:
+                    # Should we instead just move on ?
+                    # In the end the only consequence here is that we won't be able to determine
+                    # if the job failed for known tool reasons (check_tool_output).
+                    # OTOH I don't know if this can even be reached
+                    # Deal with it if we ever get reports about this.
+                    raise
 
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,
@@ -678,13 +706,18 @@ class JobState:
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
         self.runner_state = None
-        self.exit_code_file = default_exit_code_file(job_wrapper.working_directory, job_wrapper.get_id_tag())
-
         self.redact_email_in_job_name = True
+        self._exit_code_file = None
         if self.job_wrapper:
             self.redact_email_in_job_name = self.job_wrapper.app.config.redact_email_in_job_name
 
         self.cleanup_file_attributes = ["job_file", "output_file", "error_file", "exit_code_file"]
+
+    @property
+    def exit_code_file(self) -> str:
+        return self._exit_code_file or default_exit_code_file(
+            self.job_wrapper.working_directory, self.job_wrapper.get_id_tag()
+        )
 
     def set_defaults(self, files_dir):
         if self.job_wrapper is not None:
@@ -753,7 +786,7 @@ class AsynchronousJobState(JobState):
         self.output_file = output_file
         self.error_file = error_file
         if exit_code_file:
-            self.exit_code_file = exit_code_file
+            self._exit_code_file = exit_code_file
         self.job_name = job_name
 
         self.set_defaults(files_dir)

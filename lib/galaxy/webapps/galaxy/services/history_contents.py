@@ -573,6 +573,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             history_id=request.history_id,
             source=request.source,
             content=request.content,
+            validate_hashes=request.validate_hashes,
             user=trans.async_request_user,
         )
         results = materialize_task.delay(request=task_request)
@@ -604,7 +605,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         assert hda is not None
         self.history_manager.error_unless_mutable(hda.history)
         self.hda_manager.update_permissions(trans, hda, **payload_dict)
-        roles = self.hda_manager.serialize_dataset_association_roles(trans, hda)
+        roles = self.hda_manager.serialize_dataset_association_roles(hda)
         return DatasetAssociationRoles(**roles)
 
     def update(
@@ -697,7 +698,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
         self._validate_bulk_operation_params(payload, trans.user, trans)
-        contents: List["HistoryItem"]
+        contents: List[HistoryItem]
         if payload.items:
             contents = self._get_contents_by_item_list(
                 trans,
@@ -1171,21 +1172,27 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                         rval.append(ld)
                 return rval
 
-            for ld in traverse(folder):
-                hda = ld.library_dataset_dataset_association.to_history_dataset_association(
-                    history, add_to_history=True
+            hdas = [
+                ld.library_dataset_dataset_association.to_history_dataset_association(
+                    history, add_to_history=True, commit=False
                 )
+                for ld in traverse(folder)
+            ]
+            history.add_pending_items()
+
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
+
+            for hda in hdas:
                 hda_dict = self.hda_serializer.serialize_to_view(
                     hda, user=trans.user, trans=trans, encode_id=False, **serialization_params.model_dump()
                 )
                 rval.append(hda_dict)
+            return rval
+
         else:
             message = f"Invalid 'source' parameter in request: {source}"
             raise exceptions.RequestParameterInvalidException(message)
-
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return rval
 
     def __create_dataset(
         self,
@@ -1366,7 +1373,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def _get_contents_by_item_list(
         self, trans, history: History, items: List[HistoryContentItem]
     ) -> List["HistoryItem"]:
-        contents: List["HistoryItem"] = []
+        contents: List[HistoryItem] = []
 
         dataset_items = filter(lambda item: item.history_content_type == HistoryContentType.dataset, items)
         datasets_ids = (dataset.id for dataset in dataset_items)

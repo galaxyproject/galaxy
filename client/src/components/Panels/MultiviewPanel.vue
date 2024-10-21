@@ -96,7 +96,11 @@ function userTitle(title: string) {
 </script>
 
 <template>
-    <ActivityPanel title="Select Histories">
+    <ActivityPanel
+        title="Select Histories"
+        go-to-all-title="Open History Multiview"
+        href="/histories/view_multiple"
+        :go-to-on-href="false">
         <template v-slot:header-buttons>
             <BButtonGroup>
                 <BButton
@@ -114,7 +118,6 @@ function userTitle(title: string) {
 
         <template v-slot:header>
             <FilterMenu
-                class="mb-3"
                 name="Histories"
                 placeholder="search histories"
                 :filter-class="HistoriesFilters"
@@ -122,22 +125,10 @@ function userTitle(title: string) {
                 :loading="historiesLoading || loading"
                 :show-advanced.sync="showAdvanced" />
             <section v-if="!showAdvanced">
-                <BButton
-                    v-if="route.path !== '/histories/view_multiple'"
-                    v-b-tooltip.hover.noninteractive.bottom
-                    :aria-label="userTitle('Open History Multiview in center panel')"
-                    :title="userTitle('Open History Multiview in center panel')"
-                    class="w-100"
-                    size="sm"
-                    :disabled="isAnonymous"
-                    @click="router.push('/histories/view_multiple')">
-                    <FontAwesomeIcon :icon="faColumns" class="mr-1" />
-                    <span v-localize>Open History Multiview</span>
-                </BButton>
                 <BButtonGroup
-                    v-else
+                    v-if="route.path === '/histories/view_multiple'"
                     v-b-tooltip.hover.noninteractive.bottom
-                    class="w-100"
+                    class="w-100 mt-2"
                     :aria-label="pinRecentTitle"
                     :title="pinRecentTitle">
                     <BButton size="sm" :disabled="!pinnedHistoryCount" @click="pinRecent">

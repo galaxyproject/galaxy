@@ -150,11 +150,13 @@ class ToolShedInstallationClient(metaclass=abc.ABCMeta):
     ) -> Dict[str, Any]:
         """"""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def tool_data_path(self) -> str:
         """"""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def shed_tool_data_table_conf(self) -> str:
         """"""
 

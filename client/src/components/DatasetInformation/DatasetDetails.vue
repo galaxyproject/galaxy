@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { type AxiosError } from "axios";
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
 
-import { type HDADetailed } from "@/api";
+import { GalaxyApi, type HDADetailed } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
-import { fetchJobDetails, JobDetails } from "@/api/jobs";
+import { type JobDetails } from "@/api/jobs";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 import { stateIsTerminal } from "@/utils/utils";
 
 import DatasetStorage from "@/components/Dataset/DatasetStorage/DatasetStorage.vue";
@@ -33,7 +33,6 @@ const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
 
 const loading = ref(false);
-const jobLoading = ref(true);
 const jobTimeOut = ref<any>(null);
 const jobDetails = ref<JobDetails>();
 const dataset = ref<HDADetailed | null>(null);
@@ -42,46 +41,43 @@ const datasetLoadingError = ref<string | null>(null);
 
 async function getDatasetDetails() {
     loading.value = true;
-
     try {
         const data = await fetchDatasetDetails({ id: props.datasetId });
-
         dataset.value = data;
     } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
-
-        datasetLoadingError.value = error.response?.data?.err_msg || "Unable to fetch available dataset details.";
+        datasetLoadingError.value = errorMessageAsString(e) || "Unable to fetch available dataset details.";
     } finally {
         loading.value = false;
     }
 }
 
 async function loadJobDetails() {
-    jobLoading.value = true;
+    const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}", {
+        params: {
+            path: { job_id: dataset.value?.creating_job! },
+            query: { full: true },
+        },
+    });
 
-    try {
-        const { data } = await fetchJobDetails({ job_id: dataset.value?.creating_job as string, full: true });
-
-        if (stateIsTerminal(data)) {
-            clearTimeout(jobTimeOut.value);
-        } else {
-            jobTimeOut.value = setTimeout(loadJobDetails, 3000);
-        }
-
-        jobDetails.value = data;
-    } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
-
-        jobLoadingError.value = error.response?.data?.err_msg || "Unable to fetch available dataset details.";
-    } finally {
-        jobLoading.value = false;
+    if (error) {
+        jobLoadingError.value = errorMessageAsString(error);
+        return;
     }
+
+    if (stateIsTerminal(data)) {
+        clearTimeout(jobTimeOut.value);
+    } else {
+        jobTimeOut.value = setTimeout(loadJobDetails, 3000);
+    }
+
+    jobDetails.value = data;
 }
 
 onMounted(async () => {
     await getDatasetDetails();
 
-    if (dataset.value?.creating_job !== null) {
+    const creatingJobId = dataset.value?.creating_job;
+    if (creatingJobId) {
         await loadJobDetails();
     }
 });
@@ -102,7 +98,7 @@ onUnmounted(() => {
             {{ datasetLoadingError }}
         </BAlert>
         <div v-else-if="dataset">
-            <div v-if="dataset.creating_job && !jobLoading" class="details">
+            <div v-if="dataset.creating_job" class="details">
                 <DatasetInformation :dataset="dataset" />
 
                 <JobParameters dataset_type="hda" :dataset-id="datasetId" />
@@ -124,7 +120,7 @@ onUnmounted(() => {
 
                 <JobDestinationParams v-if="currentUser?.is_admin" :job-id="dataset.creating_job" />
 
-                <JobDependencies v-if="jobDetails.dependencies" :dependencies="jobDetails.dependencies" />
+                <JobDependencies v-if="jobDetails?.dependencies" :dependencies="jobDetails.dependencies" />
 
                 <div v-if="dataset.peek">
                     <h2 class="h-md">Dataset Peek</h2>

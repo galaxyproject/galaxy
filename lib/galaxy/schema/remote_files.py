@@ -35,6 +35,12 @@ class RemoteFilesDisableMode(str, Enum):
     files = "files"
 
 
+class FilesSourceSupports(Model):
+    pagination: Annotated[bool, Field(description="Whether this file source supports server-side pagination.")] = False
+    search: Annotated[bool, Field(description="Whether this file source supports server-side search.")] = False
+    sorting: Annotated[bool, Field(description="Whether this file source supports server-side sorting.")] = False
+
+
 class FilesSourcePlugin(Model):
     id: str = Field(
         ...,
@@ -54,8 +60,8 @@ class FilesSourcePlugin(Model):
         description="The display label for this plugin.",
         examples=["Library Import Directory"],
     )
-    doc: str = Field(
-        ...,
+    doc: Optional[str] = Field(
+        None,
         title="Documentation",
         description="Documentation or extended description for this plugin.",
         examples=["Galaxy's library import directory"],
@@ -86,6 +92,10 @@ class FilesSourcePlugin(Model):
         title="URL",
         description="Optional URL that might be provided by some plugins to link to the remote source.",
     )
+    supports: Annotated[
+        FilesSourceSupports,
+        Field(default=..., description="Features supported by this file source."),
+    ] = FilesSourceSupports()
 
 
 class BrowsableFilesSourcePlugin(FilesSourcePlugin):

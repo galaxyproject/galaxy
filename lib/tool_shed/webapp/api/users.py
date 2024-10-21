@@ -52,7 +52,7 @@ class UsersController(BaseShedAPIController):
         value_mapper = {"id": trans.security.encode_id}
         return value_mapper
 
-    @web.expose_api_anonymous
+    @web.expose_api_anonymous_and_sessionless
     def index(self, trans, deleted=False, **kwd):
         """
         GET /api/users
@@ -67,7 +67,7 @@ class UsersController(BaseShedAPIController):
             user_dicts.append(user_dict)
         return user_dicts
 
-    @web.expose_api_anonymous
+    @web.expose_api_anonymous_and_sessionless
     def show(self, trans, id, **kwd):
         """
         GET /api/users/{encoded_user_id}

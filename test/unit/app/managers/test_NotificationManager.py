@@ -524,8 +524,9 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
         sa_session = self.trans.sa_session
         group = Group(name=name)
         sa_session.add(group)
-        self.trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
-        sa_session.flush()
+        user_ids = [user.id for user in users]
+        role_ids = [role.id for role in roles]
+        self.trans.app.security_agent.set_group_user_and_role_associations(group, user_ids=user_ids, role_ids=role_ids)
         return group
 
     def _create_test_role(self, name: str, users: List[User], groups: List[Group]):

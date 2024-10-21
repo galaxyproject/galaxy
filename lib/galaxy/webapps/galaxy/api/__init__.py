@@ -8,6 +8,7 @@ from string import Template
 from typing import (
     Any,
     AsyncGenerator,
+    Callable,
     cast,
     NamedTuple,
     Optional,
@@ -26,6 +27,7 @@ from fastapi import (
     APIRouter,
     Form,
     Header,
+    Path,
     Query,
     Request,
     Response,
@@ -41,7 +43,10 @@ from fastapi.security import (
     HTTPAuthorizationCredentials,
     HTTPBearer,
 )
-from pydantic import ValidationError
+from pydantic import (
+    UUID4,
+    ValidationError,
+)
 from pydantic.main import BaseModel
 from routes import (
     Mapper,
@@ -68,6 +73,7 @@ from galaxy import (
 from galaxy.exceptions import (
     AdminRequiredException,
     UserCannotRunAsException,
+    UserRequiredException,
 )
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
@@ -98,10 +104,12 @@ async def get_app_with_request_session() -> AsyncGenerator[StructuredApp, None]:
     app = get_app()
     request_id = request_context.data["X-Request-ID"]
     app.model.set_request_id(request_id)
+    app.install_model.set_request_id(request_id)
     try:
         yield app
     finally:
         app.model.unset_request_id(request_id)
+        app.install_model.unset_request_id(request_id)
 
 
 DependsOnApp = cast(StructuredApp, Depends(get_app_with_request_session))
@@ -118,9 +126,10 @@ class GalaxyTypeDepends(Depends):
         self.galaxy_type_depends = dep_type
 
 
-def depends(dep_type: Type[T], get_app=get_app) -> T:
-    def _do_resolve(request: Request):
-        return get_app().resolve(dep_type)
+def depends(dep_type: Type[T], app=get_app_with_request_session) -> T:
+    async def _do_resolve(request: Request):
+        async for _dep in app():
+            yield _dep.resolve(dep_type)
 
     return cast(T, GalaxyTypeDepends(_do_resolve, dep_type))
 
@@ -178,6 +187,17 @@ def get_user(
     if galaxy_session:
         return galaxy_session.user
     return api_user
+
+
+def get_required_user(
+    galaxy_session=cast(Optional[model.GalaxySession], Depends(get_session)),
+    api_user=cast(Optional[User], Depends(get_api_user)),
+) -> User:
+    if galaxy_session and (user := galaxy_session.user):
+        return user
+    if api_user:
+        return api_user
+    raise UserRequiredException
 
 
 class UrlBuilder:
@@ -307,7 +327,7 @@ class GalaxyASGIResponse(GalaxyAbstractResponse):
         )
 
 
-DependsOnUser = cast(Optional[User], Depends(get_user))
+DependsOnUser = cast(User, Depends(get_required_user))
 
 
 def get_current_history_from_session(galaxy_session: Optional[model.GalaxySession]) -> Optional[model.History]:
@@ -360,6 +380,18 @@ def get_admin_user(trans: SessionRequestContext = DependsOnTrans):
 AdminUserRequired = Depends(get_admin_user)
 
 
+def cors_preflight(response: Response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    # Only allow CORS safe-listed headers for now (https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_request_header)
+    response.headers["Access-Control-Allow-Headers"] = "Accept,Accept-Language,Content-Language,Content-Type,Range"
+    response.headers["Access-Control-Max-Age"] = "600"
+    response.status_code = 200
+    return response
+
+
+CORSPreflightRequired = Depends(cors_preflight)
+
+
 class BaseGalaxyAPIController(BaseAPIController):
     def __init__(self, app: StructuredApp):
         super().__init__(app)
@@ -382,13 +414,20 @@ class FrameworkRouter(APIRouter):
 
     def wrap_with_alias(self, verb: RestVerb, *args, alias: Optional[str] = None, **kwd):
         """
-        Wraps FastAPI methods with additional alias keyword and require_admin handling.
+        Wraps FastAPI methods with additional alias keyword, require_admin and CORS handling.
 
         @router.get("/api/thing", alias="/api/deprecated_thing") will then create
         routes for /api/thing and /api/deprecated_thing.
         """
         kwd = self._handle_galaxy_kwd(kwd)
         include_in_schema = kwd.pop("include_in_schema", True)
+
+        allow_cors = kwd.pop("allow_cors", False)
+        if allow_cors:
+            assert (
+                "route_class_override" not in kwd
+            ), "Cannot use allow_cors=True on route and specify `route_class_override`"
+            kwd["route_class_override"] = APICorsRoute
 
         def decorate_route(route, include_in_schema=include_in_schema):
             # Decorator solely exists to allow passing `route_class_override` to add_api_route
@@ -400,6 +439,21 @@ class FrameworkRouter(APIRouter):
                     include_in_schema=include_in_schema,
                     **kwd,
                 )
+
+                if allow_cors:
+
+                    dependencies = kwd.pop("dependencies", [])
+                    dependencies.append(CORSPreflightRequired)
+
+                    self.add_api_route(
+                        route,
+                        endpoint=lambda: None,
+                        methods=[RestVerb.options],
+                        include_in_schema=False,
+                        dependencies=dependencies,
+                        **kwd,
+                    )
+
                 return func
 
             return decorated_route
@@ -482,6 +536,24 @@ class FrameworkRouter(APIRouter):
 
 class Router(FrameworkRouter):
     admin_user_dependency = AdminUserRequired
+    user_dependency = DependsOnUser
+
+
+class APICorsRoute(APIRoute):
+    """
+    Sends CORS headers
+    """
+
+    def get_route_handler(self) -> Callable:
+        original_route_handler = super().get_route_handler()
+
+        async def custom_route_handler(request: Request) -> Response:
+            response: Response = await original_route_handler(request)
+            response.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+            response.headers["Access-Control-Max-Age"] = "600"
+            return response
+
+        return custom_route_handler
 
 
 class APIContentTypeRoute(APIRoute):
@@ -602,3 +674,10 @@ def search_query_param(model_name: str, tags: list, free_text_fields: list) -> O
         title="Search query.",
         description=description,
     )
+
+
+LandingUuidPathParam: UUID4 = Path(
+    ...,
+    title="Landing UUID",
+    description="The UUID used to identify a persisted landing request.",
+)

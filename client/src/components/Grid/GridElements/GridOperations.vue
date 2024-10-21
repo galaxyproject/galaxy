@@ -42,7 +42,7 @@ function hasCondition(conditionHandler: (rowData: RowData, config: GalaxyConfigu
             <FontAwesomeIcon icon="caret-down" class="fa-lg" />
             <span class="font-weight-bold">{{ title }}</span>
         </button>
-        <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
+        <div class="dropdown-menu" aria-labelledby="grid-operations">
             <span v-for="(operation, operationIndex) in operations" :key="operationIndex">
                 <button
                     v-if="operation && (!operation.condition || hasCondition(operation.condition))"

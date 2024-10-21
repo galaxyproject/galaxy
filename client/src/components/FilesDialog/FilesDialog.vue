@@ -5,19 +5,28 @@ import Vue, { computed, onMounted, ref } from "vue";
 import {
     browseRemoteFiles,
     fetchFileSources,
-    FileSourceBrowsingMode,
-    FilterFileSourcesOptions,
-    RemoteEntry,
+    type FileSourceBrowsingMode,
+    type FilterFileSourcesOptions,
+    type RemoteEntry,
 } from "@/api/remoteFiles";
 import { UrlTracker } from "@/components/DataDialog/utilities";
 import { fileSourcePluginToItem, isSubPath } from "@/components/FilesDialog/utilities";
-import { SELECTION_STATES, type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import {
+    type ItemsProvider,
+    type ItemsProviderContext,
+    SELECTION_STATES,
+    type SelectionItem,
+    type SelectionState,
+} from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
+import { useFileSources } from "@/composables/fileSources";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { Model } from "./model";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
+
+const filesSources = useFileSources();
 
 interface FilesDialogProps {
     /** Callback function to be called passing the results when selection is complete */
@@ -55,6 +64,7 @@ const selectedDirectories = ref<SelectionItem[]>([]);
 const errorMessage = ref<string>();
 const filter = ref();
 const items = ref<SelectionItem[]>([]);
+const itemsProvider = ref<ItemsProvider>();
 const modalShow = ref(true);
 const optionsShow = ref(false);
 const undoShow = ref(false);
@@ -64,8 +74,9 @@ const showDetails = ref(true);
 const isBusy = ref(false);
 const currentDirectory = ref<SelectionItem>();
 const showFTPHelper = ref(false);
-const selectAllIcon = ref(SELECTION_STATES.UNSELECTED);
+const selectAllIcon = ref<SelectionState>(SELECTION_STATES.UNSELECTED);
 const urlTracker = ref(new UrlTracker(""));
+const totalItems = ref(0);
 
 const fields = computed(() => {
     const fields = [];
@@ -156,7 +167,7 @@ function selectDirectoryRecursive(record: SelectionItem) {
         const recursive = true;
         isBusy.value = true;
         browseRemoteFiles(record.url, recursive).then((incoming) => {
-            incoming.forEach((item) => {
+            incoming.entries.forEach((item) => {
                 // construct record
                 const subRecord = entryToRecord(item);
                 if (subRecord.isLeaf) {
@@ -167,6 +178,7 @@ function selectDirectoryRecursive(record: SelectionItem) {
                     selectedDirectories.value.push(subRecord);
                 }
             });
+            totalItems.value = incoming.totalMatches;
             isBusy.value = false;
         });
     }
@@ -230,6 +242,7 @@ function load(record?: SelectionItem) {
     optionsShow.value = false;
     undoShow.value = !urlTracker.value.atRoot();
     if (urlTracker.value.atRoot() || errorMessage.value) {
+        itemsProvider.value = undefined;
         errorMessage.value = undefined;
         fetchFileSources(props.filterOptions)
             .then((results) => {
@@ -241,6 +254,7 @@ function load(record?: SelectionItem) {
                 optionsShow.value = true;
                 showTime.value = false;
                 showDetails.value = true;
+                totalItems.value = convertedItems.length;
             })
             .catch((error) => {
                 errorMessage.value = errorMessageAsString(error);
@@ -257,9 +271,19 @@ function load(record?: SelectionItem) {
             showDetails.value = false;
             return;
         }
+
+        if (shouldUseItemsProvider()) {
+            itemsProvider.value = (ctx) => provideItems(ctx, currentDirectory.value?.url);
+            optionsShow.value = true;
+            showTime.value = true;
+            showDetails.value = false;
+            return;
+        }
+
         browseRemoteFiles(currentDirectory.value?.url, false, props.requireWritable)
-            .then((results) => {
-                items.value = filterByMode(results).map(entryToRecord);
+            .then((result) => {
+                items.value = filterByMode(result.entries).map(entryToRecord);
+                totalItems.value = result.totalMatches;
                 formatRows();
                 optionsShow.value = true;
                 showTime.value = true;
@@ -268,6 +292,45 @@ function load(record?: SelectionItem) {
             .catch((error) => {
                 errorMessage.value = errorMessageAsString(error);
             });
+    }
+}
+
+/**
+ * Check if the current file source supports server-side pagination.
+ * If it does, we will use the items provider to fetch items.
+ */
+function shouldUseItemsProvider(): boolean {
+    if (!currentDirectory.value) {
+        return false;
+    }
+    const fileSource = filesSources.getFileSourceByUri(currentDirectory.value.url);
+    const supportsPagination = fileSource?.supports?.pagination;
+    return Boolean(supportsPagination);
+}
+
+/**
+ *  Fetches items from the server using server-side pagination and filtering.
+ **/
+async function provideItems(ctx: ItemsProviderContext, url?: string): Promise<SelectionItem[]> {
+    isBusy.value = true;
+    try {
+        if (!url) {
+            return [];
+        }
+        const limit = ctx.perPage;
+        const offset = (ctx.currentPage - 1) * ctx.perPage;
+        const query = ctx.filter;
+        const response = await browseRemoteFiles(url, false, props.requireWritable, limit, offset, query);
+        const result = response.entries.map(entryToRecord);
+        totalItems.value = response.totalMatches;
+        items.value = result;
+        formatRows();
+        return result;
+    } catch (error) {
+        errorMessage.value = errorMessageAsString(error);
+        return [];
+    } finally {
+        isBusy.value = false;
     }
 }
 
@@ -346,11 +409,14 @@ onMounted(() => {
         :fields="fields"
         :is-busy="isBusy"
         :items="items"
+        :items-provider="itemsProvider"
+        :provider-url="currentDirectory?.url"
+        :total-items="totalItems"
         :modal-show="modalShow"
         :modal-static="modalStatic"
         :multiple="multiple"
         :options-show="optionsShow"
-        :select-all-icon="selectAllIcon"
+        :select-all-variant="selectAllIcon"
         :show-select-icon="undoShow && multiple"
         :undo-show="undoShow"
         @onCancel="() => (modalShow = false)"

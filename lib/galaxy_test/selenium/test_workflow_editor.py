@@ -899,22 +899,18 @@ steps:
             assert status == target_status
 
         new_workflow_name = self.workflow_create_new(clear_placeholder=True)
-
-        # Assert workflow not initially bookmarked.
-        assert_workflow_bookmarked_status(False)
-
         self.components.workflow_editor.canvas_body.wait_for_visible()
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
-        self.components.masthead.workflow.wait_for_and_click()
 
-        self.sleep_for(self.wait_types.UX_RENDER)
+        # Assert workflow not initially bookmarked.
+        self.navigate_to_tools()
+        assert_workflow_bookmarked_status(False)
+
+        self.click_activity_workflow()
         self.components.workflows.bookmark_link(action="add").wait_for_and_click()
-        self.components.masthead.workflow.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
 
         # search for bookmark in tools menu
-        self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.navigate_to_tools()
         assert_workflow_bookmarked_status(True)
 
     def tab_to(self, accessible_name, direction="forward"):
@@ -1484,12 +1480,6 @@ steps:
         self.workflow_index_open()
         self.workflow_index_search_for(name)
         self.components.workflows.edit_button.wait_for_and_click()
-
-    def workflow_upload_yaml_with_random_name(self, content):
-        workflow_populator = self.workflow_populator
-        name = self._get_random_name()
-        workflow_populator.upload_yaml_workflow(content, name=name)
-        return name
 
     @retry_assertion_during_transitions
     def assert_wf_name_is(self, expected_name):

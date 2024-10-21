@@ -34,7 +34,6 @@ from typing import (
     Union,
 )
 
-import requests
 from typing_extensions import (
     Protocol,
     TypedDict,
@@ -44,6 +43,7 @@ from galaxy import util
 from galaxy.exceptions import MessageException
 from galaxy.util import (
     Element,
+    requests,
     RW_R__R__,
 )
 from galaxy.util.compression_utils import decompress_path_to_directory

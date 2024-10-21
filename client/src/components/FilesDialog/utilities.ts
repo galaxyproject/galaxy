@@ -1,6 +1,6 @@
-import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
+import { type BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 
-import type { SelectionItem } from "../SelectionDialog/selectionTypes";
+import { type SelectionItem } from "../SelectionDialog/selectionTypes";
 
 export const isSubPath = (originPath: string, destinationPath: string) => {
     return subPathCondition(ensureTrailingSlash(originPath), ensureTrailingSlash(destinationPath));
@@ -18,7 +18,7 @@ export function fileSourcePluginToItem(plugin: BrowsableFilesSourcePlugin): Sele
     const result = {
         id: plugin.id,
         label: plugin.label,
-        details: plugin.doc,
+        details: plugin.doc || "",
         isLeaf: false,
         url: plugin.uri_root,
     };

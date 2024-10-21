@@ -1,6 +1,6 @@
 import { onMounted, readonly, ref } from "vue";
 
-import { BrowsableFilesSourcePlugin, FilterFileSourcesOptions } from "@/api/remoteFiles";
+import { type BrowsableFilesSourcePlugin, type FilterFileSourcesOptions } from "@/api/remoteFiles";
 import { useFileSourcesStore } from "@/stores/fileSourcesStore";
 
 /**
@@ -26,8 +26,20 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
     }
 
     function getFileSourceByUri(uri: string) {
+        const sourceId = getFileSourceIdFromUri(uri);
+        let matchedFileSource = getFileSourceById(sourceId);
+        if (matchedFileSource) {
+            return matchedFileSource;
+        }
+
+        // Match by URI root if the source ID is not found.
+        matchedFileSource = fileSources.value.find((fs) => uri.startsWith(fs.uri_root));
+        return matchedFileSource;
+    }
+
+    function getFileSourceIdFromUri(uri: string) {
         const sourceId = uri.split("://")[1]?.split("/")[0] ?? "";
-        return getFileSourceById(sourceId);
+        return sourceId;
     }
 
     return {

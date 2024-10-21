@@ -11,13 +11,14 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.managers.roles import get_roles_by_ids
-from galaxy.managers.users import get_users_by_ids
 from galaxy.model import Group
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.fields import Security
-from galaxy.schema.groups import GroupCreatePayload
+from galaxy.schema.groups import (
+    GroupCreatePayload,
+    GroupUpdatePayload,
+)
 from galaxy.structured_app import MinimalManagerApp
 
 
@@ -51,13 +52,11 @@ class GroupsManager:
 
         group = model.Group(name=name)
         sa_session.add(group)
-        user_ids = payload.user_ids
-        users = get_users_by_ids(sa_session, user_ids)
-        role_ids = payload.role_ids
-        roles = get_roles_by_ids(sa_session, role_ids)
-        trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
-        with transaction(sa_session):
-            sa_session.commit()
+
+        trans.app.security_agent.set_group_user_and_role_associations(
+            group, user_ids=payload.user_ids, role_ids=payload.role_ids
+        )
+        sa_session.commit()
 
         encoded_id = Security.security.encode_id(group.id)
         item = group.to_dict(view="element")
@@ -76,7 +75,7 @@ class GroupsManager:
         item["roles_url"] = self._url_for(trans, "group_roles", group_id=encoded_id)
         return item
 
-    def update(self, trans: ProvidesAppContext, group_id: int, payload: GroupCreatePayload):
+    def update(self, trans: ProvidesAppContext, group_id: int, payload: GroupUpdatePayload):
         """
         Modifies a group.
         """
@@ -85,16 +84,11 @@ class GroupsManager:
         if name := payload.name:
             self._check_duplicated_group_name(sa_session, name)
             group.name = name
-            sa_session.add(group)
-        user_ids = payload.user_ids
-        users = get_users_by_ids(sa_session, user_ids)
-        role_ids = payload.role_ids
-        roles = get_roles_by_ids(sa_session, role_ids)
-        self._app.security_agent.set_entity_group_associations(
-            groups=[group], roles=roles, users=users, delete_existing_assocs=False
-        )
-        with transaction(sa_session):
             sa_session.commit()
+
+        self._app.security_agent.set_group_user_and_role_associations(
+            group, user_ids=payload.user_ids, role_ids=payload.role_ids
+        )
 
         encoded_id = Security.security.encode_id(group.id)
         item = group.to_dict(view="element")

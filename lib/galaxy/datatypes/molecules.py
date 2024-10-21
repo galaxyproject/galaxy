@@ -1546,8 +1546,12 @@ class GRO(GenericMolFile):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.get_file_name())
-            atom_number = int(dataset.peek.split("\n")[1])
-            dataset.blurb = f"{atom_number} atoms"
+            peek_lines = dataset.peek.split("\n")
+            try:
+                atom_number = int(peek_lines[1])
+                dataset.blurb = f"{atom_number} atoms"
+            except (ValueError, IndexError):
+                dataset.blurb = "file does not look like valid GRO file."
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"

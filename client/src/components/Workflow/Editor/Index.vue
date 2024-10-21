@@ -42,8 +42,10 @@
             <div class="editor-top-bar" unselectable="on">
                 <span>
                     <span class="sr-only">Workflow Editor</span>
-                    <span v-if="!isNewTempWorkflow || name" class="editor-title" :title="name">{{ name }}</span>
-                    <i v-else class="editor-title">Create New Workflow</i>
+                    <span class="editor-title" :title="name"
+                        >{{ name }}
+                        <i v-if="hasChanges" class="text-muted"> (unsaved changes) </i>
+                    </span>
                 </span>
 
                 <b-button-group>
@@ -58,6 +60,12 @@
                         :variant="undoRedoStore.hasRedo ? 'secondary' : 'muted'"
                         @click="undoRedoStore.redo()">
                         <FontAwesomeIcon icon="fa-arrow-right" />
+                    </b-button>
+                    <b-button
+                        title="View Last Changes"
+                        :variant="showChanges ? 'primary' : 'link'"
+                        @click="toggleShowChanges">
+                        <FontAwesomeIcon icon="fa-history" />
                     </b-button>
                 </b-button-group>
             </div>
@@ -85,6 +93,7 @@
                             :is-new-temp-workflow="isNewTempWorkflow"
                             :has-changes="hasChanges"
                             :has-invalid-connections="hasInvalidConnections"
+                            :current-active-panel="showInPanel"
                             @onSave="onSave"
                             @onCreate="onCreate"
                             @onSaveAs="onSaveAs"
@@ -93,15 +102,16 @@
                             @onReport="onReport"
                             @onLayout="onLayout"
                             @onEdit="onEdit"
-                            @onAttributes="showAttributes"
+                            @onAttributes="() => showAttributes(true)"
                             @onLint="onLint"
                             @onUpgrade="onUpgrade" />
                     </div>
                 </div>
-                <div ref="right-panel" class="unified-panel-body workflow-right p-2">
-                    <div v-if="!initialLoading">
+                <div ref="rightPanelElement" class="unified-panel-body workflow-right p-2">
+                    <div v-if="!initialLoading" class="position-relative h-100">
+                        <UndoRedoStack v-if="showChanges" :store-id="id" />
                         <FormTool
-                            v-if="hasActiveNodeTool"
+                            v-else-if="hasActiveNodeTool"
                             :key="activeStep.id"
                             :step="activeStep"
                             :datatypes="datatypes"
@@ -121,7 +131,7 @@
                             @onSetData="onSetData"
                             @onUpdateStep="updateStep" />
                         <WorkflowAttributes
-                            v-else-if="attributesVisible"
+                            v-else-if="showInPanel === 'attributes'"
                             :id="id"
                             :tags="tags"
                             :parameters="parameters"
@@ -138,14 +148,14 @@
                             @update:nameCurrent="setName"
                             @update:annotationCurrent="setAnnotation" />
                         <WorkflowLint
-                            v-else-if="showLint"
+                            v-else-if="showInPanel === 'lint'"
                             :untyped-parameters="parameters"
                             :annotation="annotation"
                             :creator="creator"
                             :license="license"
                             :steps="steps"
                             :datatypes-mapper="datatypesMapper"
-                            @onAttributes="showAttributes"
+                            @onAttributes="() => showAttributes(true)"
                             @onHighlight="onHighlight"
                             @onUnhighlight="onUnhighlight"
                             @onRefactor="onAttemptRefactor"
@@ -178,13 +188,13 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faArrowRight, faHistory } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
 import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
-import Vue, { computed, nextTick, onUnmounted, ref, unref } from "vue";
+import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
@@ -217,10 +227,11 @@ import WorkflowGraph from "./WorkflowGraph.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
 import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
 import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 
-library.add(faArrowLeft, faArrowRight);
+library.add(faArrowLeft, faArrowRight, faHistory);
 
 export default {
     components: {
@@ -238,6 +249,7 @@ export default {
         MessagesModal,
         WorkflowGraph,
         FontAwesomeIcon,
+        UndoRedoStack,
     },
     props: {
         workflowId: {
@@ -291,8 +303,18 @@ export default {
         }
 
         const showInPanel = ref("attributes");
+        const showChanges = ref(false);
 
-        function showAttributes() {
+        function toggleShowChanges() {
+            ensureParametersSet();
+            showChanges.value = !showChanges.value;
+        }
+
+        function showAttributes(closeChanges = false) {
+            if (closeChanges) {
+                showChanges.value = false;
+            }
+
             ensureParametersSet();
             stateStore.activeNodeId = null;
             showInPanel.value = "attributes";
@@ -355,6 +377,15 @@ export default {
         }
 
         const tags = ref([]);
+
+        watch(
+            () => props.workflowTags,
+            (newTags) => {
+                tags.value = [...newTags];
+            },
+            { immediate: true }
+        );
+
         const setTagsHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (tags.value = structuredClone(value)),
@@ -364,6 +395,22 @@ export default {
         /** user set tags. queues an undo/redo action */
         function setTags(newTags) {
             setTagsHandler.set(tags.value, newTags);
+        }
+
+        watch(
+            () => stateStore.activeNodeId,
+            () => {
+                scrollToTop();
+            }
+        );
+
+        const rightPanelElement = ref(null);
+
+        function scrollToTop() {
+            rightPanelElement.value?.scrollTo({
+                top: 0,
+                behavior: "instant",
+            });
         }
 
         const { comments } = storeToRefs(commentStore);
@@ -416,6 +463,8 @@ export default {
             parameters,
             ensureParametersSet,
             showInPanel,
+            showChanges,
+            toggleShowChanges,
             showAttributes,
             setName,
             report,
@@ -427,6 +476,8 @@ export default {
             setAnnotation,
             tags,
             setTags,
+            rightPanelElement,
+            scrollToTop,
             connectionStore,
             hasChanges,
             hasInvalidConnections,
@@ -471,12 +522,6 @@ export default {
         };
     },
     computed: {
-        attributesVisible() {
-            return this.showInPanel == "attributes";
-        },
-        showLint() {
-            return this.showInPanel == "lint";
-        },
         activeNodeType() {
             return this.activeStep?.type;
         },
@@ -497,12 +542,12 @@ export default {
             }
         },
         annotation(newAnnotation, oldAnnotation) {
-            if (newAnnotation != oldAnnotation && !this.isNewTempWorkflow) {
+            if (newAnnotation != oldAnnotation) {
                 this.hasChanges = true;
             }
         },
         name(newName, oldName) {
-            if (newName != oldName && !this.isNewTempWorkflow) {
+            if (newName != oldName) {
                 this.hasChanges = true;
             }
         },
@@ -679,10 +724,6 @@ export default {
                 });
             });
         },
-        onWorkflowTextEditor() {
-            this.stateStore.activeNodeId = null;
-            this.showInPanel = "attributes";
-        },
         onAnnotation(nodeId, newAnnotation) {
             this.stepActions.setAnnotation(this.steps[nodeId], newAnnotation);
         },
@@ -759,6 +800,7 @@ export default {
             this.ensureParametersSet();
             this.stateStore.activeNodeId = null;
             this.showInPanel = "lint";
+            this.showChanges = false;
         },
         onUpgrade() {
             this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
@@ -774,10 +816,9 @@ export default {
             this.report.markdown = markdown;
         },
         onRun() {
-            const runUrl = `/workflows/run?id=${this.id}`;
-            this.onNavigate(runUrl);
+            this.onNavigate(`/workflows/run?id=${this.id}`, false, false, true);
         },
-        async onNavigate(url, forceSave = false, ignoreChanges = false) {
+        async onNavigate(url, forceSave = false, ignoreChanges = false, appendVersion = false) {
             if (this.isNewTempWorkflow) {
                 await this.onCreate();
             } else if (this.hasChanges && !forceSave && !ignoreChanges) {
@@ -790,6 +831,9 @@ export default {
                 await this.onSave();
             }
 
+            if (appendVersion && this.version !== undefined) {
+                url += `&version=${this.version}`;
+            }
             this.hasChanges = false;
             await nextTick();
             this.$router.push(url);
@@ -911,9 +955,6 @@ export default {
                 this.hasChanges = true;
                 this.setCreator(creator);
             }
-        },
-        onActiveNode(nodeId) {
-            this.$refs["right-panel"].scrollTop = 0;
         },
         onInsertedStateMessages(insertedStateMessages) {
             this.insertedStateMessages = insertedStateMessages;

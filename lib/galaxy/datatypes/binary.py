@@ -1299,7 +1299,7 @@ class Loom(H5):
 
     def sniff(self, filename: str) -> bool:
         if super().sniff(filename):
-            with h5py.File(filename, "r") as loom_file:
+            with h5py.File(filename, "r", locking=False) as loom_file:
                 # Check the optional but distinctive LOOM_SPEC_VERSION attribute
                 if bool(loom_file.attrs.get("LOOM_SPEC_VERSION")):
                     return True
@@ -1328,7 +1328,7 @@ class Loom(H5):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
-            with h5py.File(dataset.get_file_name(), "r") as loom_file:
+            with h5py.File(dataset.get_file_name(), "r", locking=False) as loom_file:
                 dataset.metadata.title = loom_file.attrs.get("title")
                 dataset.metadata.description = loom_file.attrs.get("description")
                 dataset.metadata.url = loom_file.attrs.get("url")
@@ -1464,7 +1464,7 @@ class Anndata(H5):
     def sniff(self, filename: str) -> bool:
         if super().sniff(filename):
             try:
-                with h5py.File(filename, "r") as f:
+                with h5py.File(filename, "r", locking=False) as f:
                     return all(attr in f for attr in ["X", "obs", "var"])
             except Exception:
                 return False
@@ -1472,7 +1472,7 @@ class Anndata(H5):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
-        with h5py.File(dataset.get_file_name(), "r") as anndata_file:
+        with h5py.File(dataset.get_file_name(), "r", locking=False) as anndata_file:
             dataset.metadata.title = anndata_file.attrs.get("title")
             dataset.metadata.description = anndata_file.attrs.get("description")
             dataset.metadata.url = anndata_file.attrs.get("url")
@@ -1505,7 +1505,7 @@ class Anndata(H5):
                     count = len(tmp.dtype)
                     size = int(tmp.size)
                 else:
-                    layers = list(tmp.attrs)
+                    layers = list(tmp.keys())
                     count = len(layers)
                     size = lennames
                 return (layers, count, size)
@@ -1822,7 +1822,7 @@ class Biom2(H5):
         False
         """
         if super().sniff(filename):
-            with h5py.File(filename, "r") as f:
+            with h5py.File(filename, "r", locking=False) as f:
                 required_fields = {"id", "format-url", "type", "generated-by", "creation-date", "nnz", "shape"}
                 return required_fields.issubset(f.attrs.keys())
         return False
@@ -1830,7 +1830,7 @@ class Biom2(H5):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
-            with h5py.File(dataset.get_file_name(), "r") as f:
+            with h5py.File(dataset.get_file_name(), "r", locking=False) as f:
                 attributes = f.attrs
 
                 dataset.metadata.id = util.unicodify(attributes["id"])
@@ -1853,7 +1853,7 @@ class Biom2(H5):
         if not dataset.dataset.purged:
             lines = ["Biom2 (HDF5) file"]
             try:
-                with h5py.File(dataset.get_file_name()) as f:
+                with h5py.File(dataset.get_file_name(), locking=False) as f:
                     for k, v in f.attrs.items():
                         lines.append(f"{k}:  {util.unicodify(v)}")
             except Exception as e:
@@ -1900,7 +1900,7 @@ class Cool(H5):
 
         if super().sniff(filename):
             keys = ["chroms", "bins", "pixels", "indexes"]
-            with h5py.File(filename, "r") as handle:
+            with h5py.File(filename, "r", locking=False) as handle:
                 fmt = util.unicodify(handle.attrs.get("format"))
                 url = util.unicodify(handle.attrs.get("format-url"))
                 if fmt == MAGIC or url == URL:
@@ -1956,7 +1956,7 @@ class MCool(H5):
 
         if super().sniff(filename):
             keys0 = ["resolutions"]
-            with h5py.File(filename, "r") as handle:
+            with h5py.File(filename, "r", locking=False) as handle:
                 if not all(name in handle.keys() for name in keys0):
                     return False
                 res0 = next(iter(handle["resolutions"].keys()))
@@ -2022,7 +2022,7 @@ class H5MLM(H5):
                 params_file = dataset.metadata.spec[spec_key].param.new_file(
                     dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
                 )
-            with h5py.File(dataset.get_file_name(), "r") as handle:
+            with h5py.File(dataset.get_file_name(), "r", locking=False) as handle:
                 hyper_params = handle[self.HYPERPARAMETER][()]
             hyper_params = json.loads(util.unicodify(hyper_params))
             with open(params_file.get_file_name(), "w") as f:
@@ -2036,7 +2036,7 @@ class H5MLM(H5):
     def sniff(self, filename: str) -> bool:
         if super().sniff(filename):
             keys = [self.CONFIG]
-            with h5py.File(filename, "r") as handle:
+            with h5py.File(filename, "r", locking=False) as handle:
                 if not all(name in handle.keys() for name in keys):
                     return False
                 url = util.unicodify(handle.attrs.get(self.URL))
@@ -2046,7 +2046,7 @@ class H5MLM(H5):
 
     def get_attribute(self, filename: str, attr_key: str) -> str:
         try:
-            with h5py.File(filename, "r") as handle:
+            with h5py.File(filename, "r", locking=False) as handle:
                 attr = util.unicodify(handle.attrs.get(attr_key))
             return attr
         except Exception as e:
@@ -2069,7 +2069,7 @@ class H5MLM(H5):
 
     def get_config_string(self, filename: str) -> str:
         try:
-            with h5py.File(filename, "r") as handle:
+            with h5py.File(filename, "r", locking=False) as handle:
                 config = util.unicodify(handle[self.CONFIG][()])
             return config
         except Exception as e:
@@ -2109,7 +2109,7 @@ class H5MLM(H5):
 
         out_dict: Dict = {}
         try:
-            with h5py.File(dataset.get_file_name(), "r") as handle:
+            with h5py.File(dataset.get_file_name(), "r", locking=False) as handle:
                 out_dict["Attributes"] = {}
                 attributes = handle.attrs
                 for k in set(attributes.keys()) - {self.HTTP_REPR, self.REPR, self.URL}:
@@ -2199,7 +2199,7 @@ class HexrdMaterials(H5):
     def sniff(self, filename: str) -> bool:
         if super().sniff(filename):
             req = {"AtomData", "Atomtypes", "CrystalSystem", "LatticeParameters"}
-            with h5py.File(filename, "r") as mat_file:
+            with h5py.File(filename, "r", locking=False) as mat_file:
                 for k in mat_file.keys():
                     if isinstance(mat_file[k], h5py._hl.group.Group) and set(mat_file[k].keys()) >= req:
                         return True
@@ -2208,7 +2208,7 @@ class HexrdMaterials(H5):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
-            with h5py.File(dataset.get_file_name(), "r") as mat_file:
+            with h5py.File(dataset.get_file_name(), "r", locking=False) as mat_file:
                 dataset.metadata.materials = list(mat_file.keys())
                 sgn = {}
                 lp = {}
@@ -3757,6 +3757,31 @@ class Fast5ArchiveBz2(Fast5Archive):
         if not is_bz2(filename):
             return False
         return Fast5Archive.sniff(self, filename)
+
+
+class Pod5(Binary):
+    """
+    Class describing a POD5 file. The POD5 Format Specification is at
+    https://pod5-file-format.readthedocs.io/en/latest/SPECIFICATION.html
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.pod5')
+    >>> Pod5().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> Pod5().sniff(fname)
+    False
+    """
+
+    file_ext = "pod5"
+
+    def sniff(self, filename: str) -> bool:
+        expected_signature = bytes([0x8B, 0x50, 0x4F, 0x44, 0x0D, 0x0A, 0x1A, 0x0A])
+        with open(filename, "rb") as f:
+            first_8_bytes = f.read(8)
+            f.seek(-8, 2)
+            last_8_bytes = f.read(8)
+            return first_8_bytes == expected_signature and last_8_bytes == expected_signature
 
 
 class SearchGuiArchive(CompressedArchive):

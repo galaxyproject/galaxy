@@ -12,7 +12,7 @@ import { BAlert, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { ColorVariant } from ".";
-import { ExportRecord } from "./models/exportRecordModel";
+import { type ExportRecord } from "./models/exportRecordModel";
 
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";

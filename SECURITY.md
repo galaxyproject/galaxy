@@ -16,8 +16,7 @@ The following branches or releases receive security support:
 
 - Development on the `dev` branch, hosted on GitHub, which will become the next release of Galaxy
 - Releases within the past 12 months.
-  - E.g. 16.04 will receive support until 2017-04. As the month changes to 2017-05 it will become unsupported.
-- There are currently no plans for Long Term Support (LTS) releases.
+  - E.g. 24.0 will receive support for a full year, at which point 25.0 will be available.
 
 For unsupported branches:
 
@@ -41,7 +40,7 @@ These are only examples. The security team will provide a severity classificatio
 
 ## Notification of Vulnerabilities
 
-For high severity issues, we will notify [the list of public Galaxy owners](https://lists.galaxyproject.org/listinfo/galaxy-public-servers) with:
+For high severity issues, we will notify [the list of public Galaxy owners](https://lists.galaxyproject.org/lists/galaxy-public-servers.lists.galaxyproject.org/) with:
 
 - A description of the issue
 - List of supported versions that are affected

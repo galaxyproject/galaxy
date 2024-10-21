@@ -4,13 +4,15 @@ import logging
 import os
 import urllib.parse
 
-import requests
-
 try:
     import gitlab
 except ImportError:
     gitlab = None
-from galaxy.util import string_as_bool
+
+from galaxy.util import (
+    requests,
+    string_as_bool,
+)
 from .base_git import BaseGitPlugin
 
 log = logging.getLogger(__name__)

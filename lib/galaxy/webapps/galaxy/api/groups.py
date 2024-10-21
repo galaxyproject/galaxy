@@ -17,6 +17,7 @@ from galaxy.schema.groups import (
     GroupCreatePayload,
     GroupListResponse,
     GroupResponse,
+    GroupUpdatePayload,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -80,8 +81,8 @@ class FastAPIGroups:
     def update(
         self,
         group_id: Annotated[DecodedDatabaseIdField, Path(...)],
+        payload: Annotated[GroupUpdatePayload, Body(...)],
         trans: ProvidesAppContext = DependsOnTrans,
-        payload: GroupCreatePayload = Body(...),
     ) -> GroupResponse:
         return self.manager.update(trans, group_id, payload)
 

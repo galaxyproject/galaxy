@@ -5,13 +5,12 @@ Controller to handle communication of tools of type data_source_async
 import logging
 from urllib.parse import urlencode
 
-import requests
-
 from galaxy import web
 from galaxy.model.base import transaction
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     Params,
+    requests,
     unicodify,
 )
 from galaxy.util.hash_util import hmac_new

@@ -6,7 +6,7 @@ from typing import (
     Tuple,
 )
 
-from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.odict import odict
 from .parser import ensure_tool_conf_item
 
@@ -44,7 +44,7 @@ class HasPanelItems:
             yield (panel_key, panel_type, panel_value)
 
 
-class ToolSection(Dictifiable, HasPanelItems):
+class ToolSection(UsesDictVisibleKeys, HasPanelItems):
     """
     A group of tools with similar type/purpose that will be displayed as a
     group in the user interface.
@@ -107,7 +107,7 @@ class ToolSection(Dictifiable, HasPanelItems):
         `section.elems`
         """
 
-        section_dict = super().to_dict()
+        section_dict = super()._dictify_view_keys()
         section_elts = []
         kwargs = dict(trans=trans, link_details=link_details, tool_help=tool_help)
         for elt in self.elems.values():
@@ -131,7 +131,7 @@ class ToolSection(Dictifiable, HasPanelItems):
         return self.elems
 
 
-class ToolSectionLabel(Dictifiable):
+class ToolSectionLabel(UsesDictVisibleKeys):
     """
     A label for a set of tools that can be displayed above groups of tools
     and sections in the user interface
@@ -151,7 +151,7 @@ class ToolSectionLabel(Dictifiable):
         self.links = item.get("links", None)
 
     def to_dict(self, **kwds):
-        return super().to_dict()
+        return super()._dictify_view_keys()
 
 
 class ToolPanelElements(odict, HasPanelItems):

@@ -18,6 +18,7 @@ import random
 import string
 from collections import defaultdict
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import (
     datetime,
     timedelta,
@@ -29,7 +30,9 @@ from string import Template
 from typing import (
     Any,
     cast,
+    ClassVar,
     Dict,
+    Generic,
     Iterable,
     List,
     NamedTuple,
@@ -39,6 +42,7 @@ from typing import (
     Tuple,
     Type,
     TYPE_CHECKING,
+    TypeVar,
     Union,
 )
 from uuid import (
@@ -133,6 +137,11 @@ import galaxy.model.metadata
 import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
+from galaxy.files.templates import (
+    FileSourceConfiguration,
+    FileSourceTemplate,
+    template_to_configuration as file_source_template_to_configuration,
+)
 from galaxy.model.base import (
     ensure_object_added_to_session,
     transaction,
@@ -152,7 +161,11 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
-from galaxy.objectstore import ObjectStorePopulator
+from galaxy.objectstore.templates import (
+    ObjectStoreConfiguration,
+    ObjectStoreTemplate,
+    template_to_configuration as object_store_template_to_configuration,
+)
 from galaxy.schema.invocation import (
     InvocationCancellationUserRequest,
     InvocationState,
@@ -164,6 +177,7 @@ from galaxy.schema.schema import (
     DatasetValidatedState,
     InvocationsStateCounts,
     JobState,
+    ToolRequestState,
 )
 from galaxy.schema.workflow.comments import WorkflowCommentModel
 from galaxy.security import get_permitted_actions
@@ -177,6 +191,13 @@ from galaxy.util import (
     ready_name_for_url,
     unicodify,
     unique_id,
+)
+from galaxy.util.config_templates import (
+    EnvironmentDict,
+    ImplicitConfigurationParameters,
+    SecretsDict,
+    Template as ConfigTemplate,
+    TemplateEnvironment,
 )
 from galaxy.util.dictifiable import (
     dict_for,
@@ -194,6 +215,7 @@ from galaxy.util.form_builder import (
     WorkflowMappingField,
 )
 from galaxy.util.hash_util import (
+    HashFunctionNameEnum,
     md5_hash_str,
     new_insecure_hash,
 )
@@ -201,6 +223,10 @@ from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
 
 if TYPE_CHECKING:
+    from galaxy.objectstore import (
+        BaseObjectStore,
+        ObjectStorePopulator,
+    )
     from galaxy.schema.invocation import InvocationMessageUnion
 
 log = logging.getLogger(__name__)
@@ -208,6 +234,28 @@ log = logging.getLogger(__name__)
 _datatypes_registry = None
 
 STR_TO_STR_DICT = Dict[str, str]
+
+
+class ConfigurationTemplateEnvironmentSecret(TypedDict):
+    name: str
+    type: Literal["secret"]
+    vault_key: str
+
+
+class ConfigurationTemplateEnvironmentVariable(TypedDict):
+    name: str
+    type: Literal["variable"]
+    variable: str
+
+
+CONFIGURATION_TEMPLATE_ENVIRONMENT_ENTRY = Union[
+    ConfigurationTemplateEnvironmentSecret, ConfigurationTemplateEnvironmentVariable
+]
+CONFIGURATION_TEMPLATE_ENVIRONMENT = List[CONFIGURATION_TEMPLATE_ENVIRONMENT_ENTRY]
+CONFIGURATION_TEMPLATE_CONFIGURATION_VALUE_TYPE = Union[str, bool, int]
+CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = Dict[str, CONFIGURATION_TEMPLATE_CONFIGURATION_VALUE_TYPE]
+CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE = List[str]
+CONFIGURATION_TEMPLATE_DEFINITION_TYPE = Dict[str, Any]
 
 
 class TransformAction(TypedDict):
@@ -220,6 +268,10 @@ mapper_registry = registry(
     type_annotation_map={
         Optional[STR_TO_STR_DICT]: JSONType,
         Optional[TRANSFORM_ACTIONS]: MutableJSONType,
+        Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]: JSONType,
+        Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]: JSONType,
+        Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]: JSONType,
+        Optional[CONFIGURATION_TEMPLATE_ENVIRONMENT]: JSONType,
     },
 )
 
@@ -732,7 +784,7 @@ class User(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    email: Mapped[str] = mapped_column(TrimmedString(255), index=True)
+    email: Mapped[str] = mapped_column(TrimmedString(255), index=True, unique=True)
     username: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True, unique=True)
     password: Mapped[str] = mapped_column(TrimmedString(255))
     last_password_change: Mapped[Optional[datetime]] = mapped_column(default=now)
@@ -749,7 +801,6 @@ class User(Base, Dictifiable, RepresentById):
     addresses: Mapped[List["UserAddress"]] = relationship(
         back_populates="user", order_by=lambda: desc(UserAddress.update_time), cascade_backrefs=False
     )
-    cloudauthz: Mapped[List["CloudAuthz"]] = relationship(back_populates="user")
     custos_auth: Mapped[List["CustosAuthnzToken"]] = relationship(back_populates="user")
     default_permissions: Mapped[List["DefaultUserPermissions"]] = relationship(back_populates="user")
     groups: Mapped[List["UserGroupAssociation"]] = relationship(back_populates="user")
@@ -764,6 +815,8 @@ class User(Base, Dictifiable, RepresentById):
     galaxy_sessions: Mapped[List["GalaxySession"]] = relationship(
         back_populates="user", order_by=lambda: desc(GalaxySession.update_time), cascade_backrefs=False
     )
+    object_stores: Mapped[List["UserObjectStore"]] = relationship(back_populates="user")
+    file_sources: Mapped[List["UserFileSource"]] = relationship(back_populates="user")
     quotas: Mapped[List["UserQuotaAssociation"]] = relationship(back_populates="user")
     quota_source_usages: Mapped[List["UserQuotaSourceUsage"]] = relationship(back_populates="user")
     social_auth: Mapped[List["UserAuthnzToken"]] = relationship(back_populates="user")
@@ -799,14 +852,6 @@ class User(Base, Dictifiable, RepresentById):
     )
     all_notifications: Mapped[List["UserNotificationAssociation"]] = relationship(
         back_populates="user", cascade_backrefs=False
-    )
-    non_private_roles: Mapped[List["UserRoleAssociation"]] = relationship(
-        viewonly=True,
-        primaryjoin=(
-            lambda: (User.id == UserRoleAssociation.user_id)
-            & (UserRoleAssociation.role_id == Role.id)
-            & not_(Role.name == User.email)
-        ),
     )
 
     preferences: AssociationProxy[Any]
@@ -1160,6 +1205,16 @@ ON CONFLICT
         environment = User.user_template_environment(user)
         return Template(in_string).safe_substitute(environment)
 
+    # above templating is for Cheetah in tools where we discouraged user details from being exposed.
+    # the following templating if user details in Jinja for object stores and file sources where user
+    # details are critical and documented.
+    def config_template_details(self) -> Dict[str, Any]:
+        return {
+            "username": self.username,
+            "email": self.email,
+            "id": self.id,
+        }
+
     def is_active(self):
         return self.active
 
@@ -1275,6 +1330,30 @@ class PasswordResetToken(Base):
             self.token = unique_id()
         self.user = user
         self.expiration_time = now() + timedelta(hours=24)
+
+
+class ToolSource(Base, Dictifiable, RepresentById):
+    __tablename__ = "tool_source"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    hash: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    source: Mapped[dict] = mapped_column(JSONType)
+
+
+class ToolRequest(Base, Dictifiable, RepresentById):
+    __tablename__ = "tool_request"
+
+    states: TypeAlias = ToolRequestState
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tool_source_id: Mapped[int] = mapped_column(ForeignKey("tool_source.id"), index=True)
+    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
+    request: Mapped[dict] = mapped_column(JSONType)
+    state: Mapped[Optional[str]] = mapped_column(TrimmedString(32), index=True)
+    state_message: Mapped[Optional[str]] = mapped_column(JSONType, index=True)
+
+    tool_source: Mapped["ToolSource"] = relationship()
+    history: Mapped[Optional["History"]] = relationship(back_populates="tool_requests")
 
 
 class DynamicTool(Base, Dictifiable, RepresentById):
@@ -1403,7 +1482,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     preferred_object_store_id: Mapped[Optional[str]] = mapped_column(String(255))
     object_store_id_overrides: Mapped[Optional[STR_TO_STR_DICT]] = mapped_column(JSONType)
+    tool_request_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tool_request.id"), index=True)
 
+    tool_request: Mapped[Optional["ToolRequest"]] = relationship()
     user: Mapped[Optional["User"]] = relationship()
     galaxy_session: Mapped[Optional["GalaxySession"]] = relationship()
     history: Mapped[Optional["History"]] = relationship(back_populates="jobs")
@@ -2653,11 +2734,12 @@ class JobExternalOutputMetadata(Base, RepresentById):
 class FakeDatasetAssociation:
     fake_dataset_association = True
 
-    def __init__(self, dataset=None):
+    def __init__(self, dataset: Optional["Dataset"] = None) -> None:
         self.dataset = dataset
-        self.metadata = {}
+        self.metadata: Dict = {}
 
-    def get_file_name(self, sync_cache=True):
+    def get_file_name(self, sync_cache: bool = True) -> str:
+        assert self.dataset
         return self.dataset.get_file_name(sync_cache)
 
     def __eq__(self, other):
@@ -2857,8 +2939,7 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
     @property
     def active(self):
         if self.configured and not self.deleted:
-            # FIXME: don't included queued?
-            return not self.job.finished
+            return self.job.running
         return False
 
     @property
@@ -2908,10 +2989,11 @@ class Group(Base, Dictifiable, RepresentById):
 
 class UserGroupAssociation(Base, RepresentById):
     __tablename__ = "user_group_association"
+    __table_args__ = (UniqueConstraint("user_id", "group_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
-    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True, nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     user: Mapped["User"] = relationship(back_populates="groups")
@@ -3125,6 +3207,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     )
     user: Mapped[Optional["User"]] = relationship(back_populates="histories")
     jobs: Mapped[List["Job"]] = relationship(back_populates="history", cascade_backrefs=False)
+    tool_requests: Mapped[List["ToolRequest"]] = relationship(back_populates="history")
 
     update_time = column_property(
         select(func.max(HistoryAudit.update_time)).where(HistoryAudit.history_id == id).scalar_subquery(),
@@ -3626,10 +3709,11 @@ class HistoryUserShareAssociation(Base, UserShareAssociation):
 
 class UserRoleAssociation(Base, RepresentById):
     __tablename__ = "user_role_association"
+    __table_args__ = (UniqueConstraint("user_id", "role_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
-    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True, nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
 
@@ -3644,10 +3728,11 @@ class UserRoleAssociation(Base, RepresentById):
 
 class GroupRoleAssociation(Base, RepresentById):
     __tablename__ = "group_role_association"
+    __table_args__ = (UniqueConstraint("group_id", "role_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True, nullable=True)
-    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True, nullable=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True)
+    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     group: Mapped["Group"] = relationship(back_populates="roles")
@@ -3986,8 +4071,13 @@ class StorableObject:
                 sa_session.commit()
 
 
+def setup_global_object_store_for_models(object_store: "BaseObjectStore") -> None:
+    Dataset.object_store = object_store
+
+
 class Dataset(Base, StorableObject, Serializable):
     __tablename__ = "dataset"
+    __table_args__ = (UniqueConstraint("uuid", name="uq_uuid_column"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
@@ -4003,7 +4093,7 @@ class Dataset(Base, StorableObject, Serializable):
     created_from_basename: Mapped[Optional[str]] = mapped_column(TEXT)
     file_size: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 0))
     total_size: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 0))
-    uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType())
+    uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType(), unique=True)
 
     actions: Mapped[List["DatasetPermissions"]] = relationship(back_populates="dataset")
     job: Mapped[Optional["Job"]] = relationship(primaryjoin=(lambda: Dataset.job_id == Job.id))
@@ -4051,7 +4141,9 @@ class Dataset(Base, StorableObject, Serializable):
 
     non_ready_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.SETTING_METADATA)
     ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
-    valid_input_states = tuple(set(states.__members__.values()) - {states.ERROR, states.DISCARDED})
+    valid_input_states = tuple(
+        set(states.__members__.values()) - {states.ERROR, states.DISCARDED, states.FAILED_METADATA}
+    )
     no_data_states = (states.PAUSED, states.DEFERRED, states.DISCARDED, *non_ready_states)
     terminal_states = (
         states.OK,
@@ -4074,7 +4166,9 @@ class Dataset(Base, StorableObject, Serializable):
 
     permitted_actions = get_permitted_actions(filter="DATASET")
     file_path = "/tmp/"
-    object_store = None  # This get initialized in mapping.py (method init) by app.py
+    object_store: ClassVar[Optional["BaseObjectStore"]] = (
+        None  # This get initialized in mapping.py (method init) by app.py
+    )
     engine = None
 
     def __init__(
@@ -4108,7 +4202,7 @@ class Dataset(Base, StorableObject, Serializable):
         return self.state in self.ready_states
 
     @property
-    def shareable(self):
+    def shareable(self) -> bool:
         """Return True if placed into an objectstore not labeled as ``private``."""
         if self.external_filename:
             return True
@@ -4120,7 +4214,7 @@ class Dataset(Base, StorableObject, Serializable):
         if not self.shareable:
             raise Exception(CANNOT_SHARE_PRIVATE_DATASET_MESSAGE)
 
-    def get_file_name(self, sync_cache=True):
+    def get_file_name(self, sync_cache: bool = True) -> str:
         if self.purged:
             log.warning(f"Attempt to get file name of purged dataset {self.id}")
             return ""
@@ -4166,20 +4260,19 @@ class Dataset(Base, StorableObject, Serializable):
         else:
             self.external_filename = filename
 
-    def _assert_object_store_set(self):
-        assert self.object_store is not None, f"Object Store has not been initialized for dataset {self.id}"
+    def _assert_object_store_set(self) -> "BaseObjectStore":
+        assert self.object_store is not None, "Object Store has not been initialized"
         return self.object_store
 
-    def get_extra_files_path(self):
+    def get_extra_files_path(self) -> str:
         # Unlike get_file_name - external_extra_files_path is not backed by an
         # actual database column so if SA instantiates this object - the
         # attribute won't exist yet.
         if not getattr(self, "external_extra_files_path", None):
-            if self.object_store.exists(self, dir_only=True, extra_dir=self._extra_files_rel_path):
-                return self.object_store.get_filename(self, dir_only=True, extra_dir=self._extra_files_rel_path)
-            return self.object_store.construct_path(
-                self, dir_only=True, extra_dir=self._extra_files_rel_path, in_cache=True
-            )
+            object_store = self._assert_object_store_set()
+            if object_store.exists(self, dir_only=True, extra_dir=self._extra_files_rel_path):
+                return object_store.get_filename(self, dir_only=True, extra_dir=self._extra_files_rel_path)
+            return object_store.construct_path(self, dir_only=True, extra_dir=self._extra_files_rel_path, in_cache=True)
         else:
             return os.path.abspath(self.external_extra_files_path)
 
@@ -4224,7 +4317,7 @@ class Dataset(Base, StorableObject, Serializable):
             except OSError:
                 return 0
         assert self.object_store
-        return self.object_store.size(self)  # type:ignore[unreachable]
+        return self.object_store.size(self)
 
     @overload
     def get_size(self, nice_size: Literal[False], calculate_size: bool = True) -> int: ...
@@ -4402,7 +4495,17 @@ class DatasetSource(Base, Dictifiable, Serializable):
         return new_source
 
 
-class DatasetSourceHash(Base, Serializable):
+class HasHashFunctionName:
+    hash_function: Mapped[Optional[str]]
+
+    @property
+    def hash_func_name(self) -> HashFunctionNameEnum:
+        as_str = self.hash_function
+        assert as_str
+        return HashFunctionNameEnum(self.hash_function)
+
+
+class DatasetSourceHash(Base, Serializable, HasHashFunctionName):
     __tablename__ = "dataset_source_hash"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -4427,7 +4530,7 @@ class DatasetSourceHash(Base, Serializable):
         return new_hash
 
 
-class DatasetHash(Base, Dictifiable, Serializable):
+class DatasetHash(Base, Dictifiable, Serializable, HasHashFunctionName):
     __tablename__ = "dataset_hash"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -4456,6 +4559,15 @@ class DatasetHash(Base, Dictifiable, Serializable):
         new_hash.extra_files_path = self.extra_files_path
         return new_hash
 
+    @property
+    def hash_func_name(self) -> HashFunctionNameEnum:
+        as_str = self.hash_function
+        assert as_str
+        return HashFunctionNameEnum(self.hash_function)
+
+
+DescribesHash = Union[DatasetSourceHash, DatasetHash]
+
 
 def datatype_for_extension(extension, datatypes_registry=None) -> "Data":
     if extension is not None:
@@ -4482,6 +4594,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     creating_job_associations: List[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
     copied_from_history_dataset_association: Optional["HistoryDatasetAssociation"]
     copied_from_library_dataset_dataset_association: Optional["LibraryDatasetDatasetAssociation"]
+    dependent_jobs: List[JobToInputLibraryDatasetAssociation]
+    implicitly_converted_datasets: List["ImplicitlyConvertedDatasetAssociation"]
+    implicitly_converted_parent_datasets: List["ImplicitlyConvertedDatasetAssociation"]
 
     validated_states = DatasetValidatedState
 
@@ -4602,18 +4717,20 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     quota_source_label = property(get_quota_source_label)
 
-    def set_skipped(self, object_store_populator: ObjectStorePopulator):
+    def set_skipped(self, object_store_populator: "ObjectStorePopulator") -> None:
         assert self.dataset
         object_store_populator.set_object_store_id(self)
         self.extension = "expression.json"
         self.state = self.states.OK
         self.blurb = "skipped"
         self.visible = False
+        null = json.dumps(None)
         with open(self.dataset.get_file_name(), "w") as out:
-            out.write(json.dumps(None))
+            out.write(null)
+        self.peek = null
         self.set_total_size()
 
-    def get_file_name(self, sync_cache=True) -> str:
+    def get_file_name(self, sync_cache: bool = True) -> str:
         if self.dataset.purged:
             return ""
         return self.dataset.get_file_name(sync_cache=sync_cache)
@@ -4769,8 +4886,16 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             # extension is None
             return "data"
 
-    def set_peek(self, **kwd):
-        return self.datatype.set_peek(self, **kwd)
+    def set_peek(self, line_count=None, **kwd):
+        try:
+            # Certain datatype's set_peek methods contain a line_count argument
+            return self.datatype.set_peek(self, line_count=line_count, **kwd)
+        except TypeError:
+            # ... and others don't
+            return self.datatype.set_peek(self, **kwd)
+        except Exception:
+            # Never fail peek setting, but do log exception so datatype logic can be fixed
+            log.exception("Setting peek failed")
 
     def init_meta(self, copy_from=None):
         return self.datatype.init_meta(self, copy_from=copy_from)
@@ -4801,9 +4926,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     def get_converted_files_by_type(self, file_type):
         for assoc in self.implicitly_converted_datasets:
             if not assoc.deleted and assoc.type == file_type:
-                if assoc.dataset:
-                    return assoc.dataset
-                return assoc.dataset_ldda
+                item = assoc.dataset or assoc.dataset_ldda
+                if not item.deleted and item.state in Dataset.valid_input_states:
+                    return item
         return None
 
     def get_converted_dataset_deps(self, trans, target_ext):
@@ -5205,6 +5330,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         if include_tags and self.history:
             self.copy_tags_from(self.user, other_hda)
         self.dataset = new_dataset or other_hda.dataset
+        self.copied_from_history_dataset_association_id = other_hda.id
         if old_dataset:
             old_dataset.full_delete()
 
@@ -5264,7 +5390,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         roles=None,
         ldda_message="",
         element_identifier=None,
-    ):
+    ) -> "LibraryDatasetDatasetAssociation":
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
@@ -5298,7 +5424,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             user=user,
         )
         library_dataset.library_dataset_dataset_association = ldda
-        object_session(self).add(library_dataset)
+        session = object_session(self)
+        assert session
+        session.add(library_dataset)
         # If roles were selected on the upload form, restrict access to the Dataset to those roles
         roles = roles or []
         for role in roles:
@@ -5308,7 +5436,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             trans.sa_session.add(dp)
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
         if self.set_metadata_requires_flush:
-            session = object_session(self)
             with transaction(session):
                 session.commit()
         ldda.metadata = self.metadata
@@ -5317,10 +5444,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             ldda.message = ldda_message
         if not replace_dataset:
             target_folder.add_library_dataset(library_dataset, genome_build=ldda.dbkey)
-            object_session(self).add(target_folder)
-        object_session(self).add(library_dataset)
+            session.add(target_folder)
+        session.add(library_dataset)
 
-        session = object_session(self)
         with transaction(session):
             session.commit()
 
@@ -5907,6 +6033,8 @@ class LibraryDataset(Base, Serializable):
 
 
 class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
+    message: Mapped[Optional[str]]
+    tags: Mapped[List["LibraryDatasetDatasetAssociationTagAssociation"]]
 
     def __init__(
         self,
@@ -5921,7 +6049,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         self.library_dataset = library_dataset
         self.user = user
 
-    def to_history_dataset_association(self, target_history, parent_id=None, add_to_history=False, visible=None):
+    def to_history_dataset_association(
+        self, target_history, parent_id=None, add_to_history=False, visible=None, commit=True
+    ):
         sa_session = object_session(self)
         hda = HistoryDatasetAssociation(
             name=self.name,
@@ -5945,9 +6075,12 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         sa_session.add(hda)
         hda.metadata = self.metadata
         if add_to_history and target_history:
-            target_history.add_dataset(hda)
-        with transaction(sa_session):
-            sa_session.commit()
+            target_history.stage_addition(hda)
+            if commit:
+                target_history.add_pending_items()
+        if commit:
+            with transaction(sa_session):
+                sa_session.commit()
         return hda
 
     def copy(self, parent_id=None, target_folder=None, flush=True):
@@ -6430,6 +6563,23 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return q
 
     @property
+    def elements_deleted(self):
+        if not hasattr(self, "_elements_deleted"):
+            if session := object_session(self):
+                stmt = self._build_nested_collection_attributes_stmt(
+                    hda_attributes=("deleted",), dataset_attributes=("deleted",)
+                )
+                stmt = stmt.exists().where(or_(HistoryDatasetAssociation.deleted == true(), Dataset.deleted == true()))
+                self._elements_deleted = session.execute(select(stmt)).scalar()
+            else:
+                self._elements_deleted = False
+                for dataset_instance in self.dataset_instances:
+                    if dataset_instance.deleted or dataset_instance.dataset.deleted:
+                        self._elements_deleted = True
+                        break
+        return self._elements_deleted
+
+    @property
     def dataset_states_and_extensions_summary(self):
         if not hasattr(self, "_dataset_states_and_extensions_summary"):
             stmt = self._build_nested_collection_attributes_stmt(
@@ -6615,7 +6765,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return elements
 
     @property
-    def first_dataset_element(self):
+    def first_dataset_element(self) -> Optional["DatasetCollectionElement"]:
         for element in self.elements:
             if element.is_collection:
                 first_element = element.child_collection.first_dataset_element
@@ -7596,7 +7746,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
         if version is None:
             return self.latest_workflow
         if len(self.workflows) <= version:
-            raise Exception("Version does not exist")
+            raise galaxy.exceptions.RequestParameterInvalidException("Version does not exist")
         return list(reversed(self.workflows))[version]
 
     def version_of(self, workflow):
@@ -7922,8 +8072,8 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         self._inputs_by_name = None
         # Injected attributes
         # TODO: code using these should be refactored to not depend on these non-persistent fields
-        self.module: Optional["WorkflowModule"]
-        self.state: Optional["DefaultToolState"]
+        self.module: Optional[WorkflowModule]
+        self.state: Optional[DefaultToolState]
         self.upgrade_messages: Optional[Dict]
 
     @reconstructor
@@ -8129,6 +8279,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
             if stored_subworkflow and stored_subworkflow.user == user:
                 # This should be fine and reduces the number of stored subworkflows
                 copied_step.subworkflow = subworkflow
+                copied_subworkflow = subworkflow
             else:
                 # Can this even happen, building a workflow with a subworkflow you don't own ?
                 copied_subworkflow = subworkflow.copy()
@@ -8137,8 +8288,8 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
                 )
                 copied_subworkflow.stored_workflow = stored_workflow
                 copied_step.subworkflow = copied_subworkflow
-                for subworkflow_step, copied_subworkflow_step in zip(subworkflow.steps, copied_subworkflow.steps):
-                    subworkflow_step_mapping[subworkflow_step.id] = copied_subworkflow_step
+            for subworkflow_step, copied_subworkflow_step in zip(subworkflow.steps, copied_subworkflow.steps):
+                subworkflow_step_mapping[subworkflow_step.id] = copied_subworkflow_step
 
         for old_conn, new_conn in zip(self.input_connections, copied_step.input_connections):
             new_conn.input_step_input = copied_step.get_or_add_input(old_conn.input_name)
@@ -8424,6 +8575,18 @@ class StoredWorkflowMenuEntry(Base, RepresentById):
     )
 
 
+@dataclass
+class InputWithRequest:
+    input: Any
+    request: Dict[str, Any]
+
+
+@dataclass
+class InputToMaterialize:
+    hda: "HistoryDatasetAssociation"
+    input_dataset: "WorkflowRequestToInputDatasetAssociation"
+
+
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation"
 
@@ -8655,6 +8818,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         and_conditions = [
             or_(
                 WorkflowInvocation.state == WorkflowInvocation.states.NEW,
+                WorkflowInvocation.state == WorkflowInvocation.states.REQUIRES_MATERIALIZATION,
                 WorkflowInvocation.state == WorkflowInvocation.states.READY,
                 WorkflowInvocation.state == WorkflowInvocation.states.CANCELLING,
             ),
@@ -8745,6 +8909,21 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         for input_dataset_collection_assoc in self.input_dataset_collections:
             inputs.append(input_dataset_collection_assoc)
         return inputs
+
+    def inputs_requiring_materialization(self) -> List[InputToMaterialize]:
+        hdas_to_materialize: List[InputToMaterialize] = []
+        for input_dataset_assoc in self.input_datasets:
+            request = input_dataset_assoc.request
+            if request:
+                deferred = request.get("deferred", False)
+                if not deferred:
+                    hdas_to_materialize.append(
+                        InputToMaterialize(
+                            input_dataset_assoc.dataset,
+                            input_dataset_assoc,
+                        )
+                    )
+        return hdas_to_materialize
 
     def _serialize(self, id_encoder, serialization_options):
         invocation_attrs = dict_for(self)
@@ -8853,7 +9032,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             for input_step_parameter in self.input_step_parameters:
                 label = input_step_parameter.workflow_step.label
                 if not label:
-                    continue
+                    label = f"{input_step_parameter.workflow_step.order_index + 1}: Unnamed parameter"
                 input_parameters[label] = {
                     "parameter_value": input_step_parameter.parameter_value,
                     "label": label,
@@ -8908,20 +9087,28 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             else:
                 request_to_content.workflow_step = step
 
+        request: Optional[Dict[str, Any]] = None
+        if isinstance(content, InputWithRequest):
+            request = content.request
+            content = content.input
+
         history_content_type = getattr(content, "history_content_type", None)
         if history_content_type == "dataset":
             request_to_content = WorkflowRequestToInputDatasetAssociation()
             request_to_content.dataset = content
+            request_to_content.request = request
             attach_step(request_to_content)
             self.input_datasets.append(request_to_content)
         elif history_content_type == "dataset_collection":
             request_to_content = WorkflowRequestToInputDatasetCollectionAssociation()
             request_to_content.dataset_collection = content
+            request_to_content.request = request
             attach_step(request_to_content)
             self.input_dataset_collections.append(request_to_content)
         else:
             request_to_content = WorkflowRequestInputStepParameter()
             request_to_content.parameter_value = content
+            request_to_content.request = request
             attach_step(request_to_content)
             self.input_step_parameters.append(request_to_content)
 
@@ -9345,6 +9532,7 @@ class WorkflowRequestToInputDatasetAssociation(Base, Dictifiable, Serializable):
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
+    request: Mapped[Optional[Dict]] = mapped_column(JSONType)
 
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     dataset: Mapped[Optional["HistoryDatasetAssociation"]] = relationship()
@@ -9380,6 +9568,7 @@ class WorkflowRequestToInputDatasetCollectionAssociation(Base, Dictifiable, Seri
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(
         back_populates="input_dataset_collections"
     )
+    request: Mapped[Optional[Dict]] = mapped_column(JSONType)
 
     history_content_type = "dataset_collection"
     dict_collection_visible_keys = ["id", "workflow_invocation_id", "workflow_step_id", "dataset_collection_id", "name"]
@@ -9403,6 +9592,7 @@ class WorkflowRequestInputStepParameter(Base, Dictifiable, Serializable):
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
     parameter_value: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    request: Mapped[Optional[Dict]] = mapped_column(JSONType)
 
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="input_step_parameters")
@@ -9426,7 +9616,6 @@ class WorkflowInvocationOutputDatasetAssociation(Base, Dictifiable, Serializable
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
     workflow_output_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_output.id"), index=True)
-
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="output_datasets")
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     dataset: Mapped[Optional["HistoryDatasetAssociation"]] = relationship()
@@ -9597,24 +9786,26 @@ class MetadataFile(Base, StorableObject, Serializable):
     def update_from_file(self, file_name):
         if not self.dataset:
             raise Exception("Attempted to write MetadataFile, but no DatasetAssociation set")
-        self.dataset.object_store.update_from_file(
-            self,
-            file_name=file_name,
-            extra_dir="_metadata_files",
-            extra_dir_at_root=True,
-            alt_name=os.path.basename(self.get_file_name()),
-        )
+        if not self.dataset.purged:
+            self.dataset.object_store.update_from_file(
+                self,
+                file_name=file_name,
+                extra_dir="_metadata_files",
+                extra_dir_at_root=True,
+                alt_name=os.path.basename(self.get_file_name()),
+            )
 
-    def get_file_name(self, sync_cache=True):
+    def get_file_name(self, sync_cache: bool = True) -> str:
         # Ensure the directory structure and the metadata file object exist
         try:
             da = self.history_dataset or self.library_dataset
-            if self.object_store_id is None and da is not None:
+            assert da is not None
+            if self.object_store_id is None:
                 self.object_store_id = da.dataset.object_store_id
             object_store = da.dataset.object_store
             store_by = object_store.get_store_by(da.dataset)
             if store_by == "id" and self.id is None:
-                self.flush()
+                self.flush()  # type:ignore[unreachable]
             identifier = getattr(self, store_by)
             alt_name = f"metadata_{identifier}.dat"
             if not object_store.exists(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name):
@@ -9623,7 +9814,7 @@ class MetadataFile(Base, StorableObject, Serializable):
                 self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name, sync_cache=sync_cache
             )
             return path
-        except AttributeError:
+        except (AssertionError, AttributeError):
             assert (
                 self.id is not None
             ), "ID must be set before MetadataFile used without an HDA/LDDA (commit the object)"
@@ -10145,42 +10336,6 @@ class CustosAuthnzToken(Base, RepresentById):
     user: Mapped["User"] = relationship("User", back_populates="custos_auth")
 
 
-class CloudAuthz(Base):
-    __tablename__ = "cloudauthz"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    provider: Mapped[Optional[str]] = mapped_column(String(255))
-    config: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    authn_id: Mapped[Optional[int]] = mapped_column(ForeignKey("oidc_user_authnz_tokens.id"), index=True)
-    tokens: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    last_update: Mapped[Optional[datetime]]
-    last_activity: Mapped[Optional[datetime]]
-    description: Mapped[Optional[str]] = mapped_column(TEXT)
-    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    user: Mapped[Optional["User"]] = relationship(back_populates="cloudauthz")
-    authn: Mapped[Optional["UserAuthnzToken"]] = relationship()
-
-    def __init__(self, user_id, provider, config, authn_id, description=None):
-        self.user_id = user_id
-        self.provider = provider
-        self.config = config
-        self.authn_id = authn_id
-        self.last_update = now()
-        self.last_activity = now()
-        self.description = description
-
-    def equals(self, user_id, provider, authn_id, config):
-        return (
-            self.user_id == user_id
-            and self.provider == provider
-            and self.authn_id
-            and self.authn_id == authn_id
-            and len({k: self.config[k] for k in self.config if k in config and self.config[k] == config[k]})
-            == len(self.config)
-        )
-
-
 class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     __tablename__ = "page"
     __table_args__ = (Index("ix_page_slug", "slug", mysql_length=200),)
@@ -10241,6 +10396,10 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
 
     def to_dict(self, view="element"):
         rval = super().to_dict(view=view)
+        if "importable" in rval and rval["importable"] is None:
+            # pages created prior to 2011 might not have importable field
+            # probably not worth creating a migration to fix that
+            rval["importable"] = False
         rev = []
         for a in self.revisions:
             rev.append(a.id)
@@ -10905,6 +11064,243 @@ class UserPreference(Base, RepresentById):
         # AssociationProxy to which 2 args are passed.
         self.name = name
         self.value = value
+
+
+class UsesTemplatesAppConfig(Protocol):
+    # TODO: delete this config protocol def and uses in dev
+    pass
+
+
+class HasConfigSecrets(RepresentById):
+    secret_config_type: str
+    template_secrets: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]]
+    uuid: Mapped[Union[UUID, str]]
+    user: Mapped["User"]
+
+    @classmethod
+    def vault_key_from_uuid(clazz, uuid: Union[str, UUID], secret: str, app_config: UsesTemplatesAppConfig) -> str:
+        return f"{clazz.secret_config_type}/{str(get_uuid(uuid))}/{secret}"
+
+    def vault_id_prefix(self, app_config: UsesTemplatesAppConfig) -> str:
+        id_str = str(self.uuid)
+        user_vault_id_prefix = f"{self.secret_config_type}/{id_str}"
+        return user_vault_id_prefix
+
+    def vault_key(self, secret: str, app_config: UsesTemplatesAppConfig) -> str:
+        user_vault_id_prefix = self.vault_id_prefix(app_config)
+        key = f"{user_vault_id_prefix}/{secret}"
+        return key
+
+
+class HasConfigEnvironment(RepresentById):
+    template_definition: Mapped[Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]]
+
+    @property
+    def template_environment(self) -> TemplateEnvironment:
+        definition = self.template_definition
+        if not definition:
+            return TemplateEnvironment.model_validate([])
+        environment = definition.get("environment")
+        if not environment:
+            return TemplateEnvironment.model_validate([])
+        else:
+            return TemplateEnvironment.model_validate(environment)
+
+
+T = TypeVar("T", bound=ConfigTemplate, covariant=True)
+
+
+class HasConfigTemplate(HasConfigSecrets, HasConfigEnvironment, RepresentById, Generic[T]):
+    name: Mapped[str]
+    description: Mapped[Optional[str]]
+    template_id: Mapped[str]
+    template_version: Mapped[int]
+    template_variables: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]]
+    hidden: Mapped[bool]
+    active: Mapped[bool]
+    purged: Mapped[bool]
+
+    @property
+    def template(self) -> T:
+        raise NotImplementedError()
+
+
+class UserObjectStore(Base, HasConfigTemplate):
+    __tablename__ = "user_object_store"
+    secret_config_type = "object_store_config"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    create_time: Mapped[datetime] = mapped_column(DateTime, default=now)
+    update_time: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now, index=True)
+    # user specified name of the instance they've created
+    name: Mapped[str] = mapped_column(String(255), index=True)
+    # user specified description of the instance they've created
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    # active but doesn't appear in user selection
+    hidden: Mapped[bool] = mapped_column(default=False)
+    # set to False to deactive the source
+    active: Mapped[bool] = mapped_column(default=True)
+    # a purged file source cannot be re-activated because secrets have been purged
+    purged: Mapped[bool] = mapped_column(default=False)
+    # the template store id
+    template_id: Mapped[str] = mapped_column(String(255), index=True)
+    # the template store version (0, 1, ...)
+    template_version: Mapped[int] = mapped_column(Integer, index=True)
+    # Full template from object_store_templates.yml catalog.
+    # For tools we just store references, so here we could easily just use
+    # the id/version and not record the definition... as the templates change
+    # over time this choice has some big consequences despite being easy to swap
+    # implementations.
+    template_definition: Mapped[Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]] = mapped_column(JSONType)
+    # Big JSON blob of the variable name -> value mapping defined for the store's
+    # variables by the user.
+    template_variables: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]] = mapped_column(JSONType)
+    # Track a list of secrets that were defined for this object store at creation
+    template_secrets: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]] = mapped_column(JSONType)
+
+    user: Mapped["User"] = relationship("User", back_populates="object_stores")
+
+    @property
+    def template(self) -> ObjectStoreTemplate:
+        return ObjectStoreTemplate(**self.template_definition or {})
+
+    def object_store_configuration(
+        self, secrets: SecretsDict, environment: EnvironmentDict, templates: Optional[List[ObjectStoreTemplate]] = None
+    ) -> ObjectStoreConfiguration:
+        if templates is None:
+            templates = [self.template]
+        user_details = self.user.config_template_details()
+        variables: CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = self.template_variables or {}
+        first_exception = None
+        for template in templates:
+            try:
+                return object_store_template_to_configuration(
+                    template,
+                    variables=variables,
+                    secrets=secrets,
+                    user_details=user_details,
+                    environment=environment,
+                )
+            except Exception as e:
+                if first_exception is None:
+                    first_exception = e
+                continue
+        if first_exception:
+            raise first_exception
+
+        raise ValueError("No template sent to object_store_configuration")
+
+
+class UserFileSource(Base, HasConfigTemplate):
+    __tablename__ = "user_file_source"
+    secret_config_type = "file_source_config"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True)
+    # user specified name of the instance they've created
+    name: Mapped[str] = mapped_column(String(255), index=True)
+    # user specified description of the instance they've created
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    # active but doesn't appear in user selection
+    hidden: Mapped[bool] = mapped_column(default=False)
+    # set to False to deactive the source
+    active: Mapped[bool] = mapped_column(default=True)
+    # a purged file source cannot be re-activated because secrets have been purged
+    purged: Mapped[bool] = mapped_column(default=False)
+    # the template store id
+    template_id: Mapped[str] = mapped_column(String(255), index=True)
+    # the template store version (0, 1, ...)
+    template_version: Mapped[int] = mapped_column(index=True)
+    # Full template from file_sources_templates.yml catalog.
+    # For tools we just store references, so here we could easily just use
+    # the id/version and not record the definition... as the templates change
+    # over time this choice has some big consequences despite being easy to swap
+    # implementations.
+    template_definition: Mapped[Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]] = mapped_column(JSONType)
+    # Big JSON blob of the variable name -> value mapping defined for the store's
+    # variables by the user.
+    template_variables: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]] = mapped_column(JSONType)
+    # Track a list of secrets that were defined for this object store at creation
+    template_secrets: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]] = mapped_column(JSONType)
+
+    user: Mapped["User"] = relationship("User", back_populates="file_sources")
+
+    @property
+    def template(self) -> FileSourceTemplate:
+        return FileSourceTemplate(**self.template_definition or {})
+
+    def file_source_configuration(
+        self,
+        secrets: SecretsDict,
+        environment: EnvironmentDict,
+        implicit: ImplicitConfigurationParameters,
+        templates: Optional[List[FileSourceTemplate]] = None,
+    ) -> FileSourceConfiguration:
+        if templates is None:
+            templates = [self.template]
+        user_details = self.user.config_template_details()
+        variables: CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = self.template_variables or {}
+        first_exception = None
+        for template in templates:
+            try:
+                return file_source_template_to_configuration(
+                    template,
+                    variables=variables,
+                    secrets=secrets,
+                    user_details=user_details,
+                    environment=environment,
+                    implicit=implicit,
+                )
+            except Exception as e:
+                if first_exception is None:
+                    first_exception = e
+                continue
+        if first_exception:
+            raise first_exception
+
+        raise ValueError("No template sent to file_source_configuration")
+
+
+# TODO: add link from tool_request to this
+class ToolLandingRequest(Base):
+    __tablename__ = "tool_landing_request"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    update_time: Mapped[Optional[datetime]] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
+    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    tool_id: Mapped[str] = mapped_column(String(255))
+    tool_version: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+    request_state: Mapped[Optional[Dict]] = mapped_column(JSONType)
+    client_secret: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+
+    user: Mapped[Optional["User"]] = relationship()
+
+
+# TODO: add link from workflow_invocation to this
+class WorkflowLandingRequest(Base):
+    __tablename__ = "workflow_landing_request"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("stored_workflow.id"), nullable=True)
+    stored_workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow.id"), nullable=True)
+
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    update_time: Mapped[Optional[datetime]] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
+    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    request_state: Mapped[Optional[Dict]] = mapped_column(JSONType)
+    client_secret: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+
+    user: Mapped[Optional["User"]] = relationship()
+    stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship()
+    workflow: Mapped[Optional["Workflow"]] = relationship()
 
 
 class UserAction(Base, RepresentById):

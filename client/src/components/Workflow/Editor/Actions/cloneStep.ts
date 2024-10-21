@@ -1,4 +1,4 @@
-import type { Step, WorkflowStepStore } from "@/stores/workflowStepStore";
+import { type Step, type WorkflowStepStore } from "@/stores/workflowStepStore";
 
 /**
  * Copies a step and increments a trailing number in it's label,

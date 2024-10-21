@@ -1,1 +1,2 @@
 include *.rst *.txt LICENSE */py.typed
+include galaxy/files/templates/examples/*yml

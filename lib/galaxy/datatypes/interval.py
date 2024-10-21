@@ -193,7 +193,8 @@ class Interval(Tabular):
     def displayable(self, dataset: DatasetProtocol) -> bool:
         try:
             return (
-                not dataset.dataset.purged
+                not dataset.deleted
+                and not dataset.dataset.purged
                 and dataset.has_data()
                 and dataset.state == dataset.states.OK
                 and dataset.metadata.columns > 0
@@ -509,8 +510,8 @@ class Bed(Interval):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """Sets the metadata information for datasets previously determined to be in bed format."""
+        i = 0
         if dataset.has_data():
-            i = 0
             for i, line in enumerate(open(dataset.get_file_name())):  # noqa: B007
                 line = line.rstrip("\r\n")
                 if line and not line.startswith("#"):
@@ -526,7 +527,7 @@ class Bed(Interval):
                             if overwrite or not dataset.metadata.element_is_set("strandCol"):
                                 dataset.metadata.strandCol = 6
                         break
-            Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
+        Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
     def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""

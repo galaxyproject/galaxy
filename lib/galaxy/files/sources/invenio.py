@@ -8,19 +8,21 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
 )
 from urllib.parse import quote
 
-import requests
 from typing_extensions import (
     Literal,
     TypedDict,
     Unpack,
 )
 
+from galaxy.exceptions import AuthenticationRequired
 from galaxy.files import OptionalUserContext
 from galaxy.files.sources import (
     AnyRemoteEntry,
+    DEFAULT_PAGE_LIMIT,
     DEFAULT_SCHEME,
     Entry,
     EntryData,
@@ -36,6 +38,7 @@ from galaxy.files.sources._rdm import (
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
+    requests,
     stream_to_open_named_file,
 )
 
@@ -117,6 +120,8 @@ class InvenioRDMFilesSource(RDMFilesSource):
     """A files source for Invenio turn-key research data management repository."""
 
     plugin_type = "inveniordm"
+    supports_pagination = True
+    supports_search = True
 
     def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
         super().__init__(**kwd)
@@ -147,15 +152,21 @@ class InvenioRDMFilesSource(RDMFilesSource):
         recursive=True,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
-    ) -> List[AnyRemoteEntry]:
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[AnyRemoteEntry], int]:
         writeable = opts and opts.writeable or False
         is_root_path = path == "/"
         if is_root_path:
-            records = self.repository.get_records(writeable, user_context)
-            return cast(List[AnyRemoteEntry], records)
+            records, total_hits = self.repository.get_records(
+                writeable, user_context, limit=limit, offset=offset, query=query
+            )
+            return cast(List[AnyRemoteEntry], records), total_hits
         record_id = self.get_record_id_from_path(path)
         files = self.repository.get_files_in_record(record_id, writeable, user_context)
-        return cast(List[AnyRemoteEntry], files)
+        return cast(List[AnyRemoteEntry], files), len(files)
 
     def _create_entry(
         self,
@@ -207,17 +218,37 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     def to_plugin_uri(self, record_id: str, filename: Optional[str] = None) -> str:
         return f"{self.plugin.get_uri_root()}/{record_id}{f'/{filename}' if filename else ''}"
 
-    def get_records(self, writeable: bool, user_context: OptionalUserContext = None) -> List[RemoteDirectory]:
+    def get_records(
+        self,
+        writeable: bool,
+        user_context: OptionalUserContext = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[RemoteDirectory], int]:
         params: Dict[str, Any] = {}
         request_url = self.records_url
         if writeable:
             # Only draft records owned by the user can be written to.
             params["is_published"] = "false"
             request_url = self.user_records_url
-        # TODO: Add pagination support to FileSources. This is limited to 100 records by default for now.
-        params["size"] = 100
+        size, page = self._to_size_page(limit, offset)
+        params["size"] = size
+        params["page"] = page
+        if query:
+            params["q"] = query
+            params["sort"] = "bestmatch"
         response_data = self._get_response(user_context, request_url, params=params)
-        return self._get_records_from_response(response_data)
+        total_hits = response_data["hits"]["total"]
+        return self._get_records_from_response(response_data), total_hits
+
+    def _to_size_page(self, limit: Optional[int], offset: Optional[int]) -> Tuple[Optional[int], Optional[int]]:
+        if limit is None and offset is None:
+            return None, None
+        size = limit or DEFAULT_PAGE_LIMIT
+        page = (offset or 0) // size + 1
+        return size, page
 
     def get_files_in_record(
         self, record_id: str, writeable: bool, user_context: OptionalUserContext = None
@@ -244,12 +275,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
             },
         }
 
-        headers = self._get_request_headers(user_context)
-        if "Authorization" not in headers:
-            raise Exception(
-                "Cannot create record without authentication token. Please set your personal access token in your Galaxy preferences."
-            )
-
+        headers = self._get_request_headers(user_context, auth_required=True)
         response = requests.post(self.records_url, json=create_record_request, headers=headers)
         self._ensure_response_has_expected_status_code(response, 201)
         record = response.json()
@@ -265,7 +291,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     ):
         record = self._get_draft_record(record_id, user_context=user_context)
         upload_file_url = record["links"]["files"]
-        headers = self._get_request_headers(user_context)
+        headers = self._get_request_headers(user_context, auth_required=True)
 
         # Add file metadata entry
         response = requests.post(upload_file_url, json=[{"key": filename}], headers=headers)
@@ -421,24 +447,37 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         }
 
     def _get_response(
-        self, user_context: OptionalUserContext, request_url: str, params: Optional[Dict[str, Any]] = None
+        self,
+        user_context: OptionalUserContext,
+        request_url: str,
+        params: Optional[Dict[str, Any]] = None,
+        auth_required: bool = False,
     ) -> dict:
-        headers = self._get_request_headers(user_context)
+        headers = self._get_request_headers(user_context, auth_required)
         response = requests.get(request_url, params=params, headers=headers)
         self._ensure_response_has_expected_status_code(response, 200)
         return response.json()
 
-    def _get_request_headers(self, user_context: OptionalUserContext):
+    def _get_request_headers(self, user_context: OptionalUserContext, auth_required: bool = False):
         token = self.plugin.get_authorization_token(user_context)
         headers = {"Authorization": f"Bearer {token}"} if token else {}
+        if auth_required and token is None:
+            self._raise_auth_required()
         return headers
 
     def _ensure_response_has_expected_status_code(self, response, expected_status_code: int):
         if response.status_code != expected_status_code:
+            if response.status_code == 403:
+                self._raise_auth_required()
             error_message = self._get_response_error_message(response)
             raise Exception(
                 f"Request to {response.url} failed with status code {response.status_code}: {error_message}"
             )
+
+    def _raise_auth_required(self):
+        raise AuthenticationRequired(
+            f"Please provide a personal access token in your user's preferences for '{self.plugin.label}'"
+        )
 
     def _get_response_error_message(self, response):
         response_json = response.json()

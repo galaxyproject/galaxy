@@ -12,7 +12,10 @@ from galaxy.exceptions import (
     ItemAccessibilityException,
     RequestParameterInvalidException,
 )
-from galaxy.files import ConfiguredFileSources
+from galaxy.files import (
+    ConfiguredFileSources,
+    ConfiguredFileSourcesConf,
+)
 from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.files.unittest_utils import (
     setup_root,
@@ -159,7 +162,7 @@ def test_user_ftp_explicit_config():
         "type": "gxftp",
     }
     tmp, root = setup_root()
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[plugin])
+    file_sources = ConfiguredFileSources(file_sources_config, ConfiguredFileSourcesConf(conf_dict=[plugin]))
     user_context = user_context_fixture(user_ftp_dir=root)
     write_file_fixtures(tmp, root)
 
@@ -181,7 +184,9 @@ def test_user_ftp_implicit_config():
         ftp_upload_dir=root,
         ftp_upload_purge=False,
     )
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
+    file_sources = ConfiguredFileSources(
+        file_sources_config, ConfiguredFileSourcesConf(conf_dict=[]), load_stock_plugins=True
+    )
     user_context = user_context_fixture(user_ftp_dir=root)
     write_file_fixtures(tmp, root)
     assert os.path.exists(os.path.join(root, "a"))
@@ -199,7 +204,9 @@ def test_user_ftp_respects_upload_purge_off():
         ftp_upload_dir=root,
         ftp_upload_purge=True,
     )
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
+    file_sources = ConfiguredFileSources(
+        file_sources_config, ConfiguredFileSourcesConf(conf_dict=[]), load_stock_plugins=True
+    )
     user_context = user_context_fixture(user_ftp_dir=root)
     write_file_fixtures(tmp, root)
     assert_realizes_as(file_sources, "gxftp://a", "a\n", user_context=user_context)
@@ -211,7 +218,9 @@ def test_user_ftp_respects_upload_purge_on_by_default():
     file_sources_config = FileSourcePluginsConfig(
         ftp_upload_dir=root,
     )
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
+    file_sources = ConfiguredFileSources(
+        file_sources_config, ConfiguredFileSourcesConf(conf_dict=[]), load_stock_plugins=True
+    )
     user_context = user_context_fixture(user_ftp_dir=root)
     write_file_fixtures(tmp, root)
     assert_realizes_as(file_sources, "gxftp://a", "a\n", user_context=user_context)
@@ -226,7 +235,7 @@ def test_import_dir_explicit_config():
     plugin = {
         "type": "gximport",
     }
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[plugin])
+    file_sources = ConfiguredFileSources(file_sources_config, ConfiguredFileSourcesConf(conf_dict=[plugin]))
     write_file_fixtures(tmp, root)
 
     assert_realizes_as(file_sources, "gximport://a", "a\n")
@@ -237,7 +246,9 @@ def test_import_dir_implicit_config():
     file_sources_config = FileSourcePluginsConfig(
         library_import_dir=root,
     )
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
+    file_sources = ConfiguredFileSources(
+        file_sources_config, ConfiguredFileSourcesConf(conf_dict=[]), load_stock_plugins=True
+    )
     write_file_fixtures(tmp, root)
 
     assert_realizes_as(file_sources, "gximport://a", "a\n")
@@ -248,7 +259,9 @@ def test_user_import_dir_implicit_config():
     file_sources_config = FileSourcePluginsConfig(
         user_library_import_dir=root,
     )
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
+    file_sources = ConfiguredFileSources(
+        file_sources_config, ConfiguredFileSourcesConf(conf_dict=[]), load_stock_plugins=True
+    )
 
     write_file_fixtures(tmp, os.path.join(root, EMAIL))
 

@@ -1,13 +1,9 @@
 import time
-from os import PathLike
 from typing import (
     List,
     Optional,
     Tuple,
-    Union,
 )
-
-import requests
 
 from galaxy import exceptions
 from galaxy.files import (
@@ -17,10 +13,12 @@ from galaxy.files import (
 from galaxy.files.sources import FilesSourceOptions
 from galaxy.files.sources.http import HTTPFilesSourceProperties
 from galaxy.files.uris import stream_url_to_file
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from galaxy.util.config_parsers import IpAllowedListEntryT
-
-TargetPathT = Union[str, PathLike]
+from galaxy.util.path import StrPath
 
 
 def _not_implemented(drs_uri: str, desc: str) -> NotImplementedError:
@@ -78,7 +76,7 @@ def _get_access_info(obj_url: str, access_method: dict, headers=None) -> Tuple[s
 
 def fetch_drs_to_file(
     drs_uri: str,
-    target_path: TargetPathT,
+    target_path: StrPath,
     user_context: Optional[FileSourcesUserContext],
     force_http=False,
     retry_options: Optional[RetryOptions] = None,

@@ -121,16 +121,6 @@ GENERAL_VALID_NEW_PROFILE_FMT = """
 </tool>
 """
 
-GENERAL_TEXT_SPACES = """
-<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="21.09">
-    <xrefs>
-        <xref type="bio.tools">
-            bwa
-        </xref>
-    </xrefs>
-</tool>
-"""
-
 GENERAL_VALID_BIOTOOLS = """
 <tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
     <xrefs>
@@ -1106,19 +1096,6 @@ def test_general_valid_new_profile_fmt(lint_ctx):
     assert not lint_ctx.info_messages
     assert len(lint_ctx.valid_messages) == 4
     assert not lint_ctx.warn_messages
-    assert not lint_ctx.error_messages
-
-
-def test_general_text_spaces(lint_ctx):
-    tool_source = get_xml_tool_source(GENERAL_TEXT_SPACES)
-    run_lint_module(lint_ctx, general, tool_source)
-    assert (
-        "XML node 'xref' has text with leading or trailing spaces ('\n            bwa\n        '!='bwa')"
-        in lint_ctx.warn_messages
-    )
-    assert not lint_ctx.info_messages
-    assert len(lint_ctx.valid_messages) == 4
-    assert len(lint_ctx.warn_messages) == 1
     assert not lint_ctx.error_messages
 
 

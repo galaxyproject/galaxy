@@ -20,9 +20,16 @@ import localize from "@/utils/localization";
 
 interface Props {
     history: HistorySummary;
+    showModal?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    showModal: false,
+});
+
+const emit = defineEmits<{
+    (e: "update:show-modal", value: boolean): void;
+}>();
 
 const userStore = useUserStore();
 const historyStore = useHistoryStore();
@@ -32,6 +39,7 @@ const { currentUser, isAnonymous } = storeToRefs(userStore);
 const name = ref("");
 const copyAll = ref(false);
 const loading = ref(false);
+const localShowModal = ref(props.showModal);
 
 const title = computed(() => {
     return `Copying History: ${props.history.name}`;
@@ -56,6 +64,18 @@ const formValid = computed(() => {
 });
 
 watch(
+    () => props.showModal,
+    (newVal) => {
+        localShowModal.value = newVal;
+    }
+);
+watch(
+    () => localShowModal.value,
+    (newVal) => {
+        emit("update:show-modal", newVal);
+    }
+);
+watch(
     () => props.history,
     (newHistory) => {
         name.value = `Copy of '${newHistory.name}'`;
@@ -74,11 +94,11 @@ async function copy(close: () => void) {
 </script>
 
 <template>
-    <BModal v-bind="$attrs" :title="title" title-tag="h2" v-on="$listeners">
+    <BModal v-model="localShowModal" v-bind="$attrs" :title="title" title-tag="h2" v-on="$listeners">
         <transition name="fade">
             <BAlert v-localize :show="isAnonymous" variant="warning">
                 As an anonymous user, unless you log in or register, you will lose your current history after copying
-                this history. You can <a href="/user/login">log in here</a> or <a href="/user/create">register here</a>.
+                this history. You can <a href="/login/start">log in or register here</a>.
             </BAlert>
         </transition>
 

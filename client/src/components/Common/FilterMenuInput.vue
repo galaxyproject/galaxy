@@ -28,6 +28,7 @@ interface Props {
     filters: {
         [k: string]: FilterType;
     };
+    disabled?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -47,14 +48,18 @@ const modalTitle = `${capitalize(props.filter.placeholder)} Help`;
 
 function onHelp(_: string, value: string) {
     helpToggle.value = false;
-    localValue.value = value;
+
+    if (!props.disabled) {
+        localValue.value = value;
+    }
 }
 
 watch(
     () => localValue.value,
     (newFilter) => {
         emit("change", props.name, newFilter);
-    }
+    },
+    { immediate: true }
 );
 
 watch(
@@ -79,6 +84,7 @@ watch(
                 size="sm"
                 :state="props.error ? false : null"
                 :placeholder="`any ${props.filter.placeholder}`"
+                :disabled="props.disabled"
                 :list="props.filter.datalist ? `${identifier}-${props.name}-selectList` : null"
                 @keyup.enter="emit('on-enter')"
                 @keyup.esc="emit('on-esc')" />
@@ -99,6 +105,7 @@ watch(
                     v-model="localValue"
                     reset-button
                     button-only
+                    :disabled="props.disabled"
                     size="sm" />
             </BInputGroupAppend>
         </BInputGroup>

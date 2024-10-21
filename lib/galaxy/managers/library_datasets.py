@@ -1,23 +1,26 @@
 """Manager and Serializer for library datasets."""
 
 import logging
+from typing import (
+    Any,
+    Dict,
+)
 
 from sqlalchemy import select
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import util
 from galaxy.exceptions import (
     InsufficientPermissionsException,
     InternalServerError,
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.managers import datasets
+from galaxy.managers.base import ModelManager
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.datasets import DatasetAssociationManager
 from galaxy.model import (
     LibraryDataset,
+    LibraryDatasetDatasetAssociation,
     LibraryFolder,
 )
 from galaxy.model.base import transaction
@@ -27,15 +30,16 @@ from galaxy.util import validation
 log = logging.getLogger(__name__)
 
 
-class LibraryDatasetsManager(datasets.DatasetAssociationManager):
+class LibraryDatasetsManager(ModelManager[LibraryDataset]):
     """Interface/service object for interacting with library datasets."""
 
-    model_class = model.LibraryDatasetDatasetAssociation
+    model_class = LibraryDataset
 
     def __init__(self, app: MinimalManagerApp):
-        self.app = app
+        super().__init__(app)
+        self.dataset_assoc_manager = DatasetAssociationManager(app)
 
-    def get(self, trans, decoded_library_dataset_id, check_accessible=True):
+    def get(self, trans, decoded_library_dataset_id, check_accessible=True) -> LibraryDataset:
         """
         Get the library dataset from the DB.
 
@@ -54,14 +58,14 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         ld = self.secure(trans, ld, check_accessible)
         return ld
 
-    def update(self, trans, ld, payload):
+    def update(self, item: LibraryDataset, new_values: Dict[str, Any], flush: bool = True, **kwargs) -> LibraryDataset:
         """
         Update the given library dataset - the latest linked ldda.
         Updating older lddas (versions) is not allowed.
 
-        :param  ld:                 library dataset to change
-        :type   ld:                 LibraryDataset
-        :param  payload:            dictionary structure containing::
+        :param  item:               library dataset to change
+        :type   item:               LibraryDataset
+        :param  new_values:         dictionary structure containing::
             :param name:            new ld's name, must be longer than 0
             :type  name:            str
             :param misc_info:       new ld's misc info
@@ -72,19 +76,27 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             :type  genome_build:    str
             :param tags:            list of dataset tags
             :type  tags:            list
-        :type   payload: dict
+        :type   new_values: dict
 
         :returns:   the changed library dataset
         :rtype:     galaxy.model.LibraryDataset
         """
-        self.check_modifiable(trans, ld)
+        trans = kwargs.get("trans")
+        if not trans:
+            raise ValueError("Missing trans parameter")
         # we are going to operate on the actual latest ldda
-        ldda = ld.library_dataset_dataset_association
-        payload = self._validate_and_parse_update_payload(payload)
-        self._set_from_dict(trans, ldda, payload)
-        return ld
+        ldda = item.library_dataset_dataset_association
+        new_values = self._validate_and_parse_update_payload(new_values)
+        self._set_from_dict(trans, ldda, new_values, flush=flush)
+        return item
 
-    def _set_from_dict(self, trans: ProvidesUserContext, ldda, new_data):
+    def _set_from_dict(
+        self,
+        trans: ProvidesUserContext,
+        ldda: LibraryDatasetDatasetAssociation,
+        new_data: Dict[str, Any],
+        flush: bool = True,
+    ) -> None:
         changed = False
         new_name = new_data.get("name", None)
         if new_name is not None and new_name != ldda.name:
@@ -100,10 +112,10 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             changed = True
         new_file_ext = new_data.get("file_ext", None)
         if new_file_ext == "auto":
-            self.detect_datatype(trans, ldda)
+            self.dataset_assoc_manager.detect_datatype(trans, ldda)
         elif new_file_ext is not None and new_file_ext != ldda.extension:
             ldda.extension = new_file_ext
-            self.set_metadata(trans, ldda)
+            self.dataset_assoc_manager.set_metadata(trans, ldda)
             changed = True
         new_genome_build = new_data.get("genome_build", None)
         if new_genome_build is not None and new_genome_build != ldda.dbkey:
@@ -118,10 +130,11 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             changed = True
         if changed:
             ldda.update_parent_folder_update_times()
-            trans.sa_session.add(ldda)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-        return changed
+            session = self.session()
+            session.add(ldda)
+            if flush:
+                with transaction(session):
+                    session.commit()
 
     def _validate_and_parse_update_payload(self, payload):
         MINIMUM_STRING_LENGTH = 1
@@ -129,7 +142,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         for key, val in payload.items():
             if val is None:
                 continue
-            if key in ("name"):
+            if key in ("name",):
                 if len(val) < MINIMUM_STRING_LENGTH:
                     raise RequestParameterInvalidException(
                         f"{key} must have at least length of {MINIMUM_STRING_LENGTH}"
@@ -139,19 +152,19 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             if key in ("misc_info", "message"):
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
-            if key in ("file_ext"):
+            if key in ("file_ext",):
                 datatype = self.app.datatypes_registry.get_datatype_by_extension(val)
                 if datatype is None and val not in ("auto",):
                     raise RequestParameterInvalidException(f"This Galaxy does not recognize the datatype of: {val}")
                 validated_payload[key] = val
-            if key in ("genome_build"):
+            if key in ("genome_build",):
                 if len(val) < MINIMUM_STRING_LENGTH:
                     raise RequestParameterInvalidException(
                         f"{key} must have at least length of {MINIMUM_STRING_LENGTH}"
                     )
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
-            if key in ("tags"):
+            if key in ("tags",):
                 val = validation.validate_and_sanitize_basestring_list(key, util.listify(val))
                 validated_payload[key] = val
         return validated_payload
@@ -187,7 +200,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
 
         :raises:    ObjectNotFound
         """
-        if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), ld, trans.user):
+        if not self.app.security_agent.can_access_library_item(trans.get_current_user_roles(), ld, trans.user):
             raise ObjectNotFound("Library dataset with the id provided was not found.")
         elif ld.deleted:
             raise ObjectNotFound("Library dataset with the id provided is deleted.")
@@ -210,27 +223,27 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             raise ObjectNotFound("Library dataset with the id provided is deleted.")
         elif trans.user_is_admin:
             return ld
-        if not trans.app.security_agent.can_modify_library_item(trans.get_current_user_roles(), ld):
+        if not self.app.security_agent.can_modify_library_item(trans.get_current_user_roles(), ld):
             raise InsufficientPermissionsException("You do not have proper permission to modify this library dataset.")
         else:
             return ld
 
-    def serialize(self, trans, ld):
+    def serialize(self, trans, ld: LibraryDataset) -> Dict[str, Any]:
         """Serialize the library dataset into a dictionary."""
         current_user_roles = trans.get_current_user_roles()
 
         # Build the full path for breadcrumb purposes.
         full_path = self._build_path(trans, ld.folder)
-        dataset_item = (trans.security.encode_id(ld.id), ld.name)
+        dataset_item = (self.app.security.encode_id(ld.id), ld.name)
         full_path.insert(0, dataset_item)
         full_path = full_path[::-1]
 
         # Find expired versions of the library dataset
         expired_ldda_versions = []
         for expired_ldda in ld.expired_datasets:
-            expired_ldda_versions.append((trans.security.encode_id(expired_ldda.id), expired_ldda.name))
+            expired_ldda_versions.append((self.app.security.encode_id(expired_ldda.id), expired_ldda.name))
 
-        rval = trans.security.encode_all_ids(ld.to_dict())
+        rval = self.app.security.encode_all_ids(ld.to_dict())
         if len(expired_ldda_versions) > 0:
             rval["has_versions"] = True
             rval["expired_versions"] = expired_ldda_versions
@@ -249,14 +262,14 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         rval["file_size"] = util.nice_size(int(ldda.get_size(calculate_size=False)))
         rval["date_uploaded"] = ldda.create_time.isoformat()
         rval["update_time"] = ldda.update_time.isoformat()
-        rval["can_user_modify"] = trans.user_is_admin or trans.app.security_agent.can_modify_library_item(
+        rval["can_user_modify"] = trans.user_is_admin or self.app.security_agent.can_modify_library_item(
             current_user_roles, ld
         )
-        rval["is_unrestricted"] = trans.app.security_agent.dataset_is_public(ldda.dataset)
+        rval["is_unrestricted"] = self.app.security_agent.dataset_is_public(ldda.dataset)
         rval["tags"] = trans.tag_handler.get_tags_list(ldda.tags)
 
         #  Manage dataset permission is always attached to the dataset itself, not the ld or ldda to maintain consistency
-        rval["can_user_manage"] = trans.user_is_admin or trans.app.security_agent.can_manage_dataset(
+        rval["can_user_manage"] = trans.user_is_admin or self.app.security_agent.can_manage_dataset(
             current_user_roles, ldda.dataset
         )
         return rval
@@ -275,15 +288,15 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         path_to_root = []
         if folder.parent_id is None:
             # We are almost in root
-            path_to_root.append((f"F{trans.security.encode_id(folder.id)}", folder.name))
+            path_to_root.append((f"F{self.app.security.encode_id(folder.id)}", folder.name))
         else:
             # We add the current folder and traverse up one folder.
-            path_to_root.append((f"F{trans.security.encode_id(folder.id)}", folder.name))
+            path_to_root.append((f"F{self.app.security.encode_id(folder.id)}", folder.name))
             upper_folder = trans.sa_session.get(LibraryFolder, folder.parent_id)
             path_to_root.extend(self._build_path(trans, upper_folder))
         return path_to_root
 
 
-def get_library_dataset(session, library_dataset_id):
+def get_library_dataset(session, library_dataset_id) -> LibraryDataset:
     stmt = select(LibraryDataset).where(LibraryDataset.id == library_dataset_id)
     return session.scalars(stmt).one()
