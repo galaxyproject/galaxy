@@ -45,7 +45,7 @@ DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
 # Conda channel order from highest to lowest, following the one used in
 # https://github.com/bioconda/bioconda-recipes/blob/master/config.yml
-DEFAULT_ENSURE_CHANNELS = "conda-forge,bioconda"
+DEFAULT_ENSURE_CHANNELS = "conda-forge,bioconda,defaults"
 CONDA_SOURCE_CMD = """[ "$(basename "$CONDA_DEFAULT_ENV")" = "$(basename '{environment_path}')" ] || {{
 MAX_TRIES=3
 COUNT=0
