@@ -12,7 +12,7 @@ const props = defineProps<{
 }>();
 
 const render = ref(false);
-const idleFallbackTime = 100;
+const idleFallbackTime = 250;
 
 onMounted(() => {
     if ("requestIdleCallback" in window) {
