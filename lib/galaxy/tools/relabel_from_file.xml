@@ -89,6 +89,37 @@
               </element>
             </output_collection>
         </test>
+        <!-- test non-default columns -->
+        <test>
+            <param name="input">
+                <collection type="list:paired">
+                    <element name="i1">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+            <param name="how_select" value="tabular" />
+            <param name="labels" value="new_labels_3.txt" ftype="tabular" />
+            <param name="from" value="3" />
+            <param name="to" value="1" />
+            <output_collection name="output" type="list:paired">
+              <element name="new_i1">
+                <element name="forward">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+                <element name="reverse">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a different line of text.\n$" />
+                  </assert_contents>
+                </element>
+              </element>
+            </output_collection>
+        </test>
         <!-- test strict -->
         <test expect_failure="true">
             <param name="input">
