@@ -3983,7 +3983,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 raise exceptions.MessageException("Column < 1 specified for relabel mapping file. Column count starts at 1.")
             new_labels_dict = {}
             try:
-                for i, line in enumerate(new_labels, 1): # noqa: B007
+                for i, line in enumerate(new_labels, 1):  # noqa: B007
                     cols = line.strip().split("\t")
                     new_labels_dict[cols[from_index]] = cols[to_index]
             except IndexError:
