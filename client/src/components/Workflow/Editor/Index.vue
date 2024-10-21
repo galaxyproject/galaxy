@@ -732,7 +732,11 @@ export default {
             }
 
             if (activityId === "save-workflow") {
-                this.onSave();
+                if (this.isNewTempWorkflow) {
+                    await this.onCreate();
+                } else {
+                    await this.onSave();
+                }
             }
         },
         onLayout() {

@@ -100,6 +100,7 @@ const dropdownOpen = ref(false);
                         :workflow="props.workflow"
                         :published="props.publishedView"
                         :editor="props.editorView"
+                        :current="props.current"
                         @refreshList="emit('refreshList', true)"
                         @dropdown="(open) => (dropdownOpen = open)" />
                 </div>
