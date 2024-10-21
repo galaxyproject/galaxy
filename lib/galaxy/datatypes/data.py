@@ -1277,6 +1277,25 @@ class ZarrDirectory(Directory):
         # TO DO: Can we access extra files path from here? Otherwise it cannot be auto-detected.
         return False
 
+    def display_data(
+        self,
+        trans,
+        dataset: DatasetHasHidProtocol,
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        **kwd,
+    ):
+        if preview:
+            store_root_path = os.path.join(dataset.extra_files_path, dataset.metadata.store_root)
+            metadata_file_path = self._find_zarr_metadata_file(store_root_path)
+            if metadata_file_path:
+                headers = kwd.get("headers", {})
+                headers["content-type"] = "application/json"
+                return self._yield_user_file_content(trans, dataset, metadata_file_path, headers), headers
+
+        return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
+
     def _find_store_root_folder_name(self, dataset: DatasetProtocol) -> Optional[str]:
         """Returns the name of the root folder where the Zarr store is located.
 
