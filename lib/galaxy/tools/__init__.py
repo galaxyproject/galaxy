@@ -3980,14 +3980,18 @@ class RelabelFromFileTool(DatabaseOperationTool):
             from_index = int(incoming["how"]["from"]) - 1
             to_index = int(incoming["how"]["to"]) - 1
             if from_index < 0 or to_index < 0:
-                raise exceptions.MessageException("Column < 1 specified for relabel mapping file. Column count starts at 1.")
+                raise exceptions.MessageException(
+                    "Column < 1 specified for relabel mapping file. Column count starts at 1."
+                )
             new_labels_dict = {}
             try:
                 for i, line in enumerate(new_labels, 1):  # noqa: B007
                     cols = line.strip().split("\t")
                     new_labels_dict[cols[from_index]] = cols[to_index]
             except IndexError:
-                raise exceptions.MessageException(f"Specified column number > number of columns [{len(cols)}] on line {i} of relabel mapping file.")
+                raise exceptions.MessageException(
+                    f"Specified column number > number of columns [{len(cols)}] on line {i} of relabel mapping file."
+                )
             for dce in hdca.collection.elements:
                 dce_object = dce.element_object
                 element_identifier = dce.element_identifier
