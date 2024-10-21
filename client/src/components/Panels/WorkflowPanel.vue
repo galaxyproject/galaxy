@@ -87,10 +87,23 @@ async function load() {
     }
 }
 
+function resetWorkflows() {
+    workflows.value = [];
+    totalWorkflowsCount.value = Infinity;
+    loading.value = false;
+    fetchKey = "";
+}
+
+function refresh() {
+    resetWorkflows();
+    getWorkflows.clear();
+    load();
+}
+
 watchImmediate(
     () => filterText.value,
     () => {
-        workflows.value = [];
+        resetWorkflows();
         fetchKey = filterText.value;
         load();
     }
@@ -131,7 +144,8 @@ function scrollToTop() {
                 :current-workflow-id="props.currentWorkflowId"
                 editor-view
                 @insertWorkflow="(...args) => emit('insertWorkflow', ...args)"
-                @insertWorkflowSteps="(...args) => emit('insertWorkflowSteps', ...args)" />
+                @insertWorkflowSteps="(...args) => emit('insertWorkflowSteps', ...args)"
+                @refreshList="refresh" />
 
             <div v-if="allLoaded || filterText !== ''" class="list-end">
                 <span v-if="workflows.length == 1"> - 1 workflow loaded - </span>
