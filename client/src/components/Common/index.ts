@@ -51,3 +51,17 @@ export interface BreadcrumbItem {
      */
     icon?: IconDefinition;
 }
+
+export type ListView = "grid" | "list";
+
+export type SortBy = "create_time" | "update_time" | "name";
+
+export type SortKey = {
+    label: string;
+    key: SortBy;
+};
+
+export const defaultSortKeys: SortKey[] = [
+    { label: "Name", key: "name" },
+    { label: "Update time", key: "update_time" },
+];
