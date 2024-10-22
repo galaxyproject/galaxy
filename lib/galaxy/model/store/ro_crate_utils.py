@@ -224,6 +224,216 @@ class WorkflowRunCrateProfileBuilder:
             crate.mainEntity["name"] = self.workflow.name
             crate.mainEntity["subjectOf"] = cwl_wf
 
+            # Adding multiple creators if available
+            if self.workflow.creator_metadata:
+                for creator_data in self.workflow.creator_metadata:
+                    if creator_data.get("class") == "Person":
+                        # Create the person entity
+                        creator_entity = crate.add(
+                            ContextEntity(
+                                crate,
+                                creator_data.get("identifier", ""),  # Default to empty string if identifier is missing
+                                properties={
+                                    "@type": "Person",
+                                    "name": creator_data.get("name", ""),  # Default to empty string if name is missing
+                                    "orcid": creator_data.get(
+                                        "identifier", ""
+                                    ),  # Assuming identifier is ORCID, or adjust as needed
+                                    "url": creator_data.get("url", ""),  # Add URL if available, otherwise empty string
+                                    "email": creator_data.get(
+                                        "email", ""
+                                    ),  # Add email if available, otherwise empty string
+                                },
+                            )
+                        )
+                        # Append the person creator entity to the mainEntity
+                        crate.mainEntity.append_to("creator", creator_entity)
+
+                    elif creator_data.get("class") == "Organization":
+                        # Create the organization entity
+                        organization_entity = crate.add(
+                            ContextEntity(
+                                crate,
+                                creator_data.get(
+                                    "url", ""
+                                ),  # Use URL as identifier if available, otherwise empty string
+                                properties={
+                                    "@type": "Organization",
+                                    "name": creator_data.get("name", ""),  # Default to empty string if name is missing
+                                    "url": creator_data.get("url", ""),  # Add URL if available, otherwise empty string
+                                },
+                            )
+                        )
+                        # Append the organization entity to the mainEntity
+                        crate.mainEntity.append_to("creator", organization_entity)
+
+            # Add CWL workflow entity if exists
+            crate.mainEntity["subjectOf"] = cwl_wf
+
+        # Add tools used in the workflow
+        self._add_tools(crate)
+        self._add_steps(crate)
+
+    def _add_steps(self, crate: ROCrate):
+        """
+        Add workflow steps (HowToStep) to the RO-Crate. These are unique for each tool occurrence.
+        """
+        step_entities = []
+        # Initialize the position as a list with a single element to keep it mutable
+        position = [1]
+        self._add_steps_recursive(self.workflow.steps, crate, step_entities, position)
+        return step_entities
+
+    def _add_steps_recursive(self, steps, crate: ROCrate, step_entities, position):
+        """
+        Recursively add HowToStep entities from workflow steps, ensuring that
+        the position index is maintained across subworkflows.
+        """
+        for step in steps:
+            if step.type == "tool":
+                # Create a unique HowToStep entity for each step
+                step_id = f"step_{position[0]}"
+                step_description = None
+                if step.annotations:
+                    annotations_list = [annotation.annotation for annotation in step.annotations if annotation]
+                    step_description = " ".join(annotations_list) if annotations_list else None
+
+                # Add HowToStep entity to the crate
+                step_entity = crate.add(
+                    ContextEntity(
+                        crate,
+                        step_id,
+                        properties={
+                            "@type": "HowToStep",
+                            "position": position[0],
+                            "name": step.tool_id,
+                            "description": step_description,
+                        },
+                    )
+                )
+
+                # Append the HowToStep entity to the workflow steps list
+                step_entities.append(step_entity)
+                crate.mainEntity.append_to("step", step_entity)
+
+                # Increment the position counter
+                position[0] += 1
+
+            # Handle subworkflows recursively
+            elif step.type == "subworkflow":
+                subworkflow = step.subworkflow
+                if subworkflow:
+                    self._add_steps_recursive(subworkflow.steps, crate, step_entities, position)
+
+    def _add_tools(self, crate: ROCrate):
+        tool_entities = []
+        self._add_tools_recursive(self.workflow.steps, crate, tool_entities)
+
+    def _add_tools_recursive(self, steps, crate: ROCrate, tool_entities):
+        """
+        Recursively add SoftwareApplication entities from workflow steps, reusing tools when necessary.
+        """
+        for step in steps:
+            if step.type == "tool":
+                tool_id = step.tool_id
+                tool_version = step.tool_version
+
+                # Cache key based on tool ID and version
+                tool_key = f"{tool_id}:{tool_version}"
+
+                # Check if tool entity is already in cache
+                if tool_key in self.tool_cache:
+                    tool_entity = self.tool_cache[tool_key]
+                else:
+                    # Create a new tool entity
+                    tool_name = tool_id
+                    tool_description = None
+                    if step.annotations:
+                        annotations_list = [annotation.annotation for annotation in step.annotations if annotation]
+                        tool_description = " ".join(annotations_list) if annotations_list else None
+
+                    # Retrieve the tool metadata from the toolbox
+                    tool_metadata = self._get_tool_metadata(tool_id)
+
+                    # Add tool entity to the RO-Crate
+                    tool_entity = crate.add(
+                        ContextEntity(
+                            crate,
+                            tool_id,
+                            properties={
+                                "@type": "SoftwareApplication",
+                                "name": tool_name,
+                                "version": tool_version,
+                                "description": tool_description,
+                                "url": "https://toolshed.g2.bx.psu.edu",  # URL if relevant
+                                "citation": tool_metadata["citations"],
+                                "identifier": tool_metadata["xrefs"],
+                                "EDAM operation": tool_metadata["edam_operations"],
+                            },
+                        )
+                    )
+
+                    # Store the tool entity in the cache
+                    self.tool_cache[tool_key] = tool_entity
+
+                # Append the tool entity to the workflow (instrument) and store it in the list
+                tool_entities.append(tool_entity)
+                crate.mainEntity.append_to("instrument", tool_entity)
+
+            # Handle subworkflows recursively
+            elif step.type == "subworkflow":
+                subworkflow = step.subworkflow
+                if subworkflow:
+                    self._add_tools_recursive(subworkflow.steps, crate, tool_entities)
+
+    def _get_tool_metadata(self, tool_id: str):
+        """
+        Retrieve the tool metadata (citations, xrefs, EDAM operations) using the ToolBox.
+
+        Args:
+            toolbox (ToolBox): An instance of the Galaxy ToolBox.
+            tool_id (str): The ID of the tool to retrieve metadata for.
+
+        Returns:
+            dict: A dictionary containing citations, xrefs, and EDAM operations for the tool.
+        """
+        tool = self.toolbox.get_tool(tool_id)
+        if not tool:
+            return None
+
+        # Extracting relevant metadata from the tool object
+        citations = []
+        if tool.citations:
+            for citation in tool.citations:
+                citations.append(
+                    {
+                        "type": citation.type,  # e.g., "doi" or "bibtex"
+                        "value": citation.value,  # The actual DOI, BibTeX, etc.
+                    }
+                )
+
+        xrefs = []
+        if tool.xrefs:
+            for xref in tool.xrefs:
+                xrefs.append(
+                    {
+                        "type": xref.type,  # e.g., "registry", "repository", etc.
+                        "value": xref.value,  # The identifier or link
+                    }
+                )
+
+        # Handling EDAM operations, which are simple values in your XML
+        edam_operations = []
+        if tool.edam_operations:
+            for operation in tool.edam_operations:
+                edam_operations.append({"value": operation})  # Extract the operation code (e.g., "operation_3482")
+
+        return {
+            "citations": citations,  # List of structured citation entries
+            "xrefs": xrefs,  # List of structured xref entries
+            "edam_operations": edam_operations,  # List of structured EDAM operations
+        }
+
     def _add_create_action(self, crate: ROCrate):
         self.create_action = crate.add(
             ContextEntity(
