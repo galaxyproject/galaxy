@@ -1434,7 +1434,7 @@ class ZarrRemoteS3Bucket(Text):
 
     def sniff(self, filename: str) -> bool:
         # Must have a single line and end with '.zarr'
-        with open(filename, "r") as f:
+        with open(filename) as f:
             lines = f.readlines()
             if len(lines) != 1:
                 return False

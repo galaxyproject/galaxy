@@ -5,8 +5,6 @@ Image classes
 import base64
 import json
 import logging
-import os
-import shutil
 from typing import Optional
 
 import mrcfile
