@@ -1333,19 +1333,12 @@ class ZarrDirectory(Directory):
 
         # Depending on the Zarr version, the metadata file can be in different locations
         # In v1 the metadata is in a file named "meta" https://zarr-specs.readthedocs.io/en/latest/v1/v1.0.html
-        if "meta" in files_in_store:
-            meta_file = os.path.join(store_root_path, "meta")
-
         # In v2 it can be in .zarray or .zgroup https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
-        if ".zarray" in files_in_store:
-            meta_file = os.path.join(store_root_path, ".zarray")
-
-        if ".zgroup" in files_in_store:
-            meta_file = os.path.join(store_root_path, ".zgroup")
-
         # In v3 the metadata is in a file named "zarr.json" https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html
-        if "zarr.json" in files_in_store:
-            meta_file = os.path.join(store_root_path, "zarr.json")
+        for meta_filename in ["meta", ".zarray", ".zgroup", "zarr.json"]:
+            if meta_filename in files_in_store:
+                meta_file = os.path.join(store_root_path, meta_filename)
+                break
 
         if meta_file and os.path.isfile(meta_file):
             return meta_file
