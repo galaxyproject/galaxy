@@ -2,13 +2,13 @@ import { faCog, faDatabase, faEdit, faPlus, faTrash, faTrashRestore, faUsers } f
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { deleteQuota, purgeQuota, undeleteQuota } from "@/api/quotas";
+import { GalaxyApi } from "@/api";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import type { ActionArray, FieldArray, GridConfig } from "./types";
+import { type ActionArray, type FieldArray, type GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -93,18 +93,23 @@ const fields: FieldArray = [
                 condition: (data: QuotaEntry) => !data.deleted,
                 handler: async (data: QuotaEntry) => {
                     if (confirm(_l("Are you sure that you want to delete this quota?"))) {
-                        try {
-                            await deleteQuota({ id: String(data.id) });
-                            return {
-                                status: "success",
-                                message: `'${data.name}' has been deleted.`,
-                            };
-                        } catch (e) {
+                        const { error } = await GalaxyApi().DELETE("/api/quotas/{id}", {
+                            params: {
+                                path: { id: String(data.id) },
+                            },
+                        });
+
+                        if (error) {
                             return {
                                 status: "danger",
-                                message: `Failed to delete '${data.name}': ${errorMessageAsString(e)}`,
+                                message: `Failed to delete '${data.name}': ${errorMessageAsString(error)}`,
                             };
                         }
+
+                        return {
+                            status: "success",
+                            message: `'${data.name}' has been deleted.`,
+                        };
                     }
                 },
             },
@@ -114,18 +119,23 @@ const fields: FieldArray = [
                 condition: (data: QuotaEntry) => !!data.deleted,
                 handler: async (data: QuotaEntry) => {
                     if (confirm(_l("Are you sure that you want to purge this quota?"))) {
-                        try {
-                            await purgeQuota({ id: String(data.id) });
-                            return {
-                                status: "success",
-                                message: `'${data.name}' has been purged.`,
-                            };
-                        } catch (e) {
+                        const { error } = await GalaxyApi().POST("/api/quotas/{id}/purge", {
+                            params: {
+                                path: { id: String(data.id) },
+                            },
+                        });
+
+                        if (error) {
                             return {
                                 status: "danger",
-                                message: `Failed to purge '${data.name}': ${errorMessageAsString(e)}`,
+                                message: `Failed to purge '${data.name}': ${errorMessageAsString(error)}`,
                             };
                         }
+
+                        return {
+                            status: "success",
+                            message: `'${data.name}' has been purged.`,
+                        };
                     }
                 },
             },
@@ -134,18 +144,23 @@ const fields: FieldArray = [
                 icon: faTrashRestore,
                 condition: (data: QuotaEntry) => !!data.deleted,
                 handler: async (data: QuotaEntry) => {
-                    try {
-                        await undeleteQuota({ id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `'${data.name}' has been restored.`,
-                        };
-                    } catch (e) {
+                    const { error } = await GalaxyApi().POST("/api/quotas/deleted/{id}/undelete", {
+                        params: {
+                            path: { id: String(data.id) },
+                        },
+                    });
+
+                    if (error) {
                         return {
                             status: "danger",
-                            message: `Failed to restore '${data.name}': ${errorMessageAsString(e)}`,
+                            message: `Failed to restore '${data.name}': ${errorMessageAsString(error)}`,
                         };
                     }
+
+                    return {
+                        status: "success",
+                        message: `'${data.name}' has been restored.`,
+                    };
                 },
             },
         ],
@@ -191,7 +206,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
     name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
     description: { placeholder: "description", type: String, handler: contains("description"), menuItem: true },
     deleted: {
-        placeholder: "Filter on deleted entries",
+        placeholder: "Deleted",
         type: Boolean,
         boolType: "is",
         handler: equals("deleted", "deleted", toBool),

@@ -37,7 +37,7 @@ function getNotificationExpirationTitle(notification: UserNotification) {
     <div v-if="notification" class="notification-actions">
         <div class="notification-actions-body">
             <BBadge v-b-tooltip pill>
-                <UtcDate :date="notification.create_time" mode="elapsed" />
+                <UtcDate :date="notification.publication_time ?? notification.create_time" mode="elapsed" />
             </BBadge>
 
             <BButtonGroup class="notification-actions-buttons">

@@ -379,7 +379,7 @@ Setting up Galaxy using docker / singularity on distributed compute resources
 (in particular in real user setups) requires careful planning.
 
 Other considerations
-====================
+--------------------
 
 Tools frequently use ``$TMP``, ``$TEMP``, or ``$TMPDIR`` (or simply use hardcoded
 ``/tmp``) for storing temporary data. In containerized environments ``/tmp``

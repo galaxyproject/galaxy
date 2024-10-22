@@ -31,7 +31,7 @@ class TestMaxDiscoveredFiles(integration_util.IntegrationTestCase):
             assert job_details["state"] == "error"
             assert (
                 f"Job generated more than maximum number ({self.max_discovered_files}) of output datasets"
-                in job_details["job_messages"]
+                in job_details["job_messages"][0]["desc"]
             )
 
 

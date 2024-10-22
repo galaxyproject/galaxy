@@ -1,5 +1,7 @@
 import urllib.parse
 
+from galaxy.files import OptionalUserContext
+
 try:
     from fs.ftpfs import FTPFS
 except ImportError:
@@ -30,14 +32,18 @@ class FtpFilesSource(PyFilesystem2FilesSource):
     required_module = FTPFS
     required_package = "fs.ftpfs"
 
-    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
+    def _open_fs(self, user_context: OptionalUserContext = None, opts: Optional[FilesSourceOptions] = None):
         props = self._serialization_props(user_context)
         extra_props: FTPFilesSourceProperties = cast(FTPFilesSourceProperties, opts.extra_props or {} if opts else {})
         handle = FTPFS(**{**props, **extra_props})
         return handle
 
     def _realize_to(
-        self, source_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+        self,
+        source_path: str,
+        native_path: str,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
     ):
         extra_props: FTPFilesSourceProperties
         if opts and opts.extra_props:
@@ -49,7 +55,11 @@ class FtpFilesSource(PyFilesystem2FilesSource):
         super()._realize_to(path, native_path, user_context=user_context, opts=opts)
 
     def _write_from(
-        self, target_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+        self,
+        target_path: str,
+        native_path: str,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
     ):
         extra_props: FTPFilesSourceProperties
         if opts and opts.extra_props:

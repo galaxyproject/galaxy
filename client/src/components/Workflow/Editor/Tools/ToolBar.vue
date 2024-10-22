@@ -4,30 +4,49 @@ import { faMarkdown } from "@fortawesome/free-brands-svg-icons";
 import {
     faChevronDown,
     faChevronUp,
+    faClone,
     faEraser,
     faMagnet,
     faMousePointer,
     faObjectGroup,
     faPen,
+    faTimes,
+    faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { BButton, BButtonGroup, BFormInput } from "bootstrap-vue";
+//@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
+import { BoxSelect } from "lucide-vue";
 import { storeToRefs } from "pinia";
 import { computed, toRefs, watch } from "vue";
 
+import { RemoveAllFreehandCommentsAction } from "@/components/Workflow/Editor/Actions/commentActions";
 import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import { type CommentTool } from "@/stores/workflowEditorToolbarStore";
 import { match } from "@/utils/utils";
 
+import { useSelectionOperations } from "./useSelectionOperations";
 import { useToolLogic } from "./useToolLogic";
 
 import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.vue";
 
-library.add(faMarkdown, faChevronUp, faChevronDown, faEraser, faMagnet, faMousePointer, faObjectGroup, faPen);
+library.add(
+    faMarkdown,
+    faChevronDown,
+    faChevronUp,
+    faClone,
+    faEraser,
+    faMagnet,
+    faMousePointer,
+    faObjectGroup,
+    faPen,
+    faTimes,
+    faTrash
+);
 
-const { toolbarStore, commentStore } = useWorkflowStores();
+const { toolbarStore, undoRedoStore, commentStore } = useWorkflowStores();
 const { snapActive, currentTool } = toRefs(toolbarStore);
 
 const { commentOptions } = toolbarStore;
@@ -43,6 +62,11 @@ const snapButtonTitle = computed(() => {
 
 function onClickPointer() {
     currentTool.value = "pointer";
+}
+
+function onClickBoxSelect() {
+    toolbarStore.boxSelectMode = "add";
+    currentTool.value = "boxSelect";
 }
 
 function onCommentToolClick(comment: CommentTool) {
@@ -99,12 +123,12 @@ const thicknessId = useUid("thickness-");
 const smoothingId = useUid("smoothing-");
 
 function onRemoveAllFreehand() {
-    commentStore.deleteFreehandComments();
+    undoRedoStore.applyAction(new RemoveAllFreehandCommentsAction(commentStore));
 }
 
-useToolLogic(toolbarStore, commentStore);
+useToolLogic();
 
-const { ctrl_1, ctrl_2, ctrl_3, ctrl_4, ctrl_5, ctrl_6, ctrl_7 } = useMagicKeys();
+const { ctrl_1, ctrl_2, ctrl_3, ctrl_4, ctrl_5, ctrl_6, ctrl_7, ctrl_8 } = useMagicKeys();
 
 whenever(ctrl_1!, () => (toolbarStore.currentTool = "pointer"));
 whenever(ctrl_2!, () => (toolbarStore.snapActive = !toolbarStore.snapActive));
@@ -113,6 +137,7 @@ whenever(ctrl_4!, () => (toolbarStore.currentTool = "markdownComment"));
 whenever(ctrl_5!, () => (toolbarStore.currentTool = "frameComment"));
 whenever(ctrl_6!, () => (toolbarStore.currentTool = "freehandComment"));
 whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
+whenever(ctrl_8!, () => (toolbarStore.currentTool = "boxSelect"));
 
 const toggleVisibilityButtonTitle = computed(() => {
     if (toolbarVisible.value) {
@@ -121,6 +146,8 @@ const toggleVisibilityButtonTitle = computed(() => {
         return "show Toolbar";
     }
 });
+
+const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateSelection } = useSelectionOperations();
 </script>
 
 <template>
@@ -204,6 +231,17 @@ const toggleVisibilityButtonTitle = computed(() => {
                         <FontAwesomeIcon icon="fa-eraser" size="lg" />
                     </BButton>
                 </BButtonGroup>
+
+                <BButton
+                    v-b-tooltip.hover.noninteractive.right
+                    title="Box Select (Ctrl + 8)"
+                    data-tool="box_select"
+                    :pressed="currentTool === 'boxSelect'"
+                    class="button"
+                    variant="outline-primary"
+                    @click="onClickBoxSelect">
+                    <BoxSelect />
+                </BButton>
             </template>
 
             <BButton
@@ -219,7 +257,8 @@ const toggleVisibilityButtonTitle = computed(() => {
         <div v-if="toolbarVisible" class="options">
             <div
                 v-if="
-                    toolbarStore.snapActive && !['freehandComment', 'freehandEraser'].includes(toolbarStore.currentTool)
+                    toolbarStore.snapActive &&
+                    !['freehandComment', 'freehandEraser', 'boxSelect'].includes(toolbarStore.currentTool)
                 "
                 class="option wide">
                 <label :for="snappingDistanceId" class="flex-label">
@@ -255,7 +294,9 @@ const toggleVisibilityButtonTitle = computed(() => {
                 </BButtonGroup>
             </div>
 
-            <div v-if="!['pointer', 'freehandEraser'].includes(toolbarStore.currentTool)" class="option buttons">
+            <div
+                v-if="!['pointer', 'freehandEraser', 'boxSelect'].includes(toolbarStore.currentTool)"
+                class="option buttons">
                 <ColorSelector
                     :color="commentOptions.color"
                     class="color-selector"
@@ -316,6 +357,45 @@ const toggleVisibilityButtonTitle = computed(() => {
                     Remove all
                 </BButton>
             </div>
+
+            <div v-if="currentTool === 'boxSelect'" class="option buttons">
+                <BButtonGroup>
+                    <BButton
+                        :pressed="toolbarStore.boxSelectMode === 'add'"
+                        class="button"
+                        data-option="select-mode-add"
+                        variant="outline-primary"
+                        title="add items to selection"
+                        @click="toolbarStore.boxSelectMode = 'add'">
+                        Add to selection
+                    </BButton>
+                    <BButton
+                        :pressed="toolbarStore.boxSelectMode === 'remove'"
+                        class="button"
+                        data-option="select-mode-remove"
+                        variant="outline-primary"
+                        title="remove items from selection"
+                        @click="toolbarStore.boxSelectMode = 'remove'">
+                        Remove from selection
+                    </BButton>
+                </BButtonGroup>
+            </div>
+        </div>
+
+        <div v-if="anySelected" class="selection-options">
+            <span>{{ selectedCountText }}</span>
+
+            <BButtonGroup>
+                <BButton class="button" title="clear selection" @click="deselectAll">
+                    Clear <FontAwesomeIcon icon="fa-times" />
+                </BButton>
+                <BButton class="button" title="duplicate selected" @click="duplicateSelection">
+                    Duplicate <FontAwesomeIcon icon="fa-clone" />
+                </BButton>
+                <BButton class="button" title="delete selected" @click="deleteSelection">
+                    Delete <FontAwesomeIcon icon="fa-trash" />
+                </BButton>
+            </BButtonGroup>
         </div>
     </div>
 </template>
@@ -330,6 +410,7 @@ const toggleVisibilityButtonTitle = computed(() => {
     z-index: 2000;
     pointer-events: none;
     display: flex;
+    width: 100%;
 
     .tools {
         display: flex;
@@ -417,6 +498,26 @@ const toggleVisibilityButtonTitle = computed(() => {
                     background-color: $brand-primary;
                 }
             }
+        }
+    }
+
+    .selection-options {
+        flex: 1;
+        pointer-events: none;
+        display: flex;
+        padding: 0.25rem;
+        gap: 0.25rem;
+        align-items: end;
+        flex-direction: column-reverse;
+        align-self: flex-start;
+
+        > * {
+            pointer-events: auto;
+        }
+
+        .button {
+            height: 2rem;
+            padding: 0 0.5rem;
         }
     }
 }

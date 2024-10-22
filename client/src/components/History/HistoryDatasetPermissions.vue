@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import axios from "axios";
 import { computed, ref } from "vue";
 
 import { initRefs, updateRefs, useCallbacks } from "@/composables/datasetPermissions";
-import { withPrefix } from "@/utils/redirect";
+
+import { getPermissions, getPermissionsUrl, setPermissions } from "./services";
 
 import DatasetPermissionsForm from "@/components/Dataset/DatasetPermissionsForm.vue";
 
@@ -24,7 +24,7 @@ const {
 } = initRefs();
 
 const inputsUrl = computed(() => {
-    return `/history/permissions?id=${props.historyId}`;
+    return getPermissionsUrl(props.historyId);
 });
 
 const title = "Change default dataset permissions for history";
@@ -48,11 +48,11 @@ async function change(value: unknown) {
         DATASET_MANAGE_PERMISSIONS: [managePermissionValue],
         DATASET_ACCESS: access,
     };
-    axios.put(withPrefix(inputsUrl.value), formValue).then(onSuccess).catch(onError);
+    setPermissions(props.historyId, formValue).then(onSuccess).catch(onError);
 }
 
 async function init() {
-    const { data } = await axios.get(withPrefix(inputsUrl.value));
+    const { data } = await getPermissions(props.historyId);
     updateRefs(data.inputs, managePermissionsOptions, accessPermissionsOptions, managePermissions, accessPermissions);
     loading.value = false;
 }

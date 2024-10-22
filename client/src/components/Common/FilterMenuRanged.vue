@@ -2,15 +2,9 @@
 import { BFormDatepicker, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { ValidFilter } from "@/utils/filtering";
+import { type ErrorType, type ValidFilter } from "@/utils/filtering";
 
 type FilterType = string | boolean | undefined;
-
-type ErrorType = {
-    index: string;
-    typeError: boolean;
-    msg: string;
-};
 
 interface Props {
     name: string;
@@ -20,6 +14,7 @@ interface Props {
     filters: {
         [k: string]: FilterType;
     };
+    disabled?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -49,11 +44,11 @@ function hasError(field: string) {
 
 function localPlaceholder(comp: "gt" | "lt") {
     if (comp == "gt") {
-        const field = isDateType.value ? "after" : "greater";
-        return `${props.filter.placeholder} ${field}`;
+        const field = isDateType.value ? "after" : "greater than";
+        return `${field} ${props.filter.placeholder}`;
     } else {
-        const field = isDateType.value ? "before" : "lower";
-        return `${props.filter.placeholder} ${field}`;
+        const field = isDateType.value ? "before" : "lower than";
+        return `${field} ${props.filter.placeholder}`;
     }
 }
 
@@ -99,11 +94,12 @@ watch(
                 size="sm"
                 :state="hasError(localNameGt) ? false : null"
                 :placeholder="localPlaceholder('gt')"
+                :disabled="props.disabled"
                 @keyup.enter="emit('on-enter')"
                 @keyup.esc="emit('on-esc')" />
 
             <BInputGroupAppend v-if="isDateType">
-                <BFormDatepicker v-model="localValueGt" reset-button button-only size="sm" />
+                <BFormDatepicker v-model="localValueGt" reset-button button-only size="sm" :disabled="props.disabled" />
             </BInputGroupAppend>
             <!--------------------------------------------------------------------->
 
@@ -115,11 +111,12 @@ watch(
                 size="sm"
                 :state="hasError(localNameLt) ? false : null"
                 :placeholder="localPlaceholder('lt')"
+                :disabled="props.disabled"
                 @keyup.enter="emit('on-enter')"
                 @keyup.esc="emit('on-esc')" />
 
             <BInputGroupAppend v-if="isDateType">
-                <BFormDatepicker v-model="localValueLt" reset-button button-only size="sm" />
+                <BFormDatepicker v-model="localValueLt" reset-button button-only size="sm" :disabled="props.disabled" />
             </BInputGroupAppend>
             <!--------------------------------------------------------------------->
         </BInputGroup>

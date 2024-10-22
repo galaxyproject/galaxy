@@ -4,6 +4,7 @@ from typing import Optional
 
 from typing_extensions import Unpack
 
+from galaxy.files import OptionalUserContext
 from . import (
     BaseFilesSource,
     FilesSourceOptions,
@@ -30,14 +31,22 @@ class Base64FilesSource(BaseFilesSource):
         self._props = props
 
     def _realize_to(
-        self, source_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+        self,
+        source_path: str,
+        native_path: str,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
     ):
         with open(native_path, "wb") as temp:
             temp.write(base64.b64decode(source_path[len("base64://") :]))
             temp.flush()
 
     def _write_from(
-        self, target_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+        self,
+        target_path: str,
+        native_path: str,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
     ):
         raise NotImplementedError()
 
@@ -47,7 +56,7 @@ class Base64FilesSource(BaseFilesSource):
         else:
             return 0
 
-    def _serialization_props(self, user_context=None):
+    def _serialization_props(self, user_context: OptionalUserContext = None):
         effective_props = {}
         for key, val in self._props.items():
             effective_props[key] = self._evaluate_prop(val, user_context=user_context)

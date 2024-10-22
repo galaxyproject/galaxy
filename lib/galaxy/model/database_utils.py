@@ -15,7 +15,7 @@ from sqlalchemy.engine.url import make_url
 from sqlalchemy.orm import object_session
 from sqlalchemy.sql.compiler import IdentifierPreparer
 from sqlalchemy.sql.expression import (
-    ClauseElement,
+    Executable,
     text,
 )
 
@@ -45,7 +45,7 @@ def create_database(db_url, database=None, encoding="utf8", template=None):
 
 @contextmanager
 def sqlalchemy_engine(url):
-    engine = create_engine(url, future=True)
+    engine = create_engine(url)
     try:
         yield engine
     finally:
@@ -163,7 +163,7 @@ def supports_skip_locked(engine: Engine) -> bool:
     return _statement_executed_without_error(stmt, engine)
 
 
-def _statement_executed_without_error(statement: ClauseElement, engine: Engine) -> bool:
+def _statement_executed_without_error(statement: Executable, engine: Engine) -> bool:
     # Execute statement against database, then issue a rollback.
     try:
         with engine.connect() as conn, conn.begin() as trans:
@@ -192,6 +192,6 @@ def ensure_object_added_to_session(object_to_add, *, object_in_session=None, ses
         session.add(object_to_add)
         return True
     if object_in_session and object_session(object_in_session):
-        object_session(object_in_session).add(object_to_add)
+        object_session(object_in_session).add(object_to_add)  # type:ignore[union-attr]
         return True
     return False

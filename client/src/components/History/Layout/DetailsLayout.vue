@@ -9,6 +9,9 @@ import { computed, ref } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import l from "@/utils/localization";
 
+import type { DetailsLayoutSummarized } from "./types";
+
+import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 library.add(faPen, faSave, faUndo);
@@ -19,6 +22,7 @@ interface Props {
     writeable?: boolean;
     annotation?: string;
     showAnnotation?: boolean;
+    summarized?: DetailsLayoutSummarized;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -27,6 +31,7 @@ const props = withDefaults(defineProps<Props>(), {
     writeable: true,
     annotation: undefined,
     showAnnotation: true,
+    summarized: undefined,
 });
 
 const emit = defineEmits(["save"]);
@@ -42,6 +47,20 @@ const localProps = ref<{ name: string; annotation: string | null; tags: string[]
     name: "",
     annotation: "",
     tags: [],
+});
+
+const detailsClass = computed(() => {
+    const classes: Record<string, boolean> = {
+        details: true,
+        "summarized-details": props.summarized && !editing.value,
+        "m-3": !props.summarized || editing.value,
+    };
+
+    if (props.summarized) {
+        classes[props.summarized] = true;
+    }
+
+    return classes;
 });
 
 const editButtonTitle = computed(() => {
@@ -87,7 +106,7 @@ function selectText() {
 </script>
 
 <template>
-    <section class="m-3 details" data-description="edit details">
+    <section :class="detailsClass" data-description="edit details">
         <BButton
             :disabled="isAnonymous || !writeable"
             class="edit-button ml-1 float-right"
@@ -103,9 +122,32 @@ function selectText() {
         <slot name="name" />
 
         <div v-if="!editing">
-            <div v-if="annotation" v-short="annotation" class="mt-2" data-description="annotation value" />
-
-            <StatelessTags v-if="tags" class="tags mt-2" :value="tags" :disabled="true" />
+            <div
+                v-if="annotation && !summarized"
+                v-short="annotation"
+                class="mt-2"
+                data-description="annotation value" />
+            <div
+                v-else-if="summarized"
+                :class="{ annotation: ['both', 'annotation'].includes(summarized), hidden: summarized === 'hidden' }">
+                <TextSummary
+                    v-if="annotation"
+                    :description="annotation"
+                    data-description="annotation value"
+                    one-line-summary
+                    no-expand />
+            </div>
+            <StatelessTags
+                v-if="tags"
+                :class="{
+                    'mt-2': !summarized,
+                    tags: ['both', 'tags'].includes(summarized),
+                    hidden: summarized === 'hidden',
+                }"
+                :value="tags"
+                disabled
+                :max-visible-tags="summarized ? 1 : 5" />
+            <slot v-if="summarized" name="update-time" />
         </div>
 
         <div v-else class="mt-3" data-description="edit form">
@@ -157,3 +199,23 @@ function selectText() {
         </div>
     </section>
 </template>
+
+<style lang="scss" scoped>
+.summarized-details {
+    margin-left: 0.5rem;
+    max-width: 15rem;
+
+    &.both {
+        min-height: 8.5em;
+    }
+    .tags {
+        min-height: 2rem;
+    }
+    .annotation {
+        min-height: 2rem;
+    }
+    .hidden {
+        display: none;
+    }
+}
+</style>

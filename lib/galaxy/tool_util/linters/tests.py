@@ -78,13 +78,17 @@ class TestsAssertsHasNQuant(Linter):
             ):
                 if a.tag not in ["has_n_lines", "has_n_columns"]:
                     continue
-                if not (set(a.attrib) & set(["n", "min", "max"])):
+                if not (set(a.attrib) & {"n", "min", "max"}):
                     lint_ctx.error(
                         f"Test {test_idx}: '{a.tag}' needs to specify 'n', 'min', or 'max'", linter=cls.name(), node=a
                     )
 
 
 class TestsAssertsHasSizeQuant(Linter):
+    """
+    has_size needs at least one of size (or value), min, max
+    """
+
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         tool_xml = getattr(tool_source, "xml_tree", None)
@@ -97,9 +101,34 @@ class TestsAssertsHasSizeQuant(Linter):
             ):
                 if a.tag != "has_size":
                     continue
-                if len(set(a.attrib) & set(["value", "min", "max"])) == 0:
+                if len(set(a.attrib) & {"value", "size", "min", "max"}) == 0:
                     lint_ctx.error(
-                        f"Test {test_idx}: '{a.tag}' needs to specify 'value', 'min', or 'max'",
+                        f"Test {test_idx}: '{a.tag}' needs to specify 'size', 'min', or 'max'",
+                        linter=cls.name(),
+                        node=a,
+                    )
+
+
+class TestsAssertsHasSizeOrValueQuant(Linter):
+    """
+    has_size should not have size and value
+    """
+
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        tests = tool_xml.findall("./tests/test")
+        for test_idx, test in enumerate(tests, start=1):
+            for a in test.xpath(
+                ".//*[self::assert_contents or self::assert_stdout or self::assert_stderr or self::assert_command]//*"
+            ):
+                if a.tag != "has_size":
+                    continue
+                if "value" in a.attrib and "size" in a.attrib:
+                    lint_ctx.error(
+                        f"Test {test_idx}: '{a.tag}' must not specify 'value' and 'size'",
                         linter=cls.name(),
                         node=a,
                     )
@@ -115,11 +144,11 @@ class TestsExpectNumOutputs(Linter):
         for test_idx, test in enumerate(tests, start=1):
             # check if expect_num_outputs is set if there are outputs with filters
             # (except for tests with expect_failure .. which can't have test outputs)
-            filter = tool_xml.find("./outputs//filter")
+            has_no_filter = (
+                tool_xml.find("./outputs/data/filter") is None and tool_xml.find("./outputs/collection/filter") is None
+            )
             if not (
-                filter is None
-                or "expect_num_outputs" in test.attrib
-                or asbool(test.attrib.get("expect_failure", False))
+                has_no_filter or "expect_num_outputs" in test.attrib or asbool(test.attrib.get("expect_failure", False))
             ):
                 lint_ctx.warn(
                     f"Test {test_idx}: should specify 'expect_num_outputs' if outputs have filters",
@@ -278,6 +307,8 @@ class TestsOutputCompareAttrib(Linter):
             "decompress": ["diff"],
             "delta": ["sim_size"],
             "delta_frac": ["sim_size"],
+            "metric": ["image_diff"],
+            "eps": ["image_diff"],
         }
         for test_idx, test in enumerate(tests, start=1):
             for output in test.xpath(".//*[self::output or self::element or self::discovered_dataset]"):
@@ -491,7 +522,7 @@ class TestsValid(Linter):
 def _iter_tests(tests: List["Element"], valid: bool) -> Iterator[Tuple[int, "Element"]]:
     for test_idx, test in enumerate(tests, start=1):
         is_valid = False
-        is_valid |= bool(set(test.attrib) & set(("expect_failure", "expect_exit_code", "expect_num_outputs")))
+        is_valid |= bool(set(test.attrib) & {"expect_failure", "expect_exit_code", "expect_num_outputs"})
         for ta in ("assert_stdout", "assert_stderr", "assert_command"):
             if test.find(ta) is not None:
                 is_valid = True

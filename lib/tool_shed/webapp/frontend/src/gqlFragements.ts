@@ -25,3 +25,14 @@ export const UpdateFragment = graphql(/* GraphQL */ `
         updateTime
     }
 `)
+
+export const CreateFragment = graphql(/* GraphQL */ `
+    fragment RepositoryCreationItem on RelayRepository {
+        encodedId
+        name
+        user {
+            username
+        }
+        createTime
+    }
+`)

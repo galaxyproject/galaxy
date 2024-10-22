@@ -2,6 +2,7 @@ import bz2
 import gzip
 import io
 import logging
+import lzma
 import os
 import shutil
 import tarfile
@@ -29,6 +30,7 @@ from galaxy.util.path import (
 from .checkers import (
     is_bz2,
     is_gzip,
+    is_xz,
 )
 
 try:
@@ -40,7 +42,7 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 FileObjTypeStr = Union[IO[str], io.TextIOWrapper]
-FileObjTypeBytes = Union[gzip.GzipFile, bz2.BZ2File, IO[bytes]]
+FileObjTypeBytes = Union[gzip.GzipFile, bz2.BZ2File, lzma.LZMAFile, IO[bytes]]
 FileObjType = Union[FileObjTypeStr, FileObjTypeBytes]
 
 
@@ -72,7 +74,7 @@ def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[Lis
     :param filename: path to file that should be opened
     :param mode: mode to pass to opener
     :param compressed_formats: list of allowed compressed file formats among
-      'bz2', 'gzip' and 'zip'. If left to None, all 3 formats are allowed
+      'bz2', 'gzip', 'xz' and 'zip'. If left to None, all 3 formats are allowed
     """
     return get_fileobj_raw(filename, mode, compressed_formats)[1]
 
@@ -103,7 +105,7 @@ def get_fileobj_raw(
     filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None
 ) -> Tuple[Optional[str], FileObjType]:
     if compressed_formats is None:
-        compressed_formats = ["bz2", "gzip", "zip"]
+        compressed_formats = ["bz2", "gzip", "xz", "zip"]
     # Remove 't' from mode, which may cause an error for compressed files
     mode = mode.replace("t", "")
     # 'U' mode is deprecated, we open in 'r'.
@@ -111,12 +113,16 @@ def get_fileobj_raw(
         mode = "r"
     compressed_format = None
     if "gzip" in compressed_formats and is_gzip(filename):
-        fh: Union[gzip.GzipFile, bz2.BZ2File, IO[bytes]] = gzip.GzipFile(filename, mode)
+        fh: Union[gzip.GzipFile, bz2.BZ2File, lzma.LZMAFile, IO[bytes]] = gzip.GzipFile(filename, mode)
         compressed_format = "gzip"
     elif "bz2" in compressed_formats and is_bz2(filename):
         mode = cast(Literal["a", "ab", "r", "rb", "w", "wb", "x", "xb"], mode)
         fh = bz2.BZ2File(filename, mode)
         compressed_format = "bz2"
+    elif "xz" in compressed_formats and is_xz(filename):
+        mode = cast(Literal["a", "ab", "r", "rb", "w", "wb", "x", "xb"], mode)
+        fh = lzma.LZMAFile(filename, mode)
+        compressed_format = "xz"
     elif "zip" in compressed_formats and zipfile.is_zipfile(filename):
         # Return fileobj for the first file in a zip file.
         # 'b' is not allowed in the ZipFile mode argument
@@ -182,6 +188,8 @@ class CompressedFile:
             self.file_type = "tar"
         elif zipfile.is_zipfile(file_path) and not file_path_str.endswith(".jar"):
             self.file_type = "zip"
+        else:
+            raise Exception("File must be valid zip or tar file.")
         self.file_name = os.path.splitext(os.path.basename(file_path))[0]
         if self.file_name.endswith(".tar"):
             self.file_name = os.path.splitext(self.file_name)[0]

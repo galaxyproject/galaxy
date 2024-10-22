@@ -4,11 +4,9 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
 
 import NotificationsManagement from "./NotificationsManagement.vue";
-
-jest.mock("@/api/schema");
 
 const localVue = getLocalVue(true);
 
@@ -17,11 +15,17 @@ const selectors = {
     createBroadcastButton: "#create-broadcast-button",
 } as const;
 
+const { server, http } = useServerMock();
+
 async function mountNotificationsManagement(config: any = {}) {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
-    mockFetcher.path("/api/configuration").method("get").mock({ data: config });
+    server.use(
+        http.get("/api/configuration", ({ response }) => {
+            return response(200).json(config);
+        })
+    );
 
     const wrapper = shallowMount(NotificationsManagement as object, {
         localVue,

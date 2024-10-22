@@ -71,7 +71,8 @@ class ToolsService(ServiceBase):
                 with tempfile.NamedTemporaryFile(
                     dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
                 ) as dest:
-                    shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
+                    shutil.copyfileobj(upload_file.file, dest)
+                    util.umask_fix_perms(dest.name, trans.app.config.umask, 0o0666)
                 upload_file.file.close()
                 files_payload[f"files_{i}|file_data"] = FilesPayload(
                     filename=upload_file.filename, local_filename=dest.name
@@ -280,6 +281,8 @@ class ToolsService(ServiceBase):
     def _patch_library_dataset(self, trans: ProvidesHistoryContext, v, target_history):
         if isinstance(v, dict) and "id" in v and v.get("src") == "ldda":
             ldda = trans.sa_session.get(LibraryDatasetDatasetAssociation, self.decode_id(v["id"]))
+            if not ldda:
+                raise exceptions.ObjectNotFound("Could not find library dataset dataset association.")
             if trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                 trans.get_current_user_roles(), ldda.dataset
             ):

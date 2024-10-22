@@ -10,19 +10,39 @@ import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { Activities } from "./activitySetup";
 
 export interface Activity {
+    // determine wether an anonymous user can access this activity
+    anonymous: boolean;
+    // description of the activity
     description: string;
+    // unique identifier
     id: string;
+    // icon to be displayed in activity bar
     icon: string;
+    // indicate if this activity can be modified and/or deleted
     mutable: boolean;
+    // indicate wether this activity can be disabled by the user
     optional: boolean;
+    // specifiy wether this activity utilizes the side panel
+    panel: boolean;
+    // title to be displayed in the activity bar
     title: string;
+    // route to be executed upon selecting the activity
     to: string | null;
+    // tooltip to be displayed when hovering above the icon
     tooltip: string;
+    // indicate wether the activity should be visible by default
     visible: boolean;
 }
 
 export const useActivityStore = defineStore("activityStore", () => {
     const activities: Ref<Array<Activity>> = useUserLocalStorage("activity-store-activities", []);
+
+    /**
+     * Restores the default activity bar items
+     */
+    function restore() {
+        activities.value = Activities.slice();
+    }
 
     /**
      * The set of built-in activities is defined in activitySetup.js.
@@ -87,6 +107,7 @@ export const useActivityStore = defineStore("activityStore", () => {
         getAll,
         remove,
         setAll,
+        restore,
         sync,
     };
 });

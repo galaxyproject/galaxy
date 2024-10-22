@@ -26,6 +26,7 @@ class HistoryIndexQueryPayload(Model):
     show_own: Optional[bool] = None
     show_published: Optional[bool] = None
     show_shared: Optional[bool] = None
+    show_archived: Optional[bool] = None
     sort_by: HistorySortByEnum = Field("update_time", title="Sort By", description="Sort by this attribute.")
     sort_desc: Optional[bool] = Field(default=True, title="Sort descending", description="Sort in descending order.")
     search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")

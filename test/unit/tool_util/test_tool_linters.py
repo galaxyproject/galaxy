@@ -1,12 +1,13 @@
+import inspect
 import os
 import tempfile
 
 import pytest
 
+import galaxy.tool_util.linters
 from galaxy.tool_util.lint import (
     lint_tool_source_with,
     lint_tool_source_with_modules,
-    lint_xml_with,
     LintContext,
     Linter,
     XMLLintMessageLine,
@@ -18,7 +19,7 @@ from galaxy.tool_util.linters import (
     general,
     help,
     inputs,
-    outputs,
+    output,
     stdio,
     tests,
     xml_order,
@@ -28,8 +29,9 @@ from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import (
     ElementTree,
-    parse_xml,
+    submodules,
 )
+from galaxy.util.unittest_utils import skip_if_site_down
 from galaxy.util.xml_macros import load_with_references
 
 # TODO tests tool xml for general linter
@@ -115,6 +117,28 @@ GENERAL_VALID = """
 
 GENERAL_VALID_NEW_PROFILE_FMT = """
 <tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
+</tool>
+"""
+
+GENERAL_VALID_BIOTOOLS = """
+<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
+    <xrefs>
+        <xref type="bio.tools">bwa</xref>
+        <xref type="bio.tools">johnscoolbowtie</xref>
+    </xrefs>
+</tool>
+"""
+
+GENERAL_VALID_EDAM = """
+<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
+    <edam_topics>
+        <edam_topic>topic_2269</edam_topic>
+        <edam_topic>topic_000</edam_topic>
+    </edam_topics>
+    <edam_operations>
+        <edam_operation>operation_3434</edam_operation>
+        <edam_operation>operation_000</edam_operation>
+    </edam_operations>
 </tool>
 """
 
@@ -792,6 +816,7 @@ ASSERTS = """
                 <invalid/>
             </assert_stderr>
             <assert_command>
+                <has_size value="500k" size="50"/>
                 <has_text invalid_attrib="blah"/>
             </assert_command>
             <output name="out_archive">
@@ -934,12 +959,14 @@ XML_ORDER = """
 """
 
 TOOL_WITH_COMMENTS = """
-<tool>
+<tool id="id" name="name" version="1" profile="22.01">
     <stdio>
-    <!-- This is a comment -->
+        <!-- This is a comment -->
+        <regex match="low space" source="both" level="warning" description="Low space on device" />
     </stdio>
     <outputs>
-    <!-- This is a comment -->
+        <!-- This is a comment -->
+        <data format="pdf" name="out_file1" />
     </outputs>
 </tool>
 """
@@ -967,17 +994,8 @@ def get_xml_tool_source(xml_string: str) -> XmlToolSource:
     return XmlToolSource(get_xml_tree(xml_string))
 
 
-def get_tool_xml_exact(xml_string: str):
-    """Returns the tool XML as it is, without stripping comments or anything else."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix="tool.xml") as tmp:
-        tmp.write(xml_string)
-        tmp.flush()
-        tool_path = tmp.name
-        return parse_xml(tool_path, strip_whitespace=False, remove_comments=False)
-
-
 def run_lint_module(lint_ctx, lint_module, lint_target):
-    lint_tool_source_with_modules(lint_ctx, lint_target, list(set([lint_module, xsd])))
+    lint_tool_source_with_modules(lint_ctx, lint_target, list({lint_module, xsd}))
 
 
 def run_lint(lint_ctx, lint_func, lint_target):
@@ -1122,6 +1140,39 @@ def test_general_valid_new_profile_fmt(lint_ctx):
     assert len(lint_ctx.valid_messages) == 4
     assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
+
+
+@skip_if_site_down("https://bio.tools/")
+def test_general_valid_biotools(lint_ctx):
+    tool_source = get_xml_tool_source(GENERAL_VALID_BIOTOOLS)
+    run_lint_module(lint_ctx, general, tool_source)
+    assert "No entry johnscoolbowtie in bio.tools." in lint_ctx.warn_messages
+    assert not lint_ctx.info_messages
+    assert len(lint_ctx.valid_messages) == 4
+    assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.error_messages
+
+
+def test_general_text_spaces_comments(lint_ctx):
+    tool_source = get_xml_tool_source(TOOL_WITH_COMMENTS)
+    run_lint_module(lint_ctx, general, tool_source)
+    assert not lint_ctx.info_messages
+    assert len(lint_ctx.valid_messages) == 4
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_general_valid_edam(lint_ctx):
+    tool_source = get_xml_tool_source(GENERAL_VALID_EDAM)
+    run_lint_module(lint_ctx, general, tool_source)
+    assert "No entry 'operation_000' in EDAM." in lint_ctx.warn_messages
+    assert "No entry 'topic_000' in EDAM." in lint_ctx.warn_messages
+    assert not lint_ctx.info_messages
+    assert len(lint_ctx.valid_messages) == 4
+    assert len(lint_ctx.warn_messages) == 2
+    # accept 2 xsd errors due to malformed topic/operation ID
+    # which should make sure that the id never becomes valid
+    assert len(lint_ctx.error_messages) == 2
 
 
 def test_help_multiple(lint_ctx):
@@ -1594,7 +1645,7 @@ def test_inputs_repeats(lint_ctx):
 
 def test_outputs_missing(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_MISSING)
-    run_lint_module(lint_ctx, outputs, tool_source)
+    run_lint_module(lint_ctx, output, tool_source)
     assert "Tool contains no outputs section, most tools should produce outputs." in lint_ctx.warn_messages
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
@@ -1604,7 +1655,7 @@ def test_outputs_missing(lint_ctx):
 
 def test_outputs_multiple(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_MULTIPLE)
-    run_lint_module(lint_ctx, outputs, tool_source)
+    run_lint_module(lint_ctx, output, tool_source)
     assert "0 outputs found." in lint_ctx.info_messages
     assert "Invalid XML: Element 'outputs': This element is not expected." in lint_ctx.error_messages
     assert len(lint_ctx.info_messages) == 1
@@ -1621,7 +1672,7 @@ def test_outputs_unknown_tag(lint_ctx):
     probably be avoided.
     """
     tool_source = get_xml_tool_source(OUTPUTS_UNKNOWN_TAG)
-    lint_tool_source_with_modules(lint_ctx, tool_source, [outputs, xsd])
+    lint_tool_source_with_modules(lint_ctx, tool_source, [output, xsd])
     assert "0 outputs found." in lint_ctx.info_messages
     assert "Avoid the use of 'output' and replace by 'data' or 'collection'" in lint_ctx.warn_messages
     assert len(lint_ctx.info_messages) == 1
@@ -1632,7 +1683,7 @@ def test_outputs_unknown_tag(lint_ctx):
 
 def test_outputs_unnamed_invalid_name(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_UNNAMED_INVALID_NAME)
-    run_lint_module(lint_ctx, outputs, tool_source)
+    run_lint_module(lint_ctx, output, tool_source)
     assert "3 outputs found." in lint_ctx.info_messages
     assert "Invalid XML: Element 'data': The attribute 'name' is required but missing." in lint_ctx.error_messages
     assert "Invalid XML: Element 'collection': The attribute 'name' is required but missing." in lint_ctx.error_messages
@@ -1648,7 +1699,7 @@ def test_outputs_unnamed_invalid_name(lint_ctx):
 
 def test_outputs_format_input_legacy(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_FORMAT_INPUT_LEGACY)
-    run_lint_module(lint_ctx, outputs, tool_source)
+    run_lint_module(lint_ctx, output, tool_source)
     assert "1 outputs found." in lint_ctx.info_messages
     assert "Using format='input' on data is deprecated. Use the format_source attribute." in lint_ctx.warn_messages
     assert len(lint_ctx.info_messages) == 1
@@ -1659,7 +1710,7 @@ def test_outputs_format_input_legacy(lint_ctx):
 
 def test_outputs_format_input(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_FORMAT_INPUT)
-    run_lint_module(lint_ctx, outputs, tool_source)
+    run_lint_module(lint_ctx, output, tool_source)
     assert "1 outputs found." in lint_ctx.info_messages
     assert "Using format='input' on data is deprecated. Use the format_source attribute." in lint_ctx.error_messages
     assert len(lint_ctx.info_messages) == 1
@@ -1670,7 +1721,7 @@ def test_outputs_format_input(lint_ctx):
 
 def test_outputs_collection_format_source(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_COLLECTION_FORMAT_SOURCE)
-    run_lint_module(lint_ctx, outputs, tool_source)
+    run_lint_module(lint_ctx, output, tool_source)
     assert "Tool data output 'reverse' should use either format_source or format/ext" in lint_ctx.warn_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -1680,7 +1731,7 @@ def test_outputs_collection_format_source(lint_ctx):
 
 def test_outputs_format_action(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_FORMAT_ACTION)
-    run_lint_module(lint_ctx, outputs, tool_source)
+    run_lint_module(lint_ctx, output, tool_source)
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
@@ -1689,7 +1740,7 @@ def test_outputs_format_action(lint_ctx):
 
 def test_outputs_discover_tool_provided_metadata(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA)
-    run_lint_module(lint_ctx, outputs, tool_source)
+    run_lint_module(lint_ctx, output, tool_source)
     assert "1 outputs found." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -1700,7 +1751,7 @@ def test_outputs_discover_tool_provided_metadata(lint_ctx):
 def test_outputs_duplicated_name_label(lint_ctx):
     """ """
     tool_source = get_xml_tool_source(OUTPUTS_DUPLICATED_NAME_LABEL)
-    run_lint_module(lint_ctx, outputs, tool_source)
+    run_lint_module(lint_ctx, output, tool_source)
     assert "4 outputs found." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -1886,11 +1937,12 @@ def test_tests_asserts(lint_ctx):
         "Invalid XML: Element 'not_has_text', attribute 'invalid_attrib_also_checked_in_nested_asserts': The attribute 'invalid_attrib_also_checked_in_nested_asserts' is not allowed."
         in lint_ctx.error_messages
     )
-    assert "Test 1: 'has_size' needs to specify 'value', 'min', or 'max'" in lint_ctx.error_messages
+    assert "Test 1: 'has_size' needs to specify 'size', 'min', or 'max'" in lint_ctx.error_messages
+    assert "Test 1: 'has_size' must not specify 'value' and 'size'" in lint_ctx.error_messages
     assert "Test 1: 'has_n_columns' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
     assert "Test 1: 'has_n_lines' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
     assert not lint_ctx.warn_messages
-    assert len(lint_ctx.error_messages) == 8
+    assert len(lint_ctx.error_messages) == 9
 
 
 def test_tests_output_type_mismatch(lint_ctx):
@@ -2153,17 +2205,34 @@ def test_linting_cwl_tool(lint_ctx):
     assert not lint_ctx.error_messages
 
 
-def test_xml_comments_are_ignored(lint_ctx: LintContext):
-    tool_xml = get_tool_xml_exact(TOOL_WITH_COMMENTS)
-    lint_xml_with(lint_ctx, tool_xml)
-    for lint_message in lint_ctx.message_list:
-        assert "Comment" not in lint_message.message
+def test_skip_by_name(lint_ctx):
+    # add a linter class name to the skip list
+    lint_ctx.skip_types = ["CitationsMissing"]
+
+    tool_source = get_xml_tool_source(CITATIONS_ABSENT)
+    run_lint_module(lint_ctx, citations, tool_source)
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.info_messages
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.error_messages
+
+
+def test_skip_by_module(lint_ctx):
+    # add a module name to the skip list -> all linters in this module are skipped
+    lint_ctx.skip_types = ["citations"]
+
+    tool_source = get_xml_tool_source(CITATIONS_ABSENT)
+    run_lint_module(lint_ctx, citations, tool_source)
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.info_messages
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.error_messages
 
 
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 134
+    assert len(linter_names) == 135
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [
@@ -2180,3 +2249,45 @@ def test_list_linters():
         "XSD",
     ]:
         assert len([x for x in linter_names if x.startswith(prefix)])
+
+
+def test_linter_module_list():
+    linter_modules = submodules.import_submodules(galaxy.tool_util.linters)
+    linter_module_names = [m.__name__.split(".")[-1] for m in linter_modules]
+    linter_module_names = [n for n in linter_module_names if not n.startswith("_")]
+    assert len(linter_module_names) >= 11
+
+    # until 23.2 the linters were implemented as functions lint_xyz contained in a module named xyz
+    # with 24.0 the functions were split in multiple classes (1 per linter message)
+    # in order to keep the skip functionality of lint contexts working (which is used eg in planemo)
+    # with the old names, we now also check for module name if a linter should be skipped
+    # therefore we test here that the module names are not changed
+    # the keys of the following dict represent the linter names before the switch and the values give
+    # the number of linter classes when we switched
+    # so adding new functionality to a linter module is fine. But splitting one or removing functionality
+    # should raise an error here to point to the possible consequences of renaming
+    old_linters = {
+        "citations": 4,
+        "command": 5,
+        "cwl": 9,
+        "general": 17,
+        "help": 6,
+        "inputs": 52,
+        "output": 11,
+        "stdio": 3,
+        "tests": 21,
+        "xml_order": 1,
+    }
+    assert len(set(linter_module_names).intersection(set(old_linters.keys()))) == len(old_linters.keys())
+
+    for module in linter_modules:
+        module_name = module.__name__.split(".")[-1]
+        if module_name not in old_linters:
+            continue
+        linter_cnt = 0
+        for name, value in inspect.getmembers(module):
+            if callable(value) and name.startswith("lint_"):
+                continue
+            elif inspect.isclass(value) and issubclass(value, Linter) and not inspect.isabstract(value):
+                linter_cnt += 1
+        assert linter_cnt >= old_linters[module_name]

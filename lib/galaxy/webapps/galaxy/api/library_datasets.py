@@ -171,7 +171,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        return self.ldda_manager.serialize_dataset_association_roles(trans, library_dataset)
+        return self.ldda_manager.serialize_dataset_association_roles(library_dataset)
 
     @expose_api
     def update(self, trans, encoded_dataset_id, payload=None, **kwd):
@@ -199,7 +199,8 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         :rtype:     dictionary
         """
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
-        updated = self.ld_manager.update(trans, library_dataset, payload)
+        self.ld_manager.check_modifiable(trans, library_dataset)
+        updated = self.ld_manager.update(library_dataset, payload, trans=trans)
         serialized = self.ld_manager.serialize(trans, updated)
         return serialized
 
@@ -486,9 +487,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                     os.path.realpath(path),
                 )
                 raise exceptions.RequestParameterInvalidException("The given path is invalid.")
-            if trans.app.config.user_library_import_check_permissions and not full_path_permission_for_user(
-                full_dir, path, username
-            ):
+            if username is not None and not full_path_permission_for_user(full_dir, path, username):
                 log.error(
                     "User attempted to import a path that resolves to a path outside of their import dir: "
                     "%s -> %s and cannot be read by them.",
@@ -501,9 +500,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 path, allowlist=[full_dir] + trans.app.config.user_library_import_symlink_allowlist, username=username
             ):
                 # the path is a dir and contains files that symlink outside the user dir
-                error = "User attempted to import a path that resolves to a path outside of their import dir: {} -> {}".format(
-                    path, os.path.realpath(path)
-                )
+                error = f"User attempted to import a path that resolves to a path outside of their import dir: {path} -> {os.path.realpath(path)}"
                 if trans.app.config.user_library_import_check_permissions:
                     error += " or is not readable for them."
                 log.error(error)

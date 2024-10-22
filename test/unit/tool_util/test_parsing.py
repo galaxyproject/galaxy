@@ -3,9 +3,22 @@ import os.path
 import shutil
 import tempfile
 from math import isinf
-from typing import Optional
+from typing import (
+    cast,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 from galaxy.tool_util.parser.factory import get_tool_source
+from galaxy.tool_util.parser.output_models import (
+    from_tool_source,
+    ToolOutput,
+    ToolOutputCollection,
+    ToolOutputDataset,
+)
+from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.util import galaxy_directory
 from galaxy.util.unittest import TestCase
 
@@ -36,6 +49,7 @@ TOOL_XML_1 = """
         <resource type="gpu_memory_min">4042</resource>
         <resource type="cuda_device_count_min">1</resource>
         <resource type="cuda_device_count_max">2</resource>
+        <resource type="shm_size">67108864</resource>
     </requirements>
     <outputs>
         <data name="out1" format="bam" from_work_dir="out1.bam" />
@@ -140,6 +154,8 @@ requirements:
     cuda_device_count_min: 1
   - type: resource
     cuda_device_count_max: 2
+  - type: resource
+    shm_size: 67108864
 containers:
   - type: docker
     identifier: "awesome/bowtie"
@@ -245,17 +261,26 @@ class BaseLoaderTestCase(TestCase):
     def _tool_source(self):
         return self._get_tool_source()
 
+    @property
+    def _output_models(self) -> List[ToolOutput]:
+        return from_tool_source(self._tool_source)
+
     def _get_tool_source(self, source_file_name=None, source_contents=None, macro_contents=None):
         if source_file_name is None:
-            source_file_name = self.source_file_name
+            source_file_name = self._get_source_file_name()
         if source_contents is None:
             source_contents = self.source_contents
+
         return get_test_tool_source(
             source_file_name,
             source_contents,
             macro_contents,
             self.temp_directory,
         )
+
+    def _get_source_file_name(self) -> str:
+        assert self.source_file_name
+        return self.source_file_name
 
 
 class TestXmlExpressionLoader(BaseLoaderTestCase):
@@ -331,6 +356,7 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert resource_requirements[3].resource_type == "gpu_memory_min"
         assert resource_requirements[4].resource_type == "cuda_device_count_min"
         assert resource_requirements[5].resource_type == "cuda_device_count_max"
+        assert resource_requirements[6].resource_type == "shm_size"
         assert not resource_requirements[0].runtime_required
 
     def test_outputs(self):
@@ -346,7 +372,7 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert isinf(exit[0].range_end)
 
     def test_help(self):
-        help_text = self._tool_source.parse_help()
+        help_text = self._tool_source.parse_help().content
         assert help_text.strip() == "This is HELP TEXT1!!!"
 
     def test_tests(self):
@@ -378,6 +404,16 @@ class TestXmlLoader(BaseLoaderTestCase):
         attributes1 = output2["attributes"]
         assert attributes1["compare"] == "sim_size"
         assert attributes1["lines_diff"] == 4
+
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "out1"
+        assert not output_model.hidden
+        assert output_model.label is None
+        output_dataset_model = assert_output_model_of_type(output_model, ToolOutputDataset)
+        assert output_dataset_model.metadata_source is None
 
     def test_xrefs(self):
         xrefs = self._tool_source.parse_xrefs()
@@ -506,7 +542,7 @@ class TestYamlLoader(BaseLoaderTestCase):
             "resolve_dependencies": False,
             "shell": "/bin/sh",
         }
-        assert len(resource_requirements) == 6
+        assert len(resource_requirements) == 7
         assert resource_requirements[0].to_dict() == {"resource_type": "cores_min", "value_or_expression": 1}
         assert resource_requirements[1].to_dict() == {"resource_type": "cuda_version_min", "value_or_expression": 10.2}
         assert resource_requirements[2].to_dict() == {
@@ -521,6 +557,10 @@ class TestYamlLoader(BaseLoaderTestCase):
         assert resource_requirements[5].to_dict() == {
             "resource_type": "cuda_device_count_max",
             "value_or_expression": 2,
+        }
+        assert resource_requirements[6].to_dict() == {
+            "resource_type": "shm_size",
+            "value_or_expression": 67108864,
         }
 
     def test_outputs(self):
@@ -539,7 +579,7 @@ class TestYamlLoader(BaseLoaderTestCase):
         assert isinf(exit[1].range_end)
 
     def test_help(self):
-        help_text = self._tool_source.parse_help()
+        help_text = self._tool_source.parse_help().content
         assert help_text.strip() == "This is HELP TEXT2!!!"
 
     def test_inputs(self):
@@ -653,6 +693,17 @@ class TestApplyRulesToolLoader(BaseLoaderTestCase):
         assert len(outputs) == 1
         assert len(output_collections) == 1
 
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "output"
+        assert not output_model.hidden
+        assert output_model.label == "${input.name} (re-organized)"
+        output_collection_model = assert_output_model_of_type(output_model, ToolOutputCollection)
+        structure = output_collection_model.structure
+        assert structure.collection_type_from_rules == "rules"
+
 
 class TestBuildListToolLoader(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/build_list.xml")
@@ -664,9 +715,16 @@ class TestBuildListToolLoader(BaseLoaderTestCase):
         assert tool_module[1] == "BuildListCollectionTool"
 
 
-class TestExpressionTestToolLoader(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/expression_null_handling_boolean.xml")
-    source_contents = None
+class FunctionalTestToolTestCase(BaseLoaderTestCase):
+    test_path: str
+    source_contents: None
+
+    def _get_source_file_name(self) -> str:
+        return functional_test_tool_path(self.test_path)
+
+
+class TestExpressionTestToolLoader(FunctionalTestToolTestCase):
+    test_path = "expression_null_handling_boolean.xml"
 
     def test_test(self):
         test_dicts = self._tool_source.parse_tests_to_dict()["tests"]
@@ -692,10 +750,17 @@ class TestExpressionTestToolLoader(BaseLoaderTestCase):
         assert "object" in output0["attributes"]
         assert output0["attributes"]["object"] is None
 
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "bool_out"
+        assert not output_model.hidden
+        assert output_model.label is None
 
-class TestDefaultDataTestToolLoader(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat_default.xml")
-    source_contents = None
+
+class TestDefaultDataTestToolLoader(FunctionalTestToolTestCase):
+    test_path = "for_workflows/cat_default.xml"
 
     def test_input_parsing(self):
         input_pages = self._tool_source.parse_input_pages()
@@ -711,9 +776,8 @@ class TestDefaultDataTestToolLoader(BaseLoaderTestCase):
         assert default_dict["location"] == "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"
 
 
-class TestDefaultCollectionDataTestToolLoader(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_paired_default.xml")
-    source_contents = None
+class TestDefaultCollectionDataTestToolLoader(FunctionalTestToolTestCase):
+    test_path = "collection_paired_default.xml"
 
     def test_input_parsing(self):
         input_pages = self._tool_source.parse_input_pages()
@@ -737,9 +801,8 @@ class TestDefaultCollectionDataTestToolLoader(BaseLoaderTestCase):
         assert element1["location"] == "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta"
 
 
-class TestDefaultNestedCollectionDataTestToolLoader(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_nested_default.xml")
-    source_contents = None
+class TestDefaultNestedCollectionDataTestToolLoader(FunctionalTestToolTestCase):
+    test_path = "collection_nested_default.xml"
 
     def test_input_parsing(self):
         input_pages = self._tool_source.parse_input_pages()
@@ -766,9 +829,8 @@ class TestDefaultNestedCollectionDataTestToolLoader(BaseLoaderTestCase):
         assert elements01["identifier"] == "reverse"
 
 
-class TestExpressionOutputDataToolLoader(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/expression_pick_larger_file.xml")
-    source_contents = None
+class TestExpressionOutputDataToolLoader(FunctionalTestToolTestCase):
+    test_path = "expression_pick_larger_file.xml"
 
     def test_output_parsing(self):
         outputs, _ = self._tool_source.parse_outputs(None)
@@ -800,9 +862,8 @@ class TestSpecialToolLoader(BaseLoaderTestCase):
         assert action[1] == "ExportHistoryToolAction"
 
 
-class TestCollection(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_two_paired.xml")
-    source_contents = None
+class TestCollection(FunctionalTestToolTestCase):
+    test_path = "collection_two_paired.xml"
 
     def test_tests(self):
         tests_dict = self._tool_source.parse_tests_to_dict()
@@ -814,27 +875,24 @@ class TestCollection(BaseLoaderTestCase):
         assert len(output_collections) == 0
 
 
-class TestCollectionOutputXml(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_creates_pair.xml")
-    source_contents = None
+class TestCollectionOutputXml(FunctionalTestToolTestCase):
+    test_path = "collection_creates_pair.xml"
 
     def test_tests(self):
         outputs, output_collections = self._tool_source.parse_outputs(None)
         assert len(output_collections) == 1
 
 
-class TestCollectionOutputYaml(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_creates_pair_y.yml")
-    source_contents = None
+class TestCollectionOutputYaml(FunctionalTestToolTestCase):
+    test_path = "collection_creates_pair_y.yml"
 
     def test_tests(self):
         outputs, output_collections = self._tool_source.parse_outputs(None)
         assert len(output_collections) == 1
 
 
-class TestEnvironmentVariables(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/environment_variables.xml")
-    source_contents = None
+class TestEnvironmentVariables(FunctionalTestToolTestCase):
+    test_path = "environment_variables.xml"
 
     def test_tests(self):
         tests_dict = self._tool_source.parse_tests_to_dict()
@@ -842,9 +900,8 @@ class TestEnvironmentVariables(BaseLoaderTestCase):
         assert len(tests) == 1
 
 
-class TestExpectations(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/detect_errors.xml")
-    source_contents = None
+class TestExpectations(FunctionalTestToolTestCase):
+    test_path = "detect_errors.xml"
 
     def test_tests(self):
         tests_dict = self._tool_source.parse_tests_to_dict()
@@ -855,9 +912,8 @@ class TestExpectations(BaseLoaderTestCase):
         assert len(test_0["stdout"]) == 2
 
 
-class TestExpectationsCommandVersion(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/job_properties.xml")
-    source_contents = None
+class TestExpectationsCommandVersion(FunctionalTestToolTestCase):
+    test_path = "job_properties.xml"
 
     def test_tests(self):
         tests_dict = self._tool_source.parse_tests_to_dict()
@@ -867,13 +923,52 @@ class TestExpectationsCommandVersion(BaseLoaderTestCase):
         assert len(test_0["command_version"]) == 1
 
 
-class TestQcStdio(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/qc_stdout.xml")
-    source_contents = None
+class TestQcStdio(FunctionalTestToolTestCase):
+    test_path = "qc_stdout.xml"
 
     def test_tests(self):
         exit, regexes = self._tool_source.parse_stdio()
         assert len(exit) == 2
-        assert len(regexes) == 1
+        assert len(regexes) == 2
         regex = regexes[0]
         assert regex.error_level == 1.1
+
+
+class TestCollectionCatGroupTag(FunctionalTestToolTestCase):
+    test_path = "collection_cat_group_tag.xml"
+
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "out_file1"
+        assert not output_model.hidden
+        assert output_model.label is None
+        output_dataset_model = assert_output_model_of_type(output_model, ToolOutputDataset)
+        assert output_dataset_model.metadata_source == "input1"
+
+
+class TestToolProvidedMetadata2(FunctionalTestToolTestCase):
+    test_path = "tool_provided_metadata_2.xml"
+
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "sample"
+        assert not output_model.hidden
+        assert output_model.label is None
+        output_dataset_model = assert_output_model_of_type(output_model, ToolOutputDataset)
+        assert output_dataset_model.metadata_source is None
+        discover_datasets = output_dataset_model.discover_datasets or []
+        assert len(discover_datasets) == 1
+        discover_datasets_0 = discover_datasets[0]
+        assert discover_datasets_0.discover_via == "pattern"
+
+
+T = TypeVar("T")
+
+
+def assert_output_model_of_type(obj, clazz: Type[T]) -> T:
+    assert isinstance(obj, clazz)
+    return cast(T, obj)

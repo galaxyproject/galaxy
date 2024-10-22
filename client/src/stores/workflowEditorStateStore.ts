@@ -1,8 +1,8 @@
-import type { UseElementBoundingReturn } from "@vueuse/core";
-import type { UnwrapRef } from "vue";
-import { computed, reactive, ref, set } from "vue";
+import { type UseElementBoundingReturn } from "@vueuse/core";
+import { computed, reactive, ref, set, type UnwrapRef } from "vue";
 
-import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
+import { type OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
+import reportDefault from "@/components/Workflow/Editor/reportDefault";
 
 import { defineScopedStore } from "./scopedStore";
 
@@ -28,6 +28,12 @@ type OutputTerminalPositions = { [index: number]: { [index: string]: OutputTermi
 type StepPosition = { [index: number]: UnwrapRef<UseElementBoundingReturn> };
 type StepLoadingState = { [index: number]: { loading?: boolean; error?: string } };
 
+export type WorkflowReport = {
+    markdown?: string;
+};
+
+export type WorkflowStateStore = ReturnType<typeof useWorkflowStateStore>;
+
 export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () => {
     const inputTerminals = ref<InputTerminalPositions>({});
     const outputTerminals = ref<OutputTerminalPositions>({});
@@ -37,6 +43,11 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     const scale = ref(1);
     const stepPosition = ref<StepPosition>({});
     const stepLoadingState = ref<StepLoadingState>({});
+    const multiSelectedSteps = ref<Record<number, boolean>>({});
+    const hasChanges = ref(false);
+    const report = ref<WorkflowReport>({
+        markdown: reportDefault,
+    });
 
     function $reset() {
         inputTerminals.value = {};
@@ -47,6 +58,10 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         scale.value = 1;
         stepPosition.value = {};
         stepLoadingState.value = {};
+        multiSelectedSteps.value = {};
+        report.value = {
+            markdown: reportDefault,
+        };
     }
 
     const getInputTerminalPosition = computed(
@@ -58,6 +73,26 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     );
 
     const getStepLoadingState = computed(() => (stepId: number) => stepLoadingState.value[stepId]);
+
+    const getStepMultiSelected = computed(() => (stepId: number) => Boolean(multiSelectedSteps.value[stepId]));
+
+    const multiSelectedStepIds = computed(() =>
+        Object.entries(multiSelectedSteps.value)
+            .filter(([_id, selected]) => selected)
+            .map(([id]) => parseInt(id))
+    );
+
+    function clearStepMultiSelection() {
+        multiSelectedSteps.value = {};
+    }
+
+    function toggleStepMultiSelected(stepId: number) {
+        setStepMultiSelected(stepId, !getStepMultiSelected.value(stepId));
+    }
+
+    function setStepMultiSelected(stepId: number, selected: boolean) {
+        set(multiSelectedSteps.value, stepId, selected);
+    }
 
     function setInputTerminalPosition(stepId: number, inputName: string, position: InputTerminalPosition) {
         if (!inputTerminals.value[stepId]) {
@@ -91,6 +126,11 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         delete stepPosition.value[stepId];
     }
 
+    function deleteStepTerminals(stepId: number) {
+        delete inputTerminals.value[stepId];
+        delete outputTerminals.value[stepId];
+    }
+
     function setLoadingState(stepId: number, loading: boolean, error: string | undefined) {
         set(stepLoadingState.value, stepId, { loading, error });
     }
@@ -102,17 +142,26 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         draggingTerminal,
         activeNodeId,
         scale,
+        report,
+        hasChanges,
         stepPosition,
         stepLoadingState,
         $reset,
         getInputTerminalPosition,
         getOutputTerminalPosition,
         getStepLoadingState,
+        multiSelectedSteps,
+        multiSelectedStepIds,
+        getStepMultiSelected,
+        clearStepMultiSelection,
+        toggleStepMultiSelected,
+        setStepMultiSelected,
         setInputTerminalPosition,
         setOutputTerminalPosition,
         deleteInputTerminalPosition,
         deleteOutputTerminalPosition,
         deleteStepPosition,
+        deleteStepTerminals,
         setStepPosition,
         setLoadingState,
     };

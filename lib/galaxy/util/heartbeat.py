@@ -17,7 +17,7 @@ def get_current_thread_object_dict():
           module does not expose any way to match 'Thread' objects with
           intepreter thread identifiers (though it should).
     """
-    rval = dict()
+    rval = {}
     # Acquire the lock and then union the contents of 'active' and 'limbo'
     # threads into the return value.
     threading._active_limbo_lock.acquire()

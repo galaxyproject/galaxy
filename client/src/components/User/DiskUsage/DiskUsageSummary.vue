@@ -2,14 +2,13 @@
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 
-import { fetchQuotaUsages, recalculateDiskUsage } from "@/api/users";
+import { type AsyncTaskResultSummary, GalaxyApi } from "@/api";
+import { fetchCurrentUserQuotaUsages, type QuotaUsage } from "@/api/users";
 import { useConfig } from "@/composables/config";
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
-
-import { QuotaUsage, UserQuotaUsageData } from "./Quota/model";
 
 import QuotaUsageSummary from "@/components/User/DiskUsage/Quota/QuotaUsageSummary.vue";
 
@@ -57,27 +56,30 @@ async function displayRecalculationForSeconds(seconds: number) {
 }
 
 async function onRefresh() {
-    try {
-        const response = await recalculateDiskUsage({});
-        if (response.status == 200) {
-            // Wait for the task to complete
-            waitForTask(response.data.id);
-        } else if (response.status == 204) {
-            // We cannot track any task, so just display the
-            // recalculation message for a reasonable amount of time
-            await displayRecalculationForSeconds(30);
-        }
-    } catch (e) {
-        errorMessage.value = errorMessageAsString(e);
+    const { response, data, error } = await GalaxyApi().PUT("/api/users/current/recalculate_disk_usage");
+
+    if (error) {
+        errorMessage.value = errorMessageAsString(error);
+        return;
+    }
+
+    if (response.status == 200) {
+        // Wait for the task to complete
+        const asyncTaskResponse = data as AsyncTaskResultSummary;
+        waitForTask(asyncTaskResponse.id);
+    } else if (response.status == 204) {
+        // We cannot track any task, so just display the
+        // recalculation message for a reasonable amount of time
+        await displayRecalculationForSeconds(30);
     }
 }
 
 async function loadQuotaUsages() {
     try {
-        const { data } = await fetchQuotaUsages({ user_id: "current" });
-        quotaUsages.value = data.map((u: UserQuotaUsageData) => new QuotaUsage(u));
-    } catch (e) {
-        errorMessage.value = errorMessageAsString(e);
+        const currentUserQuotaUsages = await fetchCurrentUserQuotaUsages();
+        quotaUsages.value = currentUserQuotaUsages;
+    } catch (error) {
+        errorMessage.value = errorMessageAsString(error);
     }
 }
 

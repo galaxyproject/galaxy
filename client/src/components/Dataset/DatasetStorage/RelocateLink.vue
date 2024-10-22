@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import { ConcreteObjectStoreModel, DatasetStorageDetails } from "@/api";
+import { type ConcreteObjectStoreModel, type DatasetStorageDetails } from "@/api";
 import { updateObjectStore } from "@/api/objectStores";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
@@ -70,6 +71,10 @@ const emit = defineEmits<{
     (e: "relocated"): void;
 }>();
 
+function closeModal() {
+    showModal.value = false;
+}
+
 async function relocate(objectStoreId: string) {
     try {
         await updateObjectStore(props.datasetId, objectStoreId);
@@ -84,12 +89,13 @@ async function relocate(objectStoreId: string) {
 
 <template>
     <span class="storage-relocate-link">
-        <SelectModal v-if="currentObjectStore" v-model="showModal" title="Relocate Dataset Storage">
+        <SelectModal v-if="currentObjectStore" v-model="showModal" title="Relocate Dataset">
             <RelocateDialog
                 :from-object-store="currentObjectStore"
                 :target-object-stores="validTargets"
-                @relocate="relocate" />
+                @relocate="relocate"
+                @closeModal="closeModal" />
         </SelectModal>
-        <b-link v-if="relocatable" href="#" @click="showModal = true">(relocate)</b-link>
+        <BButton v-if="relocatable" @click="showModal = true">Relocate Dataset</BButton>
     </span>
 </template>

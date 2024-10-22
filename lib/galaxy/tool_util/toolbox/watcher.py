@@ -4,15 +4,8 @@ import threading
 
 try:
     from watchdog.events import FileSystemEventHandler
-    from watchdog.observers import Observer
-    from watchdog.observers.polling import PollingObserver
-
-    can_watch = True
 except ImportError:
-    Observer = None
-    FileSystemEventHandler = object
-    PollingObserver = None
-    can_watch = False
+    FileSystemEventHandler = object  # type:ignore[assignment, misc, unused-ignore]
 
 from galaxy.util.hash_util import md5_hash_file
 from galaxy.util.watcher import (

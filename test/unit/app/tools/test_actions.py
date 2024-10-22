@@ -14,8 +14,8 @@ from galaxy.tool_util.parser.xml import parse_change_format
 from galaxy.tools.actions import (
     DefaultToolAction,
     determine_output_format,
-    on_text_for_names,
 )
+from galaxy.tools.execution_helpers import on_text_for_names
 from galaxy.util import XML
 from galaxy.util.unittest import TestCase
 
@@ -140,7 +140,7 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         if incoming is None:
             incoming = dict(param1="moo")
         self._init_tool(contents)
-        job, out_data, _ = self.action.execute(
+        job, out_data, *_ = self.action.execute(
             tool=self.tool,
             trans=self.trans,
             history=self.history,

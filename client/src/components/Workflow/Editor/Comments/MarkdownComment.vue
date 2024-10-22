@@ -107,7 +107,7 @@ function onSetColor(color: WorkflowCommentColor) {
 function onTextChange() {
     const element = markdownTextarea.value;
 
-    if (element) {
+    if (element && element.value !== props.comment.data.text) {
         emit("change", { text: element.value });
     }
 }
@@ -129,19 +129,28 @@ onMounted(() => {
         selectAllText(markdownTextarea.value);
     }
 });
+
+const position = computed(() => ({ x: props.comment.position[0], y: props.comment.position[1] }));
 </script>
 
 <template>
     <div ref="rootElement" class="markdown-workflow-comment">
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions vuejs-accessibility/click-events-have-key-events -->
         <div
             ref="resizeContainer"
             class="resize-container"
-            :class="{ resizable: !props.readonly, 'prevent-zoom': !props.readonly }"
+            :class="{
+                resizable: !props.readonly,
+                'prevent-zoom': !props.readonly,
+                'multi-selected': commentStore.getCommentMultiSelected(props.comment.id),
+            }"
             :style="cssVariables">
             <DraggablePan
                 v-if="!props.readonly"
                 :root-offset="reactive(props.rootOffset)"
                 :scale="props.scale"
+                :position="position"
+                :selected="commentStore.getCommentMultiSelected(props.comment.id)"
                 class="draggable-pan"
                 @mouseup="onMouseup"
                 @move="onMove"
@@ -354,6 +363,10 @@ $min-height: 1.5em;
         width: 100%;
         height: 100%;
         top: 0;
+    }
+
+    &.multi-selected {
+        box-shadow: 0 0 0 2px $white, 0 0 0 4px lighten($brand-info, 20%);
     }
 }
 

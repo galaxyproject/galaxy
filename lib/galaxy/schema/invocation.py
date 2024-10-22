@@ -6,9 +6,6 @@ from typing import (
     Generic,
     List,
     Optional,
-    Tuple,
-    Type,
-    TypeVar,
     Union,
 )
 
@@ -20,10 +17,10 @@ from pydantic import (
     UUID1,
     UUID4,
 )
-from pydantic.json_schema import GenerateJsonSchema
 from typing_extensions import (
     Annotated,
     Literal,
+    TypeAliasType,
 )
 
 from galaxy.schema import schema
@@ -32,6 +29,10 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     literal_to_value,
     ModelClassField,
+)
+from galaxy.schema.generics import (
+    DatabaseIdT,
+    GenericModel,
 )
 from galaxy.schema.schema import (
     CreateTimeField,
@@ -78,6 +79,21 @@ class FailureReason(str, Enum):
     unexpected_failure = "unexpected_failure"
 
 
+# The reasons below are attached to the invocation and user-actionable.
+# Not included are `unexpected_failure` and `expression_evaluation_failed`.
+# If expression evaluation fails we're not attaching the templated
+# expression to the invocation, as it could contain secrets.
+# If the failure reason is not in `FAILURE_REASONS_EXPECTED` we should
+# log an exception so admins can debug and/or submit bug reports.
+FAILURE_REASONS_EXPECTED = (
+    FailureReason.dataset_failed,
+    FailureReason.collection_failed,
+    FailureReason.job_failed,
+    FailureReason.output_not_found,
+    FailureReason.when_not_boolean,
+)
+
+
 class CancelReason(str, Enum):
     """Possible reasons for a cancelled workflow."""
 
@@ -86,37 +102,9 @@ class CancelReason(str, Enum):
     cancelled_on_review = "cancelled_on_review"
 
 
-DatabaseIdT = TypeVar("DatabaseIdT")
-
-ref_to_name = {}
-
-
-class InvocationMessageBase(BaseModel):
+class InvocationMessageBase(GenericModel):
     reason: Union[CancelReason, FailureReason, WarningReason]
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
-
-    @classmethod
-    def model_parametrized_name(cls, params: Tuple[Type[Any], ...]) -> str:
-        suffix = "Response" if params[0] is EncodedDatabaseIdField else "Incoming"
-        class_name = cls.__name__.split("Generic", 1)[-1]
-        return f"{class_name}{suffix}"
-
-    @classmethod
-    def __get_pydantic_core_schema__(cls, *args, **kwargs):
-        result = super().__get_pydantic_core_schema__(*args, **kwargs)
-        ref_to_name[result["ref"]] = cls.__name__
-        return result
-
-
-class CustomJsonSchema(GenerateJsonSchema):
-    def get_defs_ref(self, core_mode_ref):
-        full_def = super().get_defs_ref(core_mode_ref)
-        choices = self._prioritized_defsref_choices[full_def]
-        ref, mode = core_mode_ref
-        if ref in ref_to_name:
-            for i, choice in enumerate(choices):
-                choices[i] = choice.replace(choices[0], ref_to_name[ref])  # type: ignore[call-overload]
-        return full_def
 
 
 class GenericInvocationCancellationReviewFailed(InvocationMessageBase, Generic[DatabaseIdT]):
@@ -266,7 +254,7 @@ InvocationWarningWorkflowOutputNotFoundResponseModel = GenericInvocationEvaluati
     EncodedDatabaseIdField
 ]
 
-InvocationMessageResponseUnion = Annotated[
+_InvocationMessageResponseUnion = Annotated[
     Union[
         InvocationCancellationReviewFailedResponseModel,
         InvocationCancellationHistoryDeletedResponseModel,
@@ -283,6 +271,8 @@ InvocationMessageResponseUnion = Annotated[
     Field(discriminator="reason"),
 ]
 
+InvocationMessageResponseUnion = TypeAliasType("InvocationMessageResponseUnion", _InvocationMessageResponseUnion)
+
 
 class InvocationMessageResponseModel(RootModel):
     root: InvocationMessageResponseUnion
@@ -291,6 +281,7 @@ class InvocationMessageResponseModel(RootModel):
 
 class InvocationState(str, Enum):
     NEW = "new"  # Brand new workflow invocation... maybe this should be same as READY
+    REQUIRES_MATERIALIZATION = "requires_materialization"  # an otherwise NEW or READY workflow that requires inputs to be materialized (undeferred)
     READY = "ready"  # Workflow ready for another iteration of scheduling.
     SCHEDULED = "scheduled"  # Workflow has been scheduled.
     CANCELLED = "cancelled"
@@ -406,6 +397,11 @@ class InvocationStep(Model, WithModelClass):
         [],
         title="Jobs",
         description="Jobs associated with the workflow invocation step.",
+    )
+    implicit_collection_jobs_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="Implicit Collection Jobs ID",
+        description="The implicit collection job ID associated with the workflow invocation step.",
     )
 
 
@@ -609,10 +605,20 @@ class InvocationStepJobsResponseStepModel(InvocationJobsSummaryBaseModel):
 
 class InvocationStepJobsResponseJobModel(InvocationJobsSummaryBaseModel):
     model: JOB_MODEL_CLASS
+    id: EncodedDatabaseIdField = Field(
+        default=...,
+        title="ID",
+        description="The encoded ID of the job.",
+    )
 
 
 class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseModel):
     model: IMPLICIT_COLLECTION_JOBS_MODEL_CLASS
+    id: EncodedDatabaseIdField = Field(
+        default=...,
+        title="ID",
+        description="The encoded ID of the collection job.",
+    )
 
 
 class CreateInvocationFromStore(StoreContentSource):

@@ -45,7 +45,7 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    shouldShowCarbonEmissionsEstimates: {
+    shouldShowCarbonEmissionEstimates: {
         type: Boolean,
         default: true,
     },
@@ -203,15 +203,12 @@ const estimatedServerInstance = computed(() => {
         <AwsEstimate
             v-if="jobRuntimeInSeconds && coresAllocated && ec2Instances && shouldShowAwsEstimate"
             :ec2-instances="ec2Instances"
-            :should-show-aws-estimate="shouldShowAwsEstimate"
             :job-runtime-in-seconds="jobRuntimeInSeconds"
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
 
         <CarbonEmissions
-            v-if="
-                shouldShowCarbonEmissionsEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated
-            "
+            v-if="shouldShowCarbonEmissionEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated"
             :carbon-intensity="carbonIntensity"
             :geographical-server-location-name="geographicalServerLocationName"
             :power-usage-effectiveness="powerUsageEffectiveness"

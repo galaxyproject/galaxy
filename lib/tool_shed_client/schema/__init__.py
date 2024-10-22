@@ -123,6 +123,25 @@ class CreateRepositoryRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
+class UpdateRepositoryRequest(BaseModel):
+    name: Optional[str] = None
+    synopsis: Optional[str] = None
+    type_: Optional[RepositoryType] = Field(
+        None,
+        alias="type",
+        title="Type",
+    )
+    description: Optional[str] = None
+    remote_repository_url: Optional[str] = None
+    homepage_url: Optional[str] = None
+    category_ids: Optional[List[str]] = Field(
+        None,
+        alias="category_ids",
+        title="Category IDs",
+    )
+    model_config = ConfigDict(populate_by_name=True)
+
+
 class RepositoryUpdateRequest(BaseModel):
     commit_message: Optional[str] = None
 
@@ -410,7 +429,7 @@ class ValidTool(BaseModel):
 
     @staticmethod
     def from_legacy_list(as_dicts: List[ValidToolDict]) -> List["ValidTool"]:
-        return list(ValidTool.from_legacy_dict(d) for d in as_dicts)
+        return [ValidTool.from_legacy_dict(d) for d in as_dicts]
 
 
 class RepositoryMetadataInstallInfo(BaseModel):

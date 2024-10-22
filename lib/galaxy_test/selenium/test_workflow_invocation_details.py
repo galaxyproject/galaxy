@@ -42,12 +42,12 @@ class TestWorkflowInvocationDetails(SeleniumTestCase):
         assert_progress_steps_note_contains("3 of 3 steps successfully scheduled.")
         assert "2 of 2 jobs complete." in invocations.progress_jobs_note.wait_for_visible().text
 
-        invocations.invocation_tab(label="Details").wait_for_and_click()
-        invocations.invocation_details_tab(label="Inputs").wait_for_and_click()
+        invocations.invocation_tab(label="Inputs").wait_for_and_click()
         invocations.input_details_title(label="text_input").wait_for_visible()
         assert "Test_Dataset" in invocations.input_details_name(label="text_input").wait_for_visible().text
 
-        invocations.invocation_details_tab(label="Steps").wait_for_and_click()
+        invocations.invocation_tab(label="Overview").wait_for_and_click()
+        invocations.hide_invocation_graph.wait_for_and_click()
         assert "Step 1: text_input" in invocations.step_title(order_index="0").wait_for_visible().text
         assert "Step 2: split_up" in invocations.step_title(order_index="1").wait_for_visible().text
         assert "Step 3: paired" in invocations.step_title(order_index="2").wait_for_visible().text

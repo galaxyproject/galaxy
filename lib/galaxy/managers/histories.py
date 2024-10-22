@@ -127,10 +127,11 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         show_published = payload.show_published
         show_purged = False
         show_shared = payload.show_shared
+        show_archived = payload.show_archived
         is_admin = trans.user_is_admin
         user = trans.user
 
-        if not user:
+        if not user and not show_published:
             message = "Requires user to log in."
             raise RequestParameterInvalidException(message)
 
@@ -196,7 +197,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                         )
                     )
 
-        if show_published and not is_admin:
+        if (show_published or show_shared) and not is_admin:
             show_deleted = False
             show_purged = False
 
@@ -207,30 +208,34 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                 self.model_class.deleted == (true() if show_deleted else false())
             )
 
+        # By default, return only non-archived histories when we are showing the current user's histories
+        # if listing other users' histories, we don't filter out archived histories as they may be
+        # public or shared with the current user
+        if show_own and not show_archived:
+            stmt = stmt.where(self.model_class.archived == false())
+
         stmt = stmt.distinct()
 
         if include_total_count:
             total_matches = get_count(trans.sa_session, stmt)
         else:
             total_matches = None
+
+        sort_column: Any
         if payload.sort_by == "username":
             sort_column = model.User.username
+            stmt = stmt.add_columns(sort_column)
         else:
             sort_column = getattr(model.History, payload.sort_by)
         if payload.sort_desc:
             sort_column = sort_column.desc()
         stmt = stmt.order_by(sort_column)
+
         if payload.limit is not None:
             stmt = stmt.limit(payload.limit)
         if payload.offset is not None:
             stmt = stmt.offset(payload.offset)
-        return trans.sa_session.scalars(stmt), total_matches
-
-    def copy(self, history, user, **kwargs):
-        """
-        Copy and return the given `history`.
-        """
-        return history.copy(target_user=user, **kwargs)
+        return trans.sa_session.scalars(stmt), total_matches  # type:ignore[return-value]
 
     # .... sharable
     # overriding to handle anonymous users' current histories in both cases
@@ -278,19 +283,19 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         return self.session().scalars(stmt).first()
 
     # .... purgable
-    def purge(self, history, flush=True, **kwargs):
+    def purge(self, item, flush=True, **kwargs):
         """
         Purge this history and all HDAs, Collections, and Datasets inside this history.
         """
-        self.error_unless_mutable(history)
+        self.error_unless_mutable(item)
         self.hda_manager.dataset_manager.error_unless_dataset_purge_allowed()
         # First purge all the datasets
-        for hda in history.datasets:
+        for hda in item.datasets:
             if not hda.purged:
                 self.hda_manager.purge(hda, flush=True, **kwargs)
 
         # Now mark the history as purged
-        super().purge(history, flush=flush, **kwargs)
+        super().purge(item, flush=flush, **kwargs)
 
     # .... current
     # TODO: make something to bypass the anon user + current history permissions issue
@@ -413,7 +418,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
         # Run job to do export.
         history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
-        job, *_ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        job, *_ = history_exp_tool.execute(trans, incoming=params, history=history)
         trans.app.job_manager.enqueue(job, tool=history_exp_tool)
         return job
 
@@ -479,7 +484,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             .where(HistoryUserShareAssociation.user_id == user.id)
             .where(HistoryUserShareAssociation.history_id == history.id)
         )
-        return self.session().scalar(stmt)
+        return bool(self.session().scalar(stmt))
 
     def make_members_public(self, trans, item):
         """Make the non-purged datasets in history public.
@@ -560,6 +565,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
             model.History.purged == false(),
         )
         result = self.history_manager.session().execute(stmt).fetchone()
+        assert result
         total_size = 0 if result[0] is None else result[0]
         return CleanableItemsSummary(total_size=total_size, total_items=result[1])
 
@@ -594,6 +600,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
             model.History.purged == false(),
         )
         result = self.history_manager.session().execute(stmt).fetchone()
+        assert result
         total_size = 0 if result[0] is None else result[0]
         return CleanableItemsSummary(total_size=total_size, total_items=result[1])
 
@@ -685,6 +692,7 @@ class HistoryExportManager:
     def _serialize_task_export(self, export: model.StoreExportAssociation, history: model.History):
         task_uuid = export.task_uuid
         export_date = export.create_time
+        assert history.update_time is not None, "History update time must be set"
         history_has_changed = history.update_time > export_date
         export_metadata = self.get_record_metadata(export)
         is_ready = export_metadata is not None and export_metadata.is_ready()
@@ -992,7 +1000,9 @@ class HistoryDeserializer(sharable.SharableModelDeserializer, deletable.Purgable
 
     def deserialize_preferred_object_store_id(self, item, key, val, **context):
         preferred_object_store_id = val
-        validation_error = validate_preferred_object_store_id(self.app.object_store, preferred_object_store_id)
+        validation_error = validate_preferred_object_store_id(
+            context["trans"], self.app.object_store, preferred_object_store_id
+        )
         if validation_error:
             raise ModelDeserializingError(validation_error)
         return self.default_deserializer(item, key, preferred_object_store_id, **context)

@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from typing import Optional
 
 from galaxy.datatypes.sniff import get_test_fname
+from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import md5_hash_file
 
 
@@ -20,7 +21,7 @@ class MockDatasetDataset:
         self.file_name_ = file_name
 
 
-class MockMetadata:
+class MockMetadata(Bunch):
     file_name_: Optional[str] = None
 
     def get_file_name(self, sync_cache=True):

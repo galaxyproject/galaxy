@@ -1,0 +1,257 @@
+<tool id="validation_image" name="validation_image" version="1.0">
+    <command><![CDATA[
+      cp '$input' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="data" />
+    </inputs>
+    <outputs>
+        <data name="output" format="data" />
+    </outputs>
+    <tests>
+        <!-- Tests with intensity images -->
+        <test>
+            <param name="input" value="im1_uint8.tif" /><!-- axes: YX -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_width width="32" />
+                    <has_image_height height="32" />
+                    <has_image_channels channels="1" />
+                    <has_image_center_of_mass center_of_mass="15.61, 15.48" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_width width="30" delta="2" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_width width="29" delta="2" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_width width="32" />
+                    <has_image_height height="32" />
+                    <has_image_channels channels="3" />
+                    <has_image_center_of_mass channel="0" center_of_mass="7.5, 7.5" />
+                    <has_image_mean_intensity channel="0" mean_intensity="0.25" />
+                    <has_image_mean_intensity channel="1" mean_intensity="0.0" />
+                    <has_image_mean_intensity channel="2" mean_intensity="0" />
+                    <has_image_center_of_mass center_of_mass="7.5, 7.5" />
+                    <has_image_mean_intensity mean_intensity="0.08333333333" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_mean_intensity channel="0" mean_intensity="0.24" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_mean_intensity channel="0" mean_intensity="0.24" eps="0.0100000001" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_mean_intensity channel="0" min="0.24" max="0.26" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_mean_intensity channel="0" max="0.24" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="im3_b.tif" /><!-- axes: YXS -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_mean_intensity channel="0" min="0.26" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im5_uint8.tif" /><!-- axes: CYX -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_width width="16" />
+                    <has_image_height height="8" />
+                    <has_image_channels channels="2" />
+                    <has_image_depth depth="1" />
+                    <has_image_frames frames="1" />
+                    <has_image_mean_intensity mean_intensity="22.25" />
+                    <has_image_mean_intensity mean_intensity="12.68" channel="0" />
+                    <has_image_mean_intensity mean_intensity="31.83" channel="1" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im7_uint8.tif" /><!-- axes: ZYX -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_width width="16" />
+                    <has_image_height height="8" />
+                    <has_image_channels channels="1" />
+                    <has_image_depth depth="25" />
+                    <has_image_frames frames="1" />
+                    <has_image_mean_intensity mean_intensity="26.56" />
+                    <has_image_mean_intensity mean_intensity="12.68" slice="0" />
+                    <has_image_mean_intensity mean_intensity="9.05" slice="24" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im6_uint8.tif" /><!-- axes: ZCYX -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_width width="50" />
+                    <has_image_height height="50" />
+                    <has_image_channels channels="2" />
+                    <has_image_depth depth="25" />
+                    <has_image_frames frames="1" />
+                    <has_image_mean_intensity mean_intensity="14.18" />
+                    <has_image_mean_intensity mean_intensity="12.61" channel="0" />
+                    <has_image_mean_intensity mean_intensity="15.75" channel="1" />
+                    <has_image_mean_intensity mean_intensity="4.03" slice="0" />
+                    <has_image_mean_intensity mean_intensity="3.44" slice="0" channel="0" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im8_uint16.tif" /><!-- axes: TYX -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_width width="56" />
+                    <has_image_height height="49" />
+                    <has_image_channels channels="1" />
+                    <has_image_depth depth="1" />
+                    <has_image_frames frames="5" />
+                    <has_image_mean_intensity mean_intensity="5815.49" />
+                    <has_image_mean_intensity mean_intensity="5767.93" frame="0" />
+                    <has_image_mean_intensity mean_intensity="5844.76" frame="4" />
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Tests with float TIFF images -->
+        <test>
+            <param name="input" value="im4_float.tif" /><!-- axes: YX -->
+            <output name="output">
+                <assert_contents>
+                    <has_image_width width="25" />
+                    <has_image_height height="25" />
+                    <has_image_channels channels="1" />
+                    <has_image_center_of_mass center_of_mass="11.75, 11.75" />
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Tests with label images -->
+        <test>
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_width width="32" />
+                    <has_image_height height="32" />
+                    <has_image_channels channels="1" />
+                    <has_image_n_labels n="1" exclude_labels="0" />
+                    <has_image_n_labels n="0" exclude_labels="0,1" />
+                    <has_image_mean_object_size mean_object_size="256" exclude_labels="0" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_width width="32" />
+                    <has_image_height height="32" />
+                    <has_image_channels channels="1" />
+                    <has_image_n_labels n="2" />
+                    <has_image_mean_object_size mean_object_size="512" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_mean_object_size labels="0" mean_object_size="768" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_mean_object_size labels="0, 1" mean_object_size="512" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_mean_object_size mean_object_size="511" eps="0.9" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_width width="32" />
+                    <has_image_height height="32" />
+                    <has_image_channels channels="1" />
+                    <has_image_n_labels n="2" />
+                    <has_image_mean_object_size mean_object_size="511" eps="1.0" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_mean_object_size min="511" max="513" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_mean_object_size max="511" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_mean_object_size min="513" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

@@ -1,9 +1,22 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { useConfig } from "@/composables/config";
+
 import MountTarget from "./AdminPanel.vue";
 
 const localVue = getLocalVue(true);
+
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: { value: { enable_quotas: true, tool_shed_urls: ["tool_shed_url"], version_major: "1.0.1" } },
+        isConfigLoaded: true,
+    })),
+}));
+
+jest.mock("vue-router/composables", () => ({
+    useRoute: jest.fn(() => ({})),
+}));
 
 function createTarget(propsData = {}) {
     return mount(MountTarget, {
@@ -16,21 +29,29 @@ function createTarget(propsData = {}) {
 }
 
 describe("AdminPanel", () => {
-    it("ensure reactivity to prop changes", async () => {
-        const wrapper = createTarget();
-        const sections = {
-            isToolshedInstalled: "#admin-link-toolshed",
-            enableQuotas: "#admin-link-quotas",
-        };
-        for (const elementId of Object.values(sections)) {
-            expect(wrapper.find(elementId).exists()).toBe(false);
-        }
+    it("ensure section visibility with config changes", async () => {
+        const options = [
+            {
+                name: "tool_shed_urls",
+                elementId: "#admin-link-toolshed",
+                value: ["toolshed_url"],
+            },
+            {
+                name: "enable_quotas",
+                elementId: "#admin-link-quotas",
+                value: true,
+            },
+        ];
         for (const available of [true, false]) {
-            for (const [propId, elementId] of Object.entries(sections)) {
+            for (const option of options) {
                 const props = {};
-                props[propId] = available;
-                await wrapper.setProps(props);
-                expect(wrapper.find(elementId).exists()).toBe(available);
+                props[option.name] = available ? option.value : undefined;
+                useConfig.mockImplementation(() => ({
+                    config: { value: { ...props, version_major: "1.0.1" } },
+                    isConfigLoaded: true,
+                }));
+                const wrapper = createTarget();
+                expect(wrapper.find(option.elementId).exists()).toBe(available);
             }
         }
     });

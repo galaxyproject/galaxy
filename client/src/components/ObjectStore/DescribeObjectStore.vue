@@ -20,6 +20,7 @@ const props = defineProps<Props>();
 const quotaSourceLabel = computed(() => props.storageInfo.quota?.source);
 const isPrivate = computed(() => props.storageInfo.private);
 const badges = computed(() => props.storageInfo.badges);
+const userDefined = computed(() => props.storageInfo.object_store_id?.startsWith("user_objects://"));
 
 const quotaUsageProvider = ref(null);
 
@@ -46,15 +47,15 @@ export default {
         <div>
             <span v-localize>{{ what }}</span>
             <span v-if="storageInfo.name" class="display-os-by-name">
-                a Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> object store named
+                a Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> storage location named
                 <b>{{ storageInfo.name }}</b>
             </span>
             <span v-else-if="storageInfo.object_store_id" class="display-os-by-id">
-                a Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> object store with id
+                a Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> storage location with id
                 <b>{{ storageInfo.object_store_id }}</b>
             </span>
             <span v-else class="display-os-default">
-                the default configured Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> object store </span
+                the default configured Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> storage location </span
             >.
         </div>
         <ObjectStoreBadges :badges="badges"> </ObjectStoreBadges>
@@ -66,7 +67,10 @@ export default {
             <b-spinner v-if="isLoadingUsage" />
             <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" />
         </QuotaSourceUsageProvider>
-        <div v-else>Galaxy has no quota configured for this object store.</div>
-        <ConfigurationMarkdown v-if="storageInfo.description" :markdown="storageInfo.description" :admin="true" />
+        <div v-else>Galaxy has no quota configured for this storage location.</div>
+        <ConfigurationMarkdown
+            v-if="storageInfo.description"
+            :markdown="storageInfo.description"
+            :admin="!userDefined" />
     </div>
 </template>

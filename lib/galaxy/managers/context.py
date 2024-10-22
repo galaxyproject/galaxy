@@ -39,10 +39,13 @@ import abc
 import string
 from json import dumps
 from typing import (
+    Any,
     Callable,
     cast,
+    Dict,
     List,
     Optional,
+    Tuple,
 )
 
 from sqlalchemy import select
@@ -79,11 +82,13 @@ class ProvidesAppContext:
     Mixed in class must provide `app` property.
     """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def app(self) -> MinimalManagerApp:
         """Provide access to the Galaxy ``app`` object."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def url_builder(self) -> Optional[Callable[..., str]]:
         """
         Provide access to Galaxy URLs (if available).
@@ -204,6 +209,13 @@ class ProvidesUserContext(ProvidesAppContext):
 
     galaxy_session: Optional[GalaxySession] = None
     _tag_handler: Optional[GalaxyTagHandlerSession] = None
+    _short_term_cache: Dict[Tuple[str, ...], Any]
+
+    def set_cache_value(self, args: Tuple[str, ...], value: Any):
+        self._short_term_cache[args] = value
+
+    def get_cache_value(self, args: Tuple[str, ...], default: Any = None) -> Any:
+        return self._short_term_cache.get(args, default)
 
     @property
     def tag_handler(self):
@@ -217,7 +229,8 @@ class ProvidesUserContext(ProvidesAppContext):
             raise AuthenticationRequired("The async task requires user authentication.")
         return RequestUser(user_id=self.user.id)
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def user(self):
         """Provide access to the user object."""
 
@@ -290,7 +303,8 @@ class ProvidesHistoryContext(ProvidesUserContext):
     properties.
     """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def history(self) -> Optional[History]:
         """Provide access to the user's current history model object.
 

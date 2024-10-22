@@ -28,20 +28,36 @@ from galaxy import (
     jobs,
     tools,
 )
+from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.celery.base_task import (
     GalaxyTaskBeforeStart,
     GalaxyTaskBeforeStartUserRateLimitPostgres,
     GalaxyTaskBeforeStartUserRateLimitStandard,
 )
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.datatypes.registry import Registry
-from galaxy.files import ConfiguredFileSources
+from galaxy.files import (
+    ConfiguredFileSources,
+    ConfiguredFileSourcesConf,
+    UserDefinedFileSources,
+)
+from galaxy.files.plugins import (
+    FileSourcePluginLoader,
+    FileSourcePluginsConfig,
+)
+from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.dbkeys import GenomeBuilds
+from galaxy.managers.file_source_instances import (
+    FileSourceInstancesManager,
+    UserDefinedFileSourcesConfig,
+    UserDefinedFileSourcesImpl,
+)
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
@@ -50,6 +66,7 @@ from galaxy.managers.jobs import JobSearch
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.notification import NotificationManager
+from galaxy.managers.object_store_instances import UserObjectStoreResolverImpl
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.tasks import (
@@ -91,7 +108,10 @@ from galaxy.model.tool_shed_install import (
 from galaxy.objectstore import (
     BaseObjectStore,
     build_object_store_from_config,
+    UserObjectStoreResolver,
+    UserObjectStoresAppConfig,
 )
+from galaxy.objectstore.templates import ConfiguredObjectStoreTemplates
 from galaxy.queue_worker import (
     GalaxyQueueWorker,
     reload_toolbox,
@@ -104,6 +124,7 @@ from galaxy.quota import (
 from galaxy.schema.fields import Security
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import (
+    is_vault_configured,
     Vault,
     VaultFactory,
 )
@@ -127,6 +148,7 @@ from galaxy.tools.cache import ToolCache
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
+from galaxy.tools.evaluation import ToolTemplatingException
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.tools.special_tools import load_lib_tools
 from galaxy.tours import (
@@ -144,10 +166,7 @@ from galaxy.util.tool_shed import tool_shed_registry
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
-from galaxy.web import (
-    legacy_url_for,
-    url_for,
-)
+from galaxy.web import url_for
 from galaxy.web.framework.base import server_starttime
 from galaxy.web.proxy import ProxyManager
 from galaxy.web_stack import (
@@ -188,7 +207,7 @@ class HaltableContainer(Container):
 
 
 class SentryClientMixin:
-    config: config.GalaxyAppConfiguration
+    config: GalaxyAppConfiguration
     application_stack: ApplicationStack
 
     def configure_sentry_client(self):
@@ -210,12 +229,34 @@ class SentryClientMixin:
                 level=logging.INFO,  # Capture info and above as breadcrumbs
                 event_level=getattr(logging, event_level),  # Send errors as events
             )
+
+            def before_send(event, hint):
+                if "exc_info" in hint:
+                    exc_type, exc_value, tb = hint["exc_info"]
+                    if isinstance(exc_value, ToolTemplatingException):
+                        # We set a custom fingerprint that may look like:
+                        # ["Error occurred while {action_str.lower()} for tool '{tool.id}'",
+                        #  "1.0",
+                        #  "cannot find 'file_name' while searching for 'species_chromosomes.file_name'"]
+                        # If we don't do this issues are never properly grouped since by default the calling stack is inspected,
+                        # and that is always unique in cheetah as it is dynamically generated.
+                        event["fingerprint"] = [str(exc_value), str(exc_value.tool_version), str(exc_value.__cause__)]
+                        event.setdefault("tags", {}).update(
+                            {
+                                "tool_is_latest": exc_value.is_latest,
+                                "tool_id": str(exc_value.tool_id),
+                                "tool_version": exc_value.tool_version,
+                            }
+                        )
+                return event
+
             self.sentry_client = sentry_sdk.init(
                 self.config.sentry_dsn,
                 release=f"{self.config.version_major}.{self.config.version_minor}",
                 integrations=[sentry_logging],
                 traces_sample_rate=self.config.sentry_traces_sample_rate,
                 ca_certs=self.config.sentry_ca_certs,
+                before_send=before_send,
             )
 
 
@@ -223,7 +264,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     """Encapsulates the state of a minimal Galaxy application"""
 
     model: GalaxyModelMapping
-    config: config.GalaxyAppConfiguration
+    config: GalaxyAppConfiguration
     tool_cache: ToolCache
     job_config: jobs.JobConfiguration
     toolbox_search: ToolBoxSearch
@@ -247,10 +288,8 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.name = "galaxy"
         self.is_webapp = False
         # Read config file and check for errors
-        self.config = self._register_singleton(config.GalaxyAppConfiguration, config.GalaxyAppConfiguration(**kwargs))
+        self.config = self._register_singleton(GalaxyAppConfiguration, GalaxyAppConfiguration(**kwargs))
         self.config.check()
-        self._configure_object_store(fsmon=True)
-        self._register_singleton(BaseObjectStore, self.object_store)
         config_file = kwargs.get("global_conf", {}).get("__file__", None)
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
@@ -264,6 +303,10 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self._register_singleton(install_model_scoped_session, self.install_model.context)
         # Load quota management.
         self.quota_agent = self._register_singleton(QuotaAgent, get_quota_agent(self.config, self.model))
+        self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))  # type: ignore[type-abstract]
+        self._configure_object_store(fsmon=True)
+        self._register_singleton(BaseObjectStore, self.object_store)
+        galaxy.model.setup_global_object_store_for_models(self.object_store)
 
     def configure_fluent_log(self):
         if self.config.fluent_log:
@@ -315,6 +358,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             galaxy_root_dir=galaxy_root_dir,
             default_file_path=file_path,
             tool_data_path=self.config.tool_data_path,
+            galaxy_data_manager_data_path=self.config.galaxy_data_manager_data_path,
             shed_tool_data_path=self.config.shed_tool_data_path,
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
@@ -408,6 +452,23 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             )
 
     def _configure_object_store(self, **kwds):
+        app_config = UserObjectStoresAppConfig(
+            jobs_directory=self.config.jobs_directory,
+            new_file_path=self.config.new_file_path,
+            umask=self.config.umask,
+            gid=self.config.gid,
+            object_store_cache_size=self.config.object_store_cache_size,
+            object_store_cache_path=self.config.object_store_cache_path,
+            user_config_templates_use_saved_configuration=self.config.user_config_templates_use_saved_configuration,
+        )
+        self._register_singleton(UserObjectStoresAppConfig, app_config)
+        vault_configured = is_vault_configured(self.vault)
+        templates = ConfiguredObjectStoreTemplates.from_app_config(self.config, vault_configured=vault_configured)
+        self.object_store_templates = self._register_singleton(ConfiguredObjectStoreTemplates, templates)
+        user_object_store_resolver = self._register_abstract_singleton(
+            UserObjectStoreResolver, UserObjectStoreResolverImpl  # type: ignore[type-abstract]
+        )  # Ignored because of https://github.com/python/mypy/issues/4717
+        kwds["user_object_store_resolver"] = user_object_store_resolver
         self.object_store = build_object_store_from_config(self.config, **kwds)
 
     def _configure_security(self):
@@ -449,7 +510,6 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
 
         self.model = mapping.configure_model_mapping(
             self.config.file_path,
-            self.object_store,
             self.config.use_pbkdf2,
             engine,
             combined_install_database,
@@ -520,6 +580,10 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         self.application_stack = self._register_singleton(ApplicationStack, application_stack_instance(app=self))
         if configure_logging:
             config.configure_logging(self.config, self.application_stack.facts)
+        # Carbon emissions configuration
+        carbon_intensity_entry = get_carbon_intensity_entry(self.config.geographical_server_location_code)
+        self.carbon_intensity = carbon_intensity_entry["carbon_intensity"]
+        self.geographical_server_location_name = carbon_intensity_entry["location_name"]
         # Initialize job metrics manager, needs to be in place before
         # config so per-destination modifications can be made.
         self.job_metrics = self._register_singleton(
@@ -565,15 +629,34 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         )
 
         # ConfiguredFileSources
-        self.file_sources = self._register_singleton(
-            ConfiguredFileSources, ConfiguredFileSources.from_app_config(self.config)
+        vault_configured = is_vault_configured(self.vault)
+        templates = ConfiguredFileSourceTemplates.from_app_config(self.config, vault_configured=vault_configured)
+        file_sources_config: FileSourcePluginsConfig = FileSourcePluginsConfig.from_app_config(self.config)
+        self._register_singleton(FileSourcePluginsConfig, file_sources_config)
+        file_source_plugin_loader = FileSourcePluginLoader()
+        self._register_singleton(FileSourcePluginLoader, file_source_plugin_loader)
+        self.file_source_templates = self._register_singleton(ConfiguredFileSourceTemplates, templates)
+        self._register_singleton(
+            UserDefinedFileSourcesConfig, UserDefinedFileSourcesConfig.from_app_config(self.config)
         )
+        user_defined_file_sources = self._register_abstract_singleton(
+            UserDefinedFileSources, UserDefinedFileSourcesImpl  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
+        )
+        configured_file_source_conf: ConfiguredFileSourcesConf = ConfiguredFileSourcesConf.from_app_config(self.config)
+        file_sources = ConfiguredFileSources(
+            file_sources_config,
+            configured_file_source_conf,
+            load_stock_plugins=True,
+            plugin_loader=file_source_plugin_loader,
+            user_defined_file_sources=user_defined_file_sources,
+        )
+        self.file_sources = self._register_singleton(ConfiguredFileSources, file_sources)
+        self._register_singleton(FileSourceInstancesManager)
 
-        self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))  # type: ignore[type-abstract]
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.model.security.HostAgent(
-            model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions
+            self.security_agent.sa_session, permitted_actions=self.security_agent.permitted_actions
         )
 
         # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
@@ -690,7 +773,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.watchers = self._register_singleton(ConfigWatchers)
         self._configure_toolbox()
         # Load Data Manager
-        self.data_managers = self._register_singleton(DataManagers)  # type: ignore[type-abstract]
+        self.data_managers = self._register_singleton(DataManagers)
         # Load the update repository manager.
         self.update_repository_manager = self._register_singleton(
             UpdateRepositoryManager, UpdateRepositoryManager(self)
@@ -755,20 +838,20 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             )
             self.application_stack.register_postfork_function(self.prune_history_audit_task.start)
             self.haltables.append(("HistoryAuditTablePruneTask", self.prune_history_audit_task.shutdown))
-        # Start the job manager
-        self.application_stack.register_postfork_function(self.job_manager.start)
         self.proxy_manager = ProxyManager(self.config)
 
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
 
         self.trs_proxy = self._register_singleton(TrsProxy, TrsProxy(self.config))
+        # We need InteractiveToolManager before the job handler starts
+        self.interactivetool_manager = InteractiveToolManager(self)
+        # Start the job manager
+        self.application_stack.register_postfork_function(self.job_manager.start)
         # Must be initialized after any component that might make use of stack messaging is configured. Alternatively if
         # it becomes more commonly needed we could create a prefork function registration method like we do with
         # postfork functions.
         self.application_stack.init_late_prefork()
-
-        self.interactivetool_manager = InteractiveToolManager(self)
 
         # Configure handling of signals
         handlers = {}
@@ -795,7 +878,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Inject url_for for components to more easily optionally depend
         # on url_for.
         self.url_for = url_for
-        self.legacy_url_for = legacy_url_for
 
         self.server_starttime = server_starttime  # used for cachebusting
         # Limit lifetime of tool shed repository cache to app startup

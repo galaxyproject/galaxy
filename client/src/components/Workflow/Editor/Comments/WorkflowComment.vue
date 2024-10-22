@@ -1,9 +1,18 @@
 <script setup lang="ts">
-import type { UseElementBoundingReturn } from "@vueuse/core";
+import { type UseElementBoundingReturn } from "@vueuse/core";
 import { computed } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { WorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
+
+import {
+    ChangeColorAction,
+    DeleteCommentAction,
+    LazyChangeDataAction,
+    LazyChangePositionAction,
+    LazyChangeSizeAction,
+    ToggleCommentSelectedAction,
+} from "../Actions/commentActions";
 
 import FrameComment from "./FrameComment.vue";
 import FreehandComment from "./FreehandComment.vue";
@@ -26,20 +35,37 @@ const cssVariables = computed(() => ({
     "--position-top": `${props.comment.position[1]}px`,
     "--width": `${props.comment.size[0]}px`,
     "--height": `${props.comment.size[1]}px`,
+    "--pointer-events": props.comment.type === "freehand" ? "none" : "unset",
 }));
 
-const { commentStore } = useWorkflowStores();
+const { commentStore, undoRedoStore } = useWorkflowStores();
+let lazyAction: LazyChangeDataAction | LazyChangePositionAction | LazyChangeSizeAction | null = null;
 
 function onUpdateData(data: any) {
-    commentStore.changeData(props.comment.id, data);
+    if (lazyAction instanceof LazyChangeDataAction && undoRedoStore.isQueued(lazyAction)) {
+        lazyAction.updateData(data);
+    } else {
+        lazyAction = new LazyChangeDataAction(commentStore, props.comment, data);
+        undoRedoStore.applyLazyAction(lazyAction);
+    }
 }
 
 function onResize(size: [number, number]) {
-    commentStore.changeSize(props.comment.id, size);
+    if (lazyAction instanceof LazyChangeSizeAction && undoRedoStore.isQueued(lazyAction)) {
+        lazyAction.updateData(size);
+    } else {
+        lazyAction = new LazyChangeSizeAction(commentStore, props.comment, size);
+        undoRedoStore.applyLazyAction(lazyAction);
+    }
 }
 
 function onMove(position: [number, number]) {
-    commentStore.changePosition(props.comment.id, position);
+    if (lazyAction instanceof LazyChangePositionAction && undoRedoStore.isQueued(lazyAction)) {
+        lazyAction.updateData(position);
+    } else {
+        lazyAction = new LazyChangePositionAction(commentStore, props.comment, position);
+        undoRedoStore.applyLazyAction(lazyAction);
+    }
 }
 
 function onPan(position: { x: number; y: number }) {
@@ -47,16 +73,27 @@ function onPan(position: { x: number; y: number }) {
 }
 
 function onRemove() {
-    commentStore.deleteComment(props.comment.id);
+    undoRedoStore.applyAction(new DeleteCommentAction(commentStore, props.comment));
 }
 
 function onSetColor(color: WorkflowCommentColor) {
-    commentStore.changeColor(props.comment.id, color);
+    undoRedoStore.applyAction(new ChangeColorAction(commentStore, props.comment, color));
+}
+
+function toggleSelect(e: MouseEvent) {
+    if (!props.readonly && !(props.comment.type === "freehand")) {
+        if (e.shiftKey) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            undoRedoStore.applyAction(new ToggleCommentSelectedAction(commentStore, props.comment));
+        }
+    }
 }
 </script>
 
 <template>
-    <div class="workflow-editor-comment" :style="cssVariables">
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions vuejs-accessibility/click-events-have-key-events -->
+    <div class="workflow-editor-comment" :style="cssVariables" @click.capture="toggleSelect">
         <TextComment
             v-if="props.comment.type === 'text'"
             :comment="props.comment"
@@ -104,5 +141,6 @@ function onSetColor(color: WorkflowCommentColor) {
     height: var(--height);
     top: var(--position-top);
     left: var(--position-left);
+    pointer-events: var(--pointer-events);
 }
 </style>

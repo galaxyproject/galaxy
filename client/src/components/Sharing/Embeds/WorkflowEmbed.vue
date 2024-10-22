@@ -6,8 +6,8 @@ import { useDebounce } from "@vueuse/core";
 import { BButton, BFormCheckbox, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
 
-import { getAppRoot } from "@/onload/loadConfig";
 import { copy } from "@/utils/clipboard";
+import { getFullAppUrl } from "@/utils/utils";
 
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
@@ -27,6 +27,7 @@ const settings = reactive({
     initialX: -20,
     initialY: -20,
     zoom: 1,
+    applyStyle: true,
 });
 
 function onChangePosition(event: Event, xy: "x" | "y") {
@@ -38,13 +39,8 @@ function onChangePosition(event: Event, xy: "x" | "y") {
     }
 }
 
-const root = computed(() => {
-    const port = window.location.port ? `:${window.location.port}` : "";
-    return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}`;
-});
-
 const embedUrl = computed(() => {
-    let url = `${root.value}published/workflow?id=${props.id}&embed=true`;
+    let url = getFullAppUrl(`published/workflow?id=${props.id}&embed=true`);
     url += `&buttons=${settings.buttons}`;
     url += `&about=${settings.about}`;
     url += `&heading=${settings.heading}`;
@@ -55,7 +51,16 @@ const embedUrl = computed(() => {
     return url;
 });
 
-const embed = computed(() => `<iframe title="Galaxy Workflow Embed" src="${embedUrl.value}" />`);
+const embedStyle = computed(() => {
+    if (settings.applyStyle) {
+        return ' style="width: 100%; height: 700px; border: none;" ';
+    } else {
+        return " ";
+    }
+});
+const embed = computed(
+    () => `<iframe title="Galaxy Workflow Embed"${embedStyle.value}src="${embedUrl.value}"></iframe>`
+);
 
 // These Embed settings are not reactive, to we have to key them
 const embedKey = computed(() => `zoom: ${settings.zoom}, x: ${settings.initialX}, y: ${settings.initialY}`);
@@ -117,6 +122,12 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
                     class="zoom-control"
                     @onZoom="(level) => (settings.zoom = level)" />
             </label>
+
+            <BFormCheckbox
+                v-model="settings.applyStyle"
+                title="adds a width, height, and removes the border of the iframe">
+                Add basic styling
+            </BFormCheckbox>
         </div>
         <div class="preview">
             <label for="embed-code" class="w-100">

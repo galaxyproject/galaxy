@@ -12,8 +12,11 @@ from typing import (
     Dict,
     List,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
+
+from packaging.version import Version
 
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
@@ -68,6 +71,9 @@ from galaxy.util.template import (
 from galaxy.util.tree_dict import TreeDict
 from galaxy.work.context import WorkRequestContext
 
+if TYPE_CHECKING:
+    from galaxy.tools import Tool
+
 log = logging.getLogger(__name__)
 
 
@@ -87,13 +93,27 @@ class ToolErrorLog:
 global_tool_errors = ToolErrorLog()
 
 
-def global_tool_logs(func, config_file, action_str):
+class ToolTemplatingException(Exception):
+
+    def __init__(self, *args: object, tool_id: Optional[str], tool_version: str, is_latest: bool) -> None:
+        super().__init__(*args)
+        self.tool_id = tool_id
+        self.tool_version = tool_version
+        self.is_latest = is_latest
+
+
+def global_tool_logs(func, config_file: str, action_str: str, tool: "Tool"):
     try:
         return func()
     except Exception as e:
         # capture and log parsing errors
         global_tool_errors.add_error(config_file, action_str, e)
-        raise e
+        raise ToolTemplatingException(
+            f"Error occurred while {action_str.lower()} for tool '{tool.id}'",
+            tool_id=tool.id,
+            tool_version=tool.version,
+            is_latest=tool.is_latest_version,
+        ) from e
 
 
 DeferrableObjectsT = Union[
@@ -355,6 +375,7 @@ class ToolEvaluator:
                 element_identifier = element_identifier_mapper.identifier(dataset, param_dict)
                 if element_identifier:
                     wrapper_kwds["identifier"] = element_identifier
+                wrapper_kwds["formats"] = input.formats
                 input_values[input.name] = DatasetFilenameWrapper(dataset, **wrapper_kwds)
             elif isinstance(input, DataCollectionToolParameter):
                 dataset_collection = value
@@ -407,7 +428,7 @@ class ToolEvaluator:
                 if wrapper:
                     param_dict[name] = wrapper
                     continue
-            if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):
+            if not isinstance(param_dict_value, ToolParameterValueWrapper):
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
                     tool=self.tool,
@@ -578,13 +599,18 @@ class ToolEvaluator:
         """
         config_file = self.tool.config_file
         global_tool_logs(
-            self._create_interactivetools_entry_points, config_file, "Building Interactive Tool Entry Points"
+            self._create_interactivetools_entry_points, config_file, "Building Interactive Tool Entry Points", self.tool
         )
-        global_tool_logs(self._build_config_files, config_file, "Building Config Files")
-        global_tool_logs(self._build_param_file, config_file, "Building Param File")
-        global_tool_logs(self._build_command_line, config_file, "Building Command Line")
-        global_tool_logs(self._build_version_command, config_file, "Building Version Command Line")
-        global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables")
+        global_tool_logs(
+            self._build_config_files,
+            config_file,
+            "Building Config Files",
+            self.tool,
+        )
+        global_tool_logs(self._build_param_file, config_file, "Building Param File", self.tool)
+        global_tool_logs(self._build_command_line, config_file, "Building Command Line", self.tool)
+        global_tool_logs(self._build_version_command, config_file, "Building Version Command Line", self.tool)
+        global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables", self.tool)
         return (
             self.command_line,
             self.version_command_line,
@@ -741,7 +767,7 @@ class ToolEvaluator:
         param_dict = self.param_dict
         directory = self.local_working_directory
         command = self.tool.command
-        if self.tool.profile < 16.04 and command and "$param_file" in command:
+        if Version(str(self.tool.profile)) < Version("16.04") and command and "$param_file" in command:
             with tempfile.NamedTemporaryFile(mode="w", dir=directory, delete=False) as param:
                 for key, value in param_dict.items():
                     # parameters can be strings or lists of strings, coerce to list
@@ -833,7 +859,7 @@ class PartialToolEvaluator(ToolEvaluator):
 
     def build(self):
         config_file = self.tool.config_file
-        global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables")
+        global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables", self.tool)
         return (
             self.command_line,
             self.version_command_line,
@@ -854,10 +880,10 @@ class RemoteToolEvaluator(ToolEvaluator):
 
     def build(self):
         config_file = self.tool.config_file
-        global_tool_logs(self._build_config_files, config_file, "Building Config Files")
-        global_tool_logs(self._build_param_file, config_file, "Building Param File")
-        global_tool_logs(self._build_command_line, config_file, "Building Command Line")
-        global_tool_logs(self._build_version_command, config_file, "Building Version Command Line")
+        global_tool_logs(self._build_config_files, config_file, "Building Config Files", self.tool)
+        global_tool_logs(self._build_param_file, config_file, "Building Param File", self.tool)
+        global_tool_logs(self._build_command_line, config_file, "Building Command Line", self.tool)
+        global_tool_logs(self._build_version_command, config_file, "Building Version Command Line", self.tool)
         return (
             self.command_line,
             self.version_command_line,

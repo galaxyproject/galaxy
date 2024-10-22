@@ -2,6 +2,7 @@ import tarfile
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import (
+    Iterator,
     List,
     Optional,
     Union,
@@ -11,7 +12,7 @@ import requests
 from typing_extensions import Protocol
 
 from galaxy.util.resources import (
-    files,
+    as_file,
     resource_path,
     Traversable,
 )
@@ -22,6 +23,7 @@ from tool_shed_client.schema import (
     Category,
     CreateCategoryRequest,
     CreateRepositoryRequest,
+    DetailedRepository,
     from_legacy_install_info,
     GetInstallInfoRequest,
     GetOrderedInstallableRevisionsRequest,
@@ -40,6 +42,7 @@ from tool_shed_client.schema import (
     ResetMetadataOnRepositoryResponse,
     ToolSearchRequest,
     ToolSearchResults,
+    UpdateRepositoryRequest,
     Version,
 )
 from .api_util import (
@@ -50,31 +53,27 @@ from .api_util import (
 HasRepositoryId = Union[str, Repository]
 
 DEFAULT_PREFIX = "repofortest"
-COLUMN_MAKER_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
-COLUMN_MAKER_1_1_1_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
+TEST_DATA_REPO_FILES = resource_path(__package__, "../test_data")
+COLUMN_MAKER_PATH = TEST_DATA_REPO_FILES.joinpath("column_maker/column_maker.tar")
+COLUMN_MAKER_1_1_1_PATH = TEST_DATA_REPO_FILES.joinpath("column_maker/column_maker_1.1.1.tar")
 DEFAULT_COMMIT_MESSAGE = "a test commit message"
-TEST_DATA_REPO_FILES = files("tool_shed.test.test_data")
 
 
-def repo_files(test_data_path: str) -> List[Path]:
+def repo_files(test_data_path: str) -> Iterator[Path]:
     repos = TEST_DATA_REPO_FILES.joinpath(f"repos/{test_data_path}")
-    paths = sorted(Path(str(x)) for x in repos.iterdir())
-    return paths
+    for child in sorted(_.name for _ in repos.iterdir()):
+        with as_file(repos.joinpath(child)) as path:
+            yield path
 
 
-def repo_tars(test_data_path: str) -> List[Path]:
-    tar_paths = []
+def repo_tars(test_data_path: str) -> Iterator[Path]:
     for path in repo_files(test_data_path):
-        if path.is_dir():
-            prefix = f"shedtest_{test_data_path}_{path.name}_"
-            tf = NamedTemporaryFile(delete=False, prefix=prefix)
+        assert path.is_dir()
+        prefix = f"shedtest_{test_data_path}_{path.name}_"
+        with NamedTemporaryFile(prefix=prefix) as tf:
             with tarfile.open(tf.name, "w:gz") as tar:
                 tar.add(str(path.absolute()), arcname=test_data_path or path.name)
-            tar_path = tf.name
-        else:
-            tar_path = str(path)
-        tar_paths.append(Path(tar_path))
-    return tar_paths
+            yield Path(tf.name)
 
 
 class HostsTestToolShed(Protocol):
@@ -192,7 +191,7 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(revisions_response)
         return from_legacy_install_info(revisions_response.json())
 
-    def update_column_maker_repo(self, repository: HasRepositoryId) -> requests.Response:
+    def update_column_maker_repo(self, repository: HasRepositoryId) -> RepositoryUpdate:
         response = self.upload_revision(
             repository,
             COLUMN_MAKER_1_1_1_PATH,
@@ -212,9 +211,20 @@ class ToolShedPopulator:
         )
         return response
 
+    def update_raw(self, repository: HasRepositoryId, request: UpdateRepositoryRequest) -> requests.Response:
+        repository_id = self._repository_id(repository)
+        body_json = request.model_dump(exclude_unset=True, by_alias=True)
+        put_response = self._api_interactor.put(f"repositories/{repository_id}", json=body_json)
+        return put_response
+
+    def update(self, repository: HasRepositoryId, request: UpdateRepositoryRequest) -> Repository:
+        response = self.update_raw(repository, request)
+        api_asserts.assert_status_code_is_ok(response)
+        return Repository(**response.json())
+
     def upload_revision(
         self, repository: HasRepositoryId, path: Traversable, commit_message: str = DEFAULT_COMMIT_MESSAGE
-    ):
+    ) -> RepositoryUpdate:
         response = self.upload_revision_raw(repository, path, commit_message=commit_message)
         if response.status_code != 200:
             response_json = None
@@ -361,11 +371,14 @@ class ToolShedPopulator:
         delete_response = self._api_interactor.delete(f"repositories/{repository_id}/deprecated")
         delete_response.raise_for_status()
 
-    def is_deprecated(self, repository: HasRepositoryId) -> bool:
+    def get_repository(self, repository: HasRepositoryId) -> DetailedRepository:
         repository_id = self._repository_id(repository)
         repository_response = self._api_interactor.get(f"repositories/{repository_id}")
         repository_response.raise_for_status()
-        return Repository(**repository_response.json()).deprecated
+        return DetailedRepository(**repository_response.json())
+
+    def is_deprecated(self, repository: HasRepositoryId) -> bool:
+        return self.get_repository(repository).deprecated
 
     def get_metadata(self, repository: HasRepositoryId, downloadable_only=True) -> RepositoryMetadata:
         repository_id = self._repository_id(repository)

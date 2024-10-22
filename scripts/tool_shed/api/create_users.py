@@ -32,16 +32,16 @@ def main(options):
     from_tool_shed = options.from_tool_shed.rstrip("/")
     to_tool_shed = options.to_tool_shed.rstrip("/")
     # Get the users from the specified Tool Shed.
-    url = "%s/api/users" % from_tool_shed
+    url = f"{from_tool_shed}/api/users"
     user_dicts = get(url)
     create_response_dicts = []
     for user_dict in user_dicts:
         username = user_dict.get("username", None)
         if username is not None:
-            email = "%s@test.org" % username
+            email = f"{username}@test.org"
             password = "testuser"
             data = dict(email=email, password=password, username=username)
-            url = "%s/api/users" % to_tool_shed
+            url = f"{to_tool_shed}/api/users"
             try:
                 response = submit(url, data, api_key)
             except Exception as e:

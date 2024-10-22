@@ -1,0 +1,16 @@
+type: disk
+files_dir: "${temp_directory}/files1"
+store_by: uuid
+extra_dirs:
+  - type: temp
+    path: "${temp_directory}/tmp1"
+  - type: job_work
+    path: "${temp_directory}/job_working_directory1"
+badges:
+  - type: short_term
+  - type: faster
+    message: Fast interconnects.
+  - type: less_stable
+  - type: more_secure
+  - type: backed_up
+    message: Storage is backed up to tape nightly.

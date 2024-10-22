@@ -6,11 +6,8 @@ import { BAlert, BCard, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { getAllGroups } from "@/api/groups";
-import { sendNotification } from "@/api/notifications";
-import { getAllRoles } from "@/api/roles";
-import { type components } from "@/api/schema";
-import { getAllUsers } from "@/api/users";
+import { GalaxyApi } from "@/api";
+import { type MessageNotificationCreateRequest } from "@/api/notifications";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -24,17 +21,6 @@ import MessageNotification from "@/components/Notifications/Categories/MessageNo
 library.add(faInfoCircle);
 
 type SelectOption = [string, string];
-type NotificationCreateData = components["schemas"]["NotificationCreateData"];
-type NotificationCreateRequest = components["schemas"]["NotificationCreateRequest"];
-
-interface MessageNotificationCreateData extends NotificationCreateData {
-    category: "message";
-    content: components["schemas"]["MessageNotificationContent"];
-}
-
-interface MessageNotificationCreateRequest extends NotificationCreateRequest {
-    notification: MessageNotificationCreateData;
-}
 
 const router = useRouter();
 
@@ -90,17 +76,43 @@ const expirationDate = computed({
     },
 });
 
+const isUrgent = computed(() => notificationData.value.notification.variant === "urgent");
+
 async function loadData<T>(
     getData: () => Promise<T[]>,
     target: Ref<SelectOption[]>,
     formatter: (item: T) => SelectOption
 ) {
-    try {
-        const tmp = await getData();
-        target.value = tmp.map(formatter);
-    } catch (error: any) {
+    const tmp = await getData();
+    target.value = tmp.map(formatter);
+}
+
+async function getAllGroups() {
+    const { data, error } = await GalaxyApi().GET("/api/groups");
+    if (error) {
         Toast.error(errorMessageAsString(error));
+        return [];
     }
+    return data;
+}
+
+async function getAllRoles() {
+    const { data, error } = await GalaxyApi().GET("/api/roles");
+    if (error) {
+        Toast.error(errorMessageAsString(error));
+        return [];
+    }
+    return data;
+}
+
+// TODO: this can potentially be a very large list, consider adding filters
+async function getAllUsers() {
+    const { data, error } = await GalaxyApi().GET("/api/users");
+    if (error) {
+        Toast.error(errorMessageAsString(error));
+        return [];
+    }
+    return data;
 }
 
 loadData(getAllUsers, users, (user) => {
@@ -116,13 +128,17 @@ loadData(getAllGroups, groups, (group) => {
 });
 
 async function sendNewNotification() {
-    try {
-        await sendNotification(notificationData.value);
-        Toast.success("Notification sent");
-        router.push("/admin/notifications");
-    } catch (error: any) {
+    const { error } = await GalaxyApi().POST("/api/notifications", {
+        body: notificationData.value,
+    });
+
+    if (error) {
         Toast.error(errorMessageAsString(error));
+        return;
     }
+
+    Toast.success("Notification sent");
+    router.push("/admin/notifications");
 }
 </script>
 
@@ -153,7 +169,8 @@ async function sendNewNotification() {
                 :optional="false"
                 help="The message can be written in markdown."
                 placeholder="Enter message"
-                required />
+                required
+                area />
 
             <FormElement
                 id="notification-variant"
@@ -161,12 +178,19 @@ async function sendNewNotification() {
                 type="select"
                 title="Variant"
                 :optional="false"
-                help="This will change the color of the notification"
+                help="This measures the urgency of the notification and will affect the color of the notification."
                 :options="[
                     ['Info', 'info'],
                     ['Warning', 'warning'],
                     ['Urgent', 'urgent'],
                 ]" />
+
+            <BAlert :show="isUrgent" variant="warning">
+                <span v-localize>
+                    Urgent notifications will ignore the user's notification preferences and will be sent to all
+                    available channels. Please use this option sparingly and only for critical notifications.
+                </span>
+            </BAlert>
 
             <FormElement
                 id="notification-recipients-user-ids"

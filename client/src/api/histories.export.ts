@@ -1,14 +1,7 @@
-import type { components } from "@/api/schema";
-import { fetcher } from "@/api/schema";
-import type { ObjectExportTaskResponse } from "@/components/Common/models/exportRecordModel";
-import { ExportRecordModel } from "@/components/Common/models/exportRecordModel";
+import { GalaxyApi, type ModelStoreFormat, type ObjectExportTaskResponse } from "@/api";
+import { type ExportRecord, ExportRecordModel } from "@/components/Common/models/exportRecordModel";
 import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
-
-type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
-
-const _getExportRecords = fetcher.path("/api/histories/{history_id}/exports").method("get").create();
-const _exportToFileSource = fetcher.path("/api/histories/{history_id}/write_store").method("post").create();
-const _importFromStoreAsync = fetcher.path("/api/histories/from_store_async").method("post").create();
+import { rethrowSimple } from "@/utils/simple-error";
 
 /**
  * A list of objects with the available export formats IDs and display names.
@@ -25,17 +18,20 @@ export const AVAILABLE_EXPORT_FORMATS: { id: ModelStoreFormat; name: string }[] 
  * @returns a promise with a list of export records associated with the given history.
  */
 export async function fetchHistoryExportRecords(historyId: string) {
-    const response = await _getExportRecords(
-        {
-            history_id: historyId,
-        },
-        {
-            headers: {
-                Accept: "application/vnd.galaxy.task.export+json",
+    const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/exports", {
+        params: {
+            path: { history_id: historyId },
+            header: {
+                accept: "application/vnd.galaxy.task.export+json",
             },
-        }
-    );
-    return response.data.map((item: unknown) => new ExportRecordModel(item as ObjectExportTaskResponse));
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data.map((item) => new ExportRecordModel(item as ObjectExportTaskResponse));
 }
 
 /**
@@ -44,7 +40,7 @@ export async function fetchHistoryExportRecords(historyId: string) {
  * @param exportDirectory the output directory in the file source
  * @param fileName the name of the output archive
  * @param exportParams additional parameters to configure the export
- * @returns A promise with the request response
+ * @returns A promise with the async task response that can be used to track the export progress.
  */
 export async function exportHistoryToFileSource(
     historyId: string,
@@ -54,24 +50,42 @@ export async function exportHistoryToFileSource(
 ) {
     const exportDirectoryUri = `${exportDirectory}/${fileName}.${exportParams.modelStoreFormat}`;
 
-    return _exportToFileSource({
-        history_id: historyId,
-        target_uri: exportDirectoryUri,
-        model_store_format: exportParams.modelStoreFormat as ModelStoreFormat,
-        include_files: exportParams.includeFiles,
-        include_deleted: exportParams.includeDeleted,
-        include_hidden: exportParams.includeHidden,
+    const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/write_store", {
+        params: {
+            path: { history_id: historyId },
+        },
+        body: {
+            target_uri: exportDirectoryUri,
+            model_store_format: exportParams.modelStoreFormat,
+            include_files: exportParams.includeFiles,
+            include_deleted: exportParams.includeDeleted,
+            include_hidden: exportParams.includeHidden,
+        },
     });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data;
 }
 
 /**
  * Imports a new history using the information stored in the given export record.
  * @param record The export record to be imported
- * @returns A promise with the request response
+ * @returns A promise with the async task response that can be used to track the import progress.
  */
-export async function reimportHistoryFromRecord(record: ExportRecordModel) {
-    return _importFromStoreAsync({
-        store_content_uri: record.importUri,
-        model_store_format: record.modelStoreFormat,
+export async function reimportHistoryFromRecord(record: ExportRecord) {
+    const { data, error } = await GalaxyApi().POST("/api/histories/from_store_async", {
+        body: {
+            store_content_uri: record.importUri,
+            model_store_format: record.modelStoreFormat,
+        },
     });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data;
 }

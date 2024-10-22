@@ -62,11 +62,11 @@
 
     const ajax_url = "${h.url_for( controller='/datasets', action='index')}/" + hda_id + "/display";
     const data = httpGet(ajax_url);
-    document.getElementById("editor").innerHTML = data;
     var editor = ace.edit("editor", {
         mode: "ace/mode/powershell",
         theme: "ace/theme/textmate"
     });
+    editor.setValue(data, -1);
 </script>
 </body>
 </html>

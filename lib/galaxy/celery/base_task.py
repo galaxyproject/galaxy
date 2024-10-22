@@ -11,7 +11,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import insert as ps_insert
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 
 from galaxy.model import CeleryUserRateLimit
 from galaxy.model.base import transaction
@@ -70,7 +69,7 @@ class GalaxyTaskBeforeStartUserRateLimit(GalaxyTaskBeforeStart):
 
     @abstractmethod
     def calculate_task_start_time(
-        self, user_id: int, sa_session: Session, task_interval_secs: float, now: datetime.datetime
+        self, user_id: int, sa_session: galaxy_scoped_session, task_interval_secs: float, now: datetime.datetime
     ) -> datetime.datetime:
         return now
 
@@ -81,38 +80,28 @@ class GalaxyTaskBeforeStartUserRateLimitPostgres(GalaxyTaskBeforeStartUserRateLi
     We take advantage of efficiencies in its dialect.
     """
 
-    _update_stmt = (
-        update(CeleryUserRateLimit)
-        .where(CeleryUserRateLimit.user_id == bindparam("userid"))
-        .values(last_scheduled_time=text("greatest(last_scheduled_time + ':interval second', " ":now) "))
-        .returning(CeleryUserRateLimit.last_scheduled_time)
-    )
-
-    _insert_stmt = (
-        ps_insert(CeleryUserRateLimit)
-        .values(user_id=bindparam("userid"), last_scheduled_time=bindparam("now"))
-        .returning(CeleryUserRateLimit.last_scheduled_time)
-    )
-
-    _upsert_stmt = _insert_stmt.on_conflict_do_update(
-        index_elements=["user_id"], set_=dict(last_scheduled_time=bindparam("sched_time"))
-    )
-
-    def calculate_task_start_time(  # type: ignore
-        self, user_id: int, sa_session: Session, task_interval_secs: float, now: datetime.datetime
+    def calculate_task_start_time(
+        self, user_id: int, sa_session: galaxy_scoped_session, task_interval_secs: float, now: datetime.datetime
     ) -> datetime.datetime:
         with transaction(sa_session):
-            result = sa_session.execute(
-                self._update_stmt, {"userid": user_id, "interval": task_interval_secs, "now": now}
+            update_stmt = (
+                update(CeleryUserRateLimit)
+                .where(CeleryUserRateLimit.user_id == user_id)
+                .values(last_scheduled_time=text("greatest(last_scheduled_time + ':interval second', :now)"))
+                .returning(CeleryUserRateLimit.last_scheduled_time)
             )
-            if result.rowcount == 0:
+            result = sa_session.execute(update_stmt, {"interval": task_interval_secs, "now": now}).all()
+            if not result:
                 sched_time = now + datetime.timedelta(seconds=task_interval_secs)
-                result = sa_session.execute(
-                    self._upsert_stmt, {"userid": user_id, "now": now, "sched_time": sched_time}
+                upsert_stmt = (
+                    ps_insert(CeleryUserRateLimit)  # type:ignore[attr-defined]
+                    .values(user_id=user_id, last_scheduled_time=now)
+                    .returning(CeleryUserRateLimit.last_scheduled_time)
+                    .on_conflict_do_update(index_elements=["user_id"], set_=dict(last_scheduled_time=sched_time))
                 )
-            for row in result:
-                return row[0]
+                result = sa_session.execute(upsert_stmt).all()
             sa_session.commit()
+            return result[0][0]
 
 
 class GalaxyTaskBeforeStartUserRateLimitStandard(GalaxyTaskBeforeStartUserRateLimit):
@@ -138,7 +127,7 @@ class GalaxyTaskBeforeStartUserRateLimitStandard(GalaxyTaskBeforeStartUserRateLi
     )
 
     def calculate_task_start_time(
-        self, user_id: int, sa_session: Session, task_interval_secs: float, now: datetime.datetime
+        self, user_id: int, sa_session: galaxy_scoped_session, task_interval_secs: float, now: datetime.datetime
     ) -> datetime.datetime:
         last_scheduled_time = None
         with transaction(sa_session):

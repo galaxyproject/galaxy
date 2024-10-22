@@ -1,4 +1,4 @@
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { generateRandomString } from "./testUtils";
@@ -11,16 +11,9 @@ const WORKFLOW_ID = generateRandomString();
 const WORKFLOW_RUN_BUTTON_SELECTOR = `[data-workflow-run="${WORKFLOW_ID}"]`;
 
 async function mountWorkflowRunButton(props?: { id: string; full?: boolean }) {
-    const mockRouter = {
-        push: jest.fn(),
-    };
-
-    const wrapper = shallowMount(WorkflowRunButton as object, {
+    const wrapper = mount(WorkflowRunButton as object, {
         propsData: { ...props },
         localVue,
-        mocks: {
-            $router: mockRouter,
-        },
     });
 
     return { wrapper };
@@ -38,10 +31,8 @@ describe("WorkflowRunButton.vue", () => {
     it("should redirect to workflow run page", async () => {
         const { wrapper } = await mountWorkflowRunButton({ id: WORKFLOW_ID });
 
-        await wrapper.find(WORKFLOW_RUN_BUTTON_SELECTOR).trigger("click");
-        await wrapper.vm.$nextTick();
+        const runButton = await wrapper.find(WORKFLOW_RUN_BUTTON_SELECTOR);
 
-        expect(wrapper.vm.$router.push).toHaveBeenCalledTimes(1);
-        expect(wrapper.vm.$router.push).toHaveBeenCalledWith(`/workflows/run?id=${WORKFLOW_ID}`);
+        expect(runButton.attributes("href")).toBe(`/workflows/run?id=${WORKFLOW_ID}`);
     });
 });

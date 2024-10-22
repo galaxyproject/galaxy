@@ -1,6 +1,7 @@
 import uuid
 
 from galaxy import model
+from galaxy.model.unittest_utils.utils import random_email
 from galaxy.objectstore import (
     QuotaSourceInfo,
     QuotaSourceMap,
@@ -16,7 +17,7 @@ class TestPurgeUsage(BaseModelTestCase):
     def setUp(self):
         super().setUp()
         model = self.model
-        u = model.User(email="purge_usage@example.com", password="password")
+        u = model.User(email=random_email(), password="password")
         u.disk_usage = 25
         self.persist(u)
 
@@ -67,7 +68,7 @@ class TestPurgeUsage(BaseModelTestCase):
 class TestCalculateUsage(BaseModelTestCase):
     def setUp(self):
         model = self.model
-        u = model.User(email="calc_usage%s@example.com" % str(uuid.uuid1()), password="password")
+        u = model.User(email=f"calc_usage{uuid.uuid1()}@example.com", password="password")
         self.persist(u)
         h = model.History(name="History for Calculated Usage", user=u)
         self.persist(h)
@@ -141,6 +142,20 @@ class TestCalculateUsage(BaseModelTestCase):
         # recalculate and verify it is fixed
         u.calculate_and_set_disk_usage(object_store)
         self._refresh_user_and_assert_disk_usage_is(10)
+
+    def test_calculate_objectstore_usage(self):
+        # not strictly a quota check but such similar code and ideas...
+        u = self.u
+
+        self._add_dataset(10, "not_tracked")
+        self._add_dataset(15, "tracked")
+
+        usage = u.dictify_objectstore_usage()
+        assert len(usage) == 2
+
+        usage_dict = {u.object_store_id: u.total_disk_usage for u in usage}
+        assert int(usage_dict["not_tracked"]) == 10
+        assert int(usage_dict["tracked"]) == 15
 
     def test_calculate_usage_disabled_quota(self):
         u = self.u

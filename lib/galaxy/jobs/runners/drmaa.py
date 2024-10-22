@@ -51,7 +51,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             runner_param_specs[f"{retry_exception}_retries"] = dict(map=int, valid=lambda x: int(x) >= 0, default=0)
 
         if "runner_param_specs" not in kwargs:
-            kwargs["runner_param_specs"] = dict()
+            kwargs["runner_param_specs"] = {}
         kwargs["runner_param_specs"].update(runner_param_specs)
 
         super().__init__(app, nworkers, **kwargs)
@@ -382,7 +382,14 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                 commands.execute(cmd)
             log.info(f"({job.id}/{ext_id}) Removed from DRM queue at user's request")
         except drmaa.InvalidJobException:
-            log.exception(f"({job.id}/{ext_id}) User killed running job, but it was already dead")
+            log.warning(f"({job.id}/{ext_id}) User killed running job, but it was already dead")
+        except drmaa.InternalException as e:
+            if "already completing or completed" in str(e):
+                log.warning(f"({job.id}/{ext_id}) User killed running job, but job already terminal in DRM queue")
+            else:
+                log.exception(
+                    f"({job.id}/{ext_id}) User killed running job, but error encountered removing from DRM queue"
+                )
         except commands.CommandLineException as e:
             log.error(f"({job.id}/{ext_id}) User killed running job, but command execution failed: {unicodify(e)}")
         except Exception:

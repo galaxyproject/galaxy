@@ -24,6 +24,7 @@ from galaxy.managers.collections_util import (
     dictify_element_reference,
 )
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.hdas import HDAManager
 from galaxy.managers.hdcas import HDCAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.model import DatasetCollectionElement
@@ -32,6 +33,7 @@ from galaxy.schema.fields import (
     ModelClassField,
 )
 from galaxy.schema.schema import (
+    AnyHDCA,
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
     DCESummary,
@@ -94,12 +96,14 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         self,
         security: IdEncodingHelper,
         history_manager: HistoryManager,
+        hda_manager: HDAManager,
         hdca_manager: HDCAManager,
         collection_manager: DatasetCollectionManager,
         datatypes_registry: Registry,
     ):
         super().__init__(security)
         self.history_manager = history_manager
+        self.hda_manager = hda_manager
         self.hdca_manager = hdca_manager
         self.collection_manager = collection_manager
         self.datatypes_registry = datatypes_registry
@@ -184,7 +188,8 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         trans: ProvidesHistoryContext,
         id: DecodedDatabaseIdField,
         instance_type: DatasetCollectionInstanceType = "history",
-    ) -> HDCADetailed:
+        view: str = "element",
+    ) -> AnyHDCA:
         """
         Returns information about a particular dataset collection.
         """
@@ -203,7 +208,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             security=trans.security,
             url_builder=trans.url_builder,
             parent=parent,
-            view="element",
+            view=view,
         )
         return rval
 
@@ -247,7 +252,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             raise exceptions.RequestParameterInvalidException(
                 "Parameter instance_type not being 'history' is not yet implemented."
             )
-        hdca: "HistoryDatasetCollectionAssociation" = self.collection_manager.get_dataset_collection_instance(
+        hdca: HistoryDatasetCollectionAssociation = self.collection_manager.get_dataset_collection_instance(
             trans, "history", hdca_id
         )
 
@@ -270,6 +275,8 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
                     hdca_id=self.encode_id(hdca.id),
                     parent_id=self.encode_id(result["object"]["id"]),
                 )
+            elif result["element_type"] == DCEType.hda:
+                result["object"]["accessible"] = self.hda_manager.is_accessible(dsc_element.element_object, trans.user)
             return result
 
         rval = [serialize_element(el) for el in contents]

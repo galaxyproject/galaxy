@@ -1,12 +1,10 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import { fetcher } from "@/api/schema";
+import { GalaxyApi } from "@/api";
 
 // Temporary set to any until schema model is defined
 export type GalaxyConfiguration = any;
-
-const fetchConfiguration = fetcher.path("/api/configuration").method("get").create();
 
 export const useConfigStore = defineStore("configurationStore", () => {
     const config = ref<GalaxyConfiguration>(null);
@@ -17,11 +15,14 @@ export const useConfigStore = defineStore("configurationStore", () => {
         if (!isLoaded.value && !isLoading.value) {
             isLoading.value = true;
             try {
-                const { data } = await fetchConfiguration({});
+                const { data, error } = await GalaxyApi().GET("/api/configuration");
+
+                if (error) {
+                    console.error("Error loading Galaxy configuration", error);
+                }
+
                 config.value = data;
                 console.debug("Galaxy configuration loaded", config.value);
-            } catch (err) {
-                console.error("Error loading Galaxy configuration", err);
             } finally {
                 isLoading.value = false;
             }

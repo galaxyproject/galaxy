@@ -1,5 +1,5 @@
 <template>
-    <section v-if="hasSelection">
+    <section v-if="hasSelection && !isMultiViewItem">
         <b-dropdown text="Selection" size="sm" variant="primary" data-description="selected content menu" no-flip>
             <template v-slot:button-content>
                 <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
@@ -36,9 +36,6 @@
             <b-dropdown-divider v-if="showBuildOptions" />
             <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
                 <span v-localize>Build Dataset List</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="showBuildOptions" data-description="build pair" @click="buildDatasetPair">
-                <span v-localize>Build Dataset Pair</span>
             </b-dropdown-item>
             <b-dropdown-item v-if="showBuildOptions" data-description="build list of pairs" @click="buildListOfPairs">
                 <span v-localize>Build List of Dataset Pairs</span>
@@ -102,7 +99,7 @@
                     collection-name="Database/Builds"
                     :loading="loadingDbKeys"
                     :items="dbkeys"
-                    :current-item-id="selectedDbKey"
+                    :current-item="selectedDbKey"
                     @update:selected-item="onSelectedDbKey" />
             </DbKeyProvider>
         </b-modal>
@@ -119,7 +116,7 @@
                     collection-name="Data Types"
                     :loading="loadingDatatypes"
                     :items="datatypes"
-                    :current-item-id="selectedDatatype"
+                    :current-item="selectedDatatype"
                     @update:selected-item="onSelectedDatatype" />
             </DatatypesProvider>
         </b-modal>
@@ -158,12 +155,14 @@ import {
     undeleteSelectedContent,
     unhideSelectedContent,
 } from "components/History/model/crud";
-import { createDatasetCollection, getHistoryContent } from "components/History/model/queries";
 import { DatatypesProvider, DbKeyProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 
+import { GalaxyApi } from "@/api";
+import { createDatasetCollection, filtersToQueryValues } from "@/components/History/model/queries";
 import { useConfig } from "@/composables/config";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export default {
     components: {
@@ -178,6 +177,7 @@ export default {
         contentSelection: { type: Map, required: true },
         selectionSize: { type: Number, required: true },
         isQuerySelection: { type: Boolean, required: true },
+        isMultiViewItem: { type: Boolean, required: true },
         totalItemsInQuery: { type: Number, default: 0 },
     },
     setup() {
@@ -186,8 +186,8 @@ export default {
     },
     data: function () {
         return {
-            selectedDbKey: "?",
-            selectedDatatype: "auto",
+            selectedDbKey: { id: "?", text: "unspecified (?)" },
+            selectedDatatype: { id: "auto", text: "Auto-detect" },
             selectedTags: [],
         };
     },
@@ -307,12 +307,12 @@ export default {
             this.runOnSelection(purgeSelectedContent);
         },
         changeDbkeyOfSelected() {
-            this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedDbKey });
-            this.selectedDbKey = "?";
+            this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedDbKey.id });
+            this.selectedDbKey = { id: "?" };
         },
         changeDatatypeOfSelected() {
-            this.runOnSelection(changeDatatypeOfSelectedContent, { datatype: this.selectedDatatype });
-            this.selectedDatatype = "auto";
+            this.runOnSelection(changeDatatypeOfSelectedContent, { datatype: this.selectedDatatype.id });
+            this.selectedDatatype = { id: "auto", text: "Auto-detect" };
         },
         addTagsToSelected() {
             this.runOnSelection(addTagsToSelectedContent, { tags: this.selectedTags });
@@ -354,10 +354,10 @@ export default {
             this.$emit("operation-error", { errorMessage, result });
         },
         onSelectedDbKey(dbkey) {
-            this.selectedDbKey = dbkey.id;
+            this.selectedDbKey = dbkey;
         },
         onSelectedDatatype(datatype) {
-            this.selectedDatatype = datatype.id;
+            this.selectedDatatype = datatype;
         },
 
         // collection creation, fires up a modal
@@ -367,13 +367,20 @@ export default {
         async buildDatasetListAll() {
             let allContents = [];
             const filters = HistoryFilters.getQueryDict(this.filterText);
+            const filterQuery = filtersToQueryValues(filters);
+            const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents/{type}s", {
+                params: {
+                    path: { history_id: this.history.id, type: "dataset" },
+                    query: { ...filterQuery, v: "dev" },
+                },
+            });
+            if (error) {
+                rethrowSimple(error);
+            }
 
-            allContents = await getHistoryContent(this.history.id, filters, "dataset");
+            allContents = data;
 
             this.buildNewCollection("list", allContents);
-        },
-        async buildDatasetPair() {
-            await this.buildNewCollection("paired");
         },
         async buildListOfPairs() {
             await this.buildNewCollection("list:paired");

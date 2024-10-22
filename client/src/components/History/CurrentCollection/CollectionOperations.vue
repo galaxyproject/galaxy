@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { HDCADetailed } from "@/api";
+import { type HDCADetailed } from "@/api";
 import { getAppRoot } from "@/onload/loadConfig";
 
 const router = useRouter();
@@ -18,6 +18,8 @@ const rerunUrl = computed(() =>
 const showCollectionDetailsUrl = computed(() =>
     props.dsc.job_source_type == "Job" ? `/jobs/${props.dsc.job_source_id}/view` : null
 );
+const disableDownload = props.dsc.populated_state !== "ok";
+
 function onDownload() {
     window.location.href = downloadUrl.value;
 }
@@ -28,6 +30,7 @@ function onDownload() {
             <b-button-group>
                 <b-button
                     title="Download Collection"
+                    :disabled="disableDownload"
                     class="rounded-0 text-decoration-none"
                     size="sm"
                     variant="link"

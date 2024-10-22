@@ -5,13 +5,13 @@ from typing import (
 )
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from galaxy import model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import GroupRoleAssociation
 from galaxy.model.base import transaction
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ class GroupRolesManager:
             trans.sa_session.commit()
 
 
-def get_group_role(session: Session, group, role) -> Optional[GroupRoleAssociation]:
+def get_group_role(session: galaxy_scoped_session, group, role) -> Optional[GroupRoleAssociation]:
     stmt = (
         select(GroupRoleAssociation).where(GroupRoleAssociation.group == group).where(GroupRoleAssociation.role == role)
     )

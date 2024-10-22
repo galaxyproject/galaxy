@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 
 import { type PathDestination, useDatasetPathDestination } from "@/composables/datasetPathDestination";
@@ -24,6 +25,15 @@ const imageUrl = computed(() => {
 
     return pathDestination.value?.fileLink;
 });
+
+const isImage = computedAsync(async () => {
+    if (!imageUrl.value) {
+        return null;
+    }
+    const res = await fetch(imageUrl.value);
+    const buff = await res.blob();
+    return buff.type.startsWith("image/");
+}, null);
 </script>
 
 <template>
@@ -31,6 +41,7 @@ const imageUrl = computed(() => {
         <div v-if="imageUrl" class="w-100 p-2">
             <b-card nobody body-class="p-1">
                 <b-img :src="imageUrl" fluid />
+                <span v-if="!isImage" class="text-danger">This dataset does not appear to be an image.</span>
             </b-card>
         </div>
         <div v-else>

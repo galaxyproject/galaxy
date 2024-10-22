@@ -12,19 +12,19 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BButtonGroup, BButtonToolbar, BCard, BCollapse, BLink, BTable } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { type ExportRecordModel } from "./models/exportRecordModel";
+import { type ExportRecord } from "./models/exportRecordModel";
 
 library.add(faCheckCircle, faDownload, faExclamationCircle, faFileImport, faLink, faSpinner);
 
 interface Props {
-    records: ExportRecordModel[];
+    records: ExportRecord[];
 }
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "onReimport", record: ExportRecordModel): void;
-    (e: "onDownload", record: ExportRecordModel): void;
-    (e: "onCopyDownloadLink", record: ExportRecordModel): void;
+    (e: "onReimport", record: ExportRecord): void;
+    (e: "onDownload", record: ExportRecord): void;
+    (e: "onCopyDownloadLink", record: ExportRecord): void;
 }>();
 
 const fields = [
@@ -40,15 +40,15 @@ const isExpanded = ref(false);
 
 const title = computed(() => (isExpanded.value ? `Hide old export records` : `Show old export records`));
 
-async function reimportObject(record: ExportRecordModel) {
+async function reimportObject(record: ExportRecord) {
     emit("onReimport", record);
 }
 
-function downloadObject(record: ExportRecordModel) {
+function downloadObject(record: ExportRecord) {
     emit("onDownload", record);
 }
 
-function copyDownloadLink(record: ExportRecordModel) {
+function copyDownloadLink(record: ExportRecord) {
     emit("onCopyDownloadLink", record);
 }
 </script>

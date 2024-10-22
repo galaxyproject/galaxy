@@ -14,9 +14,9 @@ from typing import (
 )
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from galaxy.model import HistoryDatasetAssociation
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import (
     galaxy_directory,
     sanitize_lists_to_string,
@@ -166,6 +166,6 @@ class GenomeBuilds:
         return (chrom_info, db_dataset)
 
 
-def get_len_files_by_history(session: Session, history_id: int):
+def get_len_files_by_history(session: galaxy_scoped_session, history_id: int):
     stmt = select(HistoryDatasetAssociation).filter_by(history_id=history_id, extension="len", deleted=False)
     return session.scalars(stmt)

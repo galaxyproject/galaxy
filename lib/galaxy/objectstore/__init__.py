@@ -18,15 +18,22 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Set,
     Tuple,
     Type,
     TYPE_CHECKING,
 )
+from uuid import uuid4
 
 import yaml
 from pydantic import BaseModel
+from typing_extensions import (
+    Literal,
+    Protocol,
+)
 
 from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
     MalformedContents,
     ObjectInvalid,
     ObjectNotFound,
@@ -53,9 +60,13 @@ from .badges import (
     StoredBadgeDict,
 )
 from .caching import CacheTarget
+from .templates import ObjectStoreConfiguration
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from galaxy.model import (
+        Dataset,
+        DatasetInstance,
+    )
 
 NO_SESSION_ERROR_MESSAGE = (
     "Attempted to 'create' object store entity in configuration with no database session present."
@@ -65,6 +76,27 @@ DEFAULT_QUOTA_SOURCE = None  # Just track quota right on user object in Galaxy.
 DEFAULT_QUOTA_ENABLED = True  # enable quota tracking in object stores by default
 DEFAULT_DEVICE_ID = None
 log = logging.getLogger(__name__)
+
+
+class UserObjectStoreResolver(Protocol):
+    def resolve_object_store_uri_config(self, uri: str) -> ObjectStoreConfiguration:
+        pass
+
+    def resolve_object_store_uri(self, uri: str) -> "ConcreteObjectStore":
+        pass
+
+
+class BaseUserObjectStoreResolver(UserObjectStoreResolver, metaclass=abc.ABCMeta):
+    _app_config: "UserObjectStoresAppConfig"
+
+    @abc.abstractmethod
+    def resolve_object_store_uri_config(self, uri: str) -> ObjectStoreConfiguration:
+        """Resolve the supplied object store URI into a concrete object store configuration."""
+        pass
+
+    def resolve_object_store_uri(self, uri: str) -> "ConcreteObjectStore":
+        object_store_configuration = self.resolve_object_store_uri_config(uri)
+        return concrete_object_store(object_store_configuration, self._app_config)
 
 
 class ObjectStore(metaclass=abc.ABCMeta):
@@ -111,19 +143,43 @@ class ObjectStore(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def exists(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def exists(
+        self,
+        obj,
+        base_dir=None,
+        dir_only=False,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir: bool = False,
+    ) -> bool:
         """Return True if the object identified by `obj` exists, False otherwise."""
         raise NotImplementedError()
 
     @abc.abstractmethod
     def construct_path(
-        self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None
-    ):
+        self,
+        obj,
+        base_dir=None,
+        dir_only=False,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir: bool = False,
+        in_cache: bool = False,
+    ) -> str:
         raise NotImplementedError()
 
     @abc.abstractmethod
     def create(
-        self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False
+        self,
+        obj,
+        base_dir=None,
+        dir_only=False,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir: bool = False,
     ):
         """
         Mark the object (`obj`) as existing in the store, but with no content.
@@ -137,7 +193,9 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def empty(self, obj, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
+    def empty(
+        self, obj, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir: bool = False
+    ) -> bool:
         """
         Test if the object identified by `obj` has content.
 
@@ -146,7 +204,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def size(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False) -> int:
+    def size(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir: bool = False) -> int:
         """
         Return size of the object identified by `obj`.
 
@@ -158,13 +216,14 @@ class ObjectStore(metaclass=abc.ABCMeta):
     def delete(
         self,
         obj,
-        entire_dir=False,
+        entire_dir: bool = False,
         base_dir=None,
+        dir_only=False,
         extra_dir=None,
         extra_dir_at_root=False,
         alt_name=None,
-        obj_dir=False,
-    ):
+        obj_dir: bool = False,
+    ) -> bool:
         """
         Delete the object identified by `obj`.
 
@@ -186,7 +245,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         extra_dir=None,
         extra_dir_at_root=False,
         alt_name=None,
-        obj_dir=False,
+        obj_dir: bool = False,
     ):
         """
         Fetch `count` bytes of data offset by `start` bytes using `obj.id`.
@@ -203,8 +262,16 @@ class ObjectStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_filename(
-        self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False
-    ):
+        self,
+        obj,
+        base_dir=None,
+        dir_only=False,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir: bool = False,
+        sync_cache: bool = True,
+    ) -> str:
         """
         Get the expected filename with absolute path for object with id `obj.id`.
 
@@ -220,11 +287,11 @@ class ObjectStore(metaclass=abc.ABCMeta):
         extra_dir=None,
         extra_dir_at_root=False,
         alt_name=None,
-        obj_dir=False,
+        obj_dir: bool = False,
         file_name=None,
-        create=False,
-        preserve_symlinks=False,
-    ):
+        create: bool = False,
+        preserve_symlinks: bool = False,
+    ) -> None:
         """
         Inform the store that the file associated with `obj.id` has been updated.
 
@@ -243,7 +310,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def get_object_url(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
+    def get_object_url(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir: bool = False):
         """
         Return the URL for direct access if supported, otherwise return None.
 
@@ -278,7 +345,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         """Return a list of dictified badges summarizing the object store configuration."""
 
     @abc.abstractmethod
-    def is_private(self, obj):
+    def is_private(self, obj) -> bool:
         """Return True iff supplied object is stored in private ConcreteObjectStore."""
 
     def object_store_ids(self, private=None):
@@ -293,6 +360,11 @@ class ObjectStore(metaclass=abc.ABCMeta):
     def object_store_allows_id_selection(self) -> bool:
         """Return True if this object store respects object_store_id and allow selection of this."""
         return False
+
+    def validate_selected_object_store_id(self, user, object_store_id: Optional[str]) -> Optional[str]:
+        if object_store_id and not self.object_store_allows_id_selection():
+            return "The current configuration doesn't allow selecting preferred object stores."
+        return None
 
     def object_store_ids_allowing_selection(self) -> List[str]:
         """Return a non-emtpy list of allowed selectable object store IDs during creation."""
@@ -373,16 +445,6 @@ class BaseObjectStore(ObjectStore):
         """Close any connections for this ObjectStore."""
         self.running = False
 
-    def file_ready(
-        self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False
-    ):
-        """
-        Check if a file corresponding to a dataset is ready to be used.
-
-        Return True if so, False otherwise
-        """
-        return True
-
     @classmethod
     def parse_xml(clazz, config_xml):
         """Parse an XML description of a configuration for this object store.
@@ -423,35 +485,192 @@ class BaseObjectStore(ObjectStore):
     def _invoke(self, delegate, obj=None, **kwargs):
         return self.__getattribute__(f"_{delegate}")(obj=obj, **kwargs)
 
-    def exists(self, obj, **kwargs):
-        return self._invoke("exists", obj, **kwargs)
+    def exists(
+        self,
+        obj,
+        base_dir=None,
+        dir_only=False,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir: bool = False,
+    ) -> bool:
+        return self._invoke(
+            "exists",
+            obj,
+            base_dir=base_dir,
+            dir_only=dir_only,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+            obj_dir=obj_dir,
+        )
 
-    def construct_path(self, obj, **kwargs):
-        return self._invoke("construct_path", obj, **kwargs)
+    def construct_path(
+        self,
+        obj,
+        base_dir=None,
+        dir_only=False,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir: bool = False,
+        in_cache: bool = False,
+    ) -> str:
+        return self._invoke(
+            "construct_path",
+            obj,
+            base_dir=base_dir,
+            dir_only=dir_only,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+            obj_dir=obj_dir,
+            in_cache=in_cache,
+        )
 
-    def create(self, obj, **kwargs):
-        return self._invoke("create", obj, **kwargs)
+    def create(
+        self,
+        obj,
+        base_dir=None,
+        dir_only=False,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir: bool = False,
+    ):
+        return self._invoke(
+            "create",
+            obj,
+            base_dir=base_dir,
+            dir_only=dir_only,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+            obj_dir=obj_dir,
+        )
 
-    def empty(self, obj, **kwargs):
-        return self._invoke("empty", obj, **kwargs)
+    def empty(
+        self, obj, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir: bool = False
+    ) -> bool:
+        return self._invoke(
+            "empty",
+            obj,
+            base_dir=base_dir,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+            obj_dir=obj_dir,
+        )
 
-    def size(self, obj, **kwargs):
-        return self._invoke("size", obj, **kwargs)
+    def size(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir: bool = False) -> int:
+        return self._invoke(
+            "size", obj, extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name, obj_dir=obj_dir
+        )
 
-    def delete(self, obj, **kwargs):
-        return self._invoke("delete", obj, **kwargs)
+    def delete(
+        self,
+        obj,
+        entire_dir: bool = False,
+        base_dir=None,
+        dir_only=False,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir: bool = False,
+    ) -> bool:
+        return self._invoke(
+            "delete",
+            obj,
+            entire_dir=entire_dir,
+            base_dir=base_dir,
+            dir_only=dir_only,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+            obj_dir=obj_dir,
+        )
 
-    def get_data(self, obj, **kwargs):
-        return self._invoke("get_data", obj, **kwargs)
+    def get_data(
+        self,
+        obj,
+        start=0,
+        count=-1,
+        base_dir=None,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir: bool = False,
+    ):
+        return self._invoke(
+            "get_data",
+            obj,
+            start=start,
+            count=count,
+            base_dir=base_dir,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+            obj_dir=obj_dir,
+        )
 
-    def get_filename(self, obj, **kwargs):
-        return self._invoke("get_filename", obj, **kwargs)
+    def get_filename(
+        self,
+        obj,
+        base_dir=None,
+        dir_only=False,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir: bool = False,
+        sync_cache: bool = True,
+    ) -> str:
+        return self._invoke(
+            "get_filename",
+            obj,
+            base_dir=base_dir,
+            dir_only=dir_only,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+            obj_dir=obj_dir,
+            sync_cache=sync_cache,
+        )
 
-    def update_from_file(self, obj, **kwargs):
-        return self._invoke("update_from_file", obj, **kwargs)
+    def update_from_file(
+        self,
+        obj,
+        base_dir=None,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir: bool = False,
+        file_name=None,
+        create: bool = False,
+        preserve_symlinks: bool = False,
+    ) -> None:
+        return self._invoke(
+            "update_from_file",
+            obj,
+            base_dir=base_dir,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+            obj_dir=obj_dir,
+            file_name=file_name,
+            create=create,
+            preserve_symlinks=preserve_symlinks,
+        )
 
-    def get_object_url(self, obj, **kwargs):
-        return self._invoke("get_object_url", obj, **kwargs)
+    def get_object_url(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir: bool = False):
+        return self._invoke(
+            "get_object_url",
+            obj,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+            obj_dir=obj_dir,
+        )
 
     def get_concrete_store_name(self, obj):
         return self._invoke("get_concrete_store_name", obj)
@@ -468,7 +687,7 @@ class BaseObjectStore(ObjectStore):
     def get_store_by(self, obj, **kwargs):
         return self._invoke("get_store_by", obj, **kwargs)
 
-    def is_private(self, obj):
+    def is_private(self, obj) -> bool:
         return self._invoke("is_private", obj)
 
     def cache_targets(self) -> List[CacheTarget]:
@@ -508,6 +727,7 @@ class ConcreteObjectStore(BaseObjectStore):
 
     badges: List[StoredBadgeDict]
     device_id: Optional[str] = None
+    cloud: bool = False
 
     def __init__(self, config, config_dict=None, **kwargs):
         """
@@ -568,6 +788,8 @@ class ConcreteObjectStore(BaseObjectStore):
             self.badges,
             self.galaxy_enable_quotas and self.quota_enabled,
             self.private,
+            False,
+            self.cloud,
         )
 
     def _get_concrete_store_name(self, obj):
@@ -579,7 +801,7 @@ class ConcreteObjectStore(BaseObjectStore):
     def _get_store_by(self, obj):
         return self.store_by
 
-    def _is_private(self, obj):
+    def _is_private(self, obj) -> bool:
         return self.private
 
     @property
@@ -677,8 +899,15 @@ class DiskObjectStore(ConcreteObjectStore):
         return as_dict
 
     def __get_filename(
-        self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False
-    ):
+        self,
+        obj,
+        base_dir=None,
+        dir_only=False,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir: bool = False,
+    ) -> str:
         """
         Return the absolute path for the file corresponding to the `obj.id`.
 
@@ -696,30 +925,32 @@ class DiskObjectStore(ConcreteObjectStore):
         )
         # For backward compatibility: check the old style root path first;
         # otherwise construct hashed path.
-        if not os.path.exists(path):
-            return self._construct_path(
-                obj,
-                base_dir=base_dir,
-                dir_only=dir_only,
-                extra_dir=extra_dir,
-                extra_dir_at_root=extra_dir_at_root,
-                alt_name=alt_name,
-            )
+        if os.path.exists(path):
+            return path
+        return self._construct_path(
+            obj,
+            base_dir=base_dir,
+            dir_only=dir_only,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+            obj_dir=obj_dir,
+        )
 
     # TODO: rename to _disk_path or something like that to avoid conflicts with
     # children that'll use the local_extra_dirs decorator, e.g. S3
     def _construct_path(
         self,
         obj,
-        old_style=False,
         base_dir=None,
         dir_only=False,
         extra_dir=None,
         extra_dir_at_root=False,
         alt_name=None,
-        obj_dir=False,
-        **kwargs,
-    ):
+        obj_dir: bool = False,
+        in_cache: bool = False,
+        old_style=False,
+    ) -> str:
         """
         Construct the absolute path for accessing the object identified by `obj.id`.
 
@@ -786,7 +1017,7 @@ class DiskObjectStore(ConcreteObjectStore):
             path = os.path.join(path, alt_name if alt_name else f"dataset_{obj_id}.dat")
         return os.path.abspath(path)
 
-    def _exists(self, obj, **kwargs):
+    def _exists(self, obj, **kwargs) -> bool:
         """Override `ObjectStore`'s stub and check on disk."""
         if self.check_old_style:
             path = self._construct_path(obj, old_style=True, **kwargs)
@@ -794,7 +1025,8 @@ class DiskObjectStore(ConcreteObjectStore):
             # construct and check hashed path.
             if os.path.exists(path):
                 return True
-        return os.path.exists(self._construct_path(obj, **kwargs))
+        path = self._construct_path(obj, **kwargs)
+        return os.path.exists(path)
 
     def _create(self, obj, **kwargs):
         """Override `ObjectStore`'s stub by creating any files and folders on disk."""
@@ -810,9 +1042,9 @@ class DiskObjectStore(ConcreteObjectStore):
                 umask_fix_perms(path, self.config.umask, 0o666)
         return self
 
-    def _empty(self, obj, **kwargs):
+    def _empty(self, obj, **kwargs) -> bool:
         """Override `ObjectStore`'s stub by checking file size on disk."""
-        return self.size(obj, **kwargs) == 0
+        return self._size(obj, **kwargs) == 0
 
     def _size(self, obj, **kwargs) -> int:
         """Override `ObjectStore`'s stub by return file size on disk.
@@ -834,7 +1066,7 @@ class DiskObjectStore(ConcreteObjectStore):
         else:
             return 0
 
-    def _delete(self, obj, entire_dir=False, **kwargs):
+    def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         """Override `ObjectStore`'s stub; delete the file or folder on disk."""
         path = self._get_filename(obj, **kwargs)
         extra_dir = kwargs.get("extra_dir", None)
@@ -849,7 +1081,14 @@ class DiskObjectStore(ConcreteObjectStore):
             # Absolutely possible that a delete request races, but that's "fine".
             return True
         except OSError as ex:
-            log.critical(f"{self.__get_filename(obj, **kwargs)} delete error {ex}")
+            # Likely a race condition in which we delete the job working directory
+            # and another process writes files into that directory.
+            # If the path doesn't exist anymore, another rmtree call was successful.
+            path = self.__get_filename(obj, **kwargs)
+            if not os.path.exists(path):
+                return True
+            else:
+                log.critical(f"{path} delete error {ex}", exc_info=True)
         return False
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
@@ -860,7 +1099,7 @@ class DiskObjectStore(ConcreteObjectStore):
         data_file.close()
         return content
 
-    def _get_filename(self, obj, **kwargs):
+    def _get_filename(self, obj, sync_cache: bool = True, **kwargs) -> str:
         """
         Override `ObjectStore`'s stub.
 
@@ -878,9 +1117,10 @@ class DiskObjectStore(ConcreteObjectStore):
             raise ObjectNotFound
         return path
 
-    def _update_from_file(self, obj, file_name=None, create=False, **kwargs):
+    def _update_from_file(
+        self, obj, file_name=None, create: bool = False, preserve_symlinks: bool = False, **kwargs
+    ) -> None:
         """`create` parameter is not used in this implementation."""
-        preserve_symlinks = kwargs.pop("preserve_symlinks", False)
         # FIXME: symlinks and the object store model may not play well together
         # these should be handled better, e.g. registering the symlink'd file
         # as an object
@@ -923,6 +1163,8 @@ class NestedObjectStore(BaseObjectStore):
     Example: DistributedObjectStore, HierarchicalObjectStore
     """
 
+    backends: Dict
+
     def __init__(self, config, config_xml=None):
         """Extend `ObjectStore`'s constructor."""
         super().__init__(config)
@@ -934,13 +1176,9 @@ class NestedObjectStore(BaseObjectStore):
             store.shutdown()
         super().shutdown()
 
-    def _exists(self, obj, **kwargs):
+    def _exists(self, obj, **kwargs) -> bool:
         """Determine if the `obj` exists in any of the backends."""
         return self._call_method("_exists", obj, False, False, **kwargs)
-
-    def file_ready(self, obj, **kwargs):
-        """Determine if the file for `obj` is ready to be used by any of the backends."""
-        return self._call_method("file_ready", obj, False, False, **kwargs)
 
     def _create(self, obj, **kwargs):
         """Create a backing file in a random backend."""
@@ -954,15 +1192,15 @@ class NestedObjectStore(BaseObjectStore):
         # TODO: merge more intelligently - de-duplicate paths and handle conflicting sizes/percents
         return cache_targets
 
-    def _empty(self, obj, **kwargs):
+    def _empty(self, obj, **kwargs) -> bool:
         """For the first backend that has this `obj`, determine if it is empty."""
         return self._call_method("_empty", obj, True, False, **kwargs)
 
-    def _size(self, obj, **kwargs):
+    def _size(self, obj, **kwargs) -> int:
         """For the first backend that has this `obj`, return its size."""
         return self._call_method("_size", obj, 0, False, **kwargs)
 
-    def _delete(self, obj, **kwargs):
+    def _delete(self, obj, **kwargs) -> bool:
         """For the first backend that has this `obj`, delete it."""
         return self._call_method("_delete", obj, False, False, **kwargs)
 
@@ -970,16 +1208,46 @@ class NestedObjectStore(BaseObjectStore):
         """For the first backend that has this `obj`, get data from it."""
         return self._call_method("_get_data", obj, ObjectNotFound, True, **kwargs)
 
-    def _get_filename(self, obj, **kwargs):
+    def _get_filename(self, obj, **kwargs) -> str:
         """For the first backend that has this `obj`, get its filename."""
         return self._call_method("_get_filename", obj, ObjectNotFound, True, **kwargs)
 
-    def _update_from_file(self, obj, **kwargs):
+    def _update_from_file(
+        self,
+        obj,
+        base_dir=None,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir: bool = False,
+        file_name=None,
+        create: bool = False,
+        preserve_symlinks: bool = False,
+    ) -> None:
         """For the first backend that has this `obj`, update it from the given file."""
-        if kwargs.get("create", False):
-            self._create(obj, **kwargs)
-            kwargs["create"] = False
-        return self._call_method("_update_from_file", obj, ObjectNotFound, True, **kwargs)
+        if create:
+            self._create(
+                obj,
+                base_dir=base_dir,
+                extra_dir=extra_dir,
+                extra_dir_at_root=extra_dir_at_root,
+                alt_name=alt_name,
+                obj_dir=obj_dir,
+            )
+        return self._call_method(
+            "_update_from_file",
+            obj,
+            ObjectNotFound,
+            True,
+            base_dir=base_dir,
+            extra_dir=extra_dir,
+            extra_dir_at_root=extra_dir_at_root,
+            alt_name=alt_name,
+            obj_dir=obj_dir,
+            file_name=file_name,
+            create=False,
+            preserve_symlinks=preserve_symlinks,
+        )
 
     def _get_object_url(self, obj, **kwargs):
         """For the first backend that has this `obj`, get its URL."""
@@ -994,8 +1262,8 @@ class NestedObjectStore(BaseObjectStore):
     def _get_concrete_store_badges(self, obj) -> List[BadgeDict]:
         return self._call_method("_get_concrete_store_badges", obj, [], False)
 
-    def _is_private(self, obj):
-        return self._call_method("_is_private", obj, ObjectNotFound, True)
+    def _is_private(self, obj) -> bool:
+        return self._call_method("_is_private", obj, False, False)
 
     def _get_store_by(self, obj):
         return self._call_method("_get_store_by", obj, None, False)
@@ -1010,8 +1278,22 @@ class NestedObjectStore(BaseObjectStore):
 
     def _call_method(self, method, obj, default, default_is_exception, **kwargs):
         """Check all children object stores for the first one with the dataset."""
+        base_dir = kwargs.get("base_dir", None)
+        dir_only = kwargs.get("dir_only", False)
+        extra_dir = kwargs.get("extra_dir", None)
+        extra_dir_at_root = kwargs.get("extra_dir_at_root", False)
+        alt_name = kwargs.get("alt_name", None)
+        obj_dir = kwargs.get("obj_dir", False)
         for store in self.backends.values():
-            if store.exists(obj, **kwargs):
+            if store.exists(
+                obj,
+                base_dir=base_dir,
+                dir_only=dir_only,
+                extra_dir=extra_dir,
+                extra_dir_at_root=extra_dir_at_root,
+                alt_name=alt_name,
+                obj_dir=obj_dir,
+            ):
                 return store.__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default(
@@ -1019,6 +1301,17 @@ class NestedObjectStore(BaseObjectStore):
             )
         else:
             return default
+
+
+def user_object_store_configuration_to_config_dict(object_store_config: ObjectStoreConfiguration, id) -> Dict[str, Any]:
+    # convert a pydantic model describing a user object store into a config dict ready to be
+    # slotted into a distributed job runner or stand alone.
+    dynamic_object_store_as_dict = object_store_config.model_dump()
+    dynamic_object_store_as_dict["id"] = id
+    dynamic_object_store_as_dict["weight"] = 0
+    # these are all forward facing object stores...
+    dynamic_object_store_as_dict["store_by"] = "uuid"
+    return dynamic_object_store_as_dict
 
 
 class DistributedObjectStore(NestedObjectStore):
@@ -1030,9 +1323,14 @@ class DistributedObjectStore(NestedObjectStore):
     with weighting.
     """
 
+    backends: Dict[str, Any]  # BaseObjectStore or ConcreteObjectStore?
     store_type = "distributed"
+    _quota_source_map: Optional["QuotaSourceMap"]
+    _device_source_map: Optional["DeviceSourceMap"]
 
-    def __init__(self, config, config_dict, fsmon=False):
+    def __init__(
+        self, config, config_dict, fsmon=False, user_object_store_resolver: Optional[UserObjectStoreResolver] = None
+    ):
         """
         :type config: object
         :param config: An object, most likely populated from
@@ -1050,7 +1348,6 @@ class DistributedObjectStore(NestedObjectStore):
         super().__init__(config, config_dict)
         self._quota_source_map = None
         self._device_source_map = None
-        self.backends = {}
         self.weighted_backend_ids = []
         self.original_weighted_backend_ids = []
         self.max_percent_full = {}
@@ -1060,26 +1357,27 @@ class DistributedObjectStore(NestedObjectStore):
 
         user_selection_allowed = []
         for backend_def in config_dict["backends"]:
-            backened_id = backend_def["id"]
+            backend_id = backend_def["id"]
             maxpctfull = backend_def.get("max_percent_full", 0)
             weight = backend_def["weight"]
             allow_selection = backend_def.get("allow_selection")
             if allow_selection:
-                user_selection_allowed.append(backened_id)
+                user_selection_allowed.append(backend_id)
             backend = build_object_store_from_config(config, config_dict=backend_def, fsmon=fsmon)
 
-            self.backends[backened_id] = backend
-            self.max_percent_full[backened_id] = maxpctfull
+            self.backends[backend_id] = backend
+            self.max_percent_full[backend_id] = maxpctfull
 
             for _ in range(0, weight):
                 # The simplest way to do weighting: add backend ids to a
                 # sequence the number of times equalling weight, then randomly
                 # choose a backend from that sequence at creation
-                self.weighted_backend_ids.append(backened_id)
+                self.weighted_backend_ids.append(backend_id)
 
         self.original_weighted_backend_ids = self.weighted_backend_ids
+        self.user_object_store_resolver = user_object_store_resolver
         self.user_selection_allowed = user_selection_allowed
-        self.allow_user_selection = bool(user_selection_allowed)
+        self.allow_user_selection = bool(user_selection_allowed) or (user_object_store_resolver is not None)
         self.sleeper = None
         if fsmon and (self.global_max_percent_full or [_ for _ in self.max_percent_full.values() if _ != 0.0]):
             self.sleeper = Sleeper()
@@ -1124,7 +1422,14 @@ class DistributedObjectStore(NestedObjectStore):
         return config_dict
 
     @classmethod
-    def from_xml(clazz, config, config_xml, fsmon=False):
+    def from_xml(
+        clazz,
+        config,
+        config_xml,
+        fsmon=False,
+        user_object_store_resolver: Optional[UserObjectStoreResolver] = None,
+        **kwd,
+    ):
         legacy = False
         if config_xml is None:
             distributed_config = config.distributed_object_store_config_file
@@ -1141,9 +1446,9 @@ class DistributedObjectStore(NestedObjectStore):
             log.debug("Loading backends for distributed object store from %s", config_xml.get("id"))
 
         config_dict = clazz.parse_xml(config_xml, legacy=legacy)
-        return clazz(config, config_dict, fsmon=fsmon)
+        return clazz(config, config_dict, fsmon=fsmon, user_object_store_resolver=user_object_store_resolver)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, object_store_uris: Optional[Set[str]] = None) -> Dict[str, Any]:
         as_dict = super().to_dict()
         as_dict["global_max_percent_full"] = self.global_max_percent_full
         as_dict["search_for_missing"] = self.search_for_missing
@@ -1154,6 +1459,19 @@ class DistributedObjectStore(NestedObjectStore):
             backend_as_dict["max_percent_full"] = self.max_percent_full[backend_id]
             backend_as_dict["weight"] = len([i for i in self.original_weighted_backend_ids if i == backend_id])
             backends.append(backend_as_dict)
+        if object_store_uris:
+            for user_object_store_uri in object_store_uris:
+                if not self.user_object_store_resolver:
+                    raise ConfigDoesNotAllowException()
+
+                object_store_config = self.user_object_store_resolver.resolve_object_store_uri_config(
+                    user_object_store_uri
+                )
+                dynamic_object_store_as_dict = user_object_store_configuration_to_config_dict(
+                    object_store_config, user_object_store_uri
+                )
+                backends.append(dynamic_object_store_as_dict)
+
         as_dict["backends"] = backends
         return as_dict
 
@@ -1174,14 +1492,14 @@ class DistributedObjectStore(NestedObjectStore):
             self.weighted_backend_ids = new_weighted_backend_ids
             sleeper.sleep(120)  # Test free space every 2 minutes
 
-    def _construct_path(self, obj, **kwargs):
-        return self.backends[obj.object_store_id].construct_path(obj, **kwargs)
+    def _construct_path(self, obj, **kwargs) -> str:
+        return self._resolve_backend(obj.object_store_id).construct_path(obj, **kwargs)
 
     def _create(self, obj, **kwargs):
         """The only method in which obj.object_store_id may be None."""
         object_store_id = obj.object_store_id
         if object_store_id is None or not self._exists(obj, **kwargs):
-            if object_store_id is None or object_store_id not in self.backends:
+            if object_store_id is None or (object_store_id not in self.backends and "://" not in object_store_id):
                 try:
                     object_store_id = random.choice(self.weighted_backend_ids)
                     obj.object_store_id = object_store_id
@@ -1199,14 +1517,14 @@ class DistributedObjectStore(NestedObjectStore):
                     obj.__class__.__name__,
                     obj.id,
                 )
-            return self.backends[object_store_id].create(obj, **kwargs)
+            return self._resolve_backend(object_store_id).create(obj, **kwargs)
         else:
-            return self.backends[object_store_id]
+            return self._resolve_backend(object_store_id)
 
     def _call_method(self, method, obj, default, default_is_exception, **kwargs):
         object_store_id = self.__get_store_id_for(obj, **kwargs)
         if object_store_id is not None:
-            return self.backends[object_store_id].__getattribute__(method)(obj, **kwargs)
+            return self._resolve_backend(object_store_id).__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default(
                 f"objectstore, _call_method failed: {method} on {self._repr_object_for_exception(obj)}, kwargs: {kwargs}"
@@ -1214,11 +1532,20 @@ class DistributedObjectStore(NestedObjectStore):
         else:
             return default
 
-    def get_quota_source_map(self):
+    def _resolve_backend(self, object_store_id: str):
+        try:
+            return self.backends[object_store_id]
+        except KeyError:
+            if object_store_id.startswith("user_objects://") and self.user_object_store_resolver:
+                return self.user_object_store_resolver.resolve_object_store_uri(object_store_id)
+            raise
+
+    def get_quota_source_map(self) -> "QuotaSourceMap":
         if self._quota_source_map is None:
             quota_source_map = QuotaSourceMap()
             self._merge_quota_source_map(quota_source_map, self)
             self._quota_source_map = quota_source_map
+        assert self._quota_source_map is not None
         return self._quota_source_map
 
     def get_device_source_map(self) -> "DeviceSourceMap":
@@ -1226,6 +1553,7 @@ class DistributedObjectStore(NestedObjectStore):
             device_source_map = DeviceSourceMap()
             self._merge_device_source_map(device_source_map, self)
             self._device_source_map = device_source_map
+        assert self._device_source_map is not None
         return self._device_source_map
 
     @classmethod
@@ -1246,7 +1574,7 @@ class DistributedObjectStore(NestedObjectStore):
 
     def __get_store_id_for(self, obj, **kwargs):
         if obj.object_store_id is not None:
-            if obj.object_store_id in self.backends:
+            if obj.object_store_id in self.backends or obj.object_store_id.startswith("user_objects://"):
                 return obj.object_store_id
             else:
                 log.warning(
@@ -1259,8 +1587,22 @@ class DistributedObjectStore(NestedObjectStore):
             # if this instance has been switched from a non-distributed to a
             # distributed object store, or if the object's store id is invalid,
             # try to locate the object
+            base_dir = kwargs.get("base_dir", None)
+            dir_only = kwargs.get("dir_only", False)
+            extra_dir = kwargs.get("extra_dir", None)
+            extra_dir_at_root = kwargs.get("extra_dir_at_root", False)
+            alt_name = kwargs.get("alt_name", None)
+            obj_dir = kwargs.get("obj_dir", False)
             for id, store in self.backends.items():
-                if store.exists(obj, **kwargs):
+                if store.exists(
+                    obj,
+                    base_dir=base_dir,
+                    dir_only=dir_only,
+                    extra_dir=extra_dir,
+                    extra_dir_at_root=extra_dir_at_root,
+                    alt_name=alt_name,
+                    obj_dir=obj_dir,
+                ):
                     log.warning(
                         f"{obj.__class__.__name__} object with ID {obj.id} found in backend object store with ID {id}"
                     )
@@ -1280,8 +1622,26 @@ class DistributedObjectStore(NestedObjectStore):
         """Return True if this object store respects object_store_id and allow selection of this."""
         return self.allow_user_selection
 
+    def validate_selected_object_store_id(self, user, object_store_id: Optional[str]) -> Optional[str]:
+        parent_check = super().validate_selected_object_store_id(user, object_store_id)
+        if parent_check or object_store_id is None:
+            return parent_check
+        # user selection allowed and object_store_id is not None
+        if object_store_id.startswith("user_objects://"):
+            if not user:
+                return "Supplied object store id is not accessible"
+            rest_of_uri = object_store_id.split("://", 1)[1]
+            user_object_store_uuid = rest_of_uri
+            for user_object_store in user.object_stores:
+                if str(user_object_store.uuid) == user_object_store_uuid:
+                    return None
+            return "Supplied object store id was not found"
+        if object_store_id not in self.object_store_ids_allowing_selection():
+            return "Supplied object store id is not an allowed object store selection"
+        return None
+
     def object_store_ids_allowing_selection(self) -> List[str]:
-        """Return a non-emtpy list of allowed selectable object store IDs during creation."""
+        """Return a non-empty list of allowed selectable object store IDs during creation."""
         return self.user_selection_allowed
 
     def get_concrete_store_by_object_store_id(self, object_store_id: str) -> Optional["ConcreteObjectStore"]:
@@ -1297,13 +1657,13 @@ class HierarchicalObjectStore(NestedObjectStore):
     When creating objects only the first store is used.
     """
 
+    backends: Dict[int, BaseObjectStore]
     store_type = "hierarchical"
 
     def __init__(self, config, config_dict, fsmon=False):
         """The default constructor. Extends `NestedObjectStore`."""
         super().__init__(config, config_dict)
 
-        backends: Dict[int, ObjectStore] = {}
         is_private = config_dict.get("private", DEFAULT_PRIVATE)
         for order, backend_def in enumerate(config_dict["backends"]):
             backend_is_private = backend_def.get("private")
@@ -1318,9 +1678,8 @@ class HierarchicalObjectStore(NestedObjectStore):
                 assert backend_quota.get("source", DEFAULT_QUOTA_SOURCE) == DEFAULT_QUOTA_SOURCE
                 assert backend_quota.get("enabled", DEFAULT_QUOTA_ENABLED) == DEFAULT_QUOTA_ENABLED
 
-            backends[order] = build_object_store_from_config(config, config_dict=backend_def, fsmon=fsmon)
+            self.backends[order] = build_object_store_from_config(config, config_dict=backend_def, fsmon=fsmon)
 
-        self.backends = backends
         self.private = is_private
         quota_config = config_dict.get("quota", {})
         self.quota_source = quota_config.get("source", DEFAULT_QUOTA_SOURCE)
@@ -1352,21 +1711,21 @@ class HierarchicalObjectStore(NestedObjectStore):
         as_dict["private"] = self.private
         return as_dict
 
-    def _exists(self, obj, **kwargs):
+    def _exists(self, obj, **kwargs) -> bool:
         """Check all child object stores."""
         for store in self.backends.values():
             if store.exists(obj, **kwargs):
                 return True
         return False
 
-    def _construct_path(self, obj, **kwargs):
+    def _construct_path(self, obj, **kwargs) -> str:
         return self.backends[0].construct_path(obj, **kwargs)
 
     def _create(self, obj, **kwargs):
         """Call the primary object store."""
         return self.backends[0].create(obj, **kwargs)
 
-    def _is_private(self, obj):
+    def _is_private(self, obj) -> bool:
         # Unlink the DistributedObjectStore - the HierarchicalObjectStore does not use
         # object_store_id - so all the contained object stores need to define is_private
         # the same way.
@@ -1378,6 +1737,24 @@ class HierarchicalObjectStore(NestedObjectStore):
             self.quota_enabled,
         )
         return quota_source_map
+
+
+def serialize_static_object_store_config(object_store: ObjectStore, object_store_uris: Set[str]) -> Dict[str, Any]:
+    """Serialize a static object store configuration for database-less serialization.
+
+    The database-less part here comes from the fact these are used in job directories
+    during extended metadata collection. Any database/vault/app config details should
+    be unpacked and the result should be an object store configuration that doesn't
+    depend on those entities but which resolves to the same locations.
+    """
+    if len(object_store_uris) == 0:
+        return object_store.to_dict()
+    if not isinstance(object_store, DistributedObjectStore):
+        # TODO: Not for the MVP or first iteration - but potentially we could allow
+        # a concrete store here and then build a Distributed store from that and
+        # concrete stores represented by object_store_uris
+        raise ConfigDoesNotAllowException("ObjectStore configuration does not allow per-user object stores")
+    return object_store.to_dict(object_store_uris=object_store_uris)
 
 
 class QuotaModel(BaseModel):
@@ -1395,11 +1772,17 @@ class ConcreteObjectStoreModel(BaseModel):
     device: Optional[str] = None
 
 
-def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[BaseObjectStore], Dict[str, Any]]:
+def type_to_object_store_class(
+    store: str, fsmon: bool = False, user_object_store_resolver: Optional[UserObjectStoreResolver] = None
+) -> Tuple[Type[BaseObjectStore], Dict[str, Any]]:
     objectstore_class: Type[BaseObjectStore]
-    objectstore_constructor_kwds = {}
+    objectstore_constructor_kwds: Dict[str, Any] = {}
     if store == "disk":
         objectstore_class = DiskObjectStore
+    elif store == "boto3":
+        from .s3_boto3 import S3ObjectStore as Boto3ObjectStore
+
+        objectstore_class = Boto3ObjectStore
     elif store in ["s3", "aws_s3"]:
         from .s3 import S3ObjectStore
 
@@ -1415,6 +1798,7 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
     elif store == "distributed":
         objectstore_class = DistributedObjectStore
         objectstore_constructor_kwds["fsmon"] = fsmon
+        objectstore_constructor_kwds["user_object_store_resolver"] = user_object_store_resolver
     elif store == "hierarchical":
         objectstore_class = HierarchicalObjectStore
         objectstore_constructor_kwds["fsmon"] = fsmon
@@ -1430,6 +1814,14 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
         from .pithos import PithosObjectStore
 
         objectstore_class = PithosObjectStore
+    elif store == "rucio":
+        from .rucio import RucioObjectStore
+
+        objectstore_class = RucioObjectStore
+    elif store == "onedata":
+        from .onedata import OnedataObjectStore
+
+        objectstore_class = OnedataObjectStore
     else:
         raise Exception(f"Unrecognized object store definition: {store}")
     # Disable the Pulsar object store for now until it receives some attention
@@ -1440,8 +1832,28 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
     return objectstore_class, objectstore_constructor_kwds
 
 
+def build_test_object_store_from_user_config(
+    config,
+    object_store_config: ObjectStoreConfiguration,
+):
+    # check an object store configuration by building a standalone object store
+    # from a supplied user object store configuration.
+    config_dict = user_object_store_configuration_to_config_dict(object_store_config, uuid4().hex)
+    object_store = build_object_store_from_config(
+        config,
+        config_dict=config_dict,
+        disable_process_management=True,
+    )
+    return object_store
+
+
 def build_object_store_from_config(
-    config, fsmon=False, config_xml=None, config_dict=None, disable_process_management=False
+    config,
+    fsmon=False,
+    config_xml=None,
+    config_dict=None,
+    disable_process_management=False,
+    user_object_store_resolver: Optional[UserObjectStoreResolver] = None,
 ):
     """
     Invoke the appropriate object store.
@@ -1491,11 +1903,60 @@ def build_object_store_from_config(
         from_object = "dict"
         store = config_dict.get("type")
 
-    objectstore_class, objectstore_constructor_kwds = type_to_object_store_class(store, fsmon=fsmon)
+    objectstore_class, objectstore_constructor_kwds = type_to_object_store_class(
+        store, fsmon=fsmon, user_object_store_resolver=user_object_store_resolver
+    )
     if from_object == "xml":
         return objectstore_class.from_xml(config=config, config_xml=config_xml, **objectstore_constructor_kwds)
     else:
         return objectstore_class(config=config, config_dict=config_dict, **objectstore_constructor_kwds)
+
+
+# View into the application configuration that is shared between the global object store
+# and user defined object stores as produced by concrete_object_store.
+class UserObjectStoresAppConfig(BaseModel):
+    object_store_cache_path: str
+    object_store_cache_size: int
+    user_config_templates_use_saved_configuration: Literal["fallback", "preferred", "never"]
+    jobs_directory: str
+    new_file_path: str
+    umask: int
+    gid: int
+
+
+# TODO: this will need app details...
+# TODO: unit test from configuration dict...
+def concrete_object_store(
+    object_store_configuration: ObjectStoreConfiguration, app_config: UserObjectStoresAppConfig
+) -> ConcreteObjectStore:
+    # Adapt structured UserObjectStoresAppConfig into a more full configuration object as expected by
+    # the object stores
+    class GalaxyConfigAdapter:
+        # Hard code these, these will not support legacy features
+        object_store_check_old_style = False
+        object_store_store_by = "uuid"
+
+        # Set this to false for now... not sure but we may want to revisit this
+        enable_quotas = False
+
+        # These need to come in from Galaxy's config
+        jobs_directory = app_config.jobs_directory
+        new_file_path = app_config.new_file_path
+        umask = app_config.umask
+        gid = app_config.gid
+        object_store_cache_size = app_config.object_store_cache_size
+        object_store_cache_path = app_config.object_store_cache_path
+
+    objectstore_class, objectstore_constructor_kwds = type_to_object_store_class(
+        store=object_store_configuration.type,
+        fsmon=False,
+    )
+    assert issubclass(objectstore_class, ConcreteObjectStore)
+    return objectstore_class(
+        config=GalaxyConfigAdapter(),
+        config_dict=object_store_configuration.model_dump(),
+        **objectstore_constructor_kwds,
+    )
 
 
 def local_extra_dirs(func):
@@ -1509,8 +1970,8 @@ def local_extra_dirs(func):
                 if c.__name__ == "DiskObjectStore":
                     return getattr(c, func.__name__)(self, *args, **kwargs)
             raise Exception(
-                "Could not call DiskObjectStore's %s method, does your "
-                "Object Store plugin inherit from DiskObjectStore?" % func.__name__
+                f"Could not call DiskObjectStore's {func.__name__} method, does your "
+                "Object Store plugin inherit from DiskObjectStore?"
             )
 
     return wraps
@@ -1526,6 +1987,7 @@ def config_to_dict(config):
         "jobs_directory": config.jobs_directory,
         "new_file_path": config.new_file_path,
         "object_store_cache_path": config.object_store_cache_path,
+        "object_store_cache_size": config.object_store_cache_size,
         "gid": config.gid,
     }
 
@@ -1589,20 +2051,40 @@ class QuotaSourceMap:
                 exclude_object_store_ids.append(backend_id)
         return exclude_object_store_ids
 
-    def get_id_to_source_pairs(self):
+    def get_id_to_source_pairs(self, include_default_quota_source=False):
         pairs = []
         for backend_id, backend_source_map in self.backends.items():
-            if backend_source_map.default_quota_source is not None and backend_source_map.default_quota_enabled:
+            if (
+                backend_source_map.default_quota_source is not None or include_default_quota_source
+            ) and backend_source_map.default_quota_enabled:
                 pairs.append((backend_id, backend_source_map.default_quota_source))
         return pairs
 
-    def ids_per_quota_source(self):
-        quota_sources: Dict[str, List[str]] = {}
-        for object_id, quota_source_label in self.get_id_to_source_pairs():
+    def ids_per_quota_source(self, include_default_quota_source=False):
+        quota_sources: Dict[Optional[str], List[str]] = {}
+        for object_id, quota_source_label in self.get_id_to_source_pairs(
+            include_default_quota_source=include_default_quota_source
+        ):
             if quota_source_label not in quota_sources:
                 quota_sources[quota_source_label] = []
             quota_sources[quota_source_label].append(object_id)
         return quota_sources
+
+
+class ObjectCreationProblem(Exception):
+    pass
+
+
+# Calling these client_message to make it clear they should use the language of the
+# Galaxy UI/UX - for instance "storage location" not "objectstore".
+class ObjectCreationProblemSharingDisabled(ObjectCreationProblem):
+    client_message = "Job attempted to create sharable output datasets in a storage location with sharing disabled"
+
+
+class ObjectCreationProblemStoreFull(ObjectCreationProblem):
+    client_message = (
+        "Job attempted to create output datasets in a full storage location, please contact your admin for more details"
+    )
 
 
 class ObjectStorePopulator:
@@ -1619,21 +2101,20 @@ class ObjectStorePopulator:
         self.object_store_id = None
         self.user = user
 
-    def set_object_store_id(self, data, require_shareable=False):
+    def set_object_store_id(self, data: "DatasetInstance", require_shareable: bool = False) -> None:
         self.set_dataset_object_store_id(data.dataset, require_shareable=require_shareable)
 
-    def set_dataset_object_store_id(self, dataset, require_shareable=True):
+    def set_dataset_object_store_id(self, dataset: "Dataset", require_shareable: bool = True) -> None:
         # Create an empty file immediately.  The first dataset will be
         # created in the "default" store, all others will be created in
         # the same store as the first.
         dataset.object_store_id = self.object_store_id
         try:
-            ensure_non_private = require_shareable
-            concrete_store = self.object_store.create(dataset, ensure_non_private=ensure_non_private)
+            concrete_store = self.object_store.create(dataset)
             if concrete_store.private and require_shareable:
-                raise Exception("Attempted to create shared output datasets in objectstore with sharing disabled")
+                raise ObjectCreationProblemSharingDisabled()
         except ObjectInvalid:
-            raise Exception("Unable to create output dataset: object store is full")
+            raise ObjectCreationProblemStoreFull()
         self.object_store_id = dataset.object_store_id  # these will be the same thing after the first output
 
 
@@ -1643,23 +2124,32 @@ def persist_extra_files(
     primary_data: "DatasetInstance",
     extra_files_path_name: Optional[str] = None,
 ) -> None:
-    if os.path.exists(src_extra_files_path):
+    if not primary_data.dataset.purged and os.path.exists(src_extra_files_path):
         assert primary_data.dataset
         if not extra_files_path_name:
             extra_files_path_name = primary_data.dataset.extra_files_path_name_from(object_store)
         assert extra_files_path_name
-        for root, _dirs, files in safe_walk(src_extra_files_path):
-            extra_dir = os.path.join(extra_files_path_name, os.path.relpath(root, src_extra_files_path))
-            extra_dir = os.path.normpath(extra_dir)
-            for f in files:
-                if not in_directory(f, src_extra_files_path):
-                    # Unclear if this can ever happen if we use safe_walk ... probably not ?
-                    raise MalformedContents(f"Invalid dataset path: {f}")
-                object_store.update_from_file(
-                    primary_data.dataset,
-                    extra_dir=extra_dir,
-                    alt_name=f,
-                    file_name=os.path.join(root, f),
-                    create=True,
-                    preserve_symlinks=True,
-                )
+        persist_extra_files_for_dataset(object_store, src_extra_files_path, primary_data.dataset, extra_files_path_name)
+
+
+def persist_extra_files_for_dataset(
+    object_store: ObjectStore,
+    src_extra_files_path: str,
+    dataset: "Dataset",
+    extra_files_path_name: str,
+):
+    for root, _dirs, files in safe_walk(src_extra_files_path):
+        extra_dir = os.path.join(extra_files_path_name, os.path.relpath(root, src_extra_files_path))
+        extra_dir = os.path.normpath(extra_dir)
+        for f in files:
+            if not in_directory(f, src_extra_files_path):
+                # Unclear if this can ever happen if we use safe_walk ... probably not ?
+                raise MalformedContents(f"Invalid dataset path: {f}")
+            object_store.update_from_file(
+                dataset,
+                extra_dir=extra_dir,
+                alt_name=f,
+                file_name=os.path.join(root, f),
+                create=True,
+                preserve_symlinks=True,
+            )

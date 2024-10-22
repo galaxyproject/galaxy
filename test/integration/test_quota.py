@@ -85,6 +85,26 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
         json_response = show_response.json()
         assert json_response["name"] == new_quota_name
 
+    def test_update_description(self):
+        quota_name = "test-update-quota-description"
+        quota = self._create_quota_with_name(quota_name)
+        quota_id = quota["id"]
+
+        # update description (one needs to specify a name even if should not be changed)
+        quota_description = "description of test-updated-quota-name"
+        update_payload = {
+            "name": quota_name,
+            "description": quota_description,
+        }
+        put_response = self._put(f"quotas/{quota_id}", data=update_payload, json=True)
+        put_response.raise_for_status()
+
+        show_response = self._get(f"quotas/{quota_id}")
+        show_response.raise_for_status()
+        json_response = show_response.json()
+        assert json_response["name"] == quota_name
+        assert json_response["description"] == quota_description
+
     def test_delete(self):
         quota_name = "test-delete-quota"
         quota = self._create_quota_with_name(quota_name)
@@ -195,6 +215,13 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
 
         labels = [q["quota_source_label"] for q in quotas]
         assert "mylabel" in labels
+
+        with self.dataset_populator.test_history() as history_id:
+            response = self.dataset_populator._get_contents_request(
+                history_id, data={"q": "quota_source_label-eq", "qv": "invalid", "v": "dev"}
+            )
+        assert response.status_code == 400
+        assert "unparsable value for filter" in response.json()["err_msg"]
 
     def _create_quota_with_name(self, quota_name: str, is_default: bool = False):
         payload = self._build_quota_payload_with_name(quota_name, is_default)

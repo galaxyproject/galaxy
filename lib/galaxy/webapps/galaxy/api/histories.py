@@ -8,6 +8,7 @@ import logging
 from typing import (
     Any,
     List,
+    Literal,
     Optional,
     Union,
 )
@@ -33,7 +34,10 @@ from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    AcceptHeaderValidator,
+    DecodedDatabaseIdField,
+)
 from galaxy.schema.history import (
     HistoryIndexQueryPayload,
     HistorySortByEnum,
@@ -57,6 +61,7 @@ from galaxy.schema.schema import (
     ShareWithPayload,
     SharingStatus,
     StoreExportPayload,
+    UpdateHistoryPayload,
     WriteStoreToPayload,
 )
 from galaxy.schema.types import LatestLiteral
@@ -121,6 +126,12 @@ ShowSharedQueryParam: bool = Query(
     default=False, title="Include histories shared with authenticated user.", description=""
 )
 
+ShowArchivedQueryParam: Optional[bool] = Query(
+    default=None,
+    title="Show Archived",
+    description="Whether to include archived histories.",
+)
+
 SortByQueryParam: HistorySortByEnum = Query(
     default="update_time",
     title="Sort attribute",
@@ -156,6 +167,16 @@ class CreateHistoryFormData(CreateHistoryPayload):
     """Uses Form data instead of JSON"""
 
 
+IndexExportsAcceptHeader = Annotated[
+    Literal[
+        "application/json",
+        "application/vnd.galaxy.task.export+json",
+    ],
+    AcceptHeaderValidator,
+    Header(description="Accept header to determine the response format. Default is 'application/json'."),
+]
+
+
 @router.cbv
 class FastAPIHistories:
     service: HistoriesService = depends(HistoriesService)
@@ -163,6 +184,7 @@ class FastAPIHistories:
     @router.get(
         "/api/histories",
         summary="Returns histories available to the current user.",
+        response_model_exclude_unset=True,
     )
     def index(
         self,
@@ -173,6 +195,7 @@ class FastAPIHistories:
         show_own: bool = ShowOwnQueryParam,
         show_published: bool = ShowPublishedQueryParam,
         show_shared: bool = ShowSharedQueryParam,
+        show_archived: Optional[bool] = ShowArchivedQueryParam,
         sort_by: HistorySortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
         search: Optional[str] = SearchQueryParam,
@@ -191,17 +214,20 @@ class FastAPIHistories:
                 trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
             )
         else:
-            payload = HistoryIndexQueryPayload.construct(
+            payload = HistoryIndexQueryPayload.model_construct(
                 show_own=show_own,
                 show_published=show_published,
                 show_shared=show_shared,
+                show_archived=show_archived,
                 sort_by=sort_by,
                 sort_desc=sort_desc,
                 limit=limit,
                 offset=offset,
                 search=search,
             )
-            entries, total_matches = self.service.index_query(trans, payload, include_total_count=True)
+            entries, total_matches = self.service.index_query(
+                trans, payload, serialization_params, include_total_count=True
+            )
             response.headers["total_matches"] = str(total_matches)
             return entries
 
@@ -218,6 +244,7 @@ class FastAPIHistories:
     @router.get(
         "/api/histories/deleted",
         summary="Returns deleted histories for the current user.",
+        response_model_exclude_unset=True,
     )
     def index_deleted(
         self,
@@ -233,6 +260,7 @@ class FastAPIHistories:
     @router.get(
         "/api/histories/published",
         summary="Return all histories that are published.",
+        response_model_exclude_unset=True,
     )
     def published(
         self,
@@ -245,6 +273,7 @@ class FastAPIHistories:
     @router.get(
         "/api/histories/shared_with_me",
         summary="Return all histories that are shared with the current user.",
+        response_model_exclude_unset=True,
     )
     def shared_with_me(
         self,
@@ -257,6 +286,7 @@ class FastAPIHistories:
     @router.get(
         "/api/histories/archived",
         summary="Get a list of all archived histories for the current user.",
+        response_model_exclude_unset=True,
     )
     def get_archived_histories(
         self,
@@ -278,6 +308,7 @@ class FastAPIHistories:
     @router.get(
         "/api/histories/most_recently_used",
         summary="Returns the most recently used history of the user.",
+        response_model_exclude_unset=True,
     )
     def show_recent(
         self,
@@ -290,6 +321,7 @@ class FastAPIHistories:
         "/api/histories/{history_id}",
         name="history",
         summary="Returns the history with the given ID.",
+        response_model_exclude_unset=True,
     )
     def show(
         self,
@@ -345,6 +377,7 @@ class FastAPIHistories:
     @router.post(
         "/api/histories",
         summary="Creates a new history.",
+        response_model_exclude_unset=True,
     )
     def create(
         self,
@@ -367,6 +400,7 @@ class FastAPIHistories:
     @router.delete(
         "/api/histories/{history_id}",
         summary="Marks the history with the given ID as deleted.",
+        response_model_exclude_unset=True,
     )
     def delete(
         self,
@@ -383,6 +417,7 @@ class FastAPIHistories:
     @router.put(
         "/api/histories/batch/delete",
         summary="Marks several histories with the given IDs as deleted.",
+        response_model_exclude_unset=True,
     )
     def batch_delete(
         self,
@@ -402,6 +437,7 @@ class FastAPIHistories:
     @router.post(
         "/api/histories/deleted/{history_id}/undelete",
         summary="Restores a deleted history with the given ID (that hasn't been purged).",
+        response_model_exclude_unset=True,
     )
     def undelete(
         self,
@@ -414,6 +450,7 @@ class FastAPIHistories:
     @router.put(
         "/api/histories/batch/undelete",
         summary="Marks several histories with the given IDs as undeleted.",
+        response_model_exclude_unset=True,
     )
     def batch_undelete(
         self,
@@ -430,22 +467,25 @@ class FastAPIHistories:
     @router.put(
         "/api/histories/{history_id}",
         summary="Updates the values for the history with the given ID.",
+        response_model_exclude_unset=True,
     )
     def update(
         self,
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        payload: Any = Body(
+        payload: UpdateHistoryPayload = Body(
             ...,
             description="Object containing any of the editable fields of the history.",
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryView:
-        return self.service.update(trans, history_id, payload, serialization_params)
+        data = payload.model_dump(exclude_unset=True)
+        return self.service.update(trans, history_id, data, serialization_params)
 
     @router.post(
         "/api/histories/from_store",
         summary="Create histories from a model store.",
+        response_model_exclude_unset=True,
     )
     def create_from_store(
         self,
@@ -490,7 +530,7 @@ class FastAPIHistories:
         trans: ProvidesHistoryContext = DependsOnTrans,
         limit: Optional[int] = LimitQueryParam,
         offset: Optional[int] = OffsetQueryParam,
-        accept: str = Header(default="application/json", include_in_schema=False),
+        accept: IndexExportsAcceptHeader = "application/json",
     ) -> Union[JobExportHistoryArchiveListResponse, ExportTaskListResponse]:
         """
         By default the legacy job-based history exports (jeha) are returned.
@@ -590,6 +630,7 @@ class FastAPIHistories:
     @router.post(
         "/api/histories/{history_id}/archive",
         summary="Archive a history.",
+        response_model_exclude_unset=True,
     )
     def archive_history(
         self,
@@ -617,6 +658,7 @@ class FastAPIHistories:
     @router.put(
         "/api/histories/{history_id}/archive/restore",
         summary="Restore an archived history.",
+        response_model_exclude_unset=True,
     )
     def restore_archived_history(
         self,

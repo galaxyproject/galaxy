@@ -10,7 +10,10 @@ from tool_shed.test.base.populators import (
     HasRepositoryId,
     repo_tars,
 )
-from tool_shed_client.schema import RepositoryRevisionMetadata
+from tool_shed_client.schema import (
+    RepositoryRevisionMetadata,
+    UpdateRepositoryRequest,
+)
 from ..base.api import (
     ShedApiTestCase,
     skip_if_api_v1,
@@ -48,6 +51,40 @@ class TestShedRepositoriesApi(ShedApiTestCase):
             COLUMN_MAKER_PATH,
         )
         assert repository_update.is_ok
+
+    def test_update_repository_info(self):
+        populator = self.populator
+        prefix = "testupdateinfo"
+        category_id = populator.new_category(prefix=prefix).id
+        repository = populator.new_repository(category_id, prefix=prefix)
+        repository_id = repository.id
+        request = UpdateRepositoryRequest(homepage_url="https://www.google.com")
+        update = populator.update(repository_id, request)
+        assert update.homepage_url == "https://www.google.com"
+        assert populator.get_repository(repository_id).homepage_url == "https://www.google.com"
+
+    def test_update_category(self):
+        populator = self.populator
+        prefix = "testupdatecategory"
+
+        old_category_id = populator.new_category(prefix=prefix).id
+        new_category_id = populator.new_category(prefix=prefix).id
+
+        populator.assert_category_has_n_repositories(old_category_id, 0)
+        populator.assert_category_has_n_repositories(new_category_id, 0)
+
+        repository = populator.new_repository(old_category_id, prefix=prefix)
+        repository_id = repository.id
+
+        populator.assert_category_has_n_repositories(old_category_id, 1)
+        populator.assert_category_has_n_repositories(new_category_id, 0)
+
+        request = UpdateRepositoryRequest(category_ids=[new_category_id])
+        populator.update(repository_id, request)
+
+        # does this mean we cannot remove categories?
+        populator.assert_category_has_n_repositories(old_category_id, 0)
+        populator.assert_category_has_n_repositories(new_category_id, 1)
 
     # used by getRepository in TS client.
     def test_metadata_simple(self):

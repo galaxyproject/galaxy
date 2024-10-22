@@ -5,6 +5,8 @@ the security parameter to encode IDs may be changed by admins). Test case also v
 exported API values are encoded though.
 """
 
+import re
+
 from sqlalchemy import select
 
 from galaxy import model
@@ -21,6 +23,7 @@ class TestPageJsonEncodingIntegration(integration_util.IntegrationTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_page_encoding(self, history_id: str):
+        history_num_re = re.compile(r'id="History-\d+"')
         request = dict(
             slug="mypage",
             title="MY PAGE",
@@ -30,13 +33,13 @@ class TestPageJsonEncodingIntegration(integration_util.IntegrationTestCase):
         api_asserts.assert_status_code_is_ok(page_response)
         sa_session = self._app.model.session
         page_revision = sa_session.scalars(select(model.PageRevision).filter_by(content_format="html")).all()[0]
-        assert '''id="History-1"''' in page_revision.content, page_revision.content
+        assert history_num_re.search(page_revision.content), page_revision.content
         assert f'''id="History-{history_id}"''' not in page_revision.content, page_revision.content
 
         show_page_response = self._get("pages/{}".format(page_response.json()["id"]))
         api_asserts.assert_status_code_is_ok(show_page_response)
         content = show_page_response.json()["content"]
-        assert '''id="History-1"''' not in content, content
+        assert not history_num_re.search(content), content
         assert f'''id="History-{history_id}"''' in content, content
 
     def test_page_encoding_markdown(self, history_id: str):

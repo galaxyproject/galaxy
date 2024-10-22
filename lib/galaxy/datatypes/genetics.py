@@ -91,7 +91,7 @@ class GenomeGraphs(Tabular):
         """
         return open(dataset.get_file_name(), "rb")
 
-    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         """
         from the ever-helpful angie hinrichs angie@soe.ucsc.edu
         a genome graphs call looks like this
@@ -115,9 +115,7 @@ class GenomeGraphs(Tabular):
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build("ucsc", dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites("ucsc"):
                     site_url = site_url.replace("/hgTracks?", "/hgGenome?")  # for genome graphs
-                    internal_url = "%s" % app.legacy_url_for(
-                        mapper=app.legacy_mapper,
-                        environ=request.environ,
+                    internal_url = app.url_for(
                         controller="dataset",
                         dataset_id=dataset.id,
                         action="display_at",
@@ -125,7 +123,7 @@ class GenomeGraphs(Tabular):
                     )
                     display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (
                         base_url,
-                        app.legacy_url_for(mapper=app.legacy_mapper, environ=request.environ, controller="root"),
+                        app.url_for(controller="root"),
                         dataset.id,
                         type,
                     )
@@ -336,7 +334,6 @@ class Rgenetics(Html):
         ]
         for fname in flist:
             sfname = os.path.split(fname)[-1]
-            f, e = os.path.splitext(fname)
             rval.append(f'<li><a href="{sfname}">{sfname}</a></li>')
         rval.append("</ul></body></html>")
         with open(dataset.get_file_name(), "w") as f:
@@ -866,16 +863,15 @@ class RexpBase(Html):
         pp = os.path.join(dataset.extra_files_path, pn)
         dataset.metadata.pheno_path = pp
         try:
-            with open(pp) as f:
-                pf = f.readlines()  # read the basename.phenodata in the extra_files_path
+            with open(pp) as file:
+                pf = file.readlines()  # read the basename.phenodata in the extra_files_path
         except Exception:
             pf = None
         if pf:
-            h = pf[0].strip()
-            h = h.split("\t")  # hope is header
-            h = [escape(x) for x in h]
-            dataset.metadata.column_names = h
-            dataset.metadata.columns = len(h)
+            header = pf[0].strip()
+            columns = [escape(x) for x in header.split("\t")]  # hope is header
+            dataset.metadata.column_names = columns
+            dataset.metadata.columns = len(columns)
             dataset.peek = "".join(pf[:5])
         else:
             dataset.metadata.column_names = []

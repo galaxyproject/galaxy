@@ -3,6 +3,7 @@ from enum import Enum
 from typing import (
     Any,
     Dict,
+    Generic,
     List,
     Optional,
     Union,
@@ -21,6 +22,10 @@ from typing_extensions import (
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
+)
+from galaxy.schema.generics import (
+    DatabaseIdT,
+    GenericModel,
 )
 from galaxy.schema.schema import Model
 from galaxy.schema.types import (
@@ -113,19 +118,29 @@ class NewSharedItemNotificationContent(Model):
     slug: str = Field(..., title="Slug", description="The slug of the shared item. Used for the link to the item.")
 
 
-AnyNotificationContent = Annotated[
+NotificationContentField = Field(
+    default=...,
+    discriminator="category",
+    title="Content",
+    description="The content of the notification. The structure depends on the category.",
+)
+
+AnyUserNotificationContent = Annotated[
     Union[
         MessageNotificationContent,
         NewSharedItemNotificationContent,
+    ],
+    NotificationContentField,
+]
+
+AnyNotificationContent = Annotated[
+    Union[
+        AnyUserNotificationContent,
         BroadcastNotificationContent,
     ],
-    Field(
-        default=...,
-        discriminator="category",
-        title="Content",
-        description="The content of the notification. The structure depends on the category.",
-    ),
+    NotificationContentField,
 ]
+
 
 NotificationIdField = Field(
     ...,
@@ -195,6 +210,7 @@ class UserNotificationResponse(NotificationResponse):
     """A notification response specific to the user."""
 
     category: PersonalNotificationCategory = NotificationCategoryField
+    content: AnyUserNotificationContent
     seen_time: Optional[datetime] = Field(
         None,
         title="Seen time",
@@ -259,30 +275,30 @@ class NotificationCreateData(Model):
     )
 
 
-class NotificationRecipients(Model):
+class GenericNotificationRecipients(GenericModel, Generic[DatabaseIdT]):
     """The recipients of a notification. Can be a combination of users, groups and roles."""
 
-    user_ids: List[DecodedDatabaseIdField] = Field(
+    user_ids: List[DatabaseIdT] = Field(
         default=[],
         title="User IDs",
         description="The list of encoded user IDs of the users that should receive the notification.",
     )
-    group_ids: List[DecodedDatabaseIdField] = Field(
+    group_ids: List[DatabaseIdT] = Field(
         default=[],
         title="Group IDs",
         description="The list of encoded group IDs of the groups that should receive the notification.",
     )
-    role_ids: List[DecodedDatabaseIdField] = Field(
+    role_ids: List[DatabaseIdT] = Field(
         default=[],
         title="Role IDs",
         description="The list of encoded role IDs of the roles that should receive the notification.",
     )
 
 
-class NotificationCreateRequest(Model):
+class GenericNotificationCreate(GenericModel, Generic[DatabaseIdT]):
     """Contains the recipients and the notification to create."""
 
-    recipients: NotificationRecipients = Field(
+    recipients: GenericNotificationRecipients[DatabaseIdT] = Field(
         ...,
         title="Recipients",
         description="The recipients of the notification. Can be a combination of users, groups and roles.",
@@ -292,6 +308,20 @@ class NotificationCreateRequest(Model):
         title="Notification",
         description="The notification to create. The structure depends on the category.",
     )
+
+
+class NotificationCreateRequest(GenericNotificationCreate[int]):
+    galaxy_url: Optional[str] = Field(
+        None,
+        title="Galaxy URL",
+        description="The URL of the Galaxy instance. Used to generate links in the notification content.",
+    )
+
+
+NotificationRecipients = GenericNotificationRecipients[int]
+
+
+NotificationCreateRequestBody = GenericNotificationCreate[DecodedDatabaseIdField]
 
 
 class BroadcastNotificationCreateRequest(NotificationCreateData):
@@ -405,8 +435,15 @@ class NotificationChannelSettings(Model):
         title="Push",
         description="Whether the user wants to receive push notifications in the browser for this category.",
     )
-    # TODO: Add more channels
-    # email: bool # Not supported for now
+    email: bool = Field(
+        default=True,
+        title="Email",
+        description=(
+            "Whether the user wants to receive email notifications for this category. "
+            "This setting will be ignored unless the server supports asynchronous tasks."
+        ),
+    )
+    # TODO: Add more channels here and implement the corresponding plugin in lib/galaxy/managers/notification.py
     # matrix: bool # Possible future Matrix.org integration?
 
 

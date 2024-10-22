@@ -63,6 +63,24 @@ class TestJobsApi(ApiTestCase, TestsTools):
         self._assert_has_keys(job, "command_line", "external_id", "handler")
 
     @pytest.mark.require_new_history
+    def test_job_list_collection_view(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs_response = self._get("jobs?view=collection")
+        self._assert_status_code_is_ok(jobs_response)
+        jobs = jobs_response.json()
+        job = jobs[0]
+        self._assert_has_keys(job, "id", "tool_id", "state")
+
+    @pytest.mark.require_new_history
+    def test_job_list_default_view(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs_response = self._get(f"jobs?history_id={history_id}")
+        self._assert_status_code_is_ok(jobs_response)
+        jobs = jobs_response.json()
+        job = jobs[0]
+        self._assert_has_keys(job, "id", "tool_id", "state")
+
+    @pytest.mark.require_new_history
     def test_index_state_filter(self, history_id):
         # Initial number of ok jobs
         original_count = len(self.__uploads_with_state("ok"))
@@ -182,14 +200,19 @@ steps:
 
     @pytest.mark.require_new_history
     def test_index_limit_and_offset_filter(self, history_id):
+        # create 2 datasets
+        self.__history_with_new_dataset(history_id)
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(data={"history_id": history_id})
         assert len(jobs) > 0
         length = len(jobs)
         jobs = self.__jobs_index(data={"history_id": history_id, "offset": 1})
         assert len(jobs) == length - 1
-        jobs = self.__jobs_index(data={"history_id": history_id, "limit": 0})
-        assert len(jobs) == 0
+        jobs = self.__jobs_index(data={"history_id": history_id, "limit": 1})
+        assert len(jobs) == 1
+        response = self._get("jobs", data={"history_id": history_id, "limit": -1})
+        assert response.status_code == 400
+        assert response.json()["err_msg"] == "Input should be greater than or equal to 1 in ('query', 'limit')"
 
     @pytest.mark.require_new_history
     def test_index_search_filter_tool_id(self, history_id):
@@ -441,6 +464,32 @@ steps:
             assert hdca["visible"]
             assert isoparse(hdca["update_time"]) > (isoparse(first_update_time))
 
+    def test_rerun_exception_handling(self):
+        with self.dataset_populator.test_history() as history_id:
+            other_run_response = self.dataset_populator.run_tool(
+                tool_id="job_properties",
+                inputs={},
+                history_id=history_id,
+            )
+            unrelated_job_id = other_run_response["jobs"][0]["id"]
+            run_response = self._run_map_over_error(history_id)
+            job_id = run_response["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id)
+            failed_hdca = self.dataset_populator.get_history_collection_details(
+                history_id=history_id,
+                content_id=run_response["implicit_collections"][0]["id"],
+                assert_ok=False,
+            )
+            assert failed_hdca["visible"]
+            rerun_params = self._get(f"jobs/{job_id}/build_for_rerun").json()
+            inputs = rerun_params["state_inputs"]
+            inputs["rerun_remap_job_id"] = unrelated_job_id
+            before_rerun_items = self.dataset_populator.get_history_contents(history_id)
+            rerun_response = self._run_detect_errors(history_id=history_id, inputs=inputs)
+            assert "does not match rerun tool id" in rerun_response["err_msg"]
+            after_rerun_items = self.dataset_populator.get_history_contents(history_id)
+            assert len(before_rerun_items) == len(after_rerun_items)
+
     @skip_without_tool("empty_output")
     def test_common_problems(self):
         with self.dataset_populator.test_history() as history_id:
@@ -570,6 +619,23 @@ steps:
 
         if output_dataset_paths_exist:
             wait_on(paths_deleted, "path deletion")
+
+    def test_submission_on_collection_with_deleted_element(self, history_id):
+        hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id=history_id, wait=True).json()
+        hda_id = hdca["elements"][0]["object"]["elements"][0]["object"]["id"]
+        self.dataset_populator.delete_dataset(history_id=history_id, content_id=hda_id)
+        response = self.dataset_populator.run_tool_raw(
+            "is_of_type",
+            inputs={
+                "collection": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"], "map_over_type": "list"}]},
+            },
+            history_id=history_id,
+        )
+        assert response.status_code == 400
+        assert (
+            response.json()["err_msg"]
+            == "parameter 'collection': the previously selected dataset collection has elements that are deleted."
+        )
 
     @pytest.mark.require_new_history
     @skip_without_tool("create_2")

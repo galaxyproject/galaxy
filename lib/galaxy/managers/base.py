@@ -110,6 +110,8 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
             raise exceptions.ItemOwnershipException(
                 f"{item.__class__.__name__} is not owned by the current user", type="error"
             )
+        # no need to check accessibility if we're the owner
+        return item
 
     # Verify accessible:
     #   if it's part of a lib - can they access via security
@@ -178,7 +180,7 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
         item = trans.sa_session.query(item_class).get(decoded_id)
         assert item is not None
     except Exception:
-        log.exception(f"Invalid {class_name} id ( {id} ) specified.")
+        log.warning(f"Invalid {class_name} id ( {id} ) specified.")
         raise exceptions.MessageException(f"Invalid {class_name} id ( {id} ) specified", type="error")
 
     if check_ownership or check_accessible:
@@ -318,9 +320,9 @@ class ModelManager(Generic[U]):
         # overridden to raise serializable errors
         try:
             return query.one()
-        except sqlalchemy.orm.exc.NoResultFound:
+        except sqlalchemy.exc.NoResultFound:
             raise exceptions.ObjectNotFound(f"{self.model_class.__name__} not found")
-        except sqlalchemy.orm.exc.MultipleResultsFound:
+        except sqlalchemy.exc.MultipleResultsFound:
             raise exceptions.InconsistentDatabase(f"found more than one {self.model_class.__name__}")
 
     # NOTE: at this layer, all ids are expected to be decoded and in int form
@@ -501,18 +503,18 @@ class ModelManager(Generic[U]):
         """
         raise exceptions.NotImplemented("Abstract method")
 
-    def update(self, item, new_values, flush=True, **kwargs) -> U:
+    def update(self, item: U, new_values: Dict[str, Any], flush: bool = True, **kwargs) -> U:
         """
         Given a dictionary of new values, update `item` and return it.
 
         ..note: NO validation or deserialization occurs here.
         """
-        self.session().add(item)
         for key, value in new_values.items():
             if hasattr(item, key):
                 setattr(item, key, value)
+        session = self.session()
+        session.add(item)
         if flush:
-            session = self.session()
             with transaction(session):
                 session.commit()
         return item
@@ -697,7 +699,7 @@ class ModelSerializer(HasAModelManager[T]):
                 try:
                     returned[key] = self.serializers[key](item, key, **context)
                 except SkipAttribute:
-                    # dont add this key if the deserializer threw this
+                    # don't add this key if the serializer threw this
                     pass
             elif key in self.serializable_keyset:
                 returned[key] = self.default_serializer(item, key, **context)

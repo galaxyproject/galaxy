@@ -5,6 +5,8 @@ on:
 jobs:
   onMerged:
     name: "Check Labels on merge"
+    permissions:
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - name: Check Labels on merge
@@ -13,9 +15,8 @@ jobs:
           ! contains(join(github.event.pull_request.labels.*.name, ', '), 'kind/') &&
           ! contains(github.event.pull_request.labels.*.name, 'merge') &&
           ! contains(github.event.pull_request.labels.*.name, 'minor')
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             github.rest.issues.createComment({
               owner: context.repo.owner,

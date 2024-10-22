@@ -670,7 +670,7 @@ class FileParameter(MetadataParameter):
                 # directory. Correct.
                 file_name = path_rewriter(file_name)
             mf.update_from_file(file_name)
-            value = mf.id
+            value = str(mf.uuid)
         return value
 
     def to_external_value(self, value):
@@ -692,11 +692,9 @@ class FileParameter(MetadataParameter):
             sa_session = object_session(dataset)
             if sa_session:
                 sa_session.add(mf)
-                with transaction(sa_session):
-                    sa_session.commit()  # commit to assign id
             return mf
         else:
-            # we need to make a tmp file that is accessable to the head node,
+            # we need to make a tmp file that is accessible to the head node,
             # we will be copying its contents into the MetadataFile objects filename after restoring from JSON
             # we do not include 'dataset' in the kwds passed, as from_JSON_value() will handle this for us
             return MetadataTempFile(metadata_tmp_files_dir=metadata_tmp_files_dir, **kwds)

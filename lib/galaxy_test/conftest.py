@@ -4,12 +4,16 @@ import uuid
 from urllib.parse import urlencode
 
 import pytest
-import requests
 
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from galaxy.web import statsd_client as statsd
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.driver.driver_util import GalaxyTestDriver
+
+pytest_plugins = ("celery.contrib.pytest",)
 
 
 @pytest.fixture(scope="session", autouse=True)

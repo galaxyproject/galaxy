@@ -1,0 +1,31 @@
+- id: aws_private
+  version: 0
+  name: Amazon Web Services Private Bucket
+  description: Setup access to a private AWS bucket using a secret access key.
+  configuration:
+    type: s3fs
+    bucket: "{{ bucket }}"
+    writable: "{{ writable }}"
+    secret: "{{ secret_key }}"
+    key: "{{ access_key }}"
+  variables:
+    access_key:
+      label: Access Key ID
+      type: string
+      help: |
+        The "access key ID" as defined in the [Amazon Documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html).
+    bucket:
+      label: Bucket
+      type: string
+      help: |
+        The [Amazon Web Services Bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingBucket.html) to
+        access. This should be a bucket the user described by the Access Key ID has access to.
+    writable:
+      label: Writable?
+      type: boolean
+      help: Is this a bucket you have permission to write to?
+  secrets:
+    secret_key:
+      label: Secret Access Key
+      help: |
+        The "secret access key" as defined in the [Amazon Documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html).

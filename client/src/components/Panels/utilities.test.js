@@ -147,6 +147,14 @@ describe("test helpers in tool searching utilities", () => {
                 tools: Object.values(tempToolsList.tools),
                 panel: tempToolPanel.default,
             },
+            {
+                // section is searchable if provided "section:"
+                q: "section:Lift-Over",
+                expectedResults: ["liftOver1"],
+                keys: { description: 1, name: 2 },
+                tools: toolsList,
+                panel: toolsListInPanel,
+            },
             // if at least couple words match, return results
             {
                 q: "filter datasets",

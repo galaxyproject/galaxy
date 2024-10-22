@@ -9,6 +9,7 @@ import logging
 from typing import Dict
 
 from galaxy import model
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers import (
     annotatable,
     base,
@@ -40,9 +41,11 @@ def stream_dataset_collection(dataset_collection_instance, upstream_mod_zip=Fals
 
 
 def write_dataset_collection(dataset_collection_instance, archive):
+    if not dataset_collection_instance.collection.populated_optimized:
+        raise RequestParameterInvalidException("Attempt to write dataset collection that has not been populated yet")
     names, hdas = get_hda_and_element_identifiers(dataset_collection_instance)
     for name, hda in zip(names, hdas):
-        if hda.state != hda.states.OK:
+        if hda.state != hda.states.OK or hda.purged or hda.dataset.purged:
             continue
         for file_path, relpath in hda.datatype.to_archive(dataset=hda, name=name):
             archive.write(file_path, relpath)
@@ -272,7 +275,6 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "job_source_type",
                 "job_state_summary",
                 "name",
-                "type_id",
                 "deleted",
                 "visible",
                 "type",

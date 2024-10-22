@@ -117,4 +117,4 @@ def get_openapi(
         output["webhooks"] = webhook_paths
     if tags:
         output["tags"] = tags
-    return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)  # type: ignore
+    return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)

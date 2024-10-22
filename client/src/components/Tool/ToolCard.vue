@@ -7,6 +7,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -83,11 +84,20 @@ function onSetError(e) {
     errorText.value = e;
 }
 
+const { isOnlyPreference } = useStorageLocationConfiguration();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 const { isLoaded: isConfigLoaded, config } = storeToRefs(useConfigStore());
 const hasUser = computed(() => !isAnonymous.value);
 const versions = computed(() => props.options.versions);
 const showVersions = computed(() => props.options.versions?.length > 1);
+
+const storageLocationModalTitle = computed(() => {
+    if (isOnlyPreference.value) {
+        return "Tool Execution Preferred Storage Location";
+    } else {
+        return "Tool Execution Storage Location";
+    }
+});
 
 const root = computed(() => getAppRoot());
 const showPreferredObjectStoreModal = ref(false);
@@ -148,7 +158,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                         </ToolTargetPreferredObjectStorePopover>
                         <b-modal
                             v-model="showPreferredObjectStoreModal"
-                            title="Tool Execution Preferred Object Store"
+                            :title="storageLocationModalTitle"
                             modal-class="tool-preferred-object-store-modal"
                             title-tag="h3"
                             size="sm"
@@ -176,7 +186,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
         <div>
             <div v-if="props.options.help" class="mt-2 mb-4">
                 <Heading h2 separator bold size="sm"> Help </Heading>
-                <ToolHelp :content="props.options.help" />
+                <ToolHelp :content="props.options.help" :format="props.options.help_format" />
             </div>
 
             <ToolTutorialRecommendations

@@ -159,7 +159,7 @@ execution:
       k8s_namespace: default
       runner: pulsar_k8s
       docker_enabled: true
-      docker_default_container_id: busybox:ubuntu-14.04
+      docker_default_container_id: busybox:1.36.1-glibc
       pulsar_app_config:
         message_queue_url: 'amqp://guest:guest@host.docker.internal:5672//'
     local_environment:

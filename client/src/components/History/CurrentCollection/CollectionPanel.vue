@@ -4,14 +4,17 @@
 import { computed, ref, watch } from "vue";
 
 import type { CollectionEntry, DCESummary, HistorySummary, SubCollection } from "@/api";
-import { isCollectionElement, isHDCA } from "@/api";
+import { canMutateHistory, isCollectionElement, isHDCA } from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
+import { setItemDragstart } from "@/utils/setDrag";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import CollectionDetails from "./CollectionDetails.vue";
 import CollectionNavigation from "./CollectionNavigation.vue";
 import CollectionOperations from "./CollectionOperations.vue";
+import Alert from "@/components/Alert.vue";
 import ContentItem from "@/components/History/Content/ContentItem.vue";
 import ListingLayout from "@/components/History/Layout/ListingLayout.vue";
 
@@ -43,8 +46,18 @@ const dsc = computed(() => {
     }
     return currentCollection;
 });
-const collectionElements = computed(() => collectionElementsStore.getCollectionElements(dsc.value, offset.value));
+
+watch(
+    () => [dsc.value, offset.value],
+    () => {
+        collectionElementsStore.fetchMissingElements(dsc.value, offset.value);
+    },
+    { immediate: true }
+);
+
+const collectionElements = computed(() => collectionElementsStore.getCollectionElements(dsc.value) ?? []);
 const loading = computed(() => collectionElementsStore.isLoadingCollectionElements(dsc.value));
+const error = computed(() => collectionElementsStore.hasLoadingCollectionElementsError(dsc.value));
 const jobState = computed(() => ("job_state_summary" in dsc.value ? dsc.value.job_state_summary : undefined));
 const populatedStateMsg = computed(() =>
     "populated_state_message" in dsc.value ? dsc.value.populated_state_message : undefined
@@ -57,17 +70,20 @@ const rootCollection = computed(() => {
     }
 });
 const isRoot = computed(() => dsc.value == rootCollection.value);
+const canEdit = computed(() => isRoot.value && canMutateHistory(props.history));
 
-function updateDsc(collection: any, fields: Object | undefined) {
-    updateContentFields(collection, fields).then((response) => {
-        Object.keys(response).forEach((key) => {
-            collection[key] = response[key];
-        });
-    });
+async function updateDsc(collection: CollectionEntry, fields: Object | undefined) {
+    if (!isHDCA(collection)) {
+        return;
+    }
+    const updatedCollection = await updateContentFields(collection, fields);
+    // Update only editable fields
+    collection.name = updatedCollection.name || collection.name;
+    collection.tags = updatedCollection.tags || collection.tags;
 }
 
 function getItemKey(item: DCESummary) {
-    return item.id;
+    return `${item.element_type}-${item.id}`;
 }
 
 function onScroll(newOffset: number) {
@@ -78,6 +94,7 @@ async function onViewDatasetCollectionElement(element: DCESummary) {
     if (!isCollectionElement(element)) {
         return;
     }
+    offset.value = 0;
     const collection: SubCollection = {
         ...element.object,
         name: element.element_identifier,
@@ -99,22 +116,26 @@ watch(
 watch(
     jobState,
     () => {
-        collectionElementsStore.loadCollectionElements(dsc.value);
+        collectionElementsStore.invalidateCollectionElements(dsc.value);
+        collectionElementsStore.fetchMissingElements(dsc.value, offset.value);
     },
     { deep: true }
 );
 </script>
 
 <template>
-    <ExpandedItems v-slot="{ isExpanded, setExpanded }" :scope-key="dsc.id" :get-item-key="getItemKey">
+    <Alert v-if="error" variant="error">
+        {{ errorMessageAsString(error) }}
+    </Alert>
+    <ExpandedItems v-else v-slot="{ isExpanded, setExpanded }" :scope-key="dsc.id" :get-item-key="getItemKey">
         <section class="dataset-collection-panel w-100 d-flex flex-column">
             <section>
                 <CollectionNavigation
                     :history-name="history.name"
                     :selected-collections="selectedCollections"
                     v-on="$listeners" />
-                <CollectionDetails :dsc="dsc" :writeable="isRoot" @update:dsc="updateDsc(dsc, $event)" />
-                <CollectionOperations v-if="isRoot && showControls" :dsc="dsc" />
+                <CollectionDetails :dsc="dsc" :writeable="canEdit" @update:dsc="updateDsc(dsc, $event)" />
+                <CollectionOperations v-if="canEdit && showControls" :dsc="dsc" />
             </section>
             <section class="position-relative flex-grow-1 scroller">
                 <div>
@@ -146,6 +167,7 @@ watch(
                                 :expand-dataset="isExpanded(item)"
                                 :is-dataset="item.element_type == 'hda'"
                                 :filterable="filterable"
+                                @drag-start="setItemDragstart(item, $event)"
                                 @update:expand-dataset="setExpanded(item, $event)"
                                 @view-collection="onViewDatasetCollectionElement(item)" />
                         </template>

@@ -17,7 +17,7 @@ from typing import (
 from galaxy.files import (
     ConfiguredFileSources,
     DictFileSourcesUserContext,
-    ProvidesUserFileSourcesUserContext,
+    FileSourcesUserContext,
 )
 from galaxy.job_execution.datasets import (
     DatasetPath,
@@ -31,7 +31,7 @@ from galaxy.model import (
     MetadataFile,
 )
 from galaxy.util import safe_makedirs
-from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.dictifiable import UsesDictVisibleKeys
 
 TOOL_PROVIDED_JOB_METADATA_FILE = "galaxy.json"
 TOOL_PROVIDED_JOB_METADATA_KEYS = ["name", "info", "dbkey", "created_from_basename"]
@@ -62,7 +62,7 @@ class JobOutputs(threading.local):
         self.output_hdas_and_paths = {t.output_name: (t.dataset, t.dataset_path) for t in job_outputs}
 
 
-class JobIO(Dictifiable):
+class JobIO(UsesDictVisibleKeys):
     dict_collection_visible_keys = (
         "job_id",
         "working_directory",
@@ -109,13 +109,13 @@ class JobIO(Dictifiable):
         check_job_script_integrity_count: int,
         check_job_script_integrity_sleep: float,
         file_sources_dict: Dict[str, Any],
-        user_context: Union[ProvidesUserFileSourcesUserContext, Dict["str", Any]],
+        user_context: Union[FileSourcesUserContext, Dict[str, Any]],
         tool_source: Optional[str] = None,
         tool_source_class: Optional["str"] = "XmlToolSource",
         tool_dir: Optional[str] = None,
         is_task: bool = False,
     ):
-        user_context_instance: Union[ProvidesUserFileSourcesUserContext, DictFileSourcesUserContext]
+        user_context_instance: FileSourcesUserContext
         self.file_sources_dict = file_sources_dict
         if isinstance(user_context, dict):
             user_context_instance = DictFileSourcesUserContext(**user_context, file_sources=self.file_sources)
@@ -168,7 +168,7 @@ class JobIO(Dictifiable):
         return cls(sa_session=sa_session, **io_dict)
 
     def to_dict(self):
-        io_dict = super().to_dict()
+        io_dict = super()._dictify_view_keys()
         # dict_for will always add `model_class`, we don't need or want it
         io_dict.pop("model_class")
         io_dict["user_context"] = self.user_context.to_dict()
@@ -213,22 +213,26 @@ class JobIO(Dictifiable):
         for value in ds.metadata.values():
             if isinstance(value, MetadataFile):
                 filenames.append(value.get_file_name())
+        if ds.dataset and ds.dataset.extra_files_path_exists():
+            filenames.append(ds.dataset.extra_files_path)
         return filenames
 
-    def get_input_fnames(self) -> List[str]:
+    def get_input_datasets(self) -> List[DatasetInstance]:
         job = self.job
+        return [
+            da.dataset for da in job.input_datasets + job.input_library_datasets if da.dataset
+        ]  # da is JobToInputDatasetAssociation object
+
+    def get_input_fnames(self) -> List[str]:
         filenames = []
-        for da in job.input_datasets + job.input_library_datasets:  # da is JobToInputDatasetAssociation object
-            if da.dataset:
-                filenames.extend(self.get_input_dataset_fnames(da.dataset))
+        for ds in self.get_input_datasets():
+            filenames.extend(self.get_input_dataset_fnames(ds))
         return filenames
 
     def get_input_paths(self) -> List[DatasetPath]:
-        job = self.job
         paths = []
-        for da in job.input_datasets + job.input_library_datasets:  # da is JobToInputDatasetAssociation object
-            if da.dataset:
-                paths.append(self.get_input_path(da.dataset))
+        for ds in self.get_input_datasets():
+            paths.append(self.get_input_path(ds))
         return paths
 
     def get_input_path(self, dataset: DatasetInstance) -> DatasetPath:

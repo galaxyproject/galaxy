@@ -6,12 +6,14 @@ import os
 
 import h5py
 import numpy as np
-import requests
 import yaml
 
 from galaxy.tools.parameters import populate_state
-from galaxy.tools.parameters.basic import workflow_building_modes
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.tools.parameters.workflow_utils import workflow_building_modes
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from galaxy.workflow.modules import module_factory
 
 log = logging.getLogger(__name__)
@@ -27,12 +29,12 @@ class ToolRecommendations:
     def __init__(self):
         self.tool_recommendation_model_path = None
         self.admin_tool_recommendations_path = None
-        self.deprecated_tools = dict()
-        self.admin_recommendations = dict()
-        self.model_data_dictionary = dict()
-        self.reverse_dictionary = dict()
-        self.all_tools = dict()
-        self.tool_weights_sorted = dict()
+        self.deprecated_tools = {}
+        self.admin_recommendations = {}
+        self.model_data_dictionary = {}
+        self.reverse_dictionary = {}
+        self.all_tools = {}
+        self.tool_weights_sorted = {}
         self.loaded_model = None
         self.compatible_tools = None
         self.standard_connections = None
@@ -117,7 +119,7 @@ class ToolRecommendations:
         """
         Compute tool predictions
         """
-        recommended_tools = dict()
+        recommended_tools = {}
         self.__collect_admin_preferences(trans.app.config.admin_tool_recommendations_path)
         if self.model_ok is None:
             self.__set_model(trans, remote_model_url)
@@ -129,16 +131,16 @@ class ToolRecommendations:
         Create model and associated dictionaries for recommendations
         """
         self.tool_recommendation_model_path = self.__download_model(remote_model_url)
-        model_file = h5py.File(self.tool_recommendation_model_path, "r")
-        self.reverse_dictionary = json.loads(model_file["reverse_dict"][()].decode("utf-8"))
-        self.loaded_model = self.create_transformer_model(len(self.reverse_dictionary) + 1)
-        self.loaded_model.load_weights(self.tool_recommendation_model_path)
+        with h5py.File(self.tool_recommendation_model_path, "r", locking=False) as model_file:
+            self.reverse_dictionary = json.loads(model_file["reverse_dict"][()].decode("utf-8"))
+            self.loaded_model = self.create_transformer_model(len(self.reverse_dictionary) + 1)
+            self.loaded_model.load_weights(self.tool_recommendation_model_path)
 
-        self.model_data_dictionary = {v: k for k, v in self.reverse_dictionary.items()}
-        # set the list of compatible tools
-        self.compatible_tools = json.loads(model_file["compatible_tools"][()].decode("utf-8"))
-        tool_weights = json.loads(model_file["class_weights"][()].decode("utf-8"))
-        self.standard_connections = json.loads(model_file["standard_connections"][()].decode("utf-8"))
+            self.model_data_dictionary = {v: k for k, v in self.reverse_dictionary.items()}
+            # set the list of compatible tools
+            self.compatible_tools = json.loads(model_file["compatible_tools"][()].decode("utf-8"))
+            tool_weights = json.loads(model_file["class_weights"][()].decode("utf-8"))
+            self.standard_connections = json.loads(model_file["standard_connections"][()].decode("utf-8"))
         # sort the tools' usage dictionary
         tool_pos_sorted = [int(key) for key in tool_weights.keys()]
         for k in tool_pos_sorted:
@@ -197,8 +199,8 @@ class ToolRecommendations:
             module.recover_state(module_state)
         inputs = module.get_all_inputs(connectable_only=True)
         outputs = module.get_all_outputs()
-        input_extensions = list()
-        output_extensions = list()
+        input_extensions = []
+        output_extensions = []
         for i_ext in inputs:
             input_extensions.extend(i_ext["extensions"])
         for o_ext in outputs:
@@ -210,14 +212,6 @@ class ToolRecommendations:
         Filter tool predictions based on datatype compatibility and tool connections.
         Add admin preferences to recommendations.
         """
-        last_compatible_tools = list()
-        if last_tool_name in self.model_data_dictionary:
-            last_tool_name_id = self.model_data_dictionary[last_tool_name]
-            if last_tool_name_id in self.compatible_tools:
-                last_compatible_tools = [
-                    self.reverse_dictionary[t_id] for t_id in self.compatible_tools[last_tool_name_id]
-                ]
-
         prediction_data["is_deprecated"] = False
         # get the list of datatype extensions of the last tool of the tool sequence
         _, last_output_extensions = self.__get_tool_extensions(trans, self.all_tools[last_tool_name][0])
@@ -225,19 +219,15 @@ class ToolRecommendations:
         t_ids_scores = zip(tool_ids, tool_scores)
         # form the payload of the predicted tools to be shown
         for child, score in t_ids_scores:
-            c_dict = dict()
+            c_dict = {}
             for t_id in self.all_tools:
                 # select the name and tool id if it is installed in Galaxy
-                if (
-                    t_id == child
-                    and score >= 0.0
-                    and t_id in last_compatible_tools
-                    and child not in self.deprecated_tools
-                ):
+                if t_id == child and score >= 0.0 and child not in self.deprecated_tools and child != last_tool_name:
                     full_tool_id = self.all_tools[t_id][0]
                     pred_input_extensions, _ = self.__get_tool_extensions(trans, full_tool_id)
                     c_dict["name"] = self.all_tools[t_id][1]
                     c_dict["tool_id"] = full_tool_id
+                    c_dict["tool_score"] = score
                     c_dict["i_extensions"] = list(set(pred_input_extensions))
                     prediction_data["children"].append(c_dict)
                     break
@@ -267,25 +257,44 @@ class ToolRecommendations:
                 break
         return prediction_data
 
-    def __get_predicted_tools(self, base_tools, predictions, topk):
+    def __get_predicted_tools(self, pub_tools, predictions, last_tool_name, topk):
         """
         Get predicted tools. If predicted tools are less in number, combine them with published tools
         """
-        t_intersect = list(set(predictions).intersection(set(base_tools)))
-        t_diff = list(set(predictions).difference(set(base_tools)))
+        last_compatible_tools = []
+        if last_tool_name in self.model_data_dictionary:
+            last_tool_name_id = self.model_data_dictionary[last_tool_name]
+            if last_tool_name_id in self.compatible_tools:
+                last_compatible_tools = [
+                    self.reverse_dictionary[t_id] for t_id in self.compatible_tools[last_tool_name_id]
+                ]
+        t_intersect = list(set(predictions).intersection(set(pub_tools)))
+        t_diff = list(set(predictions).difference(set(pub_tools)))
         t_intersect, u_intersect = self.__sort_by_usage(
             t_intersect, self.tool_weights_sorted, self.model_data_dictionary
         )
         t_diff, u_diff = self.__sort_by_usage(t_diff, self.tool_weights_sorted, self.model_data_dictionary)
-        t_intersect.extend(t_diff)
-        u_intersect.extend(u_diff)
+        t_intersect_compat = list(set(last_compatible_tools).intersection(set(t_diff)))
+        # filter against rare bad predictions for any tool
+        if len(t_intersect_compat) > 0:
+            t_compat, u_compat = self.__sort_by_usage(
+                t_intersect_compat, self.tool_weights_sorted, self.model_data_dictionary
+            )
+        else:
+            t_compat, u_compat = self.__sort_by_usage(
+                last_compatible_tools, self.tool_weights_sorted, self.model_data_dictionary
+            )
+        t_intersect.extend(t_compat)
+        u_intersect.extend(u_compat)
+        t_intersect = t_intersect[:topk]
+        u_intersect = u_intersect[:topk]
         return t_intersect, u_intersect
 
     def __sort_by_usage(self, t_list, class_weights, d_dict):
         """
         Sort predictions by usage/class weights
         """
-        tool_dict = dict()
+        tool_dict = {}
         for tool in t_list:
             t_id = d_dict[tool]
             tool_dict[tool] = class_weights[int(t_id)]
@@ -296,18 +305,26 @@ class ToolRecommendations:
         """
         Get predictions from published and normal workflows
         """
-        last_base_tools = list()
+        last_base_tools = []
+        weight_values = list(self.tool_weights_sorted.values())
+        wt_predictions = predictions * weight_values
         prediction_pos = np.argsort(predictions, axis=-1)
-        topk_prediction_pos = prediction_pos[-topk:]
+        wt_prediction_pos = np.argsort(wt_predictions, axis=-1)
+        topk_prediction_pos = list(prediction_pos[-topk:])
+        wt_topk_prediction_pos = list(wt_prediction_pos[-topk:])
         # get tool ids
+        wt_pred_tool_names = [self.reverse_dictionary[str(tool_pos)] for tool_pos in wt_topk_prediction_pos]
         pred_tool_names = [self.reverse_dictionary[str(tool_pos)] for tool_pos in topk_prediction_pos]
+        # exclude same tool as the last tool
+        pred_tool_names.extend(wt_pred_tool_names)
+        pred_tool_names = [item for item in pred_tool_names if item != last_tool_name]
         if last_tool_name in base_tools:
             last_base_tools = base_tools[last_tool_name]
             if type(last_base_tools).__name__ == "str":
                 # get published or compatible tools for the last tool in a sequence of tools
                 last_base_tools = last_base_tools.split(",")
         # get predicted tools
-        sorted_c_t, sorted_c_v = self.__get_predicted_tools(last_base_tools, pred_tool_names, topk)
+        sorted_c_t, sorted_c_v = self.__get_predicted_tools(last_base_tools, pred_tool_names, last_tool_name, topk)
         return sorted_c_t, sorted_c_v
 
     def __compute_tool_prediction(self, trans, tool_sequence):
@@ -317,10 +334,10 @@ class ToolRecommendations:
         Return an empty payload with just the tool sequence if anything goes wrong within the try block
         """
         topk = trans.app.config.topk_recommendations
-        prediction_data = dict()
+        prediction_data = {}
         tool_sequence = tool_sequence.split(",")[::-1]
         prediction_data["name"] = ",".join(tool_sequence)
-        prediction_data["children"] = list()
+        prediction_data["children"] = []
         last_tool_name = tool_sequence[-1]
         # do prediction only if the last is present in the collections of tools
         if last_tool_name in self.model_data_dictionary:
@@ -353,8 +370,5 @@ class ToolRecommendations:
             pub_t, pub_v = self.__separate_predictions(
                 self.standard_connections, prediction, last_tool_name, weight_values, topk
             )
-            # remove duplicates if any
-            pub_t = list(dict.fromkeys(pub_t))
-            pub_v = list(dict.fromkeys(pub_v))
             prediction_data = self.__filter_tool_predictions(trans, prediction_data, pub_t, pub_v, last_tool_name)
         return prediction_data

@@ -26,8 +26,7 @@ from galaxy.webapps.base.webapp import (
     GalaxyWebTransaction,
 )
 from galaxy.webapps.util import wrap_if_allowed
-
-SHED_API_VERSION = os.environ.get("TOOL_SHED_API_VERSION", "v1")
+from .config import SHED_API_VERSION
 
 log = logging.getLogger(__name__)
 
@@ -36,6 +35,10 @@ class ToolShedGalaxyWebTransaction(GalaxyWebTransaction):
     @property
     def repositories_hostname(self) -> str:
         return url_for("/", qualified=True).rstrip("/")
+
+    def get_or_create_default_history(self):
+        # tool shed has no concept of histories
+        raise NotImplementedError
 
 
 class CommunityWebApplication(galaxy.webapps.base.webapp.WebApplication):

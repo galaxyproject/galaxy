@@ -4,24 +4,29 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
 )
 
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (
+    DEFAULT_DECOMPRESS,
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
+    DEFAULT_SORT,
 )
 from .interface import (
     AssertionDict,
     AssertionList,
+    HelpContent,
     InputSource,
     PageSource,
     PagesSource,
     ToolSource,
     ToolSourceTest,
     ToolSourceTests,
+    XrefDict,
 )
 from .output_collection_def import dataset_collector_descriptions_from_output_dict
 from .output_objects import (
@@ -51,24 +56,27 @@ class YamlToolSource(ToolSource):
     def parse_id(self):
         return self.root_dict.get("id")
 
-    def parse_version(self):
-        return str(self.root_dict.get("version"))
+    def parse_version(self) -> Optional[str]:
+        version_raw = self.root_dict.get("version")
+        return str(version_raw) if version_raw is not None else None
 
-    def parse_name(self):
-        return self.root_dict.get("name")
+    def parse_name(self) -> str:
+        rval = self.root_dict.get("name") or self.parse_id()
+        assert rval
+        return str(rval)
 
-    def parse_description(self):
+    def parse_description(self) -> str:
         return self.root_dict.get("description", "")
 
-    def parse_edam_operations(self):
+    def parse_edam_operations(self) -> List[str]:
         return self.root_dict.get("edam_operations", [])
 
-    def parse_edam_topics(self):
+    def parse_edam_topics(self) -> List[str]:
         return self.root_dict.get("edam_topics", [])
 
-    def parse_xrefs(self):
+    def parse_xrefs(self) -> List[XrefDict]:
         xrefs = self.root_dict.get("xrefs", [])
-        return [dict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
+        return [XrefDict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
 
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)
@@ -105,7 +113,7 @@ class YamlToolSource(ToolSource):
             resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
         )
 
-    def parse_input_pages(self):
+    def parse_input_pages(self) -> PagesSource:
         # All YAML tools have only one page (feature is deprecated)
         page_source = YamlPageSource(self.root_dict.get("inputs", {}))
         return PagesSource([page_source])
@@ -117,8 +125,12 @@ class YamlToolSource(ToolSource):
     def parse_stdio(self):
         return error_on_exit_code()
 
-    def parse_help(self):
-        return self.root_dict.get("help", None)
+    def parse_help(self) -> Optional[HelpContent]:
+        content = self.root_dict.get("help", None)
+        if content:
+            return HelpContent(format="markdown", content=content)
+        else:
+            return None
 
     def parse_outputs(self, tool):
         outputs = self.root_dict.get("outputs", {})
@@ -191,10 +203,10 @@ class YamlToolSource(ToolSource):
 
         return rval
 
-    def parse_profile(self):
+    def parse_profile(self) -> str:
         return self.root_dict.get("profile", "16.04")
 
-    def parse_license(self):
+    def parse_license(self) -> Optional[str]:
         return self.root_dict.get("license")
 
     def parse_interactivetool(self):
@@ -245,7 +257,8 @@ def _parse_test(i, test_dict) -> ToolSourceTest:
             "lines_diff": 0,
             "delta": DEFAULT_DELTA,
             "delta_frac": DEFAULT_DELTA_FRAC,
-            "sort": False,
+            "sort": DEFAULT_SORT,
+            "decompress": DEFAULT_DECOMPRESS,
         }
         # TODO
         attributes["extra_files"] = []
@@ -287,10 +300,11 @@ def to_test_assert_list(assertions) -> AssertionList:
                 new_assertion["that"] = assertion_key
                 new_assertion.update(assertion_value)
             assertion = new_assertion
-        children = []
-        if "children" in assertion:
-            children = assertion["children"]
-            del assertion["children"]
+        children = assertion.pop("asserts", assertion.pop("children", []))
+        # if there are no nested assertions then children should be []
+        # but to_test_assert_list would return None
+        if children:
+            children = to_test_assert_list(children)
         assert_dict: AssertionDict = dict(
             tag=assertion["that"],
             attributes=assertion,
@@ -301,6 +315,8 @@ def to_test_assert_list(assertions) -> AssertionList:
     return assert_list or None  # XML variant is None if no assertions made
 
 
+# Planemo depends on this and was never updated unfortunately.
+# https://github.com/galaxyproject/planemo/blob/master/planemo/test/_check_output.py
 __to_test_assert_list = to_test_assert_list
 
 
@@ -320,6 +336,9 @@ class YamlInputSource(InputSource):
         return self.input_dict.get(key, default)
 
     def get_bool(self, key, default):
+        return self.input_dict.get(key, default)
+
+    def get_bool_or_none(self, key, default):
         return self.input_dict.get(key, default)
 
     def parse_input_type(self):
@@ -359,8 +378,8 @@ class YamlInputSource(InputSource):
             sources.append((value, case_page_source))
         return sources
 
-    def parse_static_options(self):
-        static_options = list()
+    def parse_static_options(self) -> List[Tuple[str, str, bool]]:
+        static_options = []
         input_dict = self.input_dict
         for option in input_dict.get("options", {}):
             value = option.get("value")

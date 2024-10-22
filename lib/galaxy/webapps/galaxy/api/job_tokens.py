@@ -39,7 +39,7 @@ class FastAPIJobTokens:
         job_id: EncodedDatabaseIdField,
         job_key: str = Query(
             description=(
-                "A key used to authenticate this request as acting on" "behalf or a job runner for the specified job"
+                "A key used to authenticate this request as acting on behalf or a job runner for the specified job"
             ),
         ),
         provider: str = Query(
@@ -64,7 +64,7 @@ class FastAPIJobTokens:
 
         # Verify job is active
         job = session.get(Job, job_id)
-        if job.finished:
+        if job.state not in Job.non_ready_states:
             error_message = "Attempting to get oidc token for a job that has already completed."
             raise exceptions.ItemAccessibilityException(error_message)
         return job

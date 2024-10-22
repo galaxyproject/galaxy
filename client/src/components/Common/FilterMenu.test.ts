@@ -1,7 +1,9 @@
+import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, Wrapper } from "@vue/test-utils";
+import { mount, type Wrapper } from "@vue/test-utils";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { WorkflowFilters } from "@/components/Workflow/List/WorkflowFilters";
 import Filtering, { compare, contains, equals, toBool, toDate } from "@/utils/filtering";
 
 import FilterMenu from "./FilterMenu.vue";
@@ -80,6 +82,7 @@ describe("FilterMenu", () => {
             stubs: {
                 icon: { template: "<div></div>" },
             },
+            pinia: createTestingPinia(),
         });
     }
 
@@ -89,11 +92,13 @@ describe("FilterMenu", () => {
         await searchButton.trigger("click");
     }
 
-    async function expectCorrectEmits(showAdvanced: boolean, filterText: string, filterClass: Filtering<unknown>) {
+    async function expectCorrectEmits(filterText: string, filterClass: Filtering<unknown>, showAdvanced?: boolean) {
+        if (showAdvanced !== undefined) {
+            const toggleEmit = (wrapper.emitted()?.["update:show-advanced"]?.length ?? 0) - 1;
+            expect(wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0]).toEqual(showAdvanced);
+            await wrapper.setProps({ showAdvanced: wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0] });
+        }
         const filterEmit = (wrapper.emitted()["update:filter-text"]?.length ?? 0) - 1;
-        const toggleEmit = (wrapper.emitted()?.["update:show-advanced"]?.length ?? 0) - 1;
-        expect(wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0]).toEqual(showAdvanced);
-        await wrapper.setProps({ showAdvanced: wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0] });
         const receivedText = wrapper.emitted()["update:filter-text"]?.[filterEmit]?.[0];
         const receivedDict = filterClass.getQueryDict(receivedText);
         const parsedDict = filterClass.getQueryDict(filterText);
@@ -154,14 +159,14 @@ describe("FilterMenu", () => {
         // `has_help` filter should have help modal button
         expect(wrapper.find("[title='Value Help']").classes().includes("btn")).toBe(true);
         // ranged time field (has 2 datepickers)
-        const createdGtInput = wrapper.find("[placeholder='creation time after']");
-        const createdLtInput = wrapper.find("[placeholder='creation time before']");
+        const createdGtInput = wrapper.find("[placeholder='after creation time']");
+        const createdLtInput = wrapper.find("[placeholder='before creation time']");
         createdGtInput.setValue("January 1, 2022");
         createdLtInput.setValue("January 1, 2023");
         expect(wrapper.findAll(".b-form-datepicker").length).toBe(2);
         // ranged number field (has different placeholder: greater instead of after...)
-        const indexGtInput = wrapper.find("[placeholder='index greater']");
-        const indexLtInput = wrapper.find("[placeholder='index lower']");
+        const indexGtInput = wrapper.find("[placeholder='greater than index']");
+        const indexLtInput = wrapper.find("[placeholder='lower than index']");
         indexGtInput.setValue("1234");
         indexLtInput.setValue("5678");
         // default bool filter
@@ -185,11 +190,11 @@ describe("FilterMenu", () => {
         // perform search
         await performSearch();
         await expectCorrectEmits(
-            false,
             "create_time>'January 1, 2022' create_time<'January 1, 2023' " +
                 "filter_key:item-filter has_help:has-help-filter list_item:1234 " +
                 "number>1234 number<5678 name:name-filter radio:true bool_def:true",
-            TestFilters
+            TestFilters,
+            false
         );
     });
 
@@ -209,17 +214,17 @@ describe("FilterMenu", () => {
         // -------- Test keyup.enter key:  ---------
         // toggles view out and performs a search
         await filterName.trigger("keyup.enter");
-        await expectCorrectEmits(false, "name:'sample name'", TestFilters);
+        await expectCorrectEmits("name:'sample name'", TestFilters, false);
 
         // Test: clearing the filterText
         const clearButton = wrapper.find("[data-description='reset query']");
         await clearButton.trigger("click");
-        await expectCorrectEmits(false, "", TestFilters);
+        await expectCorrectEmits("", TestFilters, false);
 
         // Test: toggling view back in
         const toggleButton = wrapper.find("[data-description='toggle advanced search']");
         await toggleButton.trigger("click");
-        await expectCorrectEmits(true, "", TestFilters);
+        await expectCorrectEmits("", TestFilters, true);
 
         // -------- Test keyup.esc key:  ---------
         // toggles view out only (doesn't cause a new search / doesn't emulate enter)
@@ -232,7 +237,7 @@ describe("FilterMenu", () => {
 
         // press esc key from name field (should not change emitted filterText unlike enter key)
         await filterName.trigger("keyup.esc");
-        await expectCorrectEmits(false, "", TestFilters);
+        await expectCorrectEmits("", TestFilters, false);
     });
 
     /**
@@ -260,13 +265,13 @@ describe("FilterMenu", () => {
 
         // expect "deleted = any" filter to be applied
         await performSearch();
-        await expectCorrectEmits(false, "visible:true", HistoryFilters);
+        await expectCorrectEmits("visible:true", HistoryFilters, false);
 
         // -------- Testing visible filter now:  ---------
 
         const toggleButton = wrapper.find("[data-description='toggle advanced search']");
         await toggleButton.trigger("click");
-        await expectCorrectEmits(true, "visible:true", HistoryFilters);
+        await expectCorrectEmits("visible:true", HistoryFilters, true);
         const visibleFilterBtnGrp = wrapper.find("[data-description='filter visible']");
         const visibleFilterAnyBtn = visibleFilterBtnGrp.find(".btn-secondary");
         expect(visibleFilterAnyBtn.text()).toBe("Any");
@@ -283,13 +288,34 @@ describe("FilterMenu", () => {
 
         // expect "visible = any" filter to be applied
         await performSearch();
-        await expectCorrectEmits(false, "deleted:any visible:any", HistoryFilters);
+        await expectCorrectEmits("deleted:any visible:any", HistoryFilters, false);
 
         // -------- Testing repeated search if it prevents bug:  ---------
         // (bug reported here: https://github.com/galaxyproject/galaxy/issues/16211)
         await toggleButton.trigger("click");
-        await expectCorrectEmits(true, "deleted:any visible:any", HistoryFilters);
+        await expectCorrectEmits("deleted:any visible:any", HistoryFilters, true);
         await performSearch();
-        await expectCorrectEmits(false, "deleted:any visible:any", HistoryFilters);
+        await expectCorrectEmits("deleted:any visible:any", HistoryFilters, false);
+    });
+
+    /**
+     * Testing the default values of the filters defined in the HistoryFilters: Filtering
+     * class, ensuring the default values are reflected in the radio-group buttons
+     */
+    it("test compact menu with checkbox filters on WorkflowFilters", async () => {
+        const myWorkflowFilters = WorkflowFilters("my");
+        setUpWrapper("Workflows", "search workflows", myWorkflowFilters);
+        // a compact `FilterMenu` only needs to be opened once (doesn't toggle out automatically)
+        await wrapper.setProps({ showAdvanced: true, view: "compact" });
+
+        // -------- Testing auto search on value change:  ---------
+        const nameFilterInput = wrapper.find("#workflows-advanced-filter-name");
+        await nameFilterInput.setValue("myworkflow");
+        await expectCorrectEmits("name:myworkflow", myWorkflowFilters);
+
+        // -------- Testing deleted filter first:  ---------
+        const deletedFilterCheckbox = wrapper.find("[data-description='filter deleted'] input");
+        await deletedFilterCheckbox.setChecked();
+        await expectCorrectEmits("name:myworkflow is:deleted", myWorkflowFilters);
     });
 });

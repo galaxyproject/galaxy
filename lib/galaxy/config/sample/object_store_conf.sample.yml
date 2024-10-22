@@ -61,7 +61,7 @@ backends:
 # Sample Distributed Object Store with disk backends configuration
 #
 
-# In the distributed object store, existing dataests will be located by the `object_store_id` column in the `dataset`
+# In the distributed object store, existing datasets will be located by the `object_store_id` column in the `dataset`
 # table of the Galaxy database, which corresponds to the `id` option on the backend. New datasets are created based on
 # the `weight` option: a backend with weight "2" has twice the chance of being (randomly) selected for new datasets as a
 # backend with weight "1". A weight of "0" will still allow datasets in that backend to be read, but no new datasets
@@ -135,10 +135,64 @@ backends:
     store_by: uuid
     files_dir: /old-fs/galaxy/files
 
-#
-# Sample AWS S3 Object Store configuration
-#
 
+# There are now four ways to access S3 related services. Two are
+# suitable just for AWS services (aws_s3 & cloud), one is
+# more suited for non-AWS S3 compatible services (generic_s3),
+# and finally boto3 gracefully handles either scenario.
+# 
+# boto3 is built on the newest and most widely used Python client
+# outside of Galaxy. It has advanced transfer options and is likely
+# the client you should use for new setup. generic_s3 and aws_s3
+# have existed in Galaxy for longer and could perhaps be considered
+# more battle tested. Both boto3 and generic_s3 have been tested
+# with multiple non-AWS APIs including minio and GCP. The cloud
+# implementation is based on CloudBridge and is still supported
+# and has been recently tested - the downside is mostly the advanced
+# multi-threaded processing options of boto3 are not available
+# and it has not been battle tested like aws_s3.
+
+#
+# Sample AWS S3 Object Store configuration (newest boto3 client)
+#
+type: boto3
+auth:
+  access_key: ...
+  secret_key: ...
+bucket:
+  name: unique_bucket_name_all_lowercase
+connection:  # not strictly needed but more of the API works with this.
+  region: us-east-1
+transfer:
+  multipart_threshold: 10000000
+  download_max_concurrency: 5
+  upload_max_concurrency: 10
+  # any of these options:
+  # multipart_threshold, max_concurrency, multipart_chunksize,
+  # num_download_attempts, max_io_queue, io_chunksize, use_threads,
+  # and max_bandwidth
+  # can be set. By default they will apply to uploads and downloads
+  # but they can be prefixed with upload_ or download_ as shown above
+  # to apply to just one scenario. More information about these parameters
+  # can be found at:
+  # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html#boto3.s3.transfer.TransferConfig
+
+cache:
+  path: database/object_store_cache_s3
+  size: 1000
+  cache_updated_data: true
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_s3
+
+
+
+#
+# Sample AWS S3 Object Store configuration (legacy boto implementation)
+#
+# This implementation will use axel automatically for file transfers if it is on
+# Galaxy's path. Otherwise, it will use various python-based strategies for multi-part
+# upload of large uploads but all downloads will be single threaded.
 type: aws_s3
 auth:
   access_key: ...
@@ -147,6 +201,43 @@ bucket:
   name: unique_bucket_name_all_lowercase
   use_reduced_redundancy: false
   max_chunk_size: 250
+connection:  # not strictly needed but more of the API works with this.
+  region: us-east-1
+cache:
+  path: database/object_store_cache_s3
+  size: 1000
+  cache_updated_data: true
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_s3
+
+#
+# Sample Onedata Object Store
+#
+# Note for developers: you can easily set up a minimal, dockerized Onedata environment
+# using the so-called "demo-mode": https://onedata.org/#/home/documentation/topic/stable/demo-mode
+#
+
+type: onedata
+auth:
+  # An access token suitable for data access (allowing calls to the Oneprovider REST API).
+  access_token: ...
+connection:
+  # The domain of the Onezone service (e.g. datahub.egi.eu), or its IP address for
+  # devel instances (see above). The minimal supported Onezone version is 21.02.4.
+  onezone_domain: datahub.egi.eu
+  # Allows connection to Onedata servers that do not present trusted SSL certificates. 
+  # SHOULD NOT be used unless you really know what you are doing.
+  disable_tls_certificate_validation: false
+space:
+  # The name of the Onedata space where the Galaxy data will be stored.
+  # If there is more than one space with the same name, you can explicitly
+  # specify which one to select by using the format <space_name>@<space_id>
+  # (e.g. demo@7285220ecc636075ae5759aec7ad65d3cha8f9).
+  name: demo-space
+  # The relative directory path in the space at which the Galaxy data will be stored.
+  # Optional, if not provided, the data will be stored in the root of space.
+  galaxy_root_dir: galaxy-data
 cache:
   path: database/object_store_cache_s3
   size: 1000
@@ -182,7 +273,32 @@ extra_dirs:
     path: database/job_working_directory_irods
 
 #
-# Sample non-AWS S3 Object Store (e.g. swift) configuration
+# Sample non-AWS S3 Object Store (e.g. swift) configuration (boto3)
+#
+
+type: boto3
+auth:
+  access_key: ...
+  secret_key: ...
+bucket:
+  name: unique_bucket_name_all_lowercase
+connection:
+  endpoint_url: https://swift.example.org:6000/
+  # region: some services may make use of region is specified.
+  # older style host, port, secure, and conn_path available to generic_s3 work
+  # here also - Galaxy will just infer a endpoint_url from those.
+cache:
+  path: database/object_store_cache_swift
+  size: 1000
+  cache_updated_data: true
+# transfer:   # see transfer options for boto3 above in AWS configuration.
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_swift
+
+
+#
+# Sample non-AWS S3 Object Store (e.g. swift) configuration (legacy boto client)
 #
 
 type: generic_s3
@@ -299,20 +415,25 @@ extra_dirs:
 # The admin is responsible for routinely cleaning that storage using Galaxy's admin scripts - this object store
 # configuration just allows the user selection and communicates expectations to the user. Training related to Galaxy
 # cleanup scripts can be found in the Galaxy Training Network:
-# 
+#
 # Slides: https://gxy.io/GTN:S00103
 # Tutorial: https://gxy.io/GTN:T00324
 #
 # In this example, the scratch storage is marked as user-private by setting the `private` option to "true" on the
-# backend definition. This means it cannot be used in public datasets, shared between users, etc.. This is more example
+# backend definition. This means it cannot be used in public datasets, shared between users, etc.. This is for example
 # purposes - you may very well not want scratch storage to be defined as private as it prevents a lot of regular
 # functionality and Galaxy handles regularly cleaned datasets fairly gracefully when the appropriate admin scripts are
 # used.
+#
+# It is safe to just relabel the object store that a dataset belongs to if the underlying paths mapped to by the object
+# stores are the same and the dataset has not been copied. To enable users to relocate datasets this way set the
+# backends' `device` property to the same value.
 
 type: distributed
 backends:
   - id: default
     type: disk
+    device: device1
     weight: 1
     allow_selection: true
     name: Default Galaxy Storage
@@ -329,6 +450,7 @@ backends:
           found on our [Archive Tier Storage](https://www.msi.umn.edu/content/archive-tier-storage) page.
   - id: scratch
     type: disk
+    device: device2
     weight: 0
     allow_selection: true
     private: true

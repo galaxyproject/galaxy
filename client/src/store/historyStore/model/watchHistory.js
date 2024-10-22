@@ -9,7 +9,6 @@ import { getGalaxyInstance } from "app";
 import { storeToRefs } from "pinia";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
-import { getCurrentHistoryFromServer } from "stores/services/history.services";
 import { loadSet } from "utils/setCache";
 import { urlData } from "utils/url";
 
@@ -55,7 +54,7 @@ export async function watchHistoryOnce() {
 
     // get current history
     const checkForUpdate = new Date();
-    const history = await getCurrentHistoryFromServer(lastUpdateTime);
+    const history = await historyStore.loadCurrentHistory(lastUpdateTime);
     const { lastCheckedTime } = storeToRefs(historyItemsStore);
     lastCheckedTime.value = checkForUpdate;
     if (!history || !history.id) {

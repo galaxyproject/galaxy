@@ -192,12 +192,33 @@ Please mind `http` and `https`.
         <client_id> ... </client_id>
         <client_secret> ... </client_secret>
         <redirect_uri>http://localhost:8080/authnz/azure/callback</redirect_uri>
-        <!-- Azure client_id, client_secret, and api_url can be obtained by folowing the instructions at
+        <!-- Azure client_id, client_secret, and tenant_id can be obtained by folowing the instructions at
         https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app
 
-        The api_url will typiclly be https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize
+        The required API URL will be automatically constructed from the provided tenant_id. In previous Galaxy versions
+         the entire "api_url" had to be provided including the tenant ID, this is no longer a valid configuration option.
          -->
-        <api_url> ... </api_url>
+        <tenant_id> ... </tenant_id>
+    </provider>
+
+    <provider name="oidc">
+        <!-- This example section uses the generic OIDC backend from python-social-auth. This should work with any provider that
+        supports the OIDC standard.
+        -->
+        <client_id> ... </client_id>
+        <client_secret> ... </client_secret>
+        <redirect_uri>http://localhost:8080/authnz/oidc/callback</redirect_uri>
+        <oidc_endpoint> ... </oidc_endpoint>
+        <!-- enter the url of a OIDC endpoint that supports autoconfiguration here. Enter the URL minus the ".well-known/openid-configuration" part.
+        For example: If the complete url pointing to your endpoint's autoconfig file is "https:example.com/my-realm/.well-known/openid-configuration",
+        then simply enter "https://example.com/my-realm".
+         -->
+         <custom_button_text> ... </custom_button_text>
+         <!-- This is an optional field where you can provide a custom text for the sign in button on the Galaxy front page
+          that you can click to authenticate with your IdP. If you don't provide a custom button text, the sign in button
+          will just read the default value of your IdP name. For example: "Sign in with oidc" or "Sign in with Azure".
+          However, if for example you enter the value "your university account" here, the button will display "Sign in with your university account".
+         -->
     </provider>
 
     <!-- Documentation: https://docs.egi.eu/providers/check-in/sp -->

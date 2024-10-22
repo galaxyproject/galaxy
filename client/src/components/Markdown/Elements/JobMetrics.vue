@@ -74,7 +74,7 @@ watch(
                 class="job-metrics"
                 :job-id="targetJobId"
                 :should-show-aws-estimate="false"
-                :should-show-carbon-emissions-estimates="false"
+                :should-show-carbon-emission-estimates="false"
                 :include-title="false" />
         </JobSelection>
         <b-card-footer v-if="footer">

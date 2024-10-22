@@ -29,10 +29,11 @@ from datetime import (
     datetime,
     timezone,
 )
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from decimal import Decimal
+from email.message import EmailMessage
 from hashlib import md5
 from os.path import relpath
+from pathlib import Path
 from typing import (
     Any,
     cast,
@@ -54,13 +55,12 @@ from urllib.parse import (
     urlunsplit,
 )
 
-import requests
 from boltons.iterutils import (
     default_enter,
     remap,
 )
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped]
+from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped, unused-ignore]
 from typing_extensions import (
     Literal,
     Self,
@@ -115,13 +115,14 @@ try:
 
 except ImportError:
     LXML_AVAILABLE = False
-    import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
+    import xml.etree.ElementTree as etree  # type: ignore[no-redef]
     from xml.etree.ElementTree import (  # type: ignore[assignment]  # noqa: F401
         Element,
         ElementTree,
         XML,
     )
 
+from . import requests
 from .custom_logging import get_logger
 from .inflection import Inflector
 from .path import (  # noqa: F401
@@ -133,7 +134,7 @@ from .path import (  # noqa: F401
 from .rst_to_html import rst_to_html  # noqa: F401
 
 try:
-    shlex_join = shlex.join  # type: ignore[attr-defined]
+    shlex_join = shlex.join  # type: ignore[attr-defined, unused-ignore]
 except AttributeError:
     # Python < 3.8
     def shlex_join(split_command):
@@ -156,6 +157,7 @@ DEFAULT_SOCKET_TIMEOUT = 600
 
 gzip_magic = b"\x1f\x8b"
 bz2_magic = b"BZh"
+xz_magic = b"\xfd7zXZ\x00"
 DEFAULT_ENCODING = os.environ.get("GALAXY_DEFAULT_ENCODING", "utf-8")
 NULL_CHAR = b"\x00"
 BINARY_CHARS = [NULL_CHAR]
@@ -176,9 +178,10 @@ def str_removeprefix(s: str, prefix: str):
     """
     if sys.version_info >= (3, 9):
         return s.removeprefix(prefix)
-    if s.startswith(prefix):  # type: ignore[unreachable]
+    elif s.startswith(prefix):
         return s[len(prefix) :]
-    return s
+    else:
+        return s
 
 
 def remove_protocol_from_url(url):
@@ -432,7 +435,7 @@ def xml_element_to_dict(elem):
 
     sub_elems = list(elem)
     if sub_elems:
-        sub_elem_dict = dict()
+        sub_elem_dict = {}
         for sub_sub_elem_dict in map(xml_element_to_dict, sub_elems):
             for key, value in sub_sub_elem_dict.items():
                 if key not in sub_elem_dict:
@@ -640,12 +643,6 @@ def pretty_print_time_interval(time=False, precise=False, utc=False):
         if day_diff < 365:
             return "less than a year"
         return "a few years ago"
-
-
-def pretty_print_json(json_data, is_json_string=False):
-    if is_json_string:
-        json_data = json.loads(json_data)
-    return json.dumps(json_data, sort_keys=True, indent=4)
 
 
 # characters that are valid
@@ -998,7 +995,7 @@ class Params:
         self.__dict__.update(values)
 
 
-def xml_text(root, name=None):
+def xml_text(root, name=None, default=""):
     """Returns the text inside an element"""
     if name is not None:
         # Try attribute first
@@ -1013,7 +1010,7 @@ def xml_text(root, name=None):
         text = "".join(elem.text.splitlines())
         return text.strip()
     # No luck, return empty string
-    return ""
+    return default
 
 
 def parse_resource_parameters(resource_param_file):
@@ -1135,18 +1132,8 @@ def commaify(amount):
         return commaify(new)
 
 
-def roundify(amount, sfs=2):
-    """
-    Take a number in string form and truncate to 'sfs' significant figures.
-    """
-    if len(amount) <= sfs:
-        return amount
-    else:
-        return amount[0:sfs] + "0" * (len(amount) - sfs)
-
-
 @overload
-def unicodify(  # type: ignore[misc]
+def unicodify(
     value: Literal[None],
     encoding: str = DEFAULT_ENCODING,
     error: str = "replace",
@@ -1289,8 +1276,8 @@ class ParamsWithSpecs(collections.defaultdict):
     """ """
 
     def __init__(self, specs=None, params=None):
-        self.specs = specs or dict()
-        self.params = params or dict()
+        self.specs = specs or {}
+        self.params = params or {}
         for name, value in self.params.items():
             if name not in self.specs:
                 self._param_unknown_error(name)
@@ -1421,9 +1408,12 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
             os.chmod(path, perms)
         except Exception as e:
             log.warning(
-                "Unable to honor umask ({}) for {}, tried to set: {} but mode remains {}, error was: {}".format(
-                    oct(umask), path, oct(perms), oct(stat.S_IMODE(st.st_mode)), unicodify(e)
-                )
+                "Unable to honor umask (%s) for %s, tried to set: %s but mode remains %s, error was: %s",
+                oct(umask),
+                path,
+                oct(perms),
+                oct(stat.S_IMODE(st.st_mode)),
+                e,
             )
     # fix group
     if gid is not None and st.st_gid != gid:
@@ -1437,9 +1427,11 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
                 desired_group = gid
                 current_group = st.st_gid
             log.warning(
-                "Unable to honor primary group ({}) for {}, group remains {}, error was: {}".format(
-                    desired_group, path, current_group, unicodify(e)
-                )
+                "Unable to honor primary group (%s) for %s, group remains %s, error was: %s",
+                desired_group,
+                path,
+                current_group,
+                e,
             )
 
 
@@ -1470,7 +1462,65 @@ def docstring_trim(docstring):
     return "\n".join(trimmed)
 
 
-def nice_size(size):
+def metric_prefix(number: Union[int, float], base: int) -> Tuple[float, str]:
+    """
+    >>> metric_prefix(100, 1000)
+    (100.0, '')
+    >>> metric_prefix(999, 1000)
+    (999.0, '')
+    >>> metric_prefix(1000, 1000)
+    (1.0, 'K')
+    >>> metric_prefix(1001, 1000)
+    (1.001, 'K')
+    >>> metric_prefix(1000000, 1000)
+    (1.0, 'M')
+    >>> metric_prefix(1000**10, 1000)
+    (1.0, 'Q')
+    >>> metric_prefix(1000**11, 1000)
+    (1000.0, 'Q')
+    """
+    prefixes = ["", "K", "M", "G", "T", "P", "E", "Z", "Y", "R", "Q"]
+    if number < 0:
+        number = abs(number)
+        sign = -1
+    else:
+        sign = 1
+
+    for prefix in prefixes:
+        if number < base:
+            return sign * float(number), prefix
+        number /= base
+    else:
+        return sign * float(number) * base, prefix
+
+
+def shorten_with_metric_prefix(amount: int) -> str:
+    """
+    >>> shorten_with_metric_prefix(23000)
+    '23K'
+    >>> shorten_with_metric_prefix(2300000)
+    '2.3M'
+    >>> shorten_with_metric_prefix(23000000)
+    '23M'
+    >>> shorten_with_metric_prefix(1)
+    '1'
+    >>> shorten_with_metric_prefix(0)
+    '0'
+    >>> shorten_with_metric_prefix(100)
+    '100'
+    >>> shorten_with_metric_prefix(-100)
+    '-100'
+    """
+    m, prefix = metric_prefix(amount, 1000)
+    m_str = str(int(m)) if m.is_integer() else f"{m:.1f}"
+    exp = f"{m_str}{prefix}"
+    if len(exp) <= len(str(amount)):
+        return exp
+    else:
+        return str(amount)
+
+
+def nice_size(size: Union[float, int, str, Decimal]) -> str:
     """
     Returns a readably formatted string with the size
 
@@ -1483,23 +1533,15 @@ def nice_size(size):
     >>> nice_size(100000000)
     '95.4 MB'
     """
-    words = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB"]
-    prefix = ""
     try:
         size = float(size)
-        if size < 0:
-            size = abs(size)
-            prefix = "-"
-    except Exception:
+    except ValueError:
         return "??? bytes"
-    for ind, word in enumerate(words):
-        step = 1024 ** (ind + 1)
-        if step > size:
-            size = size / float(1024**ind)
-            if word == "bytes":  # No decimals for bytes
-                return "%s%d bytes" % (prefix, size)
-            return f"{prefix}{size:.1f} {word}"
-    return "??? bytes"
+    size, prefix = metric_prefix(size, 1024)
+    if prefix == "":
+        return "%d bytes" % size
+    else:
+        return f"{size:.1f} {prefix}B"
 
 
 def size_to_bytes(size):
@@ -1574,12 +1616,25 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
     :type  reply_to: str
     :param reply_to: Reply-to address (Default None)
     """
+    smtp_server = config.smtp_server
+    if smtp_server and isinstance(smtp_server, str) and smtp_server.startswith("mock_emails_to_path://"):
+        path = config.smtp_server[len("mock_emails_to_path://") :]
+        email_dict = {
+            "from": frm,
+            "to": to,
+            "subject": subject,
+            "body": body,
+            "html": html,
+            "reply_to": reply_to,
+        }
+        email_json = json.to_json_string(email_dict)
+        with open(path, "w") as f:
+            f.write(email_json)
+        return
 
     to = listify(to)
-    if html:
-        msg = MIMEMultipart("alternative")
-    else:
-        msg = MIMEText(body, "plain", "utf-8")
+    msg = EmailMessage()
+    msg.set_content(body)
 
     msg["To"] = ", ".join(to)
     msg["From"] = frm
@@ -1594,45 +1649,40 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
         return
 
     if html:
-        mp_text = MIMEText(body, "plain", "utf-8")
-        mp_html = MIMEText(html, "html", "utf-8")
-        msg.attach(mp_text)
-        msg.attach(mp_html)
+        msg.add_alternative(html, subtype="html")
 
     smtp_ssl = asbool(getattr(config, "smtp_ssl", False))
     if smtp_ssl:
         s = smtplib.SMTP_SSL(config.smtp_server)
     else:
         s = smtplib.SMTP(config.smtp_server)
-    if not smtp_ssl:
-        try:
-            s.starttls()
-            log.debug("Initiated SSL/TLS connection to SMTP server: %s", config.smtp_server)
-        except RuntimeError as e:
-            log.warning("SSL/TLS support is not available to your Python interpreter: %s", unicodify(e))
-        except smtplib.SMTPHeloError as e:
-            log.error("The server didn't reply properly to the HELO greeting: %s", unicodify(e))
-            s.close()
-            raise
-        except smtplib.SMTPException as e:
-            log.warning("The server does not support the STARTTLS extension: %s", unicodify(e))
-    if config.smtp_username and config.smtp_password:
-        try:
-            s.login(config.smtp_username, config.smtp_password)
-        except smtplib.SMTPHeloError as e:
-            log.error("The server didn't reply properly to the HELO greeting: %s", unicodify(e))
-            s.close()
-            raise
-        except smtplib.SMTPAuthenticationError as e:
-            log.error("The server didn't accept the username/password combination: %s", unicodify(e))
-            s.close()
-            raise
-        except smtplib.SMTPException as e:
-            log.error("No suitable authentication method was found: %s", unicodify(e))
-            s.close()
-            raise
-    s.sendmail(frm, to, msg.as_string())
-    s.quit()
+    try:
+        if not smtp_ssl:
+            try:
+                s.starttls()
+                log.debug("Initiated SSL/TLS connection to SMTP server: %s", config.smtp_server)
+            except RuntimeError as e:
+                log.warning("SSL/TLS support is not available to your Python interpreter: %s", e)
+            except smtplib.SMTPHeloError as e:
+                log.error("The server didn't reply properly to the HELO greeting: %s", e)
+                raise
+            except smtplib.SMTPException as e:
+                log.warning("The server does not support the STARTTLS extension: %s", e)
+        if config.smtp_username and config.smtp_password:
+            try:
+                s.login(config.smtp_username, config.smtp_password)
+            except smtplib.SMTPHeloError as e:
+                log.error("The server didn't reply properly to the HELO greeting: %s", e)
+                raise
+            except smtplib.SMTPAuthenticationError as e:
+                log.error("The server didn't accept the username/password combination: %s", e)
+                raise
+            except smtplib.SMTPException as e:
+                log.error("No suitable authentication method was found: %s", e)
+                raise
+        s.send_message(msg)
+    finally:
+        s.quit()
 
 
 def force_symlink(source, link_name):
@@ -1680,25 +1730,31 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 
-#  Don't use these two directly, prefer method version that "works" with packaged Galaxy.
-galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore[name-defined]
-galaxy_samples_path = os.path.join(__path__[0], os.pardir, "config", "sample")  # type: ignore[name-defined]
+# never load packages this way (won't work for installed packages),
+# but while we're working on packaging everything this can be a way to point
+# an installed Galaxy at a Galaxy root for things like tools. Ultimately
+# this all needs to be packaged, but we have some very old PRs working on this
+# that are pretty tricky and shouldn't slow current development.
+GALAXY_INCLUDES_ROOT = os.environ.get("GALAXY_INCLUDES_ROOT")
 
 
-def galaxy_directory():
-    path = galaxy_root_path
-    if in_packages():
-        path = os.path.join(galaxy_root_path, "..")
+#  Don't use this directly, prefer method version that "works" with packaged Galaxy.
+galaxy_root_path = Path(GALAXY_INCLUDES_ROOT) if GALAXY_INCLUDES_ROOT else Path(__file__).parent.parent.parent.parent
+
+
+def galaxy_directory() -> str:
+    if in_packages() and not GALAXY_INCLUDES_ROOT:
+        # This will work only when running pytest from <galaxy_root>/packages/<package_name>/
+        cwd = Path.cwd()
+        path = cwd.parent.parent
+    else:
+        path = galaxy_root_path
     return os.path.abspath(path)
 
 
-def in_packages():
-    # Normalize first; otherwise basename will be `..`
-    return os.path.basename(os.path.normpath(galaxy_root_path)) == "packages"
-
-
-def galaxy_samples_directory():
-    return os.path.join(galaxy_directory(), "lib", "galaxy", "config", "sample")
+def in_packages() -> bool:
+    galaxy_lib_path = Path(__file__).parent.parent.parent
+    return galaxy_lib_path.name != "lib"
 
 
 def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root_path):
@@ -1776,7 +1832,7 @@ def parse_non_hex_float(s):
 
 def build_url(base_url, port=80, scheme="http", pathspec=None, params=None, doseq=False):
     if params is None:
-        params = dict()
+        params = {}
     if pathspec is None:
         pathspec = []
     parsed_url = urlparse(base_url)

@@ -1,41 +1,42 @@
-<template>
-    <b-input-group>
-        <b-input v-model="filter" :placeholder="placeholder" />
-        <b-input-group-append>
-            <b-btn :disabled="!filter" @click="filter = ''"><i class="fa fa-times" /></b-btn>
-        </b-input-group-append>
-    </b-input-group>
-</template>
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { computed } from "vue";
 
-<script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
+library.add(faTimes);
 
-Vue.use(BootstrapVue);
+interface Props {
+    value: string;
+    title?: string;
+}
 
-export default {
-    props: {
-        value: {
-            type: String,
-            default: null,
-        },
-        title: {
-            type: String,
-            default: "",
-        },
+const props = withDefaults(defineProps<Props>(), {
+    title: "",
+});
+
+const emit = defineEmits<{
+    (e: "input", value: string): void;
+}>();
+
+const filter = computed({
+    get: () => {
+        return props.value;
     },
-    computed: {
-        placeholder() {
-            return `Type to Search ${this.title}`;
-        },
-        filter: {
-            get() {
-                return this.value;
-            },
-            set(val) {
-                this.$emit("input", val);
-            },
-        },
+    set: (newValue: string) => {
+        emit("input", newValue);
     },
-};
+});
+
+const placeholder = computed(() => `search ${props.title.toLowerCase()}`);
 </script>
+
+<template>
+    <BInputGroup class="w-100">
+        <BFormInput v-model="filter" :placeholder="placeholder" debounce="500" />
+        <BInputGroupAppend>
+            <BButton :disabled="!filter" @click="filter = ''"><FontAwesomeIcon icon="times" /></BButton>
+        </BInputGroupAppend>
+    </BInputGroup>
+</template>

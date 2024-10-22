@@ -1,5 +1,6 @@
 import { inject, onScopeDispose, provide, type Ref, ref, unref } from "vue";
 
+import { useUndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
@@ -27,6 +28,7 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
     const stepStore = useWorkflowStepStore(workflowId.value);
     const commentStore = useWorkflowCommentStore(workflowId.value);
     const toolbarStore = useWorkflowEditorToolbarStore(workflowId.value);
+    const undoRedoStore = useUndoRedoStore(workflowId.value);
 
     onScopeDispose(() => {
         connectionStore.$dispose();
@@ -34,6 +36,7 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
         stepStore.$dispose();
         commentStore.$dispose();
         toolbarStore.$dispose();
+        undoRedoStore.$dispose();
     });
 
     return {
@@ -42,6 +45,7 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
         stepStore,
         commentStore,
         toolbarStore,
+        undoRedoStore,
     };
 }
 
@@ -54,8 +58,8 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
  *
  * @returns workflow stores
  */
-export function useWorkflowStores() {
-    const workflowId = inject("workflowId") as Ref<string> | string;
+export function useWorkflowStores(workflowId?: Ref<string> | string) {
+    workflowId = workflowId ?? (inject("workflowId") as Ref<string> | string);
     const id = unref(workflowId);
 
     if (typeof id !== "string") {
@@ -69,6 +73,7 @@ export function useWorkflowStores() {
     const stepStore = useWorkflowStepStore(id);
     const commentStore = useWorkflowCommentStore(id);
     const toolbarStore = useWorkflowEditorToolbarStore(id);
+    const undoRedoStore = useUndoRedoStore(id);
 
     return {
         connectionStore,
@@ -76,5 +81,6 @@ export function useWorkflowStores() {
         stepStore,
         commentStore,
         toolbarStore,
+        undoRedoStore,
     };
 }

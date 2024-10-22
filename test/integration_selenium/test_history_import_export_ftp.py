@@ -82,7 +82,7 @@ class TestHistoryImportExportFtpSeleniumIntegration(TestHistoryImportExportFtpSe
         history_import.success_message.wait_for_visible()
 
         gx_selenium_context.navigate_to_histories_page()
-        newest_history_name = gx_selenium_context.histories_get_history_names()[0]
+        newest_history_name = gx_selenium_context.get_grid_entry_names("#histories-grid")[0]
         assert newest_history_name.startswith("imported from archive")
 
 

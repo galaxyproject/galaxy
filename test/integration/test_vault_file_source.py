@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-from galaxy.managers.users import get_user_by_email
+from galaxy.model.db.user import get_user_by_email
 from galaxy.security.vault import UserVaultWrapper
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator

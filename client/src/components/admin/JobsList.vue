@@ -101,8 +101,8 @@ import JobsTable from "components/admin/JobsTable";
 import Heading from "components/Common/Heading";
 import filtersMixin from "components/Indices/filtersMixin";
 import { jobsProvider } from "components/providers/JobProvider";
+import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { getAppRoot } from "onload/loadConfig";
-import JOB_STATES_MODEL from "utils/job-states-model";
 import { errorMessageAsString } from "utils/simple-error";
 
 import { commonJobFields } from "./JobFields";
@@ -211,7 +211,7 @@ export default {
             const unfinishedJobs = [];
             const finishedJobs = [];
             newVal.forEach((item) => {
-                if (JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(item.state)) {
+                if (NON_TERMINAL_STATES.includes(item.state)) {
                     unfinishedJobs.push(item);
                 } else {
                     finishedJobs.push(item);

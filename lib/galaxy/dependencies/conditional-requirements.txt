@@ -1,13 +1,13 @@
 # These dependencies are only required when certain config options are set
-psycopg2-binary==2.9.5
+psycopg2-binary==2.9.9
 mysqlclient
 fluent-logger
 sentry-sdk[fastapi]
 pbs_python
 drmaa
 statsd
-azure-storage==0.32.0
-python-irodsclient==1.1.3
+azure-storage-blob==12.19.1
+python-irodsclient==2.0.0
 python-ldap==3.4.0
 ldap3==2.9.1
 python-pam
@@ -24,8 +24,9 @@ fs.googledrivefs # type: googledrive
 fs-gcsfs # type: googlecloudstorage
 # fs-gcsfs doesn't pin google-cloud-storage, and old versions log noisy exceptions and break test discovery
 google-cloud-storage>=2.8.0  # type: googlecloudstorage
-fs.onedatarestfs # type: onedata
+fs.onedatarestfs==21.2.5.2 # type: onedata, depends on onedatafilerestclient
 fs-basespace # type: basespace
+fs-azureblob # type: azure
 
 # Vault backend
 hvac
@@ -35,10 +36,13 @@ custos-sdk
 chronos-python==1.2.1
 
 # Kubernetes job runner
-pykube-ng==21.3.0
+pykube-ng==23.6.0
 
 # Synnefo / Pithos+ object store client
 kamaki
+
+# Onedata REST-based client for data access, required by the Onedata object store
+onedatafilerestclient
 
 watchdog
 
@@ -56,7 +60,15 @@ tensorflow==2.9.3
 # xref https://github.com/galaxyproject/galaxy/pull/9651
 # Run run.sh or common_startup script with GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT=1
 # to install weasyprint as part of Galaxy's conditonal dependency instalation process.
-weasyprint
+weasyprint>=61.2
+# We pin the transitive weasyprint dependency pydyf here because newer versions are
+# not compatible with the last weasyprint version that still supports python 3.8.
+# This dependency is ignored on python >= 3.9 and should be removed when deprecating
+# support for python 3.8.
+pydyf<0.11; python_version<"3.9"
 
 # AWS Batch runner
 boto3
+
+# For Rucio storage plugin
+rucio-clients>=33.6.0

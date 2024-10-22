@@ -181,7 +181,7 @@ def __main__():
                     fields = [str(item) for item in (region.chrom, region.start, region.end, name, 0, region.strand)]
                     if force_num_columns is not None and len(fields) != force_num_columns:
                         fields = force_bed_field_count(fields, count, force_num_columns)
-                    out.write("%s\n" % "\t".join(fields))
+                    out.write("{}\n".format("\t".join(fields)))
                 except Exception:
                     skipped_lines += 1
                     if first_skipped_line is None:

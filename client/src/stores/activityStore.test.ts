@@ -6,11 +6,13 @@ import { useActivityStore } from "@/stores/activityStore";
 jest.mock("./activitySetup", () => ({
     Activities: [
         {
+            anonymous: false,
             description: "a-description",
             icon: "a-icon",
             id: "a-id",
             mutable: false,
             optional: false,
+            panel: true,
             title: "a-title",
             to: null,
             tooltip: "a-tooltip",
@@ -21,22 +23,26 @@ jest.mock("./activitySetup", () => ({
 
 const newActivities = [
     {
+        anonymous: false,
         description: "a-description-new",
         icon: "a-icon-new",
         id: "a-id",
         mutable: false,
         optional: false,
+        panel: true,
         title: "a-title",
         to: "a-to-new",
         tooltip: "a-tooltip-new",
         visible: false,
     },
     {
+        anonymous: false,
         description: "b-description-new",
         icon: "b-icon-new",
         id: "b-id",
         mutable: true,
         optional: false,
+        panel: true,
         title: "b-title-new",
         to: "b-to-new",
         tooltip: "b-tooltip-new",

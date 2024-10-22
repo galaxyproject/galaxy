@@ -585,11 +585,11 @@ import SaveRules from "components/RuleBuilder/SaveRules";
 import StateDiv from "components/RuleBuilder/StateDiv";
 import Select2 from "components/Select2";
 import UploadUtils from "components/Upload/utils";
+import { ERROR_STATES, NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
 import { refreshContentsWrapper } from "utils/data";
-import JobStatesModel from "utils/job-states-model";
 import _l from "utils/localization";
 import Vue from "vue";
 
@@ -1337,9 +1337,9 @@ export default {
             const handleJobShow = (jobResponse) => {
                 const state = jobResponse.data.state;
                 this.waitingJobState = state;
-                if (JobStatesModel.NON_TERMINAL_STATES.indexOf(state) !== -1) {
+                if (NON_TERMINAL_STATES.indexOf(state) !== -1) {
                     setTimeout(doJobCheck, 1000);
-                } else if (JobStatesModel.ERROR_STATES.indexOf(state) !== -1) {
+                } else if (ERROR_STATES.indexOf(state) !== -1) {
                     this.state = "error";
                     this.errorMessage =
                         "Unknown error encountered while running your upload job, this could be a server issue or a problem with the upload definition.";

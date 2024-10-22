@@ -2,15 +2,21 @@ import logging
 import os
 import re
 import urllib.parse
+from typing import List
 
-import requests
 import yaml
 
-from galaxy.exceptions import MessageException
+from galaxy.exceptions import (
+    MessageException,
+    RequestParameterInvalidException,
+)
+from galaxy.files.uris import validate_non_local
 from galaxy.util import (
     asbool,
     DEFAULT_SOCKET_TIMEOUT,
+    requests,
 )
+from galaxy.util.config_parsers import IpAllowedListEntryT
 from galaxy.util.search import parse_filters
 
 log = logging.getLogger(__name__)
@@ -73,7 +79,15 @@ class TrsProxy:
     def server_from_url(self, trs_url):
         return TrsServer(trs_url)
 
-    def match_url(self, url):
+    def match_url(self, url, ip_allowlist: List[IpAllowedListEntryT]):
+        if url.lstrip().startswith("file://"):
+            # requests doesn't know what to do with file:// anyway, but just in case we swap
+            # out the implementation
+            raise RequestParameterInvalidException("Invalid TRS URL %s", url)
+        validate_non_local(url, ip_allowlist=ip_allowlist or [])
+        return self._match_url(url)
+
+    def _match_url(self, url):
         if matches := re.match(TRS_URL_REGEX, url):
             match_dict = matches.groupdict()
             match_dict["tool_id"] = urllib.parse.unquote(match_dict["tool_id"])

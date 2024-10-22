@@ -19,9 +19,17 @@ library.add(faCog, faHourglassHalf, faRetweet);
 const notificationsStore = useNotificationsStore();
 const { notifications, loadingNotifications } = storeToRefs(notificationsStore);
 
+interface Props {
+    shouldOpenPreferences?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    shouldOpenPreferences: false,
+});
+
 const showUnread = ref(false);
 const showShared = ref(false);
-const preferencesOpen = ref(false);
+const preferencesOpen = ref(props.shouldOpenPreferences);
 const selectedNotificationIds = ref<string[]>([]);
 
 const haveSelected = computed(() => selectedNotificationIds.value.length > 0);

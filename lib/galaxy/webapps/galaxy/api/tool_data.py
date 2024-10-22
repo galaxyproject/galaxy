@@ -67,7 +67,7 @@ class FastAPIToolData:
         summary="Import a data manager bundle",
         require_admin=True,
     )
-    async def create(
+    def create(
         self, tool_data_file_path: Optional[str] = None, import_bundle_model: ImportToolDataBundle = Body(...)
     ) -> AsyncTaskResultSummary:
         source = import_bundle_model.source
@@ -91,7 +91,7 @@ class FastAPIToolData:
         response_description="A description of the reloaded data table and its content",
         require_admin=True,
     )
-    async def reload(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
+    def reload(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
         """Reloads a data table and return its details."""
         return self.tool_data_manager.reload(table_name)
 
@@ -116,7 +116,7 @@ class FastAPIToolData:
         response_class=GalaxyFileResponse,
         require_admin=True,
     )
-    async def download_field_file(
+    def download_field_file(
         self,
         table_name: str = ToolDataTableName,
         field_name: str = ToolDataTableFieldName,
@@ -136,7 +136,7 @@ class FastAPIToolData:
         response_description="A description of the affected data table and its content",
         require_admin=True,
     )
-    async def delete(
+    def delete(
         self,
         payload: ToolDataItem,
         table_name: str = ToolDataTableName,

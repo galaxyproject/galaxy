@@ -26,17 +26,14 @@ jobs:
         run: echo "TARGET_BRANCH=$GITHUB_BASE_REF" >> $GITHUB_ENV
       - name: Show target branch name
         run: echo $TARGET_BRANCH
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Cache pip dir
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
       - name: Install Python dependencies
         run: pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt sphinxcontrib-simpleversioning
       - name: Add Google Analytics to doc/source/conf.py

@@ -150,11 +150,13 @@ class ToolShedInstallationClient(metaclass=abc.ABCMeta):
     ) -> Dict[str, Any]:
         """"""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def tool_data_path(self) -> str:
         """"""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def shed_tool_data_table_conf(self) -> str:
         """"""
 
@@ -824,7 +826,7 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     def join_url_and_params(self, url: str, params, query=None) -> str:
         if params is None:
-            params = dict()
+            params = {}
         if query is None:
             query = urlparse(url).query
         if query:
@@ -1300,8 +1302,11 @@ class ShedTwillTestCase(ShedApiTestCase):
             self.check_for_strings(strings_displayed)
         if revert:
             strings_displayed = []
+            # assert original_information[input_elem_name]
             for input_elem_name in ["repo_name", "description", "long_description"]:
-                self._browser.fill_form_value("edit_repository", input_elem_name, original_information[input_elem_name])
+                self._browser.fill_form_value(
+                    "edit_repository", input_elem_name, original_information[input_elem_name]  # type:ignore[arg-type]
+                )
                 strings_displayed.append(self.escape_html(original_information[input_elem_name]))
             self._browser.submit_form_with_name("edit_repository", "edit_repository_button")
             if self._browser.is_twill:
@@ -1510,7 +1515,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         return self.get_repository_metadata_for_db_object(self._db_repository(repository))
 
     def get_repository_metadata_for_db_object(self, repository: DbRepository):
-        return [metadata_revision for metadata_revision in repository.metadata_revisions]
+        return list(repository.metadata_revisions)
 
     def get_repository_metadata_by_changeset_revision(self, repository_id: int, changeset_revision):
         return test_db_util.get_repository_metadata_by_repository_id_changeset_revision(
@@ -2045,12 +2050,10 @@ class ShedTwillTestCase(ShedApiTestCase):
     def _assert_repo_has_tool_with_id(
         self, installed_repository: galaxy_model.ToolShedRepository, tool_id: str
     ) -> None:
-        assert "tools" in installed_repository.metadata_, (
-            "No valid tools were defined in %s." % installed_repository.name
-        )
+        assert "tools" in installed_repository.metadata_, f"No valid tools were defined in {installed_repository.name}."
         tools = installed_repository.metadata_["tools"]
         found_it = False
-        for tool in tools:
+        for tool in tools:  # type:ignore[attr-defined]
             if "id" not in tool:
                 continue
             if tool["id"] == tool_id:
@@ -2061,16 +2064,16 @@ class ShedTwillTestCase(ShedApiTestCase):
     def _assert_repo_has_invalid_tool_in_file(
         self, installed_repository: galaxy_model.ToolShedRepository, name: str
     ) -> None:
-        assert "invalid_tools" in installed_repository.metadata_, (
-            "No invalid tools were defined in %s." % installed_repository.name
-        )
+        assert (
+            "invalid_tools" in installed_repository.metadata_
+        ), f"No invalid tools were defined in {installed_repository.name}."
         invalid_tools = installed_repository.metadata_["invalid_tools"]
         found_it = name in invalid_tools
         assert found_it, f"Did not find invalid tool file {name} in {invalid_tools}"
 
     def verify_unchanged_repository_metadata(self, repository: Repository):
-        old_metadata = dict()
-        new_metadata = dict()
+        old_metadata = {}
+        new_metadata = {}
         for metadata in self.get_repository_metadata(repository):
             old_metadata[metadata.changeset_revision] = metadata.metadata
         self.reset_repository_metadata(repository)

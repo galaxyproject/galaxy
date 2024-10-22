@@ -81,12 +81,12 @@ class JobsService(ServiceBase):
             or payload.history_id is not None
         )
         jobs = self.job_manager.index_query(trans, payload)
-        out = []
+        out: List[Dict[str, Any]] = []
         for job in jobs.yield_per(model.YIELD_PER_ROWS):
             # TODO: optimize if this crucial
             if check_security_of_jobs and not security_check(trans, job.history, check_accessible=True):
                 raise exceptions.ItemAccessibilityException("Cannot access the request job objects.")
-            job_dict = job.to_dict(view, system_details=is_admin)
+            job_dict = job.to_dict(view.value, system_details=is_admin)
             if view == JobIndexViewEnum.admin_job_list:
                 job_dict["decoded_job_id"] = job.id
             if user_details:
@@ -97,7 +97,7 @@ class JobsService(ServiceBase):
 
     def _check_nonadmin_access(
         self,
-        view: str,
+        view: JobIndexViewEnum,
         user_details: bool,
         decoded_user_id: Optional[DecodedDatabaseIdField],
         trans_user_id: Optional[int],

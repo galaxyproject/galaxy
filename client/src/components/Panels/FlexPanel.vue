@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounce, useDraggable } from "@vueuse/core";
-import { computed, type PropType, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useTimeoutThrottle } from "@/composables/throttle";
 
@@ -13,25 +13,25 @@ const { throttle } = useTimeoutThrottle(10);
 
 library.add(faChevronLeft, faChevronRight);
 
-const props = defineProps({
-    collapsible: {
-        type: Boolean,
-        default: true,
-    },
-    side: {
-        type: String as PropType<"left" | "right">,
-        default: "right",
-    },
+interface Props {
+    collapsible?: boolean;
+    side?: "left" | "right";
+    minWidth?: number;
+    maxWidth?: number;
+    defaultWidth?: number;
+}
+const props = withDefaults(defineProps<Props>(), {
+    collapsible: true,
+    side: "right",
+    minWidth: 200,
+    maxWidth: 800,
+    defaultWidth: 300,
 });
-
-const minWidth = 200;
-const maxWidth = 800;
-const defaultWidth = 300;
 
 const draggable = ref<HTMLElement | null>(null);
 const root = ref<HTMLElement | null>(null);
 
-const panelWidth = ref(defaultWidth);
+const panelWidth = ref(props.defaultWidth);
 const show = ref(true);
 
 const { position, isDragging } = useDraggable(draggable, {
@@ -79,9 +79,38 @@ watch(position, () => {
 
         const rectRoot = root.value.getBoundingClientRect();
         const rectDraggable = draggable.value.getBoundingClientRect();
-        panelWidth.value = determineWidth(rectRoot, rectDraggable, minWidth, maxWidth, props.side, position.value.x);
+        panelWidth.value = determineWidth(
+            rectRoot,
+            rectDraggable,
+            props.minWidth,
+            props.maxWidth,
+            props.side,
+            position.value.x
+        );
     });
 });
+
+/** If the `maxWidth` changes, prevent the panel from exceeding it */
+watch(
+    () => props.maxWidth,
+    (newVal) => {
+        if (newVal && panelWidth.value > newVal) {
+            panelWidth.value = props.maxWidth;
+        }
+    },
+    { immediate: true }
+);
+
+/** If the `minWidth` changes, ensure the panel width is at least the `minWidth` */
+watch(
+    () => props.minWidth,
+    (newVal) => {
+        if (newVal && panelWidth.value < newVal) {
+            panelWidth.value = newVal;
+        }
+    },
+    { immediate: true }
+);
 
 function onKeyLeft() {
     if (props.side === "left") {
@@ -100,11 +129,11 @@ function onKeyRight() {
 }
 
 function increaseWidth(by = 50) {
-    panelWidth.value = Math.min(panelWidth.value + by, maxWidth);
+    panelWidth.value = Math.min(panelWidth.value + by, props.maxWidth);
 }
 
 function decreaseWidth(by = 50) {
-    panelWidth.value = Math.max(panelWidth.value - by, minWidth);
+    panelWidth.value = Math.max(panelWidth.value - by, props.minWidth);
 }
 
 const sideClasses = computed(() => ({

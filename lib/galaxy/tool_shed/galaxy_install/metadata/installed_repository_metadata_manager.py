@@ -86,15 +86,15 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
         if order:
             return (
                 self.app.install_model.context.query(self.app.install_model.ToolShedRepository)
-                .filter(self.app.install_model.ToolShedRepository.table.c.uninstalled == false())
+                .filter(self.app.install_model.ToolShedRepository.uninstalled == false())
                 .order_by(
-                    self.app.install_model.ToolShedRepository.table.c.name,
-                    self.app.install_model.ToolShedRepository.table.c.owner,
+                    self.app.install_model.ToolShedRepository.name,
+                    self.app.install_model.ToolShedRepository.owner,
                 )
             )
         else:
             return self.app.install_model.context.query(self.app.install_model.ToolShedRepository).filter(
-                self.app.install_model.ToolShedRepository.table.c.uninstalled == false()
+                self.app.install_model.ToolShedRepository.uninstalled == false()
             )
 
     def get_repository_tools_tups(self):
@@ -131,7 +131,7 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
             original_metadata_dict = self.repository.metadata_
             self.generate_metadata_for_changeset_revision()
             if self.metadata_dict != original_metadata_dict:
-                self.repository.metadata_ = self.metadata_dict
+                self.repository.metadata_ = self.metadata_dict  # type:ignore[assignment]
                 self.update_in_shed_tool_config()
 
                 session = self.app.install_model.context
@@ -192,7 +192,9 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
             status = "error"
         return message, status
 
-    def set_repository(self, repository):
+    def set_repository(
+        self, repository, relative_install_dir: Optional[str] = None, changeset_revision: Optional[str] = None
+    ):
         super().set_repository(repository)
         self.repository_clone_url = common_util.generate_clone_url_for_installed_repository(self.app, repository)
 

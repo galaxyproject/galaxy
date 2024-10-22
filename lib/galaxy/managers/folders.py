@@ -20,11 +20,11 @@ from sqlalchemy import (
     or_,
     select,
 )
-from sqlalchemy.orm import aliased
-from sqlalchemy.orm.exc import (
+from sqlalchemy.exc import (
     MultipleResultsFound,
     NoResultFound,
 )
+from sqlalchemy.orm import aliased
 
 from galaxy import (
     model,
@@ -536,7 +536,7 @@ class FolderManager:
 
     def build_folder_path(
         self, sa_session: galaxy_scoped_session, folder: model.LibraryFolder
-    ) -> List[Tuple[str, str]]:
+    ) -> List[Tuple[int, Optional[str]]]:
         """
         Returns the folder path from root to the given folder.
 
@@ -546,6 +546,7 @@ class FolderManager:
         path_to_root = [(current_folder.id, current_folder.name)]
         while current_folder.parent_id is not None:
             parent_folder = sa_session.get(LibraryFolder, current_folder.parent_id)
+            assert parent_folder
             current_folder = parent_folder
             path_to_root.insert(0, (current_folder.id, current_folder.name))
         return path_to_root

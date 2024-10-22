@@ -232,6 +232,16 @@ class TestUserManager(BaseTestCase):
                 mock_unique_id.assert_called_once()
         assert result is None
 
+    def test_reset_email_user_deleted(self):
+        self.trans.app.config.allow_user_deletion = True
+        self.log("should not produce the password reset email if user is deleted")
+        user_email = "user@nopassword.com"
+        user = self.user_manager.create(email=user_email, username="nopassword")
+        self.user_manager.delete(user)
+        assert user.deleted is True
+        message = self.user_manager.send_reset_email(self.trans, {"email": user_email})
+        assert message is None
+
     def test_get_user_by_identity(self):
         # return None if username/email not found
         assert self.user_manager.get_user_by_identity("xyz") is None

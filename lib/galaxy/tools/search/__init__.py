@@ -71,8 +71,7 @@ CanConvertToInt = Union[str, int, float]
 
 def get_or_create_index(index_dir, schema):
     """Get or create a reference to the index."""
-    if not os.path.exists(index_dir):
-        os.makedirs(index_dir)
+    os.makedirs(index_dir, exist_ok=True)
     if index.exists_in(index_dir):
         idx = index.open_dir(index_dir)
         if idx.schema == schema:
@@ -233,7 +232,7 @@ class ToolPanelViewSearch:
                 # Add tool document to index (or overwrite if existing)
                 writer.update_document(**add_doc_kwds)
 
-        log.debug(f"Toolbox index of panel {self.panel_view_id}" f" finished {execution_timer}")
+        log.debug("Toolbox index of panel %s finished %s", self.panel_view_id, execution_timer)
 
     def _get_tools_to_remove(self, tool_cache) -> list:
         """Return list of tool IDs to be removed from index."""

@@ -10,7 +10,7 @@
  */
 
 import { isEqual, omit } from "lodash";
-import type { DefineComponent } from "vue";
+import { type DefineComponent } from "vue";
 
 export type Converter<T> = (value: T) => T;
 type Handler<T> = (v: T, q: T) => boolean;
@@ -29,9 +29,26 @@ const operatorForAlias = {
     eq: ":",
 } as const satisfies Record<string, string>;
 
+export type ErrorType = {
+    filter: string;
+    index?: string;
+    value?: string;
+    typeError?: string;
+    msg: string;
+};
+
 type OperatorForAlias = typeof operatorForAlias;
 export type Alias = keyof OperatorForAlias;
 type Operator = OperatorForAlias[Alias];
+export type FilterType =
+    | typeof String
+    | typeof Number
+    | typeof Boolean
+    | typeof Date
+    | "MultiTags"
+    | "ObjectStore"
+    | "QuotaSource"
+    | "Dropdown";
 
 /** A ValidFilter<T> with a `handler` for the `Filtering<T>` class,
  * and remaining properties for the `FilterMenu` component
@@ -40,7 +57,7 @@ export type ValidFilter<T> = {
     /** The `FilterMenu` input field/tooltip/label placeholder */
     placeholder?: string;
     /** The data type of the `FilterMenu` input field */
-    type?: typeof String | typeof Number | typeof Boolean | typeof Date | "MultiTags";
+    type?: FilterType;
     /** If type: Boolean:
      * - booleanType: 'default' creates: `filter:true|false|any`
      * - booleanType: 'is' creates: `is:filter`
@@ -52,7 +69,7 @@ export type ValidFilter<T> = {
      * (if `false` the filter is still valid for the search bar `filterText`)
      */
     menuItem: boolean;
-    /** Is there a datalist of values for this field */
+    /** The datalist of values for this field */
     datalist?:
         | string[]
         | {
@@ -68,6 +85,12 @@ export type ValidFilter<T> = {
     helpInfo?: DefineComponent | string;
     /** A default value (will make this a default filter for an empty `filterText`) */
     default?: T;
+    /** A dict of filters and corresponding values for this filter that disable them.
+     * Note: if value is null, the filter is disabled for any value of this filter.
+     */
+    disablesFilters?: {
+        [filter: string]: T[] | null;
+    };
 };
 
 /** Converts user input to backend compatible date
@@ -104,7 +127,7 @@ export function toLowerNoQuotes<T>(value: T): string {
 
 /** Converts name tags starting with '#' to 'name:'
  * @param value
- * @returns Lowercase value with 'name:' replaced with '#'
+ * @returns String value with 'name:' replaced with '#'
  * */
 export function expandNameTag<T>(value: T): string {
     if (value && typeof value === "string") {
@@ -114,7 +137,7 @@ export function expandNameTag<T>(value: T): string {
             value = value.replace(/^#/, "name:") as T;
         }
     }
-    return toLower(value);
+    return value as string;
 }
 
 /** Converts string alias to string operator, e.g.: 'gt' to '>'
@@ -149,6 +172,25 @@ export function equals<T>(attribute: string, query?: string, converter?: Convert
                 q = converter(q);
             }
             return toLower(v) === toLower(q);
+        },
+    };
+}
+
+export function quotaSourceFilter<T>(attribute: string, converter: Converter<T>): HandlerReturn<T> {
+    return {
+        attribute: attribute,
+        converter: converter,
+        query: `${attribute}-eq`,
+        handler: (v: T, q: T) => {
+            if (converter) {
+                v = converter(v);
+                q = converter(q);
+            }
+            function handleNullConversion(v: T) {
+                const lowerV = toLower(v);
+                return lowerV == "__null__" ? "null" : lowerV;
+            }
+            return handleNullConversion(v) === handleNullConversion(q);
         },
     };
 }
@@ -214,7 +256,9 @@ export function compare<T>(attribute: string, variant: string, converter?: Conve
  * @param validAliases: Array of valid aliases for filters
  * @param quoteStrings: Whether to auto quote filter strings in the query
  * @param nameMatching: Whether to apply name filter for unspecified filterText
- *                      (e.g. filterText = 'foo' -> 'name:foo')
+ *                      (e.g. filterText = 'foo' -> 'name:foo').
+ *                      Typically, when this is false, we index every field in
+ *                      the backend for unspecified filterText.
  * @returns Filtering object
  * */
 export default class Filtering<T> {
@@ -322,7 +366,7 @@ export default class Filtering<T> {
      * @returns Parsed filter text string
      * */
     getFilterText(filters: Record<string, T>, backendFormatted = false): string {
-        filters = this.getValidFilters(filters, backendFormatted);
+        filters = this.getValidFilters(filters, backendFormatted).validFilters;
         const hasDefaults = this.containsDefaults(filters);
 
         let newFilterText = "";
@@ -366,10 +410,11 @@ export default class Filtering<T> {
 
     /** Parses single text input into a dict of field->value pairs.
      * @param filterText Raw filter text string
-     * @param removeAny default: `true` Whether to remove default filters if the are set to `any`
+     * @param removeAny default: `true` Whether to remove default filters if they are set to `any`
      * @returns Filters as 2D array of of [field, value] pairs
      * */
-    getFiltersForText(filterText: string, removeAny = true): [string, T][] {
+    getFiltersForText(filterText: string, removeAny = true, validate = true): [string, T][] {
+        filterText = filterText.trim();
         const pairSplitRE = this.quoteStrings
             ? /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g
             : /(\S+):(.*?)(?=\s+\S+:|$)/g;
@@ -395,8 +440,8 @@ export default class Filtering<T> {
                     const normalizedField = field?.split("-").join("_");
                     if (
                         normalizedField &&
-                        this.validFilters[normalizedField] &&
-                        this.validFilters[normalizedField]?.boolType !== "is"
+                        this.validFilters[normalizedField]?.boolType !== "is" &&
+                        ((!validate && normalizedField !== "is") || this.validFilters[normalizedField])
                     ) {
                         // removes quotation and applies lower-case to filter value
                         const newVal = this.quoteStrings ? (toLowerNoQuotes(value) as T) : (value as T);
@@ -411,7 +456,12 @@ export default class Filtering<T> {
                             result[normalizedField] = newVal;
                         }
                         hasMatches = true;
-                    } else if (value && field === "is" && elg === ":" && this.validFilters[value]?.boolType === "is") {
+                    } else if (
+                        value &&
+                        field === "is" &&
+                        elg === ":" &&
+                        (!validate || this.validFilters[value]?.boolType === "is")
+                    ) {
                         // handle `is:filter` syntax
                         result[value] = true as T;
                         hasMatches = true;
@@ -452,7 +502,7 @@ export default class Filtering<T> {
      * @returns Parsed `filterText` string with added/removed filter(s)
      */
     applyFiltersToText(filters: Record<string, T>, existingText: string, remove = false) {
-        let validFilters = this.getValidFilters(filters);
+        let { validFilters } = this.getValidFilters(filters);
         const existingFilters = Object.fromEntries(this.getFiltersForText(existingText, false));
         if (remove) {
             validFilters = omit(existingFilters, Object.keys(validFilters));
@@ -466,10 +516,11 @@ export default class Filtering<T> {
      *
      * @param filters A filters object (e.g.: {hid: "3", name: "test", invalid: "x"}})
      * @param backendFormatted default: `false` Whether to convert the values to backend format
-     * @returns valid filters object (e.g.: {hid: "3", name: "test"}})
+     * @returns a _valid_ filters object (e.g.: {hid: "3", name: "test"}}) and one with invalid filters
      */
     getValidFilters(filters: Record<string, T>, backendFormatted = false) {
         const validFilters: Record<string, T> = {};
+        const invalidFilters: Record<string, T> = {};
         Object.entries(filters).forEach(([key, value]) => {
             if (this.validFilters[key]?.type === "MultiTags" && Array.isArray(value)) {
                 const validValues = value
@@ -478,14 +529,22 @@ export default class Filtering<T> {
                 if (validValues.length > 0) {
                     validFilters[key] = validValues as T;
                 }
+                const invalidValues = value.filter(
+                    (v) => !validValues.includes(this.getConvertedValue(key, v, backendFormatted))
+                );
+                if (invalidValues.length > 0) {
+                    invalidFilters[key] = invalidValues as T;
+                }
             } else {
                 const validValue = this.getConvertedValue(key, value, backendFormatted);
                 if (validValue !== undefined) {
                     validFilters[key] = validValue;
+                } else {
+                    invalidFilters[key] = value;
                 }
             }
         });
-        return validFilters;
+        return { validFilters, invalidFilters };
     }
 
     /** Convert a valid filter key (`filter`/`filter-gt`) to alias filter key (`filter:`/`filter>`)
@@ -555,11 +614,10 @@ export default class Filtering<T> {
             if (converter) {
                 if (
                     (converter == toBool && filterValue == "any") ||
-                    (!backendFormatted && /^(['"]).*\1$/.test(filterValue as string))
+                    (!backendFormatted && /^(['"]).*\1$/.test(filterValue as string)) ||
+                    (!backendFormatted && ([expandNameTag, toDate] as Converter<T>[]).includes(converter))
                 ) {
                     return filterValue;
-                } else if (!backendFormatted && ([expandNameTag, toDate] as Converter<T>[]).includes(converter)) {
-                    return toLower(filterValue) as T;
                 }
                 return converter(filterValue);
             } else {

@@ -1,37 +1,44 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, type Ref, ref } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";
+import { useHashedUserId } from "@/composables/hashedUserId";
 import { convertDropData } from "@/stores/activitySetup";
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
 
+import InvocationsPanel from "../Panels/InvocationsPanel.vue";
 import VisualizationPanel from "../Panels/VisualizationPanel.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
+import AdminPanel from "@/components/admin/AdminPanel.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+
+// require user to long click before dragging
+const DRAG_DELAY = 50;
 
 const { config, isConfigLoaded } = useConfig();
 
 const route = useRoute();
 const userStore = useUserStore();
+
+const { hashedUserId } = useHashedUserId();
+
 const eventStore = useEventStore();
 const activityStore = useActivityStore();
-const { isAnonymous } = storeToRefs(userStore);
+const { isAdmin, isAnonymous } = storeToRefs(userStore);
 
 const emit = defineEmits(["dragstart"]);
-
-// sync built-in activities with cached activities
-activityStore.sync();
 
 // activities from store
 const { activities } = storeToRefs(activityStore);
@@ -43,8 +50,11 @@ const dragItem: Ref<Activity | null> = ref(null);
 // drag state
 const isDragging = ref(false);
 
+// sync built-in activities with cached activities
+activityStore.sync();
+
 /**
- * Checks if the route of an activitiy is currently being visited and panels are collapsed
+ * Checks if the route of an activity is currently being visited and panels are collapsed
  */
 function isActiveRoute(activityTo: string) {
     return route.path === activityTo && isActiveSideBar("");
@@ -60,11 +70,18 @@ function isActiveSideBar(menuKey: string) {
 const isSideBarOpen = computed(() => userStore.toggledSideBar !== "");
 
 /**
+ * Checks if an activity that has a panel should have the `is-active` prop
+ */
+function panelActivityIsActive(activity: Activity) {
+    return isActiveSideBar(activity.id) || (activity.to !== null && isActiveRoute(activity.to));
+}
+
+/**
  * Evaluates the drop data and keeps track of the drop area
  */
 function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragData();
-    if (eventData) {
+    if (eventData && !eventStore.multipleDragData) {
         dragTarget.value = evt.target;
         dragItem.value = convertDropData(eventData);
         emit("dragstart", dragItem.value);
@@ -106,9 +123,21 @@ function onDragOver(evt: MouseEvent) {
 /**
  * Tracks the state of activities which expand or collapse the sidepanel
  */
-function onToggleSidebar(toggle: string) {
+function onToggleSidebar(toggle: string = "", to: string | null = null) {
+    // if an activity's dedicated panel/sideBar is already active
+    // but the route is different, don't collapse
+    if (toggle && to && !(route.path === to) && isActiveSideBar(toggle)) {
+        return;
+    }
     userStore.toggleSideBar(toggle);
 }
+
+watch(
+    () => hashedUserId.value,
+    () => {
+        activityStore.sync();
+    }
+);
 </script>
 
 <template>
@@ -125,22 +154,22 @@ function onToggleSidebar(toggle: string) {
                     :class="{ 'activity-popper-disabled': isDragging }"
                     :force-fallback="true"
                     chosen-class="activity-chosen-class"
+                    :delay="DRAG_DELAY"
                     drag-class="activity-drag-class"
                     ghost-class="activity-chosen-class"
                     @start="isDragging = true"
                     @end="isDragging = false">
                     <div v-for="(activity, activityIndex) in activities" :key="activityIndex">
-                        <div v-if="activity.visible">
+                        <div v-if="activity.visible && (activity.anonymous || !isAnonymous)">
                             <UploadItem
                                 v-if="activity.id === 'upload'"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
                                 :title="activity.title"
-                                :tooltip="activity.tooltip"
-                                @click="onToggleSidebar()" />
+                                :tooltip="activity.tooltip" />
                             <InteractiveItem
-                                v-else-if="activity.id === 'interactivetools'"
+                                v-else-if="activity.to && activity.id === 'interactivetools'"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
@@ -150,15 +179,15 @@ function onToggleSidebar(toggle: string) {
                                 :to="activity.to"
                                 @click="onToggleSidebar()" />
                             <ActivityItem
-                                v-else-if="['tools', 'visualizations'].includes(activity.id)"
+                                v-else-if="activity.id === 'admin' || activity.panel"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
-                                :is-active="isActiveSideBar(activity.id)"
+                                :is-active="panelActivityIsActive(activity)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
-                                :to="activity.to"
-                                @click="onToggleSidebar(activity.id)" />
+                                :to="activity.to || ''"
+                                @click="onToggleSidebar(activity.id, activity.to)" />
                             <ActivityItem
                                 v-else-if="activity.to"
                                 :id="`activity-${activity.id}`"
@@ -173,28 +202,40 @@ function onToggleSidebar(toggle: string) {
                     </div>
                 </draggable>
             </b-nav>
-            <b-nav vertical class="flex-nowrap p-1">
+            <b-nav v-if="!isAnonymous" vertical class="activity-footer flex-nowrap p-1">
                 <NotificationItem
-                    v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system"
+                    v-if="isConfigLoaded && config.enable_notification_system"
                     id="activity-notifications"
                     icon="bell"
-                    :is-active="isActiveSideBar('notifications')"
+                    :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
                     title="Notifications"
                     @click="onToggleSidebar('notifications')" />
                 <ActivityItem
                     id="activity-settings"
-                    icon="cog"
+                    icon="ellipsis-h"
                     :is-active="isActiveSideBar('settings')"
-                    title="Settings"
-                    tooltip="Edit preferences"
+                    title="More"
+                    tooltip="View additional activities"
                     @click="onToggleSidebar('settings')" />
+                <ActivityItem
+                    v-if="isAdmin"
+                    id="activity-admin"
+                    icon="user-cog"
+                    :is-active="isActiveSideBar('admin')"
+                    title="Admin"
+                    tooltip="Administer this Galaxy"
+                    variant="danger"
+                    @click="onToggleSidebar('admin')" />
             </b-nav>
         </div>
         <FlexPanel v-if="isSideBarOpen" side="left" :collapsible="false">
             <ToolPanel v-if="isActiveSideBar('tools')" />
+            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
+            <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <SettingsPanel v-else-if="isActiveSideBar('settings')" />
+            <AdminPanel v-else-if="isActiveSideBar('admin')" />
         </FlexPanel>
     </div>
 </template>
@@ -218,6 +259,11 @@ function onToggleSidebar(toggle: string) {
 
 .activity-drag-class {
     display: none;
+}
+
+.activity-footer {
+    border-top: $border-default;
+    border-top-style: dotted;
 }
 
 .activity-popper-disabled {

@@ -5,13 +5,12 @@ Controller to handle communication of tools of type data_source_async
 import logging
 from urllib.parse import urlencode
 
-import requests
-
 from galaxy import web
 from galaxy.model.base import transaction
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     Params,
+    requests,
     unicodify,
 )
 from galaxy.util.hash_util import hmac_new
@@ -86,7 +85,7 @@ class ASync(BaseUIController):
                     translator.galaxy_name for translator in tool.input_translator.param_trans_dict.values()
                 }
                 for param in params:
-                    if param in tool_declared_params:
+                    if param in tool_declared_params or not tool.wants_params_cleaned:
                         params_dict[param] = params.get(param, None)
             params = params_dict
 

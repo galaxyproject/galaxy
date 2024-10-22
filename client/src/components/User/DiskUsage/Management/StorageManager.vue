@@ -63,7 +63,7 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
             </b-alert>
         </b-row>
         <b-row class="justify-content-md-center mb-5">
-            <b-alert v-if="config.enable_quotas" show>
+            <b-alert v-if="config?.enable_quotas" show>
                 {{ localize("The storage manager only shows elements that count towards your disk quota.") }}
                 <b-link :href="config.quota_url" target="_blank">{{ localize("Learn more") }}</b-link>
             </b-alert>

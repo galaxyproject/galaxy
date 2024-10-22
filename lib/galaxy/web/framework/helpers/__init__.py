@@ -6,6 +6,7 @@ visualizations in their mako files through the `$h` object, see
 GalaxyWebTransaction in galaxy/webapps/base/webapp.py
 """
 
+import re
 from datetime import (
     datetime,
     timedelta,
@@ -32,7 +33,7 @@ def time_ago(x):
         return x.strftime("%b %d, %Y")
     else:
         # Workaround https://github.com/python-babel/babel/issues/137
-        kwargs = dict()
+        kwargs = {}
         if not default_locale("LC_TIME"):
             kwargs["locale"] = "en_US_POSIX"
         return format_timedelta(x - datetime.utcnow(), threshold=1, add_direction=True, **kwargs)  # type: ignore[arg-type] # https://github.com/python/mypy/issues/9676
@@ -103,6 +104,22 @@ def is_true(val):
     Returns true if input is a boolean and true or is a string and looks like a true value.
     """
     return val is True or val in ["True", "true", "T", "t"]
+
+
+def is_url(val):
+    """
+    Regular expression to match common URL protocols
+
+    >>> assert is_url(None) == False
+    >>> assert is_url("is_url") == False
+    >>> assert is_url("http://is_url") == True
+    >>> assert is_url("https://is_url") == True
+    """
+    if val is not None:
+        url_pattern = re.compile(r"^(https?:\/\/|ftp:\/\/)")
+        return bool(url_pattern.match(val))
+    else:
+        return False
 
 
 def to_js_bool(val):

@@ -34,7 +34,6 @@ from typing import (
     Union,
 )
 
-import requests
 from typing_extensions import (
     Protocol,
     TypedDict,
@@ -44,6 +43,7 @@ from galaxy import util
 from galaxy.exceptions import MessageException
 from galaxy.util import (
     Element,
+    requests,
     RW_R__R__,
 )
 from galaxy.util.compression_utils import decompress_path_to_directory
@@ -489,7 +489,7 @@ class TabularToolDataTable(ToolDataTable):
 
     # This method is used in tools, so need to keep its API stable
     def get_fields(self) -> List[List[str]]:
-        return self.data
+        return self.data.copy()
 
     def get_field(self, value):
         rval = None
@@ -1113,7 +1113,7 @@ class ToolDataTableManager(Dictifiable):
                 else:
                     raise
             root = tree.getroot()
-            out_elems = [elem for elem in root]
+            out_elems = list(root)
         except Exception as e:
             out_elems = []
             log.debug("Could not parse existing tool data table config, assume no existing elements: %s", e)

@@ -18,7 +18,6 @@ from typing import (
     Optional,
     Set,
     Type,
-    TYPE_CHECKING,
 )
 
 from sqlalchemy import (
@@ -28,7 +27,10 @@ from sqlalchemy import (
     true,
 )
 
-from galaxy import exceptions
+from galaxy import (
+    exceptions,
+    model,
+)
 from galaxy.managers import (
     annotatable,
     base,
@@ -51,9 +53,6 @@ from galaxy.schema.schema import (
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import ready_name_for_url
 from galaxy.util.hash_util import md5_hash_str
-
-if TYPE_CHECKING:
-    from sqlalchemy.orm import Query
 
 log = logging.getLogger(__name__)
 
@@ -91,16 +90,16 @@ class SharableModelManager(
         return self.list(filters=filters, **kwargs)
 
     # .... owned/accessible interfaces
-    def is_owner(self, item: "Query", user: Optional[User], **kwargs: Any) -> bool:
+    def is_owner(self, item: model.Base, user: Optional[User], **kwargs: Any) -> bool:
         """
         Return true if this sharable belongs to `user` (or `user` is an admin).
         """
         # ... effectively a good fit to have this here, but not semantically
         if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
-        return item.user == user
+        return item.user == user  # type:ignore[attr-defined]
 
-    def is_accessible(self, item: "Query", user: Optional[User], **kwargs: Any) -> bool:
+    def is_accessible(self, item, user: Optional[User], **kwargs: Any) -> bool:
         """
         If the item is importable, is owned by `user`, or (the valid) `user`
         is in 'users shared with' list for the item: return True.

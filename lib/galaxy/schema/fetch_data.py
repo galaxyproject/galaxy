@@ -101,6 +101,13 @@ class ExtraFiles(FetchBaseModel):
     )
 
 
+class FetchDatasetHash(Model):
+    hash_function: Literal["MD5", "SHA-1", "SHA-256", "SHA-512"]
+    hash_value: str
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class BaseDataElement(FetchBaseModel):
     name: Optional[CoercedStringType] = None
     dbkey: str = Field("?")
@@ -116,6 +123,10 @@ class BaseDataElement(FetchBaseModel):
     items_from: Optional[ElementsFromType] = Field(None, alias="elements_from")
     collection_type: Optional[str] = None
     MD5: Optional[str] = None
+    SHA1: Optional[str] = Field(None, alias="SHA-1")
+    SHA256: Optional[str] = Field(None, alias="SHA-256")
+    SHA512: Optional[str] = Field(None, alias="SHA-512")
+    hashes: Optional[List[FetchDatasetHash]] = None
     description: Optional[str] = None
     model_config = ConfigDict(extra="forbid")
 
@@ -269,4 +280,4 @@ class FetchDataPayload(BaseDataPayload):
 
 
 class FetchDataFormPayload(BaseDataPayload):
-    targets: Union[Json[Targets], Targets]  # type: ignore[type-arg]  # https://github.com/samuelcolvin/pydantic/issues/2990
+    targets: Union[Json[Targets], Targets]

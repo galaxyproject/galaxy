@@ -15,9 +15,6 @@ class PairedDatasetCollectionType(BaseDatasetCollectionType):
 
     collection_type = "paired"
 
-    def __init__(self):
-        pass
-
     def generate_elements(self, elements):
         if forward_dataset := elements.get(FORWARD_IDENTIFIER):
             left_association = DatasetCollectionElement(

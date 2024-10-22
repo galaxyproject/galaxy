@@ -1,13 +1,37 @@
 <template>
     <b-card v-if="jobs">
-        <b-table small caption-top :items="jobsProvider" :fields="fields" primary-key="id" @row-clicked="toggleDetails">
+        <b-table
+            small
+            caption-top
+            :items="jobsProvider"
+            :fields="fields"
+            primary-key="id"
+            :tbody-tr-class="showingJobCls"
+            :striped="!invocationGraph"
+            @row-clicked="rowClicked">
+            <template v-slot:cell(showing_job)="data">
+                <span v-if="showingJobId === data.item.id || data.item._showDetails">
+                    <FontAwesomeIcon v-if="!invocationGraph" icon="caret-down" size="lg" />
+                    <span v-else>
+                        <FontAwesomeIcon class="text-primary" icon="fa-eye" />
+                    </span>
+                </span>
+                <span v-else>
+                    <FontAwesomeIcon v-if="!invocationGraph" icon="caret-right" size="lg" />
+                    <span v-else>
+                        <FontAwesomeIcon icon="fa-eye" />
+                    </span>
+                </span>
+            </template>
             <template v-slot:row-details="row">
                 <JobProvider :id="row.item.id" v-slot="{ item, loading }">
                     <div v-if="loading"><b-spinner label="Loading Job..."></b-spinner></div>
                     <div v-else>
-                        <JobInformation v-if="item" :job_id="item.id" />
-                        <p></p>
-                        <JobParameters v-if="item" :job-id="item.id" :include-title="false" />
+                        <b-card>
+                            <JobInformation v-if="item" :job_id="item.id" />
+                            <p></p>
+                            <JobParameters v-if="item" :job-id="item.id" :include-title="false" />
+                        </b-card>
                     </div>
                 </JobProvider>
             </template>
@@ -21,6 +45,9 @@
     </b-card>
 </template>
 <script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown, faCaretRight } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import JobInformation from "components/JobInformation/JobInformation";
 import JobParameters from "components/JobParameters/JobParameters";
@@ -29,9 +56,11 @@ import UtcDate from "components/UtcDate";
 import Vue from "vue";
 
 Vue.use(BootstrapVue);
+library.add(faCaretDown, faCaretRight);
 
 export default {
     components: {
+        FontAwesomeIcon,
         UtcDate,
         JobProvider,
         JobParameters,
@@ -39,10 +68,13 @@ export default {
     },
     props: {
         jobs: { type: Array, required: true },
+        invocationGraph: { type: Boolean, default: false },
+        showingJobId: { type: String, default: null },
     },
     data() {
         return {
             fields: [
+                { key: "showing_job", label: "", sortable: false },
                 { key: "state", sortable: true },
                 { key: "update_time", label: "Updated", sortable: true },
                 { key: "create_time", label: "Created", sortable: true },
@@ -74,6 +106,39 @@ export default {
             // update state
             this.toggledItems[item.id] = item._showDetails;
         },
+        rowClicked(item) {
+            if (this.invocationGraph) {
+                this.$emit("row-clicked", item.id);
+            } else {
+                this.toggleDetails(item);
+            }
+        },
+        showingJobCls(item, type) {
+            let cls = "job-tr-class cursor-pointer unselectable";
+            if (this.showingJobId === item.id) {
+                cls += " showing-job";
+            }
+            return cls;
+        },
     },
 };
 </script>
+
+<style lang="scss">
+// NOTE: Couldn't use scoped style due to it not working for the BTable class rows
+@import "theme/blue.scss";
+@import "base.scss";
+
+// Table row class
+.job-tr-class {
+    &:hover {
+        background-color: $brand-secondary;
+    }
+    &.showing-job {
+        background-color: darken($brand-secondary, 10%);
+    }
+    &:not(.showing-job) {
+        border-top: 0.2rem solid $brand-secondary;
+    }
+}
+</style>

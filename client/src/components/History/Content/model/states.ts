@@ -1,8 +1,14 @@
-import type { components } from "@/api/schema";
+import { type components } from "@/api/schema";
 
 type DatasetState = components["schemas"]["DatasetState"];
 // The 'failed' state is for the collection job state summary, not a dataset state.
-type State = DatasetState | "failed" | "placeholder" | "failed_populated_state" | "new_populated_state";
+type State =
+    | DatasetState
+    | "failed"
+    | "placeholder"
+    | "failed_populated_state"
+    | "new_populated_state"
+    | "inaccessible";
 
 interface StateRepresentation {
     status: "success" | "warning" | "info" | "danger" | "secondary";
@@ -12,7 +18,7 @@ interface StateRepresentation {
     nonDb?: boolean;
 }
 
-type StateMap = {
+export type StateMap = {
     [__ in State]: StateRepresentation;
 };
 
@@ -118,6 +124,12 @@ export const STATES: StateMap = {
         status: "warning",
         text: "This is a new collection and not all of its data are available yet.",
         icon: "clock",
+        nonDb: true,
+    },
+    inaccessible: {
+        status: "warning",
+        text: "User not allowed to access this dataset.",
+        icon: "lock",
         nonDb: true,
     },
 } as const satisfies StateMap;

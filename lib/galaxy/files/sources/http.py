@@ -10,6 +10,7 @@ from typing import (
 
 from typing_extensions import Unpack
 
+from galaxy.files import OptionalUserContext
 from galaxy.files.uris import validate_non_local
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
@@ -56,7 +57,11 @@ class HTTPFilesSource(BaseFilesSource):
         return self._file_sources_config.fetch_url_allowlist
 
     def _realize_to(
-        self, source_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+        self,
+        source_path: str,
+        native_path: str,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
     ):
         props = self._serialization_props(user_context)
         extra_props: HTTPFilesSourceProperties = cast(HTTPFilesSourceProperties, opts.extra_props or {} if opts else {})
@@ -73,11 +78,15 @@ class HTTPFilesSource(BaseFilesSource):
             )
 
     def _write_from(
-        self, target_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+        self,
+        target_path: str,
+        native_path: str,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
     ):
         raise NotImplementedError()
 
-    def _serialization_props(self, user_context=None) -> HTTPFilesSourceProperties:
+    def _serialization_props(self, user_context: OptionalUserContext = None) -> HTTPFilesSourceProperties:
         effective_props = {}
         for key, val in self._props.items():
             effective_props[key] = self._evaluate_prop(val, user_context=user_context)
@@ -85,8 +94,7 @@ class HTTPFilesSource(BaseFilesSource):
         return cast(HTTPFilesSourceProperties, effective_props)
 
     def score_url_match(self, url: str):
-        match = self._url_regex.match(url)
-        if match:
+        if match := self._url_regex.match(url):
             return match.span()[1]
         else:
             return 0

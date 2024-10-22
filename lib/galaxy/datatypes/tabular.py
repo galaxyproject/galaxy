@@ -65,6 +65,7 @@ from galaxy.datatypes.sniff import (
     iter_headers,
     validate_tabular,
 )
+from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util import compression_utils
 from galaxy.util.compression_utils import (
     FileObjType,
@@ -127,13 +128,15 @@ class TabularData(Text):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         kwd.setdefault("line_wrap", False)
         super().set_peek(dataset, **kwd)
+        dataset.blurb = f"{dataset.blurb} {dataset.metadata.columns} columns"
         if dataset.metadata.comment_lines:
             dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata.comment_lines))} comments"
 
     def displayable(self, dataset: DatasetProtocol) -> bool:
         try:
             return (
-                not dataset.dataset.purged
+                not dataset.deleted
+                and not dataset.dataset.purged
                 and dataset.has_data()
                 and dataset.state == dataset.states.OK
                 and dataset.metadata.columns > 0
@@ -155,12 +158,15 @@ class TabularData(Text):
     def _read_chunk(self, trans, dataset: HasFileName, offset: int, ck_size: Optional[int] = None):
         with compression_utils.get_fileobj(dataset.get_file_name()) as f:
             f.seek(offset)
-            ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
-            if ck_data and ck_data[-1] != "\n":
-                cursor = f.read(1)
-                while cursor and cursor != "\n":
-                    ck_data += cursor
+            try:
+                ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
+                if ck_data and ck_data[-1] != "\n":
                     cursor = f.read(1)
+                    while cursor and cursor != "\n":
+                        ck_data += cursor
+                        cursor = f.read(1)
+            except UnicodeDecodeError:
+                raise InvalidFileFormatError("Dataset appears to contain binary data, cannot display.")
             last_read = f.tell()
         return ck_data, last_read
 
@@ -192,14 +198,15 @@ class TabularData(Text):
                 return open(dataset.get_file_name(), mode="rb"), headers
             else:
                 headers["content-type"] = "text/html"
-                return (
-                    trans.fill_template_mako(
-                        "/dataset/large_file.mako",
-                        truncated_data=open(dataset.get_file_name()).read(max_peek_size),
-                        data=dataset,
-                    ),
-                    headers,
-                )
+                with compression_utils.get_fileobj(dataset.get_file_name(), "rb") as fh:
+                    return (
+                        trans.fill_template_mako(
+                            "/dataset/large_file.mako",
+                            truncated_data=fh.read(max_peek_size),
+                            data=dataset,
+                        ),
+                        headers,
+                    )
         else:
             column_names = "null"
             if dataset.metadata.column_names:
@@ -450,18 +457,18 @@ class Tabular(TabularData):
         column_type_compare_order = list(column_type_set_order)  # Order to compare column types
         column_type_compare_order.reverse()
 
-        def type_overrules_type(column_type1, column_type2):
-            if column_type1 is None or column_type1 == column_type2:
+        def type_overrules_type(new_column_type, old_column_type):
+            if new_column_type is None or new_column_type == old_column_type:
                 return False
-            if column_type2 is None:
+            if old_column_type is None:
                 return True
             for column_type in column_type_compare_order:
-                if column_type1 == column_type:
+                if new_column_type == column_type:
                     return True
-                if column_type2 == column_type:
+                if old_column_type == column_type:
                     return False
             # neither column type was found in our ordered list, this cannot happen
-            raise ValueError(f"Tried to compare unknown column types: {column_type1} and {column_type2}")
+            raise ValueError(f"Tried to compare unknown column types: {new_column_type} and {old_column_type}")
 
         def is_int(column_text):
             # Don't allow underscores in numeric literals (PEP 515)
@@ -508,7 +515,7 @@ class Tabular(TabularData):
         comment_lines = 0
         column_names = None
         column_types: List = []
-        first_line_column_types = [default_column_type]  # default value is one column of type str
+        first_line_column_types = []
         if dataset.has_data():
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
             with compression_utils.get_fileobj(dataset.get_file_name()) as dataset_fh:
@@ -1074,7 +1081,7 @@ class BaseVcf(Tabular):
     def validate(self, dataset: DatasetProtocol, **kwd) -> DatatypeValidation:
         def validate_row(row):
             if len(row) < 8:
-                raise Exception("Not enough columns in row %s" % row.join("\t"))
+                raise Exception("Not enough columns in row {}".format(row.join("\t")))
 
         validate_tabular(dataset.get_file_name(), sep="\t", validate_row=validate_row, comment_designator="#")
         return DatatypeValidation.validated()
@@ -1222,7 +1229,8 @@ class Eland(Tabular):
             "DESC",
             "SRAS",
             "PRAS",
-            "PART_CHROM" "PART_CONTIG",
+            "PART_CHROM",
+            "PART_CONTIG",
             "PART_OFFSET",
             "PART_STRAND",
             "FILT",
@@ -1807,7 +1815,7 @@ class CMAP(TabularData):
             with open(dataset.get_file_name()) as dataset_fh:
                 comment_lines = 0
                 column_headers = None
-                cleaned_column_types = None
+                cleaned_column_types = []
                 number_of_columns = 0
                 for i, line in enumerate(dataset_fh):
                     line = line.strip("\n")
@@ -1815,7 +1823,6 @@ class CMAP(TabularData):
                         if line.startswith("#h"):
                             column_headers = line.split("\t")[1:]
                         elif line.startswith("#f"):
-                            cleaned_column_types = []
                             for column_type in line.split("\t")[1:]:
                                 if column_type == "Hex":
                                     cleaned_column_types.append("str")

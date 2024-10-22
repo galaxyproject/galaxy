@@ -1,14 +1,14 @@
 import { curveCatmullRom, line } from "d3";
 
 import * as commentColors from "@/components/Workflow/Editor/Comments/colors";
-import type {
-    FrameWorkflowComment,
-    FreehandWorkflowComment,
-    MarkdownWorkflowComment,
-    TextWorkflowComment,
+import {
+    type FrameWorkflowComment,
+    type FreehandWorkflowComment,
+    type MarkdownWorkflowComment,
+    type TextWorkflowComment,
 } from "@/stores/workflowEditorCommentStore";
-import type { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import type { Step } from "@/stores/workflowStepStore";
+import { type useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { type Step } from "@/stores/workflowStepStore";
 
 export function drawBoxComments(
     ctx: CanvasRenderingContext2D,

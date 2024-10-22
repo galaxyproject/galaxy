@@ -128,6 +128,20 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         created_hda_3 = datasets[DEFAULT_TOOL_OUTPUT]["test3"]
         assert_created_with_path(self.app.object_store, created_hda_3.dataset, path3)
 
+    def test_collect_collection_default_format(self):
+        self._replace_output_collectors(
+            """<dataset_collection name="parent" format="abcdef">
+            <discover_datasets pattern="__name__" directory="subdir_for_name_discovery" sort_by="reverse_filename" />
+        </dataset_collection>"""
+        )
+        self._setup_extra_file(subdir="subdir_for_name_discovery", filename="test1")
+        self._setup_extra_file(subdir="subdir_for_name_discovery", filename="test2")
+
+        datasets = self._collect()
+        assert DEFAULT_TOOL_OUTPUT in datasets
+        for dataset in datasets[DEFAULT_TOOL_OUTPUT].values():
+            assert dataset.ext == "abcdef"
+
     def test_collect_sorted_reverse(self):
         self._replace_output_collectors(
             """<output>

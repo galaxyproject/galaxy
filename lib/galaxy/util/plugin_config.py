@@ -1,4 +1,3 @@
-from pathlib import Path
 from types import ModuleType
 from typing import (
     Any,
@@ -16,9 +15,9 @@ from typing import (
 import yaml
 
 from galaxy.util import parse_xml
+from galaxy.util.path import StrPath
 from galaxy.util.submodules import import_submodules
 
-PathT = Union[str, Path]
 PluginDictConfigT = Dict[str, Any]
 PluginConfigsT = Union[PluginDictConfigT, List[PluginDictConfigT]]
 
@@ -132,7 +131,7 @@ def __load_plugins_from_dicts(
     return plugins
 
 
-def plugin_source_from_path(path: PathT) -> PluginConfigSource:
+def plugin_source_from_path(path: StrPath) -> PluginConfigSource:
     filename = str(path)
     if (
         filename.endswith(".yaml")
@@ -149,7 +148,7 @@ def plugin_source_from_dict(as_dict: PluginConfigsT) -> PluginConfigSource:
     return PluginConfigSource("dict", as_dict)
 
 
-def __read_yaml(path: PathT):
+def __read_yaml(path: StrPath):
     if yaml is None:
         raise ImportError("Attempting to read YAML configuration file - but PyYAML dependency unavailable.")
 

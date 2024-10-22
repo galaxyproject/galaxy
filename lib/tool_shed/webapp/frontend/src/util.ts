@@ -1,7 +1,7 @@
 import { copyToClipboard, Notify, Cookies } from "quasar"
 import type { QNotifyCreateOptions } from "quasar"
 import { type LocationQueryValue } from "vue-router"
-import { ApiError } from "openapi-typescript-fetch"
+import { type ApiMessageException } from "./schema/types"
 
 export function getCookie(name: string): string | null {
     return Cookies.get(name)
@@ -31,18 +31,33 @@ export async function copyAndNotify(value: string, notification: string) {
     notify(notification)
 }
 
-export function errorMessage(e: Error): string {
-    if (e instanceof ApiError) {
-        return e.data.err_msg
-    } else {
-        return JSON.stringify(e)
+export function errorMessageAsString(
+    e: Error | ApiMessageException | string | unknown,
+    defaultMessage = "Request failed."
+): string {
+    if (e instanceof Error) {
+        if (e.cause) {
+            return `${e.message}: ${e.cause}`
+        }
+        return e.message
+    } else if (isApiException(e)) {
+        return e.err_msg
+    } else if (typeof e == "string") {
+        return e
     }
+
+    return defaultMessage
+}
+
+function isApiException(e: unknown): e is ApiMessageException {
+    return e instanceof Object && "err_msg" in e
 }
 
 export function queryParamToString(param: LocationQueryValue | LocationQueryValue[]): string | null {
     return Array.isArray(param) ? param[0] : param
 }
 
-export function notifyOnCatch(e: Error) {
-    notify(errorMessage(e))
+export function notifyOnCatch(e: unknown) {
+    console.debug(e)
+    notify(errorMessageAsString(e))
 }

@@ -62,6 +62,69 @@ def test_deferred_hdas_basic_attached():
     _assert_2_bed_metadata(materialized_hda)
 
 
+def test_hash_validate():
+    fixture_context = setup_fixture_context_with_history()
+    store_dict = deferred_hda_model_store_dict()
+    perform_import_from_store_dict(fixture_context, store_dict)
+    deferred_hda = fixture_context.history.datasets[0]
+    assert deferred_hda
+    _assert_2_bed_metadata(deferred_hda)
+    assert deferred_hda.dataset.state == "deferred"
+    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materialized_hda = materializer.ensure_materialized(deferred_hda, validate_hashes=True)
+    materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset.state == "ok"
+
+
+def test_hash_invalid():
+    fixture_context = setup_fixture_context_with_history()
+    store_dict = deferred_hda_model_store_dict()
+    store_dict["datasets"][0]["file_metadata"]["hashes"][0]["hash_value"] = "invalidhash"
+    perform_import_from_store_dict(fixture_context, store_dict)
+    deferred_hda = fixture_context.history.datasets[0]
+    assert deferred_hda
+    _assert_2_bed_metadata(deferred_hda)
+    assert deferred_hda.dataset.state == "deferred"
+    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materialized_hda = materializer.ensure_materialized(deferred_hda, validate_hashes=True)
+    materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset.state == "error"
+
+
+def test_hash_validate_source_of_download():
+    fixture_context = setup_fixture_context_with_history()
+    store_dict = deferred_hda_model_store_dict()
+    store_dict["datasets"][0]["file_metadata"]["sources"][0]["hashes"] = [
+        {"model_class": "DatasetSourceHash", "hash_function": "MD5", "hash_value": "f568c29421792b1b1df4474dafae01f1"}
+    ]
+    perform_import_from_store_dict(fixture_context, store_dict)
+    deferred_hda = fixture_context.history.datasets[0]
+    assert deferred_hda
+    _assert_2_bed_metadata(deferred_hda)
+    assert deferred_hda.dataset.state == "deferred"
+    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materialized_hda = materializer.ensure_materialized(deferred_hda, validate_hashes=True)
+    materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset.state == "ok", materialized_hda.info
+
+
+def test_hash_invalid_source_of_download():
+    fixture_context = setup_fixture_context_with_history()
+    store_dict = deferred_hda_model_store_dict()
+    store_dict["datasets"][0]["file_metadata"]["sources"][0]["hashes"] = [
+        {"model_class": "DatasetSourceHash", "hash_function": "MD5", "hash_value": "invalidhash"}
+    ]
+    perform_import_from_store_dict(fixture_context, store_dict)
+    deferred_hda = fixture_context.history.datasets[0]
+    assert deferred_hda
+    _assert_2_bed_metadata(deferred_hda)
+    assert deferred_hda.dataset.state == "deferred"
+    materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
+    materialized_hda = materializer.ensure_materialized(deferred_hda, validate_hashes=True)
+    materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset.state == "error", materialized_hda.info
+
+
 def test_deferred_hdas_basic_attached_store_by_uuid():
     # skip a flush here so this is a different path...
     fixture_context = setup_fixture_context_with_history(store_by="uuid")
@@ -134,7 +197,7 @@ def test_deferred_hdas_basic_attached_from_detached_hda():
 
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(
-        True, object_store=fixture_context.app.object_store, sa_session=fixture_context.sa_session
+        True, object_store=fixture_context.app.object_store, sa_session=fixture_context.sa_session()
     )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset

@@ -1,18 +1,37 @@
-import { fetcher } from "@/api/schema";
+import { GalaxyApi } from "@/api";
+import { toQuotaUsage } from "@/components/User/DiskUsage/Quota/model";
+import { rethrowSimple } from "@/utils/simple-error";
 
-export const createApiKey = fetcher.path("/api/users/{user_id}/api_key").method("post").create();
-export const deleteUser = fetcher.path("/api/users/{user_id}").method("delete").create();
-export const fetchQuotaUsages = fetcher.path("/api/users/{user_id}/usage").method("get").create();
-export const recalculateDiskUsage = fetcher.path("/api/users/current/recalculate_disk_usage").method("put").create();
-export const recalculateDiskUsageByUserId = fetcher
-    .path("/api/users/{user_id}/recalculate_disk_usage")
-    .method("put")
-    .create();
-export const sendActivationEmail = fetcher.path("/api/users/{user_id}/send_activation_email").method("post").create();
-export const undeleteUser = fetcher.path("/api/users/deleted/{user_id}/undelete").method("post").create();
+export { type QuotaUsage } from "@/components/User/DiskUsage/Quota/model";
 
-const getUsers = fetcher.path("/api/users").method("get").create();
-export async function getAllUsers() {
-    const { data } = await getUsers({});
-    return data;
+export async function fetchCurrentUserQuotaUsages() {
+    const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/usage", {
+        params: { path: { user_id: "current" } },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data.map((usage) => toQuotaUsage(usage));
+}
+
+export async function fetchCurrentUserQuotaSourceUsage(quotaSourceLabel?: string | null) {
+    if (!quotaSourceLabel) {
+        quotaSourceLabel = "__null__";
+    }
+
+    const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/usage/{label}", {
+        params: { path: { user_id: "current", label: quotaSourceLabel } },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    if (data === null) {
+        return null;
+    }
+
+    return toQuotaUsage(data);
 }

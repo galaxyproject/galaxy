@@ -18,7 +18,7 @@ const outputFormats = Object.freeze({
 interface Props {
     id: string;
     source: string;
-    simple: boolean;
+    simple?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -29,7 +29,7 @@ const { config } = useConfig(true);
 
 const emit = defineEmits(["rendered", "show", "shown", "hide", "hidden"]);
 
-const outputFormat = ref(outputFormats.CITATION);
+const outputFormat = ref<string>(outputFormats.CITATION);
 const citations = ref<Citation[]>([]);
 
 onUpdated(() => {
@@ -65,7 +65,7 @@ onMounted(async () => {
             </template>
 
             <div v-if="source === 'histories'" class="infomessage">
-                <div v-html="config.citations_export_message_html"></div>
+                <div v-html="config?.citations_export_message_html"></div>
             </div>
 
             <div class="citations-formatted">

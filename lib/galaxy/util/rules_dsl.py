@@ -578,7 +578,7 @@ class RuleSet:
     def collection_type(self):
         mapping_as_dict = self.mapping_as_dict
         list_columns = mapping_as_dict.get("list_identifiers", {"columns": []})["columns"]
-        collection_type = ":".join(map(lambda c: "list", list_columns))
+        collection_type = ":".join("list" for c in list_columns)
         if "paired_identifier" in mapping_as_dict:
             if collection_type:
                 collection_type += ":paired"

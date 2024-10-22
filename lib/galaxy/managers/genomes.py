@@ -10,13 +10,17 @@ from sqlalchemy import (
     text,
 )
 
-from galaxy import model as m
 from galaxy.exceptions import (
     ReferenceDataError,
     RequestParameterInvalidException,
 )
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.structured_app import StructuredApp
+from galaxy.model import User
+from galaxy.model.database_utils import is_postgres
+from galaxy.structured_app import (
+    MinimalManagerApp,
+    StructuredApp,
+)
 from .base import raise_filter_err
 
 if TYPE_CHECKING:
@@ -28,10 +32,10 @@ class GenomesManager:
         self._app = app
         self.genomes = app.genomes
 
-    def get_dbkeys(self, user: Optional[m.User], chrom_info: bool) -> List[List[str]]:
+    def get_dbkeys(self, user: Optional[User], chrom_info: bool) -> List[List[str]]:
         return self.genomes.get_dbkeys(user, chrom_info)
 
-    def is_registered_dbkey(self, dbkey: str, user: Optional[m.User]) -> bool:
+    def is_registered_dbkey(self, dbkey: str, user: Optional[User]) -> bool:
         dbkeys = self.get_dbkeys(user, chrom_info=False)
         for _, key in dbkeys:
             if dbkey == key:
@@ -78,8 +82,8 @@ class GenomesManager:
 
 
 class GenomeFilterMixin:
+    app: MinimalManagerApp
     orm_filter_parsers: "OrmFilterParsersType"
-    database_connection: str
     valid_ops = ("eq", "contains", "has")
 
     def create_genome_filter(self, attr, op, val):
@@ -91,11 +95,10 @@ class GenomeFilterMixin:
             # Doesn't filter genome_build for collections
             if model_class.__name__ == "HistoryDatasetCollectionAssociation":
                 return False
-            # TODO: should use is_postgres(self.database_connection) in 23.2
-            if self.database_connection.startswith("postgres"):
+            if is_postgres(self.app.config.database_connection):
                 column = text("convert_from(metadata, 'UTF8')::json ->> 'dbkey'")
             else:
-                column = func.json_extract(model_class.table.c._metadata, "$.dbkey")
+                column = func.json_extract(model_class.table.c._metadata, "$.dbkey")  # type:ignore[assignment]
             lower_val = val.lower()  # Ignore case
             # dbkey can either be "hg38" or '["hg38"]', so we need to check both
             if op == "eq":
@@ -106,6 +109,5 @@ class GenomeFilterMixin:
 
         return _create_genome_filter
 
-    def _add_parsers(self, database_connection: str):
-        self.database_connection = database_connection
+    def _add_parsers(self):
         self.orm_filter_parsers.update({"genome_build": self.create_genome_filter})

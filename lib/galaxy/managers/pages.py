@@ -12,6 +12,7 @@ from html.entities import name2codepoint
 from html.parser import HTMLParser
 from typing import (
     Callable,
+    Optional,
     Tuple,
 )
 
@@ -24,10 +25,7 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import (
-    aliased,
-    Session,
-)
+from sqlalchemy.orm import aliased
 
 from galaxy import (
     exceptions,
@@ -64,6 +62,7 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import (
     CreatePagePayload,
     PageContentFormat,
@@ -143,36 +142,34 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         self, trans: ProvidesUserContext, payload: PageIndexQueryPayload, include_total_count: bool = False
     ) -> Tuple[sqlalchemy.engine.Result, int]:
         show_deleted = payload.deleted
+        show_own = payload.show_own
+        show_published = payload.show_published
         show_shared = payload.show_shared
         is_admin = trans.user_is_admin
         user = trans.user
 
-        if show_shared is None:
-            show_shared = not show_deleted
-
-        if show_shared and show_deleted:
+        if show_shared and show_deleted and not is_admin:
             message = "show_shared and show_deleted cannot both be specified as true"
             raise exceptions.RequestParameterInvalidException(message)
 
-        stmt = select(Page)
+        if not user and not show_published:
+            message = "Requires user to log in."
+            raise exceptions.RequestParameterInvalidException(message)
 
-        if not is_admin:
-            filters = [Page.user == trans.user]
-            if payload.show_published:
-                filters.append(Page.published == true())
-            if user and show_shared:
-                filters.append(PageUserShareAssociation.user == user)
-                stmt = stmt.outerjoin(Page.users_shared_with)
-            stmt = stmt.where(or_(*filters))
+        stmt = select(self.model_class)
 
-        if not show_deleted:
-            stmt = stmt.where(Page.deleted == false())
-        elif not is_admin:
-            # don't let non-admins see other user's deleted pages
-            stmt = stmt.where(or_(Page.deleted == false(), Page.user == user))
+        filters = []
+        if show_own or (not show_published and not show_shared and not is_admin):
+            filters = [self.model_class.user == user]
+        if show_published:
+            filters.append(self.model_class.published == true())
+        if user and show_shared:
+            filters.append(self.user_share_model.user == user)
+            stmt = stmt.outerjoin(self.model_class.users_shared_with)
+        stmt = stmt.where(or_(*filters))
 
         if payload.user_id:
-            stmt = stmt.where(Page.user_id == payload.user_id)
+            stmt = stmt.where(self.model_class.user_id == payload.user_id)
 
         if payload.search:
             search_query = payload.search
@@ -198,6 +195,8 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
                     elif key == "user":
                         stmt = append_user_filter(stmt, Page, term)
                     elif key == "is":
+                        if q == "deleted":
+                            show_deleted = True
                         if q == "published":
                             stmt = stmt.where(Page.published == true())
                         if q == "importable":
@@ -222,6 +221,12 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
                             term,
                         )
                     )
+
+        if (show_published or show_shared) and not is_admin:
+            show_deleted = False
+
+        stmt = stmt.where(self.model_class.deleted == (true() if show_deleted else false())).distinct()
+
         if include_total_count:
             total_matches = get_count(trans.sa_session, stmt)
         else:
@@ -234,7 +239,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             stmt = stmt.limit(payload.limit)
         if payload.offset is not None:
             stmt = stmt.offset(payload.offset)
-        return trans.sa_session.scalars(stmt), total_matches
+        return trans.sa_session.scalars(stmt), total_matches  # type:ignore[return-value]
 
     def create_page(self, trans, payload: CreatePagePayload):
         user = trans.get_user()
@@ -606,23 +611,27 @@ def placeholderRenderForEdit(trans: ProvidesHistoryContext, item_class, item_id)
 
 def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id, encode=False):
     encoded_item_id, decoded_item_id = get_page_identifiers(item_id, trans.app)
-    item_name = ""
+    item_name: Optional[str] = ""
     if item_class == "History":
         history = trans.sa_session.get(History, decoded_item_id)
         history = base.security_check(trans, history, False, True)
+        assert history
         item_name = history.name
     elif item_class == "HistoryDatasetAssociation":
         hda = trans.sa_session.get(HistoryDatasetAssociation, decoded_item_id)
         hda_manager = trans.app.hda_manager
         hda = hda_manager.get_accessible(decoded_item_id, trans.user)
+        assert hda
         item_name = hda.name
     elif item_class == "StoredWorkflow":
         wf = trans.sa_session.get(StoredWorkflow, decoded_item_id)
         wf = base.security_check(trans, wf, False, True)
+        assert wf
         item_name = wf.name
     elif item_class == "Visualization":
         visualization = trans.sa_session.get(Visualization, decoded_item_id)
         visualization = base.security_check(trans, visualization, False, True)
+        assert visualization
         item_name = visualization.title
     class_shorthand = PAGE_CLASS_MAPPING[item_class]
     if encode:
@@ -638,12 +647,12 @@ def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id,
     )
 
 
-def get_page_revision(session: Session, page_id: int):
+def get_page_revision(session: galaxy_scoped_session, page_id: int):
     stmt = select(PageRevision).filter_by(page_id=page_id)
     return session.scalars(stmt)
 
 
-def get_shared_pages(session: Session, user: User):
+def get_shared_pages(session: galaxy_scoped_session, user: User):
     stmt = (
         select(PageUserShareAssociation)
         .where(PageUserShareAssociation.user == user)
@@ -654,12 +663,12 @@ def get_shared_pages(session: Session, user: User):
     return session.scalars(stmt)
 
 
-def get_page(session: Session, user: User, slug: str):
+def get_page(session: galaxy_scoped_session, user: User, slug: str):
     stmt = _build_page_query(select(Page), user, slug)
     return session.scalars(stmt).first()
 
 
-def page_exists(session: Session, user: User, slug: str) -> bool:
+def page_exists(session: galaxy_scoped_session, user: User, slug: str) -> bool:
     stmt = _build_page_query(select(Page.id), user, slug)
     return session.scalars(stmt).first() is not None
 

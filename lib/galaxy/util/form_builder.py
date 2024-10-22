@@ -104,7 +104,7 @@ class SelectField(BaseField):
         self.multiple = multiple or False
         self.refresh_on_change = refresh_on_change
         self.selectlist = selectlist or []
-        self.options = list()
+        self.options = []
         if display == "checkboxes":
             assert multiple, "Checkbox display only supported for multiple select"
         elif display == "radio":

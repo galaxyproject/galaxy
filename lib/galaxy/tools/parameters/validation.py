@@ -165,7 +165,7 @@ class InRangeValidator(ExpressionValidator):
             op1 = "<"
         if self.exclude_max:
             op2 = "<"
-        expression = f"float('{self.min}') {op1} value {op2} float('{self.max}')"
+        expression = f"float('{self.min}') {op1} float(value) {op2} float('{self.max}')"
         if message is None:
             message = f"Value ('%s') must {'not ' if negate == 'true' else ''}fulfill {expression}"
         super().__init__(message, expression, negate)
@@ -186,7 +186,9 @@ class LengthValidator(InRangeValidator):
         super().__init__(message, range_min=length_min, range_max=length_max, negate=negate)
 
     def validate(self, value, trans=None):
-        super().validate(len(value), trans)
+        if value is None:
+            raise ValueError("No value provided")
+        super().validate(len(value) if value else 0, trans)
 
 
 class DatasetOkValidator(Validator):

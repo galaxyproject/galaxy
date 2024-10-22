@@ -1,19 +1,24 @@
 <script setup lang="ts">
 import type { ZoomTransform } from "d3-zoom";
 import { storeToRefs } from "pinia";
-import type { Ref } from "vue";
-import { computed, inject, PropType, reactive, ref } from "vue";
+import { computed, inject, type PropType, reactive, type Ref, ref } from "vue";
 
 import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize";
 import { useAnimationFrameThrottle } from "@/composables/throttle";
 import { useWorkflowStores } from "@/composables/workflowStores";
 
-import { useDraggable } from "./composables/useDraggable.js";
+import { LazyMoveMultipleAction } from "./Actions/workflowActions";
+import { useMultiSelect } from "./composables/multiSelect";
+import { useDraggable } from "./composables/useDraggable";
 
 const props = defineProps({
     rootOffset: {
         type: Object as PropType<Position>,
         required: true,
+    },
+    position: {
+        type: Object as PropType<Position | null>,
+        default: null,
     },
     preventDefault: {
         type: Boolean,
@@ -35,6 +40,10 @@ const props = defineProps({
     snappable: {
         type: Boolean,
         default: true,
+    },
+    selected: {
+        type: Boolean,
+        default: false,
     },
 });
 
@@ -58,10 +67,22 @@ type Size = { width: number; height: number };
 const { throttle } = useAnimationFrameThrottle();
 
 let dragging = false;
+let hasMoved = false;
+
+const { anySelected, multiSelectedSteps, multiSelectedComments, deselectAll } = useMultiSelect();
+
+const previousPosition = ref<Position | null>(null);
+const currentLazyAction = ref<LazyMoveMultipleAction | null>(null);
+
+const shouldMultidrag = computed(() => props.selected && anySelected.value);
 
 const onStart = (_position: Position, event: DragEvent) => {
-    emit("start");
     emit("mousedown", event);
+    hasMoved = false;
+
+    if (!shouldMultidrag.value) {
+        emit("start");
+    }
 
     if (event.type == "dragstart") {
         dragImg = document.createElement("img");
@@ -77,11 +98,14 @@ const onStart = (_position: Position, event: DragEvent) => {
         if (props.dragData) {
             event.dataTransfer!.setData("text/plain", JSON.stringify(props.dragData));
         }
-        emit("dragstart", event);
+
+        if (!shouldMultidrag.value) {
+            emit("dragstart", event);
+        }
     }
 };
 
-const { toolbarStore } = useWorkflowStores();
+const { toolbarStore, stepStore, commentStore, undoRedoStore } = useWorkflowStores();
 const { snapActive } = storeToRefs(toolbarStore);
 
 function getSnappedPosition<T extends Position>(position: T) {
@@ -102,6 +126,7 @@ function getSnappedPosition<T extends Position>(position: T) {
 
 const onMove = (position: Position, event: DragEvent) => {
     dragging = true;
+    toolbarStore.inputCatcherTemporarilyDisabled = true;
 
     if (event.type == "drag" && event.x == 0 && event.y == 0) {
         // the last drag event has no coordinate ... this is obviously a hack!
@@ -115,20 +140,59 @@ const onMove = (position: Position, event: DragEvent) => {
                 x: (position.x - props.rootOffset.x - transform!.value.x) / transform!.value.k,
                 y: (position.y - props.rootOffset.y - transform!.value.y) / transform!.value.k,
             };
-            emit("move", getSnappedPosition(newPosition), event);
+
+            const snapped = getSnappedPosition(newPosition);
+
+            if (
+                !previousPosition.value ||
+                previousPosition.value.x !== snapped.x ||
+                previousPosition.value.y !== snapped.y
+            ) {
+                if (shouldMultidrag.value) {
+                    if (undoRedoStore.isQueued(currentLazyAction.value)) {
+                        currentLazyAction.value?.changePosition(snapped);
+                    } else {
+                        currentLazyAction.value = new LazyMoveMultipleAction(
+                            commentStore,
+                            stepStore,
+                            multiSelectedComments.value,
+                            multiSelectedSteps.value,
+                            props.position ?? newPosition,
+                            snapped
+                        );
+                        undoRedoStore.applyLazyAction(currentLazyAction.value);
+                    }
+                } else {
+                    emit("move", snapped, event);
+                }
+
+                hasMoved = true;
+            }
+
+            previousPosition.value = snapped;
         }
     });
 };
 
 const onEnd = (_position: Position, event: DragEvent) => {
+    toolbarStore.inputCatcherTemporarilyDisabled = false;
+
     if (dragImg) {
         document.body.removeChild(dragImg);
         dragImg = null;
     }
 
+    if (!hasMoved && !event.shiftKey) {
+        deselectAll();
+    }
+
     dragging = false;
+
     emit("mouseup", event);
-    emit("stop");
+
+    if (!shouldMultidrag.value) {
+        emit("stop");
+    }
 };
 
 const maybeDraggable = computed(() => (props.disabled ? null : draggable.value));

@@ -74,7 +74,7 @@ class DataManagerHandler:
         repository,
         repository_tools_tups,
     ) -> List["DataManagerInterface"]:
-        rval: List["DataManagerInterface"] = []
+        rval: List[DataManagerInterface] = []
         if "data_manager" in metadata_dict:
             tpm = tool_panel_manager.ToolPanelManager(self.app)
             repository_tools_by_guid = {}
@@ -92,7 +92,9 @@ class DataManagerHandler:
                     raise
             if tree is None:
                 return rval
-            config_elems = [elem for elem in tree.getroot()]
+            config_elems = list(
+                tree.getroot().__iter__()
+            )  # `.__iter__()` is a workaround for lxml-stubs declaring _Element a subclass of Iterable["_Element"]
             repo_data_manager_conf_filename = metadata_dict["data_manager"].get("config_filename", None)
             if repo_data_manager_conf_filename is None:
                 log.debug("No data_manager_conf.xml file has been defined.")

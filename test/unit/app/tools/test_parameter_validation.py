@@ -1,16 +1,18 @@
-from galaxy.datatypes.sniff import get_test_fname
+import os.path
+
 from galaxy.model import (
     Dataset,
     History,
     HistoryDatasetAssociation,
 )
+from galaxy.util import galaxy_directory
 from .util import BaseParameterTestCase
 
-# def get_test_fname(fname):
-#     """Returns test data filename"""
-#     path, name = os.path.split(__file__)
-#     full_path = os.path.join(path, "test", fname)
-#     return full_path
+
+def get_test_data_path(name: str):
+    path = os.path.join(galaxy_directory(), "test-data", name)
+    assert os.path.isfile(path), f"{path} is not a file"
+    return path
 
 
 class TestParameterValidation(BaseParameterTestCase):
@@ -186,6 +188,14 @@ class TestParameterValidation(BaseParameterTestCase):
             p.validate("bar")
         p.validate("f")
         p.validate("foobarbaz")
+        p = self._parameter_for(
+            xml="""
+<param name="blah" type="text" optional="false">
+    <validator type="length" min="2" max="8"/>
+</param>"""
+        )
+        with self.assertRaisesRegex(ValueError, "No value provided"):
+            p.validate(None)
 
     def test_InRangeValidator(self):
         p = self._parameter_for(
@@ -209,11 +219,13 @@ class TestParameterValidation(BaseParameterTestCase):
         )
         p.validate(10)
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value \('15'\) must not fulfill float\('10'\) < value <= float\('20'\)"
+            ValueError,
+            r"Parameter blah: Value \('15'\) must not fulfill float\('10'\) < float\(value\) <= float\('20'\)",
         ):
             p.validate(15)
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value \('20'\) must not fulfill float\('10'\) < value <= float\('20'\)"
+            ValueError,
+            r"Parameter blah: Value \('20'\) must not fulfill float\('10'\) < float\(value\) <= float\('20'\)",
         ):
             p.validate(20)
         p.validate(21)
@@ -259,11 +271,11 @@ class TestParameterValidation(BaseParameterTestCase):
         hist = History()
         with sa_session.begin():
             sa_session.add(hist)
-        empty_dataset = Dataset(external_filename=get_test_fname("empty.txt"))
+        empty_dataset = Dataset(external_filename=get_test_data_path("empty.txt"))
         empty_hda = hist.add_dataset(
             HistoryDatasetAssociation(id=1, extension="interval", dataset=empty_dataset, sa_session=sa_session)
         )
-        full_dataset = Dataset(external_filename=get_test_fname("1.json"))
+        full_dataset = Dataset(external_filename=get_test_data_path("1.interval"))
         full_hda = hist.add_dataset(
             HistoryDatasetAssociation(id=2, extension="interval", dataset=full_dataset, sa_session=sa_session)
         )
@@ -346,7 +358,7 @@ class TestParameterValidation(BaseParameterTestCase):
                 extension="bed",
                 create_dataset=True,
                 sa_session=sa_session,
-                dataset=Dataset(external_filename=get_test_fname("1.bed")),
+                dataset=Dataset(external_filename=get_test_data_path("1.bed")),
             )
         )
         hda.state = Dataset.states.OK

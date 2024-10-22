@@ -1,6 +1,16 @@
 import os
 import stat
-import typing
+import uuid
+from logging import getLogger
+from typing import (
+    Any,
+    Dict,
+    Mapping,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import anyio
 from fastapi import (
@@ -15,15 +25,20 @@ from starlette.responses import (
     FileResponse,
     Response,
 )
+from starlette_context import context
 from starlette_context.middleware import RawContextMiddleware
-from starlette_context.plugins import RequestIdPlugin
+from starlette_context.plugins import (
+    Plugin,
+    RequestIdPlugin,
+)
 
 from galaxy.exceptions import MessageException
 from galaxy.exceptions.utils import api_error_to_dict
+from galaxy.util.path import StrPath
 from galaxy.web.framework.base import walk_controller_modules
 from galaxy.web.framework.decorators import validation_error_to_message_exception
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from starlette.background import BackgroundTask
     from starlette.types import (
         Receive,
@@ -31,9 +46,13 @@ if typing.TYPE_CHECKING:
         Send,
     )
 
+from galaxy.schema.schema import MessageExceptionModel
+
+log = getLogger(__name__)
+
 
 # Copied from https://github.com/tiangolo/fastapi/issues/1240#issuecomment-1055396884
-def _get_range_header(range_header: str, file_size: int) -> typing.Tuple[int, int]:
+def _get_range_header(range_header: str, file_size: int) -> Tuple[int, int]:
     def _invalid_range():
         return HTTPException(
             status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
@@ -57,19 +76,19 @@ class GalaxyFileResponse(FileResponse):
     Augments starlette FileResponse with x-accel-redirect/x-sendfile and byte-range handling.
     """
 
-    nginx_x_accel_redirect_base: typing.Optional[str] = None
-    apache_xsendfile: typing.Optional[bool] = None
+    nginx_x_accel_redirect_base: Optional[str] = None
+    apache_xsendfile: Optional[bool] = None
 
     def __init__(
         self,
-        path: typing.Union[str, "os.PathLike[str]"],
+        path: StrPath,
         status_code: int = 200,
-        headers: typing.Optional[typing.Mapping[str, str]] = None,
-        media_type: typing.Optional[str] = None,
-        background: typing.Optional["BackgroundTask"] = None,
-        filename: typing.Optional[str] = None,
-        stat_result: typing.Optional[os.stat_result] = None,
-        method: typing.Optional[str] = None,
+        headers: Optional[Mapping[str, str]] = None,
+        media_type: Optional[str] = None,
+        background: Optional["BackgroundTask"] = None,
+        filename: Optional[str] = None,
+        stat_result: Optional[os.stat_result] = None,
+        method: Optional[str] = None,
         content_disposition_type: str = "attachment",
     ) -> None:
         super().__init__(
@@ -174,8 +193,8 @@ def get_error_response_for_request(request: Request, exc: MessageException) -> J
     else:
         content = error_dict
 
-    retry_after: typing.Optional[int] = getattr(exc, "retry_after", None)
-    headers: typing.Dict[str, str] = {}
+    retry_after: Optional[int] = getattr(exc, "retry_after", None)
+    headers: Dict[str, str] = {}
     if retry_after:
         headers["Retry-After"] = str(retry_after)
     return JSONResponse(status_code=status_code, content=content, headers=headers)
@@ -189,7 +208,37 @@ def add_exception_handler(app: FastAPI) -> None:
 
     @app.exception_handler(MessageException)
     async def message_exception_middleware(request: Request, exc: MessageException) -> Response:
+        # Intentionally not logging traceback here as the full context will be
+        # dispatched to Sentry if configured.  This just makes logs less opaque
+        # when one sees a 500.
+        if exc.status_code >= 500:
+            log.info(f"MessageException: {exc}")
         return get_error_response_for_request(request, exc)
+
+
+class AccessLoggingMiddleware(Plugin):
+
+    key = "access_line"
+
+    async def process_request(self, request):
+        scope = request.scope
+        path = scope["root_path"] + scope["path"]
+        if scope["query_string"]:
+            path = f"{path}?{scope['query_string'].decode('ascii')}"
+        access_line = f"{scope['method']} {path} {uuid.uuid4()}"
+        log.debug(access_line)
+        return access_line
+
+    async def enrich_response(self, response) -> None:
+        access_line = context.get("access_line")
+        if status := response.get("status"):
+            log.debug(f"{access_line} {status}")
+
+
+def add_raw_context_middlewares(app: FastAPI):
+    getLogger("uvicorn.access").handlers = []
+    plugins = (RequestIdPlugin(force_new_uuid=True), AccessLoggingMiddleware())
+    app.add_middleware(RawContextMiddleware, plugins=plugins)
 
 
 def add_request_id_middleware(app: FastAPI):
@@ -197,7 +246,27 @@ def add_request_id_middleware(app: FastAPI):
 
 
 def include_all_package_routers(app: FastAPI, package_name: str):
+    responses: Dict[Union[int, str], Dict[str, Any]] = {
+        "4XX": {
+            "description": "Request Error",
+            "model": MessageExceptionModel,
+        },
+        "5XX": {
+            "description": "Server Error",
+            "model": MessageExceptionModel,
+        },
+    }
     for _, module in walk_controller_modules(package_name):
         router = getattr(module, "router", None)
         if router:
-            app.include_router(router)
+            app.include_router(router, responses=responses)
+
+    # handle CORS preflight requests - synchronize with wsgi behavior.
+    # this needs to happen last so it doesn't clobber routes with explicit cors handling
+    # it doesn't affect the CORS middleware since the middleware terminates the request handling before routing
+    @app.options("/api/{rest_of_path:path}", include_in_schema=False)
+    async def preflight_handler(request: Request, rest_of_path: str) -> Response:
+        response = Response()
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Max-Age"] = "600"
+        return response

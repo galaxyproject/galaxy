@@ -94,8 +94,8 @@ class WebApplication:
         `finalize_config` when all controllers and routes have been added
         and `__call__` to handle a request (WSGI style).
         """
-        self.controllers = dict()
-        self.api_controllers = dict()
+        self.controllers = {}
+        self.api_controllers = {}
         self.mapper = routes.Mapper()
         self.clientside_routes = routes.Mapper(controller_scan=None, register=False)
         # FIXME: The following two options are deprecated and should be
@@ -104,6 +104,7 @@ class WebApplication:
         self.transaction_factory = DefaultWebTransaction
         # Set if trace logging is enabled
         self.trace_logger = None
+        self.session_factories = []
 
     def add_ui_controller(self, controller_name, controller):
         """
@@ -170,10 +171,12 @@ class WebApplication:
         path_info = environ.get("PATH_INFO", "")
 
         try:
-            self._model.set_request_id(request_id)  # Start SQLAlchemy session scope
+            for session_factory in self.session_factories:
+                session_factory.set_request_id(request_id)  # Start SQLAlchemy session scope
             return self.handle_request(request_id, path_info, environ, start_response)
         finally:
-            self._model.unset_request_id(request_id)  # End SQLAlchemy session scope
+            for session_factory in self.session_factories:
+                session_factory.unset_request_id(request_id)  # End SQLAlchemy session scope
             self.trace(message="Handle request finished")
             if self.trace_logger:
                 self.trace_logger.context_remove("request_id")
@@ -251,8 +254,13 @@ class WebApplication:
                 raise
         trans.controller = controller_name
         trans.action = action
+
+        # Action can still refer to invalid and/or inaccurate paths here, so we use the actual
+        # controller and method names to set the timing key.
+
+        action_tag = getattr(method, "__name__", "default")
         environ["controller_action_key"] = (
-            f"{'api' if environ['is_api_request'] else 'web'}.{controller_name}.{action or 'default'}"
+            f"{'api' if environ['is_api_request'] else 'web'}.{controller_name}.{action_tag}"
         )
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
@@ -264,6 +272,7 @@ class WebApplication:
         except Exception as e:
             body = self.handle_controller_exception(e, trans, method, **kwargs)
             if not body:
+                trans.response.headers.pop("content-length", None)
                 raise
         body_renderer = body_renderer or self._render_body
         return body_renderer(trans, body, environ, start_response)

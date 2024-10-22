@@ -133,21 +133,21 @@ def job_config(jobs_directory: str) -> Config:
             <param id="limits_cpu">1.1</param>
             <param id="limits_memory">100M</param>
             <param id="docker_enabled">true</param>
-            <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
+            <param id="docker_default_container_id">busybox:1.36.1-glibc</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
         <destination id="k8s_destination_walltime_short" runner="k8s_walltime_short">
             <param id="limits_cpu">1.1</param>
             <param id="limits_memory">100M</param>
             <param id="docker_enabled">true</param>
-            <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
+            <param id="docker_default_container_id">busybox:1.36.1-glibc</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
         <destination id="k8s_destination_no_cleanup" runner="k8s_no_cleanup">
             <param id="limits_cpu">1.1</param>
             <param id="limits_memory">100M</param>
             <param id="docker_enabled">true</param>
-            <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
+            <param id="docker_default_container_id">busybox:1.36.1-glibc</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
         <destination id="local_dest" runner="local">
@@ -191,6 +191,7 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
     jobs_directory: str
     persistent_volume_claims: List[KubeSetupConfigTuple]
     persistent_volumes: List[KubeSetupConfigTuple]
+    container_type = "docker"
 
     def setUp(self) -> None:
         super().setUp()

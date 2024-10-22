@@ -47,33 +47,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def index(self, trans):
         return ""
 
-    @web.expose
-    def list_as_xml(self, trans):
-        """XML history list for functional tests"""
-        trans.response.set_content_type("text/xml")
-        return trans.fill_template("/history/list_as_xml.mako")
-
-    @web.expose
-    def as_xml(self, trans, id=None, show_deleted=None, show_hidden=None):
-        """
-        Return a history in xml format.
-        """
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template("/no_access.mako", message="Please log in to access Galaxy histories.")
-
-        if id:
-            history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
-        else:
-            history = trans.get_history(most_recent=True, create=True)
-
-        trans.response.set_content_type("text/xml")
-        return trans.fill_template_mako(
-            "history/as_xml.mako",
-            history=history,
-            show_deleted=string_as_bool(show_deleted),
-            show_hidden=string_as_bool(show_hidden),
-        )
-
     @expose_api_anonymous
     def view(self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True):
         """
@@ -124,7 +97,13 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         session = trans.sa_session
 
         user = session.scalars(select(model.User).filter_by(username=username).limit(1)).first()
-        history = session.scalars(select(model.History).filter_by(user=user, slug=slug, deleted=False).limit(1)).first()
+        history = session.scalars(
+            select(model.History)
+            .filter_by(user=user, slug=slug, deleted=False)
+            # return public histories first if slug is not unique
+            .order_by(model.History.importable.desc())
+            .limit(1)
+        ).first()
 
         if history is None:
             raise web.httpexceptions.HTTPNotFound()
@@ -144,7 +123,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             )
         )
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_login("changing default permissions")
     def permissions(self, trans, payload=None, **kwd):
         """
@@ -152,7 +131,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         """
         history_id = kwd.get("id")
         if not history_id:
-            return self.message_exception(trans, f"Invalid history id ({str(history_id)}) received")
+            raise exceptions.RequestParameterMissingException("No history id received")
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         if trans.request.method == "GET":
             inputs = []
@@ -176,7 +155,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                         "value": [trans.security.encode_id(role.id) for role in in_roles],
                     }
                 )
-            return {"title": "Change default dataset permissions for history '%s'" % history.name, "inputs": inputs}
+            return {"title": f"Change default dataset permissions for history '{history.name}'", "inputs": inputs}
         else:
             self.history_manager.error_unless_mutable(history)
             permissions = {}
@@ -185,9 +164,9 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 in_roles = [trans.sa_session.get(Role, trans.security.decode_id(x)) for x in in_roles]
                 permissions[trans.app.security_agent.get_action(action.action)] = in_roles
             trans.app.security_agent.history_set_default_permissions(history, permissions)
-            return {"message": "Default history '%s' dataset permissions have been changed." % history.name}
+            return {"message": f"Default history '{history.name}' dataset permissions have been changed."}
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_login("make datasets private")
     def make_private(self, trans, history_id=None, all_histories=False, **kwd):
         """
@@ -205,7 +184,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             if history:
                 histories.append(history)
         if not histories:
-            return self.message_exception(trans, "Invalid history or histories specified.")
+            raise exceptions.RequestParameterMissingException("No history or histories specified.")
         private_role = trans.app.security_agent.get_private_user_role(trans.user)
         user_roles = trans.user.all_roles()
         private_permissions = {
@@ -213,7 +192,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             trans.app.security_agent.permitted_actions.DATASET_ACCESS: [private_role],
         }
         for history in histories:
-            self.history_manager.error_unless_mutable(history)
             # Set default role for history to private
             trans.app.security_agent.history_set_default_permissions(history, private_permissions)
             # Set private role for all datasets
@@ -225,26 +203,9 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 ):
                     # If it's not private to me, and I can manage it, set fixed private permissions.
                     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
-                    if not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset):
-                        raise exceptions.InternalServerError("An error occurred and the dataset is NOT private.")
         return {
             "message": f"Success, requested permissions have been changed in {'all histories' if all_histories else history.name}."
         }
-
-    @web.expose
-    def adjust_hidden(self, trans, id=None, **kwd):
-        """THIS METHOD IS A TEMPORARY ADDITION. It'll allow us to fix the
-        regression in history-wide actions, and will be removed in the first
-        release after 17.01"""
-        action = kwd.get("user_action", None)
-        if action == "delete":
-            for hda in trans.history.datasets:
-                if not hda.visible:
-                    hda.mark_deleted()
-        elif action == "unhide":
-            trans.history.unhide_datasets()
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
 
     # ......................................................................... actions/orig. async
 
@@ -276,28 +237,24 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             )
         return trans.show_error_message("Cannot purge deleted datasets from this session.")
 
-    @web.expose
+    @web.expose_api_anonymous
     def resume_paused_jobs(self, trans, current=False, ids=None, **kwargs):
-        """Resume paused jobs the active history -- this does not require a logged in user."""
+        """Resume paused jobs for the active history -- this does not require a logged in user."""
         if not ids and string_as_bool(current):
-            histories = [trans.get_history()]
-            refresh_frames = ["history"]
-        else:
-            raise NotImplementedError("You can currently only resume all the datasets of the current history.")
-        for history in histories:
-            history.resume_paused_jobs()
-            trans.sa_session.add(history)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return trans.show_ok_message("Your jobs have been resumed.", refresh_frames=refresh_frames)
-        # TODO: used in index.mako
+            history = trans.get_history()
+            if history:
+                history.resume_paused_jobs()
+                return {"message": "Your jobs have been resumed.", "status": "success"}
+        raise exceptions.RequestParameterInvalidException(
+            "You can currently only resume all the datasets of the current history."
+        )
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_login("rename histories")
     def rename(self, trans, payload=None, **kwd):
         id = kwd.get("id")
         if not id:
-            return self.message_exception(trans, "No history id received for renaming.")
+            raise exceptions.RequestParameterMissingException("No history id received for renaming.")
         user = trans.get_user()
         id = listify(id)
         histories = []
@@ -322,10 +279,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 new_name = payload.get("name_%i" % i)
                 # validate name is empty
                 if not isinstance(new_name, str) or not new_name.strip():
-                    messages.append("You must specify a valid name for History '%s'." % cur_name)
+                    messages.append(f"You must specify a valid name for History '{cur_name}'.")
                 # skip if not the owner
                 elif h.user_id != user.id:
-                    messages.append("History '%s' does not appear to belong to you." % cur_name)
+                    messages.append(f"History '{cur_name}' does not appear to belong to you.")
                 # skip if it wouldn't be a change
                 elif new_name != cur_name:
                     h.name = new_name
@@ -361,7 +318,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def set_as_current(self, trans, id, **kwargs):
         """Change the current user's current history to one with `id`."""
         try:
-            history = self.history_manager.get_mutable(self.decode_id(id), trans.user, current_history=trans.history)
+            history = self.history_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
             trans.set_history(history)
             return self.history_data(trans, history)
         except exceptions.MessageException as msg_exc:

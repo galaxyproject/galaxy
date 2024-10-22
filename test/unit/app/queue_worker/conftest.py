@@ -7,7 +7,7 @@ import pytest
 try:
     import psycopg
 except ImportError:
-    psycopg = None  # type: ignore[assignment]
+    psycopg = None  # type: ignore[assignment, unused-ignore]
 
 try:
     import psycopg2
@@ -20,7 +20,7 @@ from galaxy.app_unittest_utils import galaxy_mock
 def create_base_test(connection, amqp_type: str, amqp_connection: Optional[str] = None):
     app = galaxy_mock.MockApp(database_connection=connection)
     app.config.database_connection = connection
-    app.config.amqp_internal_connection = amqp_connection or "sqlalchemy+%s" % app.config.database_connection
+    app.config.amqp_internal_connection = amqp_connection or f"sqlalchemy+{app.config.database_connection}"
     app.amqp_type = amqp_type
     return app
 
@@ -50,7 +50,7 @@ def sqlite_app(sqlite_connection):
 
 @pytest.fixture()
 def postgres_app(postgresql_proc):
-    connection = "postgresql://{p.user}@{p.host}:{p.port}/".format(p=postgresql_proc)
+    connection = f"postgresql://{postgresql_proc.user}@{postgresql_proc.host}:{postgresql_proc.port}/"
 
     def create_app():
         return create_base_test(connection, amqp_type="postgres")

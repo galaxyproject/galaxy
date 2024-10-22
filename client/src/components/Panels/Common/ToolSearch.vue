@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, type Ref, ref } from "vue";
+import { BAlert } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { getGalaxyInstance } from "@/app";
 import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
+import { useUserStore } from "@/stores/userStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 
@@ -11,6 +13,7 @@ import { type ToolSearchKeys } from "../utilities";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();
 
@@ -66,8 +69,6 @@ const emit = defineEmits<{
     (e: "onQuery", query: string): void;
 }>();
 
-const searchWorker: Ref<Worker | undefined> = ref(undefined);
-
 const localFilterText = computed({
     get: () => {
         return props.query !== null ? props.query : "";
@@ -99,7 +100,7 @@ const validFilters: ComputedRef<Record<string, ValidFilter<string>>> = computed(
             placeholder: "EDAM ontology",
             type: String,
             handler: contains("ontology"),
-            datalist: ontologyList,
+            datalist: ontologyList.value,
             menuItem: true,
         },
         id: { placeholder: "id", type: String, handler: contains("id"), menuItem: true },
@@ -109,18 +110,20 @@ const validFilters: ComputedRef<Record<string, ValidFilter<string>>> = computed(
 });
 const ToolFilters: ComputedRef<Filtering<string>> = computed(() => new Filtering(validFilters.value));
 
+const { currentFavorites } = storeToRefs(useUserStore());
 const toolStore = useToolStore();
+const { searchWorker } = storeToRefs(toolStore);
 
 const sectionNames = toolStore.sectionDatalist("default").map((option: { value: string; text: string }) => option.text);
-const ontologyList = toolStore
-    .sectionDatalist("ontology:edam_topics")
-    .concat(toolStore.sectionDatalist("ontology:edam_operations"));
+const ontologyList = computed(() =>
+    toolStore.sectionDatalist("ontology:edam_topics").concat(toolStore.sectionDatalist("ontology:edam_operations"))
+);
 
 onMounted(() => {
-    searchWorker.value = new Worker(new URL("../toolSearch.worker.js", import.meta.url));
-    const Galaxy = getGalaxyInstance();
-    const favoritesResults = Galaxy?.user.getFavorites().tools;
-
+    // initialize worker
+    if (!searchWorker.value) {
+        searchWorker.value = new Worker(new URL("components/Panels/toolSearch.worker.js", import.meta.url));
+    }
     searchWorker.value.onmessage = ({ data }) => {
         const { type, payload, sectioned, query, closestTerm } = data;
         if (type === "searchToolsByKeysResult" && query === props.query) {
@@ -128,18 +131,30 @@ onMounted(() => {
         } else if (type === "clearFilterResult") {
             emit("onResults", null, null, null);
         } else if (type === "favoriteToolsResult") {
-            emit("onResults", favoritesResults, null, null);
+            emit("onResults", currentFavorites.value.tools, null, null);
         }
     };
 });
 
 onUnmounted(() => {
-    searchWorker.value?.terminate();
+    // The worker is not terminated but it will not be listening to messages
+    if (searchWorker.value?.onmessage) {
+        searchWorker.value.onmessage = null;
+    }
 });
+
+watch(
+    () => currentFavorites.value.tools,
+    () => {
+        if (FAVORITES.includes(props.query)) {
+            post({ type: "favoriteTools" });
+        }
+    }
+);
 
 function checkQuery(q: string) {
     emit("onQuery", q);
-    if (q && q.length >= MIN_QUERY_LENGTH) {
+    if (q.trim() && q.trim().length >= MIN_QUERY_LENGTH) {
         if (FAVORITES.includes(q)) {
             post({ type: "favoriteTools" });
         } else {
@@ -169,7 +184,7 @@ function onAdvancedSearch(filters: any) {
 </script>
 
 <template>
-    <div>
+    <div v-if="searchWorker">
         <FilterMenu
             v-if="props.enableAdvanced"
             :class="!propShowAdvanced && 'mb-3'"
@@ -236,4 +251,7 @@ function onAdvancedSearch(filters: any) {
             :placeholder="placeholder"
             @change="checkQuery" />
     </div>
+    <BAlert v-else class="mb-3" variant="info" show>
+        <LoadingSpan message="Loading Tool Search" />
+    </BAlert>
 </template>

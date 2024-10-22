@@ -6,6 +6,10 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from packaging.version import Version
+
+from galaxy.tool_util.biotools.source import ApiBiotoolsMetadataSource
+from galaxy.tool_util.edam_util import load_edam_tree
 from galaxy.tool_util.lint import Linter
 from galaxy.tool_util.version import (
     LegacyVersion,
@@ -161,7 +165,7 @@ class ToolProfileLegacy(Linter):
         _, tool_node = _tool_xml_and_root(tool_source)
         profile = tool_source.parse_profile()
         profile_valid = PROFILE_PATTERN.match(profile) is not None
-        if profile_valid and profile == "16.01":
+        if profile_valid and Version(profile) == Version("16.01"):
             lint_ctx.valid("Tool targets 16.01 Galaxy profile.", linter=cls.name(), node=tool_node)
 
 
@@ -171,7 +175,7 @@ class ToolProfileValid(Linter):
         _, tool_node = _tool_xml_and_root(tool_source)
         profile = tool_source.parse_profile()
         profile_valid = PROFILE_PATTERN.match(profile) is not None
-        if profile_valid and profile != "16.01":
+        if profile_valid and Version(profile) != Version("16.01"):
             lint_ctx.valid(f"Tool specifies profile version [{profile}].", linter=cls.name(), node=tool_node)
 
 
@@ -225,3 +229,27 @@ class ResourceRequirementExpression(Linter):
                 lint_ctx.warn(
                     "Expressions in resource requirement not supported yet", linter=cls.name(), node=tool_node
                 )
+
+
+class BioToolsValid(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        _, tool_node = _tool_xml_and_root(tool_source)
+        xrefs = tool_source.parse_xrefs()
+        for xref in xrefs:
+            if xref["reftype"] != "bio.tools":
+                continue
+            metadata_source = ApiBiotoolsMetadataSource()
+            if not metadata_source.get_biotools_metadata(xref["value"]):
+                lint_ctx.warn(f'No entry {xref["value"]} in bio.tools.', linter=cls.name(), node=tool_node)
+
+
+class EDAMTermsValid(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        _, tool_node = _tool_xml_and_root(tool_source)
+        edam = load_edam_tree(None, "operation_", "topic_")
+        terms = tool_source.parse_edam_operations() + tool_source.parse_edam_topics()
+        for term in terms:
+            if term not in edam:
+                lint_ctx.warn(f"No entry '{term}' in EDAM.", linter=cls.name(), node=tool_node)

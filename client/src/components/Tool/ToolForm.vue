@@ -1,7 +1,10 @@
 <template>
-    <div v-if="currentUser && currentHistoryId">
+    <div v-if="currentUser && currentHistoryId && isConfigLoaded">
         <b-alert :show="messageShow" :variant="messageVariant">
             {{ messageText }}
+        </b-alert>
+        <b-alert v-if="!showLoading && !canMutateHistory" show variant="warning">
+            {{ immutableHistoryMessage }}
         </b-alert>
         <LoadingSpan v-if="showLoading" message="Loading Tool" />
         <div v-if="showEntryPoints">
@@ -75,12 +78,19 @@
                         title="Attempt to re-use jobs with identical parameters?"
                         help="This may skip executing jobs that you have already run."
                         type="boolean" />
+                    <FormSelect
+                        v-if="formConfig.model_class === 'DataManagerTool'"
+                        id="data_manager_mode"
+                        v-model="dataManagerMode"
+                        :options="bundleOptions"
+                        title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
                 </div>
             </template>
             <template v-slot:header-buttons>
                 <ButtonSpinner
                     id="execute"
                     title="Run Tool"
+                    :disabled="!canMutateHistory"
                     class="btn-sm"
                     :wait="showExecuting"
                     :tooltip="tooltip"
@@ -90,6 +100,7 @@
                 <ButtonSpinner
                     title="Run Tool"
                     class="mt-3 mb-3"
+                    :disabled="!canMutateHistory"
                     :wait="showExecuting"
                     :tooltip="tooltip"
                     @onClick="onExecute(config, currentHistoryId)" />
@@ -111,6 +122,7 @@ import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 import { refreshContentsWrapper } from "utils/data";
 
+import { canMutateHistory } from "@/api";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -120,6 +132,8 @@ import { getToolFormData, submitJob, updateToolFormData } from "./services";
 import ToolCard from "./ToolCard";
 import { allowCachedJobs } from "./utilities";
 
+import FormSelect from "@/components/Form/Elements/FormSelect.vue";
+
 export default {
     components: {
         ButtonSpinner,
@@ -127,6 +141,7 @@ export default {
         FormDisplay,
         ToolCard,
         FormElement,
+        FormSelect,
         ToolEntryPoints,
         ToolRecommendation,
         Heading,
@@ -175,6 +190,7 @@ export default {
             useCachedJobs: false,
             useEmail: false,
             useJobRemapping: false,
+            dataManagerMode: "populate",
             entryPoints: [],
             jobDef: {},
             jobResponse: {},
@@ -182,11 +198,17 @@ export default {
             validationScrollTo: null,
             currentVersion: this.version,
             preferredObjectStoreId: null,
+            bundleOptions: [
+                { label: "populate", value: "populate" },
+                { label: "bundle", value: "bundle" },
+            ],
+            immutableHistoryMessage:
+                "This history is immutable and you cannot run tools in it. Please switch to a different history.",
         };
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
-        ...mapState(useHistoryStore, ["currentHistoryId"]),
+        ...mapState(useHistoryStore, ["currentHistoryId", "currentHistory"]),
         ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
         toolName() {
             return this.formConfig.name;
@@ -198,6 +220,9 @@ export default {
             return id.endsWith(version) ? id : `${id}/${version}`;
         },
         tooltip() {
+            if (!this.canMutateHistory) {
+                return this.immutableHistoryMessage;
+            }
             return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
         },
         errorContentPretty() {
@@ -219,6 +244,12 @@ export default {
         },
         initialized() {
             return this.formData !== undefined;
+        },
+        canMutateHistory() {
+            return this.currentHistory && canMutateHistory(this.currentHistory);
+        },
+        runButtonTitle() {
+            return "Run Tool";
         },
     },
     watch: {
@@ -325,6 +356,9 @@ export default {
             }
             if (this.preferredObjectStoreId) {
                 jobDef.preferred_object_store_id = this.preferredObjectStoreId;
+            }
+            if (this.dataManagerMode === "bundle") {
+                jobDef.data_manager_mode = this.dataManagerMode;
             }
             console.debug("toolForm::onExecute()", jobDef);
             const prevRoute = this.$route.fullPath;

@@ -5,20 +5,37 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Union,
 )
 
-from galaxy import web
+from galaxy import (
+    exceptions,
+    web,
+)
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.notification import NotificationManager
 from galaxy.managers.workflows import (
+    RefactorResponse,
     WorkflowContentsManager,
     WorkflowSerializer,
     WorkflowsManager,
 )
-from galaxy.schema.schema import WorkflowIndexQueryPayload
+from galaxy.model import StoredWorkflow
+from galaxy.model.base import transaction
+from galaxy.schema.invocation import WorkflowInvocationResponse
+from galaxy.schema.schema import (
+    InvocationsStateCounts,
+    WorkflowIndexQueryPayload,
+)
+from galaxy.schema.workflows import (
+    InvokeWorkflowPayload,
+    StoredWorkflowDetailed,
+)
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.webapps.galaxy.services.base import ServiceBase
+from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
+from galaxy.workflow.run import queue_invoke
+from galaxy.workflow.run_request import build_workflow_run_configs
 
 log = logging.getLogger(__name__)
 
@@ -34,12 +51,12 @@ class WorkflowsService(ServiceBase):
         workflow_contents_manager: WorkflowContentsManager,
         serializer: WorkflowSerializer,
         tool_shed_registry: Registry,
-        notification_manager: NotificationManager,
+        notification_service: NotificationService,
     ):
         self._workflows_manager = workflows_manager
         self._workflow_contents_manager = workflow_contents_manager
         self._serializer = serializer
-        self.shareable_service = ShareableService(workflows_manager, serializer, notification_manager)
+        self.shareable_service = ShareableService(workflows_manager, serializer, notification_service)
         self._tool_shed_registry = tool_shed_registry
 
     def index(
@@ -68,7 +85,7 @@ class WorkflowsService(ServiceBase):
         if missing_tools:
             workflows_missing_tools = []
             workflows = []
-            workflows_by_toolshed = dict()
+            workflows_by_toolshed = {}
             for value in rval:
                 stored_workflow = self._workflows_manager.get_stored_workflow(trans, value["id"], by_stored_id=True)
                 tools = self._workflow_contents_manager.get_all_tools(stored_workflow.latest_workflow)
@@ -101,6 +118,66 @@ class WorkflowsService(ServiceBase):
             return workflows, total_matches
         return rval, total_matches
 
+    def invoke_workflow(
+        self,
+        trans,
+        workflow_id,
+        payload: InvokeWorkflowPayload,
+    ) -> Union[WorkflowInvocationResponse, List[WorkflowInvocationResponse]]:
+        if trans.anonymous:
+            raise exceptions.AuthenticationRequired("You need to be logged in to run workflows.")
+        trans.check_user_activation()
+        # Get workflow + accessibility check.
+        by_stored_id = not payload.instance
+        stored_workflow = self._workflows_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id)
+        version = payload.version
+        workflow = stored_workflow.get_internal_version(version)
+        run_configs = build_workflow_run_configs(trans, workflow, payload.model_dump(exclude_unset=True))
+        is_batch = payload.batch
+        if not is_batch and len(run_configs) != 1:
+            raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
+
+        require_exact_tool_versions = payload.require_exact_tool_versions
+        tools = self._workflow_contents_manager.get_all_tools(workflow)
+        missing_tools = [
+            tool
+            for tool in tools
+            if not trans.app.toolbox.has_tool(
+                tool["tool_id"], tool_version=tool["tool_version"], exact=require_exact_tool_versions
+            )
+        ]
+        if missing_tools:
+            missing_tools_message = "Workflow was not invoked; the following required tools are not installed: "
+            if require_exact_tool_versions:
+                missing_tools_message += ", ".join(
+                    [f"{tool['tool_id']} (version {tool['tool_version']})" for tool in missing_tools]
+                )
+            else:
+                missing_tools_message += ", ".join([tool["tool_id"] for tool in missing_tools])
+            raise exceptions.MessageException(missing_tools_message)
+
+        invocations = []
+        for run_config in run_configs:
+            workflow_scheduler_id = payload.scheduler
+            # TODO: workflow scheduler hints
+            work_request_params = dict(scheduler=workflow_scheduler_id)
+            workflow_invocation = queue_invoke(
+                trans=trans,
+                workflow=workflow,
+                workflow_run_config=run_config,
+                request_params=work_request_params,
+                flush=False,
+            )
+            invocations.append(workflow_invocation)
+
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+        encoded_invocations = [WorkflowInvocationResponse(**invocation.to_dict()) for invocation in invocations]
+        if is_batch:
+            return encoded_invocations
+        else:
+            return encoded_invocations[0]
+
     def delete(self, trans, workflow_id):
         workflow_to_delete = self._workflows_manager.get_stored_workflow(trans, workflow_id)
         self._workflows_manager.check_security(trans, workflow_to_delete)
@@ -111,14 +188,20 @@ class WorkflowsService(ServiceBase):
         self._workflows_manager.check_security(trans, workflow_to_undelete)
         self._workflows_manager.undelete(workflow_to_undelete)
 
-    def get_versions(self, trans, workflow_id, instance):
-        stored_workflow = self._workflows_manager.get_stored_accessible_workflow(
+    def get_versions(self, trans, workflow_id, instance: bool):
+        stored_workflow: StoredWorkflow = self._workflows_manager.get_stored_accessible_workflow(
             trans, workflow_id, by_stored_id=not instance
         )
         return [
             {"version": i, "update_time": w.update_time.isoformat(), "steps": len(w.steps)}
             for i, w in enumerate(reversed(stored_workflow.workflows))
         ]
+
+    def invocation_counts(self, trans, workflow_id, instance: bool) -> InvocationsStateCounts:
+        stored_workflow: StoredWorkflow = self._workflows_manager.get_stored_accessible_workflow(
+            trans, workflow_id, by_stored_id=not instance
+        )
+        return stored_workflow.invocation_counts()
 
     def get_workflow_menu(self, trans, payload):
         ids_in_menu = [x.stored_workflow_id for x in trans.user.stored_workflow_menu_entries]
@@ -127,6 +210,39 @@ class WorkflowsService(ServiceBase):
             payload,
         )
         return {"ids_in_menu": ids_in_menu, "workflows": workflows}
+
+    def refactor(
+        self,
+        trans,
+        workflow_id,
+        payload,
+        instance: bool,
+    ) -> RefactorResponse:
+        stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
+        return self._workflow_contents_manager.refactor(trans, stored_workflow, payload)
+
+    def show_workflow(self, trans, workflow_id, instance, legacy, version) -> StoredWorkflowDetailed:
+        stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
+        if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
+            wf_count = 0 if not trans.user else trans.user.count_stored_workflow_user_assocs(stored_workflow)
+            if wf_count == 0:
+                message = "Workflow is neither importable, nor owned by or shared with current user"
+                raise exceptions.ItemAccessibilityException(message)
+        if legacy:
+            style = "legacy"
+        else:
+            style = "instance"
+        if version is None and instance:
+            # A Workflow instance may not be the latest workflow version attached to StoredWorkflow.
+            # This figures out the correct version so that we return the correct Workflow and version.
+            for i, workflow in enumerate(reversed(stored_workflow.workflows)):
+                if workflow.id == workflow_id:
+                    version = i
+                    break
+        detailed_workflow = StoredWorkflowDetailed(
+            **self._workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
+        )
+        return detailed_workflow
 
     def _get_workflows_list(
         self,

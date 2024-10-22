@@ -1,0 +1,44 @@
+- id: azure
+  version: 0
+  name: Azure Blob Storage
+  description: |
+    This template allows connecting to [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction).
+  configuration:
+    type: azure
+    container_name: "{{ variables.container_name }}"
+    account_name: "{{ variables.account_name }}"
+    account_key: "{{ secrets.account_key }}"
+    namespace_type: "{{ 'hierarchical' if variables.hierarchical else 'flat' }}"
+    writable: "{{ variables.writable }}"
+  variables:
+    container_name:
+      label: Container Name
+      type: string
+      help: |
+        The name of your Azure Blob Storage container. More information on containers can be found
+        in the [Azure Storage documentation](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction#containers).
+    account_name:
+      label: Storage Account Name
+      type: string
+      help: |
+        The name of your Azure Blob Storage account. More information on containers can be found in the
+        [Azure Storage documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview).
+    hierarchical:
+      label: Hierarchical?
+      type: boolean
+      default: true
+      help: |
+        Is this storage hierarchical (e.g. does it use a Azure Data Lake Storage Gen2 hierarchical namespace)?
+        More information on Data Lake Storage namespaces can be found in the
+        [Azure Blob Storage documentation](https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-namespace).
+    writable:
+      label: Writable?
+      type: boolean
+      default: true
+      help: Allow Galaxy to write data to this Azure Blob Storage container.
+  secrets:
+    account_key:
+      label: Account Key
+      help: |
+        The Azure Blob Storage account key to use to access your Azure Blob Storage data. More information
+        on account keys can be found in the [Azure Storage documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage).

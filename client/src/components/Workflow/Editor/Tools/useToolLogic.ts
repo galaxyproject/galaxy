@@ -1,27 +1,51 @@
 import simplify from "simplify-js";
-import { watch } from "vue";
+import { ref, watch } from "vue";
 
-import type { BaseWorkflowComment, WorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
-import { type WorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
+import { useWorkflowStores } from "@/composables/workflowStores";
+import { type BaseWorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { assertDefined } from "@/utils/assertions";
 import { match } from "@/utils/utils";
 
-import { vecMax, vecMin, vecReduceFigures, vecSnap, vecSubtract, type Vector } from "../modules/geometry";
+import { AddCommentAction } from "../Actions/commentActions";
+import { AddToSelectionAction, RemoveFromSelectionAction } from "../Actions/workflowActions";
+import {
+    AxisAlignedBoundingBox,
+    vecMax,
+    vecMin,
+    vecReduceFigures,
+    vecSnap,
+    vecSubtract,
+    type Vector,
+} from "../modules/geometry";
 
-export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentStore: WorkflowCommentStore) {
-    let comment: BaseWorkflowComment | null = null;
+export function useToolLogic() {
+    const comment = ref<BaseWorkflowComment | null>(null);
     let start: Vector | null = null;
 
+    const { toolbarStore, commentStore, stepStore, stateStore, undoRedoStore } = useWorkflowStores();
     const { commentOptions } = toolbarStore;
 
     watch(
         () => toolbarStore.currentTool,
         () => {
-            if (comment?.type === "freehand") {
-                finalizeFreehandComment(comment);
+            if (comment.value?.type === "freehand") {
+                finalizeFreehandComment(comment.value);
             } else {
-                comment = null;
+                comment.value = null;
             }
+        }
+    );
+
+    watch(
+        () => comment.value,
+        (newComment, oldComment) => {
+            if (newComment === null && oldComment !== null) {
+                const comment = commentStore.commentsRecord[oldComment.id];
+                assertDefined(comment);
+                undoRedoStore.applyAction(new AddCommentAction(commentStore, comment));
+            }
+
+            toolbarStore.resetBoxSelect();
         }
     );
 
@@ -32,7 +56,11 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
             return;
         }
 
-        if (comment?.type === "freehand" || !comment) {
+        if (toolbarStore.currentTool === "boxSelect") {
+            return;
+        }
+
+        if (comment.value?.type === "freehand" || !comment.value) {
             const baseComment = {
                 id: commentStore.highestCommentId + 1,
                 position: start,
@@ -40,7 +68,7 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
                 color: commentOptions.color,
             };
 
-            comment = match(toolbarStore.currentTool, {
+            comment.value = match(toolbarStore.currentTool, {
                 textComment: () => ({
                     ...baseComment,
                     type: "text",
@@ -78,7 +106,7 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
                 },
             });
 
-            commentStore.createComment(comment);
+            commentStore.createComment(comment.value);
         }
     });
 
@@ -87,11 +115,22 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
             return;
         }
 
-        if (comment && start) {
-            if (comment.type === "freehand") {
-                commentStore.addPoint(comment.id, position);
+        if (toolbarStore.currentTool === "boxSelect" && start) {
+            const [boxPosition, boxSize] = pointsToPositionSize(start, position);
+            toolbarStore.boxSelectRect = {
+                x: boxPosition[0],
+                y: boxPosition[1],
+                width: boxSize[0],
+                height: boxSize[1],
+            };
+            return;
+        }
+
+        if (comment.value && start) {
+            if (comment.value.type === "freehand") {
+                commentStore.addPoint(comment.value.id, position);
             } else {
-                positionComment(start, position, comment);
+                positionComment(start, position, comment.value);
             }
         }
     });
@@ -99,26 +138,29 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
     toolbarStore.onInputCatcherEvent("pointerup", () => {
         if (toolbarStore.currentTool === "freehandEraser") {
             return;
-        } else if (comment?.type === "freehand") {
-            finalizeFreehandComment(comment);
+        } else if (comment.value?.type === "freehand") {
+            finalizeFreehandComment(comment.value);
+        } else if (toolbarStore.currentTool === "boxSelect") {
+            finalizeBoxSelect();
         } else if (toolbarStore.currentTool !== "freehandComment") {
             toolbarStore.currentTool = "pointer";
         }
 
-        comment = null;
+        comment.value = null;
+        start = null;
     });
 
     toolbarStore.onInputCatcherEvent("pointerleave", () => {
-        if (comment?.type === "freehand") {
-            finalizeFreehandComment(comment);
-            comment = null;
+        if (comment.value?.type === "freehand") {
+            finalizeFreehandComment(comment.value);
+            comment.value = null;
         }
     });
 
     toolbarStore.onInputCatcherEvent("temporarilyDisabled", () => {
-        if (comment?.type === "freehand") {
-            finalizeFreehandComment(comment);
-            comment = null;
+        if (comment.value?.type === "freehand") {
+            finalizeFreehandComment(comment.value);
+            comment.value = null;
         }
     });
 
@@ -148,19 +190,71 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
         commentStore.clearJustCreated(freehandComment.id);
     };
 
+    function finalizeBoxSelect() {
+        const boxAABB = new AxisAlignedBoundingBox();
+        boxAABB.fitRectangle(toolbarStore.boxSelectRect);
+
+        const commentsInRect = commentStore.comments.filter((comment) =>
+            boxAABB.contains({
+                x: comment.position[0],
+                y: comment.position[1],
+                width: comment.size[0],
+                height: comment.size[1],
+            })
+        );
+
+        const stepsInRect = Object.values(stepStore.steps).filter((step) => {
+            const rect = stateStore.stepPosition[step.id];
+
+            if (rect && step.position) {
+                const stepRect = {
+                    x: step.position.left,
+                    y: step.position.top,
+                    width: rect.width,
+                    height: rect.height,
+                };
+
+                return boxAABB.contains(stepRect);
+            } else {
+                return false;
+            }
+        });
+
+        toolbarStore.resetBoxSelect();
+
+        if (commentsInRect.length > 0 || stepsInRect.length > 0) {
+            const changedSelection = {
+                comments: commentsInRect.map((comment) => comment.id),
+                steps: stepsInRect.map((step) => step.id),
+            };
+
+            if (toolbarStore.boxSelectMode === "add") {
+                undoRedoStore.applyAction(new AddToSelectionAction(commentStore, stateStore, changedSelection));
+            } else {
+                undoRedoStore.applyAction(new RemoveFromSelectionAction(commentStore, stateStore, changedSelection));
+            }
+        }
+    }
+
     const positionComment = (pointA: Vector, pointB: Vector, comment: BaseWorkflowComment) => {
         if (toolbarStore.snapActive) {
             pointA = vecSnap(pointA, toolbarStore.snapDistance);
             pointB = vecSnap(pointB, toolbarStore.snapDistance);
         }
 
+        const [position, size] = pointsToPositionSize(pointA, pointB);
+
+        commentStore.changePosition(comment.id, position);
+        commentStore.changeSize(comment.id, size);
+    };
+
+    function pointsToPositionSize(pointA: Vector, pointB: Vector): [Vector, Vector] {
         const pointMin = vecMin(pointA, pointB);
         const pointMax = vecMax(pointA, pointB);
 
         const position = pointMin;
         const size = vecSubtract(pointMax, pointMin);
 
-        commentStore.changePosition(comment.id, position);
-        commentStore.changeSize(comment.id, size);
-    };
+        return [position, size];
+    }
 }

@@ -14,11 +14,11 @@ from galaxy.exceptions import (
     ObjectNotFound,
     ReferenceDataError,
 )
-from galaxy.managers.users import get_user_by_username
 from galaxy.model import (
     HistoryDatasetAssociation,
     User,
 )
+from galaxy.model.db.user import get_user_by_username
 from galaxy.structured_app import StructuredApp
 from galaxy.util.bunch import Bunch
 
@@ -269,7 +269,7 @@ class Genomes:
         dbkeys = []
 
         # Add user's custom keys to dbkeys.
-        if user and "dbkeys" in user.preferences:
+        if user and user.preferences and "dbkeys" in user.preferences:
             user_keys_dict = loads(user.preferences["dbkeys"])
             dbkeys.extend([(attributes["name"], key) for key, attributes in user_keys_dict.items()])
 

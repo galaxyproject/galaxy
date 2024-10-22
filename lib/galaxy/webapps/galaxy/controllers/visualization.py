@@ -11,6 +11,7 @@ from galaxy import (
     model,
     web,
 )
+from galaxy.exceptions import MessageException
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.model.base import transaction
@@ -19,7 +20,6 @@ from galaxy.model.item_attrs import (
     UsesItemRatings,
 )
 from galaxy.structured_app import StructuredApp
-from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.webapps.base.controller import (
@@ -225,7 +225,7 @@ class VisualizationController(
                 trans.sa_session.add(v)
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()
-            return {"message": "Attributes of '%s' successfully saved." % v.title, "status": "success"}
+            return {"message": f"Attributes of '{v.title}' successfully saved.", "status": "success"}
 
     # ------------------------- registry.
     @web.expose
@@ -242,7 +242,7 @@ class VisualizationController(
         try:
             return plugin.render(trans=trans, embedded=embedded, **kwargs)
         except Exception as exception:
-            self._handle_plugin_error(trans, visualization_name, exception)
+            return self._handle_plugin_error(trans, visualization_name, exception)
 
     def _get_plugin_from_registry(self, trans, visualization_name):
         """
@@ -258,14 +258,16 @@ class VisualizationController(
         """
         Log, raise if debugging; log and show html message if not.
         """
-        log.exception("error rendering visualization (%s)", visualization_name)
+        if isinstance(exception, MessageException):
+            log.debug("error rendering visualization (%s): %s", visualization_name, exception)
+        else:
+            log.exception("error rendering visualization (%s)", visualization_name)
         if trans.debug:
             raise exception
         return trans.show_error_message(
             "There was an error rendering the visualization. "
-            + "Contact your Galaxy administrator if the problem persists."
-            + "<br/>Details: "
-            + unicodify(exception),
+            "Contact your Galaxy administrator if the problem persists."
+            f"<br/>Details: {exception}",
             use_panels=False,
         )
 

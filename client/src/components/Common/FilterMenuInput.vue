@@ -14,26 +14,21 @@ import {
 import { capitalize } from "lodash";
 import { computed, ref, watch } from "vue";
 
-import { ValidFilter } from "@/utils/filtering";
+import { type ValidFilter } from "@/utils/filtering";
 
 library.add(faQuestion);
 
 type FilterType = string | boolean | undefined;
 
-type ErrorType = {
-    index: string;
-    typeError: boolean;
-    msg: string;
-};
-
 interface Props {
     name: string;
     identifier: any;
-    error?: ErrorType;
+    error?: string;
     filter: ValidFilter<any>;
     filters: {
         [k: string]: FilterType;
     };
+    disabled?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -51,23 +46,20 @@ const localValue = ref(propValue.value);
 const helpToggle = ref(false);
 const modalTitle = `${capitalize(props.filter.placeholder)} Help`;
 
-function hasError(field: string) {
-    if (props.error && props.error.index == field) {
-        return props.error.typeError || props.error.msg;
-    }
-    return "";
-}
-
 function onHelp(_: string, value: string) {
     helpToggle.value = false;
-    localValue.value = value;
+
+    if (!props.disabled) {
+        localValue.value = value;
+    }
 }
 
 watch(
     () => localValue.value,
     (newFilter) => {
         emit("change", props.name, newFilter);
-    }
+    },
+    { immediate: true }
 );
 
 watch(
@@ -87,10 +79,12 @@ watch(
                 :id="`${identifier}-advanced-filter-${props.name}`"
                 ref="filterMenuInput"
                 v-model="localValue"
-                v-b-tooltip.focus.v-danger="hasError(props.name)"
+                v-b-tooltip.focus.v-danger="props.error"
+                class="mw-100"
                 size="sm"
-                :state="hasError(props.name) ? false : null"
+                :state="props.error ? false : null"
                 :placeholder="`any ${props.filter.placeholder}`"
+                :disabled="props.disabled"
                 :list="props.filter.datalist ? `${identifier}-${props.name}-selectList` : null"
                 @keyup.enter="emit('on-enter')"
                 @keyup.esc="emit('on-esc')" />
@@ -111,6 +105,7 @@ watch(
                     v-model="localValue"
                     reset-button
                     button-only
+                    :disabled="props.disabled"
                     size="sm" />
             </BInputGroupAppend>
         </BInputGroup>

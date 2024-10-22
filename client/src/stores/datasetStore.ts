@@ -1,21 +1,18 @@
 import { defineStore } from "pinia";
 import { computed, set } from "vue";
 
-import type { DatasetDetails, DatasetEntry, HistoryContentItemBase } from "@/api";
-import { fetchDataset } from "@/api/datasets";
-import { ApiResponse } from "@/api/schema";
+import { type DatasetEntry, type HistoryContentItemBase, isInaccessible } from "@/api";
+import { fetchDatasetDetails } from "@/api/datasets";
 import { useKeyedCache } from "@/composables/keyedCache";
-
-async function fetchDatasetDetails(params: { id: string }): Promise<ApiResponse<DatasetDetails>> {
-    const response = await fetchDataset({ dataset_id: params.id, view: "detailed" });
-    return response as unknown as ApiResponse<DatasetDetails>;
-}
 
 export const useDatasetStore = defineStore("datasetStore", () => {
     const shouldFetch = computed(() => {
         return (dataset?: DatasetEntry) => {
             if (!dataset) {
                 return true;
+            }
+            if (isInaccessible(dataset)) {
+                return false;
             }
             const isNotDetailed = !("peek" in dataset);
             return isNotDetailed;

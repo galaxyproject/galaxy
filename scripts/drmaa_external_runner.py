@@ -50,14 +50,14 @@ def get_user_id_by_name(username):
     try:
         pw = pwd.getpwnam(username)
     except KeyError:
-        sys.stderr.write("error: User name (%s) is not valid.\n" % username)
+        sys.stderr.write(f"error: User name ({username}) is not valid.\n")
         exit(1)
     return pw.pw_uid
 
 
 def json_file_exists(json_filename):
     if not os.path.exists(json_filename):
-        sys.stderr.write("error: JobTemplate file (%s) doesn't exist\n" % (json_filename))
+        sys.stderr.write(f"error: JobTemplate file ({json_filename}) doesn't exist\n")
         exit(1)
 
     return True
@@ -70,7 +70,7 @@ def validate_paramters():
         sys.argv.remove("--assign_all_groups")
 
     if len(sys.argv) < 3:
-        sys.stderr.write("usage: %s [USER-ID] [JSON-JOB-TEMPLATE-FILE]\n" % sys.argv[0])
+        sys.stderr.write(f"usage: {sys.argv[0]} [USER-ID] [JSON-JOB-TEMPLATE-FILE]\n")
         exit(1)
 
     userid = sys.argv[1]

@@ -1,3 +1,15 @@
+<script setup lang="ts">
+import { type DatasetHash as DatasetHashType } from "@/api";
+
+import DatasetHash from "@/components/DatasetInformation/DatasetHash.vue";
+
+interface Props {
+    hashes: DatasetHashType[];
+}
+
+defineProps<Props>();
+</script>
+
 <template>
     <span class="dataset-hashes">
         <ul class="dataset-hashes-list">
@@ -6,23 +18,7 @@
     </span>
 </template>
 
-<script>
-import DatasetHash from "./DatasetHash";
-
-export default {
-    components: {
-        DatasetHash,
-    },
-    props: {
-        hashes: {
-            type: Array,
-            required: true,
-        },
-    },
-};
-</script>
-
-<style scoped>
+<style scoped lang="scss">
 .dataset-hashes-list {
     padding-inline-start: 20px;
     margin-bottom: 0px;

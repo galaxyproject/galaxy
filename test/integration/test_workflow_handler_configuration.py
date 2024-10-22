@@ -120,7 +120,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         request["inputs_by"] = "step_index"
         url = f"workflows/{workflow_id}/invocations"
         for _ in range(n):
-            self._post(url, data=request)
+            self._post(url, data=request, json=True)
 
     def _get_workflow_invocations(self, history_id: str):
         # Consider exposing handler via the API to reduce breaking

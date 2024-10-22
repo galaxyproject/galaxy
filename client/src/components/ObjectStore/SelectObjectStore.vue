@@ -2,6 +2,8 @@
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
+import { type ConcreteObjectStoreModel } from "@/api";
+import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 import ObjectStoreSelectButton from "./ObjectStoreSelectButton.vue";
@@ -24,15 +26,25 @@ const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
 
 const store = useObjectStoreStore();
 const { isLoading, loadErrorMessage, selectableObjectStores } = storeToRefs(store);
+const { isOnlyPreference } = useStorageLocationConfiguration();
 
-const loadingObjectStoreInfoMessage = ref("Loading object store information");
+const selectableAndVisibleObjectStores = computed(() => {
+    const allSelectableObjectStores = selectableObjectStores.value;
+    if (allSelectableObjectStores != null) {
+        return allSelectableObjectStores.filter((item) => {
+            return "hidden" in item ? !item.hidden : true;
+        });
+    } else {
+        return [];
+    }
+});
+
+const loadingObjectStoreInfoMessage = ref("Loading storage location information");
 const whyIsSelectionPreferredText = ref(`
-Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator.
-Select a preferred object store for new datasets. This is should be thought of as a preferred
-object store because depending the job and workflow configuration execution configuration of
-this Galaxy instance - a different object store may be selected. After a dataset is created,
+Select a preferred storage location for new datasets. Depending on the job and workflow execution configuration of
+this Galaxy a different storage location may be ultimately used. After a dataset is created,
 click on the info icon in the history panel to view information about where it is stored. If it
-is not stored in the correct place, contact your Galaxy administrator for more information.
+is not stored in the place you want, contact Galaxy administrator for more information.
 `);
 
 function variant(objectStoreId: string) {
@@ -44,15 +56,17 @@ function variant(objectStoreId: string) {
 }
 
 const emit = defineEmits<{
-    (e: "onSubmit", id: string | null): void;
+    (e: "onSubmit", id: string | null, isPrivate: boolean): void;
 }>();
 
 const error = computed(() => {
     return props.parentError || loadErrorMessage.value;
 });
 
-async function handleSubmit(preferredObjectStoreId: string) {
-    emit("onSubmit", preferredObjectStoreId);
+async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | null) {
+    const id: string | null = (preferredObjectStore ? preferredObjectStore.object_store_id : null) as string | null;
+    const isPrivate: boolean = preferredObjectStore ? preferredObjectStore.private : false;
+    emit("onSubmit", id, isPrivate);
 }
 </script>
 
@@ -63,7 +77,7 @@ async function handleSubmit(preferredObjectStoreId: string) {
             <b-alert v-if="error" variant="danger" class="object-store-selection-error" show>
                 {{ error }}
             </b-alert>
-            <b-row>
+            <b-row align-h="center">
                 <b-col cols="7">
                     <b-button-group vertical size="lg" style="width: 100%">
                         <b-button
@@ -75,16 +89,16 @@ async function handleSubmit(preferredObjectStoreId: string) {
                             ><i>{{ defaultOptionTitle | localize }}</i></b-button
                         >
                         <ObjectStoreSelectButton
-                            v-for="objectStore in selectableObjectStores"
+                            v-for="objectStore in selectableAndVisibleObjectStores"
                             :key="objectStore.object_store_id"
                             id-prefix="preferred"
                             :object-store="objectStore"
                             :variant="variant(objectStore.object_store_id)"
                             class="preferred-object-store-select-button"
-                            @click="handleSubmit(objectStore.object_store_id)" />
+                            @click="handleSubmit(objectStore)" />
                     </b-button-group>
                 </b-col>
-                <b-col cols="5">
+                <b-col v-if="isOnlyPreference" cols="5">
                     <p v-localize style="float: right">
                         {{ whyIsSelectionPreferredText }}
                     </p>
@@ -94,7 +108,7 @@ async function handleSubmit(preferredObjectStoreId: string) {
                 <span v-localize>{{ defaultOptionDescription }}</span>
             </ObjectStoreSelectButtonPopover>
             <ObjectStoreSelectButtonDescribePopover
-                v-for="objectStore in selectableObjectStores"
+                v-for="objectStore in selectableAndVisibleObjectStores"
                 :key="objectStore.object_store_id"
                 id-prefix="preferred"
                 :what="forWhat"

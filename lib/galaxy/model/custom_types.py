@@ -32,7 +32,7 @@ class SafeJsonEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, numpy.int_):
             return int(obj)
-        elif isinstance(obj, numpy.float_):
+        elif isinstance(obj, numpy.float64):
             return float(obj)
         elif isinstance(obj, bytes):
             return unicodify(obj)
@@ -343,11 +343,12 @@ class MetadataType(JSONType):
     def process_bind_param(self, value, dialect):
         if value is not None:
             if MAX_METADATA_VALUE_SIZE is not None:
-                for k, v in list(value.items()):
-                    sz = total_size(v)
-                    if sz > MAX_METADATA_VALUE_SIZE:
-                        del value[k]
-                        log.warning(f"Refusing to bind metadata key {k} due to size ({sz})")
+                if hasattr(value, "items"):
+                    for k, v in list(value.items()):
+                        sz = total_size(v)
+                        if sz > MAX_METADATA_VALUE_SIZE:
+                            del value[k]
+                            log.warning(f"Refusing to bind metadata key {k} due to size ({sz})")
             value = json_encoder.encode(value).encode()
         return value
 

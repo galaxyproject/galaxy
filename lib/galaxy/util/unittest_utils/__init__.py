@@ -1,3 +1,4 @@
+import os
 from functools import wraps
 from typing import (
     Any,
@@ -6,8 +7,8 @@ from typing import (
 from unittest import SkipTest
 
 import pytest
-import requests
 
+from galaxy.util import requests
 from galaxy.util.commands import which
 
 
@@ -43,3 +44,10 @@ def skip_unless_executable(executable):
     if which(executable):
         return _identity
     return pytest.mark.skip(f"PATH doesn't contain executable {executable}")
+
+
+def skip_unless_environ(env_var):
+    if os.environ.get(env_var):
+        return _identity
+
+    return pytest.mark.skip(f"{env_var} must be set for this test")

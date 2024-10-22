@@ -14,6 +14,10 @@ const sampleFilters = [
         validFilters: {
             deleted: true,
         },
+        invalidFilters: {
+            invalid: "value",
+            visible: null,
+        },
         validText: "deleted:true visible:any",
     },
     {
@@ -27,6 +31,9 @@ const sampleFilters = [
             deleted: "any",
             related: 10,
             hid_gt: 5,
+        },
+        invalidFilters: {
+            hid_less_than: 20,
         },
         validText: "deleted:any related:10 hid>5 visible:any",
     },
@@ -85,10 +92,14 @@ describe("filtering", () => {
         expect(HistoryFilters.getFilterValue(filterTexts[1], "create_time_gt", true)).toBe(1609459200);
         expect(HistoryFilters.getFilterValue("", "deleted")).toBe(false);
         expect(HistoryFilters.getFilterValue("", "visible")).toBe(true);
+        expect(HistoryFilters.getFilterValue("name_eq:Select", "name")).toBe(undefined);
+        expect(HistoryFilters.getFilterValue("name_eq:Select", "name_eq")).toBe("select");
     });
     test("parse get valid filters and settings", () => {
         sampleFilters.forEach((sample) => {
-            expect(HistoryFilters.getValidFilters(sample.filters)).toEqual(sample.validFilters);
+            const { validFilters, invalidFilters } = HistoryFilters.getValidFilters(sample.filters);
+            expect(validFilters).toEqual(sample.validFilters);
+            expect(invalidFilters).toEqual(sample.invalidFilters);
             expect(HistoryFilters.getFilterText(sample.filters)).toEqual(sample.validText);
         });
     });
@@ -115,6 +126,9 @@ describe("filtering", () => {
             expect(filters[8][1]).toBe("false");
             expect(filters[9][0]).toBe("visible");
             expect(filters[9][1]).toBe("true");
+            const filters_eq = HistoryFilters.getFiltersForText('genome_build_eq:"hg19"');
+            expect(filters_eq[0][0]).toBe("genome_build_eq");
+            expect(filters_eq[0][1]).toBe("hg19");
         });
     });
     test("parse filter text as query dictionary", () => {
@@ -131,6 +145,8 @@ describe("filtering", () => {
             expect(queryDict["deleted"]).toBe(false);
             expect(queryDict["visible"]).toBe(true);
         });
+        const queryDict = HistoryFilters.getQueryDict("name_eq:'name of item'");
+        expect(queryDict["name-eq"]).toBe("name of item");
     });
     test("apply valid filters to existing filterText", () => {
         expect(HistoryFilters.applyFiltersToText(sampleFilters[0].filters, "")).toEqual("deleted:true visible:true");

@@ -1,6 +1,10 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
+
+library.add(faAngleDoubleDown, faAngleDoubleUp);
 
 interface Props {
     h1?: boolean;
@@ -14,12 +18,28 @@ interface Props {
     inline?: boolean;
     size?: "xl" | "lg" | "md" | "sm" | "text";
     icon?: string | [string, string];
+    truncate?: boolean;
+    collapse?: "open" | "closed" | "none";
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    collapse: "none",
+    icon: "",
+    size: "lg",
+});
+
+defineEmits(["click"]);
 
 const sizeClass = computed(() => {
-    return `h-${props.size ?? "lg"}`;
+    return `h-${props.size}`;
+});
+
+const collapsible = computed(() => {
+    return props.collapse !== "none";
+});
+
+const collapsed = computed(() => {
+    return props.collapse === "closed";
 });
 
 const element = computed(() => {
@@ -34,8 +54,20 @@ const element = computed(() => {
 
 <template>
     <div v-if="props.separator" class="separator heading">
-        <div class="stripe"></div>
-        <component :is="element" :class="[sizeClass, props.bold ? 'font-weight-bold' : '']">
+        <b-button v-if="collapsible" variant="link" size="sm" @click="$emit('click')">
+            <FontAwesomeIcon v-if="collapsed" fixed-width :icon="faAngleDoubleDown" />
+            <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleUp" />
+        </b-button>
+        <div v-else class="stripe"></div>
+        <component
+            :is="element"
+            :class="[
+                sizeClass,
+                props.bold ? 'font-weight-bold' : '',
+                collapsible ? 'collapsible' : '',
+                props.truncate ? 'truncate' : '',
+            ]"
+            @click="$emit('click')">
             <slot />
         </component>
         <div class="stripe"></div>
@@ -44,7 +76,18 @@ const element = computed(() => {
         :is="element"
         v-else
         class="heading"
-        :class="[sizeClass, props.bold ? 'font-weight-bold' : '', props.inline ? 'inline' : '']">
+        :class="[
+            sizeClass,
+            props.bold ? 'font-weight-bold' : '',
+            props.inline ? 'inline' : '',
+            collapsible ? 'collapsible' : '',
+            props.truncate ? 'truncate' : '',
+        ]"
+        @click="$emit('click')">
+        <b-button v-if="collapsible" variant="link" size="sm">
+            <icon v-if="collapsed" fixed-width icon="angle-double-down" />
+            <icon v-else fixed-width icon="angle-double-up" />
+        </b-button>
         <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
         <slot />
     </component>
@@ -53,13 +96,19 @@ const element = computed(() => {
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
 
+.heading {
+    word-break: break-all;
+}
+
 .heading:deep(svg) {
     font-size: 0.75em;
 }
 
 // prettier-ignore
 h1, h2, h3, h4, h5, h6 {
-    display: flex;
+    &:not(.truncate) {
+        display: flex;
+    }
     align-items: center;
     gap: 0.4em;
 
@@ -67,6 +116,16 @@ h1, h2, h3, h4, h5, h6 {
         display: inline-flex;
         margin-bottom: 0;
     }
+
+    &.truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+.collapsible {
+    cursor: pointer;
 }
 
 .separator {

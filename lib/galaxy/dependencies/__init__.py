@@ -234,6 +234,9 @@ class ConditionalDependencies:
     def check_azure_storage(self):
         return "azure_blob" in self.object_stores
 
+    def check_boto3(self):
+        return "boto3" in self.object_stores
+
     def check_kamaki(self):
         return "pithos" in self.object_stores
 
@@ -262,6 +265,9 @@ class ConditionalDependencies:
     def check_google_cloud_storage(self):
         return "googlecloudstorage" in self.file_sources
 
+    def check_onedatafilerestclient(self):
+        return "onedata" in self.object_stores
+
     def check_fs_onedatarestfs(self):
         return "onedata" in self.file_sources
 
@@ -288,6 +294,10 @@ class ConditionalDependencies:
         # See notes in ./conditional-requirements.txt for more information.
         return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
 
+    def check_pydyf(self):
+        # See notes in ./conditional-requirements.txt for more information.
+        return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
+
     def check_custos_sdk(self):
         return "custos" == self.vault_type
 
@@ -296,6 +306,9 @@ class ConditionalDependencies:
 
     def check_pkce(self):
         return self.pkce_support
+
+    def check_rucio_clients(self):
+        return "rucio" in self.object_stores and sys.version_info >= (3, 9)
 
 
 def optional(config_file=None):

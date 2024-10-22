@@ -1,5 +1,10 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount, shallowMount } from "@vue/test-utils";
+import { setActivePinia } from "pinia";
 import { nextTick } from "vue";
+
+import { type LazyUndoRedoAction, type UndoRedoAction } from "@/stores/undoRedoStore";
+import { type TextWorkflowComment } from "@/stores/workflowEditorCommentStore";
 
 import MarkdownComment from "./MarkdownComment.vue";
 import TextComment from "./TextComment.vue";
@@ -11,6 +16,9 @@ const changePosition = jest.fn();
 const changeColor = jest.fn();
 const deleteComment = jest.fn();
 
+const pinia = createTestingPinia();
+setActivePinia(pinia);
+
 jest.mock("@/composables/workflowStores", () => ({
     useWorkflowStores: () => ({
         commentStore: {
@@ -20,6 +28,14 @@ jest.mock("@/composables/workflowStores", () => ({
             changeColor,
             deleteComment,
             isJustCreated: () => false,
+            getCommentMultiSelected: () => false,
+        },
+        undoRedoStore: {
+            applyAction: (action: UndoRedoAction) => action.run(),
+            applyLazyAction: (action: LazyUndoRedoAction) => {
+                action.queued();
+                action.run();
+            },
         },
     }),
 }));
@@ -106,9 +122,11 @@ describe("WorkflowComment", () => {
     });
 
     it("forwards events to the comment store", () => {
+        const testComment = { ...comment, id: 123, data: { size: 1, text: "HelloWorld" } } as TextWorkflowComment;
+
         const wrapper = mount(WorkflowComment as any, {
             propsData: {
-                comment: { ...comment, id: 123, data: { size: 1, text: "HelloWorld" } },
+                comment: testComment,
                 scale: 1,
                 rootOffset: {},
             },

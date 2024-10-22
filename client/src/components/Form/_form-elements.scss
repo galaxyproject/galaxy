@@ -1,0 +1,62 @@
+@import "theme/blue.scss";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
+
+.ui-form-element {
+    margin-top: $margin-v * 0.25;
+    margin-bottom: $margin-v * 0.5;
+    overflow: visible;
+    clear: both;
+
+    .ui-form-title {
+        word-wrap: break-word;
+        font-weight: bold;
+
+        .ui-form-title-text {
+            word-break: break-all;
+        }
+
+        .ui-form-title-message {
+            font-size: $font-size-base * 0.7;
+            font-weight: 300;
+            vertical-align: text-top;
+            color: $text-light;
+            cursor: default;
+        }
+
+        .ui-form-title-star {
+            color: $text-light;
+            font-weight: 300;
+            cursor: default;
+        }
+
+        .warning {
+            color: $brand-danger;
+        }
+    }
+
+    .ui-form-field {
+        position: relative;
+        margin-top: $margin-v * 0.25;
+    }
+
+    &:deep(.ui-form-collapsible-icon),
+    &:deep(.ui-form-connected-icon) {
+        border: none;
+        background: none;
+        padding: 0;
+        line-height: 1;
+        font-size: 1.2em;
+
+        &:hover {
+            color: $brand-info;
+        }
+
+        &:focus {
+            color: $brand-primary;
+        }
+
+        &:active {
+            background: none;
+        }
+    }
+}

@@ -1,16 +1,27 @@
+import reportDefault from "@/components/Workflow/Editor/reportDefault";
 import { useWorkflowCommentStore, type WorkflowComment } from "@/stores/workflowEditorCommentStore";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
 import { type ConnectionOutputLink, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
-interface Workflow {
+export interface Workflow {
     name: string;
     annotation: string;
     license: string;
     creator: any;
     version: number;
-    report: any;
+    report?: any;
     steps: Steps;
     comments: WorkflowComment[];
     tags: string[];
+}
+
+export interface LoadWorkflowOptions {
+    appendData?: boolean;
+    /** if set, overwrites the append data behavior of reassigning IDs */
+    reassignIds?: boolean;
+    createConnections?: boolean;
+    defaultPosition?: { top: number; left: number };
 }
 
 /**
@@ -23,16 +34,20 @@ interface Workflow {
  */
 export async function fromSimple(
     id: string,
-    data: Workflow,
-    appendData = false,
-    defaultPosition = { top: 0, left: 0 }
+    data: Pick<Workflow, "steps" | "comments" | "report">,
+    options?: LoadWorkflowOptions
 ) {
-    const stepStore = useWorkflowStepStore(id);
+    const appendData = options?.appendData ?? false;
+    const defaultPosition = options?.defaultPosition ?? { top: 0, left: 0 };
+
     const commentStore = useWorkflowCommentStore(id);
+    const stateStore = useWorkflowStateStore(id);
+    const stepStore = useWorkflowStepStore(id);
+    const toolbarStore = useWorkflowEditorToolbarStore(id);
 
     // If workflow being copied into another, wipe UUID and let
     // Galaxy assign new ones.
-    if (appendData) {
+    if (options?.reassignIds ?? appendData) {
         const stepIdOffset = stepStore.getStepIndex + 1;
 
         Object.values(data.steps).forEach((step) => {
@@ -68,10 +83,18 @@ export async function fromSimple(
     }
 
     Object.values(data.steps).map((step) => {
-        stepStore.addStep(step);
+        stepStore.addStep(step, appendData, options?.createConnections ?? true);
     });
 
-    commentStore.addComments(data.comments, [defaultPosition.left, defaultPosition.top]);
+    commentStore.addComments(data.comments, [defaultPosition.left, defaultPosition.top], appendData);
+
+    if (!appendData) {
+        stateStore.report = data.report ?? {
+            markdown: reportDefault,
+        };
+    }
+
+    toolbarStore.currentTool = "pointer";
 }
 
 export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "version"> {

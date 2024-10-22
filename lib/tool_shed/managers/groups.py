@@ -9,7 +9,7 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm.exc import (
+from sqlalchemy.exc import (
     MultipleResultsFound,
     NoResultFound,
 )

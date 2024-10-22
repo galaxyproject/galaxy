@@ -142,7 +142,7 @@ class Ply:
             return f"Ply file ({nice_size(dataset.get_size())})"
 
 
-class PlyAscii(Ply, data.Text):  # type: ignore[misc]
+class PlyAscii(Ply, data.Text):
     """
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.plyascii')
@@ -160,7 +160,7 @@ class PlyAscii(Ply, data.Text):  # type: ignore[misc]
         data.Text.__init__(self, **kwd)
 
 
-class PlyBinary(Ply, Binary):  # type: ignore[misc]
+class PlyBinary(Ply, Binary):
     file_ext = "plybinary"
     subtype = "binary"
 
@@ -477,7 +477,7 @@ class Vtk:
             return f"Vtk file ({nice_size(dataset.get_size())})"
 
 
-class VtkAscii(Vtk, data.Text):  # type: ignore[misc]
+class VtkAscii(Vtk, data.Text):
     """
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.vtkascii')
@@ -495,7 +495,7 @@ class VtkAscii(Vtk, data.Text):  # type: ignore[misc]
         data.Text.__init__(self, **kwd)
 
 
-class VtkBinary(Vtk, Binary):  # type: ignore[misc]
+class VtkBinary(Vtk, Binary):
     """
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.vtkbinary')

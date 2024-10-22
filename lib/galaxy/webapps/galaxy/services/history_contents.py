@@ -9,6 +9,7 @@ from typing import (
     List,
     Optional,
     Set,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -127,10 +128,12 @@ from galaxy.webapps.galaxy.services.base import (
     ServiceBase,
 )
 
+if TYPE_CHECKING:
+    from galaxy.model import HistoryItem
+
 log = logging.getLogger(__name__)
 
 DatasetDetailsType = Union[Set[DecodedDatabaseIdField], Literal["all"]]
-HistoryItemModel = Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation]
 
 
 class HistoryContentsIndexParams(Model):
@@ -570,6 +573,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             history_id=request.history_id,
             source=request.source,
             content=request.content,
+            validate_hashes=request.validate_hashes,
             user=trans.async_request_user,
         )
         results = materialize_task.delay(request=task_request)
@@ -601,13 +605,13 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         assert hda is not None
         self.history_manager.error_unless_mutable(hda.history)
         self.hda_manager.update_permissions(trans, hda, **payload_dict)
-        roles = self.hda_manager.serialize_dataset_association_roles(trans, hda)
+        roles = self.hda_manager.serialize_dataset_association_roles(hda)
         return DatasetAssociationRoles(**roles)
 
     def update(
         self,
         trans,
-        history_id: DecodedDatabaseIdField,
+        history_id: Optional[DecodedDatabaseIdField],
         id: DecodedDatabaseIdField,
         payload: Dict[str, Any],
         serialization_params: SerializationParams,
@@ -624,6 +628,10 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         :returns:   an error object if an error occurred or a dictionary containing
                     any values that were different from the original and, therefore, updated
         """
+        if history_id is None:
+            hda = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
+            history_id = hda.history.id
+
         history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         if contents_type == HistoryContentType.dataset:
             return self.__update_dataset(trans, history, id, payload, serialization_params)
@@ -663,7 +671,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 hda_ids.append(item.id)
             else:
                 hdca_ids.append(item.id)
-        payload_dict = payload.dict(exclude_unset=True)
+        payload_dict = payload.model_dump(exclude_unset=True)
         hdas = self.__datasets_for_update(trans, history, hda_ids, payload_dict)
         rval = []
         for hda in hdas:
@@ -690,7 +698,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
         self._validate_bulk_operation_params(payload, trans.user, trans)
-        contents: List[HistoryItemModel]
+        contents: List[HistoryItem]
         if payload.items:
             contents = self._get_contents_by_item_list(
                 trans,
@@ -1164,21 +1172,27 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                         rval.append(ld)
                 return rval
 
-            for ld in traverse(folder):
-                hda = ld.library_dataset_dataset_association.to_history_dataset_association(
-                    history, add_to_history=True
+            hdas = [
+                ld.library_dataset_dataset_association.to_history_dataset_association(
+                    history, add_to_history=True, commit=False
                 )
+                for ld in traverse(folder)
+            ]
+            history.add_pending_items()
+
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
+
+            for hda in hdas:
                 hda_dict = self.hda_serializer.serialize_to_view(
                     hda, user=trans.user, trans=trans, encode_id=False, **serialization_params.model_dump()
                 )
                 rval.append(hda_dict)
+            return rval
+
         else:
             message = f"Invalid 'source' parameter in request: {source}"
             raise exceptions.RequestParameterInvalidException(message)
-
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return rval
 
     def __create_dataset(
         self,
@@ -1328,7 +1342,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
     def _apply_bulk_operation(
         self,
-        contents: Iterable[HistoryItemModel],
+        contents: Iterable["HistoryItem"],
         operation: HistoryContentItemOperation,
         params: Optional[AnyBulkOperationParams],
         trans: ProvidesHistoryContext,
@@ -1343,7 +1357,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def _apply_operation_to_item(
         self,
         operation: HistoryContentItemOperation,
-        item: HistoryItemModel,
+        item: "HistoryItem",
         params: Optional[AnyBulkOperationParams],
         trans: ProvidesHistoryContext,
     ) -> Optional[BulkOperationItemError]:
@@ -1358,11 +1372,11 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
     def _get_contents_by_item_list(
         self, trans, history: History, items: List[HistoryContentItem]
-    ) -> List[HistoryItemModel]:
-        contents: List[HistoryItemModel] = []
+    ) -> List["HistoryItem"]:
+        contents: List[HistoryItem] = []
 
         dataset_items = filter(lambda item: item.history_content_type == HistoryContentType.dataset, items)
-        datasets_ids = map(lambda dataset: dataset.id, dataset_items)
+        datasets_ids = (dataset.id for dataset in dataset_items)
         contents.extend(self.hda_manager.get_owned_ids(datasets_ids, history))
 
         collection_items = filter(
@@ -1380,7 +1394,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
 class ItemOperation(Protocol):
     def __call__(
-        self, item: HistoryItemModel, params: Optional[AnyBulkOperationParams], trans: ProvidesHistoryContext
+        self, item: "HistoryItem", params: Optional[AnyBulkOperationParams], trans: ProvidesHistoryContext
     ) -> None: ...
 
 
@@ -1414,24 +1428,24 @@ class HistoryItemOperator:
     def apply(
         self,
         operation: HistoryContentItemOperation,
-        item: HistoryItemModel,
+        item: "HistoryItem",
         params: Optional[AnyBulkOperationParams],
         trans: ProvidesHistoryContext,
     ):
         self._operation_map[operation](item, params, trans)
 
-    def _get_item_manager(self, item: HistoryItemModel):
+    def _get_item_manager(self, item: "HistoryItem"):
         if isinstance(item, HistoryDatasetAssociation):
             return self.hda_manager
         return self.hdca_manager
 
-    def _hide(self, item: HistoryItemModel):
+    def _hide(self, item: "HistoryItem"):
         item.visible = False
 
-    def _unhide(self, item: HistoryItemModel):
+    def _unhide(self, item: "HistoryItem"):
         item.visible = True
 
-    def _delete(self, item: HistoryItemModel, trans: ProvidesHistoryContext):
+    def _delete(self, item: "HistoryItem", trans: ProvidesHistoryContext):
         if isinstance(item, HistoryDatasetCollectionAssociation):
             self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=False)
         else:
@@ -1440,13 +1454,16 @@ class HistoryItemOperator:
         # otherwise the history will wait indefinitely for the items to be deleted
         item.update()
 
-    def _undelete(self, item: HistoryItemModel):
+    def _undelete(self, item: "HistoryItem"):
         if getattr(item, "purged", False):
             raise exceptions.ItemDeletionException("This item has been permanently deleted and cannot be recovered.")
         manager = self._get_item_manager(item)
         manager.undelete(item, flush=self.flush)
+        # Again, we need to force an update in the edge case where all selected items are already undeleted
+        # or when the item was purged as undelete will not trigger an update
+        item.update()
 
-    def _purge(self, item: HistoryItemModel, trans: ProvidesHistoryContext):
+    def _purge(self, item: "HistoryItem", trans: ProvidesHistoryContext):
         if getattr(item, "purged", False):
             # TODO: remove this `update` when we can properly track the operation results to notify the history
             item.update()
@@ -1456,7 +1473,7 @@ class HistoryItemOperator:
         self.hda_manager.purge(item, flush=True, user=trans.user)
 
     def _change_datatype(
-        self, item: HistoryItemModel, params: ChangeDatatypeOperationParams, trans: ProvidesHistoryContext
+        self, item: "HistoryItem", params: ChangeDatatypeOperationParams, trans: ProvidesHistoryContext
     ):
         if isinstance(item, HistoryDatasetAssociation):
             wrapped_task = self._change_item_datatype(item, params, trans)
@@ -1501,15 +1518,15 @@ class HistoryItemOperator:
                 dataset_id=item.id, datatype=params.datatype, task_user_id=getattr(trans.user, "id", None)
             )
 
-    def _change_dbkey(self, item: HistoryItemModel, params: ChangeDbkeyOperationParams):
+    def _change_dbkey(self, item: "HistoryItem", params: ChangeDbkeyOperationParams):
         if isinstance(item, HistoryDatasetAssociation):
             item.set_dbkey(params.dbkey)
         elif isinstance(item, HistoryDatasetCollectionAssociation):
             for dataset_instance in item.dataset_instances:
                 dataset_instance.set_dbkey(params.dbkey)
 
-    def _add_tags(self, trans: ProvidesUserContext, item: HistoryItemModel, params: TagOperationParams):
+    def _add_tags(self, trans: ProvidesUserContext, item: "HistoryItem", params: TagOperationParams):
         trans.tag_handler.add_tags_from_list(trans.user, item, params.tags, flush=self.flush)
 
-    def _remove_tags(self, trans: ProvidesUserContext, item: HistoryItemModel, params: TagOperationParams):
+    def _remove_tags(self, trans: ProvidesUserContext, item: "HistoryItem", params: TagOperationParams):
         trans.tag_handler.remove_tags_from_list(trans.user, item, params.tags, flush=self.flush)

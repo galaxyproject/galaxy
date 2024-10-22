@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import { ConcreteObjectStoreModel } from "@/api";
+import { type ConcreteObjectStoreModel } from "@/api";
 import { getSelectableObjectStores } from "@/api/objectStores";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -27,6 +27,11 @@ export const useObjectStoreStore = defineStore("objectStoreStore", () => {
         }
     }
 
+    function getObjectStoreNameById(objectStoreId: string): string | null {
+        const objectStore = selectableObjectStores.value?.find((store) => store.object_store_id === objectStoreId);
+        return objectStore?.name ?? null;
+    }
+
     loadObjectStores();
 
     return {
@@ -34,5 +39,6 @@ export const useObjectStoreStore = defineStore("objectStoreStore", () => {
         isLoading,
         loadErrorMessage,
         selectableObjectStores,
+        getObjectStoreNameById,
     };
 });

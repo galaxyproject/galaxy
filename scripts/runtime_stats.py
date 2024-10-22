@@ -82,20 +82,20 @@ def parse_arguments():
         "--like",
         action="store_true",
         default=False,
-        help="Use SQL `LIKE` operator to find " "a shed-installed tool using the tool's " '"short" id',
+        help='Use SQL `LIKE` operator to find a shed-installed tool using the tool\'s "short" id',
     )
     populate_config_args(parser)
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="Print extra info")
     parser.add_argument("-m", "--min", type=int, default=-1, help="Ignore runtimes less than MIN seconds")
     parser.add_argument("-M", "--max", type=int, default=-1, help="Ignore runtimes greater than MAX seconds")
-    parser.add_argument("-u", "--user", help="Return stats for only this user (id, email, " "or username)")
+    parser.add_argument("-u", "--user", help="Return stats for only this user (id, email, or username)")
     parser.add_argument(
-        "-s", "--source", default="metrics", help="Runtime data source (SOURCES: %s)" % ", ".join(DATA_SOURCES)
+        "-s", "--source", default="metrics", help="Runtime data source (SOURCES: {})".format(", ".join(DATA_SOURCES))
     )
     args = parser.parse_args()
 
     if args.like and "/" in args.tool_id:
-        print("ERROR: Do not use --like with a tool shed tool id (the tool " "id should not contain `/` characters)")
+        print("ERROR: Do not use --like with a tool shed tool id (the tool id should not contain `/` characters)")
         sys.exit(2)
 
     args.source = args.source.lower()
@@ -144,13 +144,13 @@ def query(
             if row:
                 user_id = row[0]
             else:
-                print("Invalid user: %s" % user)
+                print(f"Invalid user: {user}")
                 sys.exit(1)
 
     if like:
-        query_tool_id = "%%/%s/%%" % tool_id
+        query_tool_id = f"%/{tool_id}/%"
     elif "/" in tool_id and not re.match(r"\d+\.\d+", tool_id.split("/")[-1]):
-        query_tool_id = "%s%%" % tool_id
+        query_tool_id = f"{tool_id}%"
         like = True
     else:
         query_tool_id = tool_id
@@ -187,14 +187,14 @@ def query(
         if min > 0 and max > 0:
             time_clause = """WHERE ctimes[1] - ctimes[2] > interval %s
           AND ctimes[1] - ctimes[2] < interval %s"""
-            sql_args.append("%s seconds" % min)
-            sql_args.append("%s seconds" % max)
+            sql_args.append(f"{min} seconds")
+            sql_args.append(f"{max} seconds")
         elif min > 0:
             time_clause = "WHERE ctimes[1] - ctimes[2] > interval %s"
-            sql_args.append("%s seconds" % min)
+            sql_args.append(f"{min} seconds")
         elif max > 0:
             time_clause = "WHERE ctimes[1] - ctimes[2] < interval %s"
-            sql_args.append("%s seconds" % max)
+            sql_args.append(f"{max} seconds")
         else:
             time_clause = ""
         sql = HISTORY_SQL
@@ -218,7 +218,7 @@ def query(
         return
 
     if user:
-        print("Displaying statistics for user %s" % user)
+        print(f"Displaying statistics for user {user}")
 
     stats = (
         ("Mean runtime", numpy.mean(times)),
@@ -229,11 +229,11 @@ def query(
 
     for name, seconds in stats:
         hours, minutes = nice_times(seconds)
-        msg = name + " is %0.0f seconds" % seconds
+        msg = name + f" is {seconds:0.0f} seconds"
         if minutes:
-            msg += " (=%0.2f minutes)" % minutes
+            msg += f" (={minutes:0.2f} minutes)"
         if hours:
-            msg += " (=%0.2f hours)" % hours
+            msg += f" (={hours:0.2f} hours)"
         print(msg)
 
 

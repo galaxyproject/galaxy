@@ -1,5 +1,9 @@
 import logging
 import math
+from typing import (
+    Any,
+    Dict,
+)
 
 from galaxy import (
     exceptions,
@@ -153,7 +157,9 @@ def dictify_dataset_collection_instance(
     return dict_value
 
 
-def dictify_element_reference(element, rank_fuzzy_counts=None, recursive=True, security=None):
+def dictify_element_reference(
+    element: model.DatasetCollectionElement, rank_fuzzy_counts=None, recursive=True, security=None
+):
     """Load minimal details of elements required to show outline of contents in history panel.
 
     History panel can use this reference to expand to full details if individual dataset elements
@@ -161,27 +167,29 @@ def dictify_element_reference(element, rank_fuzzy_counts=None, recursive=True, s
     """
     dictified = element.to_dict(view="element")
     if (element_object := element.element_object) is not None:
-        object_details = dict(
+        object_details: Dict[str, Any] = dict(
             id=element_object.id,
             model_class=element_object.__class__.__name__,
         )
-        if element.child_collection:
+        if isinstance(element_object, model.DatasetCollection):
             object_details["collection_type"] = element_object.collection_type
+            object_details["element_count"] = element_object.element_count
+            object_details["populated"] = element_object.populated_optimized
 
             # Recursively yield elements for each nested collection...
             if recursive:
-                child_collection = element.child_collection
-                elements, rest_fuzzy_counts = get_fuzzy_count_elements(child_collection, rank_fuzzy_counts)
+                elements, rest_fuzzy_counts = get_fuzzy_count_elements(element_object, rank_fuzzy_counts)
                 object_details["elements"] = [
                     dictify_element_reference(_, rank_fuzzy_counts=rest_fuzzy_counts, recursive=recursive)
                     for _ in elements
                 ]
-                object_details["element_count"] = child_collection.element_count
         else:
             object_details["state"] = element_object.state
             object_details["hda_ldda"] = "hda"
-            object_details["history_id"] = element_object.history_id
-            object_details["tags"] = element_object.make_tag_string_list()
+            object_details["purged"] = element_object.purged
+            if isinstance(element_object, model.HistoryDatasetAssociation):
+                object_details["history_id"] = element_object.history_id
+                object_details["tags"] = element_object.make_tag_string_list()
 
         dictified["object"] = object_details
     else:

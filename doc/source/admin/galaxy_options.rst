@@ -477,7 +477,7 @@
 :Description:
     conda channels to enable by default
     (https://conda.io/docs/user-guide/tasks/manage-channels.html)
-:Default: ``conda-forge,bioconda,defaults``
+:Default: ``conda-forge,bioconda``
 :Type: str
 
 
@@ -746,6 +746,81 @@
     FileSource plugins described embedded into Galaxy's config.
 :Default: ``None``
 :Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_templates_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Configured Object Store templates configuration file.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``object_store_templates.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_templates``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Configured Object Store templates embedded into Galaxy's config.
+:Default: ``None``
+:Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``file_source_templates_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Configured user file source templates configuration file.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``file_source_templates.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``file_source_templates``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Configured user file source templates embedded into Galaxy's
+    config.
+:Default: ``None``
+:Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``user_config_templates_use_saved_configuration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    User defined object stores and file sources are saved in the
+    database with their last valid configuration. It may be the case
+    that the admin changes file source and object store templates over
+    time such that the variables and secrets an instance is saved with
+    no longer match the configuration's expected values. For this
+    reason, admins should always add new versions of templates instead
+    of just changing them - however people take shortcuts and
+    divergences might happen. If a template is changed in such a way
+    it breaks or if a template disappears from the library of
+    templates this parameter controls how and if the database version
+    will be used.
+    By default, it will simply be used as a 'fallback' if a
+    configuration cannot be resolved against the template version in
+    the configuration file. Using 'preferred' instead will mean the
+    stored database version is always used. This ensures a greater
+    degree of reproducibility without effort on the part of the admin
+    but also means that small issues are not easy to fix. Using
+    'never' instead will ensure the config templates are always only
+    loaded from the template library files - this might make sense for
+    admins who want to disable templates without worrying about the
+    contents of the database.
+:Default: ``fallback``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1453,7 +1528,7 @@
     This option has no effect if the file specified by
     object_store_config_file exists. Otherwise, if this option is set,
     it overrides any other objectstore settings.
-    The syntax, available instrumenters, and documentation of their
+    The syntax, available storage plugins, and documentation of their
     options is explained in detail in the object store sample
     configuration file, `object_store_conf.sample.yml`
 :Default: ``None``
@@ -1515,10 +1590,24 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Default cache size for caching object stores if cache not
-    configured for that object store entry.
+    Default cache size, in GB, for caching object stores if the cache
+    is not configured for that object store entry.
 :Default: ``-1``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_always_respect_user_selection``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to true to indicate in the UI that a user's object store
+    selection isn't simply a "preference" that job destinations often
+    respect but in fact will always be respected. This should be set
+    to true to simplify the UI as long as job destinations never
+    override 'object_store_id's for a jobs.
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1955,7 +2044,7 @@
     defaults to "GLOBAL" if not set or the
     `geographical_server_location_code` value is invalid or
     unsupported. To see a full list of supported locations, visit
-    https://galaxyproject.org/admin/carbon_emissions
+    https://docs.galaxyproject.org/en/master/admin/carbon_emissions.html
 :Default: ``GLOBAL``
 :Type: str
 
@@ -2023,10 +2112,31 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Map for interactivetool proxy.
+    Map for the interactivetool proxy. Mappings are stored in a SQLite
+    database file located on this path. As an alternative, you may
+    also store them in any other RDBMS supported by SQLAlchemy using
+    the option ``interactivetoolsproxy_map``, which overrides this
+    one.
     The value of this option will be resolved with respect to
     <data_dir>.
 :Default: ``interactivetools_map.sqlite``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetoolsproxy_map``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Use a database supported by SQLAlchemy as map for the
+    interactivetool proxy. When this option is set, the value of
+    ``interactivetools_map`` is ignored. The value of this option must
+    be a `SQLAlchemy database URL
+    <https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls>`_.
+    Mappings are written to the table "gxitproxy" within the database.
+    This value cannot match ``database_connection`` nor
+    ``install_database_connection``.
+:Default: ``None``
 :Type: str
 
 
@@ -2142,7 +2252,7 @@
     Allow import of workflows from the TRS servers configured in the
     specified YAML or JSON file. The file should be a list with 'id',
     'label', and 'api_url' for each entry. Optionally, 'link_url' and
-    'doc' may be be specified as well for each entry.
+    'doc' may be specified as well for each entry.
     If this is null (the default), a simple configuration containing
     just Dockstore will be used.
     The value of this option will be resolved with respect to
@@ -2592,8 +2702,20 @@
 
 :Description:
     The upload store is a temporary directory in which files uploaded
-    by the tus middleware or server will be placed. Defaults to
-    new_file_path if not set.
+    by the tus middleware or server for user uploads will be placed.
+    Defaults to new_file_path if not set.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tus_upload_store_job_files``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The upload store is a temporary directory in which files uploaded
+    by the tus middleware or server for remote job files (Pulsar) will
+    be placed. Defaults to tus_upload_store if not set.
 :Default: ``None``
 :Type: str
 
@@ -3000,6 +3122,17 @@
     use_printdebug.  It also causes the files used by PBS/SGE
     (submission script, output, and error) to remain on disk after the
     job is complete.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``use_access_logging_middleware``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Log request start as well as request end. Disables uvicorn access
+    log handler.
 :Default: ``false``
 :Type: bool
 
@@ -4016,6 +4149,23 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``oidc_scope_prefix``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the prefix for OIDC scopes specific to this Galaxy instance.
+    If an API call is made against this Galaxy instance using an OIDC
+    bearer token, any scopes must be prefixed with this value e.g.
+    https://galaxyproject.org/api. More concretely, to request all
+    permissions that the user has, the scope would have to be
+    specified as "<prefix>:*". e.g "https://galaxyproject.org/api:*".
+    Currently, only * is recognised as a valid scope, and future
+    iterations may provide more fine-grained scopes.
+:Default: ``https://galaxyproject.org/api``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``auth_config_file``
 ~~~~~~~~~~~~~~~~~~~~
@@ -4965,6 +5115,26 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_scheduling_separate_materialization_iteration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Workflows launched with URI/URL inputs that are not marked as
+    'deferred' are "materialized" (or undeferred) by the workflow
+    scheduler. This might be a lengthy process. Setting this to 'True'
+    will place the invocation back in the queue after materialization
+    before scheduling the workflow so it is less  likely to starve
+    other workflow scheduling. Ideally, Galaxy would allow more fine
+    grain control of handlers but until then, this provides a way to
+    tip the balance between "doing more work" and "being more fair".
+    The default here is pretty arbitrary - it has been to False to
+    optimize Galaxy for automated, single user applications where
+    "fairness" is mostly irrelevant.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ``cache_user_job_count``
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5102,6 +5272,23 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~
+``enable_celery_tasks``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Offload long-running tasks to a Celery task queue. Activate this
+    only if you have setup a Celery worker for Galaxy and you have
+    configured the `celery_conf` option below. Specifically, you need
+    to set the `result_backend` option in the `celery_conf` option to
+    a valid Celery result backend URL. By default, Galaxy uses an
+    SQLite database at '<data_dir>/results.sqlite' for storing task
+    results. For details, see
+    https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~
 ``celery_conf``
 ~~~~~~~~~~~~~~~
@@ -5111,28 +5298,18 @@
     To refer to a task by name, use the template `galaxy.foo` where
     `foo` is the function name of the task defined in the
     galaxy.celery.tasks module.
-    The `broker_url` option, if unset, defaults to the value of
-    `amqp_internal_connection`. The `result_backend` option must be
-    set if the `enable_celery_tasks` option is set.
+    The `broker_url` option, if unset or null, defaults to the value
+    of `amqp_internal_connection`. The `result_backend` option, if
+    unset or null, defaults to an SQLite database at
+    '<data_dir>/results.sqlite' for storing task results. Please use a
+    more robust backend (e.g. Redis) for production setups.
     The galaxy.fetch_data task can be disabled by setting its route to
     "disabled": `galaxy.fetch_data: disabled`. (Other tasks cannot be
     disabled on a per-task basis at this time.)
     For details, see Celery documentation at
     https://docs.celeryq.dev/en/stable/userguide/configuration.html.
-:Default: ``{'task_routes': {'galaxy.fetch_data': 'galaxy.external', 'galaxy.set_job_metadata': 'galaxy.external'}}``
+:Default: ``{'broker_url': None, 'result_backend': None, 'task_routes': {'galaxy.fetch_data': 'galaxy.external', 'galaxy.set_job_metadata': 'galaxy.external'}}``
 :Type: any
-
-
-~~~~~~~~~~~~~~~~~~~~~~~
-``enable_celery_tasks``
-~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Offload long-running tasks to a Celery task queue. Activate this
-    only if you have setup a Celery worker for Galaxy. For details,
-    see https://docs.galaxyproject.org/en/master/admin/production.html
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5413,6 +5590,17 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``dispatch_notifications_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The interval in seconds between attempts to dispatch notifications
+    to users (every 10 minutes by default). Runs in a Celery task.
+:Default: ``600``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``help_forum_api_url``
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -5425,15 +5613,51 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``help_forum_tool_panel_integration_enabled``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_help_forum_tool_panel_integration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     Enable the integration of the Galaxy Help Forum in the tool panel.
     This requires the help_forum_api_url to be set.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``file_source_temp_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Directory to store temporary files for file sources. This defaults
+    to new_file_path if not set.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``file_source_webdav_use_temp_files``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default value for use_temp_files for webdav plugins that don't
+    explicitly declare this.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``file_source_listings_expiry_time``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Number of seconds before file source content listings are
+    refreshed. Shorter times will result in more queries while
+    browsing a file sources. Longer times will result in fewer
+    requests to file sources but outdated contents might be displayed
+    to the user. Currently only affects s3fs file sources.
+:Default: ``60``
+:Type: int
 
 
 

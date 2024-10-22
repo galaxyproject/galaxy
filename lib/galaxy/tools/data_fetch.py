@@ -34,7 +34,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.hash_util import (
     HASH_NAMES,
-    memory_bound_hexdigest,
+    verify_hash,
 )
 
 DESCRIPTION = """Data Import Script"""
@@ -250,6 +250,10 @@ def _fetch_target(upload_config: "UploadConfig", target):
         if url:
             sources.append(source_dict)
         hashes = item.get("hashes", [])
+        for hash_function in HASH_NAMES:
+            hash_value = item.get(hash_function)
+            if hash_value:
+                hashes.append({"hash_function": hash_function, "hash_value": hash_value})
         for hash_dict in hashes:
             hash_function = hash_dict.get("hash_function")
             hash_value = hash_dict.get("hash_value")
@@ -305,7 +309,7 @@ def _fetch_target(upload_config: "UploadConfig", target):
                 if datatype.dataset_content_needs_grooming(path):
                     err_msg = (
                         "The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be "
-                        + "<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed."
+                        "<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed."
                     )
                     raise UploadProblemException(err_msg)
 
@@ -511,11 +515,7 @@ def _has_src_to_path(upload_config, item, is_dataset=False) -> Tuple[str, str]:
 
 def _handle_hash_validation(upload_config, hash_function, hash_value, path):
     if upload_config.validate_hashes:
-        calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=path)
-        if calculated_hash_value != hash_value:
-            raise Exception(
-                f"Failed to validate upload with [{hash_function}] - expected [{hash_value}] got [{calculated_hash_value}]"
-            )
+        verify_hash(path, hash_func_name=hash_function, hash_value=hash_value, what="upload")
 
 
 def _arg_parser():

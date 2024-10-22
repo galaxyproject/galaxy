@@ -1,7 +1,6 @@
-<tool id="interactive_tool_rstudio" tool_type="interactive" name="RStudio" version="0.2" profile="22.01">
+<tool id="interactive_tool_rstudio" tool_type="interactive" name="RStudio" version="0.3" profile="22.01">
     <requirements>
-        <!--container type="docker">quay.io/erasche/docker-rstudio-notebook:19.09</container-->
-        <container type="docker">quay.io/erasche/docker-rstudio-notebook:ie2</container>
+        <container type="docker">quay.io/galaxy/docker-rstudio-notebook:23.1</container>
     </requirements>
     <entry_points>
         <entry_point name="RStudio" requires_domain="False" requires_path_in_header_named="X-RStudio-Root-Path">
@@ -18,7 +17,6 @@
         <environment_variable name="API_KEY" inject="api_key" />
     </environment_variables>
     <command><![CDATA[
-        #import re
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./rstudio/outputs/ &&
         mkdir -p ./rstudio/data &&
@@ -26,15 +24,11 @@
         ## change into the directory where the notebooks are located
         cd ./rstudio/ &&
 
-        sed -i 's|/monitor.*||g' /etc/services.d/nginx/run &&
-
-        ##/etc/init.d/syslog-ng start &&
         /init &
-        ##rstudio-server start &&
         sleep 5 &&
 
         chmod 777 /tmp -R &&
-        tail -f /var/log/rstudio-server/rserver.log
+        tail --retry -f /var/log/rstudio/rstudio-server/rserver.log
 
     ]]>
     </command>

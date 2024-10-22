@@ -1,6 +1,4 @@
-import sys
 from json import loads
-from typing import Iterator
 
 from galaxy.datatypes.tabular import Tabular
 from galaxy.model import DatasetInstance
@@ -29,42 +27,6 @@ class BaseDataProvider:
         self.original_dataset = original_dataset
         self.dependencies = dependencies
         self.error_max_vals = error_max_vals
-
-    def has_data(self, **kwargs):
-        """
-        Returns true if dataset has data in the specified genome window, false
-        otherwise.
-        """
-        raise Exception("Unimplemented Function")
-
-    def get_iterator(self, data_file, chrom, start, end, **kwargs) -> Iterator[str]:
-        """
-        Returns an iterator that provides data in the region chrom:start-end
-        """
-        raise Exception("Unimplemented Function")
-
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
-        """
-        Process data from an iterator to a format that can be provided to client.
-        """
-        raise Exception("Unimplemented Function")
-
-    def get_data(self, chrom, start, end, start_val=0, max_vals=sys.maxsize, **kwargs):
-        """
-        Returns data as specified by kwargs. start_val is the first element to
-        return and max_vals indicates the number of values to return.
-
-        Return value must be a dictionary with the following attributes:
-            dataset_type, data
-        """
-        iterator = self.get_iterator(chrom, start, end)
-        return self.process_data(iterator, start_val, max_vals, **kwargs)
-
-    def write_data_to_file(self, filename, **kwargs):
-        """
-        Write data in region defined by chrom, start, and end to a file.
-        """
-        raise Exception("Unimplemented Function")
 
 
 class ColumnDataProvider(BaseDataProvider):

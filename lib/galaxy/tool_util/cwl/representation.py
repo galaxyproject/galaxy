@@ -369,9 +369,7 @@ def to_galaxy_parameters(tool, as_dict):
                 type_representation_name = "null"
             elif as_dict_value is NOT_PRESENT or as_dict_value is None:
                 raise RequestParameterInvalidException(
-                    "Cannot translate CWL datatype - value [{}] of type [{}] with case_strings [{}]. Non-null property must be set.".format(
-                        as_dict_value, type(as_dict_value), case_strings
-                    )
+                    f"Cannot translate CWL datatype - value [{as_dict_value}] of type [{type(as_dict_value)}] with case_strings [{case_strings}]. Non-null property must be set."
                 )
             elif isinstance(as_dict_value, bool) and "boolean" in case_strings:
                 type_representation_name = "boolean"
@@ -406,9 +404,7 @@ def to_galaxy_parameters(tool, as_dict):
                 type_representation_name = "json"
             else:
                 raise RequestParameterInvalidException(
-                    "Cannot translate CWL datatype - value [{}] of type [{}] with case_strings [{}].".format(
-                        as_dict_value, type(as_dict_value), case_strings
-                    )
+                    f"Cannot translate CWL datatype - value [{as_dict_value}] of type [{type(as_dict_value)}] with case_strings [{case_strings}]."
                 )
             galaxy_request[f"{input_name}|_cwl__type_"] = type_representation_name
             if type_representation_name != "null":

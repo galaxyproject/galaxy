@@ -714,7 +714,7 @@ class ProteomicsXml(GenericXml):
             if not line.startswith("<?"):
                 break
         # pattern match <root or <ns:root for any ns string
-        pattern = r"<(\w*:)?%s" % self.root
+        pattern = rf"<(\w*:)?{self.root}"
         return re.search(pattern, line) is not None
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:

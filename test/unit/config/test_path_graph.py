@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from galaxy.config import BaseAppConfiguration
@@ -47,7 +49,7 @@ def test_basecase(monkeypatch):
         },
     }
     monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(mock_schema))
-    monkeypatch.setattr(BaseAppConfiguration, "_load_schema", lambda a: AppSchema(None, "_"))
+    monkeypatch.setattr(BaseAppConfiguration, "_load_schema", lambda a: AppSchema(Path("no path"), "_"))
 
     config = BaseAppConfiguration()
     assert config.component1_path0 == "value0"
@@ -73,7 +75,7 @@ def test_resolves_to_invalid_property(monkeypatch):
     monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(mock_schema))
 
     with pytest.raises(ConfigurationError):
-        AppSchema(None, "_").validate_path_resolution_graph()
+        AppSchema(Path("no path"), "_").validate_path_resolution_graph()
 
 
 def test_path_resolution_cycle(monkeypatch):
@@ -98,7 +100,7 @@ def test_path_resolution_cycle(monkeypatch):
     monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(mock_schema))
 
     with pytest.raises(ConfigurationError):
-        AppSchema(None, "_").validate_path_resolution_graph()
+        AppSchema(Path("no path"), "_").validate_path_resolution_graph()
 
 
 def test_path_invalid_type(monkeypatch):
@@ -117,7 +119,7 @@ def test_path_invalid_type(monkeypatch):
     monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(mock_schema))
 
     with pytest.raises(ConfigurationError):
-        AppSchema(None, "_").validate_path_resolution_graph()
+        AppSchema(Path("no path"), "_").validate_path_resolution_graph()
 
 
 def test_resolves_to_invalid_type(monkeypatch):
@@ -136,7 +138,7 @@ def test_resolves_to_invalid_type(monkeypatch):
     monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(mock_schema))
 
     with pytest.raises(ConfigurationError):
-        AppSchema(None, "_").validate_path_resolution_graph()
+        AppSchema(Path("no path"), "_").validate_path_resolution_graph()
 
 
 def test_resolves_with_empty_component(monkeypatch):
@@ -157,7 +159,7 @@ def test_resolves_with_empty_component(monkeypatch):
         },
     }
     monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(mock_schema))
-    monkeypatch.setattr(BaseAppConfiguration, "_load_schema", lambda a: AppSchema(None, "_"))
+    monkeypatch.setattr(BaseAppConfiguration, "_load_schema", lambda a: AppSchema(Path("no path"), "_"))
 
     config = BaseAppConfiguration()
     assert config.path0 == "value0"

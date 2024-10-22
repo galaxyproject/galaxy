@@ -60,13 +60,10 @@ def conda_link() -> str:
         else:
             url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh"
     else:
-        if sys.maxsize > 2**32:
-            if "arm64" in platform.platform():
-                url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh"
-            else:
-                url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh"
+        if "arm64" in platform.platform():
+            url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh"
         else:
-            url = "https://repo.anaconda.com/miniconda/Miniconda3-4.5.12-Linux-x86.sh"
+            url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh"
     return url
 
 
@@ -75,21 +72,12 @@ def find_conda_prefix() -> str:
     for Miniconda installs.
     """
     home = os.path.expanduser("~")
-    miniconda_2_dest = os.path.join(home, "miniconda2")
-    miniconda_3_dest = os.path.join(home, "miniconda3")
-    anaconda_2_dest = os.path.join(home, "anaconda2")
-    anaconda_3_dest = os.path.join(home, "anaconda3")
-    # Prefer miniconda3 install if both available
-    if os.path.exists(miniconda_3_dest):
-        return miniconda_3_dest
-    elif os.path.exists(miniconda_2_dest):
-        return miniconda_2_dest
-    elif os.path.exists(anaconda_3_dest):
-        return anaconda_3_dest
-    elif os.path.exists(anaconda_2_dest):
-        return anaconda_2_dest
-    else:
-        return miniconda_3_dest
+    destinations = ["miniforge3", "miniconda3", "miniconda2", "anaconda3", "anaconda2"]
+    for destination in destinations:
+        destination = os.path.join(home, destination)
+        if os.path.exists(destination):
+            return destination
+    return os.path.join(home, "miniforge3")
 
 
 class CondaContext(installable.InstallableContext):
@@ -254,7 +242,7 @@ class CondaContext(installable.InstallableContext):
         if self.condarc_override:
             env["CONDARC"] = self.condarc_override
         cmd_string = shlex_join(cmd)
-        kwds: Dict[str, Any] = dict()
+        kwds: Dict[str, Any] = {}
         try:
             if stdout_path:
                 kwds["stdout"] = open(stdout_path, "w")

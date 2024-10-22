@@ -20,10 +20,12 @@ from abc import (
 )
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     NamedTuple,
     Optional,
+    TYPE_CHECKING,
 )
 
 from galaxy import util
@@ -33,6 +35,9 @@ from .safety import (
     DEFAULT_SAFETY,
     Safety,
 )
+
+if TYPE_CHECKING:
+    from galaxy.job_metrics.instrumenters import InstrumentPlugin
 
 log = logging.getLogger(__name__)
 
@@ -72,7 +77,7 @@ class JobMetrics:
 
     def __init__(self, conf_file=None, conf_dict=None, **kwargs):
         """Load :class:`JobInstrumenter` objects from specified configuration file."""
-        self.plugin_classes = self.__plugins_dict()
+        self.plugin_classes = cast(Dict[str, "InstrumentPlugin"], self.__plugins_dict())
         if conf_file and os.path.exists(conf_file):
             self.default_job_instrumenter = JobInstrumenter.from_file(self.plugin_classes, conf_file, **kwargs)
         elif conf_dict or conf_dict is None:

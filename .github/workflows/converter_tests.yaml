@@ -28,28 +28,24 @@ jobs:
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: 'galaxy root'
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.12.1'
           cache: 'yarn'
           cache-dependency-path: 'galaxy root/client/yarn.lock'
       - name: Clone galaxyproject/galaxy-test-data
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: galaxyproject/galaxy-test-data
           path: galaxy-test-data
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Cache venv dir
-        uses: actions/cache@v3
-        id: pip-cache
-        with:
-          path: ~/.cache/pip
-          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+          cache: 'pip'
+          cache-dependency-path: 'galaxy root/requirements.txt'
       - name: Move test data
         run: rsync -av --remove-source-files --exclude .git galaxy-test-data/ 'galaxy root/test-data/'
       - name: Install planemo
@@ -69,7 +65,7 @@ jobs:
         run: |
           mapfile -t TOOL_ARRAY < tool_list.txt
           planemo test --biocontainers --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' "${TOOL_ARRAY[@]}"
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: Converter test results (${{ matrix.python-version }})

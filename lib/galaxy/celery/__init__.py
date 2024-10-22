@@ -220,7 +220,7 @@ def config_celery_app(config, celery_app):
     if config.celery_conf:
         celery_app.conf.update(config.celery_conf)
     # Handle special cases
-    if not celery_app.conf.broker_url:
+    if not config.celery_conf.get("broker_url"):
         celery_app.conf.broker_url = config.amqp_internal_connection
 
 
@@ -238,7 +238,10 @@ def setup_periodic_tasks(config, celery_app):
     beat_schedule: Dict[str, Dict[str, Any]] = {}
     schedule_task("prune_history_audit_table", config.history_audit_table_prune_interval)
     schedule_task("cleanup_short_term_storage", config.short_term_storage_cleanup_interval)
-    schedule_task("cleanup_expired_notifications", config.expired_notifications_cleanup_interval)
+
+    if config.enable_notification_system:
+        schedule_task("cleanup_expired_notifications", config.expired_notifications_cleanup_interval)
+        schedule_task("dispatch_pending_notifications", config.dispatch_notifications_interval)
 
     if config.object_store_cache_monitor_driver in ["auto", "celery"]:
         schedule_task("clean_object_store_caches", config.object_store_cache_monitor_interval)

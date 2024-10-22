@@ -25,7 +25,7 @@ except ImportError as exc:
     K8S_IMPORT_MESSAGE = (
         "The Python pykube package is required to use "
         "this feature, please install it or correct the "
-        "following error:\nImportError %s" % str(exc)
+        f"following error:\nImportError {exc}"
     )
 
 log = logging.getLogger(__name__)
@@ -92,6 +92,13 @@ def find_job_object_by_name(pykube_api, job_name, namespace=None):
 
 def find_pod_object_by_name(pykube_api, job_name, namespace=None):
     return Pod.objects(pykube_api).filter(selector=f"job-name={job_name}", namespace=namespace)
+
+
+def is_pod_running(pykube_api, pod, namespace=None):
+    if pod.obj["status"].get("phase") == "Running":
+        return True
+
+    return False
 
 
 def is_pod_unschedulable(pykube_api, pod, namespace=None):
@@ -311,6 +318,7 @@ __all__ = (
     "find_pod_object_by_name",
     "galaxy_instance_id",
     "HTTPError",
+    "is_pod_running",
     "is_pod_unschedulable",
     "Job",
     "Service",

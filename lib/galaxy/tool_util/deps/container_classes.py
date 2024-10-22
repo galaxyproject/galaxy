@@ -16,6 +16,7 @@ from typing import (
 )
 from uuid import uuid4
 
+from packaging.version import Version
 from typing_extensions import Protocol
 
 from galaxy.util import (
@@ -319,7 +320,7 @@ class HasDockerLikeVolumes:
             return value
 
         template = string.Template(value)
-        variables = dict()
+        variables = {}
 
         def add_var(name, value):
             if value:
@@ -337,6 +338,7 @@ class HasDockerLikeVolumes:
         add_var("default_file_path", self.app_info.default_file_path)
         add_var("library_import_dir", self.app_info.library_import_dir)
         add_var("tool_data_path", self.app_info.tool_data_path)
+        add_var("galaxy_data_manager_data_path", self.app_info.galaxy_data_manager_data_path)
         add_var("shed_tool_data_path", self.app_info.shed_tool_data_path)
 
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
@@ -360,7 +362,7 @@ class HasDockerLikeVolumes:
                 defaults += ",$tool_directory:default_ro"
             if self.job_info.job_directory:
                 defaults += ",$job_directory:default_ro,$job_directory/outputs:rw"
-                if self.tool_info.profile <= 19.09:
+                if Version(str(self.tool_info.profile)) <= Version("19.09"):
                     defaults += ",$job_directory/configs:rw"
             if self.job_info.home_directory is not None:
                 defaults += ",$home_directory:rw"
@@ -375,6 +377,8 @@ class HasDockerLikeVolumes:
             defaults += ",$library_import_dir:default_ro"
         if self.app_info.tool_data_path:
             defaults += ",$tool_data_path:default_ro"
+        if self.app_info.galaxy_data_manager_data_path:
+            defaults += ",$galaxy_data_manager_data_path:default_ro"
         if self.app_info.shed_tool_data_path:
             defaults += ",$shed_tool_data_path:default_ro"
 

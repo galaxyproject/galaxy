@@ -60,14 +60,13 @@ const filterSettings = computed(() => {
     return newFilterSettings;
 });
 
-const itemsLoaded: Ref<Tool[]> = ref([]);
-
 onMounted(async () => {
     await toolStore.fetchTools(filterSettings.value);
-    itemsLoaded.value = Object.values(toolStore.getToolsById(filterSettings.value));
 });
 
 const filterCount = computed(() => Object.keys(filterSettings.value).length);
+
+const itemsLoaded = computed<Tool[]>(() => Object.values(toolStore.getToolsById(filterSettings.value)));
 
 function scrollToTop() {
     scrollContainer.value?.scrollTo({ top: 0, behavior: "smooth" });

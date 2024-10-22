@@ -111,7 +111,7 @@ function onTagClicked(tag: string) {
 
             <HeadlessMultiselect
                 :options="userTags"
-                :selected="tags"
+                :selected="props.value"
                 :placeholder="props.placeholder"
                 :validator="isValid"
                 @addOption="onAddTag"
@@ -133,7 +133,7 @@ function onTagClicked(tag: string) {
                     :id="toggleButtonId"
                     variant="link"
                     class="toggle-link"
-                    @click="() => (toggledOpen = true)">
+                    @click.stop="() => (toggledOpen = true)">
                     {{ slicedTags.length }} more...
                 </BButton>
 

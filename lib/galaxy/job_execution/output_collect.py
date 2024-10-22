@@ -184,6 +184,7 @@ def collect_dynamic_outputs(
                 name=output_collection_def.name,
                 metadata_source_name=output_collection_def.metadata_source,
                 final_job_state=job_context.final_job_state,
+                change_datatype_actions=job_context.change_datatype_actions,
             )
             collection_builder.populate()
         except Exception:
@@ -244,6 +245,10 @@ class JobContext(BaseJobContext):
         self.max_discovered_files = float("inf") if max_discovered_files is None else max_discovered_files
         self.discovered_file_count = 0
         self._tag_handler = None
+
+    @property
+    def change_datatype_actions(self):
+        return self.job.get_change_datatype_actions()
 
     @property
     def tag_handler(self):
@@ -419,6 +424,10 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         self.max_discovered_files = float("inf") if max_discovered_files is None else max_discovered_files
         self.discovered_file_count = 0
 
+    @property
+    def change_datatype_actions(self):
+        return self.metadata_params.get("change_datatype_actions", {})
+
     def output_collection_def(self, name):
         tool_as_dict = self.metadata_params["tool"]
         output_collection_defs = tool_as_dict["output_collections"]
@@ -512,7 +521,8 @@ def collect_primary_datasets(job_context: Union[JobContext, SessionlessJobContex
                 outdata.designation = designation
                 outdata.dataset.external_filename = None  # resets filename_override
                 # Move data from temp location to dataset location
-                job_context.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
+                if not outdata.dataset.purged:
+                    job_context.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
                 primary_output_assigned = True
                 continue
             if name not in primary_datasets:
@@ -545,6 +555,7 @@ def collect_primary_datasets(job_context: Union[JobContext, SessionlessJobContex
                 dataset_attributes=new_primary_datasets_attributes,
                 creating_job_id=job_context.get_job_id() if job_context else None,
                 storage_callbacks=storage_callbacks,
+                purged=outdata.dataset.purged,
             )
             # Associate new dataset with job
             job_context.add_output_dataset_association(f"__new_primary_file_{name}|{designation}__", primary_data)
@@ -554,7 +565,13 @@ def collect_primary_datasets(job_context: Union[JobContext, SessionlessJobContex
         if primary_output_assigned:
             outdata.name = new_outdata_name
             outdata.init_meta()
-            outdata.set_meta()
+            if not outdata.dataset.purged:
+                try:
+                    outdata.set_meta()
+                except Exception:
+                    # We don't want to fail here on a single "bad" discovered dataset
+                    log.debug("set meta failed for %s", outdata, exc_info=True)
+                    outdata.state = HistoryDatasetAssociation.states.FAILED_METADATA
             outdata.set_peek()
             outdata.discovered = True
             sa_session = job_context.sa_session

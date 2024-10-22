@@ -52,6 +52,8 @@ UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
     title="Encoded user ID to restrict query to, must be own id if not an admin user",
 )
 
+ShowOwnQueryParam: bool = Query(default=True, title="Show pages owned by user.", description="")
+
 ShowPublishedQueryParam: bool = Query(default=True, title="Include published pages.", description="")
 
 ShowSharedQueryParam: bool = Query(default=False, title="Include pages shared with authenticated user.", description="")
@@ -70,10 +72,11 @@ SortDescQueryParam: bool = Query(
     description="Sort in descending order?",
 )
 
-LimitQueryParam: int = Query(default=100, lt=1000, title="Limit number of queries.")
+LimitQueryParam: int = Query(default=100, ge=1, lt=1000, title="Limit number of queries.")
 
 OffsetQueryParam: int = Query(
     default=0,
+    ge=0,
     title="Number of pages to skip in sorted query (to enable pagination).",
 )
 
@@ -100,31 +103,33 @@ class FastAPIPages:
         summary="Lists all Pages viewable by the user.",
         response_description="A list with summary page information.",
     )
-    async def index(
+    def index(
         self,
         response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = DeletedQueryParam,
-        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+        limit: int = LimitQueryParam,
+        offset: int = OffsetQueryParam,
+        search: Optional[str] = SearchQueryParam,
+        show_own: bool = ShowOwnQueryParam,
         show_published: bool = ShowPublishedQueryParam,
         show_shared: bool = ShowSharedQueryParam,
         sort_by: PageSortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
-        limit: int = LimitQueryParam,
-        offset: int = OffsetQueryParam,
-        search: Optional[str] = SearchQueryParam,
+        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
     ) -> PageSummaryList:
         """Get a list with summary information of all Pages available to the user."""
         payload = PageIndexQueryPayload.model_construct(
             deleted=deleted,
-            user_id=user_id,
+            limit=limit,
+            offset=offset,
+            search=search,
+            show_own=show_own,
             show_published=show_published,
             show_shared=show_shared,
             sort_by=sort_by,
             sort_desc=sort_desc,
-            limit=limit,
-            offset=offset,
-            search=search,
+            user_id=user_id,
         )
         pages, total_matches = self.service.index(trans, payload, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)
@@ -148,13 +153,27 @@ class FastAPIPages:
         summary="Marks the specific Page as deleted.",
         status_code=status.HTTP_204_NO_CONTENT,
     )
-    async def delete(
+    def delete(
         self,
         id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
         """Marks the Page with the given ID as deleted."""
         self.service.delete(trans, id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.put(
+        "/api/pages/{id}/undelete",
+        summary="Undelete the specific Page.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def undelete(
+        self,
+        id: PageIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """Marks the Page with the given ID as undeleted."""
+        self.service.undelete(trans, id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
@@ -169,7 +188,7 @@ class FastAPIPages:
             501: {"description": "PDF conversion service not available."},
         },
     )
-    async def show_pdf(
+    def show_pdf(
         self,
         id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -191,7 +210,7 @@ class FastAPIPages:
             501: {"description": "PDF conversion service not available."},
         },
     )
-    async def prepare_pdf(
+    def prepare_pdf(
         self,
         id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -207,7 +226,7 @@ class FastAPIPages:
         summary="Return a page summary and the content of the last revision.",
         response_description="The page summary information.",
     )
-    async def show(
+    def show(
         self,
         id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,

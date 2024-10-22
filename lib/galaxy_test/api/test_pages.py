@@ -125,7 +125,7 @@ steps:
         delete_response.raise_for_status()
         assert self._users_index_has_page_with_id(response1)
         assert not self._users_index_has_page_with_id(response2)
-        assert self._users_index_has_page_with_id(response2, dict(deleted=True))
+        assert self._users_index_has_page_with_id(response2, dict(deleted=True, show_published=False))
 
     def test_index_user_id_security(self):
         user_id = self.dataset_populator.user_id()

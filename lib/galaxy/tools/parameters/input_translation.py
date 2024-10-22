@@ -62,6 +62,8 @@ class ToolInputTranslator:
             value_trans = {}
             append_param = None
 
+            rval.vocabulary.add(remote_name)
+
             value_trans_elem = req_param.find("value_translation")
             if value_trans_elem is not None:
                 for value_elem in value_trans_elem.findall("value"):
@@ -81,6 +83,7 @@ class ToolInputTranslator:
                     value_missing = value_elem.get("missing")
                     if None not in [value_name, value_missing]:
                         append_dict[value_name] = value_missing
+                        rval.vocabulary.add(value_name)
                 append_param = Bunch(
                     separator=separator, first_separator=first_separator, join_str=join_str, append_dict=append_dict
                 )
@@ -93,6 +96,7 @@ class ToolInputTranslator:
 
     def __init__(self):
         self.param_trans_dict = {}
+        self.vocabulary = set()
 
     def translate(self, params):
         """

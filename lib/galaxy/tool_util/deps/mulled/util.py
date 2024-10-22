@@ -18,7 +18,6 @@ from typing import (
     Union,
 )
 
-import requests
 from conda_package_streaming.package_streaming import stream_conda_info
 from conda_package_streaming.url import stream_conda_info as stream_conda_info_from_url
 from packaging.version import Version
@@ -29,6 +28,7 @@ from galaxy.tool_util.version import (
     LegacyVersion,
     parse_version,
 )
+from galaxy.util import requests
 
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.container_resolvers import ResolutionCache
@@ -347,14 +347,14 @@ def v2_image_name(
         return _simple_image_name(targets, image_build=image_build)
     else:
         targets_order = sorted(targets, key=lambda t: t.package)
-        package_name_buffer = "\n".join(map(lambda t: t.package, targets_order))
+        package_name_buffer = "\n".join(t.package for t in targets_order)
         package_hash = hashlib.sha1()
         package_hash.update(package_name_buffer.encode())
 
-        versions = map(lambda t: t.version, targets_order)
+        versions = (t.version for t in targets_order)
         if any(versions):
             # Only hash versions if at least one package has versions...
-            version_name_buffer = "\n".join(map(lambda t: t.version or "null", targets_order))
+            version_name_buffer = "\n".join(t.version or "null" for t in targets_order)
             version_hash = hashlib.sha1()
             version_hash.update(version_name_buffer.encode())
             version_hash_str = version_hash.hexdigest()

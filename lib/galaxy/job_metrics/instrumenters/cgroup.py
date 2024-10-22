@@ -1,8 +1,6 @@
 """The module describes the ``cgroup`` job metrics plugin."""
 
-import decimal
 import logging
-import numbers
 from collections import namedtuple
 from typing import (
     Any,
@@ -114,18 +112,23 @@ Metric = namedtuple("Metric", ("key", "subkey", "value"))
 
 
 class CgroupPluginFormatter(formatting.JobMetricFormatter):
-    def format(self, key, value):
+    def format(self, key: str, value: Any) -> formatting.FormattedMetric:
         title = TITLES.get(key, key)
         if key in CONVERSION:
-            return title, CONVERSION[key](value)
+            return formatting.FormattedMetric(title, CONVERSION[key](value))
         elif key.endswith("_bytes"):
             try:
-                return title, nice_size(value)
+                return formatting.FormattedMetric(title, nice_size(value))
             except ValueError:
                 pass
-        elif isinstance(value, (decimal.Decimal, numbers.Integral, numbers.Real)) and value == int(value):
-            value = int(value)
-        return title, value
+        else:
+            try:
+                int_value = int(value)
+                if value == int_value:
+                    value = int_value
+            except TypeError:
+                pass
+        return formatting.FormattedMetric(title, str(value))
 
 
 class CgroupPlugin(InstrumentPlugin):

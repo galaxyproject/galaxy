@@ -1,9 +1,9 @@
 import { createPinia, setActivePinia } from "pinia";
 
 import {
-    FrameWorkflowComment,
+    type FrameWorkflowComment,
     type FreehandWorkflowComment,
-    MarkdownWorkflowComment,
+    type MarkdownWorkflowComment,
     type TextWorkflowComment,
     useWorkflowCommentStore,
 } from "./workflowEditorCommentStore";
@@ -202,5 +202,31 @@ describe("workflowEditorCommentStore", () => {
 
         expect(frame?.child_steps).not.toContain(1);
         expect(frameTwo?.child_steps).not.toContain(0);
+    });
+
+    it("keeps track of selected comments", () => {
+        const commentStore = useWorkflowCommentStore("mock-id");
+        commentStore.addComments([freehandComment, textComment, markdownComment, frameComment, frameCommentTwo]);
+
+        commentStore.setCommentMultiSelected(freehandComment.id, true);
+        commentStore.setCommentMultiSelected(markdownComment.id, true);
+
+        expect(commentStore.getCommentMultiSelected(freehandComment.id)).toBe(true);
+        expect(commentStore.getCommentMultiSelected(textComment.id)).toBe(false);
+        expect(commentStore.getCommentMultiSelected(markdownComment.id)).toBe(true);
+
+        expect(commentStore.multiSelectedCommentIds).toEqual([freehandComment.id, markdownComment.id]);
+
+        commentStore.setCommentMultiSelected(markdownComment.id, false);
+
+        expect(commentStore.getCommentMultiSelected(markdownComment.id)).toBe(false);
+        expect(commentStore.multiSelectedCommentIds).toEqual([freehandComment.id]);
+
+        commentStore.toggleCommentMultiSelected(textComment.id);
+        expect(commentStore.getCommentMultiSelected(textComment.id)).toBe(true);
+
+        commentStore.clearMultiSelectedComments();
+
+        expect(commentStore.multiSelectedCommentIds).toEqual([]);
     });
 });

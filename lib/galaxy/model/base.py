@@ -38,8 +38,7 @@ log = logging.getLogger(__name__)
 # of a request (which run within a threadpool) to see changes to the ContextVar
 # state. See https://github.com/tiangolo/fastapi/issues/953#issuecomment-586006249
 # for details
-_request_state: Dict[str, str] = {}
-REQUEST_ID = ContextVar("request_id", default=_request_state.copy())
+REQUEST_ID: ContextVar[Union[Dict[str, str], None]] = ContextVar("request_id", default=None)
 
 
 @contextlib.contextmanager
@@ -53,8 +52,8 @@ def transaction(session: Union[scoped_session, Session, "SessionlessContext"]):
         yield
         return  # exit: can't use as a Session
 
-    if not session.in_transaction():
-        with session.begin():
+    if not session.in_transaction():  # type:ignore[union-attr]
+        with session.begin():  # type:ignore[union-attr]
             yield
     else:
         yield
@@ -68,16 +67,20 @@ def check_database_connection(session):
     by rolling back the invalidated transaction.
     Ref: https://docs.sqlalchemy.org/en/14/errors.html#can-t-reconnect-until-invalid-transaction-is-rolled-back
     """
-    if session and session.connection().invalidated:
-        log.error("Database transaction rolled back due to invalid state.")
+    assert session
+    if isinstance(session, scoped_session):
+        session = session()
+    trans = session.get_transaction()
+    if (trans and not trans.is_active) or session.connection().invalidated:
         session.rollback()
+        log.error("Database transaction rolled back due to inactive session transaction or invalid connection state.")
 
 
 # TODO: Refactor this to be a proper class, not a bunch.
 class ModelMapping(Bunch):
     def __init__(self, model_modules, engine):
         self.engine = engine
-        self._SessionLocal = sessionmaker(autoflush=False, autocommit=False, future=True)
+        self._SessionLocal = sessionmaker(autoflush=False)
         versioned_session(self._SessionLocal)
         context = scoped_session(self._SessionLocal, scopefunc=self.request_scopefunc)
         # For backward compatibility with "context.current"
@@ -108,12 +111,12 @@ class ModelMapping(Bunch):
 
     def request_scopefunc(self):
         """
-        Return a value that is used as dictionary key for sqlalchemy's ScopedRegistry.
+        Return a value that is used as dictionary key for SQLAlchemy's ScopedRegistry.
 
         This ensures that threads or request contexts will receive a single identical session
         from the ScopedRegistry.
         """
-        return REQUEST_ID.get().get("request") or threading.get_ident()
+        return REQUEST_ID.get({}).get("request") or threading.get_ident()
 
     @staticmethod
     def set_request_id(request_id):
@@ -170,18 +173,32 @@ def versioned_objects_strict(iter):
             yield obj
 
 
-if os.environ.get("GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA"):
-    log.debug("Using strict flush checks")
-    versioned_objects = versioned_objects_strict  # noqa: F811
+def get_before_flush_handler():
+    if os.environ.get("GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA"):
+        log.debug("Using strict flush checks")
+
+        def before_flush(session, flush_context, instances):
+            for obj in session.new:
+                if hasattr(obj, "__strict_check_before_flush__"):
+                    obj.__strict_check_before_flush__()
+            for obj in versioned_objects_strict(session.dirty):
+                obj.__create_version__(session)
+            for obj in versioned_objects_strict(session.deleted):
+                obj.__create_version__(session, deleted=True)
+
+    else:
+
+        def before_flush(session, flush_context, instances):
+            for obj in versioned_objects(session.dirty):
+                obj.__create_version__(session)
+            for obj in versioned_objects(session.deleted):
+                obj.__create_version__(session, deleted=True)
+
+    return before_flush
 
 
 def versioned_session(session):
-    @event.listens_for(session, "before_flush")
-    def before_flush(session, flush_context, instances):
-        for obj in versioned_objects(session.dirty):
-            obj.__create_version__(session)
-        for obj in versioned_objects(session.deleted):
-            obj.__create_version__(session, deleted=True)
+    event.listens_for(session, "before_flush")(get_before_flush_handler())
 
 
 def ensure_object_added_to_session(object_to_add, *, object_in_session=None, session=None) -> bool:
@@ -197,7 +214,9 @@ def ensure_object_added_to_session(object_to_add, *, object_in_session=None, ses
     if session:
         session.add(object_to_add)
         return True
-    if object_in_session and object_session(object_in_session):
-        object_session(object_in_session).add(object_to_add)
-        return True
+    if object_in_session:
+        session = object_session(object_in_session)
+        if session:
+            session.add(object_to_add)
+            return True
     return False

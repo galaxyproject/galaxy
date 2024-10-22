@@ -74,11 +74,32 @@ class TestChangingStoreObjectStoreIntegration(BaseObjectStoreIntegrationTestCase
             usage = self.dataset_populator.get_usage_for(None)
             assert int(usage["total_disk_usage"]) == 6
 
+            def count_in_object_store(object_store_id: str):
+                return len(
+                    self.dataset_populator.get_history_contents(
+                        history_id, {"q": "object_store_id-eq", "qv": object_store_id, "v": "dev"}
+                    )
+                )
+
+            def count_in_quota_source(quota_source_label: str):
+                return len(
+                    self.dataset_populator.get_history_contents(
+                        history_id, {"q": "quota_source_label-eq", "qv": quota_source_label, "v": "dev"}
+                    )
+                )
+
+            self.dataset_populator.get_history_contents(history_id, {"q": "state-eq", "qv": "ok", "v": "dev"})
+            assert count_in_object_store("temp_short") == 0
+            assert count_in_quota_source("shorter_term") == 0
+
             self.dataset_populator.update_object_store_id(hda["id"], "temp_short")
             usage = self.dataset_populator.get_usage_for("shorter_term")
             assert int(usage["total_disk_usage"]) == 6
             usage = self.dataset_populator.get_usage_for(None)
             assert int(usage["total_disk_usage"]) == 0
+
+            assert count_in_object_store("temp_short") == 1
+            assert count_in_quota_source("shorter_term") == 1
 
             self.dataset_populator.update_object_store_id(hda["id"], "temp_long")
             usage = self.dataset_populator.get_usage_for("shorter_term")

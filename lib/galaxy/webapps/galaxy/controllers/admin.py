@@ -13,7 +13,10 @@ from galaxy import (
     util,
     web,
 )
-from galaxy.exceptions import ActionInputError
+from galaxy.exceptions import (
+    ActionInputError,
+    RequestParameterInvalidException,
+)
 from galaxy.managers.quotas import QuotaManager
 from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
@@ -73,7 +76,7 @@ class UserListGrid(grids.GridData):
                 .group_by(model.GalaxySession.table.c.user_id)
                 .subquery()
             )
-            query = query.outerjoin((last_login_subquery, model.User.table.c.id == last_login_subquery.c.user_id))
+            query = query.outerjoin(last_login_subquery, model.User.table.c.id == last_login_subquery.c.user_id)
 
             if not ascending:
                 query = query.order_by((last_login_subquery.c.last_login).desc().nullslast())
@@ -125,8 +128,7 @@ class UserListGrid(grids.GridData):
         }
         deleted = False
         purged = False
-        search_query = kwargs.get("search")
-        if search_query:
+        if search_query := kwargs.get("search"):
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
@@ -195,8 +197,7 @@ class RoleListGrid(grids.GridData):
         }
         deleted = False
         query = query.filter(self.model_class.type != self.model_class.types.PRIVATE)
-        search_query = kwargs.get("search")
-        if search_query:
+        if search_query := kwargs.get("search"):
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
@@ -255,8 +256,7 @@ class GroupListGrid(grids.GridData):
             "is": "is",
         }
         deleted = False
-        search_query = kwargs.get("search")
-        if search_query:
+        if search_query := kwargs.get("search"):
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
@@ -326,8 +326,7 @@ class QuotaListGrid(grids.GridData):
             "is": "is",
         }
         deleted = False
-        search_query = kwargs.get("search")
-        if search_query:
+        if search_query := kwargs.get("search"):
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
@@ -389,7 +388,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                         "name": data_table.name,
                         "filename": filename,
                         "tool_data_path": file_dict.get("tool_data_path"),
-                        "errors": ", ".join(file_missing + [error for error in file_dict.get("errors", [])]),
+                        "errors": ", ".join(file_missing + list(file_dict.get("errors", []))),
                     }
                 )
 
@@ -538,7 +537,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             return {
-                "title": "Quota '%s'" % quota.name,
+                "title": f"Quota '{quota.name}'",
                 "message": "Quota '%s' is currently associated with %d user(s) and %d group(s)."
                 % (quota.name, len(in_users), len(in_groups)),
                 "status": "info",
@@ -801,7 +800,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             return {
-                "title": "Role '%s'" % role.name,
+                "title": f"Role '{role.name}'",
                 "message": "Role '%s' is currently associated with %d user(s) and %d group(s)."
                 % (role.name, len(in_users), len(in_groups)),
                 "status": "info",
@@ -811,35 +810,17 @@ class AdminGalaxy(controller.JSAppLauncher):
                 ],
             }
         else:
-            in_users = [
-                trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x))
-                for x in util.listify(payload.get("in_users"))
-            ]
-            in_groups = [
-                trans.sa_session.query(trans.app.model.Group).get(trans.security.decode_id(x))
-                for x in util.listify(payload.get("in_groups"))
-            ]
-            if None in in_users or None in in_groups:
+            user_ids = [trans.security.decode_id(id) for id in util.listify(payload.get("in_users"))]
+            group_ids = [trans.security.decode_id(id) for id in util.listify(payload.get("in_groups"))]
+            try:
+                trans.app.security_agent.set_role_user_and_group_associations(
+                    role, user_ids=user_ids, group_ids=group_ids
+                )
+                return {
+                    "message": f"Role '{role.name}' has been updated with {len(user_ids)} associated users and {len(group_ids)} associated groups."
+                }
+            except RequestParameterInvalidException:
                 return self.message_exception(trans, "One or more invalid user/group id has been provided.")
-            for ura in role.users:
-                user = trans.sa_session.query(trans.app.model.User).get(ura.user_id)
-                if user not in in_users:
-                    # Delete DefaultUserPermissions for previously associated users that have been removed from the role
-                    for dup in user.default_permissions:
-                        if role == dup.role:
-                            trans.sa_session.delete(dup)
-                    # Delete DefaultHistoryPermissions for previously associated users that have been removed from the role
-                    for history in user.histories:
-                        for dhp in history.default_permissions:
-                            if role == dhp.role:
-                                trans.sa_session.delete(dhp)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
-            trans.app.security_agent.set_entity_role_associations(roles=[role], users=in_users, groups=in_groups)
-            trans.sa_session.refresh(role)
-            return {
-                "message": f"Role '{role.name}' has been updated with {len(in_users)} associated users and {len(in_groups)} associated groups."
-            }
 
     @web.legacy_expose_api
     @web.require_admin
@@ -906,7 +887,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     in_roles.append(trans.security.encode_id(role.id))
                 all_roles.append((role.name, trans.security.encode_id(role.id)))
             return {
-                "title": "Group '%s'" % group.name,
+                "title": f"Group '{group.name}'",
                 "message": "Group '%s' is currently associated with %d user(s) and %d role(s)."
                 % (group.name, len(in_users), len(in_roles)),
                 "status": "info",
@@ -916,21 +897,17 @@ class AdminGalaxy(controller.JSAppLauncher):
                 ],
             }
         else:
-            in_users = [
-                trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x))
-                for x in util.listify(payload.get("in_users"))
-            ]
-            in_roles = [
-                trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x))
-                for x in util.listify(payload.get("in_roles"))
-            ]
-            if None in in_users or None in in_roles:
+            user_ids = [trans.security.decode_id(id) for id in util.listify(payload.get("in_users"))]
+            role_ids = [trans.security.decode_id(id) for id in util.listify(payload.get("in_roles"))]
+            try:
+                trans.app.security_agent.set_group_user_and_role_associations(
+                    group, user_ids=user_ids, role_ids=role_ids
+                )
+                return {
+                    "message": f"Group '{group.name}' has been updated with {len(user_ids)} associated users and {len(role_ids)} associated roles."
+                }
+            except RequestParameterInvalidException:
                 return self.message_exception(trans, "One or more invalid user/role id has been provided.")
-            trans.app.security_agent.set_entity_group_associations(groups=[group], users=in_users, roles=in_roles)
-            trans.sa_session.refresh(group)
-            return {
-                "message": f"Group '{group.name}' has been updated with {len(in_users)} associated users and {len(in_roles)} associated roles."
-            }
 
     @web.legacy_expose_api
     @web.require_admin
@@ -1103,27 +1080,17 @@ class AdminGalaxy(controller.JSAppLauncher):
                 ],
             }
         else:
-            in_roles = [
-                trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x))
-                for x in util.listify(payload.get("in_roles"))
-            ]
-            in_groups = [
-                trans.sa_session.query(trans.app.model.Group).get(trans.security.decode_id(x))
-                for x in util.listify(payload.get("in_groups"))
-            ]
-            if None in in_groups or None in in_roles:
+            role_ids = [trans.security.decode_id(id) for id in util.listify(payload.get("in_roles"))]
+            group_ids = [trans.security.decode_id(id) for id in util.listify(payload.get("in_groups"))]
+            try:
+                trans.app.security_agent.set_user_group_and_role_associations(
+                    user, group_ids=group_ids, role_ids=role_ids
+                )
+                return {
+                    "message": f"User '{user.email}' has been updated with {len(role_ids)} associated roles and {len(group_ids)} associated groups (private roles are not displayed)."
+                }
+            except RequestParameterInvalidException:
                 return self.message_exception(trans, "One or more invalid role/group id has been provided.")
-
-            # make sure the user is not dis-associating himself from his private role
-            private_role = trans.app.security_agent.get_private_user_role(user)
-            if private_role not in in_roles:
-                in_roles.append(private_role)
-
-            trans.app.security_agent.set_entity_user_associations(users=[user], roles=in_roles, groups=in_groups)
-            trans.sa_session.refresh(user)
-            return {
-                "message": f"User '{user.email}' has been updated with {len(in_roles) - 1} associated roles and {len(in_groups)} associated groups (private roles are not displayed)."
-            }
 
 
 # ---- Utility methods -------------------------------------------------------

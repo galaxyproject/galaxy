@@ -76,7 +76,7 @@ def shell_process(cmds: Union[List[str], str], env: Optional[Dict[str, str]] = N
     redirection.
     """
     sys = kwds.get("sys", _sys)
-    popen_kwds: Dict[str, Any] = dict()
+    popen_kwds: Dict[str, Any] = {}
     if isinstance(cmds, str):
         log.warning("Passing program arguments as a string may be a security hazard if combined with untrusted input")
         popen_kwds["shell"] = True

@@ -20,12 +20,20 @@ const texts = reactive({
         icon: "fas fa-broom fa-6x",
         buttonText: localize("Free up disk usage"),
     },
-    explore: {
-        title: localize("Visually explore your disk usage"),
+    explore_by_history: {
+        title: localize("Visually explore your disk usage by history"),
         description: localize(
-            "Want to know what histories or datasets take up the most space in your account? Here you can explore your disk usage in a visual way."
+            "Want to know what histories or datasets take up the most space in your account? Here you can explore your disk usage in a visual way by history."
         ),
         icon: "fas fa-chart-pie fa-6x",
+        buttonText: localize("Explore now"),
+    },
+    explore_by_objectstore: {
+        title: localize("Visually explore your disk usage by storage location"),
+        description: localize(
+            "Want to know how the space in your account is being distributed across storage locations? Here you can explore your disk usage in a visual way by where it is physically stored."
+        ),
+        icon: "fas fa-hdd fa-6x",
         buttonText: localize("Explore now"),
     },
 });
@@ -36,6 +44,10 @@ function goToStorageManager() {
 
 function goToHistoriesOverview() {
     router.push({ name: "HistoriesOverview" });
+}
+
+function goToObjectStoresOverview() {
+    router.push({ name: "ObjectStoresOverview" });
 }
 </script>
 
@@ -60,10 +72,19 @@ function goToHistoriesOverview() {
         <IconCard
             class="mx-auto mb-3"
             data-description="explore usage card"
-            :title="texts.explore.title"
-            :description="texts.explore.description"
-            :icon="texts.explore.icon"
-            :button-text="texts.explore.buttonText"
+            :title="texts.explore_by_history.title"
+            :description="texts.explore_by_history.description"
+            :icon="texts.explore_by_history.icon"
+            :button-text="texts.explore_by_history.buttonText"
             @onButtonClick="goToHistoriesOverview" />
+
+        <IconCard
+            class="mx-auto mb-3"
+            data-description="explore object store usage card"
+            :title="texts.explore_by_objectstore.title"
+            :description="texts.explore_by_objectstore.description"
+            :icon="texts.explore_by_objectstore.icon"
+            :button-text="texts.explore_by_objectstore.buttonText"
+            @onButtonClick="goToObjectStoresOverview" />
     </div>
 </template>

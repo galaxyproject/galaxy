@@ -4,9 +4,9 @@
 
 import axios from "axios";
 import { defineStore } from "pinia";
-import Vue, { computed, Ref, ref } from "vue";
+import Vue, { computed, type Ref, ref, shallowRef } from "vue";
 
-import { createWhooshQuery, filterTools, types_to_icons } from "@/components/Panels/utilities";
+import { createWhooshQuery, filterTools, type types_to_icons } from "@/components/Panels/utilities";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -37,6 +37,7 @@ export interface ToolSection {
     model_class: string;
     id: string;
     name: string;
+    title?: string;
     version?: string;
     description?: string;
     links?: Record<string, string>;
@@ -75,11 +76,13 @@ export interface PanelView {
 export const useToolStore = defineStore("toolStore", () => {
     const currentPanelView: Ref<string> = useUserLocalStorage("tool-store-view", "");
     const defaultPanelView: Ref<string> = ref("");
-    const toolsById = ref<Record<string, Tool>>({});
+    const toolsById = shallowRef<Record<string, Tool>>({});
     const toolResults = ref<Record<string, string[]>>({});
     const panel = ref<Record<string, Record<string, Tool | ToolSection>>>({});
     const panelViews = ref<Record<string, PanelView>>({});
     const loading = ref(false);
+
+    const searchWorker = ref<Worker | undefined>(undefined);
 
     const getToolForId = computed(() => {
         return (toolId: string) => toolsById.value[toolId];
@@ -278,6 +281,7 @@ export const useToolStore = defineStore("toolStore", () => {
         currentPanel,
         isPanelPopulated,
         sectionDatalist,
+        searchWorker,
         fetchToolForId,
         fetchTools,
         fetchPanelViews,

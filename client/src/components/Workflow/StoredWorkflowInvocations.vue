@@ -1,32 +1,51 @@
-<template>
-    <StoredWorkflowDetailsProvider v-slot="{ result: item, loading }" :stored-workflow-id="storedWorkflowId">
-        <InvocationsList
-            v-if="!loading && currentUser.id"
-            :user-id="currentUser.id"
-            :stored-workflow-id="item.id"
-            :stored-workflow-name="item.name" />
-    </StoredWorkflowDetailsProvider>
-</template>
-<script>
-import { StoredWorkflowDetailsProvider } from "components/providers/StoredWorkflowsProvider";
-import InvocationsList from "components/Workflow/InvocationsList";
-import { mapState } from "pinia";
+<script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
+import { onMounted, ref } from "vue";
 
-import { useUserStore } from "@/stores/userStore";
+import { GalaxyApi } from "@/api";
+import { type StoredWorkflowDetailed } from "@/api/workflows";
+import { rethrowSimple } from "@/utils/simple-error";
 
-export default {
-    components: {
-        InvocationsList,
-        StoredWorkflowDetailsProvider,
-    },
-    props: {
-        storedWorkflowId: {
-            type: String,
-            required: true,
-        },
-    },
-    computed: {
-        ...mapState(useUserStore, ["currentUser"]),
-    },
-};
+import GridInvocation from "../Grid/GridInvocation.vue";
+import LoadingSpan from "../LoadingSpan.vue";
+
+interface Props {
+    storedWorkflowId: string;
+}
+const props = defineProps<Props>();
+
+const loading = ref(true);
+const workflow = ref<StoredWorkflowDetailed>();
+
+onMounted(async () => {
+    try {
+        const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}", {
+            params: { path: { workflow_id: props.storedWorkflowId } },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        workflow.value = data;
+    } finally {
+        loading.value = false;
+    }
+});
 </script>
+
+<template>
+    <GridInvocation
+        v-if="!loading && workflow"
+        :filtered-for="{
+            type: 'StoredWorkflow',
+            id: workflow.id,
+            name: workflow.name,
+        }" />
+    <BAlert v-else-if="loading" variant="info" show>
+        <LoadingSpan message="Loading invocations for workflow" />
+    </BAlert>
+    <BAlert v-else variant="danger" show>
+        <p>Failed to load stored workflow with ID: {{ props.storedWorkflowId }}</p>
+    </BAlert>
+</template>

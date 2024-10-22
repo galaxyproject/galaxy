@@ -24,6 +24,7 @@ localVue.use(PiniaVuePlugin);
 
 function testActivity(id, newOptions = {}) {
     const defaultOptions = {
+        anonymous: true,
         id: `test-${id}`,
         description: "test-description",
         icon: "test-icon",

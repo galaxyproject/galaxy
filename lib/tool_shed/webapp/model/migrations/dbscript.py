@@ -26,8 +26,14 @@ CONFIG_FILE_ARG = "--toolshed-config"
 # then using 231 as a partial revision identifier like `sh manage_toolshed_db.sh upgrade 231`
 # will map to release 23.1 instead of revision 231xxxxxxxxx.
 REVISION_TAGS = {
-    "release_23.1": "base",
-    "23.1": "base",
+    "release_23.1": "1b5bf427db25",
+    "23.1": "1b5bf427db25",
+    "release_23.2": "1b5bf427db25",
+    "23.2": "1b5bf427db25",
+    "release_24.0": "1b5bf427db25",
+    "24.0": "1b5bf427db25",
+    "release_24.1": "1b5bf427db25",
+    "24.1": "1b5bf427db25",
 }
 
 

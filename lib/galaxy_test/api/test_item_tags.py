@@ -135,9 +135,9 @@ class TestItemTagsApi(ApiTestCase):
         return response
 
     def _create_history_contents(self, history_id):
-        history_content_id = self.dataset_collection_populator.create_list_in_history(
-            history_id, contents=["test_dataset"], direct_upload=True, wait=True
-        ).json()["outputs"][0]["id"]
+        history_content_id = self.dataset_populator.new_dataset(
+            history_id, contents="test_dataset", direct_upload=True, wait=True
+        )["id"]
         return history_content_id
 
     def _create_history(self):

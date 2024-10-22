@@ -1,6 +1,6 @@
 {
   "name": "@galaxyproject/galaxy",
-  "version": "23.1.0",
+  "version": "24.0.0",
   "description": ".. figure:: https://galaxyproject.org/images/galaxy-logos/galaxy_project_logo.jpg    :alt: Galaxy Logo",
   "main": "index.js",
   "scripts": {
@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/galaxyproject/galaxy#readme",
   "dependencies": {
-    "@galaxyproject/galaxy-client": "^23.1.1",
+    "@galaxyproject/galaxy-client": "^24.0.0",
     "cpy-cli": "^5.0.0"
   }
 }

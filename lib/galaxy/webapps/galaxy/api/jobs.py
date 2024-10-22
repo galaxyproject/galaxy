@@ -71,7 +71,7 @@ from galaxy.webapps.galaxy.services.jobs import (
     JobIndexViewEnum,
     JobsService,
 )
-from galaxy.work.context import WorkRequestContext
+from galaxy.work.context import proxy_work_context_for_history
 
 log = logging.getLogger(__name__)
 
@@ -98,7 +98,7 @@ UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
 )
 
 ViewQueryParam: JobIndexViewEnum = Query(
-    default="collection",
+    default=JobIndexViewEnum.collection,
     title="View",
     description="Determines columns to return. Defaults to 'collection'.",
 )
@@ -161,10 +161,11 @@ SortByQueryParam: JobIndexSortByEnum = Query(
     description="Sort results by specified field.",
 )
 
-LimitQueryParam: int = Query(default=500, title="Limit", description="Maximum number of jobs to return.")
+LimitQueryParam: int = Query(default=500, ge=1, title="Limit", description="Maximum number of jobs to return.")
 
 OffsetQueryParam: int = Query(
     default=0,
+    ge=0,
     title="Offset",
     description="Return jobs starting from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, jobs 200-299 will be returned.",
 )
@@ -264,7 +265,7 @@ class FastAPIJobs:
         for job_input_assoc in job.input_datasets:
             input_dataset_instance = job_input_assoc.dataset
             if input_dataset_instance is None:
-                continue
+                continue  # type:ignore[unreachable]  # TODO if job_input_assoc.dataset is indeed never None, remove the above check
             if input_dataset_instance.get_total_size() == 0:
                 has_empty_inputs = True
             input_instance_id = input_dataset_instance.id
@@ -477,10 +478,8 @@ class FastAPIJobs:
         for k, v in payload.__annotations__.items():
             if k.startswith("files_") or k.startswith("__files_"):
                 inputs[k] = v
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
-        all_params, all_errors, _, _ = tool.expand_incoming(
-            trans=trans, incoming=inputs, request_context=request_context
-        )
+        request_context = proxy_work_context_for_history(trans)
+        all_params, all_errors, _, _ = tool.expand_incoming(request_context, incoming=inputs)
         if any(all_errors):
             return []
         params_dump = [tool.params_to_strings(param, trans.app, nested=True) for param in all_params]

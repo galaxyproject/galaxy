@@ -88,7 +88,7 @@ class RepositoryDependencyAttributeHandler:
         prior_installation_required = elem.get("prior_installation_required")
         if prior_installation_required is not None and not asbool(prior_installation_required):
             del elem.attrib["prior_installation_required"]
-        sub_elems = [child_elem for child_elem in list(elem)]
+        sub_elems = list(elem)
         if len(sub_elems) > 0:
             # At this point, a <repository> tag will point only to a package.
             # <package name="xorg_macros" version="1.17.1" />
@@ -137,8 +137,8 @@ class RepositoryDependencyAttributeHandler:
                     elem.attrib["changeset_revision"] = lastest_installable_changeset_revision
                     altered = True
                 else:
-                    error_message = "Invalid latest installable changeset_revision %s " % str(
-                        lastest_installable_changeset_revision
+                    error_message = (
+                        f"Invalid latest installable changeset_revision {lastest_installable_changeset_revision} "
                     )
                     error_message += f"retrieved for repository {name} owned by {owner}.  "
             else:

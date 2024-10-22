@@ -9,6 +9,7 @@ import { getGalaxyInstance } from "@/app";
 import { useToast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { getFullAppUrl } from "@/utils/utils";
 
 import type { Item, ShareOption } from "./item";
 
@@ -45,16 +46,11 @@ const defaultExtra = () =>
 
 const item = ref<Item>({
     title: "title",
-    username_and_slug: "username/slug",
+    username_and_slug: "__username__/__slug__",
     importable: false,
     published: false,
     users_shared_with: [],
     extra: defaultExtra(),
-});
-
-const itemRoot = computed(() => {
-    const port = window.location.port ? `:${window.location.port}` : "";
-    return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}`;
 });
 
 const itemUrl = reactive({
@@ -68,7 +64,7 @@ watch(
         if (value) {
             const index = value.lastIndexOf("/");
 
-            itemUrl.prefix = itemRoot.value + value.substring(0, index + 1);
+            itemUrl.prefix = getFullAppUrl(value.substring(0, index + 1));
             itemUrl.slug = value.substring(index + 1);
         }
     },
@@ -208,6 +204,8 @@ function onPublish(published: boolean) {
 const hasUsername = ref(Boolean(getGalaxyInstance().user.get("username")));
 const newUsername = ref("");
 
+const slugSet = computed(() => itemUrl.slug != "__slug__" && itemUrl.prefix != "__username__");
+
 async function setUsername() {
     axios
         .put(`${getAppRoot()}api/users/${getGalaxyInstance().user.id}/information/inputs`, {
@@ -258,13 +256,21 @@ const embedable = computed(() => item.value.importable && props.modelClass.toLoc
             </div>
 
             <div v-if="item.importable" class="mb-4">
-                <div>This {{ modelClass }} is currently {{ itemStatus }}.</div>
-                <p>Anyone can view and import this {{ modelClass }} by visiting the following URL:</p>
-                <EditableUrl
-                    :prefix="itemUrl.prefix"
-                    :slug="itemUrl.slug"
-                    @change="onChangeSlug"
-                    @submit="onSubmitSlug" />
+                <div v-if="slugSet">
+                    <p>
+                        This {{ modelClass }} is currently {{ itemStatus }}.
+                        <br />
+                        Anyone can view and import this {{ modelClass }} by visiting the following URL:
+                    </p>
+                    <EditableUrl
+                        :prefix="itemUrl.prefix"
+                        :slug="itemUrl.slug"
+                        @change="onChangeSlug"
+                        @submit="onSubmitSlug" />
+                </div>
+                <div v-else>
+                    <p>Currently publishing {{ modelClass }}. A shareable URL will be available here momentarily.</p>
+                </div>
             </div>
             <div v-else class="mb-4">
                 Access to this {{ modelClass }} is currently restricted so that only you and the users listed below can

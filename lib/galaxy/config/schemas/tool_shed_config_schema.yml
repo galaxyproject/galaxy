@@ -31,6 +31,14 @@ mapping:
           Where the hgweb.config file is stored.
           The default is the Galaxy installation directory.
 
+      hgweb_repo_prefix:
+        type: str
+        required: false
+        default: repos/
+        desc: |
+          Default URL prefix for repositories served via hgweb.
+          If running an external hgweb server you should set this to an empty string.
+
       config_hg_for_dev:
         type: str
         required: false
@@ -93,6 +101,13 @@ mapping:
           you can generate search index and allow full text API searching over
           the repositories and tools within the Tool Shed given that you specify
           the following two config options.
+
+      model_cache_dir:
+        type: str
+        default: database/model_cache
+        required: false
+        desc: |
+          Cache directory for Pydantic model objects.
 
       repo_name_boost:
         type: float

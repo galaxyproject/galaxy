@@ -10,7 +10,7 @@ from datetime import (
 from urllib.parse import unquote
 
 from markupsafe import escape
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound
 
 from galaxy import (
     util,
@@ -18,7 +18,7 @@ from galaxy import (
 )
 from galaxy.exceptions import Conflict
 from galaxy.managers import users
-from galaxy.managers.users import get_user_by_email
+from galaxy.model.db.user import get_user_by_email
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_publicname,
@@ -342,7 +342,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         payload = payload or {}
         if message := self.user_manager.send_reset_email(trans, payload):
             return self.message_exception(trans, message)
-        return {"message": "Reset link has been sent to your email."}
+        return {"message": "If an account exists for this email address a confirmation email will be dispatched."}
 
     def __get_redirect_url(self, redirect):
         if not redirect or redirect == "None":

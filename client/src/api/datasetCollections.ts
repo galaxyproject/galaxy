@@ -1,23 +1,40 @@
-import { CollectionEntry, DCESummary, HDCADetailed, isHDCA } from "@/api";
-import { fetcher } from "@/api/schema";
+import { type CollectionEntry, type DCESummary, GalaxyApi, type HDCADetailed, type HDCASummary, isHDCA } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
 
 const DEFAULT_LIMIT = 50;
-
-const getCollectionDetails = fetcher.path("/api/dataset_collections/{id}").method("get").create();
 
 /**
  * Fetches the details of a collection.
  * @param params.id The ID of the collection (HDCA) to fetch.
  */
 export async function fetchCollectionDetails(params: { id: string }): Promise<HDCADetailed> {
-    const { data } = await getCollectionDetails({ id: params.id });
-    return data;
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{id}", {
+        params: { path: params },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data as HDCADetailed;
 }
 
-const getCollectionContents = fetcher
-    .path("/api/dataset_collections/{hdca_id}/contents/{parent_id}")
-    .method("get")
-    .create();
+/**
+ * Fetches the details of a collection.
+ * @param params.id The ID of the collection (HDCA) to fetch.
+ */
+export async function fetchCollectionSummary(params: { id: string }): Promise<HDCASummary> {
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{id}", {
+        params: {
+            path: params,
+            query: { view: "collection" },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data as HDCASummary;
+}
 
 export async function fetchCollectionElements(params: {
     /** The ID of the top level HDCA that associates this collection with the History it belongs to. */
@@ -29,13 +46,16 @@ export async function fetchCollectionElements(params: {
     /** The maximum number of elements to fetch. */
     limit?: number;
 }): Promise<DCESummary[]> {
-    const { data } = await getCollectionContents({
-        instance_type: "history",
-        hdca_id: params.hdcaId,
-        parent_id: params.collectionId,
-        offset: params.offset,
-        limit: params.limit,
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{hdca_id}/contents/{parent_id}", {
+        params: {
+            path: { hdca_id: params.hdcaId, parent_id: params.collectionId },
+            query: { instance_type: "history", offset: params.offset, limit: params.limit },
+        },
     });
+
+    if (error) {
+        rethrowSimple(error);
+    }
     return data;
 }
 
@@ -56,8 +76,3 @@ export async function fetchElementsFromCollection(params: {
         limit: params.limit ?? DEFAULT_LIMIT,
     });
 }
-
-export const fetchCollectionAttributes = fetcher
-    .path("/api/dataset_collections/{id}/attributes")
-    .method("get")
-    .create();

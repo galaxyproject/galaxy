@@ -325,7 +325,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         history_id: Optional[DecodedDatabaseIdField],
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
-    ) -> List[AnyHistoryContentItem]:
+    ) -> Tuple[List[AnyHistoryContentItem], int]:
         """
         Search datasets or collections using a query system and returns a list
         containing summary of dataset or dataset_collection information.
@@ -345,12 +345,20 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             order_by=order_by,
             user_id=user.id,
         )
-        return [
-            self.serializer_by_type[content.history_content_type].serialize_to_view(
-                content, user=user, trans=trans, encode_id=False, **serialization_params.model_dump()
-            )
-            for content in contents
-        ]
+        total_matches = self.history_contents_manager.contents_count(
+            container=container,
+            filters=filters,
+            user_id=user.id,
+        )
+        return (
+            [
+                self.serializer_by_type[content.history_content_type].serialize_to_view(
+                    content, user=user, trans=trans, encode_id=False, **serialization_params.model_dump()
+                )
+                for content in contents
+            ],
+            total_matches,
+        )
 
     def show(
         self,
@@ -364,7 +372,17 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         """
         Displays information about and/or content of a dataset.
         """
-        dataset = self.dataset_manager_by_type[hda_ldda].get_accessible(dataset_id, trans.user)
+        dataset_manager = self.dataset_manager_by_type[hda_ldda]
+        dataset = dataset_manager.get_accessible(dataset_id, trans.user)
+        requests_that_require_data = (
+            RequestDataType.converted_datasets_state,
+            RequestDataType.data,
+            RequestDataType.features,
+            RequestDataType.raw_data,
+            RequestDataType.track_config,
+        )
+        if data_type in requests_that_require_data:
+            dataset_manager.ensure_dataset_on_disk(trans, dataset)
 
         # Use data type to return particular type of data.
         rval: Any
@@ -393,7 +411,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             # Default: return dataset as dict.
             if hda_ldda == DatasetSourceType.hda:
                 return self.hda_serializer.serialize_to_view(
-                    dataset, view=serialization_params.view or "detailed", user=trans.user, trans=trans
+                    dataset,
+                    view=serialization_params.view or "detailed",
+                    keys=serialization_params.keys,
+                    user=trans.user,
+                    trans=trans,
                 )
             else:
                 dataset_dict = dataset.to_dict()
@@ -559,7 +581,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset_manager = self.dataset_manager_by_type[hda_ldda]
         dataset = dataset_manager.get_accessible(dataset_id, trans.user)
         dataset_manager.update_permissions(trans, dataset, **payload_dict)
-        return dataset_manager.serialize_dataset_association_roles(trans, dataset)
+        return dataset_manager.serialize_dataset_association_roles(dataset)
 
     def extra_files(
         self,
@@ -606,7 +628,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         headers = {}
         rval: Any = ""
         try:
-            dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(dataset_id, trans.user)
+            dataset_manager = self.dataset_manager_by_type[hda_ldda]
+            dataset_instance = dataset_manager.get_accessible(dataset_id, trans.user)
+            dataset_manager.ensure_dataset_on_disk(trans, dataset_instance)
             if raw:
                 if filename and filename != "index":
                     object_store = trans.app.object_store
@@ -668,6 +692,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         TODO: Remove the `open_file` parameter when removing the associated legacy endpoint.
         """
         hda = self.hda_manager.get_accessible(history_content_id, trans.user)
+        self.hda_manager.ensure_dataset_on_disk(trans, hda)
         file_ext = hda.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
         fname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in hda.name)[0:150]
         headers = {}
@@ -832,7 +857,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             data_provider = self.data_provider_registry.get_data_provider(
                 trans, original_dataset=dataset, source="index"
             )
-            if not data_provider.has_data(chrom):
+            if not dataset.has_data() or not data_provider.has_data(chrom):
                 return dataset.conversion_messages.NO_DATA
 
         # Have data if we get here
@@ -891,12 +916,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         extra_info = None
         mode = kwargs.get("mode", "Auto")
-        indexer = None
 
         # Coverage mode uses index data.
         if mode == "Coverage":
             # Get summary using minimal cutoffs.
-            indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
+            indexer = self._get_indexer(trans, dataset)
             return indexer.get_data(chrom, low, high, **kwargs)
 
         # TODO:
@@ -906,13 +930,13 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         # If mode is Auto, need to determine what type of data to return.
         if mode == "Auto":
             # Get stats from indexer.
-            indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
+            indexer = self._get_indexer(trans, dataset)
             stats = indexer.get_data(chrom, low, high, stats=True)
 
             # If stats were requested, return them.
             if "stats" in kwargs:
                 if stats["data"]["max"] == 0:
-                    return DataResult(dataset_type=indexer.dataset_type, data=None)
+                    return DataResult(dataset_type=indexer.dataset_type, data=[])
                 else:
                     return stats
 
@@ -956,8 +980,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 )
 
             # Get mean depth.
-            if not indexer:
-                indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
+            indexer = self._get_indexer(trans, dataset)
             stats = indexer.get_data(chrom, low, high, stats=True)
             mean_depth = stats["data"]["mean"]
 
@@ -1008,3 +1031,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         data = data_provider.get_data(**kwargs)
 
         return data
+
+    def _get_indexer(self, trans, dataset):
+        indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
+        if indexer is None:
+            msg = f"No indexer available for dataset {self.encode_id(dataset.id)}"
+            log.exception(msg)
+            raise galaxy_exceptions.ObjectNotFound(msg)
+        return indexer

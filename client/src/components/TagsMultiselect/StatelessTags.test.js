@@ -3,11 +3,11 @@ import { useToast } from "composables/toast";
 import { getLocalVue } from "tests/jest/helpers";
 import { computed } from "vue";
 
-import { useUserTagsStore } from "@/stores/userTagsStore";
+import { normalizeTag, useUserTagsStore } from "@/stores/userTagsStore";
 
 import StatelessTags from "./StatelessTags";
 
-const autocompleteTags = ["#named_user_tag", "abc", "my_tag"];
+const autocompleteTags = ["name:named_user_tag", "abc", "my_tag"];
 const toggleButton = ".toggle-button";
 
 const localVue = getLocalVue();
@@ -27,6 +27,12 @@ useUserTagsStore.mockReturnValue({
     onTagUsed: jest.fn(),
     onMultipleNewTagsSeen: jest.fn(),
 });
+
+function normalize(tag) {
+    return tag.replace(/^#/, "name:");
+}
+
+normalizeTag.mockImplementation(normalize);
 
 jest.mock("composables/toast");
 const warningMock = jest.fn((message, title) => {
@@ -88,7 +94,7 @@ describe("StatelessTags", () => {
         expect(visibleOptions.length).toBe(autocompleteTags.length);
 
         visibleOptions.wrappers.forEach((option, i) => {
-            expect(option.text()).toContain(autocompleteTags[i]);
+            expect(normalize(option.text())).toContain(autocompleteTags[i]);
         });
     });
 

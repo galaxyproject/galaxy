@@ -50,6 +50,10 @@ class _QIIME2ResultBase(CompressedZipArchive):
         dataset.peek = "\n".join(map(": ".join, self._peek(dataset)))
 
     def display_peek(self, dataset: DatasetProtocol) -> str:
+        if dataset.metadata.semantic_type is None:
+            # Proxy for metadata elements not (yet) set
+            return "Peek unavailable"
+
         def make_row(pair):
             return f"<tr><th>{pair[0]}</th><td>{html.escape(pair[1])}</td></tr>"
 
@@ -254,10 +258,10 @@ def _get_uuid(path):
     if len(roots) == 0:
         raise ValueError("Archive does not have a visible root directory.")
     if len(roots) > 1:
-        raise ValueError("Archive has multiple root directories: %r" % roots)
+        raise ValueError(f"Archive has multiple root directories: {roots!r}")
     uuid = roots.pop()
     if not _is_uuid4(uuid):
-        raise ValueError("Archive root directory name %r is not a valid version 4 " "UUID." % uuid)
+        raise ValueError(f"Archive root directory name {uuid!r} is not a valid version 4 UUID.")
     return uuid
 
 
@@ -271,7 +275,7 @@ def _get_versions(path, uuid):
         framework_version = framework_version_line.split(":")[1].strip()
         return version, framework_version
     except Exception:
-        raise ValueError("Archive does not contain a correctly formatted" " VERSION file.")
+        raise ValueError("Archive does not contain a correctly formatted VERSION file.")
 
 
 def _open_file_in_archive(zip_path, path, uuid):

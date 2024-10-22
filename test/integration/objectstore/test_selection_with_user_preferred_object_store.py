@@ -420,9 +420,9 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
     def _run_nested_workflow_with_effective_output_get_output_storage_info_dicts(
         self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None, twice_nested=False
     ):
-        worklfow_data = WORKFLOW_NESTED_OUTPUT if not twice_nested else WORKFLOW_NESTED_TWICE_OUTPUT
+        workflow_data = WORKFLOW_NESTED_OUTPUT if not twice_nested else WORKFLOW_NESTED_TWICE_OUTPUT
         wf_run = self.workflow_populator.run_workflow(
-            worklfow_data,
+            workflow_data,
             test_data=TEST_NESTED_WORKFLOW_TEST_DATA,
             history_id=history_id,
             extra_invocation_kwds=extra_invocation_kwds,
@@ -470,9 +470,8 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
     def _storage_info(self, hda):
         return self.dataset_populator.dataset_storage_info(hda["id"])
 
-    def _set_user_preferred_object_store_id(self, store_id: Optional[str]):
-        user_properties = self.dataset_populator.update_user({"preferred_object_store_id": store_id})
-        assert user_properties["preferred_object_store_id"] == store_id
+    def _set_user_preferred_object_store_id(self, store_id: Optional[str]) -> None:
+        self.dataset_populator.set_user_preferred_object_store_id(store_id)
 
     def _reset_user_preferred_object_store_id(self):
         self._set_user_preferred_object_store_id(None)

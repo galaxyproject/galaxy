@@ -1,29 +1,34 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faCheckSquare, faThumbtack, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faSquare, faStar as faStarRegular } from "@fortawesome/free-regular-svg-icons";
+import { faCheckSquare, faStar, faThumbtack, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, type ComputedRef, type Ref, ref } from "vue";
+import { computed, type ComputedRef } from "vue";
 
+import { useActivityAction } from "@/composables/useActivityAction";
 import { type Activity, useActivityStore } from "@/stores/activityStore";
-
-import DelayedInput from "@/components/Common/DelayedInput.vue";
 
 library.add({
     faCheckSquare,
     faSquare,
+    faStar,
+    faStarRegular,
     faTrash,
     faThumbtack,
 });
 
+const props = defineProps<{
+    query: string;
+}>();
+
 const activityStore = useActivityStore();
 const { activities } = storeToRefs(activityStore);
-const query: Ref<string> = ref("");
+const activityAction = useActivityAction();
 
 const filteredActivities = computed(() => {
-    if (query.value.length > 0) {
-        const queryLower = query.value.toLowerCase();
+    if (props.query?.length > 0) {
+        const queryLower = props.query.toLowerCase();
         const results = activities.value.filter((a: Activity) => {
             const attributeValues = [a.title, a.description];
             for (const value of attributeValues) {
@@ -43,7 +48,7 @@ const foundActivities: ComputedRef<boolean> = computed(() => {
     return filteredActivities.value.length > 0;
 });
 
-function onClick(activity: Activity) {
+function onFavorite(activity: Activity) {
     if (activity.optional) {
         activity.visible = !activity.visible;
     }
@@ -52,51 +57,59 @@ function onClick(activity: Activity) {
 function onRemove(activity: Activity) {
     activityStore.remove(activity.id);
 }
-
-function onQuery(newQuery: string) {
-    query.value = newQuery;
-}
 </script>
 
 <template>
     <div class="activity-settings rounded no-highlight">
-        <DelayedInput :delay="100" placeholder="Search activities" @change="onQuery" />
         <div v-if="foundActivities" class="activity-settings-content">
             <div v-for="activity in filteredActivities" :key="activity.id">
-                <button class="activity-settings-item p-2 cursor-pointer" @click="onClick(activity)">
+                <button
+                    v-if="activity.optional"
+                    class="activity-settings-item p-2 cursor-pointer"
+                    @click="activityAction.executeActivity(activity)">
                     <div class="d-flex justify-content-between align-items-start">
-                        <span class="w-100">
-                            <FontAwesomeIcon
-                                v-if="!activity.optional"
-                                class="icon-check mr-1"
-                                icon="fas fa-thumbtack"
-                                fa-fw />
-                            <FontAwesomeIcon
-                                v-else-if="activity.visible"
-                                class="icon-check mr-1"
-                                icon="fas fa-check-square"
-                                fa-fw />
-                            <FontAwesomeIcon v-else class="mr-1" icon="far fa-square" fa-fw />
-                            <small>
+                        <span class="d-flex justify-content-between w-100">
+                            <span>
                                 <icon class="mr-1" :icon="activity.icon" />
                                 <span v-localize class="font-weight-bold">{{
                                     activity.title || "No title available"
                                 }}</span>
-                            </small>
+                            </span>
+                            <div>
+                                <BButton
+                                    v-if="activity.mutable"
+                                    v-b-tooltip.hover
+                                    data-description="delete activity"
+                                    size="sm"
+                                    title="Delete Activity"
+                                    variant="link"
+                                    @click.stop="onRemove(activity)">
+                                    <FontAwesomeIcon icon="fa-trash" fa-fw />
+                                </BButton>
+                                <BButton
+                                    v-if="activity.visible"
+                                    v-b-tooltip.hover
+                                    size="sm"
+                                    title="Hide in Activity Bar"
+                                    variant="link"
+                                    @click.stop="onFavorite(activity)">
+                                    <FontAwesomeIcon icon="fas fa-star" fa-fw />
+                                </BButton>
+                                <BButton
+                                    v-else
+                                    v-b-tooltip.hover
+                                    size="sm"
+                                    title="Show in Activity Bar"
+                                    variant="link"
+                                    @click.stop="onFavorite(activity)">
+                                    <FontAwesomeIcon icon="far fa-star" fa-fw />
+                                </BButton>
+                            </div>
                         </span>
-                        <b-button
-                            v-if="activity.mutable"
-                            data-description="delete activity"
-                            class="button-delete"
-                            size="sm"
-                            variant="link"
-                            @click.stop="onRemove(activity)">
-                            <FontAwesomeIcon icon="fa-trash" fa-fw />
-                        </b-button>
                     </div>
-                    <small v-localize>
+                    <div v-localize class="text-muted">
                         {{ activity.description || "No description available" }}
-                    </small>
+                    </div>
                 </button>
             </div>
         </div>
@@ -125,23 +138,8 @@ function onQuery(newQuery: string) {
     text-align: left;
     transition: none;
     width: 100%;
-
-    .icon-check {
-        color: darken($brand-success, 15%);
-    }
-    .button-delete {
-        background: transparent;
-    }
 }
 .activity-settings-item:hover {
-    background: $brand-primary;
-    color: $brand-light;
-    border-radius: $border-radius-large;
-    .icon-check {
-        color: $brand-light;
-    }
-    .button-delete {
-        color: $brand-light;
-    }
+    background: $gray-200;
 }
 </style>

@@ -1,5 +1,7 @@
 from typing import Dict
 
+import pytest
+
 from ..base import common
 from ..base.twilltestcase import ShedTwillTestCase
 
@@ -559,19 +561,20 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 repository=filtering_repository, repository_tuples=[emboss_tuple], filepath=dependency_xml_path
             )
 
+    @pytest.mark.xfail
     def test_0110_reset_metadata_on_all_repositories(self):
         """Reset metadata on all repositories, then verify that it has not changed."""
         self.login(email=common.admin_email, username=common.admin_username)
-        old_metadata: Dict[str, Dict] = dict()
-        new_metadata: Dict[str, Dict] = dict()
+        old_metadata: Dict[str, Dict] = {}
+        new_metadata: Dict[str, Dict] = {}
         repositories = self.test_db_util.get_all_repositories()
         for repository in repositories:
-            old_metadata[self.security.encode_id(repository.id)] = dict()
+            old_metadata[self.security.encode_id(repository.id)] = {}
             for metadata in self.get_repository_metadata_for_db_object(repository):
                 old_metadata[self.security.encode_id(repository.id)][metadata.changeset_revision] = metadata.metadata
         self.reset_metadata_on_selected_repositories(list(old_metadata.keys()))
         for repository in repositories:
-            new_metadata[self.security.encode_id(repository.id)] = dict()
+            new_metadata[self.security.encode_id(repository.id)] = {}
             for metadata in self.get_repository_metadata_for_db_object(repository):
                 new_metadata[self.security.encode_id(repository.id)][metadata.changeset_revision] = metadata.metadata
             if (

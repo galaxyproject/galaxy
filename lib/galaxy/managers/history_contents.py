@@ -22,8 +22,10 @@ from sqlalchemy import (
     nullsfirst,
     nullslast,
     select,
+    Select,
     sql,
     true,
+    UnaryExpression,
 )
 from sqlalchemy.orm import (
     joinedload,
@@ -84,6 +86,7 @@ class HistoryContentsManager(base.SortableManager):
         "collection_id",
         "name",
         "state",
+        "object_store_id",
         "size",
         "deleted",
         "purged",
@@ -133,7 +136,7 @@ class HistoryContentsManager(base.SortableManager):
             attribute_dsc = f"{attribute}-dsc"
             attribute_asc = f"{attribute}-asc"
             if order_by_string in (attribute, attribute_dsc):
-                order_by = desc(attribute)
+                order_by: UnaryExpression = desc(attribute)
                 if attribute == "size":
                     return nullslast(order_by)
                 return order_by
@@ -162,12 +165,10 @@ class HistoryContentsManager(base.SortableManager):
             base.ModelFilterParser.parsed_filter("orm", sql.column("visible") == true()),
         ]
         contents_subquery = self._union_of_contents_query(history, filters=filters).subquery()
-        statement = (
-            sql.select(sql.column("state"), func.count("*"))
-            .select_from(contents_subquery)
-            .group_by(sql.column("state"))
+        statement: Select = (
+            select(sql.column("state"), func.count()).select_from(contents_subquery).group_by(sql.column("state"))
         )
-        counts = self.app.model.context.execute(statement).fetchall()
+        counts = self.app.model.session().execute(statement).fetchall()
         return dict(counts)
 
     def active_counts(self, history):
@@ -182,9 +183,9 @@ class HistoryContentsManager(base.SortableManager):
         hdca_select = self._active_counts_statement(model.HistoryDatasetCollectionAssociation, history.id)
         subquery = hda_select.union_all(hdca_select).subquery()
         statement = select(
-            cast(func.sum(subquery.c.deleted), Integer).label("deleted"),
-            cast(func.sum(subquery.c.hidden), Integer).label("hidden"),
-            cast(func.sum(subquery.c.active), Integer).label("active"),
+            cast(func.coalesce(func.sum(subquery.c.deleted), 0), Integer).label("deleted"),
+            cast(func.coalesce(func.sum(subquery.c.hidden), 0), Integer).label("hidden"),
+            cast(func.coalesce(func.sum(subquery.c.active), 0), Integer).label("active"),
         )
         returned = self.app.model.context.execute(statement).one()
         return dict(returned._mapping)
@@ -235,9 +236,7 @@ class HistoryContentsManager(base.SortableManager):
             return contents_results
 
         # partition ids into a map of { component_class names -> list of ids } from the above union query
-        id_map: Dict[str, List[int]] = dict(
-            [(self.contained_class_type_name, []), (self.subcontainer_class_type_name, [])]
-        )
+        id_map: Dict[str, List[int]] = {self.contained_class_type_name: [], self.subcontainer_class_type_name: []}
         for result in contents_results:
             result_type = self._get_union_type(result)
             contents_id = self._get_union_id(result)
@@ -354,6 +353,8 @@ class HistoryContentsManager(base.SortableManager):
             history_content_type=literal("dataset"),
             size=model.Dataset.file_size,
             state=model.Dataset.state,
+            object_store_id=model.Dataset.object_store_id,
+            quota_source_label=model.Dataset.object_store_id,
             # do not have inner collections
             collection_id=literal(None),
         )
@@ -380,6 +381,8 @@ class HistoryContentsManager(base.SortableManager):
             dataset_id=literal(None),
             size=literal(None),
             state=model.DatasetCollection.populated_state,
+            object_store_id=literal(None),
+            quota_source_label=literal(None),
             # TODO: should be purgable? fix
             purged=literal(False),
             extension=literal(None),
@@ -410,10 +413,10 @@ class HistoryContentsManager(base.SortableManager):
         component_class = self.contained_class
         stmt = (
             select(component_class)
-            .where(component_class.id.in_(id_list))  # type: ignore[attr-defined]
+            .where(component_class.id.in_(id_list))
             .options(undefer(component_class._metadata))
             .options(joinedload(component_class.dataset).joinedload(model.Dataset.actions))
-            .options(joinedload(component_class.tags))
+            .options(joinedload(component_class.tags))  # type: ignore[attr-defined]
             .options(joinedload(component_class.annotations))  # type: ignore[attr-defined]
         )
         result = self._session().scalars(stmt).unique()
@@ -569,6 +572,30 @@ class HistoryContentsFilters(
                     return sql.column("state").in_(states)
                 raise_filter_err(attr, op, val, "bad op in filter")
 
+            if attr == "object_store_id":
+                if op == "eq":
+                    return sql.column("object_store_id") == val
+
+                if op == "in":
+                    object_store_ids = [s for s in val.split(",") if s]
+                    return sql.column("object_store_id").in_(object_store_ids)
+
+                raise_filter_err(attr, op, val, "bad op in filter")
+
+            if attr == "quota_source_label":
+                if op == "eq":
+                    ids = self.app.object_store.get_quota_source_map().ids_per_quota_source(
+                        include_default_quota_source=True
+                    )
+                    if val == "__null__":
+                        val = None
+                    if val not in ids:
+                        raise ValueError(f"Could not find key {val} in object store keys {list(ids.keys())}")
+                    object_store_ids = ids[val]
+                    return sql.column("object_store_id").in_(object_store_ids)
+
+                raise_filter_err(attr, op, val, "bad op in filter")
+
         if (column_filter := get_filter(attr, op, val)) is not None:
             return self.parsed_filter(filter_type="orm", filter=column_filter)
         return super()._parse_orm_filter(attr, op, val)
@@ -610,9 +637,8 @@ class HistoryContentsFilters(
 
     def _add_parsers(self):
         super()._add_parsers()
-        database_connection: str = self.app.config.database_connection
         annotatable.AnnotatableFilterMixin._add_parsers(self)
-        genomes.GenomeFilterMixin._add_parsers(self, database_connection)
+        genomes.GenomeFilterMixin._add_parsers(self)
         deletable.PurgableFiltersMixin._add_parsers(self)
         taggable.TaggableFilterMixin._add_parsers(self)
         tools.ToolFilterMixin._add_parsers(self)
@@ -625,6 +651,8 @@ class HistoryContentsFilters(
                 # 'hid-in'        : { 'op': ( 'in' ), 'val': self.parse_int_list },
                 "name": {"op": ("eq", "contains", "like")},
                 "state": {"op": ("eq", "in")},
+                "object_store_id": {"op": ("eq", "in")},
+                "quota_source_label": {"op": ("eq")},
                 "visible": {"op": ("eq"), "val": parse_bool},
                 "create_time": {"op": ("le", "ge", "lt", "gt"), "val": self.parse_date},
                 "update_time": {"op": ("le", "ge", "lt", "gt"), "val": self.parse_date},

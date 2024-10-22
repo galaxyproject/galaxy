@@ -5,12 +5,15 @@ from fastapi import (
     Body,
     Path,
     Query,
+    Response,
+    status,
 )
 from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    AnyHDCA,
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
     DCESummary,
@@ -43,6 +46,11 @@ InstanceTypeQueryParam: DatasetCollectionInstanceType = Query(
     description="The type of collection instance. Either `history` (default) or `library`.",
 )
 
+ViewTypeQueryParam: str = Query(
+    default="element",
+    description="The view of collection instance to return.",
+)
+
 
 @router.cbv
 class FastAPIDatasetCollections:
@@ -62,6 +70,7 @@ class FastAPIDatasetCollections:
     @router.post(
         "/api/dataset_collections/{id}/copy",
         summary="Copy the given collection datasets to a new collection using a new `dbkey` attribute.",
+        status_code=status.HTTP_204_NO_CONTENT,
     )
     def copy(
         self,
@@ -70,6 +79,7 @@ class FastAPIDatasetCollections:
         payload: UpdateCollectionAttributePayload = Body(...),
     ):
         self.service.copy(trans, id, payload)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
         "/api/dataset_collections/{id}/attributes",
@@ -104,8 +114,9 @@ class FastAPIDatasetCollections:
         id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
-    ) -> HDCADetailed:
-        return self.service.show(trans, id, instance_type)
+        view: str = ViewTypeQueryParam,
+    ) -> AnyHDCA:
+        return self.service.show(trans, id, instance_type, view=view)
 
     @router.get(
         "/api/dataset_collections/{hdca_id}/contents/{parent_id}",

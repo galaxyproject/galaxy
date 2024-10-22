@@ -14,20 +14,9 @@ import ConfigFileContents from "@/components/ConfigFileContents.vue"
 import RepositoryLinks from "@/components/RepositoryLinks.vue"
 import RepositoryExplore from "@/components/RepositoryExplore.vue"
 import { type RevisionMetadata } from "@/schema"
-import { fetcher } from "@/schema"
+import { ToolShedApi } from "@/schema"
 import { notifyOnCatch } from "@/util"
 import { UPDATING_WITH_PLANEMO_URL, EPHEMERIS_TRAINING } from "@/constants"
-
-const readmeFetcher = fetcher
-    .path("/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes")
-    .method("get")
-    .create()
-
-const deprecateFetcher = fetcher.path("/api/repositories/{encoded_repository_id}/deprecated").method("put").create()
-const undeprecateFetcher = fetcher
-    .path("/api/repositories/{encoded_repository_id}/deprecated")
-    .method("delete")
-    .create()
 
 interface RepositoryProps {
     repositoryId: string
@@ -41,14 +30,24 @@ function onUpdate() {
 async function onDeprecate() {
     const repositoryId = repository.value?.id
     if (repositoryId) {
-        deprecateFetcher({ encoded_repository_id: repositoryId }).then(onUpdate).catch(notifyOnCatch)
+        ToolShedApi()
+            .PUT("/api/repositories/{encoded_repository_id}/deprecated", {
+                params: { path: { encoded_repository_id: repositoryId } },
+            })
+            .then(onUpdate)
+            .catch(notifyOnCatch)
     }
 }
 
 async function onUndeprecate() {
     const repositoryId = repository.value?.id
     if (repositoryId) {
-        undeprecateFetcher({ encoded_repository_id: repositoryId }).then(onUpdate).catch(notifyOnCatch)
+        ToolShedApi()
+            .DELETE("/api/repositories/{encoded_repository_id}/deprecated", {
+                params: { path: { encoded_repository_id: repositoryId } },
+            })
+            .then(onUpdate)
+            .catch(notifyOnCatch)
     }
 }
 
@@ -133,10 +132,15 @@ watch(
 
 watch(currentRevision, () => {
     if (currentRevision.value) {
-        readmeFetcher({
-            encoded_repository_id: props.repositoryId,
-            changeset_revision: currentRevision.value,
-        })
+        ToolShedApi()
+            .GET("/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes", {
+                params: {
+                    path: {
+                        encoded_repository_id: props.repositoryId,
+                        changeset_revision: currentRevision.value,
+                    },
+                },
+            })
             .then((response) => {
                 if (response.data) {
                     readmes.value = response.data

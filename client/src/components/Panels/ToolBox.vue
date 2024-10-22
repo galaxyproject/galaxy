@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye, faEyeSlash } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, ComputedRef, type PropType, type Ref, ref } from "vue";
+import { computed, type ComputedRef, type PropType, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
@@ -11,14 +11,13 @@ import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { getAppRoot } from "@/onload/loadConfig";
 import { type Tool, type ToolSection as ToolSectionType } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
-import { Workflow, type Workflow as WorkflowType } from "@/stores/workflowStore";
+import { type Workflow, type Workflow as WorkflowType } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
 
 import { filterTools, getValidPanelItems, getValidToolsInCurrentView, getValidToolsInEachSection } from "./utilities";
 
 import ToolSearch from "./Common/ToolSearch.vue";
 import ToolSection from "./Common/ToolSection.vue";
-import UploadButton from "@/components/Upload/UploadButton.vue";
 
 const SECTION_IDS_TO_EXCLUDE = ["expression_tools"]; // if this isn't the Workflow Editor panel
 
@@ -51,8 +50,6 @@ const queryPending = ref(false);
 const showSections = ref(props.workflow);
 const results: Ref<string[]> = ref([]);
 const resultPanel: Ref<Record<string, Tool | ToolSectionType> | null> = ref(null);
-const buttonText = ref("");
-const buttonIcon = ref("");
 const closestTerm: Ref<string | null> = ref(null);
 
 const toolStore = useToolStore();
@@ -67,7 +64,7 @@ const propShowAdvanced = computed({
 });
 const query = computed({
     get: () => {
-        return props.panelQuery;
+        return props.panelQuery.trim();
     },
     set: (q: string) => {
         queryPending.value = true;
@@ -75,7 +72,7 @@ const query = computed({
     },
 });
 
-const { currentPanel } = storeToRefs(toolStore);
+const { currentPanel, currentPanelView } = storeToRefs(toolStore);
 const hasResults = computed(() => results.value.length > 0);
 const queryTooShort = computed(() => query.value && query.value.length < 3);
 const queryFinished = computed(() => query.value && queryPending.value != true);
@@ -135,8 +132,6 @@ const localPanel: ComputedRef<Record<string, Tool | ToolSectionType> | null> = c
     }
 });
 
-const sectionIds = computed(() => Object.keys(localPanel.value || {}));
-
 const favWorkflows = computed(() => {
     const Galaxy = getGalaxyInstance();
     const storedWorkflowMenuEntries = Galaxy && Galaxy.config.stored_workflow_menu_entries;
@@ -174,6 +169,9 @@ const workflowSection = computed(() => {
         return null;
     }
 });
+
+const buttonIcon = computed(() => (showSections.value ? faEyeSlash : faEye));
+const buttonText = computed(() => (showSections.value ? localize("Hide Sections") : localize("Show Sections")));
 
 function onInsertModule(module: Record<string, any>, event: Event) {
     event.preventDefault();
@@ -223,18 +221,22 @@ function onResults(
     }
     closestTerm.value = closestMatch;
     queryFilter.value = hasResults.value ? query.value : null;
-    setButtonText();
     queryPending.value = false;
+}
+
+function onSectionFilter(filter: string) {
+    if (query.value !== filter) {
+        query.value = filter;
+        if (!showSections.value) {
+            onToggle();
+        }
+    } else {
+        query.value = "";
+    }
 }
 
 function onToggle() {
     showSections.value = !showSections.value;
-    setButtonText();
-}
-
-function setButtonText() {
-    buttonText.value = showSections.value ? localize("Hide Sections") : localize("Show Sections");
-    buttonIcon.value = showSections.value ? "fa-eye-slash" : "fa-eye";
 }
 </script>
 
@@ -253,7 +255,6 @@ function setButtonText() {
                 @onQuery="(q) => (query = q)"
                 @onResults="onResults" />
             <section v-if="!propShowAdvanced">
-                <UploadButton />
                 <div v-if="hasResults && resultPanel" class="pb-2">
                     <b-button size="sm" class="w-100" @click="onToggle">
                         <FontAwesomeIcon :icon="buttonIcon" />
@@ -261,10 +262,10 @@ function setButtonText() {
                     </b-button>
                 </div>
                 <div v-else-if="queryTooShort" class="pb-2">
-                    <b-badge class="alert-danger w-100">Search string too short!</b-badge>
+                    <b-badge class="alert-info w-100">Search term is too short</b-badge>
                 </div>
                 <div v-else-if="queryFinished && !hasResults" class="pb-2">
-                    <b-badge class="alert-danger w-100">No results found!</b-badge>
+                    <b-badge class="alert-warning w-100">No results found</b-badge>
                 </div>
                 <div v-if="closestTerm" class="pb-2">
                     <b-badge class="alert-danger w-100">
@@ -298,12 +299,14 @@ function setButtonText() {
                         :query-filter="queryFilter || undefined"
                         :disable-filter="true"
                         @onClick="onToolClick" />
-                    <div v-for="(sectionId, key) in sectionIds" :key="key">
+                    <div v-for="(panel, key) in localPanel" :key="key">
                         <ToolSection
-                            v-if="localPanel[sectionId]"
-                            :category="localPanel[sectionId] || {}"
+                            v-if="panel"
+                            :category="panel || {}"
                             :query-filter="queryFilter || undefined"
-                            @onClick="onToolClick" />
+                            :has-filter-button="hasResults && currentPanelView === 'default'"
+                            @onClick="onToolClick"
+                            @onFilter="onSectionFilter" />
                     </div>
                 </div>
                 <ToolSection

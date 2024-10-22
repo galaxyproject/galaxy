@@ -1,17 +1,17 @@
 <script setup>
-import { setIframeEvents } from "components/Upload/utils";
-import { useConfig } from "composables/config";
-import { useUserHistories } from "composables/userHistories";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
 
+import { setIframeEvents } from "@/components/Upload/utils";
+import { useConfig } from "@/composables/config";
+import { useUserHistories } from "@/composables/userHistories";
 import { useUserStore } from "@/stores/userStore";
 import { wait } from "@/utils/utils";
 
 import UploadContainer from "./UploadContainer.vue";
 
 const { currentUser } = storeToRefs(useUserStore());
-const { currentHistoryId } = useUserHistories(currentUser);
+const { currentHistoryId, currentHistory } = useUserHistories(currentUser);
 
 const { config, isConfigLoaded } = useConfig();
 
@@ -81,7 +81,12 @@ defineExpose({
         no-enforce-focus
         hide-footer>
         <template v-slot:modal-header>
-            <h2 class="title h-sm" tabindex="0">{{ options.title }}</h2>
+            <h2 class="title h-sm" tabindex="0">
+                {{ options.title }}
+                <span v-if="currentHistory">
+                    to <b>{{ currentHistory.name }}</b>
+                </span>
+            </h2>
         </template>
         <UploadContainer
             v-if="currentHistoryId"

@@ -182,6 +182,14 @@ class TestDatasetCollectionsApi(ApiTestCase):
             namelist = archive.namelist()
             assert len(namelist) == 3, f"Expected 3 elements in [{namelist}]"
 
+    def test_download_non_english_characters(self):
+        with self.dataset_populator.test_history() as history_id:
+            name = "دیتاست"
+            payload = self.dataset_collection_populator.create_list_payload(history_id, name=name)
+            hdca_id = self.dataset_populator.fetch(payload, wait=True).json()["outputs"][0]["id"]
+            create_response = self._download_dataset_collection(history_id=history_id, hdca_id=hdca_id)
+            self._assert_status_code_is(create_response, 200)
+
     @requires_new_user
     def test_hda_security(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
@@ -455,7 +463,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
         # Get contents_url from history contents, use it to show the first level
         # of collection contents in the created HDCA, then use it again to drill
         # down into the nested collection contents
-        hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()
+        hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json()
         root_contents_url = self._get_contents_url_for_hdca(history_id, hdca)
 
         # check root contents for this collection
@@ -466,6 +474,8 @@ class TestDatasetCollectionsApi(ApiTestCase):
         # drill down, retrieve nested collection contents
         assert "object" in root_contents[0]
         assert "contents_url" in root_contents[0]["object"]
+        assert root_contents[0]["object"]["element_count"] == 3
+        assert root_contents[0]["object"]["populated"]
         drill_contents_url = root_contents[0]["object"]["contents_url"]
         drill_contents = self._get(drill_contents_url).json()
         assert len(drill_contents) == len(hdca["elements"][0]["object"]["elements"])

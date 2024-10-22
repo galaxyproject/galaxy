@@ -19,7 +19,7 @@
       </param>
       <when value="first" />
       <when value="by_identifier">
-        <param name="identifier" label="Element identifier:" type="text">
+        <param name="identifier" label="Element identifier:" type="text" optional="false">
           <sanitizer invalid_char="">
               <valid initial="string.ascii_letters,string.digits">
                   <add value="_" />
@@ -52,9 +52,9 @@ Description
 
 The tool allow extracting datasets based on position (**The first dataset** and **Select by index** options) or name (**Select by element identifier** option). This tool effectively collapses the inner-most collection into a dataset. For nested collections (e.g a list of lists of lists: outer:middle:inner, extracting the inner dataset element) a new list is created where the selected element takes the position of the inner-most collection (so outer:middle, where middle is not a collection but the inner dataset element).
 
-.. class:: warningmark 
+.. class:: warningmark
 
-**Note**: Dataset index (numbering) begins with 0 (zero). 
+**Note**: Dataset index (numbering) begins with 0 (zero).
 
 .. class:: infomark
 

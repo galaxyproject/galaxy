@@ -118,7 +118,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
             rstring = f"Metadata results could not be read from '{filename_results_code}'"
 
         if not rval:
-            log.debug(f"setting metadata externally failed for {dataset.__class__.__name__} {dataset.id}: {rstring}")
+            log.warning(f"setting metadata externally failed for {dataset.__class__.__name__} {dataset.id}: {rstring}")
         return rval
 
 
@@ -206,6 +206,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             "max_metadata_value_size": max_metadata_value_size,
             "max_discovered_files": max_discovered_files,
             "outputs": outputs,
+            "change_datatype_actions": job.get_change_datatype_actions(),
         }
 
         # export model objects and object store configuration for extended metadata also.

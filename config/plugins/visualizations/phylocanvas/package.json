@@ -9,10 +9,13 @@
     "dependencies": {
         "@phylocanvas/phylocanvas.gl": "^1.48.0",
         "babel-preset-env": "^1.6.1",
-        "deck.gl": "^8.8.23",
-        "parcel-bundler": "^1.4.1"
+        "deck.gl": "^8.8.23"
     },
     "scripts": {
-        "build": "parcel build src/script.js -d static"
+        "build": "parcel build src/script.js --dist-dir static"
+    },
+    "devDependencies": {
+        "parcel": "^2.12.0",
+        "process": "^0.11.10"
     }
 }

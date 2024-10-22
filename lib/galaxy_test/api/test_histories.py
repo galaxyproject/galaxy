@@ -106,6 +106,26 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         assert show_response["url"] == f"/api/histories/{history_id}"
         assert show_response["contents_url"] == f"/api/histories/{history_id}/contents"
 
+    def test_show_respects_view(self):
+        history_id = self._create_history(f"TestHistoryForShowView_{uuid4()}")["id"]
+        # By default the view is "detailed"
+        show_response = self._get(f"histories/{history_id}").json()
+        assert "state" in show_response
+
+        # Change the view to summary
+        show_response = self._get(f"histories/{history_id}", {"view": "summary"}).json()
+        assert "state" not in show_response
+
+        # Expect only specific keys
+        expected_keys = ["name"]
+        unexpected_keys = ["id", "deleted", "state"]
+        show_response = self._get(f"histories/{history_id}", {"keys": ",".join(expected_keys)}).json()
+        assert len(show_response) == len(expected_keys)
+        for key in expected_keys:
+            assert key in show_response
+        for key in unexpected_keys:
+            assert key not in show_response
+
     def test_show_most_recently_used(self):
         history_id = self._create_history("TestHistoryRecent")["id"]
         show_response = self._get("histories/most_recently_used").json()
@@ -139,6 +159,78 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         index_response = self._get(f"histories{query}").json()
         assert len(index_response) == 1
         assert index_response[0]["name"] == expected_history_name
+
+    def test_index_views(self):
+        # Make sure there is at least one history
+        self._create_history(f"TestHistoryForViews_{uuid4()}")["id"]
+        # By default the view is summary
+        index_response = self._get("histories").json()
+        for history in index_response:
+            assert "state" not in history
+
+        # Change the view to detailed
+        index_response = self._get("histories?view=detailed").json()
+        for history in index_response:
+            assert "state" in history
+
+        # Expect only specific keys
+        expected_keys = ["nice_size", "contents_active", "contents_states"]
+        unexpected_keys = ["id", "deleted", "state"]
+        index_response = self._get(f"histories?keys={','.join(expected_keys)}").json()
+        for history in index_response:
+            assert len(history) == len(expected_keys)
+            for key in expected_keys:
+                assert key in history
+            for key in unexpected_keys:
+                assert key not in history
+
+        # Expect combination of view and keys
+        view = "summary"
+        expected_keys = ["create_time", "count"]
+        data = dict(view=view, keys=",".join(expected_keys))
+        index_response = self._get("histories", data=data).json()
+        for history in index_response:
+            for key in expected_keys:
+                assert key in history
+            self._assert_has_keys(history, "id", "name", "url", "update_time", "deleted", "purged", "tags")
+
+    def test_index_search_mode_views(self):
+        # Make sure there is at least one history
+        expected_name_contains = "SearchMode"
+        self._create_history(f"TestHistory{expected_name_contains}_{uuid4()}")["id"]
+        # By default the view is summary
+        data = dict(search=expected_name_contains, show_published=False)
+        index_response = self._get("histories", data=data).json()
+        for history in index_response:
+            assert "state" not in history
+
+        # Change the view to detailed
+        data = dict(search=expected_name_contains, show_published=False)
+        index_response = self._get("histories?view=detailed", data=data).json()
+        for history in index_response:
+            assert "state" in history
+
+        # Expect only specific keys
+        expected_keys = ["nice_size", "contents_active", "contents_states"]
+        unexpected_keys = ["id", "deleted", "state"]
+        data = dict(search=expected_name_contains, show_published=False, keys=",".join(expected_keys))
+        index_response = self._get("histories", data=data).json()
+        for history in index_response:
+            assert len(history) == len(expected_keys)
+            for key in expected_keys:
+                assert key in history
+            for key in unexpected_keys:
+                assert key not in history
+
+        # Expect combination of view and keys
+        view = "summary"
+        expected_keys = ["create_time", "count"]
+        data = dict(search=expected_name_contains, show_published=False, view=view, keys=",".join(expected_keys))
+        index_response = self._get("histories", data=data).json()
+        for history in index_response:
+            for key in expected_keys:
+                assert key in history
+            self._assert_has_keys(history, "id", "name", "url", "update_time", "deleted", "purged", "tags")
 
     def test_index_case_insensitive_contains_query(self):
         # Create the histories with a different user to ensure the test
@@ -189,33 +281,84 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             self._delete(f"histories/{history_1}")
 
             name_contains = "history"
-            query = f"?search={name_contains}"
-            index_response = self._get(f"histories{query}").json()
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
             assert len(index_response) == 3
 
             name_contains = "history that match query"
-            query = f"?search={name_contains}"
-            index_response = self._get(f"histories{query}").json()
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
             assert len(index_response) == 3
 
             name_contains = "ANOTHER"
-            query = f"?search={name_contains}"
-            index_response = self._get(f"histories{query}").json()
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
             assert len(index_response) == 0
-
-            name_contains = "test"
-            query = f"?search={name_contains}"
-            index_response = self._get(f"histories{query}").json()
-            assert len(index_response) == 3
 
             data = dict(search="is:deleted", show_published=False)
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 1
 
             self._update(history_0, {"published": True})
+            data = dict(search=f"query_{unique_id} is:published")
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 1
+
+            archived_history_id = self._create_history(f"Archived history_{uuid4()}")["id"]
+            name_contains = "history"
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 4
+
+            # Archived histories should not be included by default
+            self.dataset_populator.archive_history(archived_history_id)
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 3
+
+            self._create_history_then_publish_and_archive_it(f"Public Archived history_{uuid4()}")
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 3
+
+            name_contains = "Archived"
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 0
+
+            # Archived public histories should be included when filtering by show_published and show_archived
+            data = dict(search="is:published", show_archived=True)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 2
+
+            # Searching all published histories will NOT include the archived if show_archived is not set
             data = dict(search="is:published")
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 1
+
+            # Searching all published histories will include our own archived when show_own is false
+            # as long as they are published
+            data = dict(search="is:published", show_own=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 2
+
+            # Publish a history and archive it by a different user
+            with self._different_user(f"other_user_{uuid4()}@bx.psu.edu"):
+                self._create_history_then_publish_and_archive_it(f"Public Archived history_{uuid4()}")
+
+            # Searching all published histories will include archived from other users and our own
+            # as long as they are published
+            data = dict(search="is:published", show_own=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 3
+
+    def _create_history_then_publish_and_archive_it(self, name):
+        history_id = self._create_history(name)["id"]
+        response = self._update(history_id, {"published": True})
+        self._assert_status_code_is_ok(response)
+        response = self.dataset_populator.archive_history(history_id)
+        self._assert_status_code_is_ok(response)
+        return history_id
 
     def test_delete(self):
         # Setup a history and ensure it is in the index
@@ -351,6 +494,10 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             history_id, contents=["Hello", "World"], direct_upload=True
         )
         dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response.json())
+        history = self._show(history_id)
+        assert "update_time" in history
+        original_update_time = history["update_time"]
+
         copied_history_response = self.dataset_populator.copy_history(history_id)
         copied_history_response.raise_for_status()
         copied_history = copied_history_response.json()
@@ -370,6 +517,10 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         assert source_hda["id"] != copied_hda["id"]
         assert source_hda["history_id"] != copied_hda["history_id"]
         assert source_hda["hid"] == copied_hda["hid"] == 2
+
+        history = self._show(history_id)
+        new_update_time = history["update_time"]
+        assert original_update_time == new_update_time
 
     # TODO: (CE) test_create_from_copy
     def test_import_from_model_store_dict(self):

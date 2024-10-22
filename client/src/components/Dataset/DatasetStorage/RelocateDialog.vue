@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ConcreteObjectStoreModel } from "@/api";
+import { type ConcreteObjectStoreModel } from "@/api";
 
 import ObjectStoreSelectButton from "@/components/ObjectStore/ObjectStoreSelectButton.vue";
 import ObjectStoreSelectButtonDescribePopover from "@/components/ObjectStore/ObjectStoreSelectButtonDescribePopover.vue";
@@ -13,24 +13,26 @@ defineProps<RelocateProps>();
 
 const emit = defineEmits<{
     (e: "relocate", value: string): void;
+    (e: "closeModal"): void;
 }>();
 
-const fromWhat = "This dataset location in a";
+const fromWhat = "This dataset location is";
 const toWhat = "This dataset will be relocated to";
 </script>
 
 <template>
     <div>
-        <p>Relocate the dataset's current object store of:</p>
+        <p>Currently the dataset is located in:</p>
         <b-button-group vertical size="lg" class="select-button-group">
             <ObjectStoreSelectButton
                 :key="fromObjectStore.object_store_id"
                 id-prefix="swap-target"
                 class="swap-target-object-store-select-button"
                 variant="info"
-                :object-store="fromObjectStore" />
+                :object-store="fromObjectStore"
+                @click="emit('closeModal')" />
         </b-button-group>
-        <p>Select a new object store below to relocate the dataset</p>
+        <p class="relocate-to">Select new storage location for the dataset:</p>
         <b-button-group vertical size="lg" class="select-button-group">
             <ObjectStoreSelectButton
                 v-for="objectStore in targetObjectStores"
@@ -59,5 +61,8 @@ const toWhat = "This dataset will be relocated to";
     display: block;
     margin: auto;
     width: 400px;
+}
+.relocate-to {
+    margin-top: 2em;
 }
 </style>

@@ -98,7 +98,7 @@ def build_tests(
             continue
         name = name_prefix + tool_id.replace(" ", "_")
         baseclasses = (baseclass,)
-        namespace = dict()
+        namespace = {}
 
         all_versions_test_count = 0
 

@@ -5,7 +5,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 export interface UrlDataOptions {
     url: string;
-    headers: Record<string, string>;
+    headers?: Record<string, string>;
     params?: Record<string, string>;
     errorSimplify?: boolean;
 }

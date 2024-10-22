@@ -22,6 +22,6 @@ from docutils.core import (
     publish_cmdline,
 )
 
-description = "Generates (X)HTML documents from standalone reStructuredText " "sources.  " + default_description
+description = "Generates (X)HTML documents from standalone reStructuredText sources.  " + default_description
 
 publish_cmdline(writer_name="html", description=description)

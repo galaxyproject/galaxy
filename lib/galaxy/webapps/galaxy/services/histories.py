@@ -20,7 +20,6 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import Session
 
 from galaxy import (
     exceptions as glx_exceptions,
@@ -41,10 +40,10 @@ from galaxy.managers.histories import (
     HistoryManager,
     HistorySerializer,
 )
-from galaxy.managers.notification import NotificationManager
 from galaxy.managers.users import UserManager
 from galaxy.model import HistoryDatasetAssociation
 from galaxy.model.base import transaction
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.store import payload_to_source_uri
 from galaxy.schema import (
     FilterQueryParams,
@@ -89,6 +88,7 @@ from galaxy.webapps.galaxy.services.base import (
     ServesExportStores,
     ServiceBase,
 )
+from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 
 log = logging.getLogger(__name__)
@@ -121,7 +121,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         history_export_manager: HistoryExportManager,
         filters: HistoryFilters,
         short_term_storage_allocator: ShortTermStorageAllocator,
-        notification_manager: NotificationManager,
+        notification_service: NotificationService,
     ):
         super().__init__(security)
         self.manager = manager
@@ -131,7 +131,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         self.citations_manager = citations_manager
         self.history_export_manager = history_export_manager
         self.filters = filters
-        self.shareable_service = ShareableHistoryService(self.manager, self.serializer, notification_manager)
+        self.shareable_service = ShareableHistoryService(self.manager, self.serializer, notification_service)
         self.short_term_storage_allocator = short_term_storage_allocator
 
     def index(
@@ -216,6 +216,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         self,
         trans,
         payload: HistoryIndexQueryPayload,
+        serialization_params: SerializationParams,
         include_total_count: bool = False,
     ) -> Tuple[List[AnyHistoryView], int]:
         """Return a list of History accessible by the user
@@ -223,10 +224,9 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         :rtype:     list
         :returns:   dictionaries containing History details
         """
-        serialization_params = SerializationParams(default_view="detailed")
         entries, total_matches = self.manager.index_query(trans, payload, include_total_count)
         return (
-            [self._serialize_history(trans, entry, serialization_params) for entry in entries],
+            [self._serialize_history(trans, entry, serialization_params, default_view="summary") for entry in entries],
             total_matches,
         )
 
@@ -686,7 +686,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         history: model.History,
         serialization_params: SerializationParams,
         default_view: str = "detailed",
-    ) -> AnyHistoryView:
+    ):
         """
         Returns a dictionary with the corresponding values depending on the
         serialization parameters provided.
@@ -793,7 +793,10 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             filters=filters, order_by=order_by, limit=filter_query_params.limit, offset=filter_query_params.offset
         )
 
-        histories = [self._serialize_archived_history(trans, history, serialization_params) for history in histories]
+        histories = [
+            self._serialize_archived_history(trans, history, serialization_params, default_view="summary")
+            for history in histories
+        ]
         return histories, total_matches
 
     def _serialize_archived_history(
@@ -801,14 +804,13 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         trans: ProvidesHistoryContext,
         history: model.History,
         serialization_params: Optional[SerializationParams] = None,
+        default_view: str = "detailed",
     ):
         if serialization_params is None:
-            serialization_params = SerializationParams(default_view="summary")
-        archived_history = self.serializer.serialize_to_view(
-            history, user=trans.user, trans=trans, **serialization_params.dict()
-        )
+            serialization_params = SerializationParams()
+        archived_history = self._serialize_history(trans, history, serialization_params, default_view)
         export_record_data = self._get_export_record_data(history)
-        archived_history["export_record_data"] = export_record_data.dict() if export_record_data else None
+        archived_history["export_record_data"] = export_record_data.model_dump() if export_record_data else None
         return archived_history
 
     def _get_export_record_data(self, history: model.History) -> Optional[WriteStoreToPayload]:
@@ -820,7 +822,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         return None
 
 
-def get_fasta_hdas_by_history(session: Session, history_id: int):
+def get_fasta_hdas_by_history(session: galaxy_scoped_session, history_id: int):
     stmt = (
         select(HistoryDatasetAssociation)
         .filter_by(history_id=history_id, extension="fasta", deleted=False)

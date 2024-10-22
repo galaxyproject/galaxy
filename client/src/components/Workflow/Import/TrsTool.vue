@@ -1,7 +1,18 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faUpload } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
+
 import type { TrsTool, TrsToolVersion } from "./types";
 
-const props = defineProps<{ trsTool: TrsTool }>();
+library.add(faUpload);
+
+interface Props {
+    trsTool: TrsTool;
+}
+
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "onImport", versionId: string): void;
@@ -17,27 +28,32 @@ function importVersion(version: TrsToolVersion) {
     <div>
         <div>
             <b>Name:</b>
+
             <span>{{ props.trsTool.name }}</span>
         </div>
         <div>
             <b>Description:</b>
+
             <span>{{ props.trsTool.description }}</span>
         </div>
         <div>
             <b>Organization</b>
+
             <span>{{ props.trsTool.organization }}</span>
         </div>
         <div>
             <b>Versions</b>
+
             <ul>
                 <li v-for="version in props.trsTool.versions" :key="version.id">
-                    <b-button
+                    <BButton
                         class="m-1 workflow-import"
                         :data-version-name="version.name"
                         @click="importVersion(version)">
                         {{ version.name }}
-                        <icon icon="upload" />
-                    </b-button>
+
+                        <FontAwesomeIcon :icon="faUpload" />
+                    </BButton>
                 </li>
             </ul>
         </div>

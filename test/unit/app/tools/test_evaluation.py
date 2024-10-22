@@ -57,8 +57,7 @@ class TestToolEvaluator(TestCase, UsesApp):
         assert command_line == "bwa --thresh=4 --in=/galaxy/files/dataset_1.dat --out=/galaxy/files/dataset_2.dat"
 
     def test_repeat_evaluation(self):
-        repeat = Repeat()
-        repeat.name = "r"
+        repeat = Repeat("r")
         repeat.inputs = {"thresh": self.tool.test_thresh_param()}
         self.tool.set_params({"r": repeat})
         self.job.parameters = [
@@ -85,8 +84,7 @@ class TestToolEvaluator(TestCase, UsesApp):
         select_xml = XML("""<param name="always_true" type="select"><option value="true">True</option></param>""")
         parameter = SelectToolParameter(self.tool, select_xml)
 
-        conditional = Conditional()
-        conditional.name = "c"
+        conditional = Conditional("c")
         conditional.test_param = parameter
         when = ConditionalWhen()
         when.inputs = {"thresh": self.tool.test_thresh_param()}
@@ -219,7 +217,7 @@ class TestToolEvaluator(TestCase, UsesApp):
 
     def _setup_test_bwa_job(self):
         def hda(id, name, path):
-            hda = HistoryDatasetAssociation(name=name, metadata=dict())
+            hda = HistoryDatasetAssociation(name=name, metadata={})
             hda.dataset = Dataset(id=id, external_filename=path)
             return hda
 
@@ -232,7 +230,7 @@ class TestToolEvaluator(TestCase, UsesApp):
 
 class MockHistoryDatasetAssociation(HistoryDatasetAssociation):
     def __init__(self, **kwds):
-        self._metadata = dict()
+        self._metadata = {}
         super().__init__(**kwds)
 
 

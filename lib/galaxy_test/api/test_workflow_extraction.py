@@ -224,6 +224,46 @@ test_data:
         collection_step_state = loads(collection_step["tool_state"])
         assert collection_step_state["collection_type"] == "paired"
 
+    def test_empty_collection_map_over_extract_workflow(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input: collection
+  filter_file: data
+steps:
+  filter_collection:
+    tool_id: __FILTER_FROM_FILE__
+    in:
+       input: input
+       how|filter_source: filter_file
+    state:
+       how:
+         how_filter: remove_if_present
+  concat:
+    tool_id: cat1
+    in:
+      input1: filter_collection/output_filtered
+test_data:
+  input:
+    collection_type: list
+    elements:
+      - identifier: i1
+        content: "0"
+  filter_file: i1""",
+                history_id,
+                wait=True,
+            )
+            response = self._post(
+                "workflows", data={"from_history_id": history_id, "workflow_name": "extract with empty collection test"}
+            )
+            assert response.status_code == 200
+            workflow_id = response.json()["id"]
+            workflow = self.workflow_populator.download_workflow(workflow_id)
+            assert workflow
+            # TODO: after adding request models we should be able to recover implicit collection job requests.
+            # assert len(workflow["steps"]) == 4
+
     @skip_without_tool("cat_collection")
     def test_subcollection_mapping(self, history_id):
         jobs_summary = self._run_workflow(
@@ -478,7 +518,7 @@ test_data:
     def __setup_and_run_cat1_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow(name="test_for_extract")
         workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow, history_id=history_id)
-        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
+        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
         self._assert_status_code_is(run_workflow_response, 200)
         invocation_response = run_workflow_response.json()
         self.workflow_populator.wait_for_invocation_and_jobs(

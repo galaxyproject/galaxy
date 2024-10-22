@@ -80,12 +80,11 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.send_escape(input_element)
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        self.components.published_histories.advanced_search_submit.wait_for_and_click()
         self.assert_histories_present([self.history3_name])
 
     @retry_assertion_during_transitions
     def assert_histories_present(self, expected_histories, sort_by_matters=False):
-        present_histories = self.histories_get_history_names(selector="#histories-published-grid")
+        present_histories = self.get_grid_entry_names("#histories-published-grid")
         assert len(present_histories) == len(expected_histories)
         for index, history_name in enumerate(present_histories):
             if not sort_by_matters:
@@ -105,11 +104,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
     def get_present_histories(self):
         self.sleep_for(self.wait_types.UX_RENDER)
         return self.components.published_histories.histories.all()
-
-    def navigate_to_published_histories(self):
-        self.home()
-        self.click_masthead_shared_data()
-        self.components.masthead.published_histories.wait_for_and_click()
 
     def create_history(self, name):
         self.home()

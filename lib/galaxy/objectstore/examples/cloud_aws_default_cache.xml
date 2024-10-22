@@ -1,0 +1,6 @@
+<object_store type="cloud" provider="aws">
+     <auth />
+     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
+     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+     <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>

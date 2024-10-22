@@ -7,6 +7,7 @@ import logging
 import sys
 import threading
 import traceback
+from typing import Optional
 from urllib.parse import urljoin
 
 from paste import httpexceptions
@@ -20,6 +21,7 @@ import galaxy.web.framework
 import galaxy.webapps.base.webapp
 from galaxy import util
 from galaxy.security.validate_user_input import VALID_PUBLICNAME_RE
+from galaxy.structured_app import MinimalApp
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 from galaxy.web.framework.middleware.error import ErrorMiddleware
@@ -33,6 +35,12 @@ log = logging.getLogger(__name__)
 
 class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
     injection_aware = True
+
+    def __init__(
+        self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: Optional[str] = None
+    ) -> None:
+        super().__init__(galaxy_app, session_cookie, name)
+        self.session_factories.append(galaxy_app.install_model)
 
 
 def app_factory(*args, **kwargs):
@@ -81,17 +89,18 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_route("/activate", controller="user", action="activate")
 
     # Authentication endpoints.
-    webapp.add_route("/authnz/", controller="authnz", action="index", provider=None)
-    webapp.add_route("/authnz/{provider}/login", controller="authnz", action="login", provider=None)
-    webapp.add_route("/authnz/{provider}/callback", controller="authnz", action="callback", provider=None)
-    webapp.add_route(
-        "/authnz/{provider}/disconnect/{email}", controller="authnz", action="disconnect", provider=None, email=None
-    )
-    webapp.add_route("/authnz/{provider}/logout", controller="authnz", action="logout", provider=None)
-    webapp.add_route("/authnz/{provider}/create_user", controller="authnz", action="create_user")
-    # Returns the provider specific logout url for currently logged in provider
-    webapp.add_route("/authnz/logout", controller="authnz", action="get_logout_url")
-    webapp.add_route("/authnz/get_cilogon_idps", controller="authnz", action="get_cilogon_idps")
+    if app.config.enable_oidc:
+        webapp.add_route("/authnz/", controller="authnz", action="index", provider=None)
+        webapp.add_route("/authnz/{provider}/login", controller="authnz", action="login", provider=None)
+        webapp.add_route("/authnz/{provider}/callback", controller="authnz", action="callback", provider=None)
+        webapp.add_route(
+            "/authnz/{provider}/disconnect/{email}", controller="authnz", action="disconnect", provider=None, email=None
+        )
+        webapp.add_route("/authnz/{provider}/logout", controller="authnz", action="logout", provider=None)
+        webapp.add_route("/authnz/{provider}/create_user", controller="authnz", action="create_user")
+        # Returns the provider specific logout url for currently logged in provider
+        webapp.add_route("/authnz/logout", controller="authnz", action="get_logout_url")
+        webapp.add_route("/authnz/get_cilogon_idps", controller="authnz", action="get_cilogon_idps")
 
     # These two routes handle our simple needs at the moment
     webapp.add_route(
@@ -213,18 +222,32 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/form/{form_id}")
     webapp.add_client_route("/admin/api_keys")
     webapp.add_client_route("/carbon_emissions_calculations")
+    webapp.add_client_route("/help/terms/{term_id}")
     webapp.add_client_route("/datatypes")
     webapp.add_client_route("/login/start")
     webapp.add_client_route("/tools/list")
     webapp.add_client_route("/tools/json")
+    webapp.add_client_route("/tool_landings/{uuid}")
+    webapp.add_client_route("/workflow_landings/{uuid}")
     webapp.add_client_route("/tours")
     webapp.add_client_route("/tours/{tour_id}")
     webapp.add_client_route("/user")
     webapp.add_client_route("/user/notifications{path:.*?}")
     webapp.add_client_route("/user/{form_id}")
+    webapp.add_client_route("/object_store_instances/create")
+    webapp.add_client_route("/object_store_instances/index")
+    webapp.add_client_route("/object_store_instances/{user_object_store_id}/edit")
+    webapp.add_client_route("/object_store_instances/{user_object_store_id}/upgrade")
+    webapp.add_client_route("/object_store_templates/{template_id}/new")
+    webapp.add_client_route("/file_source_instances/create")
+    webapp.add_client_route("/file_source_instances/index")
+    webapp.add_client_route("/file_source_instances/{user_file_source_id}/edit")
+    webapp.add_client_route("/file_source_instances/{user_file_source_id}/upgrade")
+    webapp.add_client_route("/file_source_templates/{template_id}/new")
     webapp.add_client_route("/welcome/new")
     webapp.add_client_route("/visualizations")
     webapp.add_client_route("/visualizations/edit")
+    webapp.add_client_route("/visualizations/display{path:.*?}")
     webapp.add_client_route("/visualizations/sharing")
     webapp.add_client_route("/visualizations/list_published")
     webapp.add_client_route("/visualizations/list")
@@ -272,6 +295,8 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/workflows/trs_import")
     webapp.add_client_route("/workflows/trs_search")
     webapp.add_client_route("/workflows/invocations")
+    webapp.add_client_route("/workflows/invocations/{invocation_id}")
+    webapp.add_client_route("/workflows/invocations/import")
     webapp.add_client_route("/workflows/sharing")
     webapp.add_client_route("/workflows/{stored_workflow_id}/invocations")
     webapp.add_client_route("/workflows/invocations/report")
@@ -350,27 +375,6 @@ def populate_api_routes(webapp, app):
         path_prefix="/api/pages/{page_id}",
         controller="page_revisions",
         parent_resources=dict(member_name="page", collection_name="pages"),
-    )
-
-    webapp.mapper.connect("/api/cloud/authz/", action="index", controller="cloudauthz", conditions=dict(method=["GET"]))
-    webapp.mapper.connect(
-        "/api/cloud/authz/", action="create", controller="cloudauthz", conditions=dict(method=["POST"])
-    )
-
-    webapp.mapper.connect(
-        "delete_cloudauthz_item",
-        "/api/cloud/authz/{encoded_authz_id}",
-        action="delete",
-        controller="cloudauthz",
-        conditions=dict(method=["DELETE"]),
-    )
-
-    webapp.mapper.connect(
-        "upload_cloudauthz_item",
-        "/api/cloud/authz/{encoded_authz_id}",
-        action="update",
-        controller="cloudauthz",
-        conditions=dict(method=["PUT"]),
     )
 
     # =======================
@@ -587,14 +591,10 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["POST"]),
     )
 
-    webapp.mapper.resource("visualization", "visualizations", path_prefix="/api")
     webapp.mapper.resource("plugins", "plugins", path_prefix="/api")
     webapp.mapper.connect("/api/workflows/build_module", action="build_module", controller="workflows")
     webapp.mapper.connect(
         "/api/workflows/menu", action="set_workflow_menu", controller="workflows", conditions=dict(method=["PUT"])
-    )
-    webapp.mapper.connect(
-        "/api/workflows/{id}/refactor", action="refactor", controller="workflows", conditions=dict(method=["PUT"])
     )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
 
@@ -689,23 +689,18 @@ def populate_api_routes(webapp, app):
     #     action="import_tool_version",
     #     conditions=dict(method=["POST"]),
     # )
-
-    # API refers to usages and invocations - these mean the same thing but the
-    # usage routes should be considered deprecated.
-    invoke_names = {
-        "invocations": "",
-        "usage": "_deprecated",
-    }
-    for noun, suffix in invoke_names.items():
-        name = f"{noun}{suffix}"
-        webapp.mapper.connect(
-            f"workflow_{name}",
-            "/api/workflows/{workflow_id}/%s" % noun,
-            controller="workflows",
-            action="invoke",
-            conditions=dict(method=["POST"]),
-        )
-
+    webapp.mapper.connect(
+        "/api/workflows/{encoded_workflow_id}",
+        controller="workflows",
+        action="update",
+        conditions=dict(method=["PUT"]),
+    )
+    webapp.mapper.connect(
+        "/api/workflows",
+        controller="workflows",
+        action="create",
+        conditions=dict(method=["POST"]),
+    )
     # ================================
     # ===== USERS API =====
     # ================================
@@ -856,19 +851,6 @@ def populate_api_routes(webapp, app):
         controller="library_datasets",
         action="download",
         conditions=dict(method=["POST", "GET"]),
-    )
-
-    webapp.mapper.resource(
-        "content",
-        "contents",
-        controller="library_contents",
-        name_prefix="library_",
-        path_prefix="/api/libraries/{library_id}",
-        parent_resources=dict(member_name="library", collection_name="libraries"),
-    )
-
-    _add_item_extended_metadata_controller(
-        webapp, name_prefix="library_dataset_", path_prefix="/api/libraries/{library_id}/contents/{library_content_id}"
     )
 
     webapp.mapper.connect(

@@ -11,7 +11,17 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
-import { computed, ComputedRef, nextTick, onBeforeUnmount, type Ref, ref, toRefs, type UnwrapRef, watch } from "vue";
+import {
+    computed,
+    type ComputedRef,
+    nextTick,
+    onBeforeUnmount,
+    type Ref,
+    ref,
+    toRefs,
+    type UnwrapRef,
+    watch,
+} from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStores } from "@/composables/workflowStores";
@@ -22,12 +32,13 @@ import {
     type PostJobActions,
     type Step,
 } from "@/stores/workflowStepStore";
-import { assertDefined, ensureDefined } from "@/utils/assertions";
+import { assertDefined } from "@/utils/assertions";
 
+import { UpdateStepAction } from "./Actions/stepActions";
 import { useRelativePosition } from "./composables/relativePosition";
 import { useTerminal } from "./composables/useTerminal";
 import { type CollectionTypeDescriptor, NULL_COLLECTION_TYPE_DESCRIPTION } from "./modules/collectionTypeDescription";
-import { OutputTerminals } from "./modules/terminals";
+import type { OutputTerminals } from "./modules/terminals";
 
 import DraggableWrapper from "./DraggablePan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
@@ -50,10 +61,11 @@ const props = defineProps<{
     datatypesMapper: DatatypesMapperModel;
     parentNode: HTMLElement | null;
     readonly: boolean;
+    blank: boolean;
 }>();
 
 const emit = defineEmits(["pan-by", "stopDragging", "onDragConnector"]);
-const { stateStore, stepStore } = useWorkflowStores();
+const { stateStore, stepStore, undoRedoStore } = useWorkflowStores();
 const { rootOffset, output, stepId, datatypesMapper } = toRefs(props);
 
 const terminalComponent: Ref<InstanceType<typeof DraggableWrapper> | null> = ref(null);
@@ -155,7 +167,15 @@ function onToggleActive() {
     } else {
         stepWorkflowOutputs.push({ output_name: output.value.name, label: output.value.name });
     }
-    stepStore.updateStep({ ...step, workflow_outputs: stepWorkflowOutputs });
+
+    const action = new UpdateStepAction(
+        stepStore,
+        stateStore,
+        step.id,
+        { workflow_outputs: step.workflow_outputs },
+        { workflow_outputs: stepWorkflowOutputs }
+    );
+    undoRedoStore.applyAction(action);
 }
 
 function onToggleVisible() {
@@ -164,25 +184,36 @@ function onToggleVisible() {
     }
 
     const actionKey = `HideDatasetAction${props.output.name}`;
-    const step = { ...ensureDefined(stepStore.getStep(stepId.value)) };
+    const step = stepStore.getStep(stepId.value);
+    assertDefined(step);
+
+    const oldPostJobActions = structuredClone(step.post_job_actions) ?? {};
+    let newPostJobActions;
+
     if (isVisible.value) {
-        step.post_job_actions = {
-            ...step.post_job_actions,
-            [actionKey]: {
-                action_type: "HideDatasetAction",
-                output_name: props.output.name,
-                action_arguments: {},
-            },
+        newPostJobActions = structuredClone(step.post_job_actions) ?? {};
+        newPostJobActions[actionKey] = {
+            action_type: "HideDatasetAction",
+            output_name: props.output.name,
+            action_arguments: {},
         };
     } else {
         if (step.post_job_actions) {
-            const { [actionKey]: _unused, ...newPostJobActions } = step.post_job_actions;
-            step.post_job_actions = newPostJobActions;
+            const { [actionKey]: _unused, ...remainingPostJobActions } = step.post_job_actions;
+            newPostJobActions = structuredClone(remainingPostJobActions);
         } else {
-            step.post_job_actions = {};
+            newPostJobActions = {};
         }
     }
-    stepStore.updateStep(step);
+
+    const action = new UpdateStepAction(
+        stepStore,
+        stateStore,
+        step.id,
+        { post_job_actions: oldPostJobActions },
+        { post_job_actions: newPostJobActions }
+    );
+    undoRedoStore.applyAction(action);
 }
 
 function onPanBy(panBy: XYPosition) {
@@ -279,7 +310,7 @@ const outputDetails = computed(() => {
     const outputType =
         collectionType && collectionType.isCollection && collectionType.collectionType
             ? `output is ${collectionTypeToDescription(collectionType)}`
-            : `output is dataset`;
+            : `output is  ${terminal.value.optional ? "optional " : ""}${terminal.value.type || "dataset"}`;
     if (isMultiple.value) {
         if (!collectionType) {
             collectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
@@ -321,7 +352,7 @@ const removeTagsAction = computed(() => {
 
 <template>
     <div class="node-output" :class="rowClass" :data-output-name="output.name">
-        <div class="d-flex flex-column w-100">
+        <div v-if="!props.blank" class="d-flex flex-column w-100">
             <div class="node-output-buttons">
                 <button
                     v-if="showCalloutActiveOutput"
@@ -378,9 +409,9 @@ const removeTagsAction = computed(() => {
         <DraggableWrapper
             :id="id"
             ref="terminalComponent"
-            v-b-tooltip.hover="outputDetails"
+            v-b-tooltip.hover="!props.blank ? outputDetails : ''"
             class="output-terminal prevent-zoom"
-            :class="{ 'mapped-over': isMultiple }"
+            :class="{ 'mapped-over': isMultiple, 'blank-output': props.blank }"
             :output-name="output.name"
             :root-offset="rootOffset"
             :prevent-default="false"
@@ -430,12 +461,14 @@ const removeTagsAction = computed(() => {
 .output-terminal {
     @include node-terminal-style(right);
 
-    &:hover {
-        color: $brand-success;
-    }
+    &:not(.blank-output) {
+        &:hover {
+            color: $brand-success;
+        }
 
-    button:focus + .terminal-icon {
-        color: $brand-success;
+        button:focus + .terminal-icon {
+            color: $brand-success;
+        }
     }
 }
 

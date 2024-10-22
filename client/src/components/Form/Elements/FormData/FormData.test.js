@@ -3,6 +3,8 @@ import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
 import { dispatchEvent, getLocalVue } from "tests/jest/helpers";
 
+import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useEventStore } from "@/stores/eventStore";
 
 import MountTarget from "./FormData.vue";
@@ -15,6 +17,8 @@ let eventStore;
 function createTarget(propsData) {
     const pinia = createTestingPinia({ stubActions: false });
     eventStore = useEventStore();
+    const datatypesStore = useDatatypesMapperStore();
+    datatypesStore.datatypesMapper = testDatatypesMapper;
     return mount(MountTarget, {
         localVue,
         propsData,
@@ -366,6 +370,54 @@ describe("FormData", () => {
             product: false,
             values: [{ id: "hda2", map_over_type: null, src: "hda" }],
         });
+    });
+
+    it("rejects hda on collection input", async () => {
+        const wrapper = createTarget({
+            value: null,
+            options: defaultOptions,
+            type: "data_collection",
+        });
+        eventStore.setDragData({ id: "whatever", history_content_type: "dataset" });
+        dispatchEvent(wrapper, "dragenter");
+        dispatchEvent(wrapper, "drop");
+        expect(wrapper.emitted().alert[0][0]).toEqual("dataset is not a valid input for dataset collection parameter.");
+    });
+
+    it("rejects paired collection on list collection input", async () => {
+        const wrapper = createTarget({
+            value: null,
+            options: defaultOptions,
+            type: "data_collection",
+            collectionTypes: ["list"],
+        });
+        eventStore.setDragData({
+            id: "whatever",
+            history_content_type: "dataset_collection",
+            collection_type: "paired",
+        });
+        dispatchEvent(wrapper, "dragenter");
+        dispatchEvent(wrapper, "drop");
+        expect(wrapper.emitted().alert[0][0]).toEqual(
+            "paired dataset collection is not a valid input for list type dataset collection parameter."
+        );
+    });
+
+    it("accepts list:list collection on list collection input", async () => {
+        const wrapper = createTarget({
+            value: null,
+            options: defaultOptions,
+            type: "data_collection",
+            collectionTypes: ["list"],
+        });
+        eventStore.setDragData({
+            id: "whatever",
+            history_content_type: "dataset_collection",
+            collection_type: "list:list",
+        });
+        dispatchEvent(wrapper, "dragenter");
+        dispatchEvent(wrapper, "drop");
+        expect(wrapper.emitted().alert[0][0]).toEqual(undefined);
     });
 
     it("linked and unlinked batch mode handling", async () => {

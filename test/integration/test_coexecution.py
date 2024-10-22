@@ -66,7 +66,7 @@ execution:
       k8s_namespace: ${k8s_namespace}
       runner: pulsar_k8s
       docker_enabled: true
-      docker_default_container_id: busybox:ubuntu-14.04
+      docker_default_container_id: busybox:1.36.1-glibc
       pulsar_app_config:
         message_queue_url: '${container_amqp_url}'
       env:
@@ -145,7 +145,7 @@ execution:
       runner: pulsar_tes
       tes_url: ${tes_url}
       docker_enabled: true
-      docker_default_container_id: busybox:ubuntu-14.04
+      docker_default_container_id: busybox:1.36.1-glibc
       pulsar_app_config:
         message_queue_url: '${container_amqp_url}'
       env:
@@ -204,7 +204,7 @@ execution:
       runner: pulsar_tes
       tes_url: ${tes_url}
       docker_enabled: true
-      docker_default_container_id: busybox:ubuntu-14.04
+      docker_default_container_id: busybox:1.36.1-glibc
       pulsar_app_config:
         message_queue_url: '${container_amqp_url}'
       env:

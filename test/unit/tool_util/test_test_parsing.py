@@ -38,3 +38,26 @@ def test_simple_assert_to_test_assert_list():
 
 def test_assert_legacy_same_as_new_list_style():
     assert to_test_assert_list(ASSERT_THAT_LIST) == to_test_assert_list(ASSERT_THAT_LIST)
+
+
+NESTED_ASSERT_LIST = yaml.safe_load(
+    """
+- has_archive_member:
+    path: ".*"
+    asserts:
+      - has_text:
+          text: "a text"
+      - has_text:
+          text: "another text"
+"""
+)
+
+
+def test_nested_asserts():
+    asserts = to_test_assert_list(NESTED_ASSERT_LIST)
+    assert asserts and len(asserts) == 1
+    assert asserts and asserts[0]["children"] and len(asserts[0]["children"]) == 2
+    assert asserts and asserts[0]["children"] and asserts[0]["children"][0]["tag"] == "has_text"
+    assert asserts and asserts[0]["children"] and asserts[0]["children"][0]["attributes"]["text"] == "a text"
+    assert asserts and asserts[0]["children"] and asserts[0]["children"][1]["tag"] == "has_text"
+    assert asserts and asserts[0]["children"] and asserts[0]["children"][1]["attributes"]["text"] == "another text"

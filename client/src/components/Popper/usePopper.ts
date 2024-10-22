@@ -1,6 +1,5 @@
 import { createPopper } from "@popperjs/core";
-import type { Ref } from "vue";
-import { onMounted, onUnmounted, onUpdated, ref, unref, watch } from "vue";
+import { onMounted, onUnmounted, onUpdated, type Ref, ref, unref, watch } from "vue";
 
 export type MaybeRef<T> = T | Ref<T>;
 
@@ -186,19 +185,14 @@ export function usePopperjs(
 
             case "hover": {
                 on(referenceRef.value!, "mouseover", doMouseover);
-                on(popperRef.value!, "mouseover", doMouseover);
                 on(referenceRef.value!, "mouseout", doMouseout);
-                on(popperRef.value!, "mouseout", doMouseout);
                 on(referenceRef.value!, "mousedown", doMouseout);
-                on(popperRef.value!, "mousedown", doMouseout);
                 break;
             }
 
             case "focus": {
                 on(referenceRef.value!, "focus", doOpen);
-                on(popperRef.value!, "focus", doOpen);
                 on(referenceRef.value!, "blur", doClose);
-                on(popperRef.value!, "blur", doClose);
                 break;
             }
 
@@ -218,16 +212,11 @@ export function usePopperjs(
         off(referenceRef.value!, "click", doToggle);
 
         off(referenceRef.value!, "mouseover", doMouseover);
-        off(popperRef.value!, "mouseover", doMouseover);
         off(referenceRef.value!, "mouseout", doMouseout);
-        off(popperRef.value!, "mouseout", doMouseout);
         off(referenceRef.value!, "mousedown", doMouseout);
-        off(popperRef.value!, "mousedown", doMouseout);
 
         off(referenceRef.value!, "focus", doOpen);
-        off(popperRef.value!, "focus", doOpen);
         off(referenceRef.value!, "blur", doClose);
-        off(popperRef.value!, "blur", doClose);
     };
     const doCloseForDocument = (e: Event) => {
         if (referenceRef.value?.contains(e.target as Element)) {

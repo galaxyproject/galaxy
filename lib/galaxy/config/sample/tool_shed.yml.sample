@@ -15,6 +15,10 @@ tool_shed:
   # installation directory.
   #hgweb_config_dir: null
 
+  # Default URL prefix for repositories served via hgweb. If running an
+  # external hgweb server you should set this to an empty string.
+  #hgweb_repo_prefix: repos/
+
   # Allow pushing directly to mercurial repositories directly and
   # without authentication.
   #config_hg_for_dev: null

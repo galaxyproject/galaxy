@@ -1,19 +1,20 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import type { NotificationChanges, UserNotification, UserNotificationsBatchUpdateRequest } from "@/api/notifications";
+import { GalaxyApi } from "@/api";
 import {
-    loadNotificationsFromServer,
-    loadNotificationsStatus,
-    updateBatchNotificationsOnServer,
+    type NotificationChanges,
+    type UserNotification,
+    type UserNotificationsBatchUpdateRequest,
 } from "@/api/notifications";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
+import { rethrowSimple } from "@/utils/simple-error";
 import { mergeObjectListsById } from "@/utils/utils";
 
 import { useBroadcastsStore } from "./broadcastsStore";
 
-const ACTIVE_POLLING_INTERVAL = 5000;
-const INACTIVE_POLLING_INTERVAL = 30000;
+const ACTIVE_POLLING_INTERVAL = 30000; // 30 seconds
+const INACTIVE_POLLING_INTERVAL = ACTIVE_POLLING_INTERVAL * 20; // 10 minutes
 
 export const useNotificationsStore = defineStore("notificationsStore", () => {
     const { startWatchingResource: startWatchingNotifications } = useResourceWatcher(getNotificationStatus, {
@@ -31,8 +32,14 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     const unreadNotifications = computed(() => notifications.value.filter((n) => !n.seen_time));
 
     async function loadNotifications() {
-        const data = await loadNotificationsFromServer();
-        notifications.value = mergeObjectListsById(data, [], "create_time", "desc");
+        const { data, error } = await GalaxyApi().GET("/api/notifications");
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        const useNotifications = data as UserNotification[]; // We are sure this cannot be a broadcast
+        notifications.value = mergeObjectListsById(useNotifications, [], "create_time", "desc");
     }
 
     async function getNotificationStatus() {
@@ -43,7 +50,18 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
                 await loadNotifications();
                 updateUnreadCount();
             } else {
-                const data = await loadNotificationsStatus(lastNotificationUpdate.value);
+                const { data, error } = await GalaxyApi().GET("/api/notifications/status", {
+                    params: {
+                        query: {
+                            since: lastNotificationUpdate.value.toISOString().replace("Z", ""),
+                        },
+                    },
+                });
+
+                if (error) {
+                    rethrowSimple(error);
+                }
+
                 totalUnreadCount.value = data.total_unread_count;
                 notifications.value = mergeObjectListsById(
                     notifications.value,
@@ -62,7 +80,14 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     }
 
     async function updateBatchNotification(request: UserNotificationsBatchUpdateRequest) {
-        await updateBatchNotificationsOnServer(request);
+        const { error } = await GalaxyApi().PUT("/api/notifications", {
+            body: request,
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
         if (request.changes.deleted) {
             notifications.value = notifications.value.filter((n) => !request.notification_ids.includes(n.id));
         }

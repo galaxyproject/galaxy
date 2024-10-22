@@ -26,35 +26,26 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: 'galaxy root'
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.12.1'
           cache: 'yarn'
           cache-dependency-path: 'galaxy root/client/yarn.lock'
-      - name: Get full Python version
-        id: full-python-version
-        shell: bash
-        run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
       - name: Cache pip dir
-        uses: actions/cache@v3
-        id: pip-cache
+        uses: actions/cache@v4
         with:
           path: ~/Library/Caches/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
-      - name: Cache tox env
-        uses: actions/cache@v3
+      - name: Install miniforge  # use this job to test using Python from a conda environment
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          path: .tox
-          key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-osx
-      - name: Install miniconda  # use this job to test using Python from a conda environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
+          miniforge-version: latest
           activate-environment: ''
       - name: Restore client cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: galaxy-static-${{ needs.build-client.outputs.commit-id }}
           path: 'galaxy root/static'

@@ -17,8 +17,10 @@ from galaxy.tool_shed.galaxy_install.installed_repository_manager import Install
 from galaxy.tool_shed.unittest_utils import StandaloneInstallationTarget
 from galaxy.tool_shed.util.repository_util import check_for_updates
 from galaxy.util.tool_shed.tool_shed_registry import DEFAULT_TOOL_SHED_URL
+from galaxy.util.unittest_utils import skip_if_site_down
 
 
+@skip_if_site_down(DEFAULT_TOOL_SHED_URL)
 def test_against_production_shed(tmp_path: Path):
     repo_owner = "iuc"
     repo_name = "featurecounts"
@@ -57,7 +59,7 @@ def test_against_production_shed(tmp_path: Path):
     assert tsr
     message, status = check_for_updates(
         install_target.tool_shed_registry,
-        install_model_context,
+        install_model_context,  # type:ignore[arg-type]
         tsr.id,
     )
     assert status

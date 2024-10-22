@@ -2,12 +2,14 @@
 import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
 
+import { hasDetails } from "@/api";
 import { STATES } from "@/components/History/Content/model/states";
 import { useDatasetStore } from "@/stores/datasetStore";
 
 import { type ItemUrls } from ".";
 
 import DatasetActions from "./DatasetActions.vue";
+import DatasetMiscInfo from "./DatasetMiscInfo.vue";
 
 const datasetStore = useDatasetStore();
 
@@ -25,6 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "toggleHighlights"): void;
+    (e: "edit"): void;
 }>();
 
 const result = computed(() => datasetStore.getDataset(props.id));
@@ -39,7 +42,7 @@ function toggleHighlights() {
 
 <template>
     <div>
-        <div v-if="result && !isLoading" class="dataset">
+        <div v-if="result && !isLoading && hasDetails(result)" class="dataset">
             <div class="details not-loading">
                 <div class="summary">
                     <div v-if="stateText" class="mb-1">{{ stateText }}</div>
@@ -56,9 +59,7 @@ function toggleHighlights() {
                             result.genome_build
                         }}</BLink>
                     </span>
-                    <div v-if="result.misc_info" class="info">
-                        <span class="value">{{ result.misc_info }}</span>
-                    </div>
+                    <DatasetMiscInfo v-if="result.misc_info" :misc-info="result.misc_info" />
                 </div>
                 <DatasetActions
                     :item="result"

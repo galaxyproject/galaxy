@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faClock, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faList } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useRouter } from "vue-router/composables";
+import { onMounted, ref } from "vue";
 
+import { GalaxyApi } from "@/api";
 import localize from "@/utils/localization";
+import { rethrowSimple } from "@/utils/simple-error";
 
-library.add(faClock, faSitemap);
+library.add(faList);
 
 interface Props {
     workflow: any;
@@ -14,23 +16,57 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const router = useRouter();
+const count = ref<number | undefined>(undefined);
 
-function onInvocations() {
-    router.push(`/workflows/${props.workflow.id}/invocations`);
+async function initCounts() {
+    const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}/counts", {
+        params: { path: { workflow_id: props.workflow.id } },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    let allCounts = 0;
+    for (const stateCount of Object.values(data)) {
+        if (stateCount) {
+            allCounts += stateCount;
+        }
+    }
+    count.value = allCounts;
 }
+
+onMounted(initCounts);
 </script>
 
 <template>
     <div class="workflow-invocations-count d-flex align-items-center flex-gapx-1">
+        <BBadge v-if="count != undefined && count === 0" pill class="list-view">
+            <span>never run</span>
+        </BBadge>
+        <BBadge
+            v-else-if="count != undefined && count > 0"
+            v-b-tooltip.hover.noninteractive
+            pill
+            :title="localize('View workflow invocations')"
+            class="outline-badge cursor-pointer list-view"
+            :to="`/workflows/${props.workflow.id}/invocations`">
+            <FontAwesomeIcon :icon="faList" fixed-width />
+
+            <span>
+                workflow runs:
+                {{ count }}
+            </span>
+        </BBadge>
         <BButton
-            v-b-tooltip.hover
+            v-else
+            v-b-tooltip.hover.noninteractive
             :title="localize('View workflow invocations')"
             class="inline-icon-button"
             variant="link"
             size="sm"
-            @click="onInvocations">
-            <FontAwesomeIcon :icon="faSitemap" fixed-width />
+            :to="`/workflows/${props.workflow.id}/invocations`">
+            <FontAwesomeIcon :icon="faList" fixed-width />
         </BButton>
     </div>
 </template>

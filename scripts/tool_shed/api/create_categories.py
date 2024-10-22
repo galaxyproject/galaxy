@@ -31,7 +31,7 @@ def main(options):
     from_tool_shed = options.from_tool_shed.rstrip("/")
     to_tool_shed = options.to_tool_shed.rstrip("/")
     # Get the categories from the specified Tool Shed.
-    url = "%s/api/categories" % from_tool_shed
+    url = f"{from_tool_shed}/api/categories"
     category_dicts = get(url)
     create_response_dicts = []
     for category_dict in category_dicts:
@@ -39,7 +39,7 @@ def main(options):
         description = category_dict.get("description", None)
         if name is not None and description is not None:
             data = dict(name=name, description=description)
-            url = "%s/api/categories" % to_tool_shed
+            url = f"{to_tool_shed}/api/categories"
             try:
                 response = submit(url, data, api_key)
             except Exception as e:

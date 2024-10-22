@@ -13,8 +13,8 @@ extend-exclude = '''
 isort = true
 
 [tool.poetry]
+package-mode = false
 name = "galaxy"
-version = "22.01.dev0"
 description = "Galaxy is an open, web-based platform for accessible, reproducible, and transparent computational research."
 authors = ["Galaxy Contributors"]
 license = "AFL-3.0"
@@ -24,12 +24,12 @@ repository = "https://github.com/galaxyproject/galaxy/"
 documentation = "https://docs.galaxyproject.org/"
 
 [[tool.poetry.source]]
-name = "PyPI"
-priority = "default"
-
-[[tool.poetry.source]]
 name = "galaxyproject"
 url = "https://wheels.galaxyproject.org/simple"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "PyPI"
 priority = "primary"
 
 [tool.poetry.dependencies]
@@ -46,7 +46,7 @@ boltons = "*"
 boto = "*"
 bx-python = "*"
 celery = "*"
-Cheetah3 = "!=3.2.6.post2"  # yanked release, https://github.com/python-poetry/poetry/issues/2453
+Cheetah3 = "*"
 cloudauthz = "==0.6.0"
 cloudbridge = "*"
 circus = "*"
@@ -57,18 +57,20 @@ dnspython = "*"
 docutils = "!=0.17, !=0.17.1"
 dparse = "*"
 edam-ontology = "*"
-fastapi = ">=0.108"
+fastapi-slim = ">=0.111.0"
 fs = "*"
-future = { git = "https://github.com/nsoranzo/python-future.git", branch = "python312-imp-module_past" }
-galaxy_sequence_utils = "*"
-graphene-sqlalchemy = "3.0.0rc1"  # need a beta release to be compat. with starlette plugin
+future = ">=1.0.0"  # Python 3.12 support
+graphene = "*"
+graphene-sqlalchemy = ">=3.0.0rc1"  # need a beta release to be compat. with starlette plugin
+graphql-core = "*"
 gravity = ">=1.0.4"
 gunicorn = "*"
 gxformat2 = "*"
 h5grove = ">=1.2.1"
 h5py = "*"
 importlib-resources = { version = "*", python = "<3.9" }  # for importlib.{abc.Traversable,resources.{files, Package}}
-isa-rwval = ">=0.10.10"
+isa-rwval = { git = "https://github.com/nsoranzo/isa-rwval.git", branch = "master" }  # https://github.com/ISA-tools/isa-rwval/pull/17
+jinja2 = "*"
 kombu = ">=5.3"  # for importlib-metadata fix
 isal = "*"
 lagom = "*"
@@ -85,10 +87,11 @@ paramiko = "!=2.9.0, !=2.9.1"  # https://github.com/paramiko/paramiko/issues/196
 Parsley = "*"
 Paste = "*"
 pebble = "*"
+pillow = "*"
 psutil = "*"
 pulsar-galaxy-lib = ">=0.15.0.dev0"
 pycryptodome = "*"
-pydantic = {version = ">=2, !=2.6.0, !=2.6.1", extras = ["email"]}  # https://github.com/pydantic/pydantic/issues/8760
+pydantic = {version = ">=2.7.4", extras = ["email"]}  # https://github.com/pydantic/pydantic/pull/9639
 PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
@@ -105,9 +108,9 @@ requests = "*"
 rocrate = "*"
 Routes = "*"
 schema-salad = "!=8.3.20220721194857"  # https://github.com/common-workflow-language/schema_salad/issues/575
-social-auth-core = {version = "==4.0.3", extras = ["openidconnect"]}
+social-auth-core = ">=4.5.0"  # to drop dependency on abandoned python-jose
 sortedcontainers = "*"
-SQLAlchemy = ">=1.4.25,<2"
+SQLAlchemy = ">=2.0,<2.1,!=2.0.36"  # https://github.com/sqlalchemy/sqlalchemy/issues/12019
 sqlitedict = "*"
 sqlparse = "*"
 starlette = "*"
@@ -117,17 +120,18 @@ svgwrite = "*"
 tifffile = "*"
 tuswsgi = "*"
 typing-extensions = "*"
-uvicorn = "*"
+uvicorn = "!=0.28.0"  # https://github.com/galaxyproject/galaxy/issues/17669
 uvloop = "*"
 WebOb = "*"
 Whoosh = "*"
 zipstream-new = "*"
-s3fs = "^2023.1.0"
+s3fs = ">=2023.1.0"
 
 [tool.poetry.group.dev.dependencies]
 ase = ">=3.18.1"
 axe-selenium-python = "*"
 black = "*"
+boto3 = "*"
 codespell = "*"
 cwltest = "*"
 darker = "*"
@@ -138,11 +142,11 @@ isort = "*"
 lxml = "!=4.2.2"
 markdown-it-reporter = "*"
 myst-parser = "*"
+onedatafilerestclient = "==21.2.5.2"
 pkce = "*"
 playwright = "*"
 pytest = "*"
 pytest-asyncio = "*"
-pytest-celery = "*"
 pytest-cov = "*"
 pytest-html = "*"
 pytest-httpserver = "*"
@@ -153,11 +157,12 @@ pytest-playwright = "*"
 pytest-postgresql = "!=3.0.0"  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
 pytest-shard = "*"
 responses = "*"
+rucio-clients = {version = ">=33.6.0", python = ">=3.9"}  # https://github.com/galaxyproject/galaxy/pull/17156
 selenium = "*"
 urllib3 = "<2"  # Necessary for poetry for resolve deps for Python 3.8+
 seletools = "*"
 Sphinx = ">=4.0"  # support docutils 0.17
-sphinx-rtd-theme = ">=1.0.0,<2"  # https://github.com/python-poetry/poetry/issues/8194
+sphinx-rtd-theme = "*"
 statsd = "*"
 testfixtures = "*"
 tuspy = "*"
@@ -167,8 +172,9 @@ Werkzeug = "*"
 
 [tool.poetry.group.typecheck.dependencies]
 mypy = "*"
+boto3-stubs = {version = "*", extras = ["s3"]}
 lxml-stubs = "*"
-pydantic = ">=2, !=2.6.0, !=2.6.1"  # for pydantic.mypy plugin
+pydantic = ">=2.7.4"  # for pydantic.mypy plugin
 types-bleach = "*"
 types-boto = "*"
 types-contextvars = "*"
@@ -176,10 +182,10 @@ types-dataclasses = "*"
 types-docutils = "*"
 types-Markdown = "*"
 types-paramiko = "*"
-types-pkg-resources = "*"
 types-python-dateutil = "*"
 types-PyYAML = "*"
 types-requests = "*"
+types-setuptools = "*"
 types-six = "*"
 
 [tool.ruff]
@@ -190,8 +196,9 @@ exclude = [
 
 [tool.ruff.lint]
 # Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),
-# flake8-logging-format (G) and pyupgrade (UP)
-select = ["E", "F", "B", "G", "UP"]
+# flake8-comprehensions (C4), flake8-logging-format (G),
+# flake8-implicit-str-concat (ISC) and pyupgrade (UP)
+select = ["E", "F", "B", "C4", "G", "ISC", "NPY", "UP"]
 # Exceptions:
 # B008 Do not perform function calls in argument defaults (for FastAPI Depends and Body)
 # B9 flake8-bugbear opinionated warnings
@@ -200,11 +207,18 @@ select = ["E", "F", "B", "G", "UP"]
 # G* are TODOs
 ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004"]
 
+[tool.ruff.lint.flake8-comprehensions]
+allow-dict-calls-with-keyword-arguments = true
+
 [tool.ruff.lint.isort]
 # We are not selecting "I" rules in ruff yet because support for all the isort
 # options we need is not complete, but these are the one currently implemented.
 combine-as-imports = true
 relative-imports-order = "closest-to-furthest"
+
+[tool.ruff.lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+keep-runtime-typing = true
 
 [tool.ruff.lint.per-file-ignores]
 # Don't check pyupgrade rules on tool scripts, which may use different Python versions

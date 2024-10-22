@@ -1,5 +1,9 @@
 import re
-from typing import TYPE_CHECKING
+from typing import (
+    get_origin,
+    TYPE_CHECKING,
+    Union,
+)
 
 from pydantic import (
     BeforeValidator,
@@ -112,6 +116,11 @@ def literal_to_value(arg):
     return val[0]
 
 
+def is_optional(field):
+    args = get_args(field)
+    return get_origin(field) is Union and len(args) == 2 and type(None) in args
+
+
 def ModelClassField(default_value):
     """Represents a database model class name annotated as a constant
     pydantic Field.
@@ -124,3 +133,15 @@ def ModelClassField(default_value):
         description="The name of the database model class.",
         json_schema_extra={"const": literal_to_value(default_value), "type": "string"},
     )
+
+
+def accept_wildcard_defaults_to_json(v):
+    assert isinstance(v, str)
+    # Accept header can have multiple comma separated values.
+    # If any of these values is the wildcard - we default to application/json.
+    if "*/*" in v:
+        return "application/json"
+    return v
+
+
+AcceptHeaderValidator = BeforeValidator(accept_wildcard_defaults_to_json)

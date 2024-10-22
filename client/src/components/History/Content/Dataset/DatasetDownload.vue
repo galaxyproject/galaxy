@@ -5,13 +5,13 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { type DatasetDetails } from "@/api";
+import { type HDADetailed } from "@/api";
 import { prependPath } from "@/utils/redirect";
 
 library.add(faSave);
 
 interface Props {
-    item: DatasetDetails;
+    item: HDADetailed;
 }
 
 const props = defineProps<Props>();

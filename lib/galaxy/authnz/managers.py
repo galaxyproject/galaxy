@@ -1,14 +1,5 @@
 import builtins
-import copy
-import json
 import logging
-import os
-import random
-import string
-
-import requests
-from cloudauthz import CloudAuthz
-from cloudauthz.exceptions import CloudAuthzBaseException
 
 from galaxy import (
     exceptions,
@@ -22,20 +13,20 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
-from galaxy.util.resources import files
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
+)
 from .custos_authnz import (
     CustosAuthFactory,
     KEYCLOAK_BACKENDS,
 )
 from .psa_authnz import (
     BACKENDS_NAME,
-    on_the_fly_config,
     PSAAuthnz,
-    Storage,
-    Strategy,
 )
 
-OIDC_BACKEND_SCHEMA = files("galaxy.authnz.xsd") / "oidc_backends_config.xsd"
+OIDC_BACKEND_SCHEMA = resource_path(__package__, "xsd/oidc_backends_config.xsd")
 
 log = logging.getLogger(__name__)
 
@@ -75,8 +66,8 @@ class AuthnzManager:
             for child in root:
                 if child.tag != "Setter":
                     log.error(
-                        "Expect a node with `Setter` tag, found a node with `{}` tag instead; "
-                        "skipping this node.".format(child.tag)
+                        "Expect a node with `Setter` tag, found a node with `%s` tag instead; skipping this node.",
+                        child.tag,
                     )
                     continue
                 if "Property" not in child.attrib or "Value" not in child.attrib or "Type" not in child.attrib:
@@ -92,8 +83,9 @@ class AuthnzManager:
                         func = getattr(builtins, child.get("Type"))
                 except AttributeError:
                     log.error(
-                        "The value of attribute `Type`, `{}`, is not a valid built-in type;" " skipping this node"
-                    ).format(child.get("Type"))
+                        "The value of attribute `Type`, `%s`, is not a valid built-in type; skipping this node",
+                        child.get("Type"),
+                    )
                     continue
                 self.oidc_config[child.get("Property")] = func(child.get("Value"))
         except ImportError:
@@ -104,11 +96,15 @@ class AuthnzManager:
     def _get_idp_icon(self, idp):
         return self.oidc_backends_config[idp].get("icon") or DEFAULT_OIDC_IDP_ICONS.get(idp)
 
+    def _get_idp_button_text(self, idp):
+        return self.oidc_backends_config[idp].get("custom_button_text")
+
     def _parse_oidc_backends_config(self, config_file):
         self.oidc_backends_config = {}
         self.oidc_backends_implementation = {}
         try:
-            tree = parse_xml(config_file, schemafname=OIDC_BACKEND_SCHEMA)
+            with as_file(OIDC_BACKEND_SCHEMA) as oidc_backend_schema_path:
+                tree = parse_xml(config_file, schemafname=oidc_backend_schema_path)
             root = tree.getroot()
             if root.tag != "OIDC":
                 raise etree.ParseError(
@@ -118,8 +114,8 @@ class AuthnzManager:
             for child in root:
                 if child.tag != "provider":
                     log.error(
-                        "Expect a node with `provider` tag, found a node with `{}` tag instead; "
-                        "skipping the node.".format(child.tag)
+                        "Expect a node with `provider` tag, found a node with `%s` tag instead; skipping the node.",
+                        child.tag,
                     )
                     continue
                 if "name" not in child.attrib:
@@ -129,7 +125,10 @@ class AuthnzManager:
                 if idp in BACKENDS_NAME:
                     self.oidc_backends_config[idp] = self._parse_idp_config(child)
                     self.oidc_backends_implementation[idp] = "psa"
-                    self.app.config.oidc[idp] = {"icon": self._get_idp_icon(idp)}
+                    self.app.config.oidc[idp] = {
+                        "icon": self._get_idp_icon(idp),
+                        "custom_button_text": self._get_idp_button_text(idp),
+                    }
                 elif idp in KEYCLOAK_BACKENDS:
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = "custos"
@@ -166,6 +165,10 @@ class AuthnzManager:
             rtv["extra_scopes"] = listify(config_xml.find("extra_scopes").text)
         if config_xml.find("tenant_id") is not None:
             rtv["tenant_id"] = config_xml.find("tenant_id").text
+        if config_xml.find("oidc_endpoint") is not None:
+            rtv["oidc_endpoint"] = config_xml.find("oidc_endpoint").text
+        if config_xml.find("custom_button_text") is not None:
+            rtv["custom_button_text"] = config_xml.find("custom_button_text").text
         if config_xml.find("pkce_support") is not None:
             rtv["pkce_support"] = asbool(config_xml.find("pkce_support").text)
         if config_xml.find("accepted_audiences") is not None:
@@ -193,11 +196,13 @@ class AuthnzManager:
         if config_xml.find("well_known_oidc_config_uri") is not None:
             rtv["well_known_oidc_config_uri"] = config_xml.find("well_known_oidc_config_uri").text
         if config_xml.findall("allowed_idp") is not None:
-            self.allowed_idps = list(map(lambda idp: idp.text, config_xml.findall("allowed_idp")))
+            self.allowed_idps = [idp.text for idp in config_xml.findall("allowed_idp")]
         if config_xml.find("ca_bundle") is not None:
             rtv["ca_bundle"] = config_xml.find("ca_bundle").text
         if config_xml.find("icon") is not None:
             rtv["icon"] = config_xml.find("icon").text
+        if config_xml.find("extra_scopes") is not None:
+            rtv["extra_scopes"] = listify(config_xml.find("extra_scopes").text)
         if config_xml.find("pkce_support") is not None:
             rtv["pkce_support"] = asbool(config_xml.find("pkce_support").text)
         if config_xml.find("accepted_audiences") is not None:
@@ -258,76 +263,20 @@ class AuthnzManager:
         else:
             return None
 
-    def _extend_cloudauthz_config(self, cloudauthz, request, sa_session, user_id):
-        config = copy.deepcopy(cloudauthz.config)
-        if cloudauthz.provider == "aws":
-            success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider)
-            strategy = Strategy(request, None, Storage, backend.config)
-            on_the_fly_config(sa_session)
-            try:
-                config["id_token"] = cloudauthz.authn.get_id_token(strategy)
-            except requests.exceptions.HTTPError as e:
-                msg = (
-                    "Sign-out from Galaxy and remove its access from `{}`, then log back in using `{}` "
-                    "account.".format(self._unify_provider_name(cloudauthz.authn.provider), cloudauthz.authn.uid)
-                )
-                log.debug(
-                    "Failed to get/refresh ID token for user with ID `{}` for assuming authz_id `{}`. "
-                    "User may not have a refresh token. If the problem persists, set the `prompt` key to "
-                    "`consent` in `oidc_backends_config.xml`, then restart Galaxy and ask user to: {}"
-                    "Error Message: `{}`".format(user_id, cloudauthz.id, msg, e.response.text)
-                )
-                raise exceptions.AuthenticationFailed(
-                    err_msg="An error occurred getting your ID token. {}. If the problem persists, please "
-                    "contact Galaxy admin.".format(msg)
-                )
-        return config
-
     @staticmethod
     def can_user_assume_authn(trans, authn_id):
         qres = trans.sa_session.query(model.UserAuthnzToken).get(authn_id)
         if qres is None:
-            msg = "Authentication record with the given `authn_id` (`{}`) not found.".format(
-                trans.security.encode_id(authn_id)
-            )
+            msg = f"Authentication record with the given `authn_id` (`{trans.security.encode_id(authn_id)}`) not found."
             log.debug(msg)
             raise exceptions.ObjectNotFound(msg)
         if qres.user_id != trans.user.id:
-            msg = "The request authentication with ID `{}` is not accessible to user with ID " "`{}`.".format(
-                trans.security.encode_id(authn_id), trans.security.encode_id(trans.user.id)
-            )
-            log.warning(msg)
-            raise exceptions.ItemAccessibilityException(msg)
-
-    @staticmethod
-    def try_get_authz_config(sa_session, user_id, authz_id):
-        """
-        It returns a cloudauthz config (see model.CloudAuthz) with the
-        given ID; and raise an exception if either a config with given
-        ID does not exist, or the configuration is defined for a another
-        user than trans.user.
-
-        :type  trans:       galaxy.webapps.base.webapp.GalaxyWebTransaction
-        :param trans:       Galaxy web transaction
-
-        :type  authz_id:    int
-        :param authz_id:    The ID of a CloudAuthz configuration to be used for
-                            getting temporary credentials.
-
-        :rtype :            model.CloudAuthz
-        :return:            a cloudauthz configuration.
-        """
-        qres = sa_session.query(model.CloudAuthz).get(authz_id)
-        if qres is None:
-            raise exceptions.ObjectNotFound("An authorization configuration with given ID not found.")
-        if user_id != qres.user_id:
             msg = (
-                "The request authorization configuration (with ID:`{}`) is not accessible for user with "
-                "ID:`{}`.".format(qres.id, user_id)
+                f"The request authentication with ID `{trans.security.encode_id(authn_id)}` is not accessible to user with ID "
+                f"`{trans.security.encode_id(trans.user.id)}`."
             )
             log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
-        return qres
 
     def refresh_expiring_oidc_tokens_for_provider(self, trans, auth):
         try:
@@ -340,9 +289,8 @@ class AuthnzManager:
             if refreshed:
                 log.debug(f"Refreshed user token via `{auth.provider}` identity provider")
             return True
-        except Exception as e:
-            msg = f"An error occurred when refreshing user token: {e}"
-            log.error(msg)
+        except Exception:
+            log.exception("An error occurred when refreshing user token")
             return False
 
     def refresh_expiring_oidc_tokens(self, trans, user=None):
@@ -496,107 +444,9 @@ class AuthnzManager:
             if success is False:
                 return False, message, None
             elif provider in KEYCLOAK_BACKENDS:
-                return backend.disconnect(provider, trans, email, disconnect_redirect_url)
+                return backend.disconnect(provider, trans, disconnect_redirect_url, email=email)
             return backend.disconnect(provider, trans, disconnect_redirect_url)
         except Exception:
-            msg = (
-                "An error occurred when disconnecting authentication with `{}` identity provider for user `{}`".format(
-                    provider, trans.user.username
-                )
-            )
+            msg = f"An error occurred when disconnecting authentication with `{provider}` identity provider for user `{trans.user.username}`"
             log.exception(msg)
             return False, msg, None
-
-    def get_cloud_access_credentials(self, cloudauthz, sa_session, user_id, request=None):
-        """
-        This method leverages CloudAuthz (https://github.com/galaxyproject/cloudauthz)
-        to request a cloud-based resource provider (e.g., Amazon AWS, Microsoft Azure)
-        for temporary access credentials to a given resource.
-
-        It first checks if a cloudauthz config with the given ID (`authz_id`) is
-        available and can be assumed by the user, and raises an exception if either
-        is false. Otherwise, it then extends the cloudauthz configuration as required
-        by the CloudAuthz library for the provider specified in the configuration.
-        For instance, it adds on-the-fly values such as a valid OpenID Connect
-        identity token, as required by CloudAuthz for AWS. Then requests temporary
-        credentials from the CloudAuthz library using the updated configuration.
-
-        :type  cloudauthz:  CloudAuthz
-        :param cloudauthz:  an instance of CloudAuthz to be used for getting temporary
-                            credentials.
-
-        :type   sa_session: sqlalchemy.orm.scoping.scoped_session
-        :param  sa_session: SQLAlchemy database handle.
-
-        :type   user_id:    int
-        :param  user_id:    Decoded Galaxy user ID.
-
-        :type   request:    galaxy.web.framework.base.Request
-        :param  request:    Encapsulated HTTP(S) request.
-
-        :rtype:             dict
-        :return:            a dictionary containing credentials to access a cloud-based
-                            resource provider. See CloudAuthz (https://github.com/galaxyproject/cloudauthz)
-                            for details on the content of this dictionary.
-        """
-        config = self._extend_cloudauthz_config(cloudauthz, request, sa_session, user_id)
-        try:
-            ca = CloudAuthz()
-            log.info(
-                "Requesting credentials using CloudAuthz with config id `{}` on be half of user `{}`.".format(
-                    cloudauthz.id, user_id
-                )
-            )
-            credentials = ca.authorize(cloudauthz.provider, config)
-            return credentials
-        except CloudAuthzBaseException as e:
-            log.info(e)
-            raise exceptions.AuthenticationFailed(e)
-        except NotImplementedError as e:
-            log.info(e)
-            raise exceptions.RequestParameterInvalidException(e)
-
-    def get_cloud_access_credentials_in_file(self, new_file_path, cloudauthz, sa_session, user_id, request=None):
-        """
-        This method leverages CloudAuthz (https://github.com/galaxyproject/cloudauthz)
-        to request a cloud-based resource provider (e.g., Amazon AWS, Microsoft Azure)
-        for temporary access credentials to a given resource.
-
-        This method uses the `get_cloud_access_credentials` method to obtain temporary
-        credentials, and persists them to a (temporary) file, and returns the file path.
-
-        :type  new_file_path:   str
-        :param new_file_path:   Where dataset files are saved on temporary storage.
-                                See `app.config.new_file_path`.
-
-        :type  cloudauthz:      CloudAuthz
-        :param cloudauthz:      an instance of CloudAuthz to be used for getting temporary
-                                credentials.
-
-        :type  sa_session:      sqlalchemy.orm.scoping.scoped_session
-        :param sa_session:      SQLAlchemy database handle.
-
-        :type  user_id:         int
-        :param user_id:         Decoded Galaxy user ID.
-
-        :type  request:         galaxy.web.framework.base.Request
-        :param request:         [Optional] Encapsulated HTTP(S) request.
-
-        :rtype:                 str
-        :return:                The filename to which credentials are written.
-        """
-        filename = os.path.abspath(
-            os.path.join(
-                new_file_path,
-                "cd_"
-                + "".join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(11)),
-            )
-        )
-        credentials = self.get_cloud_access_credentials(cloudauthz, sa_session, user_id, request)
-        log.info(
-            "Writing credentials generated using CloudAuthz with config id `{}` to the following file: `{}`"
-            "".format(cloudauthz.id, filename)
-        )
-        with open(filename, "w") as f:
-            f.write(json.dumps(credentials))
-        return filename

@@ -6,7 +6,12 @@
         @mousemove="mouseIsDown ? (mouseMoved = true) : (mouseMoved = false)"
         @mouseup="toggleExpanded()">
         <td>
-            {{ codeLabel }}
+            <span v-if="helpUri">
+                <HelpText :uri="helpUri" :text="codeLabel" />
+            </span>
+            <span v-else>
+                {{ codeLabel }}
+            </span>
         </td>
         <td v-if="codeItem">
             <b-row align-v="center">
@@ -25,15 +30,18 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCompressAlt, faExpandAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import HelpText from "components/Help/HelpText";
 
 library.add(faCompressAlt, faExpandAlt);
 export default {
     components: {
         FontAwesomeIcon,
+        HelpText,
     },
     props: {
         codeLabel: String,
         codeItem: String,
+        helpUri: String,
     },
     data() {
         return {

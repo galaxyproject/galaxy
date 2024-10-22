@@ -68,16 +68,6 @@
             description="Add or remove custom builds using history datasets."
             to="/custom_builds" />
         <UserPreferencesElement
-            icon="fa-th-list"
-            title="Manage Activity Bar"
-            description="Click here to show or hide the activity bar."
-            badge="New!"
-            @click="toggleActivityBar = !toggleActivityBar">
-            <b-collapse v-model="toggleActivityBar">
-                <UserActivityBarSettings />
-            </b-collapse>
-        </UserPreferencesElement>
-        <UserPreferencesElement
             v-if="hasThemes"
             icon="fa-palette"
             title="Pick a Color Theme"
@@ -102,6 +92,22 @@
             :preferred-object-store-id="currentUser.preferred_object_store_id"
             :user-id="userId">
         </UserPreferredObjectStore>
+        <UserPreferencesElement
+            v-if="hasObjectStoreTemplates"
+            id="manage-object-stores"
+            class="manage-object-stores"
+            icon="fa-hdd"
+            title="Manage Your Storage Locations"
+            description="Add, remove, or update your personally configured storage locations."
+            to="/object_store_instances/index" />
+        <UserPreferencesElement
+            v-if="hasFileSourceTemplates"
+            id="manage-file-sources"
+            class="manage-file-sources"
+            icon="fa-file"
+            title="Manage Your Remote File Sources"
+            description="Add, remove, or update your personally configured location to find files from and write files to."
+            to="/file_source_instances/index" />
         <UserDeletion
             v-if="isConfigLoaded && !config.single_user && config.enable_account_interface"
             :email="email"
@@ -138,7 +144,7 @@ import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
-import { mapState } from "pinia";
+import { mapActions, mapState } from "pinia";
 import _l from "utils/localization";
 import { userLogoutAll } from "utils/logout";
 import QueryStringParsing from "utils/query-string-parsing";
@@ -146,9 +152,10 @@ import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
+import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
+import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 import { useUserStore } from "@/stores/userStore";
 
-import UserActivityBarSettings from "./UserActivityBarSettings";
 import UserBeaconSettings from "./UserBeaconSettings";
 import UserDeletion from "./UserDeletion";
 import UserPreferencesElement from "./UserPreferencesElement";
@@ -160,7 +167,6 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        UserActivityBarSettings,
         UserDeletion,
         UserPreferencesElement,
         ThemeSelector,
@@ -190,12 +196,17 @@ export default {
             message: null,
             showLogoutModal: false,
             showDataPrivateModal: false,
-            toggleActivityBar: false,
             toggleTheme: false,
         };
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
+        ...mapState(useObjectStoreTemplatesStore, {
+            hasObjectStoreTemplates: "hasTemplates",
+        }),
+        ...mapState(useFileSourceTemplatesStore, {
+            hasFileSourceTemplates: "hasTemplates",
+        }),
         activePreferences() {
             const userPreferencesEntries = Object.entries(getUserPreferencesModel());
             // Object.entries returns an array of arrays, where the first element
@@ -204,12 +215,20 @@ export default {
             return Object.fromEntries(enabledPreferences);
         },
         hasLogout() {
-            const Galaxy = getGalaxyInstance();
-            return !!Galaxy.session_csrf_token && !this.config.single_user;
+            if (this.isConfigLoaded) {
+                const Galaxy = getGalaxyInstance();
+                return !!Galaxy.session_csrf_token && !this.config.single_user;
+            } else {
+                return false;
+            }
         },
         hasThemes() {
-            const themes = Object.keys(this.config.themes);
-            return themes?.length > 1 ?? false;
+            if (this.isConfigLoaded) {
+                const themes = Object.keys(this.config.themes);
+                return themes?.length > 1 ?? false;
+            } else {
+                return false;
+            }
         },
         userPermissionsUrl() {
             return withPrefix("/user/permissions");
@@ -227,15 +246,39 @@ export default {
             this.diskUsage = response.data.nice_total_disk_usage;
             this.diskQuota = response.data.quota;
         });
+        this.ensureObjectStoreTemplates();
+        this.ensureFileSourceTemplates();
     },
     methods: {
+        ...mapActions(useObjectStoreTemplatesStore, {
+            ensureObjectStoreTemplates: "ensureTemplates",
+        }),
+        ...mapActions(useFileSourceTemplatesStore, {
+            ensureFileSourceTemplates: "ensureTemplates",
+        }),
+        toggleNotifications() {
+            if (window.Notification) {
+                Notification.requestPermission().then(function (permission) {
+                    //If the user accepts, let's create a notification
+                    if (permission === "granted") {
+                        new Notification("Notifications enabled", {
+                            icon: "static/favicon.ico",
+                        });
+                    } else {
+                        alert("Notifications disabled, please re-enable through browser settings.");
+                    }
+                });
+            } else {
+                alert("Notifications are not supported by this browser.");
+            }
+        },
         makeDataPrivate() {
             if (
                 confirm(
                     _l(
                         "WARNING: This will make all datasets (excluding library datasets) for which you have " +
                             "'management' permissions, in all of your histories " +
-                            "private, and will set permissions such that all " +
+                            "private (including archived and purged), and will set permissions such that all " +
                             "of your new data in these histories is created as private.  Any " +
                             "datasets within that are currently shared will need " +
                             "to be re-shared or published.  Are you sure you " +

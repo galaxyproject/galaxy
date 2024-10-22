@@ -39,7 +39,7 @@ def setup_users(dburl: str, num_users: int = 2):
     This is because the new celery_user_rate_limit table has
     a user_id with a foreign key pointing to galaxy_user table.
     """
-    expected_user_ids = [i for i in range(2, num_users + 2)]
+    expected_user_ids = list(range(2, num_users + 2))
     with sqlalchemy_engine(dburl) as engine:
         with engine.begin() as conn:
             found_user_ids = conn.scalars(
@@ -50,7 +50,7 @@ def setup_users(dburl: str, num_users: int = 2):
                 for user_id in user_ids_to_add:
                     conn.execute(
                         text("insert into galaxy_user(id, active, email, password) values (:id, :active, :email, :pw)"),
-                        [{"id": user_id, "active": True, "email": "e", "pw": "p"}],
+                        [{"id": user_id, "active": True, "email": f"e{user_id}", "pw": "p"}],
                     )
 
 
@@ -73,7 +73,7 @@ class TestCeleryUserRateLimitIntegration(IntegrationTestCase):
         super().setUp()
 
     def _test_mock_pass_user_id_task(self, num_users: int, num_calls: int, tasks_per_user_per_sec: float):
-        users = [i for i in range(2, num_users + 2)]
+        users = list(range(2, num_users + 2))
         expected_duration: float
         if tasks_per_user_per_sec == 0.0:
             expected_duration = 0.0
@@ -83,13 +83,13 @@ class TestCeleryUserRateLimitIntegration(IntegrationTestCase):
             expected_duration = secs_between_tasks_per_user * (num_calls - 1)
             expected_duration_lbound = expected_duration - 4
         expected_duration_hbound = expected_duration + 4
-        start_time = datetime.datetime.utcnow()
+        start_time = datetime.datetime.now(datetime.timezone.utc)
         timer = ExecutionTimer()
         #  Invoke test task num_calls times for each user
         results: Dict[int, List[AsyncResult]] = {}
         for user in users:
             user_results: List[AsyncResult] = []
-            for _ in range(num_calls):  # type: ignore
+            for _ in range(num_calls):
                 user_results.append(mock_user_id_task.delay(task_user_id=user))
             results[user] = user_results
         #  Collect results of each call

@@ -36,7 +36,7 @@ class TestMaximumWorkflowInvocationDuration(integration_util.IntegrationTestCase
         request["inputs"] = dumps(index_map)
         request["inputs_by"] = "step_index"
         url = f"workflows/{workflow_id}/invocations"
-        invocation_response = self._post(url, data=request)
+        invocation_response = self._post(url, data=request, json=True)
         invocation_url = url + "/" + invocation_response.json()["id"]
         time.sleep(5)
         state = self._get(invocation_url).json()["state"]
@@ -90,7 +90,7 @@ steps:
             inputs = {
                 "0": {"src": "hdca", "id": hdca1["id"]},
             }
-            self.workflow_populator.invoke_workflow_and_wait(history_id, workflow_id, inputs)
+            self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id, inputs)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             assert "a\nc\nb\nd\ne\ng\nf\nh\n" == self.dataset_populator.get_history_dataset_content(history_id, hid=0)
 

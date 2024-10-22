@@ -6,14 +6,14 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import Session
 
 from galaxy import util
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.groups import get_group_by_name
 from galaxy.managers.quotas import QuotaManager
-from galaxy.managers.users import get_user_by_email
 from galaxy.model import Quota
+from galaxy.model.db.user import get_user_by_email
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.quota._schema import (
     CreateQuotaParams,
     CreateQuotaResult,
@@ -161,9 +161,7 @@ class QuotasService(ServiceBase):
         payload["in_groups"] = list(map(str, new_in_groups))
 
 
-def get_quotas(session: Session, deleted: bool = False):
-    is_deleted = true()
-    if not deleted:
-        is_deleted = false()
+def get_quotas(session: galaxy_scoped_session, deleted: bool = False):
+    is_deleted = true() if deleted else false()
     stmt = select(Quota).where(Quota.deleted == is_deleted)
     return session.scalars(stmt)

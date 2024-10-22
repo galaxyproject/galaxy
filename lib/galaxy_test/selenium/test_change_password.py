@@ -10,8 +10,7 @@ class TestChangePassword(SeleniumTestCase):
         self.home()
         email = self._get_random_email()
         self.register(email)
-        self.click_masthead_user()
-        self.components.masthead.preferences.wait_for_and_click()
+        self.navigate_to_user_preferences()
         self.components.preferences.change_password.wait_for_and_click()
         new_password = self._get_random_password()
         self.fill_input_fields(self.default_password, new_password, new_password)
@@ -57,8 +56,7 @@ class TestChangePassword(SeleniumTestCase):
     def register_and_change_password(self):
         self.home()
         self.register()
-        self.click_masthead_user()
-        self.components.masthead.preferences.wait_for_and_click()
+        self.navigate_to_user_preferences()
         self.components.preferences.change_password.wait_for_and_click()
 
     def fill_input_fields(self, current, password, confirm):

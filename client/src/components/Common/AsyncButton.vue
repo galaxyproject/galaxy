@@ -42,7 +42,7 @@ async function onClick() {
 
 <template>
     <BButton
-        v-b-tooltip.hover="!title"
+        v-b-tooltip.hover.noninteractive="!title"
         :title="title"
         :size="size"
         :variant="variant"

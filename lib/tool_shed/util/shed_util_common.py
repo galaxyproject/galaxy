@@ -136,20 +136,14 @@ def get_repository_file_contents(app: "ToolShedApp", file_path: str, repository_
                 safe_str = f"{safe_str}{basic_util.to_html_string(line)}"
                 # Stop reading after string is larger than MAX_CONTENT_SIZE.
                 if len(safe_str) > MAX_CONTENT_SIZE:
-                    large_str = (
-                        "<br/>File contents truncated because file size is larger than maximum viewing size of %s<br/>"
-                        % util.nice_size(MAX_CONTENT_SIZE)
-                    )
+                    large_str = f"<br/>File contents truncated because file size is larger than maximum viewing size of {util.nice_size(MAX_CONTENT_SIZE)}<br/>"
                     safe_str = f"{safe_str}{large_str}"
                     break
 
         if len(safe_str) > basic_util.MAX_DISPLAY_SIZE:
             # Eliminate the middle of the file to display a file no larger than basic_util.MAX_DISPLAY_SIZE.
             # This may not be ideal if the file is larger than MAX_CONTENT_SIZE.
-            join_by_str = (
-                "<br/><br/>...some text eliminated here because file size is larger than maximum viewing size of %s...<br/><br/>"
-                % util.nice_size(basic_util.MAX_DISPLAY_SIZE)
-            )
+            join_by_str = f"<br/><br/>...some text eliminated here because file size is larger than maximum viewing size of {util.nice_size(basic_util.MAX_DISPLAY_SIZE)}...<br/><br/>"
             safe_str = util.shrink_string_by_size(
                 safe_str,
                 basic_util.MAX_DISPLAY_SIZE,
@@ -287,7 +281,7 @@ def handle_email_alerts(
                     email_alerts.append(user.email)
         else:
             subject = f"Galaxy tool shed update alert for repository named {str(repository.name)}"
-            email_alerts = json.loads(repository.email_alerts)
+            email_alerts = json.loads(repository.email_alerts)  # type:ignore[arg-type]
         for email in email_alerts:
             to = email.strip()
             # Send it

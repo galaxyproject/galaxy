@@ -5,26 +5,26 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BDropdownText, BModal } from "bootstrap-vue";
 import { toRef } from "vue";
 
-import type { HistorySummary } from "@/api";
-import { useDetailedHistory } from "@/components/History/CurrentHistory/usesDetailedHistory";
+import { type HistorySummaryExtended } from "@/api";
 import {
     deleteAllHiddenContent,
     purgeAllDeletedContent,
     unhideAllHiddenContent,
 } from "@/components/History/model/crud";
 import { iframeRedirect } from "@/components/plugins/legacyNavigation";
+import { useHistoryContentStats } from "@/composables/historyContentStats";
 
 library.add(faCog);
 
 interface Props {
-    history: HistorySummary;
+    history: HistorySummaryExtended;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits(["update:operation-running"]);
 
-const { numItemsDeleted, numItemsHidden } = useDetailedHistory(toRef(props, "history"));
+const { numItemsDeleted, numItemsHidden } = useHistoryContentStats(toRef(props, "history"));
 
 function onCopy() {
     iframeRedirect("/dataset/copy_datasets");
@@ -42,7 +42,7 @@ function purgeAllDeleted() {
     runOperation(() => purgeAllDeletedContent(props.history));
 }
 
-async function runOperation(operation: () => Promise<HistorySummary>) {
+async function runOperation(operation: () => Promise<unknown>) {
     emit("update:operation-running", props.history.update_time);
     await operation();
     emit("update:operation-running", props.history.update_time);

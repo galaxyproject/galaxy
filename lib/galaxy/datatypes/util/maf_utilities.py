@@ -183,7 +183,7 @@ class RegionAlignment:
 
     # returns the reverse complement of the sequence for a species
     def get_sequence_reverse_complement(self, species):
-        complement = [base for base in self.get_sequence(species).translate(self.DNA_COMPLEMENT)]
+        complement = list(self.get_sequence(species).translate(self.DNA_COMPLEMENT))
         complement.reverse()
         return "".join(complement)
 
@@ -274,7 +274,7 @@ class SplicedAlignment:
 
     # returns the reverse complement of the sequence for a species
     def get_sequence_reverse_complement(self, species):
-        complement = [base for base in self.get_sequence(species).translate(self.DNA_COMPLEMENT)]
+        complement = list(self.get_sequence(species).translate(self.DNA_COMPLEMENT))
         complement.reverse()
         return "".join(complement)
 
@@ -683,7 +683,7 @@ def iter_components_by_src(block, src):
 
 
 def get_components_by_src(block, src):
-    return [value for value in iter_components_by_src(block, src)]
+    return list(iter_components_by_src(block, src))
 
 
 def iter_components_by_src_start(block, src):
@@ -693,7 +693,7 @@ def iter_components_by_src_start(block, src):
 
 
 def get_components_by_src_start(block, src):
-    return [value for value in iter_components_by_src_start(block, src)]
+    return list(iter_components_by_src_start(block, src))
 
 
 def sort_block_components_by_block(block1, block2):

@@ -863,7 +863,7 @@ class UtilityContainerManager:
         dependency has its own repository dependency).  This method will remove all repository
         dependencies from folder that are also sub-folders of folder.
         """
-        repository_dependencies = [rd for rd in folder.repository_dependencies]
+        repository_dependencies = list(folder.repository_dependencies)
         for repository_dependency in repository_dependencies:
             self.prune_folder(folder, repository_dependency)
         for sub_folder in folder.folders:

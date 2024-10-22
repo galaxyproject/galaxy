@@ -1,5 +1,6 @@
 """This module contains general pydantic models and common schema field annotations for them."""
 
+import base64
 from datetime import (
     date,
     datetime,
@@ -20,6 +21,7 @@ from pydantic import (
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     Json,
@@ -27,16 +29,19 @@ from pydantic import (
     RootModel,
     UUID4,
 )
+from pydantic_core import core_schema
 from typing_extensions import (
     Annotated,
     Literal,
 )
 
+from galaxy.schema import partial_model
 from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
     EncodedLibraryFolderDatabaseIdField,
+    is_optional,
     LibraryFolderDatabaseIdField,
     literal_to_value,
     ModelClassField,
@@ -45,6 +50,7 @@ from galaxy.schema.types import (
     OffsetNaiveDatetime,
     RelativeUrl,
 )
+from galaxy.util.sanitize_html import sanitize_html
 
 USER_MODEL_CLASS = Literal["User"]
 GROUP_MODEL_CLASS = Literal["Group"]
@@ -62,6 +68,8 @@ INVOCATION_REPORT_MODEL_CLASS = Literal["Report"]
 IMPLICIT_COLLECTION_JOBS_MODEL_CLASS = Literal["ImplicitCollectionJobs"]
 
 OptionalNumberT = Annotated[Optional[Union[int, float]], Field(None)]
+
+TAG_ITEM_PATTERN = r"^([^\s.:])+(\.[^\s.:]+)*(:\S+)?$"
 
 
 class DatasetState(str, Enum):
@@ -113,6 +121,15 @@ class DatasetCollectionPopulatedState(str, Enum):
     FAILED = "failed"  # some problem populating state, won't be populated
 
 
+class HashFunctionNames(str, Enum):
+    """Hash function names that can be used to generate checksums for datasets."""
+
+    md5 = "MD5"
+    sha1 = "SHA-1"
+    sha256 = "SHA-256"
+    sha512 = "SHA-512"
+
+
 # Generic and common Field annotations that can be reused across models
 
 RelativeUrlField = Annotated[
@@ -151,11 +168,11 @@ HistoryDatasetAssociationId = Annotated[EncodedDatabaseIdField, Field(..., title
 JobId = Annotated[EncodedDatabaseIdField, Field(..., title="Job ID")]
 
 
-DatasetStateField: DatasetState = Field(
-    ...,
-    title="State",
-    description="The current state of this dataset.",
-)
+DatasetStateField = Annotated[
+    DatasetState,
+    BeforeValidator(lambda v: "discarded" if v == "deleted" else v),
+    Field(..., title="State", description="The current state of this dataset."),
+]
 
 CreateTimeField = Field(
     title="Create Time",
@@ -311,8 +328,11 @@ class WithModelClass:
     def set_default(cls, data):
         if isinstance(data, dict):
             if "model_class" not in data and issubclass(cls, BaseModel):
+                model_class_annotation = cls.model_fields["model_class"].annotation
+                if is_optional(model_class_annotation):
+                    return data
                 data = data.copy()
-                data["model_class"] = literal_to_value(cls.model_fields["model_class"].annotation)
+                data["model_class"] = literal_to_value(model_class_annotation)
         return data
 
 
@@ -332,6 +352,9 @@ class LimitedUserModel(Model):
     email: Optional[str] = None
 
 
+MaybeLimitedUserModel = Union[UserModel, LimitedUserModel]
+
+
 class DiskUsageUserModel(Model):
     total_disk_usage: float = TotalDiskUsageField
     nice_total_disk_usage: str = NiceTotalDiskUsageField
@@ -342,7 +365,7 @@ class CreatedUserModel(UserModel, DiskUsageUserModel):
 
 
 class AnonUserModel(DiskUsageUserModel):
-    quota_percent: Any = QuotaPercentField
+    quota_percent: Optional[float] = QuotaPercentField
 
 
 class DetailedUserModel(BaseUserModel, AnonUserModel):
@@ -351,8 +374,16 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
     preferences: Dict[Any, Any] = Field(default=..., title="Preferences", description="Preferences of the user")
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
     quota: str = Field(default=..., title="Quota", description="Quota applicable to the user")
-    quota_bytes: Any = Field(default=..., title="Quota in bytes", description="Quota applicable to the user in bytes.")
+    quota_bytes: Optional[int] = Field(
+        default=None, title="Quota in bytes", description="Quota applicable to the user in bytes."
+    )
     tags_used: List[str] = Field(default=..., title="Tags used", description="Tags used by the user")
+
+
+class UserUpdatePayload(Model):
+    active: Annotated[Optional[bool], Field(None, title="Active", description="User is active")]
+    username: Annotated[Optional[str], Field(None, title="Username", description="The name of the user.")]
+    preferred_object_store_id: Annotated[Optional[str], PreferredObjectStoreIdField]
 
 
 class UserCreationPayload(Model):
@@ -366,7 +397,12 @@ class RemoteUserCreationPayload(Model):
 
 
 class UserDeletionPayload(Model):
-    purge: bool = Field(default=..., title="Purge user", description="Purge the user")
+    purge: bool = Field(
+        default=False,
+        title="Purge user",
+        description="Purge the user. Deprecated, please use the `purge` query parameter instead.",
+        json_schema_extra={"deprecated": True},
+    )
 
 
 class FavoriteObject(Model):
@@ -512,7 +548,7 @@ class HistoryContentSource(str, Enum):
 DatasetCollectionInstanceType = Literal["history", "library"]
 
 
-TagItem = Annotated[str, Field(..., pattern=r"^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$")]
+TagItem = Annotated[str, Field(..., pattern=TAG_ITEM_PATTERN)]
 
 
 class TagCollection(RootModel):
@@ -558,11 +594,7 @@ class Hyperlink(Model):
     target: str = Field(
         ..., title="Target", description="Specifies where to open the linked document.", examples=["_blank"]
     )
-    href: AnyUrl = Field(
-        ...,
-        title="HRef",
-        description="Specifies the linked document, resource, or location.",
-    )
+    href: Annotated[RelativeUrl, Field(..., title="Href", description="The URL of the linked document.")]
     text: str = Field(
         ...,
         title="Text",
@@ -623,8 +655,6 @@ class HistoryItemBase(Model):
 class HistoryItemCommon(HistoryItemBase):
     """Common information provided by items contained in a History."""
 
-    model_config = ConfigDict(extra="allow")
-
     type_id: Optional[str] = Field(
         default=None,
         title="Type - ID",
@@ -661,7 +691,7 @@ class HDASummary(HDACommon):
         title="Dataset ID",
         description="The encoded ID of the dataset associated with this item.",
     )
-    state: DatasetState = DatasetStateField
+    state: DatasetStateField
     extension: Optional[str] = Field(
         ...,
         title="Extension",
@@ -673,13 +703,14 @@ class HDASummary(HDACommon):
         title="Purged",
         description="Whether this dataset has been removed from disk.",
     )
+    genome_build: Optional[str] = GenomeBuildField
 
 
 class HDAInaccessible(HDACommon):
     """History Dataset Association information when the user can not access it."""
 
-    accessible: bool = AccessibleField
-    state: DatasetState = DatasetStateField
+    accessible: Literal[False]
+    state: DatasetStateField
 
 
 HdaLddaField = Field(
@@ -695,13 +726,56 @@ class DatasetValidatedState(str, Enum):
     OK = "ok"
 
 
+class DatasetHash(Model):
+    model_class: Literal["DatasetHash"] = ModelClassField(Literal["DatasetHash"])
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Encoded ID of the dataset hash.",
+    )
+    hash_function: HashFunctionNames = Field(
+        ...,
+        title="Hash Function",
+        description="The hash function used to generate the hash.",
+    )
+    hash_value: str = Field(
+        ...,
+        title="Hash Value",
+        description="The hash value.",
+    )
+    extra_files_path: Optional[str] = Field(
+        None,
+        title="Extra Files Path",
+        description="The path to the extra files used to generate the hash.",
+    )
+
+
+class DatasetSource(Model):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Encoded ID of the dataset source.",
+    )
+    source_uri: Annotated[RelativeUrl, Field(..., title="Source URI", description="The URI of the dataset source.")]
+    extra_files_path: Annotated[
+        Optional[str], Field(None, title="Extra Files Path", description="The path to the extra files.")
+    ]
+    transform: Annotated[
+        Optional[List[Any]],  # TODO: type this
+        Field(
+            None,
+            title="Transform",
+            description="The transformations applied to the dataset source.",
+        ),
+    ]
+
+
 class HDADetailed(HDASummary, WithModelClass):
     """History Dataset Association detailed information."""
 
     model_class: Annotated[HDA_MODEL_CLASS, ModelClassField(HDA_MODEL_CLASS)]
     hda_ldda: DatasetSourceType = HdaLddaField
     accessible: bool = AccessibleField
-    genome_build: Optional[str] = GenomeBuildField
     misc_info: Optional[str] = Field(
         default=None,
         title="Miscellaneous Information",
@@ -731,16 +805,6 @@ class HDADetailed(HDASummary, WithModelClass):
         default=None,
         title="Metadata",
         description="The metadata associated with this dataset.",
-    )
-    metadata_dbkey: Optional[str] = Field(
-        "?",
-        title="Metadata DBKey",
-        description="TODO",
-    )
-    metadata_data_lines: int = Field(
-        0,
-        title="Metadata Data Lines",
-        description="TODO",
     )
     meta_files: List[MetadataFile] = Field(
         ...,
@@ -791,11 +855,6 @@ class HDADetailed(HDASummary, WithModelClass):
         # https://github.com/pydantic/pydantic/issues/2255
         # deprecated=False,  # TODO: Should this field be deprecated in favor of display_apps?
     )
-    visualizations: List[Visualization] = Field(
-        ...,
-        title="Visualizations",
-        description="The collection of visualizations that can be applied to this dataset.",
-    )
     validated_state: DatasetValidatedState = Field(
         ...,
         title="Validated State",
@@ -830,6 +889,33 @@ class HDADetailed(HDASummary, WithModelClass):
         title="Created from basename",
         description="The basename of the output that produced this dataset.",  # TODO: is that correct?
     )
+    hashes: Annotated[
+        List[DatasetHash],
+        Field(
+            ...,
+            title="Hashes",
+            description="The list of hashes associated with this dataset.",
+        ),
+    ]
+    drs_id: Annotated[
+        str,
+        Field(
+            ...,
+            title="DRS ID",
+            description="The DRS ID of the dataset.",
+        ),
+    ]
+    sources: Annotated[
+        List[DatasetSource],
+        Field(
+            ...,
+            title="Sources",
+            description="The list of sources associated with this dataset.",
+        ),
+    ]
+    copied_from_history_dataset_association_id: Annotated[
+        Optional[EncodedDatabaseIdField], Field(None, description="ID of HDA this HDA was copied from.")
+    ]
 
 
 class HDAExtended(HDADetailed):
@@ -872,11 +958,13 @@ class HDAObject(Model, WithModelClass):
     # If so at least merge models
     id: HistoryDatasetAssociationId
     model_class: HDA_MODEL_CLASS = ModelClassField(HDA_MODEL_CLASS)
-    state: DatasetState = DatasetStateField
+    state: DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
     history_id: HistoryID
     tags: List[str]
     copied_from_ldda_id: Optional[EncodedDatabaseIdField] = None
+    accessible: Optional[bool] = None
+    purged: bool
     model_config = ConfigDict(extra="allow")
 
 
@@ -907,13 +995,13 @@ class DCESummary(Model, WithModelClass):
         title="Element Identifier",
         description="The actual name of this element.",
     )
-    element_type: DCEType = Field(
-        ...,
+    element_type: Optional[DCEType] = Field(
+        None,
         title="Element Type",
         description="The type of the element. Used to interpret the `object` field.",
     )
-    object: Union[HDAObject, HDADetailed, DCObject] = Field(
-        ...,
+    object: Optional[Union[HDAObject, HDADetailed, DCObject]] = Field(
+        None,
         title="Object",
         description="The element's specific data depending on the value of `element_type`.",
     )
@@ -1030,6 +1118,9 @@ class HDCASummary(HDCACommon, WithModelClass):
     populated_state: DatasetCollectionPopulatedState = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
     element_count: ElementCountField
+    elements_datatypes: Set[str] = Field(
+        ..., description="A set containing all the different element datatypes in the collection."
+    )
     job_source_id: Optional[EncodedDatabaseIdField] = Field(
         None,
         title="Job Source ID",
@@ -1054,19 +1145,10 @@ class HDCADetailed(HDCASummary):
 
     populated: PopulatedField
     elements: List[DCESummary] = ElementsField
-    elements_datatypes: Set[str] = Field(
-        ..., description="A set containing all the different element datatypes in the collection."
-    )
     implicit_collection_jobs_id: Optional[EncodedDatabaseIdField] = Field(
         None,
         description="Encoded ID for the ICJ object describing the collection of jobs corresponding to this collection",
     )
-
-
-class HistoryBase(Model):
-    """Provides basic configuration for all the History models."""
-
-    model_config = ConfigDict(extra="allow")
 
 
 class HistoryContentItemBase(Model):
@@ -1093,7 +1175,7 @@ class UpdateContentItem(HistoryContentItem):
     model_config = ConfigDict(use_enum_values=True, extra="allow")
 
 
-class UpdateHistoryContentsBatchPayload(HistoryBase):
+class UpdateHistoryContentsBatchPayload(Model):
     """Contains property values that will be updated for all the history `items` provided."""
 
     items: List[UpdateContentItem] = Field(
@@ -1102,12 +1184,13 @@ class UpdateHistoryContentsBatchPayload(HistoryBase):
         description="A list of content items to update with the changes.",
     )
     model_config = ConfigDict(
+        extra="allow",
         json_schema_extra={
             "example": {
                 "items": [{"history_content_type": "dataset", "id": "string"}],
                 "visible": False,
             }
-        }
+        },
     )
 
 
@@ -1165,7 +1248,7 @@ class HistoryContentBulkOperationResult(Model):
     errors: List[BulkOperationItemError]
 
 
-class UpdateHistoryContentsPayload(HistoryBase):
+class UpdateHistoryContentsPayload(Model):
     """Can contain arbitrary/dynamic fields that will be updated for a particular history item."""
 
     name: Optional[str] = Field(
@@ -1194,28 +1277,17 @@ class UpdateHistoryContentsPayload(HistoryBase):
         description="A list of tags to add to this item.",
     )
     model_config = ConfigDict(
+        extra="allow",
         json_schema_extra={
             "example": {
                 "visible": False,
                 "annotation": "Test",
             }
-        }
+        },
     )
 
 
-class HistoryMinimal(HistoryBase, WithModelClass):
-    """Minimal History Response with optional fields"""
-
-    model_class: HISTORY_MODEL_CLASS = ModelClassField(HISTORY_MODEL_CLASS)
-    id: Optional[HistoryID] = None
-    user_id: Optional[EncodedDatabaseIdField] = Field(
-        None,
-        title="User ID",
-        description="The encoded ID of the user that owns this History.",
-    )
-
-
-class HistorySummary(HistoryBase, WithModelClass):
+class HistorySummary(Model, WithModelClass):
     """History summary information."""
 
     model_class: HISTORY_MODEL_CLASS = ModelClassField(HISTORY_MODEL_CLASS)
@@ -1277,8 +1349,12 @@ class HistoryActiveContentCounts(Model):
     )
 
 
+# TODO: https://github.com/galaxyproject/galaxy/issues/17785
 HistoryStateCounts = Dict[DatasetState, int]
 HistoryStateIds = Dict[DatasetState, List[DecodedDatabaseIdField]]
+
+HistoryContentStates = Union[DatasetState, DatasetCollectionPopulatedState]
+HistoryContentStateCounts = Dict[HistoryContentStates, int]
 
 
 class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
@@ -1340,11 +1416,53 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
     )
 
 
-AnyHistoryView = Union[
-    HistoryDetailed,
-    HistorySummary,
-    HistoryMinimal,
+@partial_model()
+class CustomHistoryView(HistoryDetailed):
+    """History Response with all optional fields.
+
+    It is used for serializing only specific attributes using the "keys"
+    query parameter. Unfortunately, we cannot know the exact fields that
+    will be requested, so we have to allow all fields to be optional.
+    """
+
+    # Define a few more useful fields to be optional that are not part of HistoryDetailed
+    contents_active: Optional[HistoryActiveContentCounts] = Field(
+        default=None,
+        title="Contents Active",
+        description=("Contains the number of active, deleted or hidden items in a History."),
+    )
+    contents_states: Optional[HistoryContentStateCounts] = Field(
+        default=None,
+        title="Contents States",
+        description="A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.",
+    )
+    nice_size: Optional[str] = Field(
+        default=None,
+        title="Nice Size",
+        description="The total size of the contents of this history in a human-readable format.",
+    )
+
+
+AnyHistoryView = Annotated[
+    Union[
+        CustomHistoryView,
+        HistoryDetailed,
+        HistorySummary,
+    ],
+    Field(union_mode="left_to_right"),
 ]
+
+
+class UpdateHistoryPayload(Model):
+    name: Optional[str] = None
+    annotation: Optional[str] = None
+    tags: Optional[TagCollection] = None
+    published: Optional[bool] = None
+    importable: Optional[bool] = None
+    deleted: Optional[bool] = None
+    purged: Optional[bool] = None
+    genome_build: Optional[str] = None
+    preferred_object_store_id: Optional[str] = None
 
 
 class ExportHistoryArchivePayload(Model):
@@ -1452,21 +1570,23 @@ class InvocationIndexQueryPayload(Model):
         lt=1000,
     )
     offset: Optional[int] = Field(default=0, description="Number of invocations to skip")
+    include_nested_invocations: bool = True
 
 
-PageSortByEnum = Literal["update_time", "title", "username"]
+PageSortByEnum = Literal["create_time", "title", "update_time", "username"]
 
 
 class PageIndexQueryPayload(Model):
     deleted: bool = False
-    show_published: Optional[bool] = None
-    show_shared: Optional[bool] = None
-    user_id: Optional[DecodedDatabaseIdField] = None
-    sort_by: PageSortByEnum = Field("update_time", title="Sort By", description="Sort pages by this attribute.")
-    sort_desc: Optional[bool] = Field(default=False, title="Sort descending", description="Sort in descending order.")
-    search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")
     limit: Optional[int] = Field(default=100, lt=1000, title="Limit", description="Maximum number of pages to return.")
     offset: Optional[int] = Field(default=0, title="Offset", description="Number of pages to skip.")
+    show_own: Optional[bool] = None
+    show_published: Optional[bool] = None
+    show_shared: Optional[bool] = None
+    search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")
+    sort_by: PageSortByEnum = Field("update_time", title="Sort By", description="Sort pages by this attribute.")
+    sort_desc: Optional[bool] = Field(default=False, title="Sort descending", description="Sort in descending order.")
+    user_id: Optional[DecodedDatabaseIdField] = None
 
 
 class CreateHistoryPayload(Model):
@@ -1479,14 +1599,14 @@ class CreateHistoryPayload(Model):
         default=None,
         title="History ID",
         description=(
-            "The encoded ID of the history to copy. " "Provide this value only if you want to copy an existing history."
+            "The encoded ID of the history to copy. Provide this value only if you want to copy an existing history."
         ),
     )
     all_datasets: Optional[bool] = Field(
         default=True,
         title="All Datasets",
         description=(
-            "Whether to copy also deleted HDAs/HDCAs. Only applies when " "providing a `history_id` to copy from."
+            "Whether to copy also deleted HDAs/HDCAs. Only applies when providing a `history_id` to copy from."
         ),
     )
     archive_source: Optional[str] = Field(
@@ -1796,12 +1916,24 @@ class ArchivedHistoryDetailed(HistoryDetailed, ExportAssociationData):
     pass
 
 
-AnyArchivedHistoryView = Union[
-    ArchivedHistorySummary,
-    ArchivedHistoryDetailed,
-    # Any will cover those cases in which only specific `keys` are requested
-    # otherwise the validation will fail because the required fields are not returned
-    Any,
+@partial_model()
+class CustomArchivedHistoryView(CustomHistoryView, ExportAssociationData):
+    """Archived History Response with all optional fields.
+
+    It is used for serializing only specific attributes using the "keys"
+    query parameter.
+    """
+
+    pass
+
+
+AnyArchivedHistoryView = Annotated[
+    Union[
+        CustomArchivedHistoryView,
+        ArchivedHistoryDetailed,
+        ArchivedHistorySummary,
+    ],
+    Field(union_mode="left_to_right"),
 ]
 
 
@@ -1965,6 +2097,11 @@ class EncodedDataItemSourceId(Model):
     )
 
 
+class EncodedJobParameterHistoryItem(EncodedDataItemSourceId):
+    hid: Optional[int] = None
+    name: str
+
+
 class DatasetJobInfo(DatasetSourceId):
     uuid: UuidField
 
@@ -2091,7 +2228,7 @@ class JobFullDetails(JobDetails):
 
 
 class StoredWorkflowSummary(Model, WithModelClass):
-    id: DecodedDatabaseIdField
+    id: EncodedDatabaseIdField
     model_class: STORED_WORKFLOW_MODEL_CLASS = ModelClassField(STORED_WORKFLOW_MODEL_CLASS)
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -2106,10 +2243,12 @@ class StoredWorkflowSummary(Model, WithModelClass):
         title="Published",
         description="Whether this workflow is currently publicly available to all users.",
     )
-    annotations: List[str] = Field(  # Inconsistency? Why workflows summaries use a list instead of an optional string?
-        ...,
-        title="Annotations",
-        description="An list of annotations to provide details or to help understand the purpose and usage of this workflow.",
+    annotations: Optional[List[str]] = (
+        Field(  # Inconsistency? Why workflows summaries use a list instead of an optional string?
+            None,
+            title="Annotations",
+            description="An list of annotations to provide details or to help understand the purpose and usage of this workflow.",
+        )
     )
     tags: TagCollection
     deleted: bool = Field(
@@ -2127,35 +2266,35 @@ class StoredWorkflowSummary(Model, WithModelClass):
         title="Owner",
         description="The name of the user who owns this workflow.",
     )
-    latest_workflow_uuid: UUID4 = Field(  # Is this really used?
-        ...,
+    latest_workflow_uuid: Optional[UUID4] = Field(
+        None,
         title="Latest workflow UUID",
         description="TODO",
     )
-    number_of_steps: int = Field(
-        ...,
+    number_of_steps: Optional[int] = Field(
+        None,
         title="Number of Steps",
         description="The number of steps that make up this workflow.",
     )
-    show_in_tool_panel: bool = Field(
-        ...,
+    show_in_tool_panel: Optional[bool] = Field(
+        None,
         title="Show in Tool Panel",
         description="Whether to display this workflow in the Tools Panel.",
     )
 
 
 class WorkflowInput(Model):
-    label: str = Field(
+    label: Optional[str] = Field(
         ...,
         title="Label",
         description="Label of the input.",
     )
-    value: str = Field(
+    value: Optional[Any] = Field(
         ...,
         title="Value",
         description="TODO",
     )
-    uuid: UUID4 = Field(
+    uuid: Optional[UUID4] = Field(
         ...,
         title="UUID",
         description="Universal unique identifier of the input.",
@@ -2193,33 +2332,21 @@ class InputStep(Model):
     )
 
 
-class WorkflowModuleType(str, Enum):
-    """Available types of modules that represent a step in a Workflow."""
-
-    data_input = "data_input"
-    data_collection_input = "data_collection_input"
-    parameter_input = "parameter_input"
-    subworkflow = "subworkflow"
-    tool = "tool"
-    pause = "pause"  # Experimental
-
-
 class WorkflowStepBase(Model):
     id: int = Field(
         ...,
         title="ID",
         description="The identifier of the step. It matches the index order of the step inside the workflow.",
     )
-    type: WorkflowModuleType = Field(..., title="Type", description="The type of workflow module.")
     annotation: Optional[str] = AnnotationField
     input_steps: Dict[str, InputStep] = Field(
         ...,
         title="Input Steps",
         description="A dictionary containing information about the inputs connected to this workflow step.",
     )
-
-
-class ToolBasedWorkflowStep(WorkflowStepBase):
+    when: Optional[str]
+    # TODO: these should move to ToolStep, however we might be breaking scripts that iterate over steps and
+    # assume tool_id is a valid key for every step.
     tool_id: Optional[str] = Field(
         None, title="Tool ID", description="The unique name of the tool associated with this step."
     )
@@ -2229,44 +2356,36 @@ class ToolBasedWorkflowStep(WorkflowStepBase):
     tool_inputs: Any = Field(None, title="Tool Inputs", description="TODO")
 
 
-class InputDataStep(ToolBasedWorkflowStep):
-    type: WorkflowModuleType = Field(
-        WorkflowModuleType.data_input, title="Type", description="The type of workflow module."
-    )
+class InputDataStep(WorkflowStepBase):
+    type: Literal["data_input"]
 
 
-class InputDataCollectionStep(ToolBasedWorkflowStep):
-    type: WorkflowModuleType = Field(
-        WorkflowModuleType.data_collection_input, title="Type", description="The type of workflow module."
-    )
+class InputDataCollectionStep(WorkflowStepBase):
+    type: Literal["data_collection_input"]
 
 
-class InputParameterStep(ToolBasedWorkflowStep):
-    type: WorkflowModuleType = Field(
-        WorkflowModuleType.parameter_input, title="Type", description="The type of workflow module."
-    )
+class InputParameterStep(WorkflowStepBase):
+    type: Literal["parameter_input"]
 
 
 class PauseStep(WorkflowStepBase):
-    type: WorkflowModuleType = Field(WorkflowModuleType.pause, title="Type", description="The type of workflow module.")
+    type: Literal["pause"]
 
 
-class ToolStep(ToolBasedWorkflowStep):
-    type: WorkflowModuleType = Field(WorkflowModuleType.tool, title="Type", description="The type of workflow module.")
+class ToolStep(WorkflowStepBase):
+    type: Literal["tool"]
 
 
 class SubworkflowStep(WorkflowStepBase):
-    type: WorkflowModuleType = Field(
-        WorkflowModuleType.subworkflow, title="Type", description="The type of workflow module."
-    )
-    workflow_id: DecodedDatabaseIdField = Field(
+    type: Literal["subworkflow"]
+    workflow_id: EncodedDatabaseIdField = Field(
         ..., title="Workflow ID", description="The encoded ID of the workflow that will be run on this step."
     )
 
 
 class Creator(Model):
     class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
-    name: str = Field(..., title="Name", description="The name of the creator.")
+    name: Optional[str] = Field(None, title="Name", description="The name of the creator.")
     address: Optional[str] = Field(
         None,
         title="Address",
@@ -2338,35 +2457,6 @@ class Person(Creator):
     )
 
 
-class StoredWorkflowDetailed(StoredWorkflowSummary):
-    annotation: Optional[str] = AnnotationField  # Inconsistency? See comment on StoredWorkflowSummary.annotations
-    license: Optional[str] = Field(
-        None, title="License", description="SPDX Identifier of the license associated with this workflow."
-    )
-    version: int = Field(
-        ..., title="Version", description="The version of the workflow represented by an incremental number."
-    )
-    inputs: Dict[int, WorkflowInput] = Field(
-        {}, title="Inputs", description="A dictionary containing information about all the inputs of the workflow."
-    )
-    creator: Optional[List[Union[Person, Organization]]] = Field(
-        None,
-        title="Creator",
-        description=("Additional information about the creator (or multiple creators) of this workflow."),
-    )
-    steps: Dict[
-        int,
-        Union[
-            InputDataStep,
-            InputDataCollectionStep,
-            InputParameterStep,
-            PauseStep,
-            ToolStep,
-            SubworkflowStep,
-        ],
-    ] = Field({}, title="Steps", description="A dictionary with information about all the steps of the workflow.")
-
-
 class Input(Model):
     name: str = Field(..., title="Name", description="The name of the input.")
     description: str = Field(..., title="Description", description="The annotation or description of the input.")
@@ -2402,6 +2492,9 @@ class WorkflowStepLayoutPosition(Model):
     y: int = Field(..., title="Y", description="Vertical pixel coordinate of the top right corner of the box.")
     height: int = Field(..., title="Height", description="Height of the box in pixels.")
     width: int = Field(..., title="Width", description="Width of the box in pixels.")
+
+
+InvocationsStateCounts = RootModel[Dict[str, int]]
 
 
 class WorkflowStepToExportBase(Model):
@@ -3097,7 +3190,7 @@ class FileLibraryFolderItem(LibraryFolderItemBase):
     date_uploaded: datetime
     is_unrestricted: bool
     is_private: bool
-    state: DatasetState = DatasetStateField
+    state: DatasetStateField
     file_size: str
     raw_size: int
     ldda_id: EncodedDatabaseIdField
@@ -3174,49 +3267,110 @@ class DatasetAssociationRoles(Model):
     )
 
 
-class UpdateDatasetPermissionsPayload(Model):
+class UpdateDatasetPermissionsPayloadBase(Model):
     action: Optional[DatasetPermissionAction] = Field(
         DatasetPermissionAction.set_permissions,
         title="Action",
         description="Indicates what action should be performed on the dataset.",
     )
-    access_ids: Optional[RoleIdList] = Field(
-        [],
-        alias="access_ids[]",  # Added for backward compatibility but it looks really ugly...
+
+
+AccessIdsField = Annotated[
+    Optional[RoleIdList],
+    Field(
+        default=None,
         title="Access IDs",
         description="A list of role encoded IDs defining roles that should have access permission on the dataset.",
-    )
-    manage_ids: Optional[RoleIdList] = Field(
-        [],
-        alias="manage_ids[]",
+    ),
+]
+
+ManageIdsField = Annotated[
+    Optional[RoleIdList],
+    Field(
+        default=None,
         title="Manage IDs",
         description="A list of role encoded IDs defining roles that should have manage permission on the dataset.",
-    )
-    modify_ids: Optional[RoleIdList] = Field(
-        [],
-        alias="modify_ids[]",
+    ),
+]
+
+ModifyIdsField = Annotated[
+    Optional[RoleIdList],
+    Field(
+        default=None,
         title="Modify IDs",
         description="A list of role encoded IDs defining roles that should have modify permission on the dataset.",
-    )
+    ),
+]
 
 
-class CustomHistoryItem(Model):
-    """Can contain any serializable property of the item.
+class UpdateDatasetPermissionsPayload(UpdateDatasetPermissionsPayloadBase):
+    access_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="access_ids[]")] = None
+    manage_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="manage_ids[]")] = None
+    modify_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="modify_ids[]")] = None
+
+
+class UpdateDatasetPermissionsPayloadAliasB(UpdateDatasetPermissionsPayloadBase):
+    access: AccessIdsField = None
+    manage: ManageIdsField = None
+    modify: ModifyIdsField = None
+
+
+class UpdateDatasetPermissionsPayloadAliasC(UpdateDatasetPermissionsPayloadBase):
+    access_ids: AccessIdsField = None
+    manage_ids: ManageIdsField = None
+    modify_ids: ModifyIdsField = None
+
+
+UpdateDatasetPermissionsPayloadAliases = Union[
+    UpdateDatasetPermissionsPayload,
+    UpdateDatasetPermissionsPayloadAliasB,
+    UpdateDatasetPermissionsPayloadAliasC,
+]
+
+
+@partial_model()
+class HDACustom(HDADetailed):
+    """Can contain any serializable property of an HDA.
 
     Allows arbitrary custom keys to be specified in the serialization
     parameters without a particular view (predefined set of keys).
     """
 
+    # TODO: Fix this workaround for partial_model not supporting UUID fields for some reason.
+    # The error otherwise is: `PydanticUserError: 'UuidVersion' cannot annotate 'nullable'.`
+    # Also ignoring mypy complaints about the type redefinition.
+    uuid: Optional[UUID4]  # type: ignore[assignment]
+
+    # Add fields that are not part of any view here
+    visualizations: Annotated[
+        Optional[List[Visualization]],
+        Field(
+            None,
+            title="Visualizations",
+            description="The collection of visualizations that can be applied to this dataset.",
+        ),
+    ]
+
+    # We need to allow extra fields so we can have the metadata_* fields serialized.
+    # TODO: try to find a better way to handle this.
     model_config = ConfigDict(extra="allow")
 
 
-AnyHDA = Union[HDADetailed, HDASummary]
-AnyHDCA = Union[HDCADetailed, HDCASummary]
+@partial_model()
+class HDCACustom(HDCADetailed):
+    """Can contain any serializable property of an HDCA.
+
+    Allows arbitrary custom keys to be specified in the serialization
+    parameters without a particular view (predefined set of keys).
+    """
+
+
+AnyHDA = Union[HDACustom, HDADetailed, HDASummary, HDAInaccessible]
+AnyHDCA = Union[HDCACustom, HDCADetailed, HDCASummary]
 AnyHistoryContentItem = Annotated[
     Union[
         AnyHDA,
         AnyHDCA,
-        CustomHistoryItem,
     ],
     Field(union_mode="left_to_right"),
 ]
@@ -3253,7 +3407,7 @@ class DeleteHistoryContentPayload(Model):
     )
 
 
-class DeleteHistoryContentResult(CustomHistoryItem):
+class DeleteHistoryContentResult(Model):
     """Contains minimum information about the deletion state of a history item.
 
     Can also contain any other properties of the item."""
@@ -3349,7 +3503,7 @@ class ShareWithPayload(Model):
         ...,
         title="User Identifiers",
         description=(
-            "A collection of encoded IDs (or email addresses) of users " "that this resource will be shared with."
+            "A collection of encoded IDs (or email addresses) of users that this resource will be shared with."
         ),
     )
     share_option: Optional[SharingOptions] = Field(
@@ -3528,7 +3682,15 @@ class PageSummaryBase(Model):
     )
 
 
-class MaterializeDatasetInstanceAPIRequest(Model):
+class MaterializeDatasetOptions(Model):
+    validate_hashes: bool = Field(
+        False,
+        title="Validate hashes",
+        description="Set to true to enable dataset validation during materialization.",
+    )
+
+
+class MaterializeDatasetInstanceAPIRequest(MaterializeDatasetOptions):
     source: DatasetSourceType = Field(
         title="Source",
         description="The source of the content. Can be other history element to be copied or library elements.",
@@ -3582,6 +3744,22 @@ class AsyncTaskResultSummary(Model):
         None,
         title="Queue of task being done derived from Celery AsyncResult",
     )
+
+
+ToolRequestIdField = Field(title="ID", description="Encoded ID of the role")
+
+
+class ToolRequestState(str, Enum):
+    NEW = "new"
+    SUBMITTED = "submitted"
+    FAILED = "failed"
+
+
+class ToolRequestModel(Model):
+    id: EncodedDatabaseIdField = ToolRequestIdField
+    request: Dict[str, Any]
+    state: ToolRequestState
+    state_message: Optional[str]
 
 
 class AsyncFile(Model):
@@ -3648,6 +3826,18 @@ GenerateTimeField = Field(
 )
 
 
+class OAuth2State(BaseModel):
+    route: str
+    nonce: str
+
+    def encode(self) -> str:
+        return base64.b64encode(self.model_dump_json().encode("utf-8")).decode("utf-8")
+
+    @staticmethod
+    def decode(base64_param: str) -> "OAuth2State":
+        return OAuth2State.model_validate_json(base64.b64decode(base64_param.encode("utf-8")))
+
+
 class PageDetails(PageSummary):
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
@@ -3663,14 +3853,69 @@ class PageSummaryList(RootModel):
     )
 
 
-class DatasetSummary(Model):
-    id: EncodedDatabaseIdField
-    create_time: Optional[datetime] = CreateTimeField
-    update_time: Optional[datetime] = UpdateTimeField
-    state: DatasetState = DatasetStateField
-    deleted: bool
-    purged: bool
-    purgable: bool
-    file_size: int
-    total_size: int
+class LandingRequestState(str, Enum):
+    UNCLAIMED = "unclaimed"
+    CLAIMED = "claimed"
+
+
+ToolLandingRequestIdField = Field(title="ID", description="Encoded ID of the tool landing request")
+WorkflowLandingRequestIdField = Field(title="ID", description="Encoded ID of the workflow landing request")
+
+
+class CreateToolLandingRequestPayload(Model):
+    tool_id: str
+    tool_version: Optional[str] = None
+    request_state: Optional[Dict[str, Any]] = None
+    client_secret: Optional[str] = None
+
+
+class CreateWorkflowLandingRequestPayload(Model):
+    workflow_id: str
+    workflow_target_type: Literal["stored_workflow", "workflow"]
+    request_state: Optional[Dict[str, Any]] = None
+    client_secret: Optional[str] = None
+
+
+class ClaimLandingPayload(Model):
+    client_secret: Optional[str] = None
+
+
+class ToolLandingRequest(Model):
     uuid: UuidField
+    tool_id: str
+    tool_version: Optional[str] = None
+    request_state: Optional[Dict[str, Any]] = None
+    state: LandingRequestState
+
+
+class WorkflowLandingRequest(Model):
+    uuid: UuidField
+    workflow_id: str
+    workflow_target_type: Literal["stored_workflow", "workflow"]
+    request_state: Dict[str, Any]
+    state: LandingRequestState
+
+
+class MessageExceptionModel(BaseModel):
+    err_msg: str
+    err_code: int
+
+
+class SanitizedString(str):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value):
+        if isinstance(value, str):
+            return cls(sanitize_html(value))
+        raise TypeError("string required")
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        return core_schema.no_info_after_validator_function(
+            cls.validate,
+            core_schema.str_schema(),
+            serialization=core_schema.to_string_ser_schema(),
+        )

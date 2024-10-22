@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
-import { DatasetStorageDetails } from "@/api";
-import { fetchDatasetStorage } from "@/api/datasets";
-import { errorMessageAsString } from "@/utils/simple-error";
+import { type DatasetStorageDetails, GalaxyApi } from "@/api";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 import RelocateLink from "./RelocateLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -47,8 +46,16 @@ async function fetch() {
     const datasetId = props.datasetId;
     const datasetType = props.datasetType;
     try {
-        const response = await fetchDatasetStorage({ dataset_id: datasetId, hda_ldda: datasetType });
-        storageInfo.value = response.data;
+        const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}/storage", {
+            params: {
+                path: { dataset_id: datasetId },
+                query: { hda_ldda: datasetType },
+            },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+        storageInfo.value = data;
     } catch (error) {
         errorMessage.value = errorMessageAsString(error);
     }
@@ -59,14 +66,7 @@ watch(props, fetch, { immediate: true });
 
 <template>
     <div>
-        <h2 v-if="includeTitle" class="h-md">
-            Dataset Storage
-            <RelocateLink
-                v-if="storageInfo"
-                :dataset-id="datasetId"
-                :dataset-storage-details="storageInfo"
-                @relocated="fetch" />
-        </h2>
+        <h2 v-if="includeTitle" class="h-md">Dataset Storage</h2>
         <div v-if="errorMessage" class="error">{{ errorMessage }}</div>
         <LoadingSpan v-else-if="storageInfo == null"> </LoadingSpan>
         <div v-else-if="discarded">
@@ -84,5 +84,10 @@ watch(props, fetch, { immediate: true });
         <div v-else>
             <DescribeObjectStore what="This dataset is stored in" :storage-info="storageInfo" />
         </div>
+        <RelocateLink
+            v-if="storageInfo"
+            :dataset-id="datasetId"
+            :dataset-storage-details="storageInfo"
+            @relocated="fetch" />
     </div>
 </template>

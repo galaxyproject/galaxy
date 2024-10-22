@@ -1,82 +1,300 @@
+<script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
+import { computed, onMounted, ref } from "vue";
+
+import type { HDCADetailed, HistoryItemSummary } from "@/api";
+import STATES from "@/mvc/dataset/states";
+import localize from "@/utils/localization";
+
+import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
+
+interface Props {
+    initialElements: Array<any>;
+    oncancel: () => void;
+    oncreate: () => void;
+    creationFn: (workingElements: HDCADetailed[], collectionName: string, hideSourceItems: boolean) => any;
+    defaultHideSourceItems?: boolean;
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (event: "clicked-create", workingElements: HDCADetailed[], collectionName: string, hideSourceItems: boolean): void;
+}>();
+
+const state = ref("build");
+const removeExtensions = ref(true);
+const initialSuggestedName = ref("");
+const invalidElements = ref<string[]>([]);
+const workingElements = ref<HDCADetailed[]>([]);
+
+const allElementsAreInvalid = computed(() => {
+    return props.initialElements.length == invalidElements.value.length;
+});
+const noElementsSelected = computed(() => {
+    return props.initialElements.length == 0;
+});
+const exactlyTwoValidElements = computed(() => {
+    return workingElements.value.length == 2;
+});
+const hideSourceItems = ref(props.defaultHideSourceItems || false);
+
+function _elementsSetUp() {
+    /** a list of invalid elements and the reasons they aren't valid */
+    invalidElements.value = [];
+
+    //TODO: handle fundamental problem of syncing DOM, views, and list here
+    /** data for list in progress */
+    workingElements.value = [];
+
+    // copy initial list, sort, add ids if needed
+    workingElements.value = JSON.parse(JSON.stringify(props.initialElements.slice(0)));
+
+    _ensureElementIds();
+    _validateElements();
+}
+
+/** add ids to dataset objs in initial list if none */
+function _ensureElementIds() {
+    workingElements.value.forEach((element) => {
+        if (!Object.prototype.hasOwnProperty.call(element, "id")) {
+            console.warn("Element missing id", element);
+        }
+    });
+
+    return workingElements.value;
+}
+
+// /** separate working list into valid and invalid elements for this collection */
+function _validateElements() {
+    workingElements.value = workingElements.value.filter((element) => {
+        var problem = _isElementInvalid(element);
+
+        if (problem) {
+            invalidElements.value.push(element.name + "  " + problem);
+        }
+
+        return !problem;
+    });
+
+    return workingElements.value;
+}
+
+/** describe what is wrong with a particular element if anything */
+function _isElementInvalid(element: HistoryItemSummary) {
+    if (element.history_content_type === "dataset_collection") {
+        return localize("is a collection, this is not allowed");
+    }
+
+    var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state as string);
+
+    if (!validState) {
+        return localize("has errored, is paused, or is not accessible");
+    }
+
+    if (element.deleted || element.purged) {
+        return localize("has been deleted or purged");
+    }
+
+    return null;
+}
+
+function swapButton() {
+    workingElements.value = [workingElements.value[1], workingElements.value[0]] as HDCADetailed[];
+}
+
+function clickedCreate(collectionName: string) {
+    if (state.value !== "error") {
+        emit("clicked-create", workingElements.value, collectionName, hideSourceItems.value);
+
+        return props
+            .creationFn(workingElements.value, collectionName, hideSourceItems.value)
+            .done(props.oncreate)
+            .fail(() => {
+                state.value = "error";
+            });
+    }
+}
+
+function removeExtensionsToggle() {
+    removeExtensions.value = !removeExtensions.value;
+
+    initialSuggestedName.value = _guessNameForPair(
+        workingElements.value[0] as HDCADetailed,
+        workingElements.value[1] as HDCADetailed,
+        removeExtensions.value
+    );
+}
+
+function _guessNameForPair(fwd: HDCADetailed, rev: HDCADetailed, removeExtensions: boolean) {
+    removeExtensions = removeExtensions ? removeExtensions : removeExtensions;
+
+    var fwdName = fwd.name ?? "";
+    var revName = rev.name ?? "";
+    var lcs = _naiveStartingAndEndingLCS(fwdName, revName);
+
+    /** remove url prefix if files were uploaded by url */
+    var lastDotIndex = lcs.lastIndexOf(".");
+    var lastSlashIndex = lcs.lastIndexOf("/");
+    var extension = lcs.slice(lastDotIndex, lcs.length);
+
+    if (lastSlashIndex > 0) {
+        var urlprefix = lcs.slice(0, lastSlashIndex + 1);
+
+        lcs = lcs.replace(urlprefix, "");
+        fwdName = fwdName.replace(extension, "");
+        revName = revName.replace(extension, "");
+    }
+
+    if (removeExtensions) {
+        if (lastDotIndex > 0) {
+            lcs = lcs.replace(extension, "");
+            fwdName = fwdName.replace(extension, "");
+            revName = revName.replace(extension, "");
+        }
+    }
+
+    return lcs || `${fwdName} & ${revName}`;
+}
+
+function onUpdateHideSourceItems(newHideSourceItems: boolean) {
+    hideSourceItems.value = newHideSourceItems;
+}
+
+function _naiveStartingAndEndingLCS(s1: string, s2: string) {
+    var i = 0;
+    var j = 0;
+    var fwdLCS = "";
+    var revLCS = "";
+
+    while (i < s1.length && i < s2.length) {
+        if (s1[i] !== s2[i]) {
+            break;
+        }
+
+        fwdLCS += s1[i];
+        i += 1;
+    }
+
+    if (i === s1.length) {
+        return s1;
+    }
+
+    if (i === s2.length) {
+        return s2;
+    }
+
+    i = s1.length - 1;
+    j = s2.length - 1;
+
+    while (i >= 0 && j >= 0) {
+        if (s1[i] !== s2[j]) {
+            break;
+        }
+
+        revLCS = [s1[i], revLCS].join("");
+        i -= 1;
+        j -= 1;
+    }
+
+    return fwdLCS + revLCS;
+}
+
+onMounted(() => {
+    _elementsSetUp();
+
+    initialSuggestedName.value = _guessNameForPair(
+        workingElements.value[0] as HDCADetailed,
+        workingElements.value[1] as HDCADetailed,
+        removeExtensions.value
+    );
+});
+</script>
+
 <template>
     <div class="pair-collection-creator">
         <div v-if="state == 'error'">
-            <b-alert show variant="danger">
-                {{ errorText }}
-            </b-alert>
+            <BAlert show variant="danger">
+                {{ localize("Galaxy could not be reached and may be updating.  Try again in a few minutes.") }}
+            </BAlert>
         </div>
         <div v-else>
             <div v-if="noElementsSelected">
-                <b-alert show variant="warning" dismissible>
-                    {{ noElementsHeader }}
-                    {{ allInvalidElementsPartOne }}
+                <BAlert show variant="warning" dismissible>
+                    {{ localize("No datasets were selected.") }}
+                    {{ localize("Exactly two elements needed for the collection. You may need to") }}
                     <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
-                        {{ cancelText }}
+                        {{ localize("cancel") }}
                     </a>
-                    {{ allInvalidElementsPartTwo }}
-                </b-alert>
+                    {{ localize("and reselect new elements.") }}
+                </BAlert>
+
                 <div class="float-left">
                     <button class="cancel-create btn" tabindex="-1" @click="oncancel">
-                        {{ l("Cancel") }}
+                        {{ localize("Cancel") }}
                     </button>
                 </div>
             </div>
             <div v-else-if="allElementsAreInvalid">
-                <b-alert show variant="warning" dismissible>
-                    {{ invalidHeader }}
+                <BAlert show variant="warning" dismissible>
+                    {{ localize("The following selections could not be included due to problems:") }}
                     <ul>
-                        <li v-for="problem in returnInvalidElements" :key="problem">
+                        <li v-for="problem in invalidElements" :key="problem">
                             {{ problem }}
                         </li>
                     </ul>
-                    {{ allInvalidElementsPartOne }}
+                    {{ localize("Exactly two elements needed for the collection. You may need to") }}
                     <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
-                        {{ cancelText }}
+                        {{ localize("cancel") }}
                     </a>
-                    {{ allInvalidElementsPartTwo }}
-                </b-alert>
+                    {{ localize("and reselect new elements.") }}
+                </BAlert>
+
                 <div class="float-left">
                     <button class="cancel-create btn" tabindex="-1" @click="oncancel">
-                        {{ l("Cancel") }}
+                        {{ localize("Cancel") }}
                     </button>
                 </div>
             </div>
             <div v-else-if="!exactlyTwoValidElements">
-                <div v-if="returnInvalidElementsLength">
-                    <b-alert show variant="warning" dismissible>
-                        {{ invalidHeader }}
+                <div v-if="invalidElements.length">
+                    <BAlert show variant="warning" dismissible>
+                        {{ localize("The following selections could not be included due to problems:") }}
                         <ul>
-                            <li v-for="problem in returnInvalidElements" :key="problem">
+                            <li v-for="problem in invalidElements" :key="problem">
                                 {{ problem }}
                             </li>
                         </ul>
-                    </b-alert>
+                    </BAlert>
                 </div>
-                <b-alert show variant="warning" dismissible>
-                    {{ exactlyTwoValidElementsPartOne }}
+
+                <BAlert show variant="warning" dismissible>
+                    {{ localize("Two (and only two) elements are needed for the pair. You may need to ") }}
                     <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
-                        {{ cancelText }}
+                        {{ localize("cancel") }}
                     </a>
-                    {{ exactlyTwoValidElementsPartTwo }}
-                </b-alert>
+                    {{ localize("and reselect new elements.") }}
+                </BAlert>
+
                 <div class="float-left">
                     <button class="cancel-create btn" tabindex="-1" @click="oncancel">
-                        {{ l("Cancel") }}
+                        {{ localize("Cancel") }}
                     </button>
                 </div>
             </div>
             <div v-else>
-                <div v-if="returnInvalidElementsLength">
-                    <b-alert show variant="warning" dismissible>
-                        {{ invalidHeader }}
+                <div v-if="invalidElements.length">
+                    <BAlert show variant="warning" dismissible>
+                        {{ localize("The following selections could not be included due to problems:") }}
                         <ul>
-                            <li v-for="problem in returnInvalidElements" :key="problem">
+                            <li v-for="problem in invalidElements" :key="problem">
                                 {{ problem }}
                             </li>
                         </ul>
-                    </b-alert>
+                    </BAlert>
                 </div>
-                <collection-creator
+
+                <CollectionCreator
                     :oncancel="oncancel"
                     :hide-source-items="hideSourceItems"
                     :suggested-name="initialSuggestedName"
@@ -86,7 +304,7 @@
                     <template v-slot:help-content>
                         <p>
                             {{
-                                l(
+                                localize(
                                     [
                                         "Pair collections are permanent collections containing two datasets: one forward and one reverse. ",
                                         "Often these are forward and reverse reads. The pair collections can be passed to tools and workflows in ",
@@ -96,33 +314,42 @@
                                 )
                             }}
                         </p>
+
                         <ul>
                             <li>
-                                {{ l("Click the ") }}
+                                {{ localize("Click the ") }}
                                 <i data-target=".swap">
-                                    {{ l("Swap") }}
+                                    {{ localize("Swap") }}
                                 </i>
-                                {{ l("link to make your forward dataset the reverse and the reverse dataset forward") }}
+                                {{
+                                    localize(
+                                        "link to make your forward dataset the reverse and the reverse dataset forward"
+                                    )
+                                }}
                             </li>
+
                             <li>
-                                {{ l("Click the ") }}
+                                {{ localize("Click the ") }}
                                 <i data-target=".cancel-create">
-                                    {{ l("Cancel") }}
+                                    {{ localize("Cancel") }}
                                 </i>
-                                {{ l("button to exit the interface.") }}
+                                {{ localize("button to exit the interface.") }}
                             </li>
                         </ul>
+
                         <br />
+
                         <p>
-                            {{ l("Once your collection is complete, enter a ") }}
-                            <i data-target=".collection-name"> {{ l("name") }}</i>
-                            {{ l("and click ") }}
+                            {{ localize("Once your collection is complete, enter a ") }}
+                            <i data-target=".collection-name"> {{ localize("name") }}</i>
+                            {{ localize("and click ") }}
                             <i data-target=".create-collection">
-                                {{ l("Create list") }}
+                                {{ localize("Create list") }}
                             </i>
-                            {{ l(".") }}
+                            {{ localize(".") }}
                         </p>
                     </template>
+
                     <template v-slot:middle-content>
                         <div class="collection-elements-controls">
                             <a
@@ -130,183 +357,24 @@
                                 href="javascript:void(0);"
                                 title="l('Swap forward and reverse datasets')"
                                 @click="swapButton">
-                                {{ l("Swap") }}
+                                {{ localize("Swap") }}
                             </a>
                         </div>
+
                         <div class="collection-elements scroll-container flex-row">
                             <div
                                 v-for="(element, index) in workingElements"
                                 :key="element.id"
                                 class="collection-element">
-                                {{ index == 0 ? l("forward") : l("reverse") }}: {{ element.name }}
+                                {{ index == 0 ? localize("forward") : localize("reverse") }}: {{ element.name }}
                             </div>
                         </div>
                     </template>
-                </collection-creator>
+                </CollectionCreator>
             </div>
         </div>
     </div>
 </template>
-
-<script>
-import BootstrapVue from "bootstrap-vue";
-import STATES from "mvc/dataset/states";
-import _l from "utils/localization";
-import Vue from "vue";
-
-import mixin from "./common/mixin";
-
-Vue.use(BootstrapVue);
-export default {
-    mixins: [mixin],
-    data: function () {
-        return {
-            state: "build", //error
-            errorText: _l("Galaxy could not be reached and may be updating.  Try again in a few minutes."),
-            noElementsHeader: _l("No datasets were selected."),
-            allInvalidElementsPartOne: _l("Exactly two elements needed for the collection. You may need to"),
-            cancelText: _l("cancel"),
-            allInvalidElementsPartTwo: _l("and reselect new elements."),
-            exactlyTwoValidElementsPartOne: _l("Two (and only two) elements are needed for the pair. You may need to "),
-            exactlyTwoValidElementsPartTwo: _l("and reselect new elements."),
-            invalidHeader: _l("The following selections could not be included due to problems:"),
-            minElements: 2,
-            workingElements: [],
-            invalidElements: [],
-            removeExtensions: true,
-            initialSuggestedName: "",
-        };
-    },
-    computed: {
-        returnInvalidElementsLength: function () {
-            return this.invalidElements.length > 0;
-        },
-        returnInvalidElements: function () {
-            return this.invalidElements;
-        },
-        allElementsAreInvalid: function () {
-            return this.initialElements.length == this.invalidElements.length;
-        },
-        noElementsSelected: function () {
-            return this.initialElements.length == 0;
-        },
-        exactlyTwoValidElements: function () {
-            return this.workingElements.length == 2;
-        },
-    },
-    created() {
-        this._elementsSetUp();
-        this.initialSuggestedName = this._guessNameForPair(
-            this.workingElements[0],
-            this.workingElements[1],
-            this.removeExtensions
-        );
-    },
-    methods: {
-        l(str) {
-            // _l conflicts private methods of Vue internals, expose as l instead
-            return _l(str);
-        },
-        _elementsSetUp: function () {
-            /** a list of invalid elements and the reasons they aren't valid */
-            this.invalidElements = [];
-            //TODO: handle fundamental problem of syncing DOM, views, and list here
-            /** data for list in progress */
-            this.workingElements = [];
-            // copy initial list, sort, add ids if needed
-            this.workingElements = JSON.parse(JSON.stringify(this.initialElements.slice(0)));
-            this._ensureElementIds();
-            this._validateElements();
-        },
-        /** add ids to dataset objs in initial list if none */
-        _ensureElementIds: function () {
-            this.workingElements.forEach((element) => {
-                if (!Object.prototype.hasOwnProperty.call(element, "id")) {
-                    element.id = element._uid;
-                }
-            });
-            return this.workingElements;
-        },
-        // /** separate working list into valid and invalid elements for this collection */
-        _validateElements: function () {
-            this.workingElements = this.workingElements.filter((element) => {
-                var problem = this._isElementInvalid(element);
-                if (problem) {
-                    this.invalidElements.push(element.name + "  " + problem);
-                }
-                return !problem;
-            });
-            return this.workingElements;
-        },
-        /** describe what is wrong with a particular element if anything */
-        _isElementInvalid: function (element) {
-            if (element.history_content_type === "dataset_collection") {
-                return _l("is a collection, this is not allowed");
-            }
-            var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state);
-            if (!validState) {
-                return _l("has errored, is paused, or is not accessible");
-            }
-            if (element.deleted || element.purged) {
-                return _l("has been deleted or purged");
-            }
-            return null;
-        },
-        swapButton: function () {
-            this.workingElements = [this.workingElements[1], this.workingElements[0]];
-        },
-        clickedCreate: function (collectionName) {
-            if (this.state !== "error") {
-                this.$emit("clicked-create", this.workingElements, this.collectionName, this.hideSourceItems);
-                return this.creationFn(this.workingElements, collectionName, this.hideSourceItems)
-                    .done(this.oncreate)
-                    .fail(() => {
-                        this.state = "error";
-                    });
-            }
-        },
-        /** string rep */
-        toString: function () {
-            return "PairCollectionCreator";
-        },
-        removeExtensionsToggle: function () {
-            this.removeExtensions = !this.removeExtensions;
-            this.initialSuggestedName = this._guessNameForPair(
-                this.workingElements[0],
-                this.workingElements[1],
-                this.removeExtensions
-            );
-        },
-        _guessNameForPair: function (fwd, rev, removeExtensions) {
-            removeExtensions = removeExtensions ? removeExtensions : this.removeExtensions;
-            var fwdName = fwd.name;
-            var revName = rev.name;
-
-            var lcs = this._naiveStartingAndEndingLCS(fwdName, revName);
-
-            /** remove url prefix if files were uploaded by url */
-            var lastSlashIndex = lcs.lastIndexOf("/");
-            if (lastSlashIndex > 0) {
-                var urlprefix = lcs.slice(0, lastSlashIndex + 1);
-                lcs = lcs.replace(urlprefix, "");
-                fwdName = fwdName.replace(extension, "");
-                revName = revName.replace(extension, "");
-            }
-
-            if (removeExtensions) {
-                var lastDotIndex = lcs.lastIndexOf(".");
-                if (lastDotIndex > 0) {
-                    var extension = lcs.slice(lastDotIndex, lcs.length);
-                    lcs = lcs.replace(extension, "");
-                    fwdName = fwdName.replace(extension, "");
-                    revName = revName.replace(extension, "");
-                }
-            }
-            return lcs || `${fwdName} & ${revName}`;
-        },
-    },
-};
-</script>
 
 <style lang="scss">
 .pair-collection-creator {
@@ -321,6 +389,7 @@ export default {
     .collection-elements-controls {
         margin-bottom: 8px;
     }
+
     .collection-elements {
         max-height: 400px;
         border: 0px solid lightgrey;
@@ -343,6 +412,7 @@ export default {
         &:last-of-type {
             margin-bottom: 2px;
         }
+
         &:hover {
             border-color: black;
         }
@@ -350,18 +420,21 @@ export default {
         button {
             margin-top: 3px;
         }
+
         .identifier {
             &:after {
                 content: ":";
                 margin-right: 6px;
             }
         }
+
         .name {
             &:hover {
                 text-decoration: none;
             }
         }
     }
+
     .empty-message {
         margin: 8px;
         color: grey;

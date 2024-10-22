@@ -32,7 +32,7 @@ export class Services {
     async createWorkflow(workflow) {
         const url = withPrefix("/api/workflows");
         try {
-            const { data } = await axios.post(url, { workflow: toSimple(workflow.id, workflow) });
+            const { data } = await axios.post(url, { workflow: toSimple(workflow.id, workflow), from_tool_form: true });
             return data;
         } catch (e) {
             rethrowSimple(e);

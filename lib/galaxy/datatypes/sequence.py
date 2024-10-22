@@ -41,6 +41,7 @@ from galaxy.datatypes.sniff import (
     get_headers,
     iter_headers,
 )
+from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util import (
     compression_utils,
     nice_size,
@@ -258,8 +259,8 @@ class Sequence(data.Text):
 
         # These two variables act as an accumulator for consecutive entire blocks that
         # can be copied verbatim (without decompressing)
-        start_chunk = int(-1)
-        end_chunk = int(-1)
+        start_chunk = -1
+        end_chunk = -1
         copy_chunk_cmd = "dd bs=1 skip=%s count=%s if=%s 2> /dev/null >> %s"
 
         while sequence_count > 0 and i < len(sections):
@@ -277,14 +278,7 @@ class Sequence(data.Text):
                     start_chunk = -1
                 # extract, unzip, trim, recompress
                 result.append(
-                    "(dd bs=1 skip={} count={} if={} 2> /dev/null )| zcat | ( tail -n +{} 2> /dev/null) | head -{} | gzip -c >> {}".format(
-                        start_copy,
-                        end_copy - start_copy,
-                        input_name,
-                        skip_sequences * 4 + 1,
-                        sequences_to_extract * 4,
-                        output_name,
-                    )
+                    f"(dd bs=1 skip={start_copy} count={end_copy - start_copy} if={input_name} 2> /dev/null )| zcat | ( tail -n +{skip_sequences * 4 + 1} 2> /dev/null) | head -{sequences_to_extract * 4} | gzip -c >> {output_name}"
                 )
             else:  # whole section - add it to the start_chunk/end_chunk accumulator
                 if start_chunk == -1:
@@ -324,6 +318,34 @@ class Sequence(data.Text):
 
         return [cmd]
 
+    def display_data(
+        self,
+        trans,
+        dataset: DatasetHasHidProtocol,
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        **kwd,
+    ):
+        headers = kwd.get("headers", {})
+        if preview:
+            with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
+                max_peek_size = 100000
+                try:
+                    chunk = fh.read(max_peek_size + 1)
+                except UnicodeDecodeError:
+                    raise InvalidFileFormatError("Dataset appears to contain binary data, cannot display.")
+                if len(chunk) <= max_peek_size:
+                    mime = "text/plain"
+                    self._clean_and_set_mime_type(trans, mime, headers)
+                    return chunk[:-1], headers
+                return (
+                    trans.fill_template_mako("/dataset/large_file.mako", truncated_data=chunk[:-1], data=dataset),
+                    headers,
+                )
+        else:
+            return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
+
 
 class Alignment(data.Text):
     """Class describing an alignment"""
@@ -348,6 +370,24 @@ class Fasta(Sequence):
 
     edam_format = "format_1929"
     file_ext = "fasta"
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        """
+        Set the number of sequences and the number of data lines in a FASTA dataset.
+        """
+        data_lines = 0
+        sequences = 0
+        with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
+            for line in fh:
+                if not line:
+                    continue
+                elif line[0] == ">":
+                    sequences += 1
+                    data_lines += 1
+                else:
+                    data_lines += 1
+            dataset.metadata.data_lines = data_lines
+            dataset.metadata.sequences = sequences
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
@@ -699,24 +739,11 @@ class BaseFastq(Sequence):
             return
         data_lines = 0
         sequences = 0
-        seq_counter = 0  # blocks should be 4 lines long
         with compression_utils.get_fileobj(dataset.get_file_name()) as in_file:
             for line in in_file:
-                line = line.strip()
-                if line and line.startswith("#") and not data_lines:
-                    # We don't count comment lines for sequence data types
-                    continue
-                seq_counter += 1
+                if line.startswith("@") and data_lines % 4 == 0:
+                    sequences += 1
                 data_lines += 1
-                if line and line.startswith("@"):
-                    if seq_counter >= 4:
-                        # count previous block
-                        # blocks should be 4 lines long
-                        sequences += 1
-                        seq_counter = 1
-            if seq_counter >= 4:
-                # count final block
-                sequences += 1
             dataset.metadata.data_lines = data_lines
             dataset.metadata.sequences = sequences
 
@@ -764,32 +791,6 @@ class BaseFastq(Sequence):
         if not self.quality_check(headers):
             return False
         return self.check_first_block(file_prefix)
-
-    def display_data(
-        self,
-        trans,
-        dataset: DatasetHasHidProtocol,
-        preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
-        **kwd,
-    ):
-        headers = kwd.get("headers", {})
-        if preview:
-            with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
-                max_peek_size = 1000000  # 1 MB
-                if os.stat(dataset.get_file_name()).st_size < max_peek_size:
-                    mime = "text/plain"
-                    self._clean_and_set_mime_type(trans, mime, headers)
-                    return fh.read(), headers
-                return (
-                    trans.fill_template_mako(
-                        "/dataset/large_file.mako", truncated_data=fh.read(max_peek_size), data=dataset
-                    ),
-                    headers,
-                )
-        else:
-            return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
 
     @classmethod
     def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
@@ -1207,26 +1208,30 @@ class Axt(data.Text):
         >>> fname = get_test_fname( 'alignment.lav' )
         >>> Axt().sniff( fname )
         False
+        >>> fname = get_test_fname( '2.chain' )
+        >>> Axt().sniff( fname )
+        False
         """
-        headers = get_headers(file_prefix, None)
-        if len(headers) < 4:
+        headers = get_headers(file_prefix, None, count=4, comment_designator="#")
+        if not (
+            len(headers) >= 3
+            and len(headers[0]) == 9
+            and headers[0][0] == "0"
+            and headers[0][2].isdecimal()
+            and headers[0][3].isdecimal()
+            and headers[0][5].isdecimal()
+            and headers[0][6].isdecimal()
+            and headers[0][7] in data.valid_strand
+            and headers[0][8].isdecimal()
+            and len(headers[1]) == 1
+            and len(headers[2]) == 1
+        ):
             return False
-        for hdr in headers:
-            if len(hdr) > 0 and hdr[0].startswith("##matrix=axt"):
-                return True
-            if len(hdr) > 0 and not hdr[0].startswith("#"):
-                if len(hdr) != 9:
-                    return False
-                try:
-                    for _ in (hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]):
-                        int(_)
-                except ValueError:
-                    return False
-                if hdr[7] not in data.valid_strand:
-                    return False
-                else:
-                    return True
-        return False
+        # the optional fourth non-comment line has to be empty
+        if len(headers) == 4 and not headers[3] == []:
+            return False
+        else:
+            return True
 
 
 @build_sniff_from_prefix

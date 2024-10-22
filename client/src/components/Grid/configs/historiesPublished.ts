@@ -1,11 +1,12 @@
 import { faEye } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { historiesFetcher } from "@/api/histories";
+import { GalaxyApi } from "@/api";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
+import { rethrowSimple } from "@/utils/simple-error";
 
-import type { FieldArray, GridConfig } from "./types";
+import { type FieldArray, type GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -19,17 +20,29 @@ type SortKeyLiteral = "name" | "update_time" | undefined;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { data, headers } = await historiesFetcher({
-        limit,
-        offset,
-        search,
-        sort_by: sort_by as SortKeyLiteral,
-        sort_desc,
-        show_own: false,
-        show_published: true,
-        show_shared: false,
+    const { response, data, error } = await GalaxyApi().GET("/api/histories", {
+        params: {
+            query: {
+                view: "summary",
+                keys: "username",
+                limit,
+                offset,
+                search,
+                sort_by: sort_by as SortKeyLiteral,
+                sort_desc,
+                show_own: false,
+                show_published: true,
+                show_shared: false,
+                show_archived: true,
+            },
+        },
     });
-    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0");
     return [data, totalMatches];
 }
 
@@ -45,9 +58,8 @@ const fields: FieldArray = [
             {
                 title: "View",
                 icon: faEye,
-                condition: (data: HistoryEntry) => !data.deleted,
                 handler: (data: HistoryEntry) => {
-                    emit(`/histories/view?id=${data.id}`);
+                    emit(`/published/history?id=${data.id}`);
                 },
             },
         ],

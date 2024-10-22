@@ -224,7 +224,7 @@ steps:
     def test_integer_input(self):
         editor = self.components.workflow_editor
 
-        name = self.workflow_create_new()
+        name = self.workflow_create_new(save_workflow=False)
         self.workflow_editor_add_input(item_name="parameter_input")
         self.screenshot("workflow_editor_parameter_input_new")
         editor.label_input.wait_for_and_send_keys("input1")
@@ -704,6 +704,7 @@ steps:
         editor.remove_tags_input.wait_for_and_send_keys("#oldboringtag" + Keys.ENTER + Keys.ESCAPE)
         self.sleep_for(self.wait_types.UX_RENDER)
         cat_node.clone.wait_for_and_click()
+        editor.label_input.wait_for_and_send_keys(Keys.BACKSPACE * 20)
         editor.label_input.wait_for_and_send_keys("cloned label")
         output_label = editor.label_output(output="out_file1")
         self.set_text_element(output_label, "cloned output label")
@@ -898,22 +899,18 @@ steps:
             assert status == target_status
 
         new_workflow_name = self.workflow_create_new(clear_placeholder=True)
-
-        # Assert workflow not initially bookmarked.
-        assert_workflow_bookmarked_status(False)
-
         self.components.workflow_editor.canvas_body.wait_for_visible()
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
-        self.components.masthead.workflow.wait_for_and_click()
 
-        self.sleep_for(self.wait_types.UX_RENDER)
+        # Assert workflow not initially bookmarked.
+        self.navigate_to_tools()
+        assert_workflow_bookmarked_status(False)
+
+        self.click_activity_workflow()
         self.components.workflows.bookmark_link(action="add").wait_for_and_click()
-        self.components.masthead.workflow.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
 
         # search for bookmark in tools menu
-        self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.navigate_to_tools()
         assert_workflow_bookmarked_status(True)
 
     def tab_to(self, accessible_name, direction="forward"):
@@ -1089,10 +1086,11 @@ steps:
     @selenium_test
     def test_editor_place_comments(self):
         editor = self.components.workflow_editor
+
         self.workflow_create_new(annotation="simple workflow")
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        tool_bar = editor.tool_bar._.wait_for_visible()
+        canvas = editor.canvas_body.wait_for_visible()
 
         # select text comment tool use all options and set font size to 2
         editor.tool_bar.tool(tool="text_comment").wait_for_and_click()
@@ -1103,7 +1101,7 @@ steps:
         self.action_chains().send_keys(Keys.LEFT * 5).send_keys(Keys.RIGHT).perform()
 
         # place text comment
-        self.mouse_drag(from_element=tool_bar, to_offset=(400, 110))
+        self.mouse_drag(from_element=canvas, from_offset=(-200, -200), to_offset=(400, 110))
 
         self.action_chains().send_keys("Hello World").perform()
 
@@ -1128,7 +1126,7 @@ steps:
         # place and test markdown comment
         editor.tool_bar.tool(tool="markdown_comment").wait_for_and_click()
         editor.tool_bar.color(color="lime").wait_for_and_click()
-        self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 220))
+        self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 220))
         self.action_chains().send_keys("# Hello World").perform()
 
         editor.tool_bar.tool(tool="pointer").wait_for_and_click()
@@ -1149,7 +1147,7 @@ steps:
         # place and test frame comment
         editor.tool_bar.tool(tool="frame_comment").wait_for_and_click()
         editor.tool_bar.color(color="blue").wait_for_and_click()
-        self.mouse_drag(from_element=tool_bar, from_offset=(10, 10), to_offset=(400, 300))
+        self.mouse_drag(from_element=canvas, from_offset=(-200, -150), to_offset=(400, 300))
         self.action_chains().send_keys("My Frame").perform()
 
         title: WebElement = editor.comment.frame_title.wait_for_visible()
@@ -1173,14 +1171,14 @@ steps:
         editor.tool_bar.smoothing.wait_for_and_click()
         self.action_chains().send_keys(Keys.RIGHT * 10).perform()
 
-        self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 200))
+        self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 200))
 
         editor.comment.freehand_comment.wait_for_visible()
 
         editor.tool_bar.color(color="black").wait_for_and_click()
         editor.tool_bar.line_thickness.wait_for_and_click()
         self.action_chains().send_keys(Keys.LEFT * 20).perform()
-        self.mouse_drag(from_element=tool_bar, from_offset=(300, 300), via_offsets=[(100, 200)], to_offset=(-200, 30))
+        self.mouse_drag(from_element=canvas, from_offset=(-100, -100), via_offsets=[(100, 200)], to_offset=(-200, 30))
 
         # test bulk remove freehand
         editor.tool_bar.remove_freehand.wait_for_and_click()
@@ -1191,7 +1189,7 @@ steps:
         self.action_chains().send_keys(Keys.RIGHT * 20).perform()
         editor.tool_bar.color(color="orange").wait_for_and_click()
 
-        self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 200))
+        self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 200))
 
         freehand_comment_a: WebElement = editor.comment.freehand_comment.wait_for_visible()
 
@@ -1205,7 +1203,7 @@ steps:
         editor.tool_bar.tool(tool="freehand_pen").wait_for_and_click()
         editor.tool_bar.color(color="yellow").wait_for_and_click()
 
-        self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 200))
+        self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 200))
 
         freehand_comment_b: WebElement = editor.comment.freehand_comment.wait_for_visible()
 
@@ -1252,6 +1250,85 @@ steps:
 
         assert top % 200 == 0
         assert left % 200 == 0
+
+    @selenium_test
+    def test_editor_selection(self):
+        editor = self.components.workflow_editor
+        self.workflow_create_new(annotation="simple workflow")
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        canvas = editor.canvas_body.wait_for_visible()
+
+        # place tool in center of canvas
+        self.tool_open("cat")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.label_input.wait_for_and_send_keys("tool_node")
+        tool_node = editor.node._(label="tool_node").wait_for_present()
+        self.mouse_drag(from_element=tool_node, to_element=canvas, to_offset=(0, -100))
+
+        # select the node
+        self.action_chains().move_to_element(tool_node).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        assert editor.tool_bar.selection_count.wait_for_visible().text.find("1 step") != -1
+
+        # duplicate it
+        editor.tool_bar.duplicate_selection.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        assert editor.tool_bar.selection_count.wait_for_visible().text.find("1 step") != -1
+
+        # move the node
+        tool_node_new = editor.node._(label="tool_node 2").wait_for_present()
+        self.mouse_drag(from_element=tool_node_new, to_element=canvas, to_offset=(0, 100))
+
+        # clear selection
+        editor.tool_bar.clear_selection.wait_for_and_click()
+        editor.tool_bar.selection_count.wait_for_absent_or_hidden()
+
+        # select both using box
+        tool_node_original = editor.node._(label="tool_node").wait_for_present()
+        editor.tool_bar.tool(tool="box_select").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        self.mouse_drag(
+            from_element=tool_node_original, from_offset=(150, -100), to_element=tool_node_new, to_offset=(-150, 100)
+        )
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        assert editor.tool_bar.selection_count.wait_for_visible().text.find("2 steps") != -1
+
+        # delete steps
+        editor.tool_bar.delete_selection.wait_for_and_click()
+        editor.tool_bar.selection_count.wait_for_absent_or_hidden()
+        editor.node._(label="tool_node").wait_for_absent()
+        editor.node._(label="tool_node 2").wait_for_absent()
+
+        # place comments
+        editor.tool_bar.tool(tool="text_comment").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.mouse_drag(from_element=canvas, from_offset=(-100, -200), to_element=canvas, to_offset=(100, 0))
+
+        editor.tool_bar.tool(tool="markdown_comment").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.mouse_drag(from_element=canvas, from_offset=(-100, 0), to_element=canvas, to_offset=(100, 200))
+
+        # select both using box select
+        editor.tool_bar.tool(tool="box_select").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        self.mouse_drag(from_element=canvas, from_offset=(-110, -210), to_element=canvas, to_offset=(110, 210))
+
+        assert editor.tool_bar.selection_count.wait_for_visible().text.find("2 comments") != -1
+
+        # deselect one using box select
+        editor.tool_bar.select_mode_remove.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        self.mouse_drag(from_element=canvas, from_offset=(-110, -210), to_element=canvas, to_offset=(110, 10))
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        assert editor.tool_bar.selection_count.wait_for_visible().text.find("1 comment") != -1
 
     def get_node_position(self, label: str):
         node = self.components.workflow_editor.node._(label=label).wait_for_present()
@@ -1403,12 +1480,6 @@ steps:
         self.workflow_index_open()
         self.workflow_index_search_for(name)
         self.components.workflows.edit_button.wait_for_and_click()
-
-    def workflow_upload_yaml_with_random_name(self, content):
-        workflow_populator = self.workflow_populator
-        name = self._get_random_name()
-        workflow_populator.upload_yaml_workflow(content, name=name)
-        return name
 
     @retry_assertion_during_transitions
     def assert_wf_name_is(self, expected_name):

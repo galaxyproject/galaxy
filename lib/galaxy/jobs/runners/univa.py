@@ -72,7 +72,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         return state
 
     def _complete_terminal_job(self, ajs, drmaa_state, **kwargs):
-        extinfo = dict()
+        extinfo = {}
         # get state with job_info/qstat + wait/qacct
         state = self._get_drmaa_state(ajs.job_id, self.ds, True, extinfo)
         # log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) -> state {state} info {info}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state], info=extinfo))
@@ -214,7 +214,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         # log.debug("UnivaJobRunner._get_drmaa_state_qacct ({jobid})".format(jobid=job_id))
         signals = {
             k: v
-            for v, k in reversed(sorted(signal.__dict__.items()))
+            for v, k in sorted(signal.__dict__.items(), reverse=True)
             if v.startswith("SIG") and not v.startswith("SIG_")
         }
         cmd = ["qacct", "-j", job_id]
@@ -235,7 +235,7 @@ class UnivaJobRunner(DRMAAJobRunner):
                     return self.drmaa.JobState.UNDETERMINED
             else:
                 break
-        qacct = dict()
+        qacct = {}
         for line in stdout.split("\n"):
             # remove header
             if line.startswith("=") or line == "":

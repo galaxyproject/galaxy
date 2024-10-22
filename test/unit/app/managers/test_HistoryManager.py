@@ -66,7 +66,7 @@ class TestHistoryManager(BaseTestCase):
             == self.trans.sa_session.execute(select(model.History).filter(model.History.user == user2)).scalar_one()
         )
 
-        history2 = self.history_manager.copy(history1, user=user3)
+        history2 = history1.copy(target_user=user3)
 
         self.log("should be able to query")
         histories = self.trans.sa_session.scalars(select(model.History)).all()
@@ -85,7 +85,10 @@ class TestHistoryManager(BaseTestCase):
 
         self.log("should be able to order")
         history3 = self.history_manager.create(name="history3", user=user2)
-        name_first_then_time = (model.History.name, sqlalchemy.desc(model.History.create_time))
+        name_first_then_time = (
+            model.History.name,
+            sqlalchemy.desc(model.History.create_time),
+        )
         assert self.history_manager.list(order_by=name_first_then_time) == [history2, history1, history3]
 
     def test_copy(self):
@@ -105,7 +108,7 @@ class TestHistoryManager(BaseTestCase):
         self.app.tag_handler.set_tags_from_list(user=user2, item=hda, new_tags_list=hda_tags)
         self.hda_manager.annotate(hda, hda_annotation, user=user2)
 
-        history2 = self.history_manager.copy(history1, user=user3)
+        history2 = history1.copy(target_user=user3)
         assert isinstance(history2, model.History)
         assert history2.user == user3
         assert history2 == self.trans.sa_session.get(model.History, history2.id)

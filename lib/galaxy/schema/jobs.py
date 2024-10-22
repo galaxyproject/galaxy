@@ -4,6 +4,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from pydantic import (
@@ -21,6 +22,7 @@ from galaxy.schema.fields import (
 from galaxy.schema.schema import (
     DataItemSourceType,
     EncodedDataItemSourceId,
+    EncodedJobParameterHistoryItem,
     JobMetricCollection,
     JobState,
     JobSummary,
@@ -221,7 +223,9 @@ class JobParameter(Model):
         title="Depth",
         description="The depth of the job parameter.",
     )
-    value: Optional[Any] = Field(default=None, title="Value", description="The values of the job parameter")
+    value: Optional[Union[List[Optional[EncodedJobParameterHistoryItem]], float, int, bool, str]] = Field(
+        default=None, title="Value", description="The values of the job parameter", union_mode="left_to_right"
+    )
     notes: Optional[str] = Field(default=None, title="Notes", description="Notes associated with the job parameter.")
 
 

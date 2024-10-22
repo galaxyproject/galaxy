@@ -56,6 +56,13 @@ class ConfigurationManager:
         decoded_id = self._app.security.decode_id(encoded_id)
         return {"decoded_id": decoded_id}
 
+    def encode_id(
+        self,
+        decoded_id: int,
+    ) -> Dict[str, str]:
+        encoded_id = self._app.security.encode_id(decoded_id)
+        return {"encoded_id": encoded_id}
+
     def tool_lineages(self) -> List[Dict[str, Dict]]:
         rval = []
         for id, tool in self._app.toolbox.tools():
@@ -97,8 +104,8 @@ class ConfigSerializer(base.ModelSerializer):
         self.default_view = "all"
         self.add_view("all", list(self.serializers.keys()))
 
-    def default_serializer(self, config, key):
-        return getattr(config, key, None)
+    def default_serializer(self, item, key, **context):
+        return getattr(item, key, None)
 
     def add_serializers(self):
         def _defaults_to(default) -> base.Serializer:
@@ -176,8 +183,8 @@ class ConfigSerializer(base.ModelSerializer):
             "interactivetools_enable": _use_config,
             "aws_estimate": _use_config,
             "carbon_emission_estimates": _defaults_to(True),
-            "carbon_intensity": _use_config,
-            "geographical_server_location_name": _use_config,
+            "carbon_intensity": lambda item, key, **context: self.app.carbon_intensity,
+            "geographical_server_location_name": lambda item, key, **context: self.app.geographical_server_location_name,
             "geographical_server_location_code": _use_config,
             "power_usage_effectiveness": _use_config,
             "message_box_content": _use_config,
@@ -206,6 +213,7 @@ class ConfigSerializer(base.ModelSerializer):
             ),
             "object_store_allows_id_selection": lambda item, key, **context: object_store.object_store_allows_id_selection(),
             "object_store_ids_allowing_selection": lambda item, key, **context: object_store.object_store_ids_allowing_selection(),
+            "object_store_always_respect_user_selection": _use_config,
             "user_activation_on": _use_config,
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
             "welcome_directory": _use_config,

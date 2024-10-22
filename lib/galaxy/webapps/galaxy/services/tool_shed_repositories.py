@@ -57,6 +57,7 @@ class ToolShedRepositoriesService:
 
     def show(self, repository_id: DecodedDatabaseIdField) -> InstalledToolShedRepository:
         tool_shed_repository = self._install_model_context.get(ToolShedRepository, repository_id)
+        assert tool_shed_repository
         return self._show(tool_shed_repository)
 
     def check_for_updates(self, repository_id: Optional[int]) -> CheckForUpdatesResponse:
@@ -74,7 +75,7 @@ class ToolShedRepositoriesService:
         stmt = select(ToolShedRepository)
         for key, value in kwd.items():
             if value is not None:
-                column = ToolShedRepository.table.c[key]
+                column = ToolShedRepository.__table__.c[key]  # type:ignore[attr-defined]
                 stmt = stmt.filter(column == value)
         stmt = stmt.order_by(ToolShedRepository.name).order_by(cast(ToolShedRepository.ctx_rev, Integer).desc())
         session = self._install_model_context

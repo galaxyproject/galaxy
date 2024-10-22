@@ -47,8 +47,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         self.navigate_to_histories_page()
         self.components.histories.advanced_search_toggle.wait_for_and_click()
-        self.components.histories.advanced_search_filter(filter="published").wait_for_and_click()
-        self.components.histories.advanced_search_submit.wait_for_and_click()
+        self.check_advanced_search_filter("published")
         self.sleep_for(self.wait_types.UX_RENDER)
 
         self.assert_histories_in_grid([self.history2_name])
@@ -85,8 +84,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.assert_histories_in_grid([self.history2_name], False)
 
         self.components.histories.advanced_search_toggle.wait_for_and_click()
-        self.components.histories.advanced_search_filter(filter="deleted").wait_for_and_click()
-        self.components.histories.advanced_search_submit.wait_for_and_click()
+        self.check_advanced_search_filter("deleted")
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Restore the history
@@ -113,8 +111,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.assert_histories_in_grid([self.history4_name], False)
 
         self.components.histories.advanced_search_toggle.wait_for_and_click()
-        self.components.histories.advanced_search_filter(filter="purged").wait_for_and_click()
-        self.components.histories.advanced_search_submit.wait_for_and_click()
+        self.check_advanced_search_filter("purged")
         self.sleep_for(self.wait_types.UX_RENDER)
 
         self.assert_histories_in_grid([self.history4_name])
@@ -137,8 +134,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         # Display deleted histories
         self.components.histories.advanced_search_toggle.wait_for_and_click()
-        self.components.histories.advanced_search_filter(filter="deleted").wait_for_and_click()
-        self.components.histories.advanced_search_submit.wait_for_and_click()
+        self.check_advanced_search_filter("deleted")
 
         # Select multiple histories
         self.sleep_for(self.wait_types.UX_RENDER)
@@ -188,33 +184,26 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         # search by name
         self.components.histories.advanced_search_toggle.wait_for_and_click()
         self.components.histories.advanced_search_name_input.wait_for_and_send_keys(self.history3_name)
-        self.components.histories.advanced_search_submit.wait_for_and_click()
         self.assert_histories_present([self.history3_name])
 
         self.components.histories.reset_input.wait_for_and_click()
 
-        self.components.histories.advanced_search_toggle.wait_for_and_click()
         self.components.histories.advanced_search_name_input.wait_for_and_send_keys(self.history2_name)
-        self.components.histories.advanced_search_submit.wait_for_and_click()
         self.assert_histories_present([self.history2_name])
 
         self.components.histories.reset_input.wait_for_and_click()
 
-        self.components.histories.advanced_search_toggle.wait_for_and_click()
         self.components.histories.advanced_search_name_input.wait_for_and_send_keys(self.history4_name)
-        self.components.histories.advanced_search_submit.wait_for_and_click()
         self.assert_histories_present([])
 
         self.components.histories.reset_input.wait_for_and_click()
 
         # search by tags
-        self.components.histories.advanced_search_toggle.wait_for_and_click()
         self.components.histories.advanced_search_tag_area.wait_for_and_click()
         input_element = self.components.histories.advanced_search_tag_input.wait_for_visible()
         input_element.send_keys(self.history3_tags[0])
         self.send_enter(input_element)
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.histories.advanced_search_submit.wait_for_and_click()
         self.assert_histories_present([self.history3_name])
 
     @retry_assertion_during_transitions
@@ -272,7 +261,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
             assert intersection == set()
 
     def get_histories(self):
-        return self.histories_get_history_names()
+        return self.get_grid_entry_names("#histories-grid")
 
     def add_tag(self, tags_cell, tag):
         tag_button = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags button")

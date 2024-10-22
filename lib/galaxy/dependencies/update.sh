@@ -36,7 +36,7 @@ fi
 
 # Install the latest version of poetry into the user account
 curl -sSL https://install.python-poetry.org | python3 -
-poetry self add poetry-plugin-export
+poetry self add 'poetry-plugin-export!=1.7.0'  # https://github.com/python-poetry/poetry-plugin-export/issues/269
 
 # Run poetry (this may update pyproject.toml and poetry.lock).
 if [ -z "$add" ]; then
@@ -88,7 +88,8 @@ split_requirement () {
 # For some packages there is no recent version that works on all Python versions
 # supported by Galaxy, so Poetry resorts to an old version. Here we replace any
 # such requirement with multiple Python-version-specific requirements.
-# Packages which specify a maximum Python version pin:
+split_requirement contourpy
+split_requirement h5py
 split_requirement matplotlib
 split_requirement numpy
 split_requirement scipy

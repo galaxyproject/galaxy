@@ -180,12 +180,12 @@ def _get_annotation_assoc_class(item):
 def get_foreign_key(source_class, target_class):
     """Returns foreign key in source class that references target class."""
     target_fk = None
-    for fk in source_class.table.foreign_keys:
-        if fk.references(target_class.table):
+    for fk in source_class.__table__.foreign_keys:
+        if fk.references(target_class.__table__):
             target_fk = fk
             break
     if not target_fk:
-        raise Exception(f"No foreign key found between objects: {source_class.table}, {target_class.table}")
+        raise Exception(f"No foreign key found between objects: {source_class.__table__}, {target_class.__table__}")
     return target_fk
 
 

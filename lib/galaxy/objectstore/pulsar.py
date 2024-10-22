@@ -24,7 +24,7 @@ class PulsarObjectStore(BaseObjectStore):
     def __init__(self, config, config_xml):
         self.pulsar_client = self.__build_pulsar_client(config_xml)
 
-    def _exists(self, obj, **kwds):
+    def _exists(self, obj, **kwds) -> bool:
         return self.pulsar_client.exists(**self.__build_kwds(obj, **kwds))
 
     def file_ready(self, obj, **kwds):
@@ -33,23 +33,23 @@ class PulsarObjectStore(BaseObjectStore):
     def _create(self, obj, **kwds):
         return self.pulsar_client.create(**self.__build_kwds(obj, **kwds))
 
-    def _empty(self, obj, **kwds):
+    def _empty(self, obj, **kwds) -> bool:
         return self.pulsar_client.empty(**self.__build_kwds(obj, **kwds))
 
-    def _size(self, obj, **kwds):
+    def _size(self, obj, **kwds) -> int:
         return self.pulsar_client.size(**self.__build_kwds(obj, **kwds))
 
-    def _delete(self, obj, **kwds):
+    def _delete(self, obj, **kwds) -> bool:
         return self.pulsar_client.delete(**self.__build_kwds(obj, **kwds))
 
     # TODO: Optimize get_data.
     def _get_data(self, obj, **kwds):
         return self.pulsar_client.get_data(**self.__build_kwds(obj, **kwds))
 
-    def _get_filename(self, obj, **kwds):
+    def _get_filename(self, obj, **kwds) -> str:
         return self.pulsar_client.get_filename(**self.__build_kwds(obj, **kwds))
 
-    def _update_from_file(self, obj, **kwds):
+    def _update_from_file(self, obj, **kwds) -> None:
         return self.pulsar_client.update_from_file(**self.__build_kwds(obj, **kwds))
 
     def _get_store_usage_percent(self):

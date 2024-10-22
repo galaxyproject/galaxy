@@ -1,3 +1,55 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed, ref, watch } from "vue";
+
+import localize from "@/utils/localization";
+
+library.add(faChevronDown, faChevronUp);
+
+interface Props {
+    oncancel: () => void;
+    hideSourceItems: boolean;
+    suggestedName?: string;
+    renderExtensionsToggle?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    suggestedName: "",
+});
+
+const emit = defineEmits<{
+    (e: "remove-extensions-toggle"): void;
+    (e: "clicked-create", value: string): void;
+    (e: "onUpdateHideSourceItems", value: boolean): void;
+}>();
+
+const isExpanded = ref(false);
+const collectionName = ref(props.suggestedName);
+const localHideSourceItems = ref(props.hideSourceItems);
+
+const validInput = computed(() => {
+    return collectionName.value.length > 0;
+});
+
+function clickForHelp() {
+    isExpanded.value = !isExpanded.value;
+    return isExpanded.value;
+}
+
+function cancelCreate() {
+    props.oncancel();
+}
+
+watch(
+    () => localHideSourceItems.value,
+    () => {
+        emit("onUpdateHideSourceItems", localHideSourceItems.value);
+    }
+);
+</script>
+
 <template>
     <div class="collection-creator">
         <div class="header flex-row no-flex">
@@ -6,140 +58,84 @@
                     class="more-help"
                     href="javascript:void(0);"
                     role="button"
-                    :title="titleForHelp"
-                    @click="_clickForHelp">
+                    :title="localize('Expand or Close Help')"
+                    @click="clickForHelp">
                     <div v-if="!isExpanded">
-                        <i class="fas fa-chevron-down"></i>
+                        <FontAwesomeIcon :icon="faChevronDown" />
                     </div>
                     <div v-else>
-                        <i class="fas fa-chevron-up"></i>
+                        <FontAwesomeIcon :icon="faChevronUp" />
                     </div>
                 </a>
+
                 <div class="help-content">
                     <!-- each collection that extends this will add their own help content -->
                     <slot name="help-content"></slot>
+
                     <a
                         class="more-help"
                         href="javascript:void(0);"
                         role="button"
-                        :title="titleForHelp"
-                        @click="_clickForHelp">
+                        :title="localize('Expand or Close Help')"
+                        @click="clickForHelp">
                     </a>
                 </div>
             </div>
         </div>
+
         <div class="middle flex-row flex-row-container">
             <slot name="middle-content"></slot>
         </div>
+
         <div class="footer flex-row no-flex">
             <div class="attributes clear">
                 <div class="clear">
                     <label v-if="renderExtensionsToggle" class="setting-prompt float-right">
-                        {{ removeFileExtensionsText }}
+                        {{ localize("Remove file extensions?") }}
                         <input
                             class="remove-extensions float-right"
                             type="checkbox"
                             checked
-                            @click="$emit('remove-extensions-toggle')" />
+                            @click="emit('remove-extensions-toggle')" />
                     </label>
+
                     <label class="setting-prompt float-right">
-                        {{ hideOriginalsText }}
+                        {{ localize("Hide original elements?") }}
                         <input v-model="localHideSourceItems" class="hide-originals float-right" type="checkbox" />
                     </label>
                 </div>
+
                 <div class="clear">
                     <input
                         v-model="collectionName"
                         class="collection-name form-control float-right"
-                        :placeholder="placeholderEnterName" />
+                        :placeholder="localize('Enter a name for your new collection')" />
+
                     <div class="collection-name-prompt float-right">
-                        {{ l("Name:") }}
+                        {{ localize("Name:") }}
                     </div>
                 </div>
             </div>
+
             <div class="actions clear vertically-spaced">
                 <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="_cancelCreate">
-                        {{ l("Cancel") }}
+                    <button class="cancel-create btn" tabindex="-1" @click="cancelCreate">
+                        {{ localize("Cancel") }}
                     </button>
                 </div>
+
                 <div class="main-options float-right">
                     <button
                         class="create-collection btn btn-primary"
                         :disabled="!validInput"
-                        @click="$emit('clicked-create', collectionName)">
-                        {{ l("Create collection") }}
+                        @click="emit('clicked-create', collectionName)">
+                        {{ localize("Create collection") }}
                     </button>
                 </div>
             </div>
         </div>
     </div>
 </template>
-
-<script>
-import _l from "utils/localization";
-
-export default {
-    props: {
-        oncancel: {
-            type: Function,
-            required: true,
-        },
-        renderExtensionsToggle: {
-            type: Boolean,
-            default: false,
-        },
-        hideSourceItems: {
-            type: Boolean,
-            required: true,
-        },
-        suggestedName: {
-            type: String,
-            required: false,
-            default: "",
-        },
-    },
-    data: function () {
-        return {
-            titleForHelp: _l("Expand or Close Help"),
-            hideOriginalsText: _l("Hide original elements?"),
-            titleMoreHelp: _l("Close and show more help"),
-            placeholderEnterName: _l("Enter a name for your new collection"),
-            dropdownText: _l("Create a <i>single</> pair"),
-            isExpanded: false,
-            collectionName: this.suggestedName,
-            removeFileExtensionsText: "Remove file extensions?",
-            localHideSourceItems: this.hideSourceItems,
-        };
-    },
-    computed: {
-        validInput: function () {
-            return this.collectionName.length > 0;
-        },
-    },
-    watch: {
-        localHideSourceItems() {
-            this.$emit("onUpdateHideSourceItems", this.localHideSourceItems);
-        },
-    },
-    methods: {
-        l(str) {
-            // _l conflicts private methods of Vue internals, expose as l instead
-            return _l(str);
-        },
-        _clickForHelp: function () {
-            this.isExpanded = !this.isExpanded;
-            return this.isExpanded;
-        },
-        _cancelCreate: function () {
-            this.oncancel();
-        },
-        _getName: function () {
-            return this.collectionName;
-        },
-    },
-};
-</script>
 
 <style lang="scss">
 $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/";

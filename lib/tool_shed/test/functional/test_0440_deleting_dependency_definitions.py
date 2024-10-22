@@ -165,15 +165,14 @@ class TestDeletedDependencies(ShedTwillTestCase):
         new_changeset_revision = self.get_repository_tip(repository)
         # Check that the old changeset revision is still downloadable.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, old_changeset_revision)
-        assert metadata_record.downloadable, (
-            "The revision of %s that contains repository_dependencies.xml is no longer downloadable." % repository.name
-        )
+        assert (
+            metadata_record.downloadable
+        ), f"The revision of {repository.name} that contains repository_dependencies.xml is no longer downloadable."
         # Check that the new tip is also downloadable.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, new_changeset_revision)
-        assert metadata_record.downloadable, (
-            "The revision of %s that does not contain repository_dependencies.xml is not downloadable."
-            % repository.name
-        )
+        assert (
+            metadata_record.downloadable
+        ), f"The revision of {repository.name} that does not contain repository_dependencies.xml is not downloadable."
         # Verify that there are only two downloadable revisions.
         assert (
             len(self._db_repository(repository).downloadable_revisions) == 2
@@ -279,14 +278,14 @@ class TestDeletedDependencies(ShedTwillTestCase):
         new_changeset_revision = self.get_repository_tip(repository)
         # Check that the old changeset revision is still downloadable.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, old_changeset_revision)
-        assert metadata_record.downloadable, (
-            "The revision of %s that contains tool_dependencies.xml is no longer downloadable." % repository.name
-        )
+        assert (
+            metadata_record.downloadable
+        ), f"The revision of {repository.name} that contains tool_dependencies.xml is no longer downloadable."
         # Check that the new tip is also downloadable.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, new_changeset_revision)
-        assert metadata_record.downloadable, (
-            "The revision of %s that does not contain tool_dependencies.xml is not downloadable." % repository.name
-        )
+        assert (
+            metadata_record.downloadable
+        ), f"The revision of {repository.name} that does not contain tool_dependencies.xml is not downloadable."
         # Verify that there are only two downloadable revisions.
         assert (
             len(self._db_repository(repository).downloadable_revisions) == 2
@@ -331,9 +330,9 @@ class TestDeletedDependencies(ShedTwillTestCase):
         assert old_changeset_revision != new_changeset_revision
         # Check that the old changeset revision is still downloadable.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, old_changeset_revision)
-        assert metadata_record.downloadable, (
-            "The revision of %s that contains tool_dependencies.xml is no longer downloadable." % repository.name
-        )
+        assert (
+            metadata_record.downloadable
+        ), f"The revision of {repository.name} that contains tool_dependencies.xml is no longer downloadable."
         # Check that the new tip does not have a metadata revision.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, new_changeset_revision)
         # If a changeset revision does not have metadata, the above method will return None.
@@ -364,15 +363,14 @@ class TestDeletedDependencies(ShedTwillTestCase):
         new_changeset_revision = self.get_repository_tip(repository)
         # Check that the old changeset revision is still downloadable.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, old_changeset_revision)
-        assert metadata_record is None, (
-            "The revision of %s that does not contain tool_dependencies.xml should not be downloadable, but is."
-            % repository.name
-        )
+        assert (
+            metadata_record is None
+        ), f"The revision of {repository.name} that does not contain tool_dependencies.xml should not be downloadable, but is."
         # Check that the new tip is also downloadable.
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, new_changeset_revision)
-        assert metadata_record.downloadable, (
-            "The revision of %s that contains tool_dependencies.xml is not downloadable." % repository.name
-        )
+        assert (
+            metadata_record.downloadable
+        ), f"The revision of {repository.name} that contains tool_dependencies.xml is not downloadable."
         # Verify that there are only two downloadable revisions.
         assert (
             len(self._db_repository(repository).downloadable_revisions) == 1

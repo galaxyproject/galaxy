@@ -65,6 +65,9 @@
                             type="iframe"
                             aspect="16by9"
                             :src="displayUrl" />
+                        <HistoryDatasetAsImage
+                            v-else-if="isSubTypeOfAny(datasetType, ['galaxy.datatypes.images.Image'], datatypesModel)"
+                            :args="args" />
                         <div v-else-if="itemContent.item_data">
                             <div v-if="isSubTypeOfAny(datasetType, ['tabular'], datatypesModel)">
                                 <UrlDataProvider
@@ -81,8 +84,8 @@
                                 </UrlDataProvider>
                             </div>
                             <pre v-else>
-                                    <code class="word-wrap-normal">{{ itemContent.item_data }}</code>
-                                </pre>
+                                <code class="word-wrap-normal">{{ itemContent.item_data }}</code>
+                            </pre>
                         </div>
                         <div v-else>No content found.</div>
                         <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
@@ -99,10 +102,13 @@ import LoadingSpan from "components/LoadingSpan";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import { getAppRoot } from "onload/loadConfig";
 
+import HistoryDatasetAsImage from "./HistoryDatasetAsImage.vue";
+
 export default {
     components: {
         LoadingSpan,
         UrlDataProvider,
+        HistoryDatasetAsImage,
     },
     props: {
         args: {
@@ -146,7 +152,7 @@ export default {
             return `${getAppRoot()}dataset/display?dataset_id=${this.args.history_dataset_id}`;
         },
         displayUrl() {
-            return `${getAppRoot()}datasets/${this.args.history_dataset_id}/display`;
+            return `${getAppRoot()}datasets/${this.args.history_dataset_id}/display/?preview=True`;
         },
         importUrl() {
             return `${getAppRoot()}dataset/imp?dataset_id=${this.args.history_dataset_id}`;

@@ -1,6 +1,6 @@
 import { computed, del, ref, set } from "vue";
 
-import type { Color } from "@/components/Workflow/Editor/Comments/colors";
+import { type Color } from "@/components/Workflow/Editor/Comments/colors";
 import {
     AxisAlignedBoundingBox,
     type Rectangle,
@@ -9,14 +9,14 @@ import {
     vecMin,
     vecReduceFigures,
     vecSubtract,
-    Vector,
+    type Vector,
 } from "@/components/Workflow/Editor/modules/geometry";
 import { assertDefined } from "@/utils/assertions";
 import { hasKeys, match } from "@/utils/utils";
 
 import { defineScopedStore } from "./scopedStore";
 import { useWorkflowStateStore } from "./workflowEditorStateStore";
-import { Step, useWorkflowStepStore } from "./workflowStepStore";
+import { type Step, useWorkflowStepStore } from "./workflowStepStore";
 
 export type WorkflowCommentColor = Color | "none";
 
@@ -69,8 +69,11 @@ export type WorkflowComment =
     | MarkdownWorkflowComment
     | FreehandWorkflowComment;
 
+export type WorkflowCommentType = WorkflowComment["type"];
+
 interface CommentsMetadata {
     justCreated?: boolean;
+    multiSelected?: boolean;
 }
 
 function assertCommentDataValid(
@@ -102,13 +105,21 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
         localCommentsMetadata.value = {};
     }
 
-    const addComments = (commentsArray: WorkflowComment[], defaultPosition: [number, number] = [0, 0]) => {
+    const addComments = (
+        commentsArray: WorkflowComment[],
+        defaultPosition: [number, number] = [0, 0],
+        select = false
+    ) => {
         commentsArray.forEach((comment) => {
             const newComment = structuredClone(comment);
             newComment.position[0] += defaultPosition[0];
             newComment.position[1] += defaultPosition[1];
 
             set(commentsRecord.value, newComment.id, newComment);
+
+            if (select) {
+                setCommentMultiSelected(newComment.id, true);
+            }
         });
     };
 
@@ -121,6 +132,34 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
         assertDefined(comment);
         return comment;
     });
+
+    const multiSelectedCommentIds = computed(() =>
+        Object.entries(localCommentsMetadata.value)
+            .filter(([_id, meta]) => meta.multiSelected)
+            .map(([id]) => parseInt(id))
+    );
+
+    const getCommentMultiSelected = computed(() => (id: number) => {
+        return Boolean(localCommentsMetadata.value[id]?.multiSelected);
+    });
+
+    function setCommentMultiSelected(id: number, selected: boolean) {
+        const meta = localCommentsMetadata.value[id];
+
+        if (meta) {
+            set(meta, "multiSelected", selected);
+        } else {
+            set(localCommentsMetadata.value, id, { multiSelected: selected });
+        }
+    }
+
+    function toggleCommentMultiSelected(id: number) {
+        setCommentMultiSelected(id, !getCommentMultiSelected.value(id));
+    }
+
+    function clearMultiSelectedComments() {
+        Object.values(localCommentsMetadata.value).forEach((meta) => (meta.multiSelected = false));
+    }
 
     function changePosition(id: number, position: [number, number]) {
         const comment = getComment.value(id);
@@ -162,6 +201,7 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
 
     function deleteComment(id: number) {
         del(commentsRecord.value, id);
+        del(localCommentsMetadata.value, id);
     }
 
     /**
@@ -175,13 +215,7 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
     }
 
     function markJustCreated(id: number) {
-        const metadata = localCommentsMetadata.value[id];
-
-        if (metadata) {
-            set(metadata, "justCreated", true);
-        } else {
-            set(localCommentsMetadata.value, id, { justCreated: true });
-        }
+        set(localCommentsMetadata.value, id, { justCreated: true });
     }
 
     function clearJustCreated(id: number) {
@@ -287,9 +321,15 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
     return {
         commentsRecord,
         comments,
+        localCommentsMetadata,
         addComments,
         highestCommentId,
         isJustCreated,
+        multiSelectedCommentIds,
+        getCommentMultiSelected,
+        setCommentMultiSelected,
+        toggleCommentMultiSelected,
+        clearMultiSelectedComments,
         changePosition,
         changeSize,
         changeData,

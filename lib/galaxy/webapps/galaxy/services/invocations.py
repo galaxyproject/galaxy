@@ -1,5 +1,4 @@
 import logging
-from tempfile import NamedTemporaryFile
 from typing import (
     Any,
     Dict,
@@ -27,10 +26,6 @@ from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import (
     WorkflowInvocation,
     WorkflowInvocationStep,
-)
-from galaxy.model.store import (
-    BcoExportOptions,
-    get_export_store_factory,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
@@ -126,12 +121,16 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             offset=invocation_payload.offset,
             sort_by=invocation_payload.sort_by,
             sort_desc=invocation_payload.sort_desc,
+            include_nested_invocations=invocation_payload.include_nested_invocations,
+            check_ownership=False,
         )
         invocation_dict = self.serialize_workflow_invocations(invocations, serialization_params)
         return invocation_dict, total_matches
 
     def show(self, trans, invocation_id, serialization_params, eager=False):
-        wfi = self._workflows_manager.get_invocation(trans, invocation_id, eager)
+        wfi = self._workflows_manager.get_invocation(
+            trans, invocation_id, eager, check_ownership=False, check_accessible=True
+        )
         return self.serialize_workflow_invocation(wfi, serialization_params)
 
     def cancel(self, trans, invocation_id, serialization_params):
@@ -143,7 +142,9 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         return wfi_report
 
     def show_invocation_step(self, trans, step_id) -> InvocationStep:
-        wfi_step = self._workflows_manager.get_invocation_step(trans, step_id)
+        wfi_step = self._workflows_manager.get_invocation_step(
+            trans, step_id, check_ownership=False, check_accessible=True
+        )
         return self.serialize_workflow_invocation_step(wfi_step)
 
     def update_invocation_step(self, trans, step_id, action):
@@ -168,7 +169,9 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
     ) -> AsyncFile:
         ensure_celery_tasks_enabled(trans.app.config)
         model_store_format = payload.model_store_format
-        workflow_invocation = self._workflows_manager.get_invocation(trans, invocation_id, eager=True)
+        workflow_invocation = self._workflows_manager.get_invocation(
+            trans, invocation_id, eager=True, check_ownership=False, check_accessible=True
+        )
         if not workflow_invocation:
             raise ObjectNotFound()
         try:
@@ -194,7 +197,9 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         self, trans, invocation_id: DecodedDatabaseIdField, payload: WriteInvocationStoreToPayload
     ) -> AsyncTaskResultSummary:
         ensure_celery_tasks_enabled(trans.app.config)
-        workflow_invocation = self._workflows_manager.get_invocation(trans, invocation_id, eager=True)
+        workflow_invocation = self._workflows_manager.get_invocation(
+            trans, invocation_id, eager=True, check_ownership=False, check_accessible=True
+        )
         if not workflow_invocation:
             raise ObjectNotFound()
         request = WriteInvocationTo(
@@ -226,34 +231,13 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         params: InvocationSerializationParams,
         default_view: InvocationSerializationView = InvocationSerializationView.collection,
     ):
-        return list(
-            map(lambda i: self.serialize_workflow_invocation(i, params, default_view=default_view), invocations)
-        )
+        return [self.serialize_workflow_invocation(i, params, default_view=default_view) for i in invocations]
 
     def serialize_workflow_invocation_step(
         self,
         invocation_step: WorkflowInvocationStep,
     ):
         return invocation_step.to_dict("element")
-
-    # TODO: remove this after 23.1 release
-    def deprecated_generate_invocation_bco(
-        self,
-        trans,
-        invocation_id: DecodedDatabaseIdField,
-        export_options: BcoExportOptions,
-    ):
-        workflow_invocation = self._workflows_manager.get_invocation(trans, invocation_id, eager=True)
-        if not workflow_invocation:
-            raise ObjectNotFound()
-
-        with NamedTemporaryFile() as export_target:
-            with get_export_store_factory(trans.app, "bco.json", bco_export_options=export_options)(
-                export_target.name
-            ) as export_store:
-                export_store.export_workflow_invocation(workflow_invocation)
-                export_target.seek(0)
-            return export_target.read()
 
     def create_from_store(
         self,

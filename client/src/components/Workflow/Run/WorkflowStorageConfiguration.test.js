@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { findViaNavigation, getLocalVue } from "tests/jest/helpers";
 import { ROOT_COMPONENT } from "utils/navigation";
@@ -18,6 +19,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
         wrapper = mount(WorkflowStorageConfiguration, {
             propsData,
             localVue,
+            pinia: createTestingPinia(),
         });
     }
 
