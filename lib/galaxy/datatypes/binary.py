@@ -442,28 +442,75 @@ class CompressedZipArchive(CompressedArchive):
 
 
 class CompressedZarrZipArchive(CompressedZipArchive):
+    """A zarr store compressed in a zip file.
+
+    The zarr store must be in the root of the zip file.
+    """
+
     file_ext = "zarr.zip"
+
+    MetadataElement(
+        name="zarr_format",
+        default=None,
+        desc="Zarr format version",
+        readonly=True,
+        optional=False,
+        visible=False,
+    )
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "Compressed zarr file"
-            dataset.blurb = nice_size(dataset.get_size())
+            dataset.blurb = f"{nice_size(dataset.get_size())}"
+            dataset.blurb += f"\nFormat v{dataset.metadata.zarr_format}"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        # We assume that the Zarr store is directly in the extra files folder and
+        # not in a subfolder.
+        with zipfile.ZipFile(dataset.get_file_name()) as zf:
+            meta_file = self._find_zarr_metadata_file(zf)
+            if meta_file:
+                with zf.open(meta_file) as f:
+                    meta = json.load(f)
+                    format_version = meta.get("zarr_format")
+                    if not format_version:
+                        log.debug("Could not determine Zarr format version")
+                        return
+                    dataset.metadata.zarr_format = format_version
+
     def sniff(self, filename: str) -> bool:
+        # Check if the zip file contains a zarr store.
+        # The zarr store must be in the root of the zip file.
+        # See: https://github.com/zarr-developers/zarr-python/issues/756#issuecomment-852134901
+        meta_file = None
         with zipfile.ZipFile(filename) as zf:
-            zf_files = zf.infolist()
-            for f in zf_files:
-                if f.file_size > 0 and (
-                    f.filename.endswith("meta")
-                    or f.filename.endswith(".zarray")
-                    or f.filename.endswith(".zgroup")
-                    or f.filename.endswith("zarr.json")
-                ):
-                    return True
-        return False
+            meta_file = self._find_zarr_metadata_file(zf)
+        return meta_file is not None
+
+    def _find_zarr_metadata_file(self, zip_file: zipfile.ZipFile) -> Optional[str]:
+        """Returns the path to the metadata file in the Zarr store."""
+        meta_file = None
+        files_in_store = zip_file.namelist()
+
+        # Depending on the Zarr version, the metadata file can be in different locations
+        # In v1 the metadata is in a file named "meta" https://zarr-specs.readthedocs.io/en/latest/v1/v1.0.html
+        if "meta" in files_in_store:
+            meta_file = "meta"
+
+        # In v2 it can be in .zarray or .zgroup https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
+        if ".zarray" in files_in_store:
+            meta_file = ".zarray"
+
+        if ".zgroup" in files_in_store:
+            meta_file = ".zgroup"
+
+        # In v3 the metadata is in a file named "zarr.json" https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html
+        if "zarr.json" in files_in_store:
+            meta_file = "zarr.json"
+
+        return meta_file
 
 
 class GenericAsn1Binary(Binary):
