@@ -573,15 +573,13 @@ class DataTableFilter(Filter):
         # get column from data table, by index or column name
         entries = None
         try:
-            entries = set(
-                [f[int(self.data_table_column)] for f in trans.app.tool_data_tables[self.table_name].get_fields()]
-            )
+            entries = {f[int(self.data_table_column)] for f in trans.app.tool_data_tables[self.table_name].get_fields()}
         except TypeError:
             pass
         try:
-            entries = set(
-                [f[self.data_table_column] for f in trans.app.tool_data_tables[self.table_name].get_named_fields_list()]
-            )
+            entries = {
+                f[self.data_table_column] for f in trans.app.tool_data_tables[self.table_name].get_named_fields_list()
+            }
         except KeyError:
             pass
         if entries is None:

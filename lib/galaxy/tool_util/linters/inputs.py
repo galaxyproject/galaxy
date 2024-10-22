@@ -654,7 +654,7 @@ class InputsOptionsFiltersCheckReferences(Linter):
             return
 
         # get the set of param names
-        param_names = set([param_name for _, param_name in _iter_param(tool_xml)])
+        param_names = {param_name for _, param_name in _iter_param(tool_xml)}
 
         for param, param_name in _iter_param(tool_xml):
             options = param.find("./options")
