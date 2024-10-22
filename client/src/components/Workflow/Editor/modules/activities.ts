@@ -127,16 +127,6 @@ export const workflowEditorActivities = [
         optional: true,
     },
     {
-        description: "Save this workflow, then exit the workflow editor.",
-        icon: faSave,
-        id: "save-and-exit",
-        title: "Save + Exit",
-        tooltip: "Save and Exit",
-        visible: false,
-        click: true,
-        optional: true,
-    },
-    {
         description: "Exit the workflow editor and return to the start screen.",
         icon: faSignOutAlt,
         id: "exit",
@@ -156,27 +146,23 @@ interface SpecialActivityOptions {
 
 export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions>) {
     const saveHover = computed(() => {
-        if (options.value.isNewTempWorkflow) {
-            return "Save Workflow";
-        } else if (!options.value.hasChanges) {
-            return "Workflow has no changes";
-        } else if (options.value.hasInvalidConnections) {
+        if (options.value.hasInvalidConnections) {
             return "Workflow has invalid connections, review and remove invalid connections";
         } else {
-            return "Save Workflow";
+            return "Save this workflow, then exit the workflow editor";
         }
     });
 
     const specialWorkflowActivities = computed<Activity[]>(() => [
         {
-            title: "Save",
-            tooltip: saveHover.value,
-            description: "Save changes made to this workflow.",
+            description: "",
             icon: faSave,
-            id: "save-workflow",
+            id: "save-and-exit",
+            title: "Save + Exit",
+            tooltip: saveHover.value,
+            visible: false,
             click: true,
             mutable: false,
-            variant: options.value.hasChanges ? "primary" : "disabled",
         },
     ]);
 
