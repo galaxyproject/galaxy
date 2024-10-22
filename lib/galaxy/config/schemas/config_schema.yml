@@ -359,7 +359,7 @@ mapping:
 
       conda_ensure_channels:
         type: str
-        default: conda-forge,bioconda,defaults
+        default: conda-forge,bioconda
         required: false
         desc: |
           conda channels to enable by default

@@ -578,7 +578,7 @@ galaxy:
 
   # conda channels to enable by default
   # (https://conda.io/docs/user-guide/tasks/manage-channels.html)
-  #conda_ensure_channels: conda-forge,bioconda,defaults
+  #conda_ensure_channels: conda-forge,bioconda
 
   # Use locally-built conda packages.
   #conda_use_local: false
