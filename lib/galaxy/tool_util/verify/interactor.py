@@ -546,7 +546,7 @@ class GalaxyInteractorApi:
             file_name = None
             file_name_exists = False
             location = self._ensure_valid_location_in(test_data)
-            if fname:
+            if fname and force_path_paste:
                 file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
                 file_name_exists = os.path.exists(file_name)
             tool_input["files_0|type"] = "upload_dataset"
@@ -556,7 +556,8 @@ class GalaxyInteractorApi:
             else:
                 name = fname
                 if force_path_paste:
-                    file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
+                    if file_name is None:
+                        file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
                     tool_input["files_0|url_paste"] = f"file://{file_name}"
                 else:
                     file_content = self.test_data_download(tool_id, fname, is_output=False, tool_version=tool_version)
