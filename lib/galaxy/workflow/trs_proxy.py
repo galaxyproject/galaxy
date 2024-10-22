@@ -140,6 +140,9 @@ class TrsServer:
         )
         return self._get(trs_api_url)["content"]
 
+    def get_trs_url(self, tool_id: str, version_id: str):
+        return f"{self._get_tool_api_endpoint(tool_id)}/versions/{version_id}"
+
     def _quote(self, tool_id, **kwd):
         if asbool(kwd.get("tool_id_b64_encoded", False)):
             import base64
