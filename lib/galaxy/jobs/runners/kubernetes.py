@@ -8,6 +8,7 @@ import math
 import os
 import re
 import time
+from dataclasses import dataclass
 from datetime import datetime
 
 import yaml
@@ -44,6 +45,7 @@ from galaxy.jobs.runners.util.pykube_util import (
     produce_k8s_job_prefix,
     pull_policy,
     pykube_client_from_dict,
+    reload_job,
     Service,
     service_object_dict,
 )
@@ -53,6 +55,18 @@ from galaxy.util.bytesize import ByteSize
 log = logging.getLogger(__name__)
 
 __all__ = ("KubernetesJobRunner",)
+
+
+@dataclass
+class RetryableDeleteJobState(JobState):
+    def __init__(self, job_state, k8s_job, max_retries=5, attempts=0):
+        self.__dict__ = job_state.__dict__.copy()
+        self.init_retryable_job(max_retries, attempts)
+        self.k8s_job = k8s_job
+
+    def init_retryable_job(self, max_retries, attempts):
+        self.max_retries: int = max_retries
+        self.attempts: int = attempts
 
 
 class KubernetesJobRunner(AsynchronousJobRunner):
@@ -153,11 +167,11 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self.runner_params["k8s_volumes"].extend(get_volume_mounts_for("k8s_working_volume_claim")[0])
 
     def queue_job(self, job_wrapper):
-        """Create job script and submit it to Kubernetes cluster"""
-        # prepare the job
+        """Create a Galaxy job script and submit it to Kubernetes cluster"""
+        # prepare the Galaxy job
         # We currently don't need to include_metadata or include_work_dir_outputs, as working directory is the same
         # where galaxy will expect results.
-        log.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
+        log.debug(f"Starting queue_job for Galaxy job {job_wrapper.get_id_tag()}")
 
         ajs = AsynchronousJobState(
             files_dir=job_wrapper.working_directory,
@@ -184,8 +198,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         try:
             self.write_executable_script(ajs.job_file, script, job_io=job_wrapper.job_io)
         except Exception:
-            job_wrapper.fail("failure preparing job script", exception=True)
-            log.exception(f"({job_wrapper.get_id_tag()}) failure writing job script")
+            job_wrapper.fail("Failure preparing Galaxy job script", exception=True)
+            log.exception(f"({job_wrapper.get_id_tag()}) failure writing Galaxy job script")
             return
 
         # Construction of Kubernetes objects follow: https://kubernetes.io/docs/concepts/workloads/controllers/job/
@@ -202,27 +216,27 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         k8s_job_prefix = self.__produce_k8s_job_prefix()
         k8s_job_obj = job_object_dict(self.runner_params, k8s_job_prefix, self.__get_k8s_job_spec(ajs))
 
-        job = Job(self._pykube_api, k8s_job_obj)
+        k8s_job = Job(self._pykube_api, k8s_job_obj)
         try:
-            job.create()
+            k8s_job.create()
         except HTTPError:
-            log.exception("Kubernetes failed to create job, HTTP exception encountered")
+            log.exception("Kubernetes failed to create a job, HTTP exception encountered")
             ajs.runner_state = JobState.runner_states.UNKNOWN_ERROR
-            ajs.fail_message = "Kubernetes failed to create job."
+            ajs.fail_message = "Kubernetes failed to create a job; HTTP exception encountered."
             self.mark_as_failed(ajs)
             return
-        if not job.name:
-            log.exception(f"Kubernetes failed to create job, empty name encountered: [{job.obj}]")
+        if not k8s_job.name:
+            log.exception(f"Kubernetes failed to create a job, empty name encountered: [{k8s_job.obj}]")
             ajs.runner_state = JobState.runner_states.UNKNOWN_ERROR
-            ajs.fail_message = "Kubernetes failed to create job."
+            ajs.fail_message = "Kubernetes failed to create a job; empty name encountered."
             self.mark_as_failed(ajs)
             return
-        job_id = job.name
+        k8s_job_id = k8s_job.name
 
         # define job attributes in the AsyncronousJobState for follow-up
-        ajs.job_id = job_id
+        ajs.job_id = k8s_job_id
         # store runner information for tracking if Galaxy restarts
-        job_wrapper.set_external_id(job_id)
+        job_wrapper.set_external_id(k8s_job_id)
         self.monitor_queue.put(ajs)
 
     def __has_guest_ports(self, job_wrapper):
@@ -750,7 +764,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         jobs = find_job_object_by_name(self._pykube_api, job_state.job_id, self.runner_params["k8s_namespace"])
 
         if len(jobs.response["items"]) == 1:
-            job = Job(self._pykube_api, jobs.response["items"][0])
+            k8s_job = Job(self._pykube_api, jobs.response["items"][0])
             job_destination = job_state.job_wrapper.job_destination
             succeeded = 0
             active = 0
@@ -767,7 +781,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # would wait forever for a pod that never gets sent.
             max_pod_retries = min(max_pod_retries, self.runner_params["k8s_job_spec_back_off_limit"])
 
-            # Check if job.obj['status'] is empty,
+            # Check if k8s_job.obj['status'] is empty,
             # return job_state unchanged if this is the case
             # as probably this means that the k8s API server hasn't
             # had time to fill in the object status since the
@@ -775,14 +789,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # It is possible that k8s didn't account for the status of the pods
             # and they are in the uncountedTerminatedPods status. In this
             # case we also need to wait a moment
-            if len(job.obj["status"]) == 0 or job.obj["status"].get("uncountedTerminatedPods"):
+            if len(k8s_job.obj["status"]) == 0 or k8s_job.obj["status"].get("uncountedTerminatedPods"):
                 return job_state
-            if "succeeded" in job.obj["status"]:
-                succeeded = job.obj["status"]["succeeded"]
-            if "active" in job.obj["status"]:
-                active = job.obj["status"]["active"]
-            if "failed" in job.obj["status"]:
-                failed = job.obj["status"]["failed"]
+            if "succeeded" in k8s_job.obj["status"]:
+                succeeded = k8s_job.obj["status"]["succeeded"]
+            if "active" in k8s_job.obj["status"]:
+                active = k8s_job.obj["status"]["active"]
+            if "failed" in k8s_job.obj["status"]:
+                failed = k8s_job.obj["status"]["failed"]
 
             job_persisted_state = job_state.job_wrapper.get_state()
 
@@ -790,29 +804,29 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             if succeeded > 0 or job_state == model.Job.states.STOPPED:
                 job_state.running = False
                 self.mark_as_finished(job_state)
-                log.debug(f"Job id: {job_state.job_id} with k8s id: {job.name} succeeded")
+                log.debug(f"Job id: {job_state.job_id} with k8s id: {k8s_job.name} succeeded")
                 return None
             elif active > 0 and failed < max_pod_retries + 1:
                 if not job_state.running:
                     if self.__job_pending_due_to_unschedulable_pod(job_state):
-                        log.debug(f"Job id: {job_state.job_id} with k8s id: {job.name}  pending...")
+                        log.debug(f"Job id: {job_state.job_id} with k8s id: {k8s_job.name} pending...")
                         if self.runner_params.get("k8s_unschedulable_walltime_limit"):
-                            creation_time_str = job.obj["metadata"].get("creationTimestamp")
+                            creation_time_str = k8s_job.obj["metadata"].get("creationTimestamp")
                             creation_time = datetime.strptime(creation_time_str, "%Y-%m-%dT%H:%M:%SZ")
                             elapsed_seconds = (datetime.utcnow() - creation_time).total_seconds()
                             if elapsed_seconds > self.runner_params["k8s_unschedulable_walltime_limit"]:
-                                return self._handle_unschedulable_job(job, job_state)
+                                return self._handle_unschedulable_job(k8s_job, job_state)
                             else:
                                 pass
                         else:
                             pass
                     elif self.__check_job_pod_running(job_state):
-                        log.debug("Job set to running...")
+                        log.debug(f"Job {k8s_job.name} set to running...")
                         job_state.running = True
                         job_state.job_wrapper.change_state(model.Job.states.RUNNING)
                     else:
                         log.debug(
-                            f"Job id: {job_state.job_id} with k8s id: {job.name} scheduled and is waiting to start..."
+                            f"Job id: {job_state.job_id} with k8s id: {k8s_job.name} scheduled and is waiting to start..."
                         )
                 return job_state
             elif job_persisted_state == model.Job.states.DELETED:
@@ -826,7 +840,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 log.debug(
                     f"Job id: {job_state.job_id} failed and it is not a deletion case. Current state: {job_state.job_wrapper.get_state()}"
                 )
-                if self._handle_job_failure(job, job_state):
+                if self._handle_job_failure(k8s_job, job_state):
                     # changes for resubmission (removed self.mark_as_failed from handle_job_failure)
                     self.work_queue.put((self.mark_as_failed, job_state))
                 else:
@@ -864,7 +878,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # job is no longer viable - remove from watched jobs
             return None
 
-    def _handle_unschedulable_job(self, job, job_state):
+    def _handle_unschedulable_job(self, k8s_job, job_state):
         # Handle unschedulable job that exceeded deadline
         job_state.fail_message = "Job was unschedulable longer than specified deadline"
         job_state.runner_state = JobState.runner_states.WALLTIME_REACHED
@@ -872,13 +886,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self.mark_as_failed(job_state)
         try:
             if self.__has_guest_ports(job_state.job_wrapper):
-                self.__cleanup_k8s_guest_ports(job_state.job_wrapper, job)
-            self.__cleanup_k8s_job(job)
+                self.__cleanup_k8s_guest_ports(job_state.job_wrapper, k8s_job)
+            # Wrap the k8s job before we put it in the work queue so it can be retried a few times
+            self.work_queue.put((self.__cleanup_k8s_job, RetryableDeleteJobState(job_state=job_state, k8s_job=k8s_job)))
         except Exception:
-            log.exception("Could not clean up k8s batch job. Ignoring...")
+            log.exception("Could not clean up an unschedulable k8s batch job. Ignoring...")
         return None
 
-    def _handle_job_failure(self, job, job_state):
+    def _handle_job_failure(self, k8s_job, job_state):
         # Figure out why job has failed
         mark_failed = True
         with open(job_state.error_file, "a") as error_file:
@@ -888,7 +903,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 error_file.write("Job killed after running out of memory. Try with more memory.\n")
                 job_state.fail_message = "Tool failed due to insufficient memory. Try with more memory."
                 job_state.runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
-            elif self.__job_failed_due_to_walltime_limit(job):
+            elif self.__job_failed_due_to_walltime_limit(k8s_job):
                 log.debug(f"Walltime limit reached for job: {job_state.job_id}")
                 error_file.write("DeadlineExceeded")
                 job_state.fail_message = "Job was active longer than specified deadline"
@@ -904,22 +919,51 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 log.debug(msg)
                 error_file.write(msg)
                 job_state.fail_message = (
-                    "An unknown error occurered with this job. See standard output within the info section for details."
+                    "An unknown error occurred with this job. See standard output within the info section for details."
                 )
         # changes for resubmission
         # job_state.running = False
         # self.mark_as_failed(job_state)
         try:
             if self.__has_guest_ports(job_state.job_wrapper):
-                self.__cleanup_k8s_guest_ports(job_state.job_wrapper, job)
-            self.__cleanup_k8s_job(job)
+                self.__cleanup_k8s_guest_ports(job_state.job_wrapper, k8s_job)
+            # Wrap the k8s job before we put it in the work queue so it can be retried a few times
+            self.work_queue.put((self.__cleanup_k8s_job, RetryableDeleteJobState(job_state=job_state, k8s_job=k8s_job)))
         except Exception:
-            log.exception("Could not clean up k8s batch job. Ignoring...")
+            log.exception("Could not clean up a failed k8s batch job. Ignoring...")
         return mark_failed
 
-    def __cleanup_k8s_job(self, job):
+    def __cleanup_k8s_job(self, retryable_delete_k8s_job_state: RetryableDeleteJobState):
+        k8s_job = retryable_delete_k8s_job_state.k8s_job
+        log.debug(
+            f"Cleaning up job with K8s id {k8s_job.name} (attempt {retryable_delete_k8s_job_state.attempts + 1})."
+        )
         k8s_cleanup_job = self.runner_params["k8s_cleanup_job"]
-        delete_job(job, k8s_cleanup_job)
+        try:
+            delete_job(k8s_job, k8s_cleanup_job)
+        except HTTPError as exc:
+            # If job not found, then previous deletion was successful
+            if exc.code == 404 and retryable_delete_k8s_job_state.attempts >= 1:
+                log.warning(
+                    f"Cleanup job with K8s id {k8s_job.name} skipped as it is no longer available (404) and a previous deletion was triggered."
+                )
+                return
+            if retryable_delete_k8s_job_state.max_retries <= retryable_delete_k8s_job_state.attempts:
+                log.error(
+                    f"Failed to cleanup job with K8s id {k8s_job.name} after {retryable_delete_k8s_job_state.attempts} of {retryable_delete_k8s_job_state.max_retries} attempts; giving up."
+                )
+                raise exc
+            else:
+                # Refresh the job to resolve object & cluster conflicts
+                reload_job(k8s_job)
+                # Try the cleanup again
+                new_retryable_job_state = RetryableDeleteJobState(
+                    job_state=retryable_delete_k8s_job_state,
+                    k8s_job=k8s_job,
+                    max_retries=retryable_delete_k8s_job_state.max_retries,
+                    attempts=retryable_delete_k8s_job_state.attempts + 1,
+                )
+                self.work_queue.put((self.__cleanup_k8s_job, new_retryable_job_state))
 
     def __cleanup_k8s_ingress(self, ingress, job_failed=False):
         k8s_cleanup_job = self.runner_params["k8s_cleanup_job"]
@@ -929,8 +973,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         k8s_cleanup_job = self.runner_params["k8s_cleanup_job"]
         delete_service(service, k8s_cleanup_job, job_failed)
 
-    def __job_failed_due_to_walltime_limit(self, job):
-        conditions = job.obj["status"].get("conditions") or []
+    def __job_failed_due_to_walltime_limit(self, k8s_job):
+        conditions = k8s_job.obj["status"].get("conditions") or []
         return any(True for c in conditions if c["type"] == "Failed" and c["reason"] == "DeadlineExceeded")
 
     def _get_pod_for_job(self, job_state):
@@ -1032,39 +1076,48 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def stop_job(self, job_wrapper):
         """Attempts to delete a dispatched job to the k8s cluster"""
-        job = job_wrapper.get_job()
+        gxy_job = job_wrapper.get_job()
         try:
-            log.debug(f"Attempting to stop job {job.id} ({job.job_runner_external_id})")
+            log.debug(f"Attempting to stop job {gxy_job.id} ({gxy_job.job_runner_external_id})")
             job_to_delete = find_job_object_by_name(
-                self._pykube_api, job.get_job_runner_external_id(), self.runner_params["k8s_namespace"]
+                self._pykube_api, gxy_job.get_job_runner_external_id(), self.runner_params["k8s_namespace"]
             )
             if job_to_delete and len(job_to_delete.response["items"]) > 0:
                 k8s_job = Job(self._pykube_api, job_to_delete.response["items"][0])
-                log.debug(f"Found job with id {job.get_job_runner_external_id()} to delete")
+                log.debug(f"Found job with id {gxy_job.get_job_runner_external_id()} to delete")
                 # For interactive jobs, at this point because the job stopping has been partly handled by the
                 # interactive tool manager, the job wrapper no longer shows any guest ports. We need another way
                 # to check if the job is an interactive job.
                 if self.__has_guest_ports(job_wrapper):
-                    log.debug(f"Job {job.id} ({job.job_runner_external_id}) has guest ports, cleaning them up")
+                    log.debug(f"Job {gxy_job.id} ({gxy_job.job_runner_external_id}) has guest ports, cleaning them up")
                     self.__cleanup_k8s_guest_ports(job_wrapper, k8s_job)
-                self.__cleanup_k8s_job(k8s_job)
+                # Wrap the k8s job before we put it in the work queue so it can be retried a few times
+                self.work_queue.put(
+                    (
+                        self.__cleanup_k8s_job,
+                        RetryableDeleteJobState(
+                            job_state=JobState(job_wrapper=job_wrapper, job_destination=job_wrapper.job_destination),
+                            k8s_job=k8s_job,
+                        ),
+                    )
+                )
             else:
-                log.debug(f"Could not find job with id {job.get_job_runner_external_id()} to delete")
+                log.debug(f"Could not find job with id {gxy_job.get_job_runner_external_id()} to delete")
             # TODO assert whether job parallelism == 0
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
-            log.debug(f"({job.id}/{job.job_runner_external_id}) Terminated at user's request")
+            log.debug(f"({gxy_job.id}/{gxy_job.job_runner_external_id}) terminated at user's request")
 
         except Exception as e:
             log.exception(
                 "(%s/%s) User killed running job, but error encountered during termination: %s",
-                job.id,
-                job.get_job_runner_external_id(),
+                gxy_job.id,
+                gxy_job.get_job_runner_external_id(),
                 e,
             )
 
-    def recover(self, job, job_wrapper):
+    def recover(self, gxy_job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
-        job_id = job.get_job_runner_external_id()
+        job_id = gxy_job.get_job_runner_external_id()
         log.debug(f"k8s trying to recover job: {job_id}")
         if job_id is None:
             self.put(job_wrapper)
@@ -1075,22 +1128,22 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_id=job_id,
             job_destination=job_wrapper.job_destination,
         )
-        ajs.command_line = job.command_line
-        if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
+        ajs.command_line = gxy_job.command_line
+        if gxy_job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
                 "(%s/%s) is still in %s state, adding to the runner monitor queue",
-                job.id,
-                job.job_runner_external_id,
-                job.state,
+                gxy_job.id,
+                gxy_job.job_runner_external_id,
+                gxy_job.state,
             )
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
-        elif job.state == model.Job.states.QUEUED:
+        elif gxy_job.state == model.Job.states.QUEUED:
             log.debug(
                 "(%s/%s) is still in queued state, adding to the runner monitor queue",
-                job.id,
-                job.job_runner_external_id,
+                gxy_job.id,
+                gxy_job.job_runner_external_id,
             )
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
@@ -1099,7 +1152,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     # added to make sure that stdout and stderr is captured for Kubernetes
     def fail_job(self, job_state: "JobState", exception=False, message="Job failed", full_status=None):
         log.debug("PP Getting into fail_job in k8s runner")
-        job = job_state.job_wrapper.get_job()
+        gxy_job = job_state.job_wrapper.get_job()
 
         # Get STDOUT and STDERR from the job and tool to be stored in the database #
         # This is needed because when calling finish_job on a failed job, the check_output method
@@ -1120,7 +1173,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 if which_try == self.app.config.retry_job_output_collection:
                     job_stdout = ""
                     job_stderr = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
-                    log.error(f"{job.id}/{job.job_runner_external_id} {job_stderr}: {unicodify(e)}")
+                    log.error(f"{gxy_job.id}/{gxy_job.job_runner_external_id} {job_stderr}: {unicodify(e)}")
                 else:
                     time.sleep(1)
                 which_try += 1
@@ -1155,10 +1208,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         # full status empty leaves the UI without stderr/stdout
         full_status = {"stderr": tool_stderr, "stdout": tool_stdout}
-        log.debug(f"({job.id}/{job.job_runner_external_id}) tool_stdout: {tool_stdout}")
-        log.debug(f"({job.id}/{job.job_runner_external_id}) tool_stderr: {tool_stderr}")
-        log.debug(f"({job.id}/{job.job_runner_external_id}) job_stdout: {job_stdout}")
-        log.debug(f"({job.id}/{job.job_runner_external_id}) job_stderr: {job_stderr}")
+        log.debug(f"({gxy_job.id}/{gxy_job.job_runner_external_id}) tool_stdout: {tool_stdout}")
+        log.debug(f"({gxy_job.id}/{gxy_job.job_runner_external_id}) tool_stderr: {tool_stderr}")
+        log.debug(f"({gxy_job.id}/{gxy_job.job_runner_external_id}) job_stdout: {job_stdout}")
+        log.debug(f"({gxy_job.id}/{gxy_job.job_runner_external_id}) job_stderr: {job_stderr}")
 
         # run super method
         super().fail_job(job_state, exception, message, full_status)
@@ -1176,7 +1229,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         elif len(jobs.response["items"]) == 0:
             log.warning("No k8s job found which matches job id '%s'. Ignoring...", job_state.job_id)
         else:
-            job = Job(self._pykube_api, jobs.response["items"][0])
+            k8s_job = Job(self._pykube_api, jobs.response["items"][0])
             if self.__has_guest_ports(job_state.job_wrapper):
-                self.__cleanup_k8s_guest_ports(job_state.job_wrapper, job)
-            self.__cleanup_k8s_job(job)
+                self.__cleanup_k8s_guest_ports(job_state.job_wrapper, k8s_job)
+            # Wrap the k8s job before we put it in the work queue so it can be retried a few times
+            self.work_queue.put((self.__cleanup_k8s_job, RetryableDeleteJobState(job_state=job_state, k8s_job=k8s_job)))
