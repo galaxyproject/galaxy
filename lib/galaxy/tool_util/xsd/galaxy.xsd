@@ -8030,7 +8030,7 @@ favour of a ``has_size`` assertion.</xs:documentation>
   </xs:simpleType>
   <xs:simpleType name="FormatList">
     <xs:restriction base="xs:string">
-      <xs:pattern value="([a-zA-Z0-9._-]+)(,([a-zA-Z0-9._-]+))*"/>
+      <xs:pattern value="([a-z0-9._-]+)(,([a-z0-9._-]+))*"/>
     </xs:restriction>
   </xs:simpleType>
   
