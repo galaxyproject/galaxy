@@ -1234,6 +1234,9 @@ class ZarrDirectory(Directory):
     edam_format = "format_3915"
     file_ext = "zarr"
 
+    # This wouldn't be needed if the CompressedFile.extract function didn't
+    # create an extra folder under the dataset's extra_files_path.
+    # Maybe this can be avoided somehow?
     MetadataElement(
         name="store_root",
         default=None,
@@ -1328,7 +1331,7 @@ class ZarrDirectory(Directory):
         meta_file = None
         files_in_store = os.listdir(store_root_path)
 
-        # Depending on the Zarr version, the metadata file can in different locations
+        # Depending on the Zarr version, the metadata file can be in different locations
         # In v1 the metadata is in a file named "meta" https://zarr-specs.readthedocs.io/en/latest/v1/v1.0.html
         if "meta" in files_in_store:
             meta_file = os.path.join(store_root_path, "meta")
