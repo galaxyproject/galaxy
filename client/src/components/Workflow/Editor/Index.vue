@@ -118,6 +118,14 @@
                         <span class="editor-title" :title="name"
                             >{{ name }}
                             <i v-if="hasChanges" class="text-muted"> (unsaved changes) </i>
+                            <b-button
+                                v-if="hasChanges"
+                                class="py-1 px-2"
+                                variant="link"
+                                :title="saveWorkflowTitle"
+                                @click="saveOrCreate">
+                                <FontAwesomeIcon :icon="faSave" />
+                            </b-button>
                         </span>
                     </span>
 
@@ -170,7 +178,7 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowLeft, faArrowRight, faCog, faHistory, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faArrowRight, faCog, faHistory, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
@@ -443,6 +451,12 @@ export default {
             }))
         );
 
+        const saveWorkflowTitle = computed(() =>
+            hasInvalidConnections.value
+                ? "Workflow has invalid connections, review and remove invalid connections"
+                : "Save Workflow"
+        );
+
         return {
             id,
             name,
@@ -484,6 +498,7 @@ export default {
             insertMarkdown,
             specialWorkflowActivities,
             isNewTempWorkflow,
+            saveWorkflowTitle,
         };
     },
     data() {
@@ -511,6 +526,7 @@ export default {
             workflowEditorActivities,
             faTimes,
             faCog,
+            faSave,
         };
     },
     computed: {
@@ -699,14 +715,16 @@ export default {
         onSaveAs() {
             this.showSaveAsModal = true;
         },
+        async saveOrCreate() {
+            if (this.isNewTempWorkflow) {
+                await this.onCreate();
+            } else {
+                await this.onSave();
+            }
+        },
         async onActivityClicked(activityId) {
             if (activityId === "save-and-exit") {
-                if (this.isNewTempWorkflow) {
-                    await this.onCreate();
-                } else {
-                    await this.onSave();
-                }
-
+                await this.saveOrCreate();
                 this.$router.push("/workflows/list");
             }
 
@@ -731,11 +749,7 @@ export default {
             }
 
             if (activityId === "save-workflow") {
-                if (this.isNewTempWorkflow) {
-                    await this.onCreate();
-                } else {
-                    await this.onSave();
-                }
+                await this.saveOrCreate();
             }
         },
         onLayout() {
