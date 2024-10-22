@@ -458,6 +458,15 @@ class CompressedZarrZipArchive(CompressedZipArchive):
         visible=False,
     )
 
+    MetadataElement(
+        name="compression",
+        default=None,
+        desc="Compression type used in the Zip zarr store",
+        readonly=True,
+        optional=False,
+        visible=False,
+    )
+
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.blurb = f"{nice_size(dataset.get_size())}"
@@ -470,6 +479,7 @@ class CompressedZarrZipArchive(CompressedZipArchive):
         # We assume that the Zarr store is directly in the extra files folder and
         # not in a subfolder.
         with zipfile.ZipFile(dataset.get_file_name()) as zf:
+            dataset.metadata.compression = zf.compression
             meta_file = self._find_zarr_metadata_file(zf)
             if meta_file:
                 with zf.open(meta_file) as f:
