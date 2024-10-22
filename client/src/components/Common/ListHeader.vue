@@ -5,14 +5,13 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import { defaultSortKeys, type ListView, type SortBy, type SortKey } from "@/components/Common";
 import { useUserStore } from "@/stores/userStore";
 
 library.add(faAngleDown, faAngleUp, faBars, faGripVertical);
 
-type ListView = "grid" | "list";
-type SortBy = "create_time" | "update_time" | "name";
-
 interface Props {
+    sortKeys?: SortKey[];
     allSelected?: boolean;
     haveSelected?: boolean;
     showSelectAll?: boolean;
@@ -23,6 +22,7 @@ interface Props {
 
 withDefaults(defineProps<Props>(), {
     selectedItems: undefined,
+    sortKeys: () => defaultSortKeys,
 });
 
 const emit = defineEmits<{
@@ -66,27 +66,17 @@ defineExpose({
             Sort by:
             <BButtonGroup>
                 <BButton
-                    id="sortby-name"
+                    v-for="sortKey in sortKeys"
+                    :id="`sortby-${sortKey.key}`"
+                    :key="`sortby-${sortKey.key}`"
                     v-b-tooltip.hover
                     size="sm"
-                    :title="sortDesc ? 'Sort by name ascending' : 'Sort by name descending'"
-                    :pressed="sortBy === 'name'"
+                    :title="sortDesc ? `Sort by ${sortKey.label} ascending` : `Sort by ${sortKey.label} descending`"
+                    :pressed="sortBy === sortKey.key"
                     variant="outline-primary"
-                    @click="onSort('name')">
-                    <FontAwesomeIcon v-show="sortBy === 'name'" :icon="sortDesc ? faAngleDown : faAngleUp" />
-                    Name
-                </BButton>
-
-                <BButton
-                    id="sortby-update-time"
-                    v-b-tooltip.hover
-                    size="sm"
-                    :title="sortDesc ? 'Sort by update time ascending' : 'Sort by update time descending'"
-                    :pressed="sortBy === 'update_time'"
-                    variant="outline-primary"
-                    @click="onSort('update_time')">
-                    <FontAwesomeIcon v-show="sortBy === 'update_time'" :icon="sortDesc ? faAngleDown : faAngleUp" />
-                    Update time
+                    @click="onSort(sortKey.key)">
+                    <FontAwesomeIcon v-show="sortBy === sortKey.key" :icon="sortDesc ? faAngleDown : faAngleUp" />
+                    {{ sortKey.label }}
                 </BButton>
             </BButtonGroup>
 
