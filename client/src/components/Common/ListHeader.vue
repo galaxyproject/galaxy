@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { defaultSortKeys, type SortBy, type SortKey } from "@/components/Common";
+import { defaultSortKeys, type SortKey } from "@/components/Common";
 import { type ListViewMode, useUserStore } from "@/stores/userStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
