@@ -737,7 +737,7 @@ class DefaultToolState:
         Restore the state from a string
         """
         values = safe_loads(values) or {}
-        self.page = values.pop("__page__") if "__page__" in values else None
+        self.page = values.pop("__page__") if "__page__" in values else 0
         self.rerun_remap_job_id = values.pop("__rerun_remap_job_id__") if "__rerun_remap_job_id__" in values else None
         self.inputs = params_from_strings(tool.inputs, values, app, ignore_errors=True)
 
