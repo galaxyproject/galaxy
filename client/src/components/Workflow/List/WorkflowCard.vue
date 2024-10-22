@@ -114,7 +114,7 @@ const dropdownOpen = ref(false);
                         {{ workflow.name }}
                     </BLink>
                     <BButton
-                        v-if="!shared && !workflow.deleted"
+                        v-if="!props.current && !shared && !workflow.deleted"
                         v-b-tooltip.hover.noninteractive
                         :data-workflow-rename="workflow.id"
                         class="inline-icon-button workflow-rename"
@@ -138,7 +138,7 @@ const dropdownOpen = ref(false);
                     <StatelessTags
                         clickable
                         :value="workflow.tags"
-                        :disabled="isAnonymous || workflow.deleted || shared"
+                        :disabled="props.current || isAnonymous || workflow.deleted || shared"
                         :max-visible-tags="gridView ? 2 : 8"
                         @input="onTagsUpdate($event)"
                         @tag-click="onTagClick($event)" />
