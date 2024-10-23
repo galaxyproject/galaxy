@@ -1,0 +1,16 @@
+<tool id="gx_select_dynamic_empty_validated" name="gx_select_dynamic_empty_validated" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter' >> '$output'
+    ]]></command>
+    <code file="gx_select_dynamic_empty.py"/>
+    <inputs>
+        <param name="parameter" type="select" dynamic_options="empty_list()">
+            <validator type="no_options" message="this is the empty message" />
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+</tool>

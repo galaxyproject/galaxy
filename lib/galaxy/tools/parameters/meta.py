@@ -19,10 +19,19 @@ from galaxy.model.dataset_collections import (
     matching,
     subcollections,
 )
-from galaxy.util import permutations
+from galaxy.util.permutations import (
+    build_combos,
+    input_classification,
+    is_in_state,
+    state_copy,
+    state_get_value,
+    state_remove_value,
+    state_set_value,
+)
 from . import visit_input_values
 from .wrapped import process_key
 from .._types import (
+    InputFormatT,
     ToolRequestT,
     ToolStateJobInstanceT,
 )
@@ -161,7 +170,15 @@ def expand_workflow_inputs(param_inputs, inputs=None):
 ExpandedT = Tuple[List[ToolStateJobInstanceT], Optional[matching.MatchingCollections]]
 
 
-def expand_meta_parameters(trans, tool, incoming: ToolRequestT) -> ExpandedT:
+def expand_flat_parameters_to_nested(incoming_copy: ToolRequestT) -> Dict[str, Any]:
+    nested_dict: Dict[str, Any] = {}
+    for incoming_key, incoming_value in incoming_copy.items():
+        if not incoming_key.startswith("__"):
+            process_key(incoming_key, incoming_value=incoming_value, d=nested_dict)
+    return nested_dict
+
+
+def expand_meta_parameters(trans, tool, incoming: ToolRequestT, input_format: InputFormatT) -> ExpandedT:
     """
     Take in a dictionary of raw incoming parameters and expand to a list
     of expanded incoming parameters (one set of parameters per tool
@@ -176,33 +193,24 @@ def expand_meta_parameters(trans, tool, incoming: ToolRequestT) -> ExpandedT:
     # order matters, so the following reorders incoming
     # according to tool.inputs (which is ordered).
     incoming_copy = incoming.copy()
-    nested_dict: Dict[str, Any] = {}
-    for incoming_key, incoming_value in incoming_copy.items():
-        if not incoming_key.startswith("__"):
-            process_key(incoming_key, incoming_value=incoming_value, d=nested_dict)
+    if input_format == "legacy":
+        nested_dict = expand_flat_parameters_to_nested(incoming_copy)
+    else:
+        nested_dict = incoming_copy
 
-    reordered_incoming = {}
+    collections_to_match = matching.CollectionsToMatch()
 
-    def visitor(input, value, prefix, prefixed_name, prefixed_label, error, **kwargs):
-        if prefixed_name in incoming_copy:
-            reordered_incoming[prefixed_name] = incoming_copy[prefixed_name]
-            del incoming_copy[prefixed_name]
-
-    visit_input_values(inputs=tool.inputs, input_values=nested_dict, callback=visitor)
-    reordered_incoming.update(incoming_copy)
-
-    def classifier(input_key):
-        value = incoming[input_key]
+    def classifier_from_value(value, input_key):
         if isinstance(value, dict) and "values" in value:
             # Explicit meta wrapper for inputs...
             is_batch = value.get("batch", False)
             is_linked = value.get("linked", True)
             if is_batch and is_linked:
-                classification = permutations.input_classification.MATCHED
+                classification = input_classification.MATCHED
             elif is_batch:
-                classification = permutations.input_classification.MULTIPLIED
+                classification = input_classification.MULTIPLIED
             else:
-                classification = permutations.input_classification.SINGLE
+                classification = input_classification.SINGLE
             if __collection_multirun_parameter(value):
                 collection_value = value["values"][0]
                 values = __expand_collection_parameter(
@@ -211,22 +219,112 @@ def expand_meta_parameters(trans, tool, incoming: ToolRequestT) -> ExpandedT:
             else:
                 values = value["values"]
         else:
-            classification = permutations.input_classification.SINGLE
+            classification = input_classification.SINGLE
             values = value
         return classification, values
 
-    collections_to_match = matching.CollectionsToMatch()
+    nested = input_format != "legacy"
+    if not nested:
+        reordered_incoming = reorder_parameters(tool, incoming_copy, nested_dict, nested)
+        incoming_template = reordered_incoming
 
-    # Stick an unexpanded version of multirun keys so they can be replaced,
-    # by expand_mult_inputs.
-    incoming_template = reordered_incoming
+        def classifier_flat(input_key):
+            return classifier_from_value(incoming[input_key], input_key)
 
-    expanded_incomings = permutations.expand_multi_inputs(incoming_template, classifier)
+        single_inputs, matched_multi_inputs, multiplied_multi_inputs = split_inputs_flat(
+            incoming_template, classifier_flat
+        )
+    else:
+        reordered_incoming = reorder_parameters(tool, incoming_copy, nested_dict, nested)
+        incoming_template = reordered_incoming
+        single_inputs, matched_multi_inputs, multiplied_multi_inputs = split_inputs_nested(
+            tool.inputs, incoming_template, classifier_from_value
+        )
+
+    expanded_incomings = build_combos(single_inputs, matched_multi_inputs, multiplied_multi_inputs, nested=nested)
     if collections_to_match.has_collections():
         collection_info = trans.app.dataset_collection_manager.match_collections(collections_to_match)
     else:
         collection_info = None
     return expanded_incomings, collection_info
+
+
+def reorder_parameters(tool, incoming, nested_dict, nested):
+    # If we're going to multiply input dataset combinations
+    # order matters, so the following reorders incoming
+    # according to tool.inputs (which is ordered).
+    incoming_copy = state_copy(incoming, nested)
+
+    reordered_incoming = {}
+
+    def visitor(input, value, prefix, prefixed_name, prefixed_label, error, **kwargs):
+        if is_in_state(incoming_copy, prefixed_name, nested):
+            value_to_copy_over = state_get_value(incoming_copy, prefixed_name, nested)
+            state_set_value(reordered_incoming, prefixed_name, value_to_copy_over, nested)
+            state_remove_value(incoming_copy, prefixed_name, nested)
+
+    visit_input_values(inputs=tool.inputs, input_values=nested_dict, callback=visitor)
+
+    def merge_into(from_object, into_object):
+        if isinstance(from_object, dict):
+            for key, value in from_object.items():
+                if key not in into_object:
+                    into_object[key] = value
+                else:
+                    into_target = into_object[key]
+                    merge_into(value, into_target)
+        elif isinstance(from_object, list):
+            for index in from_object:
+                if len(into_object) <= index:
+                    into_object.append(from_object[index])
+                else:
+                    merge_into(from_object[index], into_object[index])
+
+    merge_into(incoming_copy, reordered_incoming)
+    return reordered_incoming
+
+
+def split_inputs_flat(inputs: Dict[str, Any], classifier):
+    single_inputs: Dict[str, Any] = {}
+    matched_multi_inputs: Dict[str, Any] = {}
+    multiplied_multi_inputs: Dict[str, Any] = {}
+
+    for input_key in inputs:
+        input_type, expanded_val = classifier(input_key)
+        if input_type == input_classification.SINGLE:
+            single_inputs[input_key] = expanded_val
+        elif input_type == input_classification.MATCHED:
+            matched_multi_inputs[input_key] = expanded_val
+        elif input_type == input_classification.MULTIPLIED:
+            multiplied_multi_inputs[input_key] = expanded_val
+
+    return (single_inputs, matched_multi_inputs, multiplied_multi_inputs)
+
+
+def split_inputs_nested(inputs, nested_dict, classifier):
+    single_inputs: Dict[str, Any] = {}
+    matched_multi_inputs: Dict[str, Any] = {}
+    multiplied_multi_inputs: Dict[str, Any] = {}
+    unset_value = object()
+
+    def visitor(input, value, prefix, prefixed_name, prefixed_label, error, **kwargs):
+        if value is unset_value:
+            # don't want to inject extra nulls into state
+            return
+
+        input_type, expanded_val = classifier(value, prefixed_name)
+        if input_type == input_classification.SINGLE:
+            single_inputs[prefixed_name] = expanded_val
+        elif input_type == input_classification.MATCHED:
+            matched_multi_inputs[prefixed_name] = expanded_val
+        elif input_type == input_classification.MULTIPLIED:
+            multiplied_multi_inputs[prefixed_name] = expanded_val
+
+    visit_input_values(
+        inputs=inputs, input_values=nested_dict, callback=visitor, allow_case_inference=True, unset_value=unset_value
+    )
+    single_inputs_nested = expand_flat_parameters_to_nested(single_inputs)
+    return (single_inputs_nested, matched_multi_inputs, multiplied_multi_inputs)
 
 
 def __expand_collection_parameter(trans, input_key, incoming_val, collections_to_match, linked=False):

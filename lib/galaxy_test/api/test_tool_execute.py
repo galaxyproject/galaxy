@@ -7,9 +7,17 @@ keep things like testing other tool APIs in ./test_tools.py (index, search, tool
 files, etc..).
 """
 
+from dataclasses import dataclass
+from typing import List
+
+import pytest
+
 from galaxy_test.base.decorators import requires_tool_id
 from galaxy_test.base.populators import (
+    DescribeToolExecution,
+    DescribeToolInputs,
     RequiredTool,
+    SrcDict,
     TargetHistory,
 )
 
@@ -80,24 +88,15 @@ def test_identifier_in_multiple_reduce(target_history: TargetHistory, required_t
 
 
 @requires_tool_id("identifier_in_conditional")
-def test_identifier_map_over_multiple_input_in_conditional_legacy_format(
-    target_history: TargetHistory, required_tool: RequiredTool
+def test_identifier_map_over_multiple_input_in_conditional(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
 ):
     hdca = target_history.with_pair()
-    execute = required_tool.execute.with_inputs(
+    inputs = tool_input_format.when.flat(
         {
             "outer_cond|input1": hdca.src_dict,
         }
-    )
-    execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("forward\nreverse")
-
-
-@requires_tool_id("identifier_in_conditional")
-def test_identifier_map_over_multiple_input_in_conditional_21_01_format(
-    target_history: TargetHistory, required_tool: RequiredTool
-):
-    hdca = target_history.with_pair()
-    execute = required_tool.execute.with_nested_inputs(
+    ).when.nested(
         {
             "outer_cond": {
                 "multi_input": True,
@@ -105,32 +104,48 @@ def test_identifier_map_over_multiple_input_in_conditional_21_01_format(
             },
         }
     )
+    execute = required_tool.execute.with_inputs(inputs)
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("forward\nreverse")
 
 
 @requires_tool_id("identifier_multiple_in_repeat")
-def test_identifier_multiple_reduce_in_repeat_new_payload_form(
-    target_history: TargetHistory, required_tool: RequiredTool
+def test_identifier_multiple_reduce_in_repeat(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
 ):
     hdca = target_history.with_pair()
-    execute = required_tool.execute.with_nested_inputs(
+    inputs = tool_input_format.when.nested(
         {
             "the_repeat": [{"the_data": {"input1": hdca.src_dict}}],
         }
+    ).when.flat(
+        {
+            "the_repeat_0|the_data|input1": hdca.src_dict,
+        }
     )
+    execute = required_tool.execute.with_inputs(inputs)
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("forward\nreverse")
 
 
 @requires_tool_id("output_action_change_format")
-def test_map_over_with_output_format_actions(target_history: TargetHistory, required_tool: RequiredTool):
+def test_map_over_with_output_format_actions(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
     hdca = target_history.with_pair()
     for use_action in ["do", "dont"]:
-        execute = required_tool.execute.with_inputs(
+        inputs = tool_input_format.when.flat(
             {
                 "input_cond|dispatch": use_action,
                 "input_cond|input": {"batch": True, "values": [hdca.src_dict]},
             }
+        ).when.nested(
+            {
+                "input_cond": {
+                    "dispatch": use_action,
+                    "input": {"batch": True, "values": [hdca.src_dict]},
+                }
+            }
         )
+        execute = required_tool.execute.with_inputs(inputs)
         execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
         expected_extension = "txt" if (use_action == "do") else "data"
         execute.assert_has_job(0).with_single_output.with_file_ext(expected_extension)
@@ -201,7 +216,7 @@ def test_identifier_with_multiple_normal_datasets(target_history: TargetHistory,
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("Normal HDA1\nNormal HDA2")
 
 
-@requires_tool_id("cat1")
+@requires_tool_id("cat|cat1")
 def test_map_over_empty_collection(target_history: TargetHistory, required_tool: RequiredTool):
     hdca = target_history.with_list([])
     inputs = {
@@ -209,7 +224,160 @@ def test_map_over_empty_collection(target_history: TargetHistory, required_tool:
     }
     execute = required_tool.execute.with_inputs(inputs)
     execute.assert_has_n_jobs(0)
-    execute.assert_creates_implicit_collection(0).named("Concatenate datasets on collection 1")
+    name = execute.assert_creates_implicit_collection(0).details["name"]
+    assert "Concatenate datasets" in name
+    assert "on collection 1" in name
+
+
+@dataclass
+class MultiRunInRepeatFixtures:
+    repeat_datasets: List[SrcDict]
+    common_dataset: SrcDict
+
+
+@pytest.fixture
+def multi_run_in_repeat_datasets(target_history: TargetHistory) -> MultiRunInRepeatFixtures:
+    dataset1 = target_history.with_dataset("123").src_dict
+    dataset2 = target_history.with_dataset("456").src_dict
+    common_dataset = target_history.with_dataset("Common").src_dict
+    return MultiRunInRepeatFixtures([dataset1, dataset2], common_dataset)
+
+
+@requires_tool_id("cat|cat1")
+def test_multi_run_in_repeat(
+    required_tool: RequiredTool,
+    multi_run_in_repeat_datasets: MultiRunInRepeatFixtures,
+    tool_input_format: DescribeToolInputs,
+):
+    inputs = tool_input_format.when.flat(
+        {
+            "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
+            "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+        }
+    ).when.nested(
+        {
+            "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
+            "queries": [
+                {
+                    "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+                }
+            ],
+        }
+    )
+    execute = required_tool.execute.with_inputs(inputs)
+    _check_multi_run_in_repeat(execute)
+
+
+@requires_tool_id("cat|cat1")
+def test_multi_run_in_repeat_mismatch(
+    required_tool: RequiredTool,
+    multi_run_in_repeat_datasets: MultiRunInRepeatFixtures,
+    tool_input_format: DescribeToolInputs,
+):
+    """Same test as above but without the batch wrapper around the common dataset shared between multirun."""
+    inputs = tool_input_format.when.flat(
+        {
+            "input1": multi_run_in_repeat_datasets.common_dataset,
+            "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+        }
+    ).when.nested(
+        {
+            "input1": multi_run_in_repeat_datasets.common_dataset,
+            "queries": [
+                {
+                    "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+                }
+            ],
+        }
+    )
+    execute = required_tool.execute.with_inputs(inputs)
+    _check_multi_run_in_repeat(execute)
+
+
+def _check_multi_run_in_repeat(execute: DescribeToolExecution):
+    execute.assert_has_n_jobs(2)
+    execute.assert_has_job(0).with_single_output.with_contents_stripped("Common\n123")
+    execute.assert_has_job(1).with_single_output.with_contents_stripped("Common\n456")
+
+
+@dataclass
+class TwoMultiRunsFixture:
+    first_two_datasets: List[SrcDict]
+    second_two_datasets: List[SrcDict]
+
+
+@pytest.fixture
+def two_multi_run_datasets(target_history: TargetHistory) -> TwoMultiRunsFixture:
+    dataset1 = target_history.with_dataset("123").src_dict
+    dataset2 = target_history.with_dataset("456").src_dict
+    dataset3 = target_history.with_dataset("789").src_dict
+    dataset4 = target_history.with_dataset("0ab").src_dict
+    return TwoMultiRunsFixture([dataset1, dataset2], [dataset3, dataset4])
+
+
+@requires_tool_id("cat|cat1")
+def test_multirun_on_multiple_inputs(
+    required_tool: RequiredTool,
+    two_multi_run_datasets: TwoMultiRunsFixture,
+    tool_input_format: DescribeToolInputs,
+):
+    inputs = tool_input_format.when.flat(
+        {
+            "input1": {"batch": True, "values": two_multi_run_datasets.first_two_datasets},
+            "queries_0|input2": {"batch": True, "values": two_multi_run_datasets.second_two_datasets},
+        }
+    ).when.nested(
+        {
+            "input1": {"batch": True, "values": two_multi_run_datasets.first_two_datasets},
+            "queries": [
+                {"input2": {"batch": True, "values": two_multi_run_datasets.second_two_datasets}},
+            ],
+        }
+    )
+    execute = required_tool.execute.with_inputs(inputs)
+    execute.assert_has_n_jobs(2)
+    execute.assert_has_job(0).with_single_output.with_contents_stripped("123\n789")
+    execute.assert_has_job(1).with_single_output.with_contents_stripped("456\n0ab")
+
+
+@requires_tool_id("cat|cat1")
+def test_multirun_on_multiple_inputs_unlinked(
+    required_tool: RequiredTool,
+    two_multi_run_datasets: TwoMultiRunsFixture,
+    tool_input_format: DescribeToolInputs,
+):
+    inputs = tool_input_format.when.flat(
+        {
+            "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
+            "queries_0|input2": {"batch": True, "linked": False, "values": two_multi_run_datasets.second_two_datasets},
+        }
+    ).when.nested(
+        {
+            "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
+            "queries": [
+                {"input2": {"batch": True, "linked": False, "values": two_multi_run_datasets.second_two_datasets}},
+            ],
+        }
+    )
+    execute = required_tool.execute.with_inputs(inputs)
+    execute.assert_has_n_jobs(4)
+    execute.assert_has_job(0).with_single_output.with_contents_stripped("123\n789")
+    execute.assert_has_job(1).with_single_output.with_contents_stripped("123\n0ab")
+    execute.assert_has_job(2).with_single_output.with_contents_stripped("456\n789")
+    execute.assert_has_job(3).with_single_output.with_contents_stripped("456\n0ab")
+
+
+@requires_tool_id("cat|cat1")
+def test_map_over_collection(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
+    hdca = target_history.with_pair(["123", "456"])
+    inputs = tool_input_format.when.any({"input1": {"batch": True, "values": [hdca.src_dict]}})
+    execute = required_tool.execute.with_inputs(inputs)
+    execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_has_dataset_element("forward").with_contents_stripped("123")
+    output_collection.assert_has_dataset_element("reverse").with_contents_stripped("456")
 
 
 @requires_tool_id("gx_repeat_boolean_min")
@@ -218,3 +386,100 @@ def test_optional_repeats_with_mins_filled_id(target_history: TargetHistory, req
     # tool test framework filling in a default. Creating a raw request here
     # verifies that currently select parameters don't require a selection.
     required_tool.execute.assert_has_single_job.with_single_output.containing("false").containing("length: 2")
+
+
+@requires_tool_id("gx_select")
+@requires_tool_id("gx_select_no_options_validation")
+def test_select_first_by_default(required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs):
+    empty = tool_input_format.when.any({})
+    for required_tool in required_tools:
+        required_tool.execute.with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
+            "--ex1"
+        )
+
+
+@requires_tool_id("gx_select")
+@requires_tool_id("gx_select_no_options_validation")
+@requires_tool_id("gx_select_dynamic_empty")
+@requires_tool_id("gx_select_dynamic_empty_validated")
+def test_select_on_null_errors(required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs):
+    # test_select_first_by_default verifies the first option will just be selected, despite that if an explicit null
+    # is passed, an error (rightfully) occurs. This test verifies that.
+    null_parameter = tool_input_format.when.any({"parameter": None})
+    for required_tool in required_tools:
+        required_tool.execute.with_inputs(null_parameter).assert_fails.with_error_containing("an invalid option")
+
+
+@requires_tool_id("gx_select_dynamic_empty")
+@requires_tool_id("gx_select_dynamic_empty_validated")
+def test_select_empty_causes_error_regardless(
+    required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs
+):
+    # despite selects otherwise selecting defaults - nothing can be done if the select option list is empty
+    empty = tool_input_format.when.any({})
+    for required_tool in required_tools:
+        required_tool.execute.with_inputs(empty).assert_fails.with_error_containing("an invalid option")
+
+
+@requires_tool_id("gx_select_optional")
+@requires_tool_id("gx_select_optional_no_options_validation")
+def test_select_optional_null_by_default(required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs):
+    # test_select_first_by_default shows that required select values will pick an option by default,
+    # this test verify that doesn't occur for optional selects.
+    empty = tool_input_format.when.any({})
+    null_parameter = tool_input_format.when.any({"parameter": None})
+    for required_tool in required_tools:
+        required_tool.execute.with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
+            "None"
+        )
+        required_tool.execute.with_inputs(null_parameter).assert_has_single_job.with_output(
+            "output"
+        ).with_contents_stripped("None")
+
+
+@requires_tool_id("gx_select_multiple")
+@requires_tool_id("gx_select_multiple_optional")
+def test_select_multiple_does_not_select_first_by_default(
+    required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs
+):
+    # unlike single selects - no selection is forced and these serve as optional by default
+    empty = tool_input_format.when.any({})
+    null_parameter = tool_input_format.when.any({"parameter": None})
+    for required_tool in required_tools:
+        required_tool.execute.with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
+            "None"
+        )
+        required_tool.execute.with_inputs(null_parameter).assert_has_single_job.with_output(
+            "output"
+        ).with_contents_stripped("None")
+
+
+@requires_tool_id("gx_text")
+@requires_tool_id("gx_text_optional_false")
+def test_null_to_text_tools(required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs):
+    for required_tool in required_tools:
+        execute = required_tool.execute.with_inputs(tool_input_format.when.any({}))
+        execute.assert_has_single_job.with_output("output").with_contents_stripped("")
+        execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
+
+        execute = required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": None}))
+        execute.assert_has_single_job.with_output("output").with_contents_stripped("")
+        execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
+
+
+@requires_tool_id("gx_text_optional")
+def test_null_to_optinal_text_tool(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    execute = required_tool.execute.with_inputs(tool_input_format.when.any({}))
+    execute.assert_has_single_job.with_output("output").with_contents_stripped("")
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
+
+    execute = required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": None}))
+    execute.assert_has_single_job.with_output("output").with_contents_stripped("")
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
+
+
+@requires_tool_id("gx_text_empty_validation")
+def test_null_to_text_tool_with_validation(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    required_tool.execute.with_inputs(tool_input_format.when.any({})).assert_fails()
+    required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": None})).assert_fails()
+    required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": ""})).assert_fails()
