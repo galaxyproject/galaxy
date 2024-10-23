@@ -303,7 +303,8 @@
     </datatype>
     <datatype extension="directory" type="galaxy.datatypes.data:Directory"/>
     <datatype extension="zarr" type="galaxy.datatypes.data:ZarrDirectory" />
-    <datatype extension="zarr_s3" type="galaxy.datatypes.text:ZarrRemoteS3Bucket" />
+    <datatype extension="zarr_uri" type="galaxy.datatypes.text:ZarrRemoteUri" />
+    <datatype extension="zarr_s3" type="galaxy.datatypes.text:ZarrRemoteS3Bucket" subclass="true" display_in_upload="true"/>
     <datatype extension="ome_zarr" type="galaxy.datatypes.images:OMEZarr" />
     <datatype extension="yaml" type="galaxy.datatypes.text:Yaml" display_in_upload="true" />
     <!-- Proteomics Datatypes -->
@@ -1117,6 +1118,7 @@
     <sniffer type="galaxy.datatypes.qiime2:QIIME2Metadata"/>
     <sniffer type="galaxy.datatypes.qiime2:QIIME2Artifact"/>
     <sniffer type="galaxy.datatypes.qiime2:QIIME2Visualization"/>
+    <sniffer type="galaxy.datatypes.text:ZarrRemoteUri"/>
     <sniffer type="galaxy.datatypes.binary:CompressedOMEZarrZipArchive"/>
     <sniffer type="galaxy.datatypes.binary:CompressedZarrZipArchive"/>
     <sniffer type="galaxy.datatypes.binary:CompressedZipArchive"/>

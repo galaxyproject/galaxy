@@ -1423,14 +1423,13 @@ class FormattedDensity(Text):
         )
 
 
-class ZarrRemoteS3Bucket(Text):
-    """Zarr remote S3 bucket
+class ZarrRemoteUri(Text):
+    """Zarr remote URI
 
-    It is a text file containing a single line with the path (without https://) to a remote S3 bucket containing the Zarr store.
-    The bucket name must end with '.zarr'.
+    It is a text file containing a single line with the URI to a remote Zarr store.
+    The URI must NOT include the protocol (http://, https://, s3://, etc.) otherwise
+    Galaxy will try to download it as a file.
     """
-
-    file_ext = "zarr_s3"
 
     def sniff(self, filename: str) -> bool:
         # Must have a single line and end with '.zarr'
@@ -1445,10 +1444,16 @@ class ZarrRemoteS3Bucket(Text):
             try:
                 with open(dataset.get_file_name()) as f:
                     dataset.peek = f.read().strip()
-                    dataset.info = "Zarr remote S3 bucket"
+                    dataset.info = "Zarr remote URI"
                     dataset.blurb = nice_size(dataset.get_size())
             except Exception:
                 dataset.peek = "Could not read file"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
+
+
+class ZarrRemoteS3Bucket(ZarrRemoteUri):
+    """Zarr remote S3 bucket"""
+
+    file_ext = "zarr_s3"
