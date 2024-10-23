@@ -45,6 +45,7 @@ ATTRS_FILENAME_INVOCATIONS = "invocation_attrs.txt"
 class WorkflowRunCrateProfileBuilder:
     def __init__(self, model_store: Any):
         self.model_store = model_store
+        self.toolbox = self.model_store.app.toolbox
         self.invocation: WorkflowInvocation = model_store.included_invocations[0]
         self.workflow: Workflow = self.invocation.workflow
         self.param_type_mapping = {
@@ -85,6 +86,8 @@ class WorkflowRunCrateProfileBuilder:
         self.file_entities: Dict[int, Any] = {}
         self.param_entities: Dict[int, Any] = {}
         self.pv_entities: Dict[str, Any] = {}
+        # Cache for tools to avoid duplicating entities for the same tool
+        self.tool_cache: Dict[str, ContextEntity] = {}
 
     def build_crate(self):
         crate = ROCrate()
