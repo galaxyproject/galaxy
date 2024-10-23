@@ -119,12 +119,14 @@ async function fetchItems() {
 }
 
 watch(
-    () => props.items,
+    () => [props.items, currentPage.value, perPage.value],
     () => {
-        filteredItems.value = props.items.slice(
-            (currentPage.value - 1) * perPage.value,
-            currentPage.value * perPage.value
-        );
+        if (props.itemsProvider === undefined) {
+            filteredItems.value = props.items.slice(
+                (currentPage.value - 1) * perPage.value,
+                currentPage.value * perPage.value
+            );
+        }
     }
 );
 
