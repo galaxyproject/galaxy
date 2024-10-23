@@ -8,13 +8,18 @@ import {
     faSpinner,
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
+import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { fetchCollectionDetails } from "@/api/datasetCollections";
+import { fetchDatasetDetails } from "@/api/datasets";
 import { type InvocationStep, type StepJobSummary, type WorkflowInvocationElementView } from "@/api/invocations";
+import { getContentItemState } from "@/components/History/Content/model/states";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
+import { useInvocationStore } from "@/stores/invocationStore";
 import { type Step } from "@/stores/workflowStepStore";
 import { type Workflow } from "@/stores/workflowStore";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -39,6 +44,7 @@ export interface GraphStep extends Step {
     headerClass?: Record<string, boolean>;
     headerIcon?: IconDefinition;
     headerIconSpin?: boolean;
+    nodeText?: string | boolean;
 }
 interface InvocationGraph extends Workflow {
     steps: { [index: number]: GraphStep };
@@ -55,6 +61,11 @@ export const iconClasses: Record<string, { icon: IconDefinition; spin?: boolean;
     queued: { icon: faClock },
     deleted: { icon: faTrash, class: "text-danger" },
     skipped: { icon: faForward, class: "text-warning" },
+};
+
+export const statePlaceholders: Record<string, string> = {
+    ok: "successful",
+    error: "failed",
 };
 
 /** Only one job needs to be in one of these states for the graph step to be in that state */
@@ -78,6 +89,8 @@ export function useInvocationGraph(
     const storeId = computed(() => `invocation-${invocation.value.id}`);
 
     const lastStepsJobsSummary = ref<StepJobSummary[]>([]);
+    const invocationStore = useInvocationStore();
+    const { graphStepsByStoreId } = storeToRefs(invocationStore);
 
     /** The full invocation mapped onto the original workflow */
     const invocationGraph = ref<InvocationGraph | null>(null);
@@ -120,20 +133,13 @@ export function useInvocationGraph(
                 rethrowSimple(error);
             }
 
-            // if the steps have not been populated or the job states have changed, update the steps
-            // TODO: What if the state of something not in the stepsJobsSummary has changed? (e.g.: subworkflows...)
-            if (
-                !stepsPopulated.value ||
-                JSON.stringify(stepsJobsSummary) !== JSON.stringify(lastStepsJobsSummary.value)
-            ) {
-                updateSteps(stepsJobsSummary);
+            await updateSteps(stepsJobsSummary);
 
-                // Load the invocation graph into the editor the first time
-                if (!stepsPopulated.value) {
-                    invocationGraph.value!.steps = { ...steps.value };
-                    await fromSimple(storeId.value, invocationGraph.value as any);
-                    stepsPopulated.value = true;
-                }
+            // Load the invocation graph into the editor the first time
+            if (!stepsPopulated.value) {
+                invocationGraph.value!.steps = { ...steps.value };
+                await fromSimple(storeId.value, invocationGraph.value as any);
+                stepsPopulated.value = true;
             }
         } catch (e) {
             rethrowSimple(e);
@@ -144,7 +150,7 @@ export function useInvocationGraph(
      * if they haven't been populated yet.
      * @param stepsJobsSummary - The job summary for each step in the invocation
      * */
-    function updateSteps(stepsJobsSummary: StepJobSummary[]) {
+    async function updateSteps(stepsJobsSummary: StepJobSummary[]) {
         /** Initialize with the original steps of the workflow, else update the existing graph steps */
         const fullSteps: Record<string, Step | GraphStep> = !stepsPopulated.value
             ? { ...loadedWorkflow.value.steps }
@@ -163,7 +169,13 @@ export function useInvocationGraph(
             /** The raw invocation step */
             const invocationStep = invocation.value.steps[i];
 
-            if (!isWorkflowInput(graphStepFromWfStep.type)) {
+            // TODO: What if the state of something not in the stepsJobsSummary has changed? (e.g.: subworkflows...)
+            /** if the steps have not been populated or the job states have changed, update the step */
+            const updateNonInputStep =
+                !stepsPopulated.value ||
+                JSON.stringify(stepsJobsSummary) !== JSON.stringify(lastStepsJobsSummary.value);
+
+            if (updateNonInputStep && !isWorkflowInput(graphStepFromWfStep.type)) {
                 let invocationStepSummary: StepJobSummary | undefined;
                 if (invocationStep) {
                     invocationStepSummary = stepsJobsSummary.find((stepJobSummary: StepJobSummary) => {
@@ -175,12 +187,18 @@ export function useInvocationGraph(
                     });
                 }
                 updateStep(graphStepFromWfStep, invocationStep, invocationStepSummary);
+            } else if (invocationStep && graphStepFromWfStep.nodeText === undefined) {
+                await initializeGraphInput(graphStepFromWfStep, invocationStep);
             }
 
             // add the graph step to the steps object if it doesn't exist yet
             if (!steps.value[i]) {
                 set(steps.value, i, graphStepFromWfStep);
             }
+
+            // update the invocation store's graph steps object
+            // TODO: Find a better way of doing this, instead of using two separate objects...?
+            set(graphStepsByStoreId.value, storeId.value, steps.value);
         }
 
         lastStepsJobsSummary.value = stepsJobsSummary;
@@ -262,19 +280,7 @@ export function useInvocationGraph(
         // if the state has changed, update the graph step
         if (graphStep.state !== newState) {
             graphStep.state = newState;
-
-            /** Setting the header class for the graph step */
-            graphStep.headerClass = {
-                "node-header-invocation": true,
-                [`header-${graphStep.state}`]: !!graphStep.state,
-            };
-            // TODO: maybe a different one for inputs? Currently they have no state either.
-
-            /** Setting the header icon for the graph step */
-            if (graphStep.state) {
-                graphStep.headerIcon = iconClasses[graphStep.state]?.icon;
-                graphStep.headerIconSpin = iconClasses[graphStep.state]?.spin;
-            }
+            setHeaderClass(graphStep);
         }
     }
 
@@ -298,19 +304,47 @@ export function useInvocationGraph(
         return undefined;
     }
 
-    // TODO: Maybe we can use this to layout the graph after the steps are loaded (for neatness)?
-    // async function layoutGraph() {
-    //     const newSteps = await autoLayout(storeId.value, steps.value);
-    //     if (newSteps) {
-    //         newSteps?.map((step: any) => stepStore.updateStep(step));
-    //         // Object.assign(steps.value, {...steps.value, ...stepStore.steps});
-    //         Object.keys(steps.value).forEach((key) => {
-    //             steps.value[key] = { ...steps.value[key], ...(stepStore.steps[key] as GraphStep) };
-    //         });
-    //     }
-    //     invocationGraph.value!.steps = steps.value;
-    //     await fromSimple(storeId.value, invocationGraph.value as any);
-    // }
+    function setHeaderClass(graphStep: GraphStep) {
+        /** Setting the header class for the graph step */
+        graphStep.headerClass = getHeaderClass(graphStep.state as string);
+
+        /** Setting the header icon for the graph step */
+        if (graphStep.state) {
+            graphStep.headerIcon = iconClasses[graphStep.state]?.icon;
+            graphStep.headerIconSpin = iconClasses[graphStep.state]?.spin;
+        }
+    }
+
+    async function initializeGraphInput(graphStep: GraphStep, invocationStep: InvocationStep) {
+        const inputItem = invocation.value.inputs[graphStep.id];
+        const inputParam = getWorkflowInputParam(invocation.value, invocationStep);
+        if (inputItem && inputItem?.id !== undefined && inputItem?.id !== null) {
+            if (inputItem.src === "hda") {
+                const hda = await fetchDatasetDetails({ id: inputItem.id });
+                // TODO: There is a type mismatch for `hda.state` and `GraphStep["state"]`
+                set(graphStep, "state", getContentItemState(hda));
+                set(graphStep, "nodeText", `${hda.hid}: <b>${hda.name}</b>`);
+            } else {
+                const hdca = await fetchCollectionDetails({ id: inputItem.id });
+                // TODO: Same type mismatch as above
+                set(graphStep, "state", getContentItemState(hdca));
+                set(graphStep, "nodeText", `${hdca.hid}: <b>${hdca.name}</b>`);
+            }
+        } else if (inputParam) {
+            if (typeof inputParam.parameter_value === "boolean") {
+                set(graphStep, "nodeText", inputParam.parameter_value);
+            } else {
+                set(graphStep, "nodeText", `<b>${inputParam.parameter_value}</b>`);
+            }
+        }
+        setHeaderClass(graphStep);
+    }
+
+    function getWorkflowInputParam(invocation: WorkflowInvocationElementView, invocationStep: InvocationStep) {
+        return Object.values(invocation.input_step_parameters).find(
+            (param) => param.workflow_step_id === invocationStep.workflow_step_id
+        );
+    }
 
     return {
         /** An id used to scope the store to the invocation's id */
@@ -321,5 +355,12 @@ export function useInvocationGraph(
          * and displays the job states on the workflow graph steps.
          */
         loadInvocationGraph,
+    };
+}
+
+export function getHeaderClass(state: string) {
+    return {
+        "node-header-invocation": true,
+        [`header-${state}`]: !!state,
     };
 }

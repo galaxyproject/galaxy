@@ -2,6 +2,7 @@ import axios from "axios";
 import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
+// import type { StoredWorkflowDetailed } from "@/api/workflows"; // TODO: use this instead of locally defined type
 import { getAppRoot } from "@/onload/loadConfig";
 import { type Steps } from "@/stores/workflowStepStore";
 
