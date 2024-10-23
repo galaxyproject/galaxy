@@ -304,6 +304,7 @@
     <datatype extension="directory" type="galaxy.datatypes.data:Directory"/>
     <datatype extension="zarr" type="galaxy.datatypes.data:ZarrDirectory" />
     <datatype extension="zarr_s3" type="galaxy.datatypes.text:ZarrRemoteS3Bucket" />
+    <datatype extension="ome_zarr" type="galaxy.datatypes.images:OMEZarr" />
     <datatype extension="yaml" type="galaxy.datatypes.text:Yaml" display_in_upload="true" />
     <!-- Proteomics Datatypes -->
     <datatype extension="mrm" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="true"/>
