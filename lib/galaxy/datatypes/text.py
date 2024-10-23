@@ -1457,3 +1457,9 @@ class ZarrRemoteS3Bucket(ZarrRemoteUri):
     """Zarr remote S3 bucket"""
 
     file_ext = "zarr_s3"
+
+
+class OMEZarrRemoteUri(ZarrRemoteUri):
+    """OME-Zarr remote URI"""
+
+    file_ext = "ome_zarr_uri"
