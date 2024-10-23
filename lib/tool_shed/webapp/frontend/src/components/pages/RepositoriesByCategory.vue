@@ -30,7 +30,7 @@ const categoryName = computed(() => {
 
 const query = graphql(/* GraphQL */ `
     query repositoriesByCategory($categoryId: String, $cursor: String) {
-        relayRepositoriesForCategory(encodedId: $categoryId, sort: UPDATE_TIME_DESC, first: 10, after: $cursor) {
+        relayRepositoriesForCategory(encodedId: $categoryId, sort: NAME_ASC, first: 10, after: $cursor) {
             edges {
                 cursor
                 node {
