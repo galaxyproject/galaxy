@@ -458,11 +458,11 @@ class TestMappings(BaseModelTestCase):
     def test_role_creation(self):
         security_agent = GalaxyRBACAgent(self.model.session)
 
-        def check_private_role(private_role, email):
+        def check_private_role(private_role, user):
             assert private_role.type == model.Role.types.PRIVATE
             assert len(private_role.users) == 1
-            assert private_role.name == email
-            assert private_role.description == "Private Role for " + email
+            assert private_role.users[0].user is user
+            assert private_role.name == model.Role.default_name(model.Role.types.PRIVATE)
 
         email = "rule_user_1@example.com"
         u = model.User(email=email, password="password")
@@ -472,7 +472,7 @@ class TestMappings(BaseModelTestCase):
         assert role is None
         role = security_agent.create_private_user_role(u)
         assert role is not None
-        check_private_role(role, email)
+        check_private_role(role, u)
 
         email = "rule_user_2@example.com"
         u = model.User(email=email, password="password")
@@ -481,12 +481,12 @@ class TestMappings(BaseModelTestCase):
         assert role is None
         role = security_agent.get_private_user_role(u, auto_create=True)
         assert role is not None
-        check_private_role(role, email)
+        check_private_role(role, u)
 
         # make sure re-running auto_create doesn't break things
         role = security_agent.get_private_user_role(u, auto_create=True)
         assert role is not None
-        check_private_role(role, email)
+        check_private_role(role, u)
 
     def test_private_share_role(self):
         security_agent = GalaxyRBACAgent(self.model.session)

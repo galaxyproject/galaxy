@@ -128,7 +128,7 @@ class GalaxyRBACAgent(RBACAgent):
                 roles.append(item_permission.role)
         return roles
 
-    def get_valid_roles(self, trans, item, query=None, page=None, page_limit=None, is_library_access=False):
+    def get_valid_roles(self, trans, item, page=None, page_limit=None, is_library_access=False):
         """
         This method retrieves the list of possible roles that user can select
         in the item permissions form. Admins can select any role so the
@@ -138,11 +138,6 @@ class GalaxyRBACAgent(RBACAgent):
         sharing roles and any public role (not private and not sharing).
         """
         roles = []
-        if query not in [None, ""]:
-            query = query.strip().replace("_", "/_").replace("%", "/%").replace("/", "//")
-            search_query = f"{query}%"
-        else:
-            search_query = None
         # Limit the query only to get the page needed
         if page is not None and page_limit is not None:
             limit = page * page_limit
@@ -164,8 +159,6 @@ class GalaxyRBACAgent(RBACAgent):
             else:
                 # User is not an admin but the configuration exposes all private roles to all users.
                 stmt = select(Role).where(and_(Role.deleted == false(), Role.type == Role.types.PRIVATE))
-            if search_query:
-                stmt = stmt.where(Role.name.like(search_query, escape="/"))
 
             count_stmt = select(func.count()).select_from(stmt)
             total_count = trans.sa_session.scalar(count_stmt)
@@ -1024,7 +1017,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         self.set_dataset_permission(dataset, {self.permitted_actions.DATASET_ACCESS: [sharing_role]})
 
     def _create_sharing_role(self, users):
-        sharing_role = Role(name=f"Sharing role for: {', '.join(u.email for u in users)}", type=Role.types.SHARING)
+        sharing_role = Role(type=Role.types.SHARING)
         self.sa_session.add(sharing_role)
         with transaction(self.sa_session):
             self.sa_session.commit()
@@ -1526,7 +1519,6 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         else:
             delete_stmt = delete_stmt.where(UserRoleAssociation.role_id != private_role.id)
         role_ids = self._filter_private_roles(role_ids)
-        # breakpoint()
 
         insert_values = [{"user_id": user.id, "role_id": role_id} for role_id in role_ids]
         self._set_associations(user, UserRoleAssociation, delete_stmt, insert_values)
@@ -1808,3 +1800,7 @@ def is_foreign_key_violation(error):
         # If this is a PostgreSQL foreign key error, then error.orig is an instance of psycopg2.errors.ForeignKeyViolation
         # and should have an attribute `pgcode` = 23503.
         return int(getattr(error.orig, "pgcode", -1)) == 23503
+
+
+def role_name_by_type(type):
+    return f"{type} role"

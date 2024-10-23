@@ -3,8 +3,39 @@ from galaxy.model.db.role import (
     get_npns_roles,
     get_private_user_role,
     get_roles_by_ids,
+    get_roles_with_resolved_names,
 )
 from . import have_same_elements
+
+
+def test_get_roles_with_resolved_names(session, make_user_and_role, make_role):
+    u1, r1 = make_user_and_role(email="jack@foo.com")
+    u2, r2 = make_user_and_role(email="jill@bar.com")
+    make_role(name="foo")
+    make_role(name="bar")
+
+    roles = get_roles_with_resolved_names(session)
+    role_names = [r.name for r in roles]
+    assert len(role_names) == 4
+    assert "foo" in role_names
+    assert "bar" in role_names
+    assert "private role for jack@foo.com" in role_names
+    assert "private role for jill@bar.com" in role_names
+
+    # update user emails
+    u1.email = "updated-jack@foo.com"
+    u2.email = "updated-jill@bar.com"
+    session.add_all([u1, u2])
+    session.commit()
+
+    # verify role names reflect updated emails
+    roles = get_roles_with_resolved_names(session)
+    role_names = [r.name for r in roles]
+    assert len(role_names) == 4
+    assert "foo" in role_names
+    assert "bar" in role_names
+    assert "private role for updated-jack@foo.com" in role_names
+    assert "private role for updated-jill@bar.com" in role_names
 
 
 def test_get_npns_roles(session, make_role):

@@ -1229,10 +1229,7 @@ ON CONFLICT
 
     def attempt_create_private_role(self):
         session = object_session(self)
-        role_name = self.email
-        role_desc = f"Private Role for {self.email}"
-        role_type = Role.types.PRIVATE
-        role = Role(name=role_name, description=role_desc, type=role_type)
+        role = Role(type=Role.types.PRIVATE)
         assoc = UserRoleAssociation(self, role)
         session.add(assoc)
         with transaction(session):
@@ -3750,7 +3747,7 @@ class Role(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    name: Mapped[Optional[str]] = mapped_column(String(255), index=True, unique=True)
+    name: Mapped[str] = mapped_column(String(255), index=True)
     description: Mapped[Optional[str]] = mapped_column(TEXT)
     type: Mapped[Optional[str]] = mapped_column(String(40), index=True)
     deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
@@ -3761,6 +3758,7 @@ class Role(Base, Dictifiable, RepresentById):
     dict_collection_visible_keys = ["id", "name"]
     dict_element_visible_keys = ["id", "name", "description", "type"]
     private_id = None
+    private_role_name_prefix = "private role for "
 
     class types(str, Enum):
         PRIVATE = "private"
@@ -3769,8 +3767,12 @@ class Role(Base, Dictifiable, RepresentById):
         ADMIN = "admin"
         SHARING = "sharing"
 
+    @staticmethod
+    def default_name(role_type):
+        return f"{role_type.value} role"
+
     def __init__(self, name=None, description=None, type=types.SYSTEM, deleted=False):
-        self.name = name
+        self.name = name or Role.default_name(type)
         self.description = description
         self.type = type
         self.deleted = deleted

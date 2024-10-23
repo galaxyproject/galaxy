@@ -123,9 +123,6 @@ class FastAPILibraryFolders:
         page_limit: int = Query(
             default=10, title="Page Limit", description="The maximum number of permissions per page when paginating."
         ),
-        q: Optional[str] = Query(
-            None, title="Query", description="Optional search text to retrieve only the roles matching this query."
-        ),
     ) -> Union[LibraryFolderCurrentPermissions, LibraryAvailablePermissions]:
         """Gets the current or available permissions of a particular library.
         The results can be paginated and additionally filtered by a query."""
@@ -135,7 +132,6 @@ class FastAPILibraryFolders:
             scope,
             page,
             page_limit,
-            q,
         )
 
     @router.post(

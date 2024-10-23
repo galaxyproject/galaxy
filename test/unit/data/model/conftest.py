@@ -375,6 +375,14 @@ def make_page(session, make_user):
 @pytest.fixture
 def make_role(session):
     def f(**kwd):
+        # We must specify `name` because after removing the unique constraint
+        # from role.name (migration 9a5207190a4d) and setting up a default name
+        # generation for roles that do not receive a name argument that does
+        # not generate unique names, any migration unit tests that use
+        # this fixture AFTER DOWNGRADING (like # test_migrations.py::test_349dd9d9aac9)
+        # would break due to violating that constraint (restored via
+        # downgrading) without setting name.
+        kwd["name"] = kwd.get("name") or random_str()
         model = m.Role(**kwd)
         write_to_db(session, model)
         return model
@@ -416,6 +424,24 @@ def make_user(session):
         model = m.User(**kwd)
         write_to_db(session, model)
         return model
+
+    return f
+
+
+@pytest.fixture
+def make_user_and_role(session, make_user, make_role, make_user_role_association):
+    """
+    Each user created in Galaxy is assumed to have a private role, such that role.type == Role.types.PRIVATE.
+    Since we are testing user/group/role associations here, to ensure the correct state of the test database,
+    we need to ensure that a user is never created without a corresponding private role.
+    Therefore, we use this fixture instead of make_user (which only creates a user).
+    """
+
+    def f(**kwd):
+        user = make_user(**kwd)
+        private_role = make_role(type=m.Role.types.PRIVATE)
+        make_user_role_association(user, private_role)
+        return user, private_role
 
     return f
 
