@@ -2171,6 +2171,10 @@ class JobMetric(Model):
     )
 
 
+class WorkflowJobMetric(JobMetric):
+    tool_id: str
+
+
 class JobMetricCollection(RootModel):
     """Represents a collection of metrics associated with a Job."""
 

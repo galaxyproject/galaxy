@@ -25,7 +25,9 @@ from galaxy.managers.context import (
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.jobs import (
     fetch_job_states,
+    get_job_metrics_for_invocation,
     invocation_job_source_iter,
+    summarize_metrics,
 )
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import (
@@ -161,6 +163,18 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             trans, step_id, check_ownership=False, check_accessible=True
         )
         return self.serialize_workflow_invocation_step(wfi_step)
+
+    def show_invocation_metrics(self, trans: ProvidesHistoryContext, invocation_id: int):
+        extended_job_metrics = get_job_metrics_for_invocation(trans.sa_session, invocation_id)
+        job_metrics = []
+        tool_ids = []
+        for row in extended_job_metrics:
+            job_metrics.append(row[0])
+            tool_ids.append(row[1])
+        metrics_dict_list = summarize_metrics(trans, job_metrics)
+        for tool_id, metrics_dict in zip(tool_ids, metrics_dict_list):
+            metrics_dict["tool_id"] = tool_id
+        return metrics_dict_list
 
     def update_invocation_step(self, trans, step_id, action):
         wfi_step = self._workflows_manager.update_invocation_step(trans, step_id, action)

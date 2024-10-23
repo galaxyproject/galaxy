@@ -13,6 +13,7 @@ import { isTerminal, jobCount, runningCount } from "./util";
 
 import InvocationReport from "../Workflow/InvocationReport.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
+import WorkflowInvocationMetrics from "./WorkflowInvocationMetrics.vue";
 import WorkflowInvocationHeader from "./WorkflowInvocationHeader.vue";
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
@@ -184,6 +185,9 @@ function cancelWorkflowSchedulingLocal() {
                 <BAlert v-else variant="info" show>
                     <LoadingSpan message="Waiting to complete invocation" />
                 </BAlert>
+            </BTab>
+            <BTab title="Metrics">
+                <WorkflowInvocationMetrics :invocation-id="invocation.id"></WorkflowInvocationMetrics>
             </BTab>
         </BTabs>
     </div>

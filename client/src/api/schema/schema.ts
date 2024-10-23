@@ -2594,6 +2594,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/invocations/{invocation_id}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Invocation Metrics */
+        get: operations["get_invocation_metrics_api_invocations__invocation_id__metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/invocations/{invocation_id}/prepare_store_download": {
         parameters: {
             query?: never;
@@ -18317,6 +18334,45 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /**
+         * WorkflowJobMetric
+         * @example {
+         *       "name": "start_epoch",
+         *       "plugin": "core",
+         *       "raw_value": "1614261340.0000000",
+         *       "title": "Job Start Time",
+         *       "value": "2021-02-25 14:55:40"
+         *     }
+         */
+        WorkflowJobMetric: {
+            /**
+             * Name
+             * @description The name of the metric variable.
+             */
+            name: string;
+            /**
+             * Plugin
+             * @description The instrumenter plugin that generated this metric.
+             */
+            plugin: string;
+            /**
+             * Raw Value
+             * @description The raw value of the metric as a string.
+             */
+            raw_value: string;
+            /**
+             * Title
+             * @description A descriptive title for this metric.
+             */
+            title: string;
+            /** Tool Id */
+            tool_id: string;
+            /**
+             * Value
+             * @description The textual representation of the metric value.
+             */
+            value: string;
+        };
         /** WorkflowLandingRequest */
         WorkflowLandingRequest: {
             /** Request State */
@@ -26999,6 +27055,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvocationJobsResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_invocation_metrics_api_invocations__invocation_id__metrics_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Invocation. */
+                invocation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowJobMetric"][];
                 };
             };
             /** @description Request Error */
