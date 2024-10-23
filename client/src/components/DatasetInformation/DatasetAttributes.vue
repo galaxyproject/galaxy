@@ -138,7 +138,8 @@ onMounted(async () => {
                     v-if="
                         (!datasetAttributes['conversion_disable'] || !datasetAttributes['datatype_disable']) &&
                         !datasetAttributes['metadata_disable']
-                    ">
+                    "
+                    title-link-class="dataset-edit-datatype-tab">
                     <template v-slot:title>
                         <FontAwesomeIcon :icon="faDatabase" class="mr-1" />
                         {{ localize("Datatypes") }}
@@ -168,7 +169,9 @@ onMounted(async () => {
                                     {{ localize("Save") }}
                                 </BButton>
 
-                                <BButton @click="submit('datatype', 'datatype_detect')">
+                                <BButton
+                                    id="dataset-attributes-autodetect-datatype"
+                                    @click="submit('datatype', 'datatype_detect')">
                                     <FontAwesomeIcon :icon="faRedo" class="mr-1" />
                                     {{ localize("Auto-detect") }}
                                 </BButton>
