@@ -1,0 +1,4276 @@
+{
+  "$defs": {
+    "AssertAttributeIs": {
+      "additionalProperties": false,
+      "description": "Asserts the XML ``attribute`` for the element (or tag) with the specified\nXPath-like ``path`` is the specified ``text``, e.g. ```xml &lt;attribute_is\npath=\"outerElement/innerElement1\" attribute=\"foo\" text=\"bar\" /&gt; ``` The\nassertion implicitly also asserts that an element matching ``path`` exists.\n\nWith ``negate`` the result of the assertion (on the equality) can be inverted (the\nimplicit assertion on the existence of the path is not affected).\n$attribute_list::5",
+      "properties": {
+        "path": {
+          "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
+          "title": "Path",
+          "type": "string"
+        },
+        "text": {
+          "description": "Text to check for.",
+          "title": "Text",
+          "type": "string"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        }
+      },
+      "required": [
+        "path",
+        "text"
+      ],
+      "title": "AssertAttributeIs",
+      "type": "object"
+    },
+    "AssertAttributeMatches": {
+      "additionalProperties": false,
+      "description": "Asserts the XML ``attribute`` for the element (or tag) with the specified\nXPath-like ``path`` matches the regular expression specified by ``expression``,\ne.g. ```xml &lt;attribute_matches path=\"outerElement/innerElement2\"\nattribute=\"foo2\" expression=\"bar\\d+\" /&gt; ``` The assertion implicitly also\nasserts that an element matching ``path`` exists.\n\nWith ``negate`` the result of the assertion (on the matching) can be inverted (the\nimplicit assertion on the existence of the path is not affected).\n$attribute_list::5",
+      "properties": {
+        "path": {
+          "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
+          "title": "Path",
+          "type": "string"
+        },
+        "expression": {
+          "description": "The regular expression to use.",
+          "title": "Expression",
+          "type": "string"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        }
+      },
+      "required": [
+        "path",
+        "expression"
+      ],
+      "title": "AssertAttributeMatches",
+      "type": "object"
+    },
+    "AssertElementText": {
+      "additionalProperties": false,
+      "description": "This tag allows the developer to recurisively specify additional assertions\nas child elements about just the text contained in the element specified by the\nXPath-like ``path``, e.g. ```xml &lt;element_text\npath=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def\"&gt;\n&lt;not_has_text text=\"EDK72998.1\" /&gt; &lt;/element_text&gt; ``` The\nassertion implicitly also asserts that an element matching ``path`` exists.\n\nWith ``negate`` the result of the implicit assertions can be inverted.\nThe sub-assertions, which have their own ``negate`` attribute, are not affected\nby ``negate``.\n$attribute_list::5",
+      "properties": {
+        "has_text": {
+          "items": {
+            "$ref": "#/$defs/AssertHasText"
+          },
+          "title": "Has Text",
+          "type": "array"
+        },
+        "not_has_text": {
+          "items": {
+            "$ref": "#/$defs/AssertNotHasText"
+          },
+          "title": "Not Has Text",
+          "type": "array"
+        },
+        "has_text_matching": {
+          "items": {
+            "$ref": "#/$defs/AssertHasTextMatching"
+          },
+          "title": "Has Text Matching",
+          "type": "array"
+        },
+        "has_line": {
+          "items": {
+            "$ref": "#/$defs/AssertHasLine"
+          },
+          "title": "Has Line",
+          "type": "array"
+        },
+        "has_line_matching": {
+          "items": {
+            "$ref": "#/$defs/AssertHasLineMatching"
+          },
+          "title": "Has Line Matching",
+          "type": "array"
+        },
+        "has_n_lines": {
+          "items": {
+            "$ref": "#/$defs/AssertHasNlines"
+          },
+          "title": "Has N Lines",
+          "type": "array"
+        },
+        "path": {
+          "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
+          "title": "Path",
+          "type": "string"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "AssertElementText",
+      "type": "object"
+    },
+    "AssertElementTextIs": {
+      "additionalProperties": false,
+      "description": "Asserts the text of the XML element with the specified XPath-like ``path``\nis the specified ``text``, e.g. ```xml &lt;element_text_is\npath=\"BlastOutput_program\" text=\"blastp\" /&gt; ``` The assertion implicitly\nalso asserts that an element matching ``path`` exists.\n\nWith ``negate`` the result of the assertion (on the equality) can be inverted (the\nimplicit assertion on the existence of the path is not affected).\n$attribute_list::5",
+      "properties": {
+        "path": {
+          "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
+          "title": "Path",
+          "type": "string"
+        },
+        "text": {
+          "description": "Text to check for.",
+          "title": "Text",
+          "type": "string"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        }
+      },
+      "required": [
+        "path",
+        "text"
+      ],
+      "title": "AssertElementTextIs",
+      "type": "object"
+    },
+    "AssertElementTextMatches": {
+      "additionalProperties": false,
+      "description": "Asserts the text of the XML element with the specified XPath-like ``path``\nmatches the regular expression defined by ``expression``, e.g. ```xml\n&lt;element_text_matches path=\"BlastOutput_version\"\nexpression=\"BLASTP\\s+2\\.2.*\"/&gt; ``` The assertion implicitly also asserts\nthat an element matching ``path`` exists.\n\nWith ``negate`` the result of the assertion (on the matching) can be inverted (the\nimplicit assertion on the existence of the path is not affected).\n$attribute_list::5",
+      "properties": {
+        "path": {
+          "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
+          "title": "Path",
+          "type": "string"
+        },
+        "expression": {
+          "description": "The regular expression to use.",
+          "title": "Expression",
+          "type": "string"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        }
+      },
+      "required": [
+        "path",
+        "expression"
+      ],
+      "title": "AssertElementTextMatches",
+      "type": "object"
+    },
+    "AssertHasArchiveMember": {
+      "additionalProperties": false,
+      "description": "This tag allows to check if ``path`` is contained in a compressed file. The\npath is a regular expression that is matched against the full paths of the\nobjects in the compressed file (remember that \"matching\" means it is checked if\na prefix of the full path of an archive member is described by the regular\nexpression). Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``.\nNote that.\n\ndepending on the archive creation method:\n- full paths of the members may be prefixed with ``./``\n- directories may be treated as empty files\n```xml\n&lt;has_archive_member path=\"./path/to/my-file.txt\"/&gt;\n```\nWith ``n`` and ``delta`` (or ``min`` and ``max``) assertions on the number of\narchive members matching ``path`` can be expressed. The following could be used,\ne.g., to assert an archive containing n&amp;plusmn;1 elements out of which at least\n4 need to have a ``txt`` extension.\n```xml\n&lt;has_archive_member path=\".*\" n=\"10\" delta=\"1\"/&gt;\n&lt;has_archive_member path=\".*\\.txt\" min=\"4\"/&gt;\n```\nIn addition the tag can contain additional assertions as child elements about\nthe first member in the archive matching the regular expression ``path``. For\ninstance\n```xml\n&lt;has_archive_member path=\".*/my-file.txt\"&gt;\n&lt;not_has_text text=\"EDK72998.1\"/&gt;\n&lt;/has_archive_member&gt;\n```\nIf the ``all`` attribute is set to ``true`` then all archive members are subject\nto the assertions. Note that, archive members matching the ``path`` are sorted\nalphabetically.\nThe ``negate`` attribute of the ``has_archive_member`` assertion only affects\nthe asserts on the presence and number of matching archive members, but not any\nsub-assertions (which can offer the ``negate`` attribute on their own).  The\ncheck if the file is an archive at all, which is also done by the function, is\nnot affected.\n$attribute_list::5",
+      "properties": {
+        "has_size": {
+          "items": {
+            "$ref": "#/$defs/AssertHasSize"
+          },
+          "title": "Has Size",
+          "type": "array"
+        },
+        "has_text": {
+          "items": {
+            "$ref": "#/$defs/AssertHasText"
+          },
+          "title": "Has Text",
+          "type": "array"
+        },
+        "not_has_text": {
+          "items": {
+            "$ref": "#/$defs/AssertNotHasText"
+          },
+          "title": "Not Has Text",
+          "type": "array"
+        },
+        "has_text_matching": {
+          "items": {
+            "$ref": "#/$defs/AssertHasTextMatching"
+          },
+          "title": "Has Text Matching",
+          "type": "array"
+        },
+        "has_line": {
+          "items": {
+            "$ref": "#/$defs/AssertHasLine"
+          },
+          "title": "Has Line",
+          "type": "array"
+        },
+        "has_line_matching": {
+          "items": {
+            "$ref": "#/$defs/AssertHasLineMatching"
+          },
+          "title": "Has Line Matching",
+          "type": "array"
+        },
+        "has_n_lines": {
+          "items": {
+            "$ref": "#/$defs/AssertHasNlines"
+          },
+          "title": "Has N Lines",
+          "type": "array"
+        },
+        "has_n_columns": {
+          "items": {
+            "$ref": "#/$defs/AssertHasNcolumns"
+          },
+          "title": "Has N Columns",
+          "type": "array"
+        },
+        "has_json_property_with_value": {
+          "items": {
+            "$ref": "#/$defs/AssertHasJsonPropertyWithValue"
+          },
+          "title": "Has Json Property With Value",
+          "type": "array"
+        },
+        "has_json_property_with_text": {
+          "items": {
+            "$ref": "#/$defs/AssertHasJsonPropertyWithText"
+          },
+          "title": "Has Json Property With Text",
+          "type": "array"
+        },
+        "is_valid_xml": {
+          "items": {
+            "$ref": "#/$defs/AssertIsValidXml"
+          },
+          "title": "Is Valid Xml",
+          "type": "array"
+        },
+        "xml_element": {
+          "items": {
+            "$ref": "#/$defs/AssertXmlelement"
+          },
+          "title": "Xml Element",
+          "type": "array"
+        },
+        "has_element_with_path": {
+          "items": {
+            "$ref": "#/$defs/AssertHasElementWithPath"
+          },
+          "title": "Has Element With Path",
+          "type": "array"
+        },
+        "has_n_elements_with_path": {
+          "items": {
+            "$ref": "#/$defs/AssertHasNelementsWithPath"
+          },
+          "title": "Has N Elements With Path",
+          "type": "array"
+        },
+        "element_text_matches": {
+          "items": {
+            "$ref": "#/$defs/AssertElementTextMatches"
+          },
+          "title": "Element Text Matches",
+          "type": "array"
+        },
+        "element_text_is": {
+          "items": {
+            "$ref": "#/$defs/AssertElementTextIs"
+          },
+          "title": "Element Text Is",
+          "type": "array"
+        },
+        "attribute_matches": {
+          "items": {
+            "$ref": "#/$defs/AssertAttributeMatches"
+          },
+          "title": "Attribute Matches",
+          "type": "array"
+        },
+        "attribute_is": {
+          "items": {
+            "$ref": "#/$defs/AssertAttributeIs"
+          },
+          "title": "Attribute Is",
+          "type": "array"
+        },
+        "element_text": {
+          "items": {
+            "$ref": "#/$defs/AssertElementText"
+          },
+          "title": "Element Text",
+          "type": "array"
+        },
+        "has_h5_keys": {
+          "items": {
+            "$ref": "#/$defs/AssertHasH5Keys"
+          },
+          "title": "Has H5 Keys",
+          "type": "array"
+        },
+        "has_h5_attribute": {
+          "items": {
+            "$ref": "#/$defs/AssertHasH5Attribute"
+          },
+          "title": "Has H5 Attribute",
+          "type": "array"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The regular expression specifying the archive member.",
+          "title": "Path"
+        },
+        "all": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first",
+          "title": "All"
+        },
+        "n": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "N"
+        },
+        "delta": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Delta"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Min"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Max"
+        }
+      },
+      "title": "AssertHasArchiveMember",
+      "type": "object"
+    },
+    "AssertHasElementWithPath": {
+      "additionalProperties": false,
+      "description": "Asserts the XML output contains at least one element (or tag) with the\nspecified XPath-like ``path``, e.g. ```xml &lt;has_element_with_path\npath=\"BlastOutput_param/Parameters/Parameters_matrix\" /&gt; ``` With ``negate``\nthe result of the assertion can be inverted.\n\n$attribute_list::5",
+      "properties": {
+        "path": {
+          "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
+          "title": "Path",
+          "type": "string"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "AssertHasElementWithPath",
+      "type": "object"
+    },
+    "AssertHasH5Attribute": {
+      "additionalProperties": false,
+      "description": "Asserts HDF5 output contains the specified ``value`` for an attribute (``key``), e.g.\n```xml\n&lt;has_h5_attribute key=\"nchroms\" value=\"15\" /&gt;\n```\n$attribute_list::5",
+      "properties": {
+        "key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "HDF5 attribute to check value of.",
+          "title": "Key"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Expected value of HDF5 attribute to check.",
+          "title": "Value"
+        }
+      },
+      "title": "AssertHasH5Attribute",
+      "type": "object"
+    },
+    "AssertHasH5Keys": {
+      "additionalProperties": false,
+      "description": "Asserts HDF5 output has a set of attributes (``keys``), specified as a\ncomma-separated list, e.g.\n```xml\n&lt;has_h5_keys keys=\"bins,chroms,indexes,pixels,chroms/lengths\" /&gt;\n```\n$attribute_list::5",
+      "properties": {
+        "keys": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Comma-separated list of HDF5 attributes to check for.",
+          "title": "Keys"
+        }
+      },
+      "title": "AssertHasH5Keys",
+      "type": "object"
+    },
+    "AssertHasJsonPropertyWithText": {
+      "additionalProperties": false,
+      "description": "Asserts the JSON document contains a property or key with the specified text\n(i.e. string) value.\n\n```xml\n&lt;has_json_property_with_text property=\"color\" text=\"red\" /&gt;\n```\n$attribute_list::5",
+      "properties": {
+        "property": {
+          "description": "JSON property to search the target for.",
+          "title": "Property",
+          "type": "string"
+        },
+        "text": {
+          "description": "Text value to search for.",
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "property",
+        "text"
+      ],
+      "title": "AssertHasJsonPropertyWithText",
+      "type": "object"
+    },
+    "AssertHasJsonPropertyWithValue": {
+      "additionalProperties": false,
+      "description": "Asserts the JSON document contains a property or key with the specified JSON\nvalue.\n\n```xml\n&lt;has_json_property_with_value property=\"skipped_columns\" value=\"[1, 3, 5]\" /&gt;\n```\n$attribute_list::5",
+      "properties": {
+        "property": {
+          "description": "JSON property to search the target for.",
+          "title": "Property",
+          "type": "string"
+        },
+        "value": {
+          "description": "JSON-ified value to search for. This will be converted from an XML string to JSON with Python's json.loads function.",
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "property",
+        "value"
+      ],
+      "title": "AssertHasJsonPropertyWithValue",
+      "type": "object"
+    },
+    "AssertHasLine": {
+      "additionalProperties": false,
+      "description": "Asserts a line matching the specified string (``line``) appears in the\noutput (e.g. ``&lt;has_line line=\"A full example line.\" /&gt;``).\n\nIf the ``line`` is expected\nto occur a particular number of times, this value can be specified using ``n``.\nOptionally also with a certain ``delta``. Alternatively the range of expected\noccurences can be specified by ``min`` and/or ``max``.\n$attribute_list::5",
+      "properties": {
+        "line": {
+          "description": "The line to check for",
+          "title": "Line",
+          "type": "string"
+        },
+        "n": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "N"
+        },
+        "delta": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Delta"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Min"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Max"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        }
+      },
+      "required": [
+        "line"
+      ],
+      "title": "AssertHasLine",
+      "type": "object"
+    },
+    "AssertHasLineMatching": {
+      "additionalProperties": false,
+      "description": "Asserts a line matching the specified regular expression (``expression``)\nappears in the output (e.g. ``&lt;has_line_matching\nexpression=\".*\\s+127489808\\s+127494553\" /&gt;``).\n\nIf a particular number of matching lines is expected, this value can be\nspecified using ``n``.  Optionally also with ``delta``. Alternatively the range\nof expected occurences can be specified by ``min`` and/or ``max``.\n$attribute_list::5",
+      "properties": {
+        "expression": {
+          "description": "Regular expression to check for",
+          "title": "Expression",
+          "type": "string"
+        },
+        "n": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "N"
+        },
+        "delta": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Delta"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Min"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Max"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        }
+      },
+      "required": [
+        "expression"
+      ],
+      "title": "AssertHasLineMatching",
+      "type": "object"
+    },
+    "AssertHasNcolumns": {
+      "additionalProperties": false,
+      "description": "Asserts tabular output (actually only the first line) contains the specified\nnumber (``n``) of columns (e.g. ``&lt;has_n_columns n=\"3\"/&gt;``) optionally\nalso with ``delta``.\n\nAlternatively the range of expected occurences can be specified by\n``min`` and/or ``max``.  Optionally a column separator (``sep``, default is\n``\\t``) `and comment character(s) can be specified (``comment``, default is\nempty string), then the first non-comment line is used for determining the\nnumber of columns.\n$attribute_list::5",
+      "properties": {
+        "n": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "N"
+        },
+        "delta": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Delta"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Min"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Max"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        },
+        "sep": {
+          "default": "&#9;",
+          "description": "Separator defining columns, default: tab",
+          "title": "Sep",
+          "type": "string"
+        },
+        "comment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Comment character(s) used to skip comment lines (which should not be used for counting columns)",
+          "title": "Comment"
+        }
+      },
+      "title": "AssertHasNcolumns",
+      "type": "object"
+    },
+    "AssertHasNelementsWithPath": {
+      "additionalProperties": false,
+      "description": "Asserts the XML output contains the specified number (``n``, optionally with\n``delta``) of elements (or tags) with the specified XPath-like ``path``, e.g.\n```xml &lt;has_n_elements_with_path n=\"9\"\npath=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num\" /&gt; ```\nAlternatively to ``n`` and ``delta`` also the ``min`` and ``max`` attributes\ncan be used to specify the range of the expected number of occurences.\n\nWith ``negate`` the result of the assertion can be inverted.\n$attribute_list::5",
+      "properties": {
+        "path": {
+          "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
+          "title": "Path",
+          "type": "string"
+        },
+        "n": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "N"
+        },
+        "delta": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Delta"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Min"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Max"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "AssertHasNelementsWithPath",
+      "type": "object"
+    },
+    "AssertHasNlines": {
+      "additionalProperties": false,
+      "description": "Asserts that an output contains ``n`` lines, allowing for a difference of\n``delta`` (default is 0), e.g. ``&lt;has_n_lines n=\"3\" delta=\"1\"/&gt;``.\n\nAlternatively the range of expected occurences can be specified by ``min``\nand/or ``max``.\n$attribute_list::5",
+      "properties": {
+        "n": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "N"
+        },
+        "delta": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Delta"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Min"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Max"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        }
+      },
+      "title": "AssertHasNlines",
+      "type": "object"
+    },
+    "AssertHasSize": {
+      "additionalProperties": false,
+      "description": "Asserts the output has a specific size (in bytes) of ``value`` plus minus\n``delta``, e.g. ``&lt;has_size value=\"10000\" delta=\"100\" /&gt;``.\n\nAlternatively the range of the expected size can be specified by ``min`` and/or\n``max``.\n$attribute_list::5",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Desired size of the output (in bytes), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Value"
+        },
+        "delta": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum allowed size difference (default is 0). The observed size has to be in the range ``value +- delta``. Can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Delta"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Minimum expected size, can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Min"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum expected size, can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Max"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        }
+      },
+      "title": "AssertHasSize",
+      "type": "object"
+    },
+    "AssertHasText": {
+      "additionalProperties": false,
+      "description": "Asserts the specified ``text`` appears in the output (e.g. ``&lt;has_text\ntext=\"chr7\"&gt;``).\n\nIf the ``text`` is expected to occur a particular number of\ntimes, this value can be specified using ``n``. Optionally also with a certain\n``delta``. Alternatively the range of expected occurences can be specified by\n``min`` and/or ``max``.\n$attribute_list::5",
+      "properties": {
+        "text": {
+          "description": "Text to check for",
+          "title": "Text",
+          "type": "string"
+        },
+        "n": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "N"
+        },
+        "delta": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Delta"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Min"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Max"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "AssertHasText",
+      "type": "object"
+    },
+    "AssertHasTextMatching": {
+      "additionalProperties": false,
+      "description": "Asserts text matching the specified regular expression (``expression``)\nappears in the output (e.g. ``&lt;has_text_matching expression=\"1274\\d+53\"\n/&gt;`` ).\n\nIf the\nregular expression is expected to match a particular number of times, this value\ncan be specified using ``n``.  Note only non-overlapping occurences are counted.\nOptionally also with a certain ``delta``. Alternatively the range of expected\noccurences can be specified by ``min`` and/or ``max``.\n$attribute_list::5",
+      "properties": {
+        "expression": {
+          "description": "Regular expression to check for",
+          "title": "Expression",
+          "type": "string"
+        },
+        "n": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "N"
+        },
+        "delta": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Delta"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Min"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Max"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        }
+      },
+      "required": [
+        "expression"
+      ],
+      "title": "AssertHasTextMatching",
+      "type": "object"
+    },
+    "AssertIsValidXml": {
+      "additionalProperties": false,
+      "description": "Asserts the output is a valid XML file (e.g. ``&lt;is_valid_xml /&gt;``).\n\n$attribute_list::5",
+      "properties": {},
+      "title": "AssertIsValidXml",
+      "type": "object"
+    },
+    "AssertNotHasText": {
+      "additionalProperties": false,
+      "description": "Asserts the specified ``text`` does not appear in the output (e.g.\n``&lt;not_has_text text=\"chr8\" /&gt;``).\n\n$attribute_list::5",
+      "properties": {
+        "text": {
+          "description": "Text to check for",
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "AssertNotHasText",
+      "type": "object"
+    },
+    "AssertXmlelement": {
+      "additionalProperties": false,
+      "description": "Assert if the XML file contains element(s) or tag(s) with the specified\n[XPath-like ``path``](https://lxml.de/xpathxslt.html).  If ``n`` and ``delta``\nor ``min`` and ``max`` are given also the number of occurences is checked.\n```xml\n&lt;assert_contents&gt;\n&lt;xml_element path=\"./elem\"/&gt;\n&lt;xml_element path=\"./elem/more[2]\"/&gt;\n&lt;xml_element path=\".//more\" n=\"3\" delta=\"1\"/&gt;\n&lt;/assert_contents&gt;\n```\nWith ``negate=\"true\"`` the outcome of the assertions wrt the precence and number\nof ``path`` can be negated. If there are any sub assertions then check them against\n- the content of the attribute ``attribute``\n- the element's text if no attribute is given\n```xml\n&lt;assert_contents&gt;\n&lt;xml_element path=\"./elem/more[2]\" attribute=\"name\"&gt;\n&lt;has_text_matching expression=\"foo$\"/&gt;\n&lt;/xml_element&gt;\n&lt;/assert_contents&gt;\n```\nSub-assertions are not subject to the ``negate`` attribute of ``xml_element``.\nIf ``all`` is ``true`` then the sub assertions are checked for all occurences.\nNote that all other XML assertions can be expressed by this assertion (Galaxy\nalso implements the other assertions by calling this one).\n$attribute_list::5",
+      "properties": {
+        "path": {
+          "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
+          "title": "Path",
+          "type": "string"
+        },
+        "all": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first",
+          "title": "All"
+        },
+        "attribute": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The name of the attribute to apply sub-assertion on. If not given then the element text is used",
+          "title": "Attribute"
+        },
+        "n": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "N"
+        },
+        "delta": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Delta"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Min"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``",
+          "title": "Max"
+        },
+        "negate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            }
+          ],
+          "default": "false",
+          "description": "Negate the outcome of the assertion.",
+          "title": "Negate"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "AssertXmlelement",
+      "type": "object"
+    },
+    "Collection": {
+      "properties": {
+        "class": {
+          "const": "Collection",
+          "title": "Class"
+        },
+        "collection_type": {
+          "default": "list",
+          "title": "Collection Type",
+          "type": "string"
+        },
+        "elements": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/CollectionElement"
+              },
+              {
+                "$ref": "#/$defs/LocationFileElement"
+              },
+              {
+                "$ref": "#/$defs/PathFileElement"
+              },
+              {
+                "$ref": "#/$defs/CompositeDataFileElement"
+              }
+            ]
+          },
+          "title": "Elements",
+          "type": "array"
+        }
+      },
+      "required": [
+        "class",
+        "elements"
+      ],
+      "title": "Collection",
+      "type": "object"
+    },
+    "CollectionElement": {
+      "properties": {
+        "class": {
+          "const": "Collection",
+          "title": "Class"
+        },
+        "identifier": {
+          "title": "Identifier",
+          "type": "string"
+        },
+        "elements": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/CollectionElement"
+              },
+              {
+                "$ref": "#/$defs/LocationFileElement"
+              },
+              {
+                "$ref": "#/$defs/PathFileElement"
+              },
+              {
+                "$ref": "#/$defs/CompositeDataFileElement"
+              }
+            ]
+          },
+          "title": "Elements",
+          "type": "array"
+        },
+        "type": {
+          "default": "list",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "identifier",
+        "elements"
+      ],
+      "title": "CollectionElement",
+      "type": "object"
+    },
+    "CompositeDataFile": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "const": "File",
+          "title": "Class"
+        },
+        "filetype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Datatype extension for uploaded dataset.",
+          "title": "Filetype"
+        },
+        "dbkey": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dbkey"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Decompress"
+        },
+        "to_posix_line": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Posix Line"
+        },
+        "space_to_tab": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, spaces in text datasets will be converted to tabs.",
+          "title": "Space To Tab"
+        },
+        "deferred": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, datasets will not be stored on disk, but will be downloaded when used as inputs. Can only be used if a remote URI is used instead of a local file.",
+          "title": "Deferred"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Name of dataset in history.",
+          "title": "Name"
+        },
+        "info": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Info"
+        },
+        "tags": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tags to apply to uploaded dataset.",
+          "title": "Tags"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "composite_data": {
+          "items": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "title": "Composite Data",
+          "type": "array"
+        }
+      },
+      "required": [
+        "class",
+        "composite_data"
+      ],
+      "title": "CompositeDataFile",
+      "type": "object"
+    },
+    "CompositeDataFileElement": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "const": "File",
+          "title": "Class"
+        },
+        "filetype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Datatype extension for uploaded dataset.",
+          "title": "Filetype"
+        },
+        "dbkey": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dbkey"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Decompress"
+        },
+        "to_posix_line": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Posix Line"
+        },
+        "space_to_tab": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, spaces in text datasets will be converted to tabs.",
+          "title": "Space To Tab"
+        },
+        "deferred": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, datasets will not be stored on disk, but will be downloaded when used as inputs. Can only be used if a remote URI is used instead of a local file.",
+          "title": "Deferred"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Name of dataset in history.",
+          "title": "Name"
+        },
+        "info": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Info"
+        },
+        "tags": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tags to apply to uploaded dataset.",
+          "title": "Tags"
+        },
+        "identifier": {
+          "title": "Identifier",
+          "type": "string"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "composite_data": {
+          "items": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "title": "Composite Data",
+          "type": "array"
+        }
+      },
+      "required": [
+        "class",
+        "identifier",
+        "composite_data"
+      ],
+      "title": "CompositeDataFileElement",
+      "type": "object"
+    },
+    "Job": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "$ref": "#/$defs/Collection"
+              },
+              {
+                "$ref": "#/$defs/LocationFile"
+              },
+              {
+                "$ref": "#/$defs/PathFile"
+              },
+              {
+                "$ref": "#/$defs/CompositeDataFile"
+              },
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "$ref": "#/$defs/Collection"
+                    },
+                    {
+                      "$ref": "#/$defs/LocationFile"
+                    },
+                    {
+                      "$ref": "#/$defs/PathFile"
+                    },
+                    {
+                      "$ref": "#/$defs/CompositeDataFile"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": "object"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "title": "Job"
+    },
+    "LocationFile": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "const": "File",
+          "title": "Class"
+        },
+        "filetype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Datatype extension for uploaded dataset.",
+          "title": "Filetype"
+        },
+        "dbkey": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dbkey"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Decompress"
+        },
+        "to_posix_line": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Posix Line"
+        },
+        "space_to_tab": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, spaces in text datasets will be converted to tabs.",
+          "title": "Space To Tab"
+        },
+        "deferred": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, datasets will not be stored on disk, but will be downloaded when used as inputs. Can only be used if a remote URI is used instead of a local file.",
+          "title": "Deferred"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Name of dataset in history.",
+          "title": "Name"
+        },
+        "info": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Info"
+        },
+        "tags": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tags to apply to uploaded dataset.",
+          "title": "Tags"
+        },
+        "location": {
+          "title": "Location",
+          "type": "string"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        }
+      },
+      "required": [
+        "class",
+        "location"
+      ],
+      "title": "LocationFile",
+      "type": "object"
+    },
+    "LocationFileElement": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "const": "File",
+          "title": "Class"
+        },
+        "filetype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Datatype extension for uploaded dataset.",
+          "title": "Filetype"
+        },
+        "dbkey": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dbkey"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Decompress"
+        },
+        "to_posix_line": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Posix Line"
+        },
+        "space_to_tab": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, spaces in text datasets will be converted to tabs.",
+          "title": "Space To Tab"
+        },
+        "deferred": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, datasets will not be stored on disk, but will be downloaded when used as inputs. Can only be used if a remote URI is used instead of a local file.",
+          "title": "Deferred"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Name of dataset in history.",
+          "title": "Name"
+        },
+        "info": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Info"
+        },
+        "tags": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tags to apply to uploaded dataset.",
+          "title": "Tags"
+        },
+        "identifier": {
+          "title": "Identifier",
+          "type": "string"
+        },
+        "location": {
+          "title": "Location",
+          "type": "string"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        }
+      },
+      "required": [
+        "class",
+        "identifier",
+        "location"
+      ],
+      "title": "LocationFileElement",
+      "type": "object"
+    },
+    "PathFile": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "const": "File",
+          "title": "Class"
+        },
+        "filetype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Datatype extension for uploaded dataset.",
+          "title": "Filetype"
+        },
+        "dbkey": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dbkey"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Decompress"
+        },
+        "to_posix_line": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Posix Line"
+        },
+        "space_to_tab": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, spaces in text datasets will be converted to tabs.",
+          "title": "Space To Tab"
+        },
+        "deferred": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, datasets will not be stored on disk, but will be downloaded when used as inputs. Can only be used if a remote URI is used instead of a local file.",
+          "title": "Deferred"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Name of dataset in history.",
+          "title": "Name"
+        },
+        "info": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Info"
+        },
+        "tags": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tags to apply to uploaded dataset.",
+          "title": "Tags"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "path"
+      ],
+      "title": "PathFile",
+      "type": "object"
+    },
+    "PathFileElement": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "const": "File",
+          "title": "Class"
+        },
+        "filetype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Datatype extension for uploaded dataset.",
+          "title": "Filetype"
+        },
+        "dbkey": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dbkey"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Decompress"
+        },
+        "to_posix_line": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Posix Line"
+        },
+        "space_to_tab": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, spaces in text datasets will be converted to tabs.",
+          "title": "Space To Tab"
+        },
+        "deferred": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, datasets will not be stored on disk, but will be downloaded when used as inputs. Can only be used if a remote URI is used instead of a local file.",
+          "title": "Deferred"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Name of dataset in history.",
+          "title": "Name"
+        },
+        "info": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Info"
+        },
+        "tags": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tags to apply to uploaded dataset.",
+          "title": "Tags"
+        },
+        "identifier": {
+          "title": "Identifier",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "identifier",
+        "path"
+      ],
+      "title": "PathFileElement",
+      "type": "object"
+    },
+    "PermissiveBooleanValue": {
+      "enum": [
+        "0",
+        "1",
+        "true",
+        "false",
+        "True",
+        "False",
+        "yes",
+        "no"
+      ],
+      "title": "PermissiveBooleanValue",
+      "type": "string"
+    },
+    "Test": {
+      "additionalProperties": false,
+      "properties": {
+        "doc": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Describes the purpose of the test.",
+          "title": "Doc"
+        },
+        "job": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Job"
+            }
+          ],
+          "description": "Defines job to execute. Can be a path to a file or an line dictionary describing the job inputs."
+        },
+        "outputs": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TestOutputElement"
+              },
+              {
+                "$ref": "#/$defs/TestOutput"
+              },
+              {
+                "$ref": "#/$defs/TestOutputCollection"
+              },
+              {
+                "$ref": "#/$defs/TestOutputCollectionDeprecated"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "description": "Defines assertions about outputs (datasets, collections or parameters). Each key corresponds to a labeled output, values are dictionaries describing the expected output.",
+          "title": "Outputs",
+          "type": "object"
+        }
+      },
+      "required": [
+        "job",
+        "outputs"
+      ],
+      "title": "Test",
+      "type": "object"
+    },
+    "TestAssertions": {
+      "additionalProperties": false,
+      "description": "This tag set defines a sequence of checks or assertions to run against the\ntarget output.\n\nThis tag requires no attributes, but child tags should be used to\ndefine the assertions to make about the output. The functional test framework\nmakes it easy to extend Galaxy with such tags, the following table summarizes\nmany of the default assertion tags that come with Galaxy and examples of each\ncan be found below.\nThe implementation of these tags are simply Python functions defined in the\n[/lib/galaxy/tool_util/verify/asserts](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tool_util/verify/asserts)\nmodule.",
+      "properties": {
+        "has_size": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertHasSize"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertHasSize"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has Size"
+        },
+        "has_text": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertHasText"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertHasText"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has Text"
+        },
+        "not_has_text": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertNotHasText"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertNotHasText"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Not Has Text"
+        },
+        "has_text_matching": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertHasTextMatching"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertHasTextMatching"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has Text Matching"
+        },
+        "has_line": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertHasLine"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertHasLine"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has Line"
+        },
+        "has_line_matching": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertHasLineMatching"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertHasLineMatching"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has Line Matching"
+        },
+        "has_n_lines": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertHasNlines"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertHasNlines"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has N Lines"
+        },
+        "has_n_columns": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertHasNcolumns"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertHasNcolumns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has N Columns"
+        },
+        "has_archive_member": {
+          "items": {
+            "$ref": "#/$defs/AssertHasArchiveMember"
+          },
+          "title": "Has Archive Member",
+          "type": "array"
+        },
+        "is_valid_xml": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertIsValidXml"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertIsValidXml"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Valid Xml"
+        },
+        "xml_element": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertXmlelement"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertXmlelement"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Xml Element"
+        },
+        "has_element_with_path": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertHasElementWithPath"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertHasElementWithPath"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has Element With Path"
+        },
+        "has_n_elements_with_path": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertHasNelementsWithPath"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertHasNelementsWithPath"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has N Elements With Path"
+        },
+        "element_text_matches": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertElementTextMatches"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertElementTextMatches"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Element Text Matches"
+        },
+        "element_text_is": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertElementTextIs"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertElementTextIs"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Element Text Is"
+        },
+        "attribute_matches": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertAttributeMatches"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertAttributeMatches"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attribute Matches"
+        },
+        "attribute_is": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertAttributeIs"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertAttributeIs"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attribute Is"
+        },
+        "element_text": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertElementText"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertElementText"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Element Text"
+        },
+        "has_json_property_with_value": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertHasJsonPropertyWithValue"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertHasJsonPropertyWithValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has Json Property With Value"
+        },
+        "has_json_property_with_text": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertHasJsonPropertyWithText"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertHasJsonPropertyWithText"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has Json Property With Text"
+        },
+        "has_h5_keys": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertHasH5Keys"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertHasH5Keys"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has H5 Keys"
+        },
+        "has_h5_attribute": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AssertHasH5Attribute"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/AssertHasH5Attribute"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has H5 Attribute"
+        }
+      },
+      "title": "TestAssertions",
+      "type": "object"
+    },
+    "TestDiscoveredDataset": {
+      "additionalProperties": false,
+      "description": "This directive specifies a test for an output's discovered dataset.\n\nIt acts as an\n``output`` test tag in many ways and can define any tests of that tag (e.g.\n``assert_contents``, ``value``, ``compare``, ``md5``, ``checksum``, ``metadata``, etc...).\n### Example\nThe functional test tool\n[multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_assign_primary.xml)\nprovides a demonstration of using this tag.\n```xml\n&lt;outputs&gt;\n&lt;data format=\"tabular\" name=\"sample\"&gt;\n&lt;discover_datasets pattern=\"(?P&amp;lt;designation&amp;gt;.+)\\.report\\.tsv\" ext=\"tabular\" visible=\"true\" assign_primary_output=\"true\" /&gt;\n&lt;/data&gt;\n&lt;/outputs&gt;\n&lt;test&gt;\n&lt;param name=\"num_param\" value=\"7\" /&gt;\n&lt;param name=\"input\" ftype=\"txt\" value=\"simple_line.txt\"/&gt;\n&lt;output name=\"sample\"&gt;\n&lt;assert_contents&gt;\n&lt;has_line line=\"1\" /&gt;\n&lt;/assert_contents&gt;\n&lt;!-- no sample1 it was consumed by named output \"sample\" --&gt;\n&lt;discovered_dataset designation=\"sample2\" ftype=\"tabular\"&gt;\n&lt;assert_contents&gt;&lt;has_line line=\"2\" /&gt;&lt;/assert_contents&gt;\n&lt;/discovered_dataset&gt;\n&lt;discovered_dataset designation=\"sample3\" ftype=\"tabular\"&gt;\n&lt;assert_contents&gt;&lt;has_line line=\"3\" /&gt;&lt;/assert_contents&gt;\n&lt;/discovered_dataset&gt;\n&lt;/output&gt;\n&lt;/test&gt;\n```\nNote that this tool uses ``assign_primary_output=\"true\"`` for ``&lt;discover_datasets&gt;``. Hence, the content of the first discovered dataset (which is the first in the alphabetically sorted list of discovered designations) is checked directly in the ``&lt;output&gt;`` tag of the test.",
+      "properties": {
+        "class": {
+          "anyOf": [
+            {
+              "const": "File"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "File",
+          "title": "Class"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "discovered_dataset": {
+          "items": {
+            "$ref": "#/$defs/TestDiscoveredDataset"
+          },
+          "title": "Discovered Dataset",
+          "type": "array"
+        },
+        "asserts": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TestAssertions"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/TestAssertions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "$assertions\n### Examples\nThe following demonstrates a wide variety of text-based and tabular\nassertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;has_text text=\"chr7\" /&gt;\n&lt;not_has_text text=\"chr8\" /&gt;\n&lt;has_text_matching expression=\"1274\\d+53\" /&gt;\n&lt;has_line_matching expression=\".*\\s+127489808\\s+127494553\" /&gt;\n&lt;!-- &amp;#009; is XML escape code for tab --&gt;\n&lt;has_line line=\"chr7&amp;#009;127471195&amp;#009;127489808\" /&gt;\n&lt;has_n_columns n=\"3\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates a wide variety of XML assertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;is_valid_xml /&gt;\n&lt;has_element_with_path path=\"BlastOutput_param/Parameters/Parameters_matrix\" /&gt;\n&lt;has_n_elements_with_path n=\"9\" path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num\" /&gt;\n&lt;element_text_matches path=\"BlastOutput_version\" expression=\"BLASTP\\s+2\\.2.*\" /&gt;\n&lt;element_text_is path=\"BlastOutput_program\" text=\"blastp\" /&gt;\n&lt;element_text path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def\"&gt;\n&lt;not_has_text text=\"EDK72998.1\" /&gt;\n&lt;has_text_matching expression=\"ABK[\\d\\.]+\" /&gt;\n&lt;/element_text&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates verifying XML content with XPath-like expressions.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;attribute_is path=\"outerElement/innerElement1\" attribute=\"foo\" text=\"bar\" /&gt;\n&lt;attribute_matches path=\"outerElement/innerElement2\" attribute=\"foo2\" expression=\"bar\\d+\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```",
+          "title": "Asserts"
+        },
+        "extra_files": {
+          "items": {
+            "$ref": "#/$defs/TestExtraFile"
+          },
+          "title": "Extra Files",
+          "type": "array"
+        },
+        "metadata": {
+          "items": {
+            "$ref": "#/$defs/TestOutputMetadata"
+          },
+          "title": "Metadata",
+          "type": "array"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "This value is the same as the value of the ``name`` attribute of the ``&lt;data&gt;``\ntag set contained within the tool's ``&lt;outputs&gt;`` tag set.",
+          "title": "Name"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, this value is the name of the output file stored in the target\n``test-data`` directory which will be used to compare the results of executing\nthe tool via the functional test framework.",
+          "title": "File"
+        },
+        "value_json": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, this value will be loaded as JSON and compared against the output\ngenerated as JSON. This can be useful for testing tool outputs that are not files.",
+          "title": "Value Json"
+        },
+        "ftype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, this value will be checked against the corresponding output's\ndata type. If these do not match, the test will fail.",
+          "title": "Ftype"
+        },
+        "sort": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Applies only if ``compare`` is ``diff``, ``re_match`` or ``re_match_multiline``. This flag causes the lines of the history data set to be sorted before the comparison. In case of ``diff`` and ``re_match`` also the local file is sorted. This could be\nuseful for non-deterministic output.",
+          "title": "Sort"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "An alias for ``file``.",
+          "title": "Value"
+        },
+        "md5": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, the target output's MD5 hash should match the value specified\nhere. For large static files it may be inconvenient to upload the entiry file\nand this can be used instead.",
+          "title": "Md5"
+        },
+        "checksum": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, the target output's checksum should match the value specified\nhere. This value should have the form ``hash_type$hash_value``\n(e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files\nit may be inconvenient to upload the entiry file and this can be used instead.",
+          "title": "Checksum"
+        },
+        "compare": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TestOutputCompareType"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "lines_diff": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Applies only if ``compare`` is set to ``diff``, ``re_match``, and ``contains``. If ``compare`` is set to ``diff``, the number of lines of difference to allow (each line with a modification is a line added and a line removed so this counts as two lines).",
+          "title": "Lines Diff"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If this attribute is true then try to decompress files if needed. This applies to\ntest assertions expressed with ``assert_contents`` or ``compare`` set to anything\nbut ``sim_size``.\nThis flag is useful for testing compressed outputs that are non-deterministic\ndespite having deterministic decompressed contents. By default, only files compressed\nwith bz2, gzip and zip will be automatically decompressed.\nNote, for specifying assertions for compressed as well as decompressed output\nthe corresponding output tag can be specified multiple times.\nThis is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).",
+          "title": "Decompress"
+        },
+        "delta": {
+          "default": 10000,
+          "description": "If ``compare`` is set to ``sim_size``, this is the maximum allowed absolute size difference (in bytes) between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. Default value is 10000 bytes. Can be combined with ``delta_frac``.",
+          "title": "Delta",
+          "type": "integer"
+        },
+        "delta_frac": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If ``compare`` is set to ``sim_size``, this is the maximum allowed relative size difference between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. A value of 0.1 means that the file that is generated in the test can differ by at most 10% of the file in ``test-data``. The default is not to check for  relative size difference. Can be combined with ``delta``.",
+          "title": "Delta Frac"
+        },
+        "count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Number or datasets for this output. Should be used for outputs with ``discover_datasets``",
+          "title": "Count"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "URL that points to a remote output file that will downloaded and used for output comparison.\nPlease use this option only when is not possible to include the files in the `test-data` folder, since\nthis is more error prone due to external factors like remote availability.\nYou can use it in two ways:\n- In combination with `file` it will look for the output file in the `test-data` folder, if it's not available on disk it will\ndownload the file pointed by `location` using the same name as in `file` (or `value`).\n- Specifiying the `location` without a `file` (or `value`), it will download the file and use it as an alias of `file`. The name of the file\nwill be infered from the last component of the location URL. For example, `location=\"https://my_url/my_file.txt\"` will be equivalent to `file=\"my_file.txt\"`.\nIf you specify a `checksum`, it will be also used to check the integrity of the download.",
+          "title": "Location"
+        },
+        "designation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The designation of the discovered dataset.",
+          "title": "Designation"
+        }
+      },
+      "title": "TestDiscoveredDataset",
+      "type": "object"
+    },
+    "TestExtraFile": {
+      "additionalProperties": false,
+      "description": "Define test for extra files on corresponding output.",
+      "properties": {
+        "class": {
+          "anyOf": [
+            {
+              "const": "File"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "File",
+          "title": "Class"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "discovered_dataset": {
+          "items": {
+            "$ref": "#/$defs/TestDiscoveredDataset"
+          },
+          "title": "Discovered Dataset",
+          "type": "array"
+        },
+        "asserts": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TestAssertions"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/TestAssertions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "$assertions\n### Examples\nThe following demonstrates a wide variety of text-based and tabular\nassertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;has_text text=\"chr7\" /&gt;\n&lt;not_has_text text=\"chr8\" /&gt;\n&lt;has_text_matching expression=\"1274\\d+53\" /&gt;\n&lt;has_line_matching expression=\".*\\s+127489808\\s+127494553\" /&gt;\n&lt;!-- &amp;#009; is XML escape code for tab --&gt;\n&lt;has_line line=\"chr7&amp;#009;127471195&amp;#009;127489808\" /&gt;\n&lt;has_n_columns n=\"3\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates a wide variety of XML assertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;is_valid_xml /&gt;\n&lt;has_element_with_path path=\"BlastOutput_param/Parameters/Parameters_matrix\" /&gt;\n&lt;has_n_elements_with_path n=\"9\" path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num\" /&gt;\n&lt;element_text_matches path=\"BlastOutput_version\" expression=\"BLASTP\\s+2\\.2.*\" /&gt;\n&lt;element_text_is path=\"BlastOutput_program\" text=\"blastp\" /&gt;\n&lt;element_text path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def\"&gt;\n&lt;not_has_text text=\"EDK72998.1\" /&gt;\n&lt;has_text_matching expression=\"ABK[\\d\\.]+\" /&gt;\n&lt;/element_text&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates verifying XML content with XPath-like expressions.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;attribute_is path=\"outerElement/innerElement1\" attribute=\"foo\" text=\"bar\" /&gt;\n&lt;attribute_matches path=\"outerElement/innerElement2\" attribute=\"foo2\" expression=\"bar\\d+\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```",
+          "title": "Asserts"
+        },
+        "extra_files": {
+          "items": {
+            "$ref": "#/$defs/TestExtraFile"
+          },
+          "title": "Extra Files",
+          "type": "array"
+        },
+        "metadata": {
+          "items": {
+            "$ref": "#/$defs/TestOutputMetadata"
+          },
+          "title": "Metadata",
+          "type": "array"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "This value is the same as the value of the ``name`` attribute of the ``&lt;data&gt;``\ntag set contained within the tool's ``&lt;outputs&gt;`` tag set.",
+          "title": "Name"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, this value is the name of the output file stored in the target\n``test-data`` directory which will be used to compare the results of executing\nthe tool via the functional test framework.",
+          "title": "File"
+        },
+        "value_json": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, this value will be loaded as JSON and compared against the output\ngenerated as JSON. This can be useful for testing tool outputs that are not files.",
+          "title": "Value Json"
+        },
+        "ftype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, this value will be checked against the corresponding output's\ndata type. If these do not match, the test will fail.",
+          "title": "Ftype"
+        },
+        "sort": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Applies only if ``compare`` is ``diff``, ``re_match`` or ``re_match_multiline``. This flag causes the lines of the history data set to be sorted before the comparison. In case of ``diff`` and ``re_match`` also the local file is sorted. This could be\nuseful for non-deterministic output.",
+          "title": "Sort"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "An alias for ``file``.",
+          "title": "Value"
+        },
+        "md5": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, the target output's MD5 hash should match the value specified\nhere. For large static files it may be inconvenient to upload the entiry file\nand this can be used instead.",
+          "title": "Md5"
+        },
+        "checksum": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, the target output's checksum should match the value specified\nhere. This value should have the form ``hash_type$hash_value``\n(e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files\nit may be inconvenient to upload the entiry file and this can be used instead.",
+          "title": "Checksum"
+        },
+        "compare": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TestOutputCompareType"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "lines_diff": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Applies only if ``compare`` is set to ``diff``, ``re_match``, and ``contains``. If ``compare`` is set to ``diff``, the number of lines of difference to allow (each line with a modification is a line added and a line removed so this counts as two lines).",
+          "title": "Lines Diff"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If this attribute is true then try to decompress files if needed. This applies to\ntest assertions expressed with ``assert_contents`` or ``compare`` set to anything\nbut ``sim_size``.\nThis flag is useful for testing compressed outputs that are non-deterministic\ndespite having deterministic decompressed contents. By default, only files compressed\nwith bz2, gzip and zip will be automatically decompressed.\nNote, for specifying assertions for compressed as well as decompressed output\nthe corresponding output tag can be specified multiple times.\nThis is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).",
+          "title": "Decompress"
+        },
+        "delta": {
+          "default": 10000,
+          "description": "If ``compare`` is set to ``sim_size``, this is the maximum allowed absolute size difference (in bytes) between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. Default value is 10000 bytes. Can be combined with ``delta_frac``.",
+          "title": "Delta",
+          "type": "integer"
+        },
+        "delta_frac": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If ``compare`` is set to ``sim_size``, this is the maximum allowed relative size difference between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. A value of 0.1 means that the file that is generated in the test can differ by at most 10% of the file in ``test-data``. The default is not to check for  relative size difference. Can be combined with ``delta``.",
+          "title": "Delta Frac"
+        },
+        "count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Number or datasets for this output. Should be used for outputs with ``discover_datasets``",
+          "title": "Count"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "URL that points to a remote output file that will downloaded and used for output comparison.\nPlease use this option only when is not possible to include the files in the `test-data` folder, since\nthis is more error prone due to external factors like remote availability.\nYou can use it in two ways:\n- In combination with `file` it will look for the output file in the `test-data` folder, if it's not available on disk it will\ndownload the file pointed by `location` using the same name as in `file` (or `value`).\n- Specifiying the `location` without a `file` (or `value`), it will download the file and use it as an alias of `file`. The name of the file\nwill be infered from the last component of the location URL. For example, `location=\"https://my_url/my_file.txt\"` will be equivalent to `file=\"my_file.txt\"`.\nIf you specify a `checksum`, it will be also used to check the integrity of the download.",
+          "title": "Location"
+        },
+        "type_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Extra file type (either ``file`` or ``directory``).",
+          "title": "Type Value"
+        }
+      },
+      "title": "TestExtraFile",
+      "type": "object"
+    },
+    "TestOutput": {
+      "additionalProperties": false,
+      "description": "This tag set defines the variable that names the output dataset for the\nfunctional test framework. The functional test framework will execute the tool\nusing the parameters defined in the ``&lt;param&gt;`` tag sets and generate a\ntemporary file, which will either be compared with the file named in the\n``file`` attribute value or checked against assertions made by a child\n``assert_contents`` tag to verify that the tool is functionally correct.\nDifferent methods can be chosen for the comparison with the local file\nspecified.\n\nby ``file`` using the ``compare`` attribute:\n- ``diff``: uses diff to compare the history data set and the file provided by\n``file``. Compressed files are decompressed before the compariopm if\n``decompress`` is set to ``true``. BAM files are converted to SAM before the\ncomparision and for pdf some special rules are implemented. The number of\nallowed differences can be set with ``lines_diff``.  If ``sort=\"true\"`` history\nand local data is sorted before the comparison.\n- ``re_match``: each line of the history data set is compared to the regular\nexpression specified in the corresponding line of the ``file``. The allowed\nnumber of non matching lines can be set with ``lines_diff`` and the history\ndataset is sorted if ``sort`` is set to ``true``.\n- ``re_match_multiline``: it is checked if the history data sets matches the\nmulti line regular expression given in ``file``. The history dataset is sorted\nbefore the comparison if the ``sort`` atrribute is set to ``true``.\n- ``contains``: check if each line in ``file`` is contained in the history data set.\nThe allowed number of lines that are not contained in the history dataset\ncan be set with ``lines_diff``.\n- ``sim_size``: compares the size of the history dataset and the ``file`` subject to\nthe values of the ``delta`` and ``delta_frac`` attributes. Note that a ``has_size``\ncontent assertion should be preferred, because this avoids storing the test file.",
+      "properties": {
+        "class": {
+          "anyOf": [
+            {
+              "const": "File"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "File",
+          "title": "Class"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "discovered_dataset": {
+          "items": {
+            "$ref": "#/$defs/TestDiscoveredDataset"
+          },
+          "title": "Discovered Dataset",
+          "type": "array"
+        },
+        "asserts": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TestAssertions"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/TestAssertions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "$assertions\n### Examples\nThe following demonstrates a wide variety of text-based and tabular\nassertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;has_text text=\"chr7\" /&gt;\n&lt;not_has_text text=\"chr8\" /&gt;\n&lt;has_text_matching expression=\"1274\\d+53\" /&gt;\n&lt;has_line_matching expression=\".*\\s+127489808\\s+127494553\" /&gt;\n&lt;!-- &amp;#009; is XML escape code for tab --&gt;\n&lt;has_line line=\"chr7&amp;#009;127471195&amp;#009;127489808\" /&gt;\n&lt;has_n_columns n=\"3\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates a wide variety of XML assertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;is_valid_xml /&gt;\n&lt;has_element_with_path path=\"BlastOutput_param/Parameters/Parameters_matrix\" /&gt;\n&lt;has_n_elements_with_path n=\"9\" path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num\" /&gt;\n&lt;element_text_matches path=\"BlastOutput_version\" expression=\"BLASTP\\s+2\\.2.*\" /&gt;\n&lt;element_text_is path=\"BlastOutput_program\" text=\"blastp\" /&gt;\n&lt;element_text path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def\"&gt;\n&lt;not_has_text text=\"EDK72998.1\" /&gt;\n&lt;has_text_matching expression=\"ABK[\\d\\.]+\" /&gt;\n&lt;/element_text&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates verifying XML content with XPath-like expressions.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;attribute_is path=\"outerElement/innerElement1\" attribute=\"foo\" text=\"bar\" /&gt;\n&lt;attribute_matches path=\"outerElement/innerElement2\" attribute=\"foo2\" expression=\"bar\\d+\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```",
+          "title": "Asserts"
+        },
+        "extra_files": {
+          "items": {
+            "$ref": "#/$defs/TestExtraFile"
+          },
+          "title": "Extra Files",
+          "type": "array"
+        },
+        "metadata": {
+          "items": {
+            "$ref": "#/$defs/TestOutputMetadata"
+          },
+          "title": "Metadata",
+          "type": "array"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "This value is the same as the value of the ``name`` attribute of the ``&lt;data&gt;``\ntag set contained within the tool's ``&lt;outputs&gt;`` tag set.",
+          "title": "Name"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, this value is the name of the output file stored in the target\n``test-data`` directory which will be used to compare the results of executing\nthe tool via the functional test framework.",
+          "title": "File"
+        },
+        "value_json": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, this value will be loaded as JSON and compared against the output\ngenerated as JSON. This can be useful for testing tool outputs that are not files.",
+          "title": "Value Json"
+        },
+        "ftype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, this value will be checked against the corresponding output's\ndata type. If these do not match, the test will fail.",
+          "title": "Ftype"
+        },
+        "sort": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Applies only if ``compare`` is ``diff``, ``re_match`` or ``re_match_multiline``. This flag causes the lines of the history data set to be sorted before the comparison. In case of ``diff`` and ``re_match`` also the local file is sorted. This could be\nuseful for non-deterministic output.",
+          "title": "Sort"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "An alias for ``file``.",
+          "title": "Value"
+        },
+        "md5": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, the target output's MD5 hash should match the value specified\nhere. For large static files it may be inconvenient to upload the entiry file\nand this can be used instead.",
+          "title": "Md5"
+        },
+        "checksum": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, the target output's checksum should match the value specified\nhere. This value should have the form ``hash_type$hash_value``\n(e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files\nit may be inconvenient to upload the entiry file and this can be used instead.",
+          "title": "Checksum"
+        },
+        "compare": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TestOutputCompareType"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "lines_diff": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Applies only if ``compare`` is set to ``diff``, ``re_match``, and ``contains``. If ``compare`` is set to ``diff``, the number of lines of difference to allow (each line with a modification is a line added and a line removed so this counts as two lines).",
+          "title": "Lines Diff"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If this attribute is true then try to decompress files if needed. This applies to\ntest assertions expressed with ``assert_contents`` or ``compare`` set to anything\nbut ``sim_size``.\nThis flag is useful for testing compressed outputs that are non-deterministic\ndespite having deterministic decompressed contents. By default, only files compressed\nwith bz2, gzip and zip will be automatically decompressed.\nNote, for specifying assertions for compressed as well as decompressed output\nthe corresponding output tag can be specified multiple times.\nThis is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).",
+          "title": "Decompress"
+        },
+        "delta": {
+          "default": 10000,
+          "description": "If ``compare`` is set to ``sim_size``, this is the maximum allowed absolute size difference (in bytes) between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. Default value is 10000 bytes. Can be combined with ``delta_frac``.",
+          "title": "Delta",
+          "type": "integer"
+        },
+        "delta_frac": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If ``compare`` is set to ``sim_size``, this is the maximum allowed relative size difference between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. A value of 0.1 means that the file that is generated in the test can differ by at most 10% of the file in ``test-data``. The default is not to check for  relative size difference. Can be combined with ``delta``.",
+          "title": "Delta Frac"
+        },
+        "count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Number or datasets for this output. Should be used for outputs with ``discover_datasets``",
+          "title": "Count"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "URL that points to a remote output file that will downloaded and used for output comparison.\nPlease use this option only when is not possible to include the files in the `test-data` folder, since\nthis is more error prone due to external factors like remote availability.\nYou can use it in two ways:\n- In combination with `file` it will look for the output file in the `test-data` folder, if it's not available on disk it will\ndownload the file pointed by `location` using the same name as in `file` (or `value`).\n- Specifiying the `location` without a `file` (or `value`), it will download the file and use it as an alias of `file`. The name of the file\nwill be infered from the last component of the location URL. For example, `location=\"https://my_url/my_file.txt\"` will be equivalent to `file=\"my_file.txt\"`.\nIf you specify a `checksum`, it will be also used to check the integrity of the download.",
+          "title": "Location"
+        }
+      },
+      "title": "TestOutput",
+      "type": "object"
+    },
+    "TestOutputCollection": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "anyOf": [
+            {
+              "const": "Collection"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "Collection",
+          "title": "Class"
+        },
+        "element": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TestOutput"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/TestOutput"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Element"
+        },
+        "count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Number of elements in output collection.",
+          "title": "Count"
+        }
+      },
+      "title": "TestOutputCollection",
+      "type": "object"
+    },
+    "TestOutputCollectionDeprecated": {
+      "additionalProperties": false,
+      "properties": {
+        "element_tests": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TestOutputElement"
+              },
+              {
+                "$ref": "#/$defs/TestOutput"
+              }
+            ]
+          },
+          "description": "Deprecated field, please use elements to describe expectations about collection elements.",
+          "metadata": {
+            "deprecated": true
+          },
+          "title": "Element Tests",
+          "type": "object"
+        },
+        "collection_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Collection Type"
+        },
+        "class": {
+          "anyOf": [
+            {
+              "const": "Collection"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "Collection",
+          "title": "Class"
+        },
+        "element": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TestOutput"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/TestOutput"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Element"
+        },
+        "count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Number of elements in output collection.",
+          "title": "Count"
+        }
+      },
+      "required": [
+        "element_tests"
+      ],
+      "title": "TestOutputCollectionDeprecated",
+      "type": "object"
+    },
+    "TestOutputCompareType": {
+      "description": "Type of comparison to use when comparing test generated output files to\nexpected output files.\n\nCurrently valid value are\n``diff`` (the default), ``re_match``, ``re_match_multiline``,\nand ``contains``. In addition there is ``sim_size`` which is discouraged in favour of a ``has_size`` assertion.",
+      "enum": [
+        "diff",
+        "re_match",
+        "sim_size",
+        "re_match_multiline",
+        "contains"
+      ],
+      "title": "TestOutputCompareType",
+      "type": "string"
+    },
+    "TestOutputElement": {
+      "additionalProperties": false,
+      "properties": {
+        "elements": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TestOutputElement"
+              },
+              {
+                "$ref": "#/$defs/TestOutput"
+              }
+            ]
+          },
+          "title": "Elements",
+          "type": "object"
+        },
+        "class": {
+          "anyOf": [
+            {
+              "const": "File"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "File",
+          "title": "Class"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "discovered_dataset": {
+          "items": {
+            "$ref": "#/$defs/TestDiscoveredDataset"
+          },
+          "title": "Discovered Dataset",
+          "type": "array"
+        },
+        "asserts": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TestAssertions"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/TestAssertions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "$assertions\n### Examples\nThe following demonstrates a wide variety of text-based and tabular\nassertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;has_text text=\"chr7\" /&gt;\n&lt;not_has_text text=\"chr8\" /&gt;\n&lt;has_text_matching expression=\"1274\\d+53\" /&gt;\n&lt;has_line_matching expression=\".*\\s+127489808\\s+127494553\" /&gt;\n&lt;!-- &amp;#009; is XML escape code for tab --&gt;\n&lt;has_line line=\"chr7&amp;#009;127471195&amp;#009;127489808\" /&gt;\n&lt;has_n_columns n=\"3\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates a wide variety of XML assertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;is_valid_xml /&gt;\n&lt;has_element_with_path path=\"BlastOutput_param/Parameters/Parameters_matrix\" /&gt;\n&lt;has_n_elements_with_path n=\"9\" path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num\" /&gt;\n&lt;element_text_matches path=\"BlastOutput_version\" expression=\"BLASTP\\s+2\\.2.*\" /&gt;\n&lt;element_text_is path=\"BlastOutput_program\" text=\"blastp\" /&gt;\n&lt;element_text path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def\"&gt;\n&lt;not_has_text text=\"EDK72998.1\" /&gt;\n&lt;has_text_matching expression=\"ABK[\\d\\.]+\" /&gt;\n&lt;/element_text&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates verifying XML content with XPath-like expressions.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;attribute_is path=\"outerElement/innerElement1\" attribute=\"foo\" text=\"bar\" /&gt;\n&lt;attribute_matches path=\"outerElement/innerElement2\" attribute=\"foo2\" expression=\"bar\\d+\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```",
+          "title": "Asserts"
+        },
+        "extra_files": {
+          "items": {
+            "$ref": "#/$defs/TestExtraFile"
+          },
+          "title": "Extra Files",
+          "type": "array"
+        },
+        "metadata": {
+          "items": {
+            "$ref": "#/$defs/TestOutputMetadata"
+          },
+          "title": "Metadata",
+          "type": "array"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "This value is the same as the value of the ``name`` attribute of the ``&lt;data&gt;``\ntag set contained within the tool's ``&lt;outputs&gt;`` tag set.",
+          "title": "Name"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, this value is the name of the output file stored in the target\n``test-data`` directory which will be used to compare the results of executing\nthe tool via the functional test framework.",
+          "title": "File"
+        },
+        "value_json": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, this value will be loaded as JSON and compared against the output\ngenerated as JSON. This can be useful for testing tool outputs that are not files.",
+          "title": "Value Json"
+        },
+        "ftype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, this value will be checked against the corresponding output's\ndata type. If these do not match, the test will fail.",
+          "title": "Ftype"
+        },
+        "sort": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Applies only if ``compare`` is ``diff``, ``re_match`` or ``re_match_multiline``. This flag causes the lines of the history data set to be sorted before the comparison. In case of ``diff`` and ``re_match`` also the local file is sorted. This could be\nuseful for non-deterministic output.",
+          "title": "Sort"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "An alias for ``file``.",
+          "title": "Value"
+        },
+        "md5": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, the target output's MD5 hash should match the value specified\nhere. For large static files it may be inconvenient to upload the entiry file\nand this can be used instead.",
+          "title": "Md5"
+        },
+        "checksum": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If specified, the target output's checksum should match the value specified\nhere. This value should have the form ``hash_type$hash_value``\n(e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files\nit may be inconvenient to upload the entiry file and this can be used instead.",
+          "title": "Checksum"
+        },
+        "compare": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TestOutputCompareType"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "lines_diff": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Applies only if ``compare`` is set to ``diff``, ``re_match``, and ``contains``. If ``compare`` is set to ``diff``, the number of lines of difference to allow (each line with a modification is a line added and a line removed so this counts as two lines).",
+          "title": "Lines Diff"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/PermissiveBooleanValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If this attribute is true then try to decompress files if needed. This applies to\ntest assertions expressed with ``assert_contents`` or ``compare`` set to anything\nbut ``sim_size``.\nThis flag is useful for testing compressed outputs that are non-deterministic\ndespite having deterministic decompressed contents. By default, only files compressed\nwith bz2, gzip and zip will be automatically decompressed.\nNote, for specifying assertions for compressed as well as decompressed output\nthe corresponding output tag can be specified multiple times.\nThis is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).",
+          "title": "Decompress"
+        },
+        "delta": {
+          "default": 10000,
+          "description": "If ``compare`` is set to ``sim_size``, this is the maximum allowed absolute size difference (in bytes) between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. Default value is 10000 bytes. Can be combined with ``delta_frac``.",
+          "title": "Delta",
+          "type": "integer"
+        },
+        "delta_frac": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If ``compare`` is set to ``sim_size``, this is the maximum allowed relative size difference between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. A value of 0.1 means that the file that is generated in the test can differ by at most 10% of the file in ``test-data``. The default is not to check for  relative size difference. Can be combined with ``delta``.",
+          "title": "Delta Frac"
+        },
+        "count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Number or datasets for this output. Should be used for outputs with ``discover_datasets``",
+          "title": "Count"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "URL that points to a remote output file that will downloaded and used for output comparison.\nPlease use this option only when is not possible to include the files in the `test-data` folder, since\nthis is more error prone due to external factors like remote availability.\nYou can use it in two ways:\n- In combination with `file` it will look for the output file in the `test-data` folder, if it's not available on disk it will\ndownload the file pointed by `location` using the same name as in `file` (or `value`).\n- Specifiying the `location` without a `file` (or `value`), it will download the file and use it as an alias of `file`. The name of the file\nwill be infered from the last component of the location URL. For example, `location=\"https://my_url/my_file.txt\"` will be equivalent to `file=\"my_file.txt\"`.\nIf you specify a `checksum`, it will be also used to check the integrity of the download.",
+          "title": "Location"
+        }
+      },
+      "required": [
+        "elements"
+      ],
+      "title": "TestOutputElement",
+      "type": "object"
+    },
+    "TestOutputMetadata": {
+      "additionalProperties": false,
+      "description": "This directive specifies a test for an output's metadata as an expected key-\nvalue pair.\n\n### Example\nThe functional test tool\n[tool_provided_metadata_1.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/tool_provided_metadata_1.xml)\nprovides a demonstration of using this tag.\n```xml\n&lt;test&gt;\n&lt;param name=\"input1\" value=\"simple_line.txt\" /&gt;\n&lt;output name=\"out1\" file=\"simple_line.txt\" ftype=\"txt\"&gt;\n&lt;metadata name=\"name\" value=\"my dynamic name\" /&gt;\n&lt;metadata name=\"info\" value=\"my dynamic info\" /&gt;\n&lt;metadata name=\"dbkey\" value=\"cust1\" /&gt;\n&lt;/output&gt;\n&lt;/test&gt;\n```",
+      "properties": {
+        "name": {
+          "description": "Name of the metadata element to check.",
+          "title": "Name",
+          "type": "string"
+        },
+        "value": {
+          "description": "Expected value (as a string) of metadata value.",
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "title": "TestOutputMetadata",
+      "type": "object"
+    }
+  },
+  "items": {
+    "$ref": "#/$defs/Test"
+  },
+  "title": "ListOfTests",
+  "type": "array"
+}
