@@ -2,6 +2,7 @@
 Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 """
 import datetime
+import functools
 import os
 import time
 from collections import defaultdict
@@ -1269,7 +1270,7 @@ class DefaultJobDispatcher:
         except ObjectNotFound:
             msg = "Could not recover job working directory after Galaxy restart"
             log.exception(f"recover(): ({job_wrapper.job_id}) {msg}")
-            job_wrapper.fail(msg)
+            runner.work_queue.put(functools.partial(job_wrapper.fail, msg))
 
     def shutdown(self):
         failures = []
