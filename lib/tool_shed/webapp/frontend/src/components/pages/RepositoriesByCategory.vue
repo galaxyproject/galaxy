@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { useCategoriesStore } from "@/stores"
 import RepositoriesGrid from "@/components/RepositoriesGrid.vue"
-import { nodeToRow } from "@/components/RepositoriesGridInterface"
+import { nodeToRow, type RepositoryGridItem } from "@/components/RepositoriesGridInterface"
 import ErrorBanner from "@/components/ErrorBanner.vue"
 import LoadingDiv from "@/components/LoadingDiv.vue"
 import { graphql } from "@/gql"
@@ -67,6 +67,11 @@ const rows = computed(() => {
     <loading-div v-if="loading" />
     <error-banner error="Failed to load repository" v-else-if="error"> </error-banner>
     <q-page class="q-pa-md" v-if="categoryName">
-        <repositories-grid :title="`Repositories for ${categoryName}`" :rows="rows" :on-scroll="onScroll" />
+        <repositories-grid
+            :title="`Repositories for ${categoryName}`"
+            :rows="rows"
+            :on-scroll="onScroll"
+            :allow-search="true"
+        />
     </q-page>
 </template>
