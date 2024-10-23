@@ -10,12 +10,24 @@
             <div v-for="(creator, index) in creatorsCurrent" :key="index">
                 <CreatorViewer :creator="creator">
                     <template v-slot:buttons>
-                        <span v-b-tooltip.hover title="Edit Creator"
-                            ><FontAwesomeIcon icon="edit" @click="onEdit(index)"
-                        /></span>
-                        <span v-b-tooltip.hover title="Remove Creator">
-                            <FontAwesomeIcon icon="times" @click="onRemove(index)" />
-                        </span>
+                        <BButton
+                            v-b-tooltip.hover
+                            class="inline-icon-button"
+                            variant="link"
+                            size="sm"
+                            title="Edit Creator"
+                            @click="onEdit(index)">
+                            <FontAwesomeIcon icon="edit" />
+                        </BButton>
+                        <BButton
+                            v-b-tooltip.hover
+                            class="inline-icon-button"
+                            variant="link"
+                            size="sm"
+                            title="Remove Creator"
+                            @click="onRemove(index)">
+                            <FontAwesomeIcon icon="times" />
+                        </BButton>
                     </template>
                 </CreatorViewer>
             </div>
