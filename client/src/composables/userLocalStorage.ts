@@ -1,9 +1,9 @@
-import { useLocalStorage } from "@vueuse/core";
-import { computed, customRef, type Ref, ref } from "vue";
+import { computed, type Ref, ref } from "vue";
 
 import { type AnyUser } from "@/api";
 
 import { useHashedUserId } from "./hashedUserId";
+import { usePersistentRef } from "./persistentRef";
 
 /**
  * Local storage composable specific to current user.
@@ -15,22 +15,20 @@ export function useUserLocalStorage<T>(key: string, initialValue: T, user?: Ref<
 
     const storedRef = computed(() => {
         if (hashedUserId.value) {
-            return useLocalStorage(`${key}-${hashedUserId.value}`, initialValue);
+            return usePersistentRef(`${key}-${hashedUserId.value}`, initialValue);
         } else {
             return ref(initialValue);
         }
     });
 
-    const currentValue = customRef((track, trigger) => ({
+    const currentValue = computed({
         get() {
-            track();
             return storedRef.value.value;
         },
         set(newValue) {
             storedRef.value.value = newValue;
-            trigger();
         },
-    }));
+    });
 
     return currentValue;
 }

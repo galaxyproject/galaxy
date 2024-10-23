@@ -21,15 +21,12 @@ interface Preferences {
     [key: string]: unknown;
 }
 
-type ListViewMode = "grid" | "list";
-
 export const useUserStore = defineStore("userStore", () => {
     const currentUser = ref<AnyUser>(null);
     const currentPreferences = ref<Preferences | null>(null);
 
     // explicitly pass current User, because userStore might not exist yet
     const toggledSideBar = useUserLocalStorage("user-store-toggled-side-bar", "tools", currentUser);
-    const preferredListViewMode = useUserLocalStorage("user-store-preferred-list-view-mode", "grid", currentUser);
 
     let loadPromise: Promise<void> | null = null;
 
@@ -128,10 +125,6 @@ export const useUserStore = defineStore("userStore", () => {
         }
     }
 
-    function setPreferredListViewMode(view: ListViewMode) {
-        preferredListViewMode.value = view;
-    }
-
     function toggleSideBar(currentOpen = "") {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
     }
@@ -154,12 +147,10 @@ export const useUserStore = defineStore("userStore", () => {
         currentTheme,
         currentFavorites,
         toggledSideBar,
-        preferredListViewMode,
         loadUser,
         matchesCurrentUsername,
         setCurrentUser,
         setCurrentTheme,
-        setPreferredListViewMode,
         addFavoriteTool,
         removeFavoriteTool,
         toggleSideBar,

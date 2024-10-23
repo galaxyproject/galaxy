@@ -6,7 +6,8 @@ import { useEventBus } from "@vueuse/core";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { useConfig } from "@/composables/config";
-import { type Tool as ToolType, type ToolSection, type ToolSectionLabel, useToolStore } from "@/stores/toolStore";
+import { useToolStore } from "@/stores/toolStore";
+import { type Tool as ToolType, type ToolSection, type ToolSectionLabel } from "@/stores/toolStoreTypes";
 import ariaAlert from "@/utils/ariaAlert";
 
 import Tool from "./Tool.vue";
