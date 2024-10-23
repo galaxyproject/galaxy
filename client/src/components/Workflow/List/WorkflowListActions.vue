@@ -17,6 +17,12 @@ const userStore = useUserStore();
 
 const { isAnonymous } = storeToRefs(userStore);
 
+interface Props {
+    advancedOptions: boolean;
+}
+
+const props = defineProps<Props>();
+
 const createButtonTitle = computed(() => {
     if (isAnonymous.value) {
         return "Log in to create workflow";
@@ -47,6 +53,7 @@ function navigateToOldCreate() {
             <BButton
                 id="workflow-create"
                 v-b-tooltip.hover.noninteractive
+                v-if="advancedOptions"
                 size="sm"
                 :title="createButtonTitle"
                 variant="outline-primary"
