@@ -14,16 +14,20 @@ type SortBy = "create_time" | "update_time" | "name";
 interface Props {
     listId: string;
     allSelected?: boolean;
+    haveSelected?: boolean;
     showSelectAll?: boolean;
+    selectedItems?: string[];
     showViewToggle?: boolean;
     showSortOptions?: boolean;
     selectAllDisabled?: boolean;
     indeterminateSelected?: boolean;
+    intermediateSelected?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     allSelected: false,
     showSelectAll: false,
+    selectedItems: undefined,
     showViewToggle: false,
     showSortOptions: false,
     selectAllDisabled: false,
@@ -77,6 +81,12 @@ defineExpose({
 
         <div class="list-header-filters">
             <div v-if="showSortOptions">
+                <BFormCheckbox
+                    v-if="showSelectAll"
+                    :checked="allSelected"
+                    :intermediate="intermediateSelected"
+                    @change="emit('select-all')" />
+
                 Sort by:
                 <GButtonGroup>
                     <GButton
@@ -144,6 +154,8 @@ defineExpose({
 <style scoped lang="scss">
 .list-header {
     display: flex;
+    width: 100%;
+    padding: 0 0.5rem 0.5rem;
     justify-content: space-between;
     align-items: center;
     margin: 0.5rem 0;
