@@ -184,27 +184,25 @@ class QuotaManager:
             if params.default != "no":
                 self.quota_agent.set_default_quota(params.default, quota)
                 message = f"Quota '{quota.name}' is now the default for {params.default} users."
+            elif quota.default:
+                message = f"Quota '{quota.name}' is no longer the default for {quota.default[0].type} users."
+                for dqa in quota.default:
+                    self.sa_session.delete(dqa)
+                with transaction(self.sa_session):
+                    self.sa_session.commit()
             else:
-                if quota.default:
-                    message = f"Quota '{quota.name}' is no longer the default for {quota.default[0].type} users."
-                    for dqa in quota.default:
-                        self.sa_session.delete(dqa)
-                    with transaction(self.sa_session):
-                        self.sa_session.commit()
-                else:
-                    message = f"Quota '{quota.name}' is not a default."
+                message = ""
             return message
 
     def unset_quota_default(self, quota, params=None) -> str:
-        if not quota.default:
-            raise ActionInputError(f"Quota '{quota.name}' is not a default.")
-        else:
+        message = ""
+        if quota.default:
             message = f"Quota '{quota.name}' is no longer the default for {quota.default[0].type} users."
             for dqa in quota.default:
                 self.sa_session.delete(dqa)
             with transaction(self.sa_session):
                 self.sa_session.commit()
-            return message
+        return message
 
     def delete_quota(self, quota, params=None) -> str:
         quotas = util.listify(quota)
