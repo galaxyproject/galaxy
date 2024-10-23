@@ -280,11 +280,20 @@ defineExpose({
     </BModal>
 </template>
 
-<style>
-.selection-dialog-modal .modal-body {
-    max-height: 70vh;
-    min-height: 70vh;
-    overflow-y: auto;
+<style lang="scss">
+@import "breakpoints.scss";
+
+.selection-dialog-modal {
+    .modal-dialog {
+        width: inherit;
+        max-width: $breakpoint-xl;
+
+        .modal-body {
+            max-height: 70vh;
+            min-height: 70vh;
+            overflow-y: auto;
+        }
+    }
 }
 
 .selection-dialog-header {
