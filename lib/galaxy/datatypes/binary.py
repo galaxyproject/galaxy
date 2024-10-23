@@ -515,6 +515,29 @@ class CompressedZarrZipArchive(CompressedZipArchive):
         return None
 
 
+class CompressedOMEZarrZipArchive(CompressedZarrZipArchive):
+    file_ext = "ome_zarr.zip"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "OME-Zarr directory"
+            dataset.blurb = f"{nice_size(dataset.get_size())}"
+            dataset.blurb += f"\nZarr Format v{dataset.metadata.zarr_format}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def sniff(self, filename: str) -> bool:
+        meta_file = None
+        with zipfile.ZipFile(filename) as zf:
+            meta_file = self._find_ome_zarr_metadata_file(zf)
+        return meta_file is not None
+
+    def _find_ome_zarr_metadata_file(self, zip_file: zipfile.ZipFile) -> Optional[str]:
+        expected_meta_file_name = "OME/METADATA.ome.xml"
+        return expected_meta_file_name if expected_meta_file_name in zip_file.namelist() else None
+
+
 class GenericAsn1Binary(Binary):
     """Class for generic ASN.1 binary format"""
 
