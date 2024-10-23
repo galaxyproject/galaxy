@@ -66,6 +66,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
     WORKFLOW_WITH_RULES_1,
     WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT,
+    WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT_OVERRIDES_TOOL_DEFAULT,
 )
 from ._framework import ApiTestCase
 from .sharable import SharingApiTests
@@ -5110,6 +5111,17 @@ default_file_input:
             )
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert "chr1" in content
+
+    def test_run_with_default_file_in_step_inline_overrides_tool_default_file(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT_OVERRIDES_TOOL_DEFAULT,
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert ">hg17" in content
 
     def test_conditional_flat_crossproduct_subworkflow(self):
         parent = yaml.safe_load(
