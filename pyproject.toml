@@ -37,6 +37,7 @@ dependencies = [
     "dparse",
     "edam-ontology",
     "fastapi-slim>=0.111.0",
+    "fissix ; python_version>='3.13'",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
     "graphene",
