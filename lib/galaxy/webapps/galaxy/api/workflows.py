@@ -64,6 +64,7 @@ from galaxy.schema.invocation import (
     InvocationStepJobsResponseJobModel,
     InvocationStepJobsResponseStepModel,
     InvocationUpdatePayload,
+    WorkflowInvocationRequestModel,
     WorkflowInvocationResponse,
 )
 from galaxy.schema.schema import (
@@ -1463,6 +1464,17 @@ class FastAPIInvocations:
             step_details=step_details, legacy_job_state=legacy_job_state
         )
         return self.invocations_service.show(trans, invocation_id, serialization_params, eager=True)
+
+    @router.get(
+        "/api/invocations/{invocation_id}/request",
+        summary="Get a description modeling an API request to invoke this workflow - this is recreated and will be more specific in some ways than the initial creation request.",
+    )
+    def invocation_as_request(
+        self,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> WorkflowInvocationRequestModel:
+        return self.invocations_service.as_request(trans, invocation_id)
 
     @router.get(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}",

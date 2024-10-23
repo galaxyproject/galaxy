@@ -121,7 +121,9 @@ def _normalize_inputs(
             elif inputs_by_el == "step_uuid":
                 possible_input_keys.append(str(step.uuid))
             elif inputs_by_el == "name":
-                possible_input_keys.append(step.label or step.tool_inputs.get("name"))  # type:ignore[union-attr]
+                label = step.effective_label
+                if label:
+                    possible_input_keys.append(label)
             else:
                 raise exceptions.MessageException(
                     "Workflow cannot be run because unexpected inputs_by value specified."
@@ -317,7 +319,7 @@ def build_workflow_run_configs(
     add_to_history = "no_add_to_history" not in payload
     legacy = payload.get("legacy", False)
     already_normalized = payload.get("parameters_normalized", False)
-    raw_parameters = payload.get("parameters", {})
+    raw_parameters = payload.get("parameters") or {}
     requires_materialization: bool = False
     run_configs = []
     unexpanded_param_map = _normalize_step_parameters(
