@@ -1435,9 +1435,7 @@ class ZarrRemoteUri(Text):
         # Must have a single line and end with '.zarr'
         with open(filename) as f:
             lines = f.readlines()
-            if len(lines) != 1:
-                return False
-            return lines[0].strip().endswith(".zarr")
+            return len(lines) == 1 and lines[0].strip().endswith(".zarr")
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
@@ -1451,12 +1449,6 @@ class ZarrRemoteUri(Text):
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
-
-
-class ZarrRemoteS3Bucket(ZarrRemoteUri):
-    """Zarr remote S3 bucket"""
-
-    file_ext = "zarr_s3"
 
 
 class OMEZarrRemoteUri(ZarrRemoteUri):

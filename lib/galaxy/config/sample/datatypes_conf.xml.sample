@@ -303,8 +303,7 @@
     </datatype>
     <datatype extension="directory" type="galaxy.datatypes.data:Directory"/>
     <datatype extension="zarr" type="galaxy.datatypes.data:ZarrDirectory" />
-    <datatype extension="zarr_uri" type="galaxy.datatypes.text:ZarrRemoteUri" />
-    <datatype extension="zarr_s3" type="galaxy.datatypes.text:ZarrRemoteS3Bucket" subclass="true" display_in_upload="true"/>
+    <datatype extension="zarr_uri" type="galaxy.datatypes.text:ZarrRemoteUri" display_in_upload="true"/>
     <datatype extension="ome_zarr" type="galaxy.datatypes.images:OMEZarr" />
     <datatype extension="ome_zarr_uri" type="galaxy.datatypes.text:OMEZarrRemoteUri" subclass="true" display_in_upload="true"/>
     <datatype extension="yaml" type="galaxy.datatypes.text:Yaml" display_in_upload="true" />
