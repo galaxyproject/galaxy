@@ -150,6 +150,7 @@
                     :datatypes-mapper="datatypesMapper"
                     :highlight-id="highlightId"
                     :scroll-to-id="scrollToId"
+                    :initial-position="{ x: 50, y: 50 }"
                     @scrollTo="scrollToId = null"
                     @transform="(value) => (transform = value)"
                     @graph-offset="(value) => (graphOffset = value)"
