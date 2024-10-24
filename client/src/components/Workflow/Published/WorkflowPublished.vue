@@ -35,6 +35,7 @@ interface Props {
     showMinimap?: boolean;
     showButtons?: boolean;
     showZoomControls?: boolean;
+    ignoreErrors?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -48,6 +49,7 @@ const props = withDefaults(defineProps<Props>(), {
     showMinimap: true,
     showButtons: true,
     showZoomControls: true,
+    ignoreErrors: false,
 });
 
 const userStore = useUserStore();
@@ -229,6 +231,7 @@ onMounted(async () => {
                         :initial-position="initialPosition"
                         :show-minimap="props.showMinimap"
                         :show-zoom-controls="props.showZoomControls"
+                        :ignore-errors="props.ignoreErrors"
                         readonly />
                 </BCard>
 
