@@ -8,10 +8,7 @@ from typing import (
 )
 
 from galaxy import exceptions
-from galaxy.managers.base import (
-    is_valid_slug,
-    security_check,
-)
+from galaxy.managers.base import security_check
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.sharable import (
     slug_exists,
@@ -302,7 +299,7 @@ class VisualizationsService(ServiceBase):
         # Error checking.
         if slug:
             slug_err = ""
-            if not is_valid_slug(slug):
+            if not SlugBuilder.is_valid_slug(slug):
                 slug_err = (
                     "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
                 )

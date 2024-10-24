@@ -1294,13 +1294,6 @@ def raise_filter_err(attr, op, val, msg):
     raise exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)
 
 
-def is_valid_slug(slug):
-    """Returns true iff slug is valid."""
-
-    VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
-    return VALID_SLUG_RE.match(slug)
-
-
 class SortableManager:
     """A manager interface for parsing order_by strings into actual 'order by' queries."""
 
