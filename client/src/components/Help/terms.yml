@@ -106,3 +106,8 @@ galaxy:
       failed: |
         This state indicates there was a problem scheduling the workflow invocation. No additional datasets
         or jobs will be created for this workflow invocation.
+  upload:
+    galaxyUploadUtil: |
+      A utility for uploading files to a Galaxy server from the command line. Use ``galaxy-upload`` to upload
+      file(s) to a Galaxy server, and ``galaxy-history-search``, a helper utility to find Galaxy histories
+      to pass to the ``galaxy-upload`` command.
