@@ -46,10 +46,10 @@ boltons = "*"
 boto = "*"
 bx-python = "*"
 celery = "*"
-Cheetah3 = "*"
 cloudauthz = "==0.6.0"
 cloudbridge = "*"
 circus = "*"
+CT3 = ">=3.3.3"  # Python 3.13 support
 cwltool = ">=3.1.20230624081518"  # save time, minimum needed by cwl-1.0 branch
 conda-package-streaming = "*"
 dictobj = "*"
@@ -58,6 +58,7 @@ docutils = "!=0.17, !=0.17.1"
 dparse = "*"
 edam-ontology = "*"
 fastapi-slim = ">=0.111.0"
+fissix = { version = "*", python = ">=3.13" }
 fs = "*"
 future = ">=1.0.0"  # Python 3.12 support
 graphene = "*"
@@ -72,7 +73,7 @@ importlib-resources = { version = "*", python = "<3.9" }  # for importlib.{abc.T
 isa-rwval = { git = "https://github.com/nsoranzo/isa-rwval.git", branch = "master" }  # https://github.com/ISA-tools/isa-rwval/pull/17
 jinja2 = "*"
 kombu = ">=5.3"  # for importlib-metadata fix
-isal = "*"
+isal = ">=1.7.0"  # Python 3.13 support
 lagom = "*"
 Mako = "*"
 Markdown = "*"
@@ -107,7 +108,7 @@ regex = "*"
 requests = "*"
 rocrate = "*"
 Routes = "*"
-schema-salad = "!=8.3.20220721194857"  # https://github.com/common-workflow-language/schema_salad/issues/575
+schema-salad = ">=8.7.20240905150001"  # Python 3.13 support
 social-auth-core = ">=4.5.0"  # to drop dependency on abandoned python-jose
 sortedcontainers = "*"
 SQLAlchemy = ">=2.0,<2.1,!=2.0.36"  # https://github.com/sqlalchemy/sqlalchemy/issues/12019
@@ -121,8 +122,8 @@ tifffile = "*"
 tuswsgi = "*"
 typing-extensions = "*"
 uvicorn = "!=0.28.0"  # https://github.com/galaxyproject/galaxy/issues/17669
-uvloop = "*"
-WebOb = "*"
+uvloop = ">=0.21.0"  # Python 3.13 support
+WebOb = ">=1.8.9"  # Python 3.13 support
 Whoosh = "*"
 zipstream-new = "*"
 s3fs = ">=2023.1.0"
@@ -133,7 +134,7 @@ axe-selenium-python = "*"
 black = "*"
 boto3 = "*"
 codespell = "*"
-cwltest = "*"
+cwltest = ">=2.5.20240906231108"  # Python 3.13 support
 darker = "*"
 fluent-logger = "*"
 galaxy-release-util = "*"
@@ -144,7 +145,7 @@ markdown-it-reporter = "*"
 myst-parser = "*"
 onedatafilerestclient = "==21.2.5.2"
 pkce = "*"
-playwright = "*"
+playwright = ">=1.48.0"  # Python 3.13 support
 pytest = "*"
 pytest-asyncio = "*"
 pytest-cov = "*"
@@ -166,7 +167,7 @@ sphinx-rtd-theme = "*"
 statsd = "*"
 testfixtures = "*"
 tuspy = "*"
-twill = ">=3.2.1"  # https://github.com/twill-tools/twill/issues/18
+twill = ">=3.2.5"  # Python 3.13 support
 watchdog = "*"
 Werkzeug = "*"
 

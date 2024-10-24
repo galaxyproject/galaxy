@@ -1,5 +1,5 @@
 # These dependencies are only required when certain config options are set
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.10
 mysqlclient
 fluent-logger
 sentry-sdk[fastapi]

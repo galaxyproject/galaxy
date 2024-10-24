@@ -1,17 +1,33 @@
 """Entry point for the usage of Cheetah templating within Galaxy."""
 
+import sys
 import traceback
-from lib2to3.refactor import RefactoringTool
 
 from Cheetah.Compiler import Compiler
 from Cheetah.NameMapper import NotFound
 from Cheetah.Parser import ParseError
 from Cheetah.Template import Template
 from packaging.version import Version
-from past.translation import myfixes
 
 from galaxy.util.tree_dict import TreeDict
 from . import unicodify
+
+if sys.version_info >= (3, 13):
+    import fissix
+    from fissix import (
+        fixes as fissix_fixes,
+        pgen2 as fissix_pgen2,
+        refactor as fissix_refactor,
+    )
+
+    sys.modules["lib2to3"] = fissix
+    sys.modules["lib2to3.fixes"] = fissix_fixes
+    sys.modules["lib2to3.pgen2"] = fissix_pgen2
+    sys.modules["lib2to3.refactor"] = fissix_refactor
+
+from lib2to3.refactor import RefactoringTool
+
+from past.translation import myfixes
 
 # Skip libpasteurize fixers, which make sure code is py2 and py3 compatible.
 # This is not needed, we only translate code on py3.
