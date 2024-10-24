@@ -24,7 +24,7 @@
             <help>Select a geometry type.</help>
             <type>select</type>
             <display>radio</display>
-            <value>circle</value>
+            <value>Circle</value>
             <data>
                 <data>
                     <label>None</label>
