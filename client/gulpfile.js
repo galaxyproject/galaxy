@@ -23,6 +23,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "h5web",
     "heatmap/heatmap_default",
     "hyphyvision",
+    "jmol",
     "jqplot/jqplot_bar",
     "media_player",
     "mvpapp",
