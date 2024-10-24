@@ -509,7 +509,8 @@
 :Description:
     Set to true to instruct Galaxy to install Conda from the web
     automatically if it cannot find a local copy and conda_exec is not
-    configured.
+    configured. The default is true if running Galaxy from source, and
+    false if running from installed packages.
 :Default: ``true``
 :Type: bool
 
