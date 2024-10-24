@@ -9,6 +9,8 @@ import { useUserHistories } from "@/composables/userHistories";
 import { useUserStore } from "@/stores/userStore";
 import { wait } from "@/utils/utils";
 
+import ExternalLink from "../ExternalLink.vue";
+import HelpText from "../Help/HelpText.vue";
 import UploadContainer from "./UploadContainer.vue";
 
 const { currentUser } = storeToRefs(useUserStore());
@@ -89,9 +91,12 @@ defineExpose({
                         to <b>{{ currentHistory.name }}</b>
                     </span>
                 </h2>
-                <a href="https://galaxy-upload.readthedocs.io/en/latest/" target="_blank">
-                    Check out the <code>galaxy-upload</code> util here!
-                </a>
+                <span>
+                    <ExternalLink href="https://galaxy-upload.readthedocs.io/en/latest/"> Click here </ExternalLink>
+                    to check out the
+                    <HelpText uri="galaxy.upload.galaxyUploadUtil" text="galaxy-upload" />
+                    util!
+                </span>
             </div>
         </template>
         <UploadContainer
