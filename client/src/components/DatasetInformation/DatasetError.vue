@@ -16,6 +16,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import DatasetErrorDetails from "@/components/DatasetInformation/DatasetErrorDetails.vue";
 import FormElement from "@/components/Form/FormElement.vue";
+import GalaxyWizard from "@/components/GalaxyWizard.vue";
 
 library.add(faBug);
 
@@ -188,8 +189,12 @@ onMounted(async () => {
                 </b>
             </p>
 
-            <h4 class="mb-3 h-md">Issue Report</h4>
+            <h4 class="mb-3 h-md">What might have happened?</h4>
+            <b-card>
+                <GalaxyWizard view="error" :query="jobDetails.tool_stderr" context="tool_error" />
+            </b-card>
 
+            <h4 class="mb-3 h-md">Issue Report</h4>
             <BAlert v-for="(resultMessage, index) in resultMessages" :key="index" :variant="resultMessage[1]" show>
                 <span v-html="renderMarkdown(resultMessage[0])" />
             </BAlert>

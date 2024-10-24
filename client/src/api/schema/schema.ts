@@ -21,6 +21,13 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat": {
+        /**
+         * Query
+         * @description We're off to ask the wizard
+         */
+        post: operations["query_api_chat_post"];
+    };
     "/api/configuration": {
         parameters: {
             query?: never;
@@ -6484,6 +6491,20 @@ export interface components {
              * @enum {string}
              */
             type: "change_dbkey";
+        };
+        /** ChatPayload */
+        ChatPayload: {
+            /**
+             * Message
+             * @description The message to be sent to the chat.
+             */
+            query: string;
+            /**
+             * Context
+             * @description The context identifier to be used by the chat.
+             * @enum {string}
+             */
+            context?: "username" | "tool_error";
         };
         /** CheckForUpdatesResponse */
         CheckForUpdatesResponse: {
@@ -18450,6 +18471,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    query_api_chat_post: {
+        /**
+         * Query
+         * @description We're off to ask the wizard
+         */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

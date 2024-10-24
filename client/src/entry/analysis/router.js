@@ -85,6 +85,8 @@ import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 
+import GalaxyWizard from "components/GalaxyWizard";
+
 Vue.use(VueRouter);
 
 // patches $router.push() to trigger an event and hide duplication warnings
@@ -485,6 +487,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "tours",
                         component: TourList,
+                    },
+                    {
+                        path: "wizard",
+                        component: GalaxyWizard,
                     },
                     {
                         path: "tours/:tourId",
