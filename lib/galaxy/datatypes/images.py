@@ -127,6 +127,24 @@ class OMETiff(Tiff):
         return False
 
 
+class OMEZarr(data.ZarrDirectory):
+    """OME-Zarr is a format for storing multi-dimensional image data in Zarr format.
+
+    It is technically a Zarr directory with custom metadata but stores image information
+    so it is an Image datatype.
+    """
+
+    file_ext = "ome_zarr"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "OME-Zarr directory"
+            dataset.blurb = f"Zarr Format v{dataset.metadata.zarr_format}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+
 class Hamamatsu(Image):
     file_ext = "vms"
 
