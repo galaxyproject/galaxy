@@ -22,11 +22,11 @@
                     Edit
                     <FontAwesomeIcon icon="edit" />
                 </b-button>
-                <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
+                <h1 v-if="title" class="float-right align-middle mr-2 mt-1 h-md">
+                    Galaxy {{ markdownConfig.model_class }}
+                </h1>
                 <span class="float-left font-weight-light">
-                    <h1 class="text-break align-middle">
-                        Title: {{ markdownConfig.title || markdownConfig.model_class }}
-                    </h1>
+                    <h1 v-if="title" class="text-break align-middle">Title: {{ title }}</h1>
                     <h2 v-if="workflowVersions" class="text-break align-middle">
                         Workflow Checkpoint: {{ workflowVersions.version }}
                     </h2>
@@ -34,7 +34,7 @@
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
                 <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }}</div>
-                <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
+                <div v-if="showIdentifier" class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
             </b-badge>
             <div>
                 <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
@@ -119,6 +119,10 @@ export default {
             type: String,
             default: null,
         },
+        showIdentifier: {
+            type: Boolean,
+            default: true,
+        },
     },
     data() {
         return {
@@ -136,6 +140,9 @@ export default {
     computed: {
         effectiveExportLink() {
             return this.enable_beta_markdown_export ? this.exportLink : null;
+        },
+        title() {
+            return this.markdownConfig.title || this.markdownConfig.model_class;
         },
         time() {
             let generateTime = this.markdownConfig.generate_time;

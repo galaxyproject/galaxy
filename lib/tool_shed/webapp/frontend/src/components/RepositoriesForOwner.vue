@@ -48,5 +48,10 @@ const rows = computed(() => {
 <template>
     <loading-div v-if="loading" />
     <error-banner error="Failed to load repositories" v-else-if="error"> </error-banner>
-    <repositories-grid :title="`Repositories for ${username}`" :rows="rows" :on-scroll="onScroll" />
+    <repositories-grid
+        :title="`Repositories for ${username}`"
+        :rows="rows"
+        :on-scroll="onScroll"
+        :allow-search="true"
+    />
 </template>

@@ -302,13 +302,10 @@ class HDAManager(
 
     # .... data
     # TODO: to data provider or Text datatype directly
-    def text_data(self, hda, preview=True):
+    def text_data(self, hda, preview=True, filename: Optional[str] = None):
         """
         Get data from text file, truncating if necessary.
         """
-        # 1 MB
-        MAX_PEEK_SIZE = 1000000
-
         truncated = False
         hda_data = None
         # For now, cannot get data from non-text datasets.
@@ -318,6 +315,11 @@ class HDAManager(
         if not os.path.exists(file_path):
             return truncated, hda_data
 
+        return self.text_data_truncated(file_path, preview=preview)
+
+    def text_data_truncated(self, file_path, preview=True):
+        # 1 MB
+        MAX_PEEK_SIZE = 1000000
         truncated = preview and os.stat(file_path).st_size > MAX_PEEK_SIZE
         with get_fileobj(file_path) as fh:
             try:
