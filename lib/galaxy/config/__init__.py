@@ -1091,6 +1091,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         self._process_celery_config()
 
+        # load in the chat_prompts if openai is enabled
+        self._load_chat_prompts()
+
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         try:
             with open(self.user_preferences_extra_conf_path) as stream:
@@ -1250,6 +1253,23 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         if self.file_source_temp_dir:
             self.file_source_temp_dir = os.path.abspath(self.file_source_temp_dir)
+
+    def _load_chat_prompts(self):
+        if self.openai_api_key:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            chat_prompts_path = os.path.join(current_dir, "chat_prompts.json")
+
+            if os.path.exists(chat_prompts_path):
+                try:
+                    with open(chat_prompts_path, "r", encoding="utf-8") as file:
+                        data = json.load(file)
+                        self.chat_prompts = data.get("prompts", {})
+                except json.JSONDecodeError as e:
+                    log.error(f"JSON decoding error in chat prompts file: {e}")
+                except Exception as e:
+                    log.error(f"An error occurred while reading chat prompts file: {e}")
+            else:
+                log.warning(f"Chat prompts file not found at {chat_prompts_path}")
 
     def _process_celery_config(self):
         if self.celery_conf and self.celery_conf.get("result_backend") is None:
