@@ -77,6 +77,7 @@ from galaxy.schema.schema import (
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+    WorkflowJobMetric,
     WorkflowLandingRequest,
     WorkflowSortByEnum,
 )
@@ -1760,3 +1761,11 @@ class FastAPIInvocations:
     ) -> InvocationJobsResponse:
         """An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored."""
         return self.invocation_jobs_summary(trans=trans, invocation_id=invocation_id)
+
+    @router.get("/api/invocations/{invocation_id}/metrics")
+    def get_invocation_metrics(
+        self,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> List[WorkflowJobMetric]:
+        return self.invocations_service.show_invocation_metrics(trans=trans, invocation_id=invocation_id)
