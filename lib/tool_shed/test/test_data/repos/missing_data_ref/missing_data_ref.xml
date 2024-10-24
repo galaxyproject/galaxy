@@ -1,0 +1,19 @@
+<tool id="missing_data_ref" name="missing_data_ref" version="1.0" profile="23.0">
+    <requirements>
+    </requirements>
+    <command detect_errors="aggressive">
+        <![CDATA[
+        echo $column
+        ]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" format="tabular"/>
+        <param name="column" type="data_column" />
+    </inputs>
+    <outputs>
+        <data name="output" format="text"/>
+    </outputs>
+    <tests>
+    </tests>
+    <help/>
+</tool>
