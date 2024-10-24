@@ -227,7 +227,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
 
 .ui-textarea {
     @extend .ui-input;
-    height: 100px !important;
+    min-height: 100px;
 }
 
 .ui-switch {
