@@ -8,11 +8,15 @@ import sys
 from io import StringIO
 
 from lxml import etree
+from yaml import safe_load
 
 with open(sys.argv[2]) as f:
     xmlschema_doc = etree.parse(f)
 
 markdown_buffer = StringIO()
+
+DIRECTIVES_PATH = "../client/src/components/Markdown/directives.yml"
+DIRECTIVES = safe_load(open(DIRECTIVES_PATH))
 
 
 def main():
@@ -74,6 +78,7 @@ def _build_tag(tag, hide_attributes):
     annotation_el = tag_el.find("{http://www.w3.org/2001/XMLSchema}annotation")
     text = annotation_el.find("{http://www.w3.org/2001/XMLSchema}documentation").text
     text = _replace_attribute_list(tag, text, attributes)
+    text = _expand_directives(text)
     for line in text.splitlines():
         if line.startswith("$assertions"):
             assertions_tag = xmlschema_doc.find(
@@ -124,6 +129,29 @@ def _replace_attribute_list(tag, text, attributes):
         text = text.replace(
             line, _build_attributes_table(tag, attributes, attribute_names=attribute_names, header_level=header_level)
         )
+    return text
+
+
+def _build_directive_table(line: str) -> str:
+    _, directives_str = line.split(":", 1)
+    directives = directives_str.split(",")
+    attribute_table = StringIO()
+    attribute_table.write("\n\n")
+    for directive in directives:
+        header_level = 3
+        header_prefix = "#" * header_level
+        attribute_table.write(f"\n{header_prefix} {directive}\n\n")
+        directive_info = DIRECTIVES[directive]
+        if "help" in directive_info:
+            attribute_table.write(DIRECTIVES[directive]["help"])
+    return attribute_table.getvalue()
+
+
+def _expand_directives(text):
+    for line in text.splitlines():
+        if not line.startswith("$directive_list:"):
+            continue
+        text = text.replace(line, _build_directive_table(line))
     return text
 
 

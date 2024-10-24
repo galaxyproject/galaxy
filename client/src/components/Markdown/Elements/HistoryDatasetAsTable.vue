@@ -11,6 +11,7 @@ interface HistoryDatasetAsTableProps {
     showColumnHeaders: boolean;
     title?: string;
     footer?: string;
+    path?: string;
 }
 
 const props = withDefaults(defineProps<HistoryDatasetAsTableProps>(), {
@@ -18,10 +19,15 @@ const props = withDefaults(defineProps<HistoryDatasetAsTableProps>(), {
     showColumnHeaders: true,
     title: undefined,
     footer: undefined,
+    path: undefined,
 });
 
 const itemUrl = computed(() => {
-    return `/api/datasets/${props.historyDatasetId}/get_content_as_text`;
+    if (props.path) {
+        return `/api/datasets/${props.historyDatasetId}/get_content_as_text?filename=${props.path}`;
+    } else {
+        return `/api/datasets/${props.historyDatasetId}/get_content_as_text`;
+    }
 });
 
 const metaUrl = computed(() => {

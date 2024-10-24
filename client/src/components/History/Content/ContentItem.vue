@@ -189,8 +189,12 @@ const itemUrls = computed<ItemUrls>(() => {
                     : null,
         };
     }
+    let display = `/datasets/${id}/preview`;
+    if (props.item.extension == "tool_markdown") {
+        display = `/datasets/${id}/report`;
+    }
     return {
-        display: `/datasets/${id}/preview`,
+        display: display,
         edit: `/datasets/${id}/edit`,
         showDetails: `/datasets/${id}/details`,
         reportError: `/datasets/${id}/error`,
