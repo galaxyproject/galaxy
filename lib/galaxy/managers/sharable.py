@@ -291,7 +291,7 @@ class SharableModelManager(
         Validate and set the new slug for `item`.
         """
         # precondition: has been validated
-        if not base.is_valid_slug(new_slug):
+        if not SlugBuilder.is_valid_slug(new_slug):
             raise exceptions.RequestParameterInvalidException("Invalid slug", slug=new_slug)
 
         if item.slug == new_slug:
@@ -562,6 +562,11 @@ class SlugBuilder:
         # Set slug and return.
         item.slug = new_slug
         return item.slug == cur_slug
+
+    @classmethod
+    def is_valid_slug(self, slug):
+        """Returns true if slug is valid."""
+        return slugify(slug, allow_unicode=True) == slug
 
 
 def slug_exists(session, model_class, user, slug, ignore_deleted=False):

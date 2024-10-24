@@ -1090,7 +1090,7 @@ class SharableMixin:
 
     def _is_valid_slug(self, slug):
         """Returns true if slug is valid."""
-        return managers_base.is_valid_slug(slug)
+        return SlugBuilder.is_valid_slug(slug)
 
     @web.expose
     @web.require_login("modify Galaxy items")

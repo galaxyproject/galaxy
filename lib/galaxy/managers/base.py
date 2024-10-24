@@ -46,7 +46,6 @@ from typing import (
 )
 
 import sqlalchemy
-from slugify import slugify
 from sqlalchemy.orm import Query
 from sqlalchemy.orm.scoping import scoped_session
 from typing_extensions import Protocol
@@ -1293,11 +1292,6 @@ def parse_bool(bool_string: Union[str, bool]) -> bool:
 
 def raise_filter_err(attr, op, val, msg):
     raise exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)
-
-
-def is_valid_slug(slug):
-    """Returns true if slug is valid."""
-    return slugify(slug, allow_unicode=True) == slug
 
 
 class SortableManager:
