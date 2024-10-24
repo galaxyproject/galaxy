@@ -1431,6 +1431,24 @@ class ZarrRemoteUri(Text):
     Galaxy will try to download it as a file.
     """
 
+    info = "Zarr remote URI"
+
+    MetadataElement(
+        name="remote_uri",
+        default=None,
+        desc="Remote URI to a Zarr store",
+        readonly=True,
+        optional=False,
+        visible=False,
+    )
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        with open(dataset.get_file_name()) as f:
+            uri = f.read().strip()
+            if "://" not in uri:
+                uri = f"https://{uri}"
+            dataset.metadata.remote_uri = uri
+
     def sniff(self, filename: str) -> bool:
         # Must have a single line and end with '.zarr'
         with open(filename) as f:
@@ -1439,13 +1457,7 @@ class ZarrRemoteUri(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            try:
-                with open(dataset.get_file_name()) as f:
-                    dataset.peek = f.read().strip()
-                    dataset.info = "Zarr remote URI"
-                    dataset.blurb = nice_size(dataset.get_size())
-            except Exception:
-                dataset.peek = "Could not read file"
+            dataset.info = self.info
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -1455,3 +1467,5 @@ class OMEZarrRemoteUri(ZarrRemoteUri):
     """OME-Zarr remote URI"""
 
     file_ext = "ome_zarr_uri"
+
+    info = "OME-Zarr remote URI"
