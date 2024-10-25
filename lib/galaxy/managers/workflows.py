@@ -1093,7 +1093,7 @@ class WorkflowContentsManager(UsesAnnotations):
             ]
             annotations_dict = {
                 "annotation": stored.annotations[0].annotation,
-                "update_time": (stored.annotations[0].stored_workflow.update_time).isoformat(),
+                "update_time": (stored.update_time).isoformat(),
                 "tags": self.convert_to_dict_from_many(stored.annotations[0].stored_workflow.tags),
             }
             if step.annotations:
