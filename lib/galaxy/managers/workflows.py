@@ -1092,7 +1092,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 for oc in step.output_connections
             ]
             annotations_dict = {
-                "annotation": stored.annotations[0].annotation,
+                "annotation": self.get_item_annotation_str(trans.sa_session, trans.user, stored),
                 "update_time": (stored.update_time).isoformat(),
                 "tags": self.convert_to_dict_from_many(stored.tags),
             }
