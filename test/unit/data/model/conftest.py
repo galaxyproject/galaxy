@@ -429,6 +429,24 @@ def make_user(session):
 
 
 @pytest.fixture
+def make_user_and_role(session, make_user, make_role, make_user_role_association):
+    """
+    Each user created in Galaxy is assumed to have a private role, such that role.type == Role.types.PRIVATE.
+    Since we are testing user/group/role associations here, to ensure the correct state of the test database,
+    we need to ensure that a user is never created without a corresponding private role.
+    Therefore, we use this fixture instead of make_user (which only creates a user).
+    """
+
+    def f(**kwd):
+        user = make_user(**kwd)
+        private_role = make_role(type=m.Role.types.PRIVATE)
+        make_user_role_association(user, private_role)
+        return user, private_role
+
+    return f
+
+
+@pytest.fixture
 def make_user_item_rating_association(session):
     def f(assoc_class, user, item, rating):
         model = assoc_class(user, item, rating)

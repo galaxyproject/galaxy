@@ -10,24 +10,6 @@ from galaxy.model.security import GalaxyRBACAgent
 from . import have_same_elements
 
 
-@pytest.fixture
-def make_user_and_role(session, make_user, make_role, make_user_role_association):
-    """
-    Each user created in Galaxy is assumed to have a private role, such that role.name == user.email.
-    Since we are testing user/group/role associations here, to ensure the correct state of the test database,
-    we need to ensure that a user is never created without a corresponding private role.
-    Therefore, we use this fixture instead of make_user (which only creates a user).
-    """
-
-    def f(**kwd):
-        user = make_user()
-        private_role = make_role(name=user.email, type=Role.types.PRIVATE)
-        make_user_role_association(user, private_role)
-        return user, private_role
-
-    return f
-
-
 def test_private_user_role_assoc_not_affected_by_setting_user_roles(session, make_user_and_role):
     # Create user with a private role
     user, private_role = make_user_and_role()
