@@ -176,6 +176,7 @@ config/plugins/**/static/*.map
 config/plugins/visualizations/annotate_image/static/jquery.contextMenu.css
 config/plugins/visualizations/nvd3/nvd3_bar/static/nvd3.js
 config/plugins/visualizations/scatterplot/static/scatterplot.js
+config/plugins/visualizations/vizarr/static/*.js
 
 # CWL conformance tests
 lib/galaxy_test/api/cwl/test_cwl_conformance_v1_?.py
