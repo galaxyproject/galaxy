@@ -18,7 +18,6 @@ class CacheableStaticURLParser(StaticURLParser):
 
     def __call__(self, environ, start_response):
         path_info = environ.get("PATH_INFO", "")
-        script_name = environ.get("SCRIPT_NAME", "")
         if not path_info:
             # See if this is a static file hackishly mapped.
             if os.path.exists(self.directory) and os.path.isfile(self.directory):
