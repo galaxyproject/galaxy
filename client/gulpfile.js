@@ -36,6 +36,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "tiffviewer",
     "ts_visjs",
     "venn",
+    "vizarr",
 ];
 const INSTALL_PLUGIN_BUILD_IDS = ["ngl", "msa", "openlayers"]; // todo: derive from XML
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
