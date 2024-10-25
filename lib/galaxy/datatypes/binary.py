@@ -476,8 +476,6 @@ class CompressedZarrZipArchive(CompressedZipArchive):
             dataset.blurb = "file purged from disk"
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        # We assume that the Zarr store is directly in the extra files folder and
-        # not in a subfolder.
         with zipfile.ZipFile(dataset.get_file_name()) as zf:
             dataset.metadata.compression = zf.compression
             meta_file = self._find_zarr_metadata_file(zf)
@@ -492,26 +490,25 @@ class CompressedZarrZipArchive(CompressedZipArchive):
 
     def sniff(self, filename: str) -> bool:
         # Check if the zip file contains a zarr store.
-        # The zarr store must be in the root of the zip file.
+        # In theory, the zarr store must be in the root of the zip file.
         # See: https://github.com/zarr-developers/zarr-python/issues/756#issuecomment-852134901
+        # But in practice, many examples online have the zarr store in a subfolder in the zip file,
+        # so we will check for that as well.
         meta_file = None
         with zipfile.ZipFile(filename) as zf:
             meta_file = self._find_zarr_metadata_file(zf)
         return meta_file is not None
 
     def _find_zarr_metadata_file(self, zip_file: zipfile.ZipFile) -> Optional[str]:
-        """Returns the path to the metadata file in the Zarr store."""
-        meta_file = None
-        files_in_store = zip_file.namelist()
-
+        """Returns the path to the metadata file in the Zarr store if found."""
         # Depending on the Zarr version, the metadata file can be in different locations
         # In v1 the metadata is in a file named "meta" https://zarr-specs.readthedocs.io/en/latest/v1/v1.0.html
         # In v2 it can be in .zarray or .zgroup https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
         # In v3 the metadata is in a file named "zarr.json" https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html
         possible_meta_files = ["meta", ".zarray", ".zgroup", "zarr.json"]
-        for meta_file in possible_meta_files:
-            if meta_file in files_in_store:
-                return meta_file
+        for file in zip_file.namelist():
+            if any(file.endswith(meta_file) for meta_file in possible_meta_files):
+                return file
         return None
 
 
@@ -535,7 +532,10 @@ class CompressedOMEZarrZipArchive(CompressedZarrZipArchive):
 
     def _find_ome_zarr_metadata_file(self, zip_file: zipfile.ZipFile) -> Optional[str]:
         expected_meta_file_name = "OME/METADATA.ome.xml"
-        return expected_meta_file_name if expected_meta_file_name in zip_file.namelist() else None
+        for file in zip_file.namelist():
+            if file.endswith(expected_meta_file_name):
+                return file
+        return None
 
 
 class GenericAsn1Binary(Binary):
