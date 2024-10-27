@@ -46,6 +46,7 @@ from galaxy.managers import (
 )
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model import (
+    HistoryDatasetAssociation,
     Job,
     JobStateHistory,
     JobToOutputDatasetAssociation,
@@ -81,7 +82,7 @@ class HistoryDatasetAssociationNoHistoryException(Exception):
 
 
 class HDAManager(
-    datasets.DatasetAssociationManager,
+    datasets.DatasetAssociationManager[HistoryDatasetAssociation],
     secured.OwnableManagerMixin,
     annotatable.AnnotatableManagerMixin,
 ):
@@ -89,7 +90,7 @@ class HDAManager(
     Interface/service object for interacting with HDAs.
     """
 
-    model_class = model.HistoryDatasetAssociation
+    model_class = HistoryDatasetAssociation
     foreign_key_name = "history_dataset_association"
 
     tag_assoc = model.HistoryDatasetAssociationTagAssociation
@@ -118,22 +119,11 @@ class HDAManager(
         return self.list(filters=filters)
 
     # .... security and permissions
-    def is_accessible(self, item: model.HistoryDatasetAssociation, user: Optional[model.User], **kwargs: Any) -> bool:
-        """
-        Override to allow owners (those that own the associated history).
-        """
-        # this, apparently, is not True:
-        #   if I have a copy of a dataset and anyone who manages permissions on it revokes my access
-        #   I can not access that dataset even if it's in my history
-        # if self.is_owner( hda, user, **kwargs ):
-        #     return True
-        return super().is_accessible(item, user, **kwargs)
-
     def is_owner(self, item, user: Optional[model.User], current_history=None, **kwargs: Any) -> bool:
         """
         Use history to see if current user owns HDA.
         """
-        if not isinstance(item, model.HistoryDatasetAssociation):
+        if not isinstance(item, HistoryDatasetAssociation):
             raise TypeError('"item" must be of type HistoryDatasetAssociation.')
         if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
@@ -144,15 +134,13 @@ class HDAManager(
         # TODO: some dup here with historyManager.is_owner but prevents circ import
         # TODO: awkward kwarg (which is my new band name); this may not belong here - move to controller?
         if self.user_manager.is_anonymous(user):
-            if current_history and history == current_history:
-                return True
-            return False
+            return current_history is not None and history == current_history
         return history.user == user
 
     # .... create and copy
     def create(
         self, flush: bool = True, history=None, dataset=None, *args: Any, **kwargs: Any
-    ) -> model.HistoryDatasetAssociation:
+    ) -> HistoryDatasetAssociation:
         """
         Create a new hda optionally passing in it's history and dataset.
 
@@ -161,9 +149,7 @@ class HDAManager(
         """
         if not dataset:
             kwargs["create_dataset"] = True
-        hda = model.HistoryDatasetAssociation(
-            history=history, dataset=dataset, sa_session=self.app.model.context, **kwargs
-        )
+        hda = HistoryDatasetAssociation(history=history, dataset=dataset, sa_session=self.app.model.context, **kwargs)
 
         if history:
             history.add_dataset(hda, set_hid=("hid" not in kwargs))
@@ -204,11 +190,11 @@ class HDAManager(
 
     def copy(
         self, item: Any, history=None, hide_copy: bool = False, flush: bool = True, **kwargs: Any
-    ) -> model.HistoryDatasetAssociation:
+    ) -> HistoryDatasetAssociation:
         """
         Copy hda, including annotation and tags, add to history and return the given HDA.
         """
-        if not isinstance(item, model.HistoryDatasetAssociation):
+        if not isinstance(item, HistoryDatasetAssociation):
             raise TypeError()
         hda = item
         copy = hda.copy(
@@ -353,7 +339,7 @@ class HDAManager(
 
 def dereference_input(
     trans: ProvidesHistoryContext, data_request: DataRequestUri, history: Optional[model.History] = None
-) -> model.HistoryDatasetAssociation:
+) -> HistoryDatasetAssociation:
     target_history = history or trans.history
     hda = dereference_to_model(trans.sa_session, trans.user, target_history, data_request)
     permissions = trans.app.security_agent.history_get_default_permissions(target_history)
@@ -368,24 +354,24 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         self.hda_manager = hda_manager
         self.dataset_manager = dataset_manager
         self.sort_map = {
-            StoredItemOrderBy.NAME_ASC: asc(model.HistoryDatasetAssociation.name),
-            StoredItemOrderBy.NAME_DSC: desc(model.HistoryDatasetAssociation.name),
+            StoredItemOrderBy.NAME_ASC: asc(HistoryDatasetAssociation.name),
+            StoredItemOrderBy.NAME_DSC: desc(HistoryDatasetAssociation.name),
             StoredItemOrderBy.SIZE_ASC: nulls_first(asc(model.Dataset.total_size)),
             StoredItemOrderBy.SIZE_DSC: nulls_last(desc(model.Dataset.total_size)),
-            StoredItemOrderBy.UPDATE_TIME_ASC: asc(model.HistoryDatasetAssociation.update_time),
-            StoredItemOrderBy.UPDATE_TIME_DSC: desc(model.HistoryDatasetAssociation.update_time),
+            StoredItemOrderBy.UPDATE_TIME_ASC: asc(HistoryDatasetAssociation.update_time),
+            StoredItemOrderBy.UPDATE_TIME_DSC: desc(HistoryDatasetAssociation.update_time),
         }
 
     def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
         stmt = (
-            select(func.sum(model.Dataset.total_size), func.count(model.HistoryDatasetAssociation.id))
-            .select_from(model.HistoryDatasetAssociation)
-            .join(model.Dataset, model.HistoryDatasetAssociation.table.c.dataset_id == model.Dataset.id)
-            .join(model.History, model.HistoryDatasetAssociation.table.c.history_id == model.History.id)
+            select(func.sum(model.Dataset.total_size), func.count(HistoryDatasetAssociation.id))
+            .select_from(HistoryDatasetAssociation)
+            .join(model.Dataset, HistoryDatasetAssociation.table.c.dataset_id == model.Dataset.id)
+            .join(model.History, HistoryDatasetAssociation.table.c.history_id == model.History.id)
             .where(
                 and_(
-                    model.HistoryDatasetAssociation.deleted == true(),
-                    model.HistoryDatasetAssociation.purged == false(),  # type:ignore[arg-type]
+                    HistoryDatasetAssociation.deleted == true(),
+                    HistoryDatasetAssociation.purged == false(),  # type:ignore[arg-type]
                     model.History.user_id == user.id,
                 )
             )
@@ -404,18 +390,18 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
     ) -> List[StoredItem]:
         stmt = (
             select(
-                model.HistoryDatasetAssociation.id,
-                model.HistoryDatasetAssociation.name,
-                model.HistoryDatasetAssociation.update_time,
+                HistoryDatasetAssociation.id,
+                HistoryDatasetAssociation.name,
+                HistoryDatasetAssociation.update_time,
                 model.Dataset.total_size,
             )
-            .select_from(model.HistoryDatasetAssociation)
-            .join(model.Dataset, model.HistoryDatasetAssociation.table.c.dataset_id == model.Dataset.id)
-            .join(model.History, model.HistoryDatasetAssociation.table.c.history_id == model.History.id)
+            .select_from(HistoryDatasetAssociation)
+            .join(model.Dataset, HistoryDatasetAssociation.table.c.dataset_id == model.Dataset.id)
+            .join(model.History, HistoryDatasetAssociation.table.c.history_id == model.History.id)
             .where(
                 and_(
-                    model.HistoryDatasetAssociation.deleted == true(),
-                    model.HistoryDatasetAssociation.purged == false(),  # type:ignore[arg-type]
+                    HistoryDatasetAssociation.deleted == true(),
+                    HistoryDatasetAssociation.purged == false(),  # type:ignore[arg-type]
                     model.History.user_id == user.id,
                 )
             )
@@ -441,7 +427,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
 
         for hda_id in item_ids:
             try:
-                hda: model.HistoryDatasetAssociation = self.hda_manager.get_owned(hda_id, user)
+                hda: HistoryDatasetAssociation = self.hda_manager.get_owned(hda_id, user)
                 hda.deleted = True
                 quota_amount = int(hda.quota_amount(user))
                 hda.purge_usage_from_quota(user, hda.dataset.quota_source_info)
@@ -649,7 +635,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         """
         hda = item
         display_apps: List[Dict[str, Any]] = []
-        if hda.state == model.HistoryDatasetAssociation.states.OK and not hda.deleted:
+        if hda.state == HistoryDatasetAssociation.states.OK and not hda.deleted:
             for display_app in hda.get_display_applications(trans).values():
                 app_links = []
                 for link_app in display_app.links.values():
@@ -673,7 +659,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         display_apps: List[Dict[str, Any]] = []
         if (
             self.app.config.enable_old_display_applications
-            and hda.state == model.HistoryDatasetAssociation.states.OK
+            and hda.state == HistoryDatasetAssociation.states.OK
             and not hda.deleted
         ):
             display_link_fn = hda.datatype.get_display_links
@@ -760,7 +746,7 @@ class HDAFilterParser(
     datasets.DatasetAssociationFilterParser, taggable.TaggableFilterMixin, annotatable.AnnotatableFilterMixin
 ):
     model_manager_class = HDAManager
-    model_class = model.HistoryDatasetAssociation
+    model_class = HistoryDatasetAssociation
 
     def _add_parsers(self):
         super()._add_parsers()

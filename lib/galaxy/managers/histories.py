@@ -263,9 +263,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         # anon users are only allowed to view their current history
         if self.user_manager.is_anonymous(user):
-            if current_history and item == current_history:
-                return True
-            return False
+            return current_history is not None and item == current_history
         return super().is_owner(item, user)
 
     # TODO: possibly to sharable or base
