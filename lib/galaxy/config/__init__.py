@@ -982,8 +982,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             # self, populate config_dict
             self.config_dict["conda_mapping_files"] = [self.local_conda_mapping_file, _default_mapping]
 
-        if not running_from_source and kwargs.get("conda_auto_init") is None:
-            self.config_dict["conda_auto_init"] = False
+        if kwargs.get("conda_auto_init") is None:
+            self.config_dict["conda_auto_init"] = running_from_source
 
         if self.container_resolvers_config_file:
             self.container_resolvers_config_file = self._in_config_dir(self.container_resolvers_config_file)
