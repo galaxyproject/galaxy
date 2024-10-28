@@ -4584,7 +4584,7 @@ def datatype_for_extension(extension, datatypes_registry=None) -> "Data":
 
 
 class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
-    """A base class for all 'dataset instances', HDAs, LDAs, etc"""
+    """A base class for all 'dataset instances', HDAs, LDDAs, etc"""
 
     states = Dataset.states
     _state: Optional[str]
