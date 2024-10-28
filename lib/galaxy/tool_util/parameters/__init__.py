@@ -1,4 +1,7 @@
-from .case import test_case_state
+from .case import (
+    test_case_state,
+    validate_test_cases_for_tool_source,
+)
 from .convert import (
     decode,
     dereference,
@@ -139,6 +142,7 @@ __all__ = (
     "ToolParameterT",
     "to_json_schema_string",
     "test_case_state",
+    "validate_test_cases_for_tool_source",
     "RequestToolState",
     "RequestInternalToolState",
     "RequestInternalDereferencedToolState",
