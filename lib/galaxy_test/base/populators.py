@@ -1996,7 +1996,7 @@ class BaseWorkflowPopulator(BasePopulator):
         url = f"workflows/{workflow_id}/invocations"
         invocation_response = self._post(url, data=request, json=True)
         if assert_ok:
-            invocation_response.raise_for_status()
+            api_asserts.assert_status_code_is_ok(invocation_response)
         return invocation_response
 
     def invoke_workflow(
@@ -2084,6 +2084,11 @@ class BaseWorkflowPopulator(BasePopulator):
             return response.json()
         else:
             return ordered_load(response.text)
+
+    def invocation_to_request(self, invocation_id: str):
+        request_response = self._get(f"invocations/{invocation_id}/request")
+        api_asserts.assert_status_code_is_ok(request_response)
+        return request_response.json()
 
     def set_tags(self, workflow_id: str, tags: List[str]) -> None:
         update_payload = {"tags": tags}
@@ -2183,7 +2188,51 @@ class BaseWorkflowPopulator(BasePopulator):
             workflow_request.update(extra_invocation_kwds)
         if has_uploads:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+        return self._request_to_summary(
+            history_id,
+            workflow_id,
+            workflow_request,
+            inputs=inputs,
+            wait=wait,
+            assert_ok=assert_ok,
+            invocations=invocations,
+            expected_response=expected_response,
+        )
+
+    def rerun(self, run_jobs_summary: "RunJobsSummary", wait: bool = True, assert_ok: bool = True) -> "RunJobsSummary":
+        history_id = run_jobs_summary.history_id
+        invocation_id = run_jobs_summary.invocation_id
+        inputs = run_jobs_summary.inputs
+        workflow_request = self.invocation_to_request(invocation_id)
+        workflow_id = workflow_request["workflow_id"]
+        assert workflow_request["history_id"] == history_id
+        assert workflow_request["instance"] is True
+        return self._request_to_summary(
+            history_id,
+            workflow_id,
+            workflow_request,
+            inputs=inputs,
+            wait=wait,
+            assert_ok=assert_ok,
+            invocations=1,
+            expected_response=200,
+        )
+
+    def _request_to_summary(
+        self,
+        history_id: str,
+        workflow_id: str,
+        workflow_request: Dict[str, Any],
+        inputs,
+        wait: bool,
+        assert_ok: bool,
+        invocations: int,
+        expected_response: int,
+    ):
+        workflow_populator = self
         assert invocations > 0
+
         jobs = []
         for _ in range(invocations):
             invocation_response = workflow_populator.invoke_workflow_raw(workflow_id, workflow_request)
@@ -2199,6 +2248,7 @@ class BaseWorkflowPopulator(BasePopulator):
                 if wait:
                     workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
                 jobs.extend(self.dataset_populator.invocation_jobs(invocation_id))
+
         return RunJobsSummary(
             history_id=history_id,
             workflow_id=workflow_id,
