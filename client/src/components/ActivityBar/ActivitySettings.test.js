@@ -2,8 +2,9 @@ import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
+import { nextTick } from "vue";
 
-import { Activities } from "@/stores/activitySetup";
+import { defaultActivities } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 
 import mountTarget from "./ActivitySettings.vue";
@@ -40,30 +41,30 @@ describe("ActivitySettings", () => {
 
     beforeEach(async () => {
         const pinia = createTestingPinia({ stubActions: false });
-        activityStore = useActivityStore("default");
-        activityStore.sync();
+        activityStore = useActivityStore(undefined);
         wrapper = mount(mountTarget, {
             localVue,
             pinia,
             props: {
                 query: "",
-                activityBarScope: "default",
+                activityBarId: undefined,
             },
             stubs: {
                 icon: { template: "<div></div>" },
             },
         });
+        await activityStore.sync();
     });
 
     it("availability of built-in activities", async () => {
         const items = wrapper.findAll(activityItemSelector);
-        const nOptional = Activities.filter((x) => x.optional).length;
+        const nOptional = defaultActivities.filter((x) => x.optional).length;
         expect(items.length).toBe(nOptional);
     });
 
     it("visible and optional activity", async () => {
         activityStore.setAll([testActivity("1")]);
-        await wrapper.vm.$nextTick();
+        await nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
         const checkbox = items.at(0).find("[title='Hide in Activity Bar']");
