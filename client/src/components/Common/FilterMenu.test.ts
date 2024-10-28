@@ -3,6 +3,7 @@ import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { getWorkflowFilters } from "@/components/Workflow/List/workflowFilters";
 import Filtering, { compare, contains, equals, toBool, toDate } from "@/utils/filtering";
 
 import FilterMenu from "./FilterMenu.vue";
@@ -302,7 +303,7 @@ describe("FilterMenu", () => {
      * class, ensuring the default values are reflected in the radio-group buttons
      */
     it("test compact menu with checkbox filters on WorkflowFilters", async () => {
-        const myWorkflowFilters = WorkflowFilters("my");
+        const myWorkflowFilters = getWorkflowFilters("my");
         setUpWrapper("Workflows", "search workflows", myWorkflowFilters);
         // a compact `FilterMenu` only needs to be opened once (doesn't toggle out automatically)
         await wrapper.setProps({ showAdvanced: true, view: "compact" });
