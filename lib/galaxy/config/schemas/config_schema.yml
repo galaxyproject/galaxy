@@ -382,7 +382,6 @@ mapping:
 
       conda_auto_init:
         type: bool
-        default: true
         required: false
         desc: |
           Set to true to instruct Galaxy to install Conda from the web automatically
