@@ -3,8 +3,9 @@ import { isDate } from "date-fns";
 
 import { useUserTagsStore } from "@/stores/userTagsStore";
 
-import Attributes from "./Attributes";
 import { UntypedParameters } from "./modules/parameters";
+
+import WorkflowAttributes from "./WorkflowAttributes.vue";
 
 jest.mock("app");
 
@@ -24,13 +25,13 @@ useUserTagsStore.mockReturnValue({
     onMultipleNewTagsSeen: jest.fn(),
 });
 
-describe("Attributes", () => {
+describe("WorkflowAttributes", () => {
     it("test attributes", async () => {
         const localVue = createLocalVue();
         const untypedParameters = new UntypedParameters();
         untypedParameters.getParameter("workflow_parameter_0");
         untypedParameters.getParameter("workflow_parameter_1");
-        const wrapper = mount(Attributes, {
+        const wrapper = mount(WorkflowAttributes, {
             propsData: {
                 id: "workflow_id",
                 name: TEST_NAME,
