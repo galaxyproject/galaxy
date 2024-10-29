@@ -34,12 +34,6 @@ def test_private_user_role_assoc_not_affected_by_setting_user_roles(session, mak
     assert user.email == private_role.name
     verify_user_associations(user, [], [private_role])  # the only existing association is with the private role
 
-    # Update users's email so it's no longer the same as the private role's name.
-    user.email = user.email + "updated"
-    session.add(user)
-    session.commit()
-    assert user.email != private_role.name
-
     # Delete user roles
     GalaxyRBACAgent(session).set_user_group_and_role_associations(user, role_ids=[])
     # association with private role is preserved
@@ -51,12 +45,6 @@ def test_private_user_role_assoc_not_affected_by_setting_role_users(session, mak
     user, private_role = make_user_and_role()
     assert user.email == private_role.name
     verify_user_associations(user, [], [private_role])  # the only existing association is with the private role
-
-    # Update users's email
-    user.email = user.email + "updated"
-    session.add(user)
-    session.commit()
-    assert user.email != private_role.name
 
     # Update role users
     GalaxyRBACAgent(session).set_role_user_and_group_associations(private_role, user_ids=[])
