@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Vizarr Viewer" logo="vizarr-logo.png">
+<visualization name="Vizarr Viewer">
     <description>Basic visualization for Zarr-based images like OME-Zarr</description>
     <requirements>
         <requirement type="npm" version="0.1.1" package="galaxy-vizarr"/>
