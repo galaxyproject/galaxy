@@ -1,8 +1,13 @@
 import logging
 
 from markupsafe import escape
-from sqlalchemy import desc
-from sqlalchemy.orm import joinedload
+from sqlalchemy import (
+    and_,
+    desc,
+    false,
+    func,
+    select,
+)
 
 from galaxy import (
     model,
@@ -166,13 +171,32 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
         # The following query loads all user-owned workflows,
         # So that they can be copied or inserted in the workflow editor.
-        workflows = (
-            trans.sa_session.query(model.StoredWorkflow)
-            .filter_by(user=trans.user, deleted=False, hidden=False)
-            .order_by(desc(model.StoredWorkflow.table.c.update_time))
-            .options(joinedload(model.StoredWorkflow.latest_workflow).joinedload(model.Workflow.steps))
-            .all()
+        assert trans.user  # help out type checker, require_login means we will have a user
+        workflow_stmnt = (
+            select(
+                model.StoredWorkflow.id,
+                model.StoredWorkflow.latest_workflow_id,
+                model.StoredWorkflow.name,
+                func.coalesce(func.count(model.WorkflowStep.id), 0).label("step_count"),
+            )
+            .join(
+                model.WorkflowStep,
+                model.StoredWorkflow.latest_workflow_id == model.WorkflowStep.workflow_id,
+                isouter=True,
+            )
+            .where(
+                and_(
+                    model.StoredWorkflow.user_id == trans.user.id,
+                    model.StoredWorkflow.deleted == false(),
+                    model.StoredWorkflow.hidden == false(),
+                )
+            )
+            .group_by(
+                model.StoredWorkflow.id,
+            )
+            .order_by(desc(model.StoredWorkflow.update_time))
         )
+        workflow_results = trans.sa_session.execute(workflow_stmnt).all()
 
         # create workflow module models
         module_sections = []
@@ -219,13 +243,13 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # create workflow models
         workflows = [
             {
-                "id": trans.security.encode_id(workflow.id),
-                "latest_id": trans.security.encode_id(workflow.latest_workflow.id),
-                "step_count": len(workflow.latest_workflow.steps),
-                "name": workflow.name,
+                "id": trans.security.encode_id(stored_workflow_id),
+                "latest_id": trans.security.encode_id(latest_workflow_id),
+                "step_count": step_count,
+                "name": workflow_name,
             }
-            for workflow in workflows
-            if new_workflow or workflow.id != stored.id
+            for stored_workflow_id, latest_workflow_id, workflow_name, step_count in workflow_results
+            if not stored or stored_workflow_id != stored.id
         ]
 
         # build workflow editor model
@@ -236,7 +260,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         }
 
         # for existing workflow add its data to the model
-        if new_workflow is False:
+        if stored:
             editor_config.update(
                 {
                     "id": trans.security.encode_id(stored.id),
