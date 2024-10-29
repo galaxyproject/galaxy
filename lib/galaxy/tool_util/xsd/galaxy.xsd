@@ -4317,7 +4317,7 @@ when the ``type`` attribute value is ``boolean``.</xs:documentation>
         <xs:attribute name="allow_uri_if_prefixed" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en"><![CDATA[
-When using `deferred` datasets, Galaxy will try to materialize then into files when
+When using `deferred` datasets, Galaxy will try to materialize them into files when
 running the tool. In case we don't want to download them. The `allow_uri_if_prefixed` attribute
 can be used to avoid materialization and pass the URI as is to the tool.
 This is useful when the tool can handle the URI directly. Example:
