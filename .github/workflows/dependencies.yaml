@@ -17,9 +17,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Update dependencies
-        run: | 
-          python -m venv .venv
-          make update-dependencies
+        run: make update-dependencies
       - name: Create pull request
         uses: peter-evans/create-pull-request@v6
         with:
