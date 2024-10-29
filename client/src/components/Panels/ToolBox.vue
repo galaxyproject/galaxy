@@ -6,12 +6,9 @@ import { storeToRefs } from "pinia";
 import { computed, type ComputedRef, type PropType, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { getGalaxyInstance } from "@/app";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
-import { getAppRoot } from "@/onload/loadConfig";
 import { type Tool, type ToolSection as ToolSectionType } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
-import { type Workflow, type Workflow as WorkflowType } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
 
 import { filterTools, getValidPanelItems, getValidToolsInCurrentView, getValidToolsInEachSection } from "./utilities";
@@ -29,8 +26,6 @@ const emit = defineEmits<{
     (e: "update:panel-query", query: string): void;
     (e: "onInsertTool", toolId: string, toolName: string): void;
     (e: "onInsertModule", moduleName: string, moduleTitle: string | undefined): void;
-    (e: "onInsertWorkflow", workflowLatestId: string | undefined, workflowName: string): void;
-    (e: "onInsertWorkflowSteps", workflowId: string, workflowStepCount: number | undefined): void;
 }>();
 
 const props = defineProps({
@@ -132,59 +127,12 @@ const localPanel: ComputedRef<Record<string, Tool | ToolSectionType> | null> = c
     }
 });
 
-const favWorkflows = computed(() => {
-    const Galaxy = getGalaxyInstance();
-    const storedWorkflowMenuEntries = Galaxy && Galaxy.config.stored_workflow_menu_entries;
-    if (storedWorkflowMenuEntries) {
-        const returnedWfs = [];
-        if (!props.workflow) {
-            returnedWfs.push({
-                title: localize("All workflows") as string,
-                href: `${getAppRoot()}workflows/list`,
-                id: "list",
-            });
-        }
-        const storedWfs = [
-            ...storedWorkflowMenuEntries.map((menuEntry: Workflow) => {
-                return {
-                    id: menuEntry.id,
-                    title: menuEntry.name,
-                    href: `${getAppRoot()}workflows/run?id=${menuEntry.id}`,
-                };
-            }),
-        ];
-        return returnedWfs.concat(storedWfs);
-    } else {
-        return [];
-    }
-});
-
-const workflowSection = computed(() => {
-    if (props.workflow && props.editorWorkflows.length > 0) {
-        return {
-            name: localize("Workflows"),
-            elems: props.workflow && props.editorWorkflows,
-        };
-    } else {
-        return null;
-    }
-});
-
 const buttonIcon = computed(() => (showSections.value ? faEyeSlash : faEye));
 const buttonText = computed(() => (showSections.value ? localize("Hide Sections") : localize("Show Sections")));
 
 function onInsertModule(module: Record<string, any>, event: Event) {
     event.preventDefault();
     emit("onInsertModule", module.name, module.title);
-}
-
-function onInsertWorkflow(workflow: WorkflowType, event: Event) {
-    event.preventDefault();
-    emit("onInsertWorkflow", workflow.latest_id, workflow.name);
-}
-
-function onInsertWorkflowSteps(workflow: WorkflowType) {
-    emit("onInsertWorkflowSteps", workflow.id, workflow.step_count);
 }
 
 function onToolClick(tool: Tool, evt: Event) {
@@ -307,29 +255,6 @@ function onToggle() {
                             :has-filter-button="hasResults && currentPanelView === 'default'"
                             @onClick="onToolClick"
                             @onFilter="onSectionFilter" />
-                    </div>
-                </div>
-                <ToolSection
-                    v-if="props.workflow && workflowSection"
-                    :key="workflowSection.name"
-                    :category="workflowSection"
-                    section-name="workflows"
-                    :sort-items="false"
-                    operation-icon="fa fa-files-o"
-                    operation-title="Insert individual steps."
-                    :query-filter="queryFilter || undefined"
-                    :disable-filter="true"
-                    @onClick="onInsertWorkflow"
-                    @onOperation="onInsertWorkflowSteps" />
-                <div v-else-if="favWorkflows.length > 0">
-                    <ToolSection :category="{ text: 'Workflows' }" />
-                    <div id="internal-workflows" class="toolSectionBody">
-                        <div class="toolSectionBg" />
-                        <div v-for="wf in favWorkflows" :key="wf.id" class="toolTitle">
-                            <a class="title-link" href="javascript:void(0)" @click="router.push(wf.href)">{{
-                                wf.title
-                            }}</a>
-                        </div>
                     </div>
                 </div>
             </div>
