@@ -4686,6 +4686,13 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return self.dataset.state == Dataset.states.DEFERRED
 
     @property
+    def deferred_source_uri(self):
+        if self.has_deferred_data:
+            # Assuming the first source is the deferred source
+            return self.sources[0].source_uri
+        return None
+
+    @property
     def state(self):
         # self._state holds state that should only affect this particular dataset association, not the dataset state itself
         if self._state:

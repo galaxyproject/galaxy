@@ -314,7 +314,8 @@ class ToolEvaluator:
         deferred_objects: Dict[str, DeferrableObjectsT] = {}
         for key, value in input_datasets.items():
             if value is not None and value.state == model.Dataset.states.DEFERRED:
-                deferred_objects[key] = value
+                if self._should_materialize_deferred_input(key, value):
+                    deferred_objects[key] = value
 
         def find_deferred_collections(input, value, context, prefixed_name=None, **kwargs):
             if (
@@ -326,6 +327,19 @@ class ToolEvaluator:
         visit_input_values(self.tool.inputs, incoming, find_deferred_collections)
 
         return deferred_objects
+
+    def _should_materialize_deferred_input(self, input_name: str, input_value: DeferrableObjectsT) -> bool:
+        """
+        We can skip materializing some deferred datasets if the input can work with URIs that are prefixed
+        with a known prefix set in `allow_uri_if_prefixed`.
+        """
+        deferred_input = self.tool.inputs[input_name]
+        if isinstance(deferred_input, DataToolParameter) and isinstance(input_value, model.DatasetInstance):
+            source_uri = input_value.sources[0].source_uri or ""
+            for prefix in deferred_input.allow_uri_if_prefixed:
+                if source_uri.startswith(prefix):
+                    return False
+        return True
 
     def __walk_inputs(self, inputs, input_values, func):
         def do_walk(inputs, input_values):
