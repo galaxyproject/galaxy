@@ -21,6 +21,7 @@ from typing_extensions import (
 from galaxy.tool_util_models.tool_source import JavascriptRequirement
 from galaxy.util import (
     asbool,
+    string_as_bool,
     xml_text,
 )
 from galaxy.util.oset import OrderedSet
@@ -42,17 +43,30 @@ class ToolRequirement:
         type: Optional[str] = None,
         version: Optional[str] = None,
         specs: Optional[Iterable["RequirementSpecification"]] = None,
+        inject_as_env: Optional[str] = None,
+        interfaces: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
         if specs is None:
             specs = []
+        if interfaces is None:
+            interfaces = []
         self.name = name
         self.type = type
         self.version = version
         self.specs = specs
+        self.inject_as_env = inject_as_env
+        self.interfaces = interfaces
 
     def to_dict(self) -> Dict[str, Any]:
         specs = [s.to_dict() for s in self.specs]
-        return dict(name=self.name, type=self.type, version=self.version, specs=specs)
+        return dict(
+            name=self.name,
+            type=self.type,
+            version=self.version,
+            specs=specs,
+            inject_as_env=self.inject_as_env,
+            interfaces=self.interfaces,
+        )
 
     def copy(self) -> "ToolRequirement":
         return copy.deepcopy(self)
@@ -63,7 +77,11 @@ class ToolRequirement:
         name = d["name"]
         type = d.get("type")
         specs = [RequirementSpecification.from_dict(s) for s in d.get("specs", [])]
-        return cls(name=name, type=type, version=version, specs=specs)
+        inject_as_env = d.get("inject_as_env")
+        interfaces = d.get("interfaces", [])
+        return cls(
+            name=name, type=type, version=version, specs=specs, inject_as_env=inject_as_env, interfaces=interfaces
+        )
 
     def __eq__(self, other: Any) -> bool:
         return (
@@ -71,13 +89,24 @@ class ToolRequirement:
             and self.type == other.type
             and self.version == other.version
             and self.specs == other.specs
+            and self.inject_as_env == other.inject_as_env
+            and self.interfaces == other.interfaces
         )
 
     def __hash__(self) -> int:
-        return hash((self.name, self.type, self.version, frozenset(self.specs)))
+        return hash(
+            (
+                self.name,
+                self.type,
+                self.version,
+                frozenset(self.specs),
+                self.inject_as_env,
+                frozenset(tuple(i.items()) for i in self.interfaces),
+            )
+        )
 
     def __str__(self) -> str:
-        return f"ToolRequirement[{self.name},version={self.version},type={self.type},specs={self.specs}]"
+        return f"ToolRequirement[{self.name},version={self.version},type={self.type},specs={self.specs},inject_as_env={self.inject_as_env},interfaces={self.interfaces}]"
 
     __repr__ = __str__
 
@@ -357,7 +386,11 @@ def parse_requirements_from_xml(xml_root, parse_resources: bool = False):
         name = xml_text(requirement_elem)
         type = requirement_elem.get("type", DEFAULT_REQUIREMENT_TYPE)
         version = requirement_elem.get("version", DEFAULT_REQUIREMENT_VERSION)
-        requirement = ToolRequirement(name=name, type=type, version=version)
+        inject_as_env = requirement_elem.get("inject_as_env")
+        interfaces = parse_interfaces(requirement_elem)
+        requirement = ToolRequirement(
+            name=name, type=type, version=version, inject_as_env=inject_as_env, interfaces=interfaces
+        )
         requirements.append(requirement)
 
     container_elems = []
@@ -372,6 +405,18 @@ def parse_requirements_from_xml(xml_root, parse_resources: bool = False):
         return requirements, containers, resources, javascript_requirements
 
     return requirements, containers
+
+
+def parse_interfaces(requirement_elem):
+    interfaces = []
+    for interface_elem in requirement_elem.findall("interface"):
+        interface = {
+            "name": interface_elem.get("name"),
+            "label": interface_elem.get("label"),
+            "required": string_as_bool(interface_elem.get("required", "false")),
+        }
+        interfaces.append(interface)
+    return interfaces
 
 
 def resource_from_element(resource_elem) -> ResourceRequirement:

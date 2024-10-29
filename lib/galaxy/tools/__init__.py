@@ -1036,6 +1036,8 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.display_interface = True
         self.require_login = False
         self.rerun = False
+        self.inject_as_env: Optional[str] = None
+        self.interfaces: List[Dict[str, Any]] = []
         # This will be non-None for tools loaded from the database (DynamicTool objects).
         self.dynamic_tool: Optional[DynamicTool] = None
         # Define a place to keep track of all input   These
@@ -1467,6 +1469,26 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.containers = containers
         self.resource_requirements = resource_requirements
         self.javascript_requirements = javasscript_requirements
+        for requirement in self.requirements:
+            if requirement.type == "secret":
+                self.inject_as_env = requirement.inject_as_env
+                self.interfaces = requirement.interfaces
+                for interface in self.interfaces:
+                    preferences = self.app.config.user_preferences_extra["preferences"]
+                    interface_name = interface.get("name", "")
+                    main_key, input_key = interface_name.split("|")
+                    preferences_inputs = preferences.get(main_key, {}).get("inputs", [])
+                    required = interface.get("required", False)
+                    for input_item in preferences_inputs:
+                        if any(input_item.get("name") == input_key):
+                            input_item["required"] = required
+                            # now this should add it the environment variables to the job as the name self.inject_as_env
+                            # value should be get from vault (trans.user_vault.read_secret(vault_key))
+
+                            self.environment_variables.append({"name": self.inject_as_env, "value": None})
+                            break
+                    else:
+                        raise exceptions.ConfigurationError(f"Interface {interface_name} not found in user preferences")
 
         required_files = tool_source.parse_required_files()
         if required_files is None:
