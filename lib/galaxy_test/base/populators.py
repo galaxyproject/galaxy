@@ -3511,6 +3511,17 @@ class DescribeToolExecutionOutput:
             raise AssertionError(f"Output dataset had file extension {ext}, not the expected extension {expected_ext}")
         return self
 
+    @property
+    def json(self) -> Any:
+        contents = self.contents
+        return json.loads(contents)
+
+    def with_json(self, expected_json: Any) -> Self:
+        json = self.json
+        if json != expected_json:
+            raise AssertionError(f"Output dataset contianed JSON {json}, not {expected_json} as expected")
+        return self
+
     # aliases that might help make tests more like English in particular cases. Declaring them explicitly
     # instead quick little aliases because of https://github.com/python/mypy/issues/6700
     def assert_contains(self, expected_contents: str) -> Self:
@@ -3635,6 +3646,9 @@ class DescribeFailure:
     def __init__(self, response: Response):
         self._response = response
 
+    def __call__(self) -> Self:
+        return self
+
     def with_status_code(self, code: int) -> Self:
         api_asserts.assert_status_code_is(self._response, code)
         return self
@@ -3659,6 +3673,34 @@ class RequiredTool:
         return execution
 
 
+class DescribeToolInputs:
+    _input_format: str = "legacy"
+    _inputs: Optional[Dict[str, Any]]
+
+    def __init__(self, input_format: str):
+        self._input_format = input_format
+        self._inputs = None
+
+    def any(self, inputs: Dict[str, Any]) -> Self:
+        self._inputs = inputs
+        return self
+
+    def flat(self, inputs: Dict[str, Any]) -> Self:
+        if self._input_format == "legacy":
+            self._inputs = inputs
+        return self
+
+    def nested(self, inputs: Dict[str, Any]) -> Self:
+        if self._input_format == "21.01":
+            self._inputs = inputs
+        return self
+
+    # aliases for self to create silly little English sentense... inputs.when.flat().when.legacy()
+    @property
+    def when(self) -> Self:
+        return self
+
+
 class DescribeToolExecution:
     _history_id: Optional[str] = None
     _execute_response: Optional[Response] = None
@@ -3677,8 +3719,13 @@ class DescribeToolExecution:
             self._history_id = has_history_id._history_id
         return self
 
-    def with_inputs(self, inputs: Dict[str, Any]) -> Self:
-        self._inputs = inputs
+    def with_inputs(self, inputs: Union[DescribeToolInputs, Dict[str, Any]]) -> Self:
+        if isinstance(inputs, DescribeToolInputs):
+            self._inputs = inputs._inputs or {}
+            self._input_format = inputs._input_format
+        else:
+            self._inputs = inputs
+            self._input_format = "legacy"
         return self
 
     def with_nested_inputs(self, inputs: Dict[str, Any]) -> Self:
@@ -3745,12 +3792,24 @@ class DescribeToolExecution:
         return DescribeJob(self._dataset_populator, history_id, job["id"])
 
     @property
-    def assert_fails(self) -> DescribeFailure:
+    def that_fails(self) -> DescribeFailure:
         self._ensure_executed()
         execute_response = self._execute_response
         assert execute_response is not None
-        api_asserts.assert_status_code_is_not_ok(execute_response)
-        return DescribeFailure(execute_response)
+        if execute_response.status_code != 200:
+            return DescribeFailure(execute_response)
+        else:
+            response = self._assert_executed_ok()
+            jobs = response["jobs"]
+            for job in jobs:
+                final_state = self._dataset_populator.wait_for_job(job["id"])
+                assert final_state == "error"
+            return DescribeFailure(execute_response)
+
+    # alternative assert_ syntax for cases where it reads better.
+    @property
+    def assert_fails(self) -> DescribeFailure:
+        return self.that_fails
 
 
 class GiHttpMixin:

@@ -8,6 +8,9 @@ from typing import (
 
 from packaging.version import Version
 
+from galaxy.util import string_as_bool
+from .parameter_validators import statically_validates
+
 if TYPE_CHECKING:
     from .interface import (
         InputSource,
@@ -81,6 +84,27 @@ def boolean_true_and_false_values(input_source, profile: Optional[Union[float, s
                 f"Cannot set falsevalue to [{falsevalue}], Galaxy state may encounter issues distinguishing booleans and strings in this case."
             )
     return (truevalue, falsevalue)
+
+
+def text_input_is_optional(input_source: "InputSource") -> Tuple[bool, bool]:
+    # Optionality not explicitly defined, default to False
+    optional: Optional[bool] = False
+    optionality_inferred: bool = False
+
+    optional = input_source.get("optional", None)
+    if optional is not None:
+        optional = string_as_bool(optional)
+    else:
+        # A text parameter that doesn't raise a validation error on empty string
+        # is considered to be optional
+        if statically_validates(input_source.parse_validators(), ""):
+            optional = True
+            optionality_inferred = True
+        else:
+            optional = False
+
+    assert isinstance(optional, bool)
+    return optional, optionality_inferred
 
 
 class ParameterParseException(Exception):

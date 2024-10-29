@@ -19,7 +19,6 @@ from typing import (
     Union,
 )
 
-from packaging.version import Version
 from typing_extensions import TypeAlias
 
 from galaxy.model import (
@@ -33,7 +32,10 @@ from galaxy.model import (
 from galaxy.model.metadata import FileParameter
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
-from galaxy.tools.parameters.basic import BooleanToolParameter
+from galaxy.tools.parameters.basic import (
+    BooleanToolParameter,
+    TextToolParameter,
+)
 from galaxy.tools.parameters.wrapped_json import (
     data_collection_input_to_staging_path_and_source_path,
     data_input_to_staging_path_and_source_path,
@@ -126,15 +128,9 @@ class InputValueWrapper(ToolParameterValueWrapper):
         profile: Optional[float] = None,
     ) -> None:
         self.input = input
-        if (
-            value is None
-            and input.type == "text"
-            and input.optional
-            and input.optionality_inferred
-            and (profile is None or Version(str(profile)) < Version("23.0"))
-        ):
+        if value is None and input.type == "text":
             # Tools with old profile versions may treat an optional text parameter as `""`
-            value = ""
+            value = cast(TextToolParameter, input).wrapper_default
         self.value = value
         self._other_values: Dict[str, str] = other_values or {}
 

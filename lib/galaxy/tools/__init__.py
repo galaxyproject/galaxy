@@ -1904,16 +1904,20 @@ class Tool(UsesDictVisibleKeys):
                 simple_errors=False,
                 input_format=input_format,
             )
-            # If the tool provides a `validate_input` hook, call it.
-            validate_input = self.get_hook("validate_input")
-            if validate_input:
-                # hooks are so terrible ... this is specifically for https://github.com/galaxyproject/tools-devteam/blob/main/tool_collections/gops/basecoverage/operation_filter.py
-                legacy_non_dce_params = {
-                    k: v.hda if isinstance(v, model.DatasetCollectionElement) and v.hda else v
-                    for k, v in params.items()
-                }
-                validate_input(request_context, errors, legacy_non_dce_params, self.inputs)
+            self._handle_validate_input_hook(request_context, params, errors)
         return params, errors
+
+    def _handle_validate_input_hook(
+        self, request_context, params: ToolStateJobInstancePopulatedT, errors: ParameterValidationErrorsT
+    ):
+        # If the tool provides a `validate_input` hook, call it.
+        validate_input = self.get_hook("validate_input")
+        if validate_input:
+            # hooks are so terrible ... this is specifically for https://github.com/galaxyproject/tools-devteam/blob/main/tool_collections/gops/basecoverage/operation_filter.py
+            legacy_non_dce_params = {
+                k: v.hda if isinstance(v, model.DatasetCollectionElement) and v.hda else v for k, v in params.items()
+            }
+            validate_input(request_context, errors, legacy_non_dce_params, self.inputs)
 
     def completed_jobs(
         self, trans, use_cached_job: bool, all_params: List[ToolStateJobInstancePopulatedT]

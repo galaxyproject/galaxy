@@ -7,8 +7,11 @@ keep things like testing other tool APIs in ./test_tools.py (index, search, tool
 files, etc..).
 """
 
+from typing import List
+
 from galaxy_test.base.decorators import requires_tool_id
 from galaxy_test.base.populators import (
+    DescribeToolInputs,
     RequiredTool,
     TargetHistory,
 )
@@ -80,24 +83,15 @@ def test_identifier_in_multiple_reduce(target_history: TargetHistory, required_t
 
 
 @requires_tool_id("identifier_in_conditional")
-def test_identifier_map_over_multiple_input_in_conditional_legacy_format(
-    target_history: TargetHistory, required_tool: RequiredTool
+def test_identifier_map_over_multiple_input_in_conditional(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
 ):
     hdca = target_history.with_pair()
-    execute = required_tool.execute.with_inputs(
+    inputs = tool_input_format.when.flat(
         {
             "outer_cond|input1": hdca.src_dict,
         }
-    )
-    execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("forward\nreverse")
-
-
-@requires_tool_id("identifier_in_conditional")
-def test_identifier_map_over_multiple_input_in_conditional_21_01_format(
-    target_history: TargetHistory, required_tool: RequiredTool
-):
-    hdca = target_history.with_pair()
-    execute = required_tool.execute.with_nested_inputs(
+    ).when.nested(
         {
             "outer_cond": {
                 "multi_input": True,
@@ -105,6 +99,7 @@ def test_identifier_map_over_multiple_input_in_conditional_21_01_format(
             },
         }
     )
+    execute = required_tool.execute.with_inputs(inputs)
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("forward\nreverse")
 
 
@@ -218,3 +213,100 @@ def test_optional_repeats_with_mins_filled_id(target_history: TargetHistory, req
     # tool test framework filling in a default. Creating a raw request here
     # verifies that currently select parameters don't require a selection.
     required_tool.execute.assert_has_single_job.with_single_output.containing("false").containing("length: 2")
+
+
+@requires_tool_id("gx_select")
+@requires_tool_id("gx_select_no_options_validation")
+def test_select_first_by_default(required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs):
+    empty = tool_input_format.when.any({})
+    for required_tool in required_tools:
+        required_tool.execute.with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
+            "--ex1"
+        )
+
+
+@requires_tool_id("gx_select")
+@requires_tool_id("gx_select_no_options_validation")
+@requires_tool_id("gx_select_dynamic_empty")
+@requires_tool_id("gx_select_dynamic_empty_validated")
+def test_select_on_null_errors(required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs):
+    # test_select_first_by_default verifies the first option will just be selected, despite that if an explicit null
+    # is passed, an error (rightfully) occurs. This test verifies that.
+    null_parameter = tool_input_format.when.any({"parameter": None})
+    for required_tool in required_tools:
+        required_tool.execute.with_inputs(null_parameter).assert_fails.with_error_containing("an invalid option")
+
+
+@requires_tool_id("gx_select_dynamic_empty")
+@requires_tool_id("gx_select_dynamic_empty_validated")
+def test_select_empty_causes_error_regardless(
+    required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs
+):
+    # despite selects otherwise selecting defaults - nothing can be done if the select option list is empty
+    empty = tool_input_format.when.any({})
+    for required_tool in required_tools:
+        required_tool.execute.with_inputs(empty).assert_fails.with_error_containing("an invalid option")
+
+
+@requires_tool_id("gx_select_optional")
+@requires_tool_id("gx_select_optional_no_options_validation")
+def test_select_optional_null_by_default(required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs):
+    # test_select_first_by_default shows that required select values will pick an option by default,
+    # this test verify that doesn't occur for optional selects.
+    empty = tool_input_format.when.any({})
+    null_parameter = tool_input_format.when.any({"parameter": None})
+    for required_tool in required_tools:
+        required_tool.execute.with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
+            "None"
+        )
+        required_tool.execute.with_inputs(null_parameter).assert_has_single_job.with_output(
+            "output"
+        ).with_contents_stripped("None")
+
+
+@requires_tool_id("gx_select_multiple")
+@requires_tool_id("gx_select_multiple_optional")
+def test_select_multiple_does_not_select_first_by_default(
+    required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs
+):
+    # unlike single selects - no selection is forced and these serve as optional by default
+    empty = tool_input_format.when.any({})
+    null_parameter = tool_input_format.when.any({"parameter": None})
+    for required_tool in required_tools:
+        required_tool.execute.with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
+            "None"
+        )
+        required_tool.execute.with_inputs(null_parameter).assert_has_single_job.with_output(
+            "output"
+        ).with_contents_stripped("None")
+
+
+@requires_tool_id("gx_text")
+@requires_tool_id("gx_text_optional_false")
+def test_null_to_text_tools(required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs):
+    for required_tool in required_tools:
+        execute = required_tool.execute.with_inputs(tool_input_format.when.any({}))
+        execute.assert_has_single_job.with_output("output").with_contents_stripped("")
+        execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
+
+        execute = required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": None}))
+        execute.assert_has_single_job.with_output("output").with_contents_stripped("")
+        execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
+
+
+@requires_tool_id("gx_text_optional")
+def test_null_to_optinal_text_tool(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    execute = required_tool.execute.with_inputs(tool_input_format.when.any({}))
+    execute.assert_has_single_job.with_output("output").with_contents_stripped("")
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
+
+    execute = required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": None}))
+    execute.assert_has_single_job.with_output("output").with_contents_stripped("")
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
+
+
+@requires_tool_id("gx_text_empty_validation")
+def test_null_to_text_tool_with_validation(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    required_tool.execute.with_inputs(tool_input_format.when.any({})).assert_fails()
+    required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": None})).assert_fails()
+    required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": ""})).assert_fails()
