@@ -41,7 +41,7 @@ const metadataDetail = ref({
 
 function updateJob(newJob) {
     job.value = newJob;
-    if (newJob) {
+    if (newJob && !invocationId.value) {
         fetchInvocation(newJob.id);
     }
 }
@@ -57,6 +57,7 @@ function filterMetadata(jobMessages) {
     });
 }
 
+/** Fetches the invocation for the given job id to get the associated invocation id */
 async function fetchInvocation(jobId) {
     if (jobId) {
         const invocation = await invocationForJob({ jobId: jobId });
