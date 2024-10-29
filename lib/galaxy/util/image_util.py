@@ -1,11 +1,12 @@
 """Provides utilities for working with image files."""
 
-import imghdr
 import logging
 from typing import (
     List,
     Optional,
 )
+
+import puremagic
 
 try:
     from PIL import Image
@@ -26,7 +27,7 @@ def image_type(filename: str) -> Optional[str]:
             # exception we expect to happen frequently, so we're not logging
             pass
     if not fmt:
-        fmt = imghdr.what(filename)
+        fmt = puremagic.what(filename)
     if fmt:
         return fmt.upper()
     else:
