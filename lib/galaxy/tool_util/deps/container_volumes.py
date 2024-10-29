@@ -7,7 +7,7 @@ from typing import Optional
 
 
 class ContainerVolume(metaclass=ABCMeta):
-    valid_modes = frozenset({"ro", "rw"})
+    valid_modes = frozenset({"ro", "rw", "z"})
 
     def __init__(self, path: str, host_path: Optional[str] = None, mode: Optional[str] = None):
         self.path = path
@@ -50,7 +50,7 @@ class DockerVolume(ContainerVolume):
             kwds["path"] = kwds["host_path"]
         elif len(parts) == 2:
             # /host_path:mode is not (or is no longer?) valid Docker volume syntax
-            if parts[1] in DockerVolume.valid_modes:
+            if any(mode_part not in DockerVolume.valid_modes for mode_part in parts[1].split(",")):
                 kwds["mode"] = parts[1]
                 kwds["path"] = kwds["host_path"]
             else:
