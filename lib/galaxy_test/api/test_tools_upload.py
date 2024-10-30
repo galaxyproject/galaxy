@@ -675,6 +675,7 @@ class TestToolsUpload(ApiTestCase):
     def _assert_content_matches_hash(self, content: bytes, expected_hash: str):
         with tempfile.NamedTemporaryFile("wb") as temp:
             temp.write(content)
+            temp.flush()
             actual_hash = md5_hash_file(temp.name)
             assert actual_hash == expected_hash
 
