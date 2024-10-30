@@ -28,9 +28,10 @@ from galaxy.model.deferred import (
 )
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
+from galaxy.security.vault import UserVaultWrapper
 from galaxy.structured_app import (
     BasicSharedApp,
-    MinimalToolApp,
+    StructuredApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tools.parameters import (
@@ -126,11 +127,11 @@ class ToolEvaluator:
     tool inputs in an isolated, testable manner.
     """
 
-    app: MinimalToolApp
+    app: StructuredApp
     job: model.Job
     materialize_datasets: bool = True
 
-    def __init__(self, app: MinimalToolApp, tool, job, local_working_directory):
+    def __init__(self, app: StructuredApp, tool, job, local_working_directory):
         self.app = app
         self.job = job
         self.tool = tool
@@ -187,6 +188,16 @@ class ToolEvaluator:
             output_collections=out_collections,
         )
         self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
+
+        if self.tool.secrets:
+            user_vault = UserVaultWrapper(self.app.vault, self._user)
+            for secret in self.tool.secrets:
+                vault_key = secret.user_preferences_key
+                secret_value = user_vault.read_secret("preferences/" + vault_key)
+                if secret_value is not None:
+                    self.environment_variables.append({"name": secret.inject_as_env, "value": secret_value})
+                else:
+                    log.warning(f"Failed to read secret from vault with key {vault_key}")
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution
