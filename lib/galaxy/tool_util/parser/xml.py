@@ -433,7 +433,7 @@ class XmlToolSource(ToolSource):
         return RequiredFiles.from_dict(as_dict)
 
     def parse_requirements_and_containers(self):
-        return requirements.parse_requirements_from_xml(self.root, parse_resources=True)
+        return requirements.parse_requirements_from_xml(self.root, parse_resources_and_secrets=True)
 
     def parse_input_pages(self) -> "XmlPagesSource":
         return XmlPagesSource(self.root)

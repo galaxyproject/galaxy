@@ -1036,8 +1036,6 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.display_interface = True
         self.require_login = False
         self.rerun = False
-        self.inject_as_env: Optional[str] = None
-        self.interfaces: List[Dict[str, Any]] = []
         # This will be non-None for tools loaded from the database (DynamicTool objects).
         self.dynamic_tool: Optional[DynamicTool] = None
         # Define a place to keep track of all input   These
@@ -1462,36 +1460,20 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                     raise Exception(message)
 
         # Requirements (dependencies)
-        requirements, containers, resource_requirements, javasscript_requirements = (
+        requirements, containers, resource_requirements, javasscript_requirements, secrets = (
             tool_source.parse_requirements_and_containers()
         )
         self.requirements = requirements
         self.containers = containers
         self.resource_requirements = resource_requirements
         self.javascript_requirements = javasscript_requirements
-        for requirement in self.requirements:
-            if requirement.type == "secret":
-                self.inject_as_env = requirement.inject_as_env
-                self.interfaces = requirement.interfaces
-                for interface in self.interfaces:
-                    preferences = self.app.config.user_preferences_extra["preferences"]
-                    interface_name = interface.get("name", "")
-                    main_key, input_key = interface_name.split("|")
-                    preferences_inputs = preferences.get(main_key, {}).get("inputs", [])
-                    required = interface.get("required", False)
-                    for input_item in preferences_inputs:
-                        if any(input_item.get("name") == input_key):
-                            if input_item.get("required") != required:
-                                raise exceptions.ConfigurationError(
-                                    f"Interface {interface_name} required mismatch between tool and user preferences"
-                                )
-                            if input_item.get("type") != "secret" or input_item.get("store") != "vault":
-                                raise exceptions.ConfigurationError(
-                                    f"Interface {interface_name} type should be 'secret' and store should be 'vault'."
-                                )
-                            break
-                    else:
-                        raise exceptions.ConfigurationError(f"Interface {interface_name} not found in user preferences")
+        self.secrets = secrets
+        for secret in self.secrets:
+            preferences = self.app.config.user_preferences_extra["preferences"]
+            main_key, input_key = secret.user_preferences_key.split("/")
+            preferences_input = preferences.get(main_key, {}).get("inputs", [])
+            if not any(input_item.get("name") == input_key for input_item in preferences_input):
+                raise exceptions.ConfigurationError(f"User preferences key {secret.user_preferences_key} not found")
 
         required_files = tool_source.parse_required_files()
         if required_files is None:
