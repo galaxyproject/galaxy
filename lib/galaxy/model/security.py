@@ -159,38 +159,7 @@ class GalaxyRBACAgent(RBACAgent):
             is_public_item = False
         # Admins can always choose from all non-deleted roles
         if trans.user_is_admin or trans.app.config.expose_user_email:
-
-            stmt = select(Role)
-
-            if search_query:
-                stmt = stmt.join(Role.users).join(User)  # We need to query against user email
-                stmt = stmt.where(
-                    or_(Role.name.like(search_query, escape="/"), User.email.like(search_query, escape="/"))
-                )
-
-            stmt = stmt.where(Role.deleted == false())
-
-            if not trans.user_is_admin:
-                # User is not an admin but the configuration exposes all private roles to all users.
-                stmt = stmt.where(Role.type == Role.types.PRIVATE)
-
-            count_stmt = select(func.count()).select_from(stmt)
-            total_count = trans.sa_session.scalar(count_stmt)
-
-            if limit is not None:
-                # Takes the least number of results from beginning that includes the requested page
-                stmt = stmt.order_by(Role.name).limit(limit)
-                page_start = (page * page_limit) - page_limit
-                page_end = page_start + page_limit
-                if total_count < page_start + 1:
-                    # Return empty list if there are less results than the requested position
-                    roles = []
-                else:
-                    roles = trans.sa_session.scalars(stmt).all()
-                    roles = roles[page_start:page_end]
-            else:
-                stmt = stmt.order_by(Role.name)
-                roles = trans.sa_session.scalars(stmt).all()
+            roles = _get_valid_roles_case1(trans.sa_session, search_query, trans.user_is_admin, limit, page, page_limit)
         # Non-admin and public item
         elif is_public_item:
             # Add the current user's private role
@@ -1814,3 +1783,46 @@ def is_foreign_key_violation(error):
         # If this is a PostgreSQL foreign key error, then error.orig is an instance of psycopg2.errors.ForeignKeyViolation
         # and should have an attribute `pgcode` = 23503.
         return int(getattr(error.orig, "pgcode", -1)) == 23503
+
+
+def _get_valid_roles_case1(session, search_query, is_admin, limit, page, page_limit):
+    """Case: trans.user_is_admin or trans.app.config.expose_user_email"""
+    stmt = select(Role).where(Role.deleted == false())
+
+    if not is_admin:
+        # User is not an admin but the configuration exposes all private roles to all users,
+        # so only private roles are returned.
+        stmt = stmt.where(Role.type == Role.types.PRIVATE)
+
+    if search_query:
+        stmt = stmt.where(Role.name.like(search_query, escape="/"))
+
+        # Also check against user emails for associated users of private roles ONLY
+        stmt2 = (
+            select(Role)
+            .join(Role.users)
+            .join(User)
+            .where(and_(Role.type == Role.types.PRIVATE, User.email.like(search_query, escape="/")))
+        )
+        stmt = stmt.union(stmt2)
+
+    count_stmt = select(func.count()).select_from(stmt)
+    total_count = session.scalar(count_stmt)
+
+    stmt = stmt.order_by(Role.name)
+
+    if limit is not None:
+        # Takes the least number of results from beginning that includes the requested page
+        stmt = stmt.limit(limit)
+        page_start = (page * page_limit) - page_limit
+        page_end = page_start + page_limit
+        if total_count < page_start + 1:
+            # Return empty list if there are less results than the requested position
+            return []
+
+    stmt = select(Role).from_statement(stmt)
+    roles = session.scalars(stmt).all()
+    if limit is not None:
+        roles = roles[page_start:page_end]
+
+    return roles
