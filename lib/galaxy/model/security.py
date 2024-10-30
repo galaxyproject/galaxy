@@ -159,13 +159,20 @@ class GalaxyRBACAgent(RBACAgent):
             is_public_item = False
         # Admins can always choose from all non-deleted roles
         if trans.user_is_admin or trans.app.config.expose_user_email:
-            if trans.user_is_admin:
-                stmt = select(Role).where(Role.deleted == false())
-            else:
-                # User is not an admin but the configuration exposes all private roles to all users.
-                stmt = select(Role).where(and_(Role.deleted == false(), Role.type == Role.types.PRIVATE))
+
+            stmt = select(Role)
+
             if search_query:
-                stmt = stmt.where(Role.name.like(search_query, escape="/"))
+                stmt = stmt.join(Role.users).join(User)  # We need to query against user email
+                stmt = stmt.where(
+                    or_(Role.name.like(search_query, escape="/"), User.email.like(search_query, escape="/"))
+                )
+
+            stmt = stmt.where(Role.deleted == false())
+
+            if not trans.user_is_admin:
+                # User is not an admin but the configuration exposes all private roles to all users.
+                stmt = stmt.where(Role.type == Role.types.PRIVATE)
 
             count_stmt = select(func.count()).select_from(stmt)
             total_count = trans.sa_session.scalar(count_stmt)
