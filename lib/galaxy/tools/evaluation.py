@@ -333,7 +333,11 @@ class ToolEvaluator:
         We can skip materializing some deferred datasets if the input can work with URIs that are prefixed
         with a known prefix set in `allow_uri_if_protocol`.
         """
-        deferred_input = self.tool.inputs[input_name]
+        deferred_input = self.tool.inputs.get(input_name)
+        if not deferred_input:
+            # TODO: Can this ever happen? It seems like it happens in the test suite.
+            # For example, in test_metadata_validator_on_deferred_input
+            return True
         if isinstance(deferred_input, DataToolParameter) and isinstance(input_value, model.DatasetInstance):
             source_uri = input_value.sources[0].source_uri or ""
             for prefix in deferred_input.allow_uri_if_protocol:
