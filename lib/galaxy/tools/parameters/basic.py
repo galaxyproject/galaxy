@@ -2094,7 +2094,7 @@ class DataToolParameter(BaseDataToolParameter):
         # In case of deferred datasets, if the source URI is prefixed with one of the values in this list,
         # the dataset will behave as an URI and will not be materialized into a file path.
         allow_uri_if_protocol = input_source.get("allow_uri_if_protocol", None)
-        self.allow_uri_if_protocol = allow_uri_if_protocol.split("|") if allow_uri_if_protocol else []
+        self.allow_uri_if_protocol = allow_uri_if_protocol.split(",") if allow_uri_if_protocol else []
 
     def from_json(self, value, trans, other_values=None):
         session = trans.sa_session
