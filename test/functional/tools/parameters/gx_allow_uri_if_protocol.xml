@@ -1,0 +1,13 @@
+<tool id="gx_allow_uri_if_protocol" name="gx_allow_uri_if_protocol" version="1.0.0">
+    <command><![CDATA[
+echo '$input' > '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" allow_uri_if_protocol="https"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+    <tests>
+    </tests>
+</tool>
