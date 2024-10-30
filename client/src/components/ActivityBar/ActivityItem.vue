@@ -61,6 +61,7 @@ function onClick(evt: MouseEvent): void {
     <Popper reference-is="span" popper-is="span" :placement="tooltipPlacement">
         <template v-slot:reference>
             <b-nav-item
+                :id="id"
                 class="activity-item position-relative my-1 p-2"
                 :class="{ 'nav-item-active': isActive }"
                 :link-classes="`variant-${props.variant}`"
