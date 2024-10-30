@@ -2737,6 +2737,7 @@ class FakeDatasetAssociation:
     def __init__(self, dataset: Optional["Dataset"] = None) -> None:
         self.dataset = dataset
         self.metadata: Dict = {}
+        self.has_deferred_data = False
 
     def get_file_name(self, sync_cache: bool = True) -> str:
         assert self.dataset
