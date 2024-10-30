@@ -7,7 +7,7 @@ from typing import Optional
 
 
 class ContainerVolume(metaclass=ABCMeta):
-    valid_modes = frozenset({"ro", "rw", "z"})
+    valid_modes = frozenset({"ro", "rw", "z", "Z"})
 
     def __init__(self, path: str, host_path: Optional[str] = None, mode: Optional[str] = None):
         self.path = path
