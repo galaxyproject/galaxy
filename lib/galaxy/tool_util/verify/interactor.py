@@ -429,15 +429,30 @@ class GalaxyInteractorApi:
     def test_data_path(self, tool_id, filename, tool_version=None):
         version_fragment = f"&tool_version={tool_version}" if tool_version else ""
         response = self._get(f"tools/{tool_id}/test_data_path?filename={filename}{version_fragment}", admin=True)
-        try:
-            result = response.json()
-        except Exception:
-            raise Exception(
-                f"Failed to parse test_data_path from Galaxy. An admin key is required for this feature and it is probably not set or not a valid admin key. Status Code: {response.status_code}. Response: {response.text}."
-            )
         if response.status_code in [200, 404]:
-            return result
-        raise Exception(result["err_msg"])
+            return response.json()
+
+        base_error = "Failed to parse test_data_path from Galaxy. An admin key is required for this feature and it is probably not set or not a valid admin key."
+        err_msg = GalaxyInteractorApi._append_response_to_err_msg(response, base_error)
+        raise Exception(err_msg)
+
+    @staticmethod
+    def _append_response_to_err_msg(response: Response, base_error: Optional[str] = None):
+        try:
+            as_json = response.json()
+            if not isinstance(as_json, dict):
+                err_msg = f"Failed to parse expected JSON error from API endpoint. Status Code: {response.status_code}. Response JSON: {as_json}"
+            else:
+                err_msg = as_json.get(
+                    "err_msg",
+                    f"Unknown error - JSON didn't contain the expected error dictionary with an err_msg key. Status Code: {response.status_code}. Response JSON: {as_json}",
+                )
+        except Exception:
+            err_msg = "Failed to parse expected JSON from API endpoint. Status Code: {response.status_code}. Response: {response.text}"
+        if base_error is None:
+            return err_msg
+        else:
+            return f"{base_error} {err_msg}"
 
     def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None):
         result = None
