@@ -331,12 +331,12 @@ class ToolEvaluator:
     def _should_materialize_deferred_input(self, input_name: str, input_value: DeferrableObjectsT) -> bool:
         """
         We can skip materializing some deferred datasets if the input can work with URIs that are prefixed
-        with a known prefix set in `allow_uri_if_prefixed`.
+        with a known prefix set in `allow_uri_if_protocol`.
         """
         deferred_input = self.tool.inputs[input_name]
         if isinstance(deferred_input, DataToolParameter) and isinstance(input_value, model.DatasetInstance):
             source_uri = input_value.sources[0].source_uri or ""
-            for prefix in deferred_input.allow_uri_if_prefixed:
+            for prefix in deferred_input.allow_uri_if_protocol:
                 if source_uri.startswith(prefix):
                     return False
         return True
