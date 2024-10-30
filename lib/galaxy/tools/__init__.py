@@ -1481,11 +1481,10 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                     required = interface.get("required", False)
                     for input_item in preferences_inputs:
                         if any(input_item.get("name") == input_key):
-                            input_item["required"] = required
-                            # now this should add it the environment variables to the job as the name self.inject_as_env
-                            # value should be get from vault (trans.user_vault.read_secret(vault_key))
-
-                            self.environment_variables.append({"name": self.inject_as_env, "value": None})
+                            if input_item["required"] != required:
+                                raise exceptions.ConfigurationError(
+                                    f"Interface {interface_name} required mismatch between tool and user preferences"
+                                )
                             break
                     else:
                         raise exceptions.ConfigurationError(f"Interface {interface_name} not found in user preferences")
