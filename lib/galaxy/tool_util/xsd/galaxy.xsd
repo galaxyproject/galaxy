@@ -625,7 +625,7 @@ serve as complete descriptions of the runtime of a tool.
       <xs:element name="resource" type="Resource" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-  <xs:complexType name="Requirement">
+  <xs:complexType name="Requirement" mixed="true">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
@@ -668,23 +668,62 @@ resolver.
 </requirements>
 ```
 
+This is possible to add secrets into tools directly by adding a requirement of
+type ``secret``. This will inject the value of the requirement into the
+environment of the tool. The value of the requirement is the value of the
+environment variable to inject the secret into.
+
+```xml
+<requirements>
+    <requirement type="secret" inject_as_env="some_tool_api_key">
+        <interface name="some_tool|api_key" label="API Key" required="true"/>
+    </requirement>
+</requirements>
+```
+
+
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:simpleContent>
-      <xs:extension base="xs:string">
-        <xs:attribute name="type" type="RequirementType" use="required">
-          <xs:annotation>
-            <xs:documentation xml:lang="en">Valid values are ``package``, ``set_environment``, ``python-module`` (deprecated), ``binary`` (deprecated)</xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="version" type="xs:string">
-          <xs:annotation>
-            <xs:documentation xml:lang="en">For requirements of type ``package`` this value defines a specific version of the tool dependency.</xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-      </xs:extension>
-    </xs:simpleContent>
+
+    <xs:sequence>
+      <xs:element name="interface" type="Interface" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+
+    <xs:attribute name="type" type="RequirementType" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Valid values are ``package``, ``set_environment``, ``secret``, ``python-module`` (deprecated), ``binary`` (deprecated)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="version" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">For requirements of type ``package`` this value defines a specific version of the tool dependency.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="inject_as_env" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">For requirements of type ``secret`` this value defines the name of the environment variable to inject the value of the requirement into.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
+
+  <xs:complexType name="Interface">
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the interface.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The label of the interface.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="required" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Whether the interface is required.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
   <xs:complexType name="Resource">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -7876,6 +7915,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="binary"/>
       <xs:enumeration value="package"/>
       <xs:enumeration value="set_environment"/>
+      <xs:enumeration value="secret"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="ResourceType">
