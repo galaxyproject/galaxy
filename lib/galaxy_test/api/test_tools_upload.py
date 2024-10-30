@@ -1,13 +1,17 @@
 import json
 import os
+import tempfile
 import urllib.parse
 from base64 import b64encode
+from typing import cast
 
 import pytest
 from tusclient import client
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import UNKNOWN
+from galaxy.util.compression_utils import decompress_bytes_to_directory
+from galaxy.util.hash_util import md5_hash_file
 from galaxy.util.unittest_utils import (
     skip_if_github_down,
     skip_if_site_down,
@@ -28,6 +32,14 @@ from ._framework import ApiTestCase
 
 B64_FOR_1_2_3 = b64encode(b"1 2 3").decode("utf-8")
 URI_FOR_1_2_3 = f"base64://{B64_FOR_1_2_3}"
+
+EXPECTED_TAR_CONTENTS = {
+    "testdir": "Directory",
+    "testdir/c": "Directory",
+    "testdir/a": "File",
+    "testdir/b": "File",
+    "testdir/c/d": "File",
+}
 
 
 class TestToolsUpload(ApiTestCase):
@@ -604,18 +616,11 @@ class TestToolsUpload(ApiTestCase):
         assert content.strip() == "Test123"
         extra_files = self.dataset_populator.get_history_dataset_extra_files(history_id, dataset_id=dataset["id"])
         assert len(extra_files) == 5, extra_files
-        expected_contents = {
-            "testdir": "Directory",
-            "testdir/c": "Directory",
-            "testdir/a": "File",
-            "testdir/b": "File",
-            "testdir/c/d": "File",
-        }
         found_files = set()
         for extra_file in extra_files:
             path = extra_file["path"]
-            assert path in expected_contents
-            assert extra_file["class"] == expected_contents[path]
+            assert path in EXPECTED_TAR_CONTENTS
+            assert extra_file["class"] == EXPECTED_TAR_CONTENTS[path]
             found_files.add(path)
 
         assert len(found_files) == 5, found_files
@@ -638,6 +643,75 @@ class TestToolsUpload(ApiTestCase):
             dataset = run_response.json()["outputs"][0]
             details = self.dataset_populator.get_history_dataset_details(history_id, dataset=dataset, assert_ok=False)
             assert details["state"] == "error"
+
+    def test_upload_tar_roundtrip(self, history_id):
+        testdir = TestDataResolver().get_filename("testdir.tar")
+        expected_size = os.path.getsize(testdir)
+        with open(testdir, "rb") as fh:
+            details = self._upload_and_get_details(fh, api="fetch", history_id=history_id, assert_ok=True)
+        assert details["file_ext"] == "tar"
+        assert details["file_size"] == expected_size
+        content = cast(
+            bytes, self.dataset_populator.get_history_dataset_content(history_id, dataset=details, type="bytes")
+        )
+        # Make sure we got the expected content size.
+        assert len(content) == expected_size
+
+        # Make sure we get the expected contents.
+        dir_path = decompress_bytes_to_directory(content)
+        assert dir_path.endswith("testdir")
+        for path, entry_class in EXPECTED_TAR_CONTENTS.items():
+            path = os.path.join(dir_path, os.path.pardir, path)
+            if entry_class == "Directory":
+                assert os.path.isdir(path)
+            else:
+                assert os.path.isfile(path)
+
+        # Make sure the hash of the content matches the hash of the original file.
+        expected_hash = md5_hash_file(testdir)
+        assert expected_hash is not None
+        self._assert_content_matches_hash(content, expected_hash)
+
+    def _assert_content_matches_hash(self, content: bytes, expected_hash: str):
+        with tempfile.NamedTemporaryFile("wb") as temp:
+            temp.write(content)
+            temp.flush()
+            actual_hash = md5_hash_file(temp.name)
+            assert actual_hash == expected_hash
+
+    def test_upload_zip_roundtrip(self, history_id):
+        testdir = TestDataResolver().get_filename("testdir1.zip")
+        expected_size = os.path.getsize(testdir)
+        with open(testdir, "rb") as fh:
+            details = self._upload_and_get_details(fh, api="fetch", history_id=history_id, assert_ok=True)
+        assert details["file_ext"] == "zip"
+        assert details["file_size"] == expected_size
+        content = cast(
+            bytes, self.dataset_populator.get_history_dataset_content(history_id, dataset=details, type="bytes")
+        )
+        # Make sure we got the expected content size.
+        assert len(content) == expected_size
+
+        # Make sure we get the expected contents.
+        dir_path = decompress_bytes_to_directory(content)
+        assert dir_path.endswith("testdir1")
+        EXPECTED_ZIP_CONTENTS = {
+            "file1": "File",
+            "file2": "File",
+            "dir1/": "Directory",
+            "dir1/file3": "File",
+        }
+        for path, entry_class in EXPECTED_ZIP_CONTENTS.items():
+            path = os.path.join(dir_path, path)
+            if entry_class == "Directory":
+                assert os.path.isdir(path)
+            else:
+                assert os.path.isfile(path)
+
+        # Make sure the hash of the content matches the hash of the original file.
+        expected_hash = md5_hash_file(testdir)
+        assert expected_hash is not None
+        self._assert_content_matches_hash(content, expected_hash)
 
     def test_upload_dbkey(self):
         with self.dataset_populator.test_history() as history_id:
