@@ -5,7 +5,7 @@ import { JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
 import { formatDuration, intervalToDuration } from "date-fns";
 import JOB_STATES_MODEL from "utils/job-states-model";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { invocationForJob } from "@/api/invocations";
 
@@ -13,7 +13,7 @@ import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
 
 const job = ref(null);
-const invocationId = ref(null);
+const invocationId = ref(undefined);
 
 const props = defineProps({
     job_id: {
@@ -41,9 +41,6 @@ const metadataDetail = ref({
 
 function updateJob(newJob) {
     job.value = newJob;
-    if (newJob && !invocationId.value) {
-        fetchInvocation(newJob.id);
-    }
 }
 
 function filterMetadata(jobMessages) {
@@ -57,15 +54,21 @@ function filterMetadata(jobMessages) {
     });
 }
 
-/** Fetches the invocation for the given job id to get the associated invocation id */
-async function fetchInvocation(jobId) {
-    if (jobId) {
-        const invocation = await invocationForJob({ jobId: jobId });
-        if (invocation) {
-            invocationId.value = invocation.id;
+// Fetches the invocation for the given job id to get the associated invocation id
+watch(
+    () => props.job_id,
+    async (newId, oldId) => {
+        if (newId && (invocationId.value === undefined || newId !== oldId)) {
+            const invocation = await invocationForJob({ jobId: newId });
+            if (invocation) {
+                invocationId.value = invocation.id;
+            } else {
+                invocationId.value = null;
+            }
         }
-    }
-}
+    },
+    { immediate: true }
+);
 </script>
 
 <template>
