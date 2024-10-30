@@ -4,7 +4,6 @@ from typing import (
 )
 from uuid import uuid4
 
-import yaml
 from pydantic import UUID4
 from sqlalchemy import select
 
@@ -15,10 +14,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterMissingException,
 )
-from galaxy.managers.workflows import (
-    WorkflowContentsManager,
-    WorkflowCreateOptions,
-)
+from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.model import (
     ToolLandingRequest as ToolLandingRequestModel,
     WorkflowLandingRequest as WorkflowLandingRequestModel,
@@ -106,22 +102,10 @@ class LandingRequestManager:
         if request.workflow_source_type == "trs_url" and isinstance(trans.app, StructuredApp):
             # trans is always structured app except for unit test
             assert request.workflow_source
-            trs_id, trs_version = request.workflow_source.rsplit("/", 1)
-            _, trs_id, trs_version = trans.app.trs_proxy.get_trs_id_and_version_from_trs_url(request.workflow_source)
-            workflow = self.workflow_contents_manager.get_workflow_by_trs_id_and_version(
-                self.sa_session, trs_id=trs_id, trs_version=trs_version, user_id=trans.user and trans.user.id
+            workflow = self.workflow_contents_manager.get_or_create_workflow_from_trs(
+                trans, trs_url=request.workflow_source
             )
-            if not workflow:
-                data = trans.app.trs_proxy.get_version_from_trs_url(request.workflow_source)
-                as_dict = yaml.safe_load(data)
-                raw_workflow_description = self.workflow_contents_manager.normalize_workflow_format(trans, as_dict)
-                created_workflow = self.workflow_contents_manager.build_workflow_from_raw_description(
-                    trans,
-                    raw_workflow_description,
-                    WorkflowCreateOptions(),
-                )
-                workflow = created_workflow.workflow
-            request.workflow_id = workflow.id
+            request.workflow_id = workflow.latest_workflow_id
 
     def get_tool_landing_request(self, trans: ProvidesUserContext, uuid: UUID4) -> ToolLandingRequest:
         request = self._get_claimed_tool_landing_request(trans, uuid)

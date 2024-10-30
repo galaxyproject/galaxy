@@ -7827,7 +7827,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     reports_config: Mapped[Optional[bytes]] = mapped_column(JSONType)
     creator_metadata: Mapped[Optional[bytes]] = mapped_column(JSONType)
     license: Mapped[Optional[str]] = mapped_column(TEXT)
-    source_metadata: Mapped[Optional[bytes]] = mapped_column(JSONType)
+    source_metadata: Mapped[Optional[Dict[str, str]]] = mapped_column(JSONType)
     uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType)
 
     steps = relationship(

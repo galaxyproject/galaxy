@@ -1234,7 +1234,7 @@ steps:
             == "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
         )
         assert original_workflow.get("source_metadata").get("trs_version_id") == "master"
-        assert original_workflow.get("source_metadata").get("trs_server") == ""
+        assert not original_workflow.get("source_metadata").get("trs_server")
         assert original_workflow.get("source_metadata").get("trs_url") == (
             "https://dockstore.org/api/ga4gh/trs/v2/tools/"
             "%23workflow%2Fgithub.com%2Fjmchilton%2Fgalaxy-workflow-dockstore-example-1%2Fmycoolworkflow/"
@@ -1264,7 +1264,7 @@ steps:
         assert "COVID-19: variation analysis reporting" in original_workflow["name"]
         assert original_workflow.get("source_metadata").get("trs_tool_id") == "109"
         assert original_workflow.get("source_metadata").get("trs_version_id") == "5"
-        assert original_workflow.get("source_metadata").get("trs_server") == ""
+        assert not original_workflow.get("source_metadata").get("trs_server")
         assert (
             original_workflow.get("source_metadata").get("trs_url")
             == "https://workflowhub.eu/ga4gh/trs/v2/tools/109/versions/5"

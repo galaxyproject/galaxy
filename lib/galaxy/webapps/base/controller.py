@@ -1003,7 +1003,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         """
         Converts a workflow to a dict of attributes suitable for exporting.
         """
-        workflow_contents_manager = workflows.WorkflowContentsManager(self.app)
+        workflow_contents_manager = workflows.WorkflowContentsManager(self.app, self.app.trs_proxy)
         return workflow_contents_manager.workflow_to_dict(
             trans,
             stored,
