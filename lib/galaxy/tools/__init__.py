@@ -1481,9 +1481,13 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                     required = interface.get("required", False)
                     for input_item in preferences_inputs:
                         if any(input_item.get("name") == input_key):
-                            if input_item["required"] != required:
+                            if input_item.get("required") != required:
                                 raise exceptions.ConfigurationError(
                                     f"Interface {interface_name} required mismatch between tool and user preferences"
+                                )
+                            if input_item.get("type") != "secret" or input_item.get("store") != "vault":
+                                raise exceptions.ConfigurationError(
+                                    f"Interface {interface_name} type should be 'secret' and store should be 'vault'."
                                 )
                             break
                     else:
