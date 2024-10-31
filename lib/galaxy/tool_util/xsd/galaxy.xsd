@@ -747,7 +747,7 @@ environment variable to inject the secret into.
 
 ```xml
 <requirements>
-    <secret type="vault" user_preferences_key="some_tool|api_key" inject_as_env="some_tool_api_key" label="API Key" required="true"/>
+    <secret type="vault" user_preferences_key="some_tool/api_key" inject_as_env="some_tool_api_key" label="API Key" required="true"/>
 </requirements>
 ```
 ]]></xs:documentation>
