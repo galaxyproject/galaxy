@@ -119,17 +119,22 @@ def get_tool_source_from_representation(tool_format, tool_representation):
         raise Exception(f"Unknown tool representation format [{tool_format}].")
 
 
-def get_input_source(content):
+def get_input_source(content, trusted: bool = True):
     """Wrap dicts or XML elements as InputSource if needed.
 
     If the supplied content is already an InputSource object,
     it is simply returned. This allow Galaxy to uniformly
     consume using the tool input source interface.
+
+    Setting trusted to false indicates that no dynamic code should be
+    executed - no eval. This should be used for user-defined tools (in
+    the future) and for workflow inputs.
     """
     if not isinstance(content, InputSource):
         if isinstance(content, dict):
-            content = YamlInputSource(content)
+            content = YamlInputSource(content, trusted=trusted)
         else:
+            assert trusted  # trust is not implemented for XML inputs
             content = XmlInputSource(content)
     return content
 

@@ -54,6 +54,7 @@ from galaxy.schema.invocation import (
     InvocationFailureWorkflowParameterInvalid,
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
+from galaxy.tool_util.parser import get_input_source
 from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
 from galaxy.tools import (
     DatabaseOperationTool,
@@ -1520,9 +1521,10 @@ class InputParameterModule(WorkflowModule):
             suggestion_values = parameter_def.get("suggestions")
             parameter_kwds["options"] = _parameter_def_list_to_options(suggestion_values)
 
-        input_source = dict(
+        input_source_dict = dict(
             name="input", label=self.label, type=client_parameter_type, optional=optional, **parameter_kwds
         )
+        input_source = get_input_source(input_source_dict, trusted=False)
         input = parameter_class(None, input_source)
         return dict(input=input)
 
@@ -1585,7 +1587,7 @@ class InputParameterModule(WorkflowModule):
             default_value = state["default"]
             state["optional"] = True
         multiple = state.get("multiple")
-        validators = state.get("validators")
+        source_validators = state.get("validators")
         restrictions = state.get("restrictions")
         restrictOnConnections = state.get("restrictOnConnections")
         suggestions = state.get("suggestions")
@@ -1605,8 +1607,19 @@ class InputParameterModule(WorkflowModule):
         }
         if multiple is not None:
             state["parameter_definition"]["multiple"] = multiple
-        if validators is not None:
-            state["parameter_definition"]["validators"] = validators
+        if source_validators is not None:
+            form_validators = []
+            # the form definition can change from Galaxy to Galaxy fairly freely, but the source validators are persisted
+            # and need to be consistent - here we convert the persisted/YAML tool definition version to the "tool form" version.
+            for i, source_validator in enumerate(source_validators):
+                form_validators.append(
+                    {
+                        "__index__": i,
+                        "regex_doc": source_validator.get("message"),
+                        "regex_match": source_validator.get("expression"),
+                    }
+                )
+            state["parameter_definition"]["validators"] = form_validators
         state["parameter_definition"]["restrictions"] = {}
         state["parameter_definition"]["restrictions"]["how"] = restrictions_how
 
@@ -1651,7 +1664,19 @@ class InputParameterModule(WorkflowModule):
             if "multiple" in parameters_def:
                 rval["multiple"] = parameters_def["multiple"]
             if "validators" in parameters_def:
-                rval["validators"] = parameters_def["validators"]
+                form_validators = parameters_def["validators"]
+                source_validators = []
+                # convert the current tool form structure to the persisted YAML-definition style
+                for form_validator in form_validators:
+                    source_validators.append(
+                        {
+                            "message": form_validator["regex_doc"],
+                            "expression": form_validator["regex_match"],
+                            "negate": False,
+                            "type": "regex",
+                        }
+                    )
+                rval["validators"] = source_validators
             restrictions_cond_values = parameters_def.get("restrictions")
             if restrictions_cond_values:
 
