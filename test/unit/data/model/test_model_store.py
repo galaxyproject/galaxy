@@ -19,7 +19,6 @@ import pytest
 from rocrate.rocrate import ROCrate
 from sqlalchemy import select
 from sqlalchemy.orm.scoping import scoped_session
-from unittest.mock import Mock
 
 from galaxy import model
 from galaxy.model import store
