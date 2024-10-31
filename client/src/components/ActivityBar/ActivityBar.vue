@@ -36,6 +36,7 @@ const props = withDefaults(
         optionsHeading?: string;
         optionsIcon?: IconDefinition;
         optionsSearchPlaceholder?: string;
+        initialActivity?: string;
     }>(),
     {
         defaultActivities: undefined,
@@ -47,6 +48,7 @@ const props = withDefaults(
         optionsIcon: () => faEllipsisH,
         optionsSearchPlaceholder: "Search Activities",
         optionsTooltip: "View additional activities",
+        initialActivity: undefined,
     }
 );
 
@@ -60,6 +62,10 @@ const userStore = useUserStore();
 
 const eventStore = useEventStore();
 const activityStore = useActivityStore(props.activityBarId);
+
+if (props.initialActivity) {
+    activityStore.toggledSideBar = props.initialActivity;
+}
 
 watchImmediate(
     () => props.defaultActivities,
