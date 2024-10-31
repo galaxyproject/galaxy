@@ -10,7 +10,7 @@
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
 
-            <test type="isinstance" test_attr="datatype" result_type="datatype">data:ZarrDirectory</test>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">data.ZarrDirectory</test>
             <test type="isinstance" test_attr="datatype" result_type="datatype">images.OMEZarr</test>
 
             <to_param param_attr="id">dataset_id</to_param>
