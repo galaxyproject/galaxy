@@ -179,7 +179,7 @@ class ToolParameter(UsesDictVisibleKeys):
     """
 
     name: str
-    dict_collection_visible_keys = ["name", "argument", "type", "label", "help", "refresh_on_change"]
+    dict_collection_visible_keys = ["name", "argument", "type", "label", "help", "help_format", "refresh_on_change"]
 
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
@@ -193,6 +193,7 @@ class ToolParameter(UsesDictVisibleKeys):
         self.is_dynamic = False
         self.label = input_source.parse_label()
         self.help = input_source.parse_help()
+        self.help_format = input_source.get("help_format") or "html"
         if (sanitizer_elem := input_source.parse_sanitizer_elem()) is not None:
             self.sanitizer = ToolParameterSanitizer.from_element(sanitizer_elem)
         else:

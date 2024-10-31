@@ -78,7 +78,9 @@ from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
     DataCollectionToolParameter,
     DataToolParameter,
+    FloatToolParameter,
     HiddenToolParameter,
+    IntegerToolParameter,
     parameter_types,
     raw_to_galaxy,
     SelectToolParameter,
@@ -1279,7 +1281,7 @@ class InputParameterModule(WorkflowModule):
                 specify_multiple = BooleanToolParameter(None, specify_multiple_source)
 
                 add_validators_repeat = Repeat("validators")
-                add_validators_repeat._title = "Add validator to restrict valid input"
+                add_validators_repeat.title = "Add validator to restrict valid input"
                 add_validators_repeat.min = 0
                 add_validators_repeat.max = math.inf
                 add_validators_repeat.inputs = {
@@ -1288,8 +1290,9 @@ class InputParameterModule(WorkflowModule):
                         {
                             "optional": False,
                             "name": "regex_match",
-                            "label": "Specify regex",
-                            "help": "Provided regex must match input value for input to be valid",
+                            "label": "Specify regular expression",
+                            "help": "Provided [regular expression](gxhelp://programming.python.reg.ex) must match input value for input to be valid",
+                            "help_format": "markdown",
                         },
                     ),
                     "regex_doc": TextToolParameter(
@@ -1298,7 +1301,7 @@ class InputParameterModule(WorkflowModule):
                             "optional": False,
                             "name": "regex_doc",
                             "label": "Specify a message",
-                            "help": "This message will be shown if the regex does not match the input",
+                            "help": "This message will be shown if the regular does not match the input",
                         },
                     ),
                 }
@@ -1385,6 +1388,45 @@ class InputParameterModule(WorkflowModule):
                 ]
                 restrictions_cond.cases = restrictions_cond_cases
                 when_this_type.inputs["restrictions"] = restrictions_cond
+
+            if param_type == "integer":
+                when_this_type.inputs["min"] = IntegerToolParameter(
+                    None,
+                    {
+                        "name": "min",
+                        "optional": True,
+                        "value": parameter_def.get("min", ""),
+                        "label": "Set a minimum value for this input",
+                    },
+                )
+                when_this_type.inputs["max"] = IntegerToolParameter(
+                    None,
+                    {
+                        "name": "max",
+                        "optional": True,
+                        "value": parameter_def.get("max", ""),
+                        "label": "Set a maximum value for this input",
+                    },
+                )
+            if param_type == "float":
+                when_this_type.inputs["min"] = FloatToolParameter(
+                    None,
+                    {
+                        "name": "min",
+                        "optional": True,
+                        "value": parameter_def.get("min", ""),
+                        "label": "Set a minimum value for this input",
+                    },
+                )
+                when_this_type.inputs["max"] = FloatToolParameter(
+                    None,
+                    {
+                        "name": "max",
+                        "optional": True,
+                        "value": parameter_def.get("max", ""),
+                        "label": "Set a maximum value for this input",
+                    },
+                )
 
             cases.append(when_this_type)
 
@@ -1500,7 +1542,7 @@ class InputParameterModule(WorkflowModule):
             parameter_kwds["options"] = _parameter_def_list_to_options(restriction_values)
             restricted_inputs = True
 
-        if is_text and parameter_def.get("validators"):
+        if parameter_def.get("validators"):
             parameter_kwds["validators"] = parameter_def["validators"]
 
         client_parameter_type = parameter_type
@@ -1611,14 +1653,18 @@ class InputParameterModule(WorkflowModule):
             form_validators = []
             # the form definition can change from Galaxy to Galaxy fairly freely, but the source validators are persisted
             # and need to be consistent - here we convert the persisted/YAML tool definition version to the "tool form" version.
-            for i, source_validator in enumerate(source_validators):
-                form_validators.append(
-                    {
-                        "__index__": i,
-                        "regex_doc": source_validator.get("message"),
-                        "regex_match": source_validator.get("expression"),
-                    }
-                )
+            for source_validator in source_validators:
+                source_type = source_validator["type"]
+                if source_type == "regex":
+                    form_validators.append(
+                        {
+                            "regex_doc": source_validator.get("message"),
+                            "regex_match": source_validator.get("expression"),
+                        }
+                    )
+                elif source_type == "in_range":
+                    state["parameter_definition"]["min"] = source_validator.get("min")
+                    state["parameter_definition"]["max"] = source_validator.get("max")
             state["parameter_definition"]["validators"] = form_validators
         state["parameter_definition"]["restrictions"] = {}
         state["parameter_definition"]["restrictions"]["how"] = restrictions_how
@@ -1663,9 +1709,21 @@ class InputParameterModule(WorkflowModule):
                 optional = False
             if "multiple" in parameters_def:
                 rval["multiple"] = parameters_def["multiple"]
+            source_validators = []
+            if "min" in parameters_def or "max" in parameters_def:
+                min = parameters_def.get("min")
+                max = parameters_def.get("max")
+                source_validators.append(
+                    {
+                        "min": min,
+                        "max": max,
+                        "negate": False,
+                        "type": "in_range",
+                    }
+                )
+
             if "validators" in parameters_def:
                 form_validators = parameters_def["validators"]
-                source_validators = []
                 # convert the current tool form structure to the persisted YAML-definition style
                 for form_validator in form_validators:
                     source_validators.append(
@@ -1676,7 +1734,7 @@ class InputParameterModule(WorkflowModule):
                             "type": "regex",
                         }
                     )
-                rval["validators"] = source_validators
+            rval["validators"] = source_validators
             restrictions_cond_values = parameters_def.get("restrictions")
             if restrictions_cond_values:
 

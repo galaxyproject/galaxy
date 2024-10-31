@@ -218,7 +218,9 @@ class InRangeParameterValidatorModel(StaticValidatorModel):
             op1 = "<"
         if self.exclude_max:
             op2 = "<"
-        range_description_str = f"({self.min} {op1} value {op2} {self.max})"
+        min_str = str(self.min) if self.min is not None else "-infinity"
+        max_str = str(self.max) if self.max is not None else "+infinity"
+        range_description_str = f"({min_str} {op1} value {op2} {max_str})"
         return f"Value ('%s') must {'not ' if self.negate else ''}fulfill {range_description_str}"
 
 
@@ -466,7 +468,7 @@ AnyValidatorModel = Annotated[
 ]
 
 
-DiscriminatedAnyValidatorModel = TypeAdapter(AnyValidatorModel)
+DiscriminatedAnyValidatorModel = TypeAdapter(AnyValidatorModel)  # type:ignore[var-annotated]
 
 
 def parse_dict_validators(validator_dicts: List[Dict[str, Any]], trusted: bool) -> List[AnyValidatorModel]:
