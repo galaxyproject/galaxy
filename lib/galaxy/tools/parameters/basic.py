@@ -146,7 +146,7 @@ def assert_throws_param_value_error(message):
 
 class ParameterValueError(ValueError):
     def __init__(self, message_suffix, parameter_name, parameter_value=NO_PARAMETER_VALUE, is_dynamic=None):
-        message = f"parameter '{parameter_name}': {message_suffix}"
+        message = f"Parameter '{parameter_name}': {message_suffix}"
         super().__init__(message)
         self.message_suffix = message_suffix
         self.parameter_name = parameter_name

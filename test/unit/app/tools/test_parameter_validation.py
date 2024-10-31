@@ -85,7 +85,7 @@ class TestParameterValidation(BaseParameterTestCase):
 </param>"""
         )
         p.validate("foo")
-        with self.assertRaisesRegex(ValueError, "Parameter index: No options available for selection"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'index': No options available for selection"):
             p.validate(None)
 
         p = self._parameter_for(
@@ -95,7 +95,7 @@ class TestParameterValidation(BaseParameterTestCase):
     <validator type="no_options" negate="true"/>
 </param>"""
         )
-        with self.assertRaisesRegex(ValueError, "Parameter index: Options available for selection"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'index': Options available for selection"):
             p.validate("foo")
         p.validate(None)
 
