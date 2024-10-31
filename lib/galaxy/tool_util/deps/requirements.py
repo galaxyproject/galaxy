@@ -342,13 +342,14 @@ class SecretsRequirement:
             "required": self.required,
         }
 
-    def from_dict(self, dict: Dict[str, Any]) -> "SecretsRequirement":
+    @classmethod
+    def from_dict(cls, dict: Dict[str, Any]) -> "SecretsRequirement":
         type = dict["type"]
         user_preferences_key = dict["user_preferences_key"]
         inject_as_env = dict["inject_as_env"]
         label = dict.get("label", "")
         required = dict.get("required", False)
-        return SecretsRequirement(
+        return cls(
             type=type,
             user_preferences_key=user_preferences_key,
             inject_as_env=inject_as_env,
@@ -362,12 +363,20 @@ def parse_requirements_from_lists(
     containers: Iterable[Dict[str, Any]],
     resource_requirements: Iterable[Dict[str, Any]],
     javascript_requirements: List[Dict[str, Any]],
-) -> Tuple[ToolRequirements, List[ContainerDescription], List[ResourceRequirement], List[JavascriptRequirement]]:
+    secrets: Iterable[Dict[str, Any]],
+) -> Tuple[
+    ToolRequirements,
+    List[ContainerDescription],
+    List[ResourceRequirement],
+    List[JavascriptRequirement],
+    List[SecretsRequirement],
+]:
     return (
         ToolRequirements.from_list(software_requirements),
         [ContainerDescription.from_dict(c) for c in containers],
         resource_requirements_from_list(resource_requirements),
         [JavascriptRequirement(**r) for r in javascript_requirements],
+        [SecretsRequirement.from_dict(s) for s in secrets],
     )
 
 
