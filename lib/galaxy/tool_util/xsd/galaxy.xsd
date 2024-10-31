@@ -4326,8 +4326,8 @@ This is useful when the tool can handle the URI directly. Example:
 <param name="input" type="data" format="txt" allow_uri_if_protocol="http,https,s3" />
 ```
 
-You can specify multiple prefixes separated by comma. The URI will be passed to the tool
-as is if it starts with any of the specified prefixes.
+You can specify multiple prefixes separated by comma or use the wildcard '*' to always
+treat deferred datasets as URIs. The source URI will be passed to the tool as is.
 
 This attribute is only valid for `data` parameters.
          ]]></xs:documentation>
