@@ -1785,7 +1785,7 @@ def is_foreign_key_violation(error):
         return int(getattr(error.orig, "pgcode", -1)) == 23503
 
 
-def _get_valid_roles_case1(session, search_query, is_admin, limit, page, page_limit):
+def _get_valid_roles_exposed(session, search_query, is_admin, limit, page, page_limit):
     """Case: trans.user_is_admin or trans.app.config.expose_user_email"""
     stmt = select(Role).where(Role.deleted == false())
 
