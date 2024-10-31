@@ -4,16 +4,20 @@ Modules used in building workflows
 
 import json
 import logging
+import math
 import re
 from collections import defaultdict
 from typing import (
     Any,
     cast,
     Dict,
+    get_args,
     Iterable,
     List,
+    Literal,
     Optional,
     Type,
+    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -47,6 +51,7 @@ from galaxy.schema.invocation import (
     InvocationFailureExpressionEvaluationFailed,
     InvocationFailureOutputNotFound,
     InvocationFailureWhenNotBoolean,
+    InvocationFailureWorkflowParameterInvalid,
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
@@ -70,12 +75,9 @@ from galaxy.tools.parameters import (
 from galaxy.tools.parameters.basic import (
     BaseDataToolParameter,
     BooleanToolParameter,
-    ColorToolParameter,
     DataCollectionToolParameter,
     DataToolParameter,
-    FloatToolParameter,
     HiddenToolParameter,
-    IntegerToolParameter,
     parameter_types,
     raw_to_galaxy,
     SelectToolParameter,
@@ -84,6 +86,7 @@ from galaxy.tools.parameters.basic import (
 from galaxy.tools.parameters.grouping import (
     Conditional,
     ConditionalWhen,
+    Repeat,
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
 from galaxy.tools.parameters.workflow_utils import (
@@ -102,6 +105,7 @@ from galaxy.util.json import safe_loads
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
+from galaxy.workflow.workflow_parameter_input_definitions import get_default_source
 
 if TYPE_CHECKING:
     from galaxy.schema.invocation import InvocationMessageUnion
@@ -116,6 +120,9 @@ RUNTIME_STEP_META_STATE_KEY = "__STEP_META_STATE__"
 # actions (i.e. PJA specified at runtime on top of the workflow-wide defined
 # ones.
 RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
+
+INPUT_PARAMETER_TYPES = Literal["text", "integer", "float", "boolean", "color"]
+POSSIBLE_PARAMETER_TYPES: Tuple[INPUT_PARAMETER_TYPES] = get_args(INPUT_PARAMETER_TYPES)
 
 
 class NoReplacement:
@@ -1179,7 +1186,7 @@ class InputDataCollectionModule(InputModule):
 
 
 class InputParameterModule(WorkflowModule):
-    POSSIBLE_PARAMETER_TYPES = ["text", "integer", "float", "boolean", "color"]
+    POSSIBLE_PARAMETER_TYPES = POSSIBLE_PARAMETER_TYPES
     type = "parameter_input"
     name = "Input parameter"
     default_parameter_type = "text"
@@ -1214,52 +1221,8 @@ class InputParameterModule(WorkflowModule):
         parameter_type_cond.test_param = input_parameter_type
         cases = []
 
-        for param_type in ["text", "integer", "float", "boolean", "color"]:
-            default_source: Dict[str, Union[int, float, bool, str]] = dict(
-                name="default", label="Default Value", type=param_type
-            )
-            if param_type == "text":
-                if parameter_type == "text":
-                    text_default = parameter_def.get("default") or ""
-                else:
-                    text_default = ""
-                default_source["value"] = text_default
-                input_default_value: Union[
-                    TextToolParameter,
-                    IntegerToolParameter,
-                    FloatToolParameter,
-                    BooleanToolParameter,
-                    ColorToolParameter,
-                ] = TextToolParameter(None, default_source)
-            elif param_type == "integer":
-                if parameter_type == "integer":
-                    integer_default = parameter_def.get("default") or 0
-                else:
-                    integer_default = 0
-                default_source["value"] = integer_default
-                input_default_value = IntegerToolParameter(None, default_source)
-            elif param_type == "float":
-                if parameter_type == "float":
-                    float_default = parameter_def.get("default") or 0.0
-                else:
-                    float_default = 0.0
-                default_source["value"] = float_default
-                input_default_value = FloatToolParameter(None, default_source)
-            elif param_type == "boolean":
-                if parameter_type == "boolean":
-                    boolean_default = parameter_def.get("default") or False
-                else:
-                    boolean_default = False
-                default_source["value"] = boolean_default
-                default_source["checked"] = boolean_default
-                input_default_value = BooleanToolParameter(None, default_source)
-            elif param_type == "color":
-                if parameter_type == "color":
-                    color_default = parameter_def.get("default") or "#000000"
-                else:
-                    color_default = "#000000"
-                default_source["value"] = color_default
-                input_default_value = ColorToolParameter(None, default_source)
+        for param_type in POSSIBLE_PARAMETER_TYPES:
+            input_default_value = get_default_source(param_type, parameter_def)
 
             optional_value = optional_param(optional)
             optional_cond = Conditional("optional")
@@ -1311,9 +1274,35 @@ class InputParameterModule(WorkflowModule):
                     type="boolean",
                     checked=parameter_def.get("multiple", False),
                 )
+
                 specify_multiple = BooleanToolParameter(None, specify_multiple_source)
+
+                add_validators_repeat = Repeat()
+                add_validators_repeat._title = "Add validator to restrict valid input"
+                add_validators_repeat.name = "validators"
+                add_validators_repeat.min = 0
+                add_validators_repeat.max = math.inf
+                add_validators_repeat.inputs = {
+                    "regex_match": TextToolParameter(
+                        None,
+                        {"optional": False, "name": "regex_match", "label": "Specify a regex that must match input"},
+                    ),
+                    "regex_doc": TextToolParameter(
+                        None,
+                        {
+                            "optional": False,
+                            "name": "regex_doc",
+                            "label": "Specify a message that should be shown as a hint",
+                        },
+                    ),
+                }
+
                 # Insert multiple option as first option, which is determined by dictionary insert order
-                when_this_type.inputs = {"multiple": specify_multiple, **when_this_type.inputs}
+                when_this_type.inputs = {
+                    "multiple": specify_multiple,
+                    "validators": add_validators_repeat,
+                    **when_this_type.inputs,
+                }
 
                 restrict_how_source: Dict[str, Union[str, List[Dict[str, Union[str, bool]]]]] = dict(
                     name="how", label="Restrict Text Values?", type="select"
@@ -1511,6 +1500,9 @@ class InputParameterModule(WorkflowModule):
             parameter_kwds["options"] = _parameter_def_list_to_options(restriction_values)
             restricted_inputs = True
 
+        if is_text and parameter_def.get("validators"):
+            parameter_kwds["validators"] = parameter_def["validators"]
+
         client_parameter_type = parameter_type
         if restricted_inputs:
             client_parameter_type = "select"
@@ -1560,7 +1552,10 @@ class InputParameterModule(WorkflowModule):
         self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
     ) -> Optional[bool]:
         step = invocation_step.workflow_step
-        input_value = step.state.inputs["input"]
+        if step.id in progress.inputs_by_step_id:
+            input_value = progress.inputs_by_step_id[step.id]
+        else:
+            input_value = step.state.inputs["input"]
         if input_value is None:
             default_value = step.get_input_default_value(NO_REPLACEMENT)
             # TODO: look at parameter type and infer if value should be a dictionary
@@ -1569,6 +1564,17 @@ class InputParameterModule(WorkflowModule):
             if not isinstance(default_value, dict):
                 default_value = {"value": default_value}
             input_value = default_value.get("value", NO_REPLACEMENT)
+        input_param = self.get_runtime_inputs(self)["input"]
+        # TODO: raise DelayedWorkflowEvaluation if replacement not ready ? Need test
+        # TODO: move (at least regex) to frontend. failing here is kind of stupid
+        try:
+            input_param.validate(input_value)
+        except ValueError as e:
+            raise FailWorkflowEvaluation(
+                why=InvocationFailureWorkflowParameterInvalid(
+                    reason=FailureReason.workflow_parameter_invalid, workflow_step_id=step.id, details=str(e)
+                )
+            )
         step_outputs = dict(output=input_value)
         progress.set_outputs_for_input(invocation_step, step_outputs)
         return None
@@ -1581,6 +1587,7 @@ class InputParameterModule(WorkflowModule):
             default_value = state["default"]
             state["optional"] = True
         multiple = state.get("multiple")
+        validators = state.get("validators")
         restrictions = state.get("restrictions")
         restrictOnConnections = state.get("restrictOnConnections")
         suggestions = state.get("suggestions")
@@ -1600,6 +1607,8 @@ class InputParameterModule(WorkflowModule):
         }
         if multiple is not None:
             state["parameter_definition"]["multiple"] = multiple
+        if validators is not None:
+            state["parameter_definition"]["validators"] = validators
         state["parameter_definition"]["restrictions"] = {}
         state["parameter_definition"]["restrictions"]["how"] = restrictions_how
 
@@ -1643,6 +1652,8 @@ class InputParameterModule(WorkflowModule):
                 optional = False
             if "multiple" in parameters_def:
                 rval["multiple"] = parameters_def["multiple"]
+            if "validators" in parameters_def:
+                rval["validators"] = parameters_def["validators"]
             restrictions_cond_values = parameters_def.get("restrictions")
             if restrictions_cond_values:
 

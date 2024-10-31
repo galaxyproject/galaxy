@@ -28,7 +28,9 @@ from galaxy.model.base import (
     transaction,
 )
 from galaxy.tool_util.parameters import DataRequestUri
+from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.tools.parameters.meta import expand_workflow_inputs
+from galaxy.workflow.modules import WorkflowModuleInjector
 from galaxy.workflow.resources import get_resource_mapper_function
 
 if TYPE_CHECKING:
@@ -368,11 +370,20 @@ def build_workflow_run_configs(
 
         steps_by_id = workflow.steps_by_id
         # Set workflow inputs.
+        module_injector = WorkflowModuleInjector(trans, False)
         for key, input_dict in normalized_inputs.items():
             if input_dict is None:
                 continue
             step = steps_by_id[key]
             if step.type == "parameter_input":
+                module_injector.inject(step)
+                input_param = step.module.get_runtime_inputs(step.module)["input"]
+                try:
+                    input_param.validate(input_dict)
+                except ParameterValueError as e:
+                    raise exceptions.RequestParameterInvalidException(
+                        f"{step.label or step.order_index + 1}: {e.message_suffix}"
+                    )
                 continue
             if "src" not in input_dict:
                 raise exceptions.RequestParameterInvalidException(

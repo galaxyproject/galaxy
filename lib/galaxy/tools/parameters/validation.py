@@ -233,7 +233,7 @@ class MetadataEqualValidator(Validator):
 
     requires_dataset_metadata = True
 
-    def __init__(self, metadata_name=None, value=None, message=None, negate="false"):
+    def __init__(self, metadata_name=None, value=None, message=None, negate: bool = False):
         super().__init__(message, negate)
         self.metadata_name = metadata_name
         self.value = value
@@ -381,7 +381,7 @@ class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
     """
 
     def __init__(
-        self, tool_data_table, metadata_column: Union[str, int], message="Value already present.", negate="false"
+        self, tool_data_table, metadata_column: Union[str, int], message="Value already present.", negate: bool = False
     ):
         super().__init__(tool_data_table, metadata_column, message, negate)
 
