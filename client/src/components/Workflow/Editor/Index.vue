@@ -37,6 +37,7 @@
             options-heading="Workflow Options"
             options-tooltip="View additional workflow options"
             options-search-placeholder="Search options"
+            initial-activity="workflow-editor-attributes"
             :options-icon="faCog"
             @activityClicked="onActivityClicked">
             <template v-slot:side-panel="{ isActiveSideBar }">
