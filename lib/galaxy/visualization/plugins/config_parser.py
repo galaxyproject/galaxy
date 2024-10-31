@@ -301,8 +301,14 @@ class DataSourceParser:
             # result type should tell the registry how to convert the result before the test
             test_result_type = test_elem.get("result_type", "string")
 
+            # allow_deferred indicates that the visualization can work with deferred data_sources
+            # Can only be used with certain test types (e.g. isinstance)
+            allow_deferred = False
+
             # test functions should be sent an object to test, and the parsed result expected from the test
             if test_type == "isinstance":
+                allow_deferred = asbool(test_elem.get("allow_deferred", False))
+
                 # is test_attr attribute an instance of result
                 # TODO: wish we could take this further but it would mean passing in the datatypes_registry
                 def test_fn(o, result, getter=getter):
@@ -328,7 +334,15 @@ class DataSourceParser:
                 def test_fn(o, result, getter=getter):
                     return str(getter(o)) == result
 
-            tests.append({"type": test_type, "result": test_result, "result_type": test_result_type, "fn": test_fn})
+            tests.append(
+                {
+                    "type": test_type,
+                    "result": test_result,
+                    "result_type": test_result_type,
+                    "fn": test_fn,
+                    "allow_deferred": allow_deferred,
+                }
+            )
 
         return tests
 

@@ -263,11 +263,13 @@ class VisualizationsRegistry:
         it can be applied to the target_object.
         """
         # log.debug( 'is_object_applicable( self, trans, %s, %s )', target_object, data_source_tests )
+        is_deferred_target = getattr(target_object, "state", None) == "deferred"
         for test in data_source_tests:
             test_type = test["type"]
             result_type = test["result_type"]
             test_result = test["result"]
             test_fn = test["fn"]
+            allow_deferred = test.get("allow_deferred", False)
             # log.debug( '%s %s: %s, %s, %s, %s', str( target_object ), 'is_object_applicable',
             #           test_type, result_type, test_result, test_fn )
 
@@ -286,7 +288,7 @@ class VisualizationsRegistry:
                         continue
 
             # NOTE: tests are OR'd, if any test passes - the visualization can be applied
-            if test_fn(target_object, test_result):
+            if test_fn(target_object, test_result) and (not is_deferred_target or allow_deferred):
                 # log.debug( '\t test passed' )
                 return True
 
