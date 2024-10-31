@@ -223,7 +223,7 @@ class ToolEvaluator:
                 if secret_value is not None:
                     self.environment_variables.append({"name": secret.inject_as_env, "value": secret_value})
                 else:
-                    log.warning(f"Failed to read secret from vault with key {vault_key}")
+                    log.warning("Failed to read secret from vault")
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution
