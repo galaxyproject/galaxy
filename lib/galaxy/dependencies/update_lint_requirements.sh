@@ -10,7 +10,7 @@ THIS_DIRECTORY="$(cd "$(dirname "$0")" > /dev/null && pwd)"
 
 update_pinned_reqs() {
     VENV=$(mktemp -d "${TMPDIR:-/tmp}/$1_venv.XXXXXXXXXX")
-    python3.8 -m venv "${VENV}"
+    python3 -m venv "${VENV}"
     . "${VENV}/bin/activate"
     pip install --upgrade pip setuptools
     pip install -r "${THIS_DIRECTORY}/$1-requirements.txt"
