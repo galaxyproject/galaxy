@@ -39,7 +39,6 @@ celery==5.4.0
 certifi==2024.8.30
 cffi==1.17.1
 charset-normalizer==3.4.0
-cheetah3==3.2.6.post1
 circus==0.18.0
 click==8.1.7
 click-didyoumean==0.3.1
@@ -51,6 +50,7 @@ colorama==0.4.6 ; platform_system == 'Windows'
 coloredlogs==15.0.1
 conda-package-streaming==0.11.0
 cryptography==43.0.3
+ct3==3.3.3.post1
 cwl-upgrader==1.2.11
 cwl-utils==0.35
 cwltool==3.1.20241007082533
@@ -66,6 +66,7 @@ email-validator==2.2.0
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
 fastapi-slim==0.115.4
 filelock==3.16.1
+fissix==24.4.24 ; python_full_version >= '3.13'
 frozenlist==1.5.0
 fs==2.4.16
 fsspec==2024.10.0

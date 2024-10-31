@@ -25,11 +25,11 @@ dependencies = [
     "boto",
     "bx-python",
     "celery",
-    "Cheetah3",
     "cloudauthz==0.6.0",
     "cloudbridge",
     "circus",
     "conda-package-streaming",
+    "CT3>=3.3.3",  # Python 3.13 support
     "cwltool>=3.1.20230624081518",  # save time, minimum needed by cwl-1.0 branch
     "dictobj",
     "dnspython",
@@ -37,6 +37,7 @@ dependencies = [
     "dparse",
     "edam-ontology",
     "fastapi-slim>=0.111.0",
+    "fissix ; python_version>='3.13'",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
     "graphene",
@@ -50,14 +51,14 @@ dependencies = [
     "h5py>=3.12 ; python_version>='3.9'",  # Python 3.13 support
     "importlib-resources ; python_version<'3.9'",  # for importlib.{abc.Traversable,resources.{files, Package}}
     "isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@master",  # https://github.com/ISA-tools/isa-rwval/pull/17
-    "isal",
+    "isal>=1.7.0",  # Python 3.13 support
     "jinja2",
     "kombu>=5.3",  # for importlib-metadata fix
     "lagom",
     "Mako",
     "Markdown",
     "MarkupSafe",
-    "mercurial",
+    "mercurial>=6.8.2",  # Python 3.13 support
     "mrcfile",
     "msal",
     "nodeenv",
@@ -89,7 +90,7 @@ dependencies = [
     "rocrate",
     "Routes",
     "s3fs>=2023.1.0",
-    "schema-salad!=8.3.20220721194857",  # https://github.com/common-workflow-language/schema_salad/issues/575
+    "schema-salad>=8.7.20240905150001",  # Python 3.13 support
     "social-auth-core>=4.5.0",  # to drop dependency on abandoned python-jose
     "sortedcontainers",
     "SQLAlchemy>=2.0,<2.1,!=2.0.36",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019,
@@ -103,8 +104,8 @@ dependencies = [
     "tuswsgi",
     "typing-extensions",
     "uvicorn!=0.28.0",  # https://github.com/galaxyproject/galaxy/issues/17669
-    "uvloop",
-    "WebOb",
+    "uvloop>=0.21.0",  # Python 3.13 support
+    "WebOb>=1.8.9",  # Python 3.13 support
     "Whoosh",
     "zipstream-new",
 ]
@@ -122,7 +123,7 @@ dev = [
     "black",
     "boto3",
     "codespell",
-    "cwltest",
+    "cwltest>=2.5.20240906231108",  # Python 3.13 support
     "darker",
     "fluent-logger",
     "galaxy-release-util",
@@ -133,7 +134,7 @@ dev = [
     "myst-parser",
     "onedatafilerestclient==21.2.5.2",
     "pkce",
-    "playwright",
+    "playwright>=1.48.0",  # Python 3.13 support
     "pytest<8",  # https://github.com/galaxyproject/galaxy/issues/17561
     "pytest-asyncio",
     "pytest-cov",
@@ -154,7 +155,7 @@ dev = [
     "statsd",
     "testfixtures",
     "tuspy",
-    "twill>=3.2.1",  # https://github.com/twill-tools/twill/issues/18
+    "twill>=3.2.5",  # Python 3.13 support
     "watchdog",
     "Werkzeug",
 ]
