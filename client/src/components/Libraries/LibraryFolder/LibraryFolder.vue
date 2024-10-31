@@ -384,7 +384,7 @@ export default {
                     this.sortBy,
                     this.sortDesc,
                     this.perPage,
-                    (this.currentPage - 1) * this.perPage,
+                    (this.currentPage ? this.currentPage - 1 : 0) * this.perPage,
                     this.searchText
                 )
                 .then((response) => {
