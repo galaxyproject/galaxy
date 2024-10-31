@@ -175,10 +175,12 @@ class CwlToolSource(ToolSource):
 
         software_requirements = self.tool_proxy.software_requirements()
         resource_requirements = self.tool_proxy.resource_requirements()
+        secrets = self.tool_proxy.secrets()
         return requirements.parse_requirements_from_lists(
             software_requirements=[{"name": r[0], "version": r[1], "type": "package"} for r in software_requirements],
             containers=containers,
             resource_requirements=resource_requirements,
+            secrets=secrets,
         )
 
     def parse_profile(self):
