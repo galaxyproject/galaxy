@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import (
     Any,
     Callable,
+    cast,
     Literal,
     Optional,
     TYPE_CHECKING,
@@ -32,6 +33,7 @@ from galaxy.security.vault import UserVaultWrapper
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
+    MinimalToolApp,
     StructuredApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
@@ -134,12 +136,12 @@ class ToolEvaluator:
     tool inputs in an isolated, testable manner.
     """
 
-    app: StructuredApp
+    app: MinimalToolApp
     job: model.Job
     materialize_datasets: bool = True
     param_dict_style = "regular"
 
-    def __init__(self, app: StructuredApp, tool: "Tool", job, local_working_directory):
+    def __init__(self, app: MinimalToolApp, tool: "Tool", job, local_working_directory):
         self.app = app
         self.job = job
         self.tool = tool
@@ -216,7 +218,8 @@ class ToolEvaluator:
             )
 
         if self.tool.secrets:
-            user_vault = UserVaultWrapper(self.app.vault, self._user)
+            app = cast(StructuredApp, self.app)
+            user_vault = UserVaultWrapper(app.vault, self._user)
             for secret in self.tool.secrets:
                 vault_key = secret.user_preferences_key
                 secret_value = user_vault.read_secret("preferences/" + vault_key)
