@@ -45,7 +45,7 @@ def test_get_roles_by_ids(session, make_role):
     have_same_elements(roles2, expected)
 
 
-def test_get_falid_roles_case1(session, make_user_and_role, make_user, make_role, make_user_role_association):
+def test_get_valid_roles_case1(session, make_user_and_role, make_user, make_role, make_user_role_association):
     # Make 3 users with private roles
     (
         u1,
