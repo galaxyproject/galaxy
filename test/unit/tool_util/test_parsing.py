@@ -347,7 +347,7 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements, secrets = self._tool_source.parse_requirements_and_containers()
         assert requirements[0].type == "package"
         assert list(containers)[0].identifier == "mycool/bwa"
         assert resource_requirements[0].resource_type == "cores_min"
