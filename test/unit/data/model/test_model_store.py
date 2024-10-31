@@ -19,6 +19,7 @@ import pytest
 from rocrate.rocrate import ROCrate
 from sqlalchemy import select
 from sqlalchemy.orm.scoping import scoped_session
+from unittest.mock import Mock
 
 from galaxy import model
 from galaxy.model import store
@@ -1186,11 +1187,33 @@ class TestApp(GalaxyDataTestApp):
         )
 
 
+class MockTool:
+    """Mock class to simulate Galaxy tools with essential metadata for testing."""
+
+    def __init__(self, tool_id):
+        self.tool_id = tool_id
+        self.citations = [{"type": "doi", "value": "10.1234/example.doi"}]
+        self.xrefs = [{"type": "registry", "value": "tool_registry_id"}]
+        self.edam_operations = ["operation_1234"]
+
+
+class MockToolbox:
+    """Mock class for the Galaxy toolbox, which returns tools based on their IDs."""
+
+    def get_tool(self, tool_id):
+        # Returns a MockTool object with basic metadata for testing
+        return MockTool(tool_id)
+
+
 def _mock_app(store_by=DEFAULT_OBJECT_STORE_BY):
     app = TestApp()
     test_object_store_config = TestConfig(store_by=store_by)
     app.object_store = test_object_store_config.object_store
     app.model.Dataset.object_store = app.object_store
+
+    # Add a mocked toolbox attribute for tests requiring tool metadata
+    app.toolbox = MockToolbox()
+
     return app
 
 
