@@ -2,12 +2,12 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from galaxy.managers.users import _cleanup_nonprivate_user_roles
 from galaxy.model import (
     Role,
     UserRoleAssociation,
 )
 from galaxy.model.db.user import (
+    _cleanup_nonprivate_user_roles,
     get_user_by_email,
     get_user_by_username,
     get_users_by_ids,
