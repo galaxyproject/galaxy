@@ -159,7 +159,9 @@ class GalaxyRBACAgent(RBACAgent):
             is_public_item = False
         # Admins can always choose from all non-deleted roles
         if trans.user_is_admin or trans.app.config.expose_user_email:
-            roles = _get_valid_roles_exposed(trans.sa_session, search_query, trans.user_is_admin, limit, page, page_limit)
+            roles = _get_valid_roles_exposed(
+                trans.sa_session, search_query, trans.user_is_admin, limit, page, page_limit
+            )
         # Non-admin and public item
         elif is_public_item:
             # Add the current user's private role
