@@ -191,7 +191,7 @@ gravity:
 
     # Routes file to monitor.
     # Should be set to the same path as ``interactivetools_map`` in the ``galaxy:`` section. This is ignored if
-    # ``interactivetools_map is set.
+    # ``interactivetools_map is set``.
     # sessions: database/interactivetools_map.sqlite
 
     # Include verbose messages in gx-it-proxy
@@ -3007,4 +3007,3 @@ galaxy:
   # but outdated contents might be displayed to the user. Currently only
   # affects s3fs file sources.
   #file_source_listings_expiry_time: 60
-
