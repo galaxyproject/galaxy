@@ -157,15 +157,24 @@ def tool_input_format(request) -> Iterator[DescribeToolInputs]:
 def check_required_tools(anonymous_galaxy_interactor, request):
     for marker in request.node.iter_markers():
         if marker.name == "requires_tool_id":
-            tool_id = marker.args[0]
+            tool_id = _requires_marker_to_effective_tool_id(anonymous_galaxy_interactor, marker)
             check_missing_tool(tool_id not in get_tool_ids(anonymous_galaxy_interactor))
 
 
 @pytest.fixture
-def required_tool_ids(request) -> List[str]:
+def required_tool_ids(anonymous_galaxy_interactor, request) -> List[str]:
     tool_ids = []
     for marker in request.node.iter_markers():
         if marker.name == "requires_tool_id":
-            tool_id = marker.args[0]
+            tool_id = _requires_marker_to_effective_tool_id(anonymous_galaxy_interactor, marker)
             tool_ids.append(tool_id)
     return tool_ids
+
+
+def _requires_marker_to_effective_tool_id(anonymous_galaxy_interactor, marker):
+    tool_id = marker.args[0]
+    if "|" in tool_id:
+        any_of_tool_ids = tool_id.split("|")
+        all_tool_ids = get_tool_ids(anonymous_galaxy_interactor)
+        tool_id = [t for t in any_of_tool_ids if t in all_tool_ids][0]
+    return tool_id
