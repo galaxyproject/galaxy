@@ -263,7 +263,7 @@ class VisualizationsRegistry:
         it can be applied to the target_object.
         """
         # log.debug( 'is_object_applicable( self, trans, %s, %s )', target_object, data_source_tests )
-        is_deferred_target = getattr(target_object, "state", None) == "deferred"
+        is_deferred_target = self._is_deferred(target_object)
         for test in data_source_tests:
             test_type = test["type"]
             result_type = test["result_type"]
@@ -293,3 +293,6 @@ class VisualizationsRegistry:
                 return True
 
         return False
+
+    def _is_deferred(self, target_object):
+        return getattr(target_object, "state", None) == "deferred"

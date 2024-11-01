@@ -302,7 +302,7 @@ class DataSourceParser:
             test_result_type = test_elem.get("result_type", "string")
 
             # allow_deferred indicates that the visualization can work with deferred data_sources
-            # Can only be used with certain test types (e.g. isinstance)
+            # Can only be used with isinstance tests. By default, no visualization can work with deferred data_sources.
             allow_deferred = False
 
             # test functions should be sent an object to test, and the parsed result expected from the test
