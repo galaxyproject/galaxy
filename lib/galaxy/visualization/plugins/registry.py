@@ -316,6 +316,9 @@ class VisualizationsRegistry:
         if not supported_protocols:
             return False  # no protocols defined, means no support for deferred objects
 
+        if "*" in supported_protocols:
+            return True  # wildcard support for all protocols
+
         deferred_source_uri = self._deferred_source_uri(target_object)
         if deferred_source_uri:
             protocol = deferred_source_uri.split("://")[0]
