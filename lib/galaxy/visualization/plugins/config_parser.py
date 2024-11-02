@@ -6,7 +6,10 @@ from typing import (
 )
 
 import galaxy.model
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    listify,
+)
 from galaxy.util.xml_macros import load
 
 log = logging.getLogger(__name__)
@@ -301,13 +304,15 @@ class DataSourceParser:
             # result type should tell the registry how to convert the result before the test
             test_result_type = test_elem.get("result_type", "string")
 
-            # allow_deferred indicates that the visualization can work with deferred data_sources
-            # Can only be used with isinstance tests. By default, no visualization can work with deferred data_sources.
-            allow_deferred = False
+            # allow_uri_if_protocol indicates that the visualization can work with deferred data_sources which source URI
+            # matches any of the given protocols in this list. This is useful for visualizations that can work with URIs.
+            # Can only be used with isinstance tests. By default, an empty list means that the visualization doesn't support
+            # deferred data_sources.
+            allow_uri_if_protocol = []
 
             # test functions should be sent an object to test, and the parsed result expected from the test
             if test_type == "isinstance":
-                allow_deferred = asbool(test_elem.get("allow_deferred", False))
+                allow_uri_if_protocol = listify(test_elem.get("allow_uri_if_protocol"))
 
                 # is test_attr attribute an instance of result
                 # TODO: wish we could take this further but it would mean passing in the datatypes_registry
@@ -340,7 +345,7 @@ class DataSourceParser:
                     "result": test_result,
                     "result_type": test_result_type,
                     "fn": test_fn,
-                    "allow_deferred": allow_deferred,
+                    "allow_uri_if_protocol": allow_uri_if_protocol,
                 }
             )
 

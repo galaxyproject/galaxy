@@ -54,17 +54,18 @@
                 if result_type is 'datatype' the registry will assume the text is a datatype class name
                 and parse it into the proper class before the test (often 'isinstance') is run.
                 DEFAULT: no parsing (result should be a string)
-        allow_deferred: used in conjunction with type='isinstance' and test_attr='datatype'. If set to true,
-                the registry will allow the test to pass if the target is deferred (currently only HDAs can be deferred).
+        allow_uri_if_protocol: used in conjunction with type='isinstance' and test_attr='datatype'. Let you define
+                a list of protocols or schemes (e.g. 's3,https') that, in the case of a deferred target (e.g. currently only HDAs),
+                the registry will allow the test to pass if the the source URI has a scheme in the list.
                 This is useful for visualizations that can work directly with URIs.
-                DEFAULT: false
+                DEFAULT: []
                 
     -->
     <!ATTLIST test
-        type            CDATA #IMPLIED
-        test_attr       CDATA #IMPLIED
-        result_type     CDATA #IMPLIED
-        allow_deferred  CDATA #IMPLIED
+        type                    CDATA #IMPLIED
+        test_attr               CDATA #IMPLIED
+        result_type             CDATA #IMPLIED
+        allow_uri_if_protocol   CDATA #IMPLIED
     >
 
     <!ELEMENT to_param (#PCDATA)>
