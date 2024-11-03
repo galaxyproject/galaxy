@@ -335,7 +335,7 @@ class ToolEvaluator:
         """
         deferred_input = self.tool.inputs.get(input_name)
         if isinstance(deferred_input, DataToolParameter) and isinstance(input_value, model.DatasetInstance):
-            source_uri = input_value.sources[0].source_uri or ""
+            source_uri = input_value.deferred_source_uri or ""
             for prefix in deferred_input.allow_uri_if_protocol:
                 if prefix == "*" or source_uri.startswith(prefix):
                     return False

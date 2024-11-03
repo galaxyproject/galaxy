@@ -4688,7 +4688,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     @property
     def deferred_source_uri(self):
-        if self.has_deferred_data:
+        if self.has_deferred_data and self.sources:
             # Assuming the first source is the deferred source
             return self.sources[0].source_uri
         return None
