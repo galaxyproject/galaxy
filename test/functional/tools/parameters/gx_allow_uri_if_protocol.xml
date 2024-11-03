@@ -1,6 +1,15 @@
 <tool id="gx_allow_uri_if_protocol" name="gx_allow_uri_if_protocol" version="1.0.0">
     <command><![CDATA[
-echo '$input' > '$output'
+        ## We should handle the case where the input must be treated as a URI with a specific protocol.
+        #if $input.is_deferred:
+            ## Here, the input is a deferred dataset which source URI has the protocol 'https'.
+            ## The ouput will be the source URI of the input.
+            echo '$input' > '$output'
+        #else:
+            ## Here, the input is a regular dataset or a materialized dataset in case of a 
+            ## deferred dataset which source URI has a protocol different than 'https'.
+            ## The output will be a copy of the input content.
+            cp '$input' '$output'
     ]]></command>
     <inputs>
         <param name="input" type="data" allow_uri_if_protocol="https"/>
@@ -8,6 +17,4 @@ echo '$input' > '$output'
     <outputs>
         <data name="output" format="txt"/>
     </outputs>
-    <tests>
-    </tests>
 </tool>
