@@ -1,7 +1,7 @@
 """
 Classes encapsulating Galaxy tool parameters.
 """
-
+import logging
 from json import dumps
 
 from boltons.iterutils import remap
@@ -18,6 +18,8 @@ from .basic import (
     SelectToolParameter,
 )
 from .grouping import Conditional, Repeat, Section, UploadDataset
+
+log = logging.getLogger(__name__)
 
 REPLACE_ON_TRUTHY = object()
 
@@ -205,14 +207,21 @@ def params_to_strings(params, param_values, app, nested=False, use_security=Fals
     Convert a dictionary of parameter values to a dictionary of strings
     suitable for persisting. The `value_to_basic` method of each parameter
     is called to convert its value to basic types, the result of which
-    is then json encoded (this allowing complex nested parameters and
+    is then JSON encoded (this allowing complex nested parameters and
     such).
+    If the value is not JSON-encodable, the key/value pair is skipped.
     """
     rval = dict()
     for key, value in param_values.items():
         if key in params:
             value = params[key].value_to_basic(value, app, use_security=use_security)
-        rval[key] = value if nested or value is None else str(dumps(value, sort_keys=True))
+        if not nested and value is not None:
+            try:
+                value = dumps(value, sort_keys=True)
+            except Exception as e:
+                log.warning(f"Error while serializing value {value} for key {key}: {e}")
+                continue
+        rval[key] = value
     return rval
 
 
