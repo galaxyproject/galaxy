@@ -2467,6 +2467,71 @@ class TestToolsApi(ApiTestCase, TestsTools):
         job_details = self.dataset_populator.get_job_details(job_id=job_id).json()
         assert job_details["state"] == "failed"
 
+    @skip_without_tool("gx_allow_uri_if_protocol")
+    def test_allow_uri_if_protocol_on_deferred_input(self, history_id):
+        source_uri = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/simple_line.txt"
+        deferred_hda = self.dataset_populator.create_deferred_hda(history_id, source_uri, ext="txt")
+
+        inputs = {"input1": dataset_to_param(deferred_hda)}
+        # The tool just returns the URI (or file path if it was materialized) as the output content
+        run_response = self.dataset_populator.run_tool(
+            tool_id="gx_allow_uri_if_protocol", inputs=inputs, history_id=history_id
+        )
+        output = run_response["outputs"][0]
+        output_details = self.dataset_populator.get_history_dataset_details(
+            history_id, dataset=output, wait=True, assert_ok=True
+        )
+        assert output_details["state"] == "ok"
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+        assert output_content.strip() == source_uri.strip()
+
+    @skip_without_tool("gx_allow_uri_if_protocol")
+    def test_allow_uri_if_protocol_on_collection_with_deferred(self, history_id):
+        source_uris = [
+            "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/simple_line.txt",
+            "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/simple_line_alternative.txt",
+        ]
+        elements = [
+            {
+                "src": "url",
+                "url": source_uri,
+                "deferred": True,
+                "ext": "txt",
+            }
+            for source_uri in source_uris
+        ]
+        targets = [
+            {
+                "destination": {"type": "hdca"},
+                "elements": elements,
+                "collection_type": "list",
+                "name": "deferred list",
+            }
+        ]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload, wait=True)
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        hdca_id = dataset_collection["id"]
+        inputs = {
+            "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
+        }
+        run_response = self.dataset_populator.run_tool(
+            tool_id="gx_allow_uri_if_protocol", inputs=inputs, history_id=history_id
+        )
+        hdca_id = run_response["implicit_collections"][0]["id"]
+        dataset_collection = self.dataset_populator.get_history_collection_details(history_id, id=hdca_id)
+        elements = dataset_collection["elements"]
+        assert len(elements) == 2
+        for element in elements:
+            object = element["object"]
+            assert isinstance(object, dict)
+            assert object["state"] == "ok"
+            output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=object)
+            assert output_content.strip() in source_uris
+
     @skip_without_tool("cat1")
     def test_run_deferred_mapping(self, history_id: str):
         elements = [

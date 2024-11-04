@@ -4316,6 +4316,47 @@ template if the parameter is ``false`` or not checked by the user. Used only
 when the ``type`` attribute value is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="allow_uri_if_protocol" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"><![CDATA[
+When using `deferred` datasets, Galaxy will try to materialize them into files when
+running the tool. In case we don't want to download them, the `allow_uri_if_protocol` attribute
+can be used to avoid materialization and pass the URI as is to the tool.
+This is useful when the tool can handle the URI directly. Example:
+
+```xml
+<param name="input" type="data" format="txt" allow_uri_if_protocol="http,https,s3" />
+```
+
+You can specify multiple prefixes separated by comma or use the wildcard '*' to always
+treat deferred datasets as URIs. The source URI will be passed to the tool as is.
+
+This attribute is only valid for `data` parameters.
+
+### Handling the input in the tool
+
+Since the input can be a regular file or a URI, the tool should be able to handle both cases.
+The tool should check if the input ``is_deferred`` and if so, treat it as a URI, otherwise
+it should treat it as a regular file. Please note that only deferred datasets with the specified
+protocol will be passed as URIs, the rest will be materialized as files.
+
+Here is an example command section that handles the above sample input:
+
+```python
+<command>
+  ## We should handle the case where the input must be treated as a URI with a specific protocol.
+  #if $input.is_deferred:
+      ## Here, the input is a deferred dataset which source URI has the protocol 'https', 'http' or 's3'.
+      echo '$input' > '$output' ## The ouput will be the source URI of the input.
+  #else:
+      ## Here, the input is a regular dataset or a materialized dataset in case of a 
+      ## deferred dataset which source URI has a protocol different than 'https', 'http' or 's3'.
+      cp '$input' '$output' ## The output will be a copy of the input content.
+</command>
+```
+         ]]></xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="size" type="xs:string" gxdocs:deprecated="true">
           <!-- TODO: can be integer or integerxinteger -->
           <xs:annotation>

@@ -2737,6 +2737,7 @@ class FakeDatasetAssociation:
     def __init__(self, dataset: Optional["Dataset"] = None) -> None:
         self.dataset = dataset
         self.metadata: Dict = {}
+        self.has_deferred_data = False
 
     def get_file_name(self, sync_cache: bool = True) -> str:
         assert self.dataset
@@ -4684,6 +4685,13 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     @property
     def has_deferred_data(self):
         return self.dataset.state == Dataset.states.DEFERRED
+
+    @property
+    def deferred_source_uri(self):
+        if self.has_deferred_data and self.sources:
+            # Assuming the first source is the deferred source
+            return self.sources[0].source_uri
+        return None
 
     @property
     def state(self):

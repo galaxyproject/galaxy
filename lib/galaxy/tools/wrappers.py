@@ -456,6 +456,10 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     def is_collection(self) -> bool:
         return False
 
+    @property
+    def is_deferred(self) -> bool:
+        return self.unsanitized.has_deferred_data
+
     def is_of_type(self, *exts: str) -> bool:
         datatypes = []
         if not self.datatypes_registry:
@@ -471,6 +475,11 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         return self.dataset.datatype.matches_any(datatypes)
 
     def __str__(self) -> str:
+        return self._path_or_uri()
+
+    def _path_or_uri(self) -> str:
+        if self.is_deferred:
+            return self.unsanitized.deferred_source_uri or ""
         if self.false_path is not None:
             return self.false_path
         else:
