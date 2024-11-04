@@ -96,12 +96,10 @@ const route = useRoute();
 const router = useRouter();
 
 function cardClicked(invocation: WorkflowInvocation) {
-    let path = `/workflows/invocations/${invocation.id}`;
     if (props.inPanel) {
-        path += "?from_panel=true";
         emit("invocation-clicked");
     }
-    router.push(path);
+    router.push(`/workflows/invocations/${invocation.id}`);
 }
 
 function scrollToTop() {

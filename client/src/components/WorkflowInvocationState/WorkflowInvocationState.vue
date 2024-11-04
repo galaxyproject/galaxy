@@ -21,6 +21,7 @@ import {
     runningCount as jobStatesSummaryRunningCount,
 } from "./util";
 
+import ProgressBar from "../ProgressBar.vue";
 import WorkflowInvocationSteps from "../Workflow/Invocation/Graph/WorkflowInvocationSteps.vue";
 import InvocationReport from "../Workflow/InvocationReport.vue";
 import WorkflowAnnotation from "../Workflow/WorkflowAnnotation.vue";
@@ -35,7 +36,6 @@ interface Props {
     invocationId: string;
     isSubworkflow?: boolean;
     isFullPage?: boolean;
-    fromPanel?: boolean;
     success?: boolean;
     newHistoryTarget?: boolean;
     targetHistory: string;
@@ -235,19 +235,16 @@ function cancelWorkflowSchedulingLocal() {
 
 <template>
     <div v-if="invocation" class="d-flex flex-column w-100" data-description="workflow invocation state">
-        <WorkflowNavigationTitle v-if="props.isFullPage && !props.success" :invocation="invocation" :from-panel="props.fromPanel" :target-history="props.targetHistory" />
-        <!-- invocation.history_id={{ invocation.history_id }}<br> -->
-        <!-- invocationId={{ invocationId }}<br> -->
-        <!-- targetHistory={{ props.targetHistory }}<br>
-        targetHistory={{ targetHistory }}<br> -->
+        <WorkflowNavigationTitle
+            v-if="props.isFullPage && !props.success"
+            :invocation="invocation"
+            :workflow-id="invocation.workflow_id" />
         <WorkflowAnnotation
             v-if="props.isFullPage"
             :workflow-id="invocation.workflow_id"
-            :update-time="invocation.update_time"
+            :invocation-update-time="invocation.update_time"
             :history-id="invocation.history_id"
-            :from-panel="props.fromPanel"
-            :new-history-target="props.newHistoryTarget"
-            :target-history="props.targetHistory">
+            :new-history-target="props.newHistoryTarget">
             <template v-slot:middle-content>
                 <div class="progress-bars mx-1">
                     <ProgressBar

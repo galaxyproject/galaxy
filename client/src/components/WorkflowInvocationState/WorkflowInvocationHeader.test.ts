@@ -64,23 +64,16 @@ const localVue = getLocalVue();
 /**
  * Mounts the WorkflowNavigationTitle component with props/stores adjusted given the parameters
  * @param ownsWorkflow Whether the user owns the workflow associated with the invocation
- * @param hasReturnBtn Whether the component should have a return to invocations list button
  * @param unimportableWorkflow Whether the workflow import should fail
  * @returns The wrapper object
  */
-async function mountWorkflowNavigationTitle(ownsWorkflow = true, hasReturnBtn = false, unimportableWorkflow = false) {
+async function mountWorkflowNavigationTitle(ownsWorkflow = true, unimportableWorkflow = false) {
     const wrapper = shallowMount(WorkflowNavigationTitle as object, {
         propsData: {
             invocation: {
                 ...sampleInvocation,
                 workflow_id: !unimportableWorkflow ? sampleInvocation.workflow_id : UNIMPORTABLE_WORKFLOW_INSTANCE_ID,
             },
-            invocationState: "scheduled",
-            isFullPage: true,
-            jobStatesSummary: {},
-            fromPanel: !hasReturnBtn,
-            invocationSchedulingTerminal: true,
-            invocationAndJobTerminal: true,
         },
         localVue,
         pinia: createTestingPinia(),
@@ -140,7 +133,7 @@ describe("Importing a workflow in WorkflowNavigationTitle", () => {
     });
 
     it("should show an error dialog when the import fails", async () => {
-        const { wrapper } = await mountWorkflowNavigationTitle(false, false, true);
+        const { wrapper } = await mountWorkflowNavigationTitle(false, true);
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
         const importButton = actionsGroup.find(SELECTORS.IMPORT_WORKFLOW_BUTTON);
 
