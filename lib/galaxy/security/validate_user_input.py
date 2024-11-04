@@ -35,8 +35,8 @@ EMAIL_MAX_LEN = 255
 
 # Public name validity parameters
 PUBLICNAME_MAX_LEN = 255
-VALID_PUBLICNAME_RE = re.compile(r"^[a-z0-9._\-]+$")
-VALID_PUBLICNAME_SUB = re.compile(r"[^a-z0-9._\-]")
+VALID_PUBLICNAME_RE = re.compile(r"^[a-zA-Z0-9._\-]+$")
+VALID_PUBLICNAME_SUB = re.compile(r"[^a-zA-Z0-9._\-]")
 FILL_CHAR = "-"
 
 # Password validity parameters
@@ -67,7 +67,7 @@ def validate_publicname_str(publicname):
     if len(publicname) > PUBLICNAME_MAX_LEN:
         return "Public name cannot be more than %d characters in length." % (PUBLICNAME_MAX_LEN)
     if not (VALID_PUBLICNAME_RE.match(publicname)):
-        return "Public name must contain only lower-case letters, numbers, '.', '_' and '-'."
+        return "Public name must contain only letters, numbers, '.', '_' and '-'."
     return ""
 
 
