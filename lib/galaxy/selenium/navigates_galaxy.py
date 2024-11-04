@@ -1227,7 +1227,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_editor_click_option(self, option_label):
         self.workflow_editor_click_options()
         menu_element = self.workflow_editor_options_menu_element()
-        option_elements = menu_element.find_elements(By.CSS_SELECTOR, "a")
+        option_elements = menu_element.find_elements(By.CSS_SELECTOR, "button")
         assert len(option_elements) > 0, "Failed to find workflow editor options"
         self.sleep_for(WAIT_TYPES.UX_RENDER)
         found_option = False
@@ -1247,7 +1247,7 @@ class NavigatesGalaxy(HasDriver):
         return self.wait_for_and_click_selector("#activity-settings")
 
     def workflow_editor_options_menu_element(self):
-        return self.wait_for_selector_visible("#activity-settings")
+        return self.wait_for_selector_visible(".activity-settings")
 
     def workflow_editor_click_run(self):
         return self.wait_for_and_click_selector("#workflow-run-button")
