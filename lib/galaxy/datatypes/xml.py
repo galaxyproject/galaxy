@@ -272,7 +272,7 @@ class Sbml(GenericXml):
         """
         return file_prefix.search(SBML_MARKER)
 
-class MeshVtu(GenericXml):
+class Vtu(GenericXml):
     """Format for defining VTU (VTK Unstructured Grid) data https://docs.vtk.org/"""
 
     edam_data = "edam:data_3671"
@@ -297,10 +297,10 @@ class MeshVtu(GenericXml):
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'output.vtu' )
-        >>> VTU().sniff( fname )
+        >>> Vtu().sniff( fname )
         True
         >>> fname = get_test_fname( 'solid.xml' )
-        >>> VTU().sniff( fname )
+        >>> Vtu().sniff( fname )
         False
         """
         return self._has_root_element_in_prefix(file_prefix, "VTKFile") and b'type="UnstructuredGrid"' in file_prefix.string_io.read(100)
