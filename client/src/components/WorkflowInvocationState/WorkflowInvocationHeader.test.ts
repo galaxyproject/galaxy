@@ -7,7 +7,7 @@ import { getLocalVue } from "tests/jest/helpers";
 import sampleInvocation from "@/components/Workflow/test/json/invocation.json";
 import { useUserStore } from "@/stores/userStore";
 
-import WorkflowInvocationHeader from "./WorkflowInvocationHeader.vue";
+import WorkflowNavigationTitle from "../Workflow/WorkflowNavigationTitle.vue";
 
 // Constants
 const WORKFLOW_OWNER = "test-user";
@@ -62,14 +62,14 @@ jest.mock("@/stores/workflowStore", () => {
 const localVue = getLocalVue();
 
 /**
- * Mounts the WorkflowInvocationHeader component with props/stores adjusted given the parameters
+ * Mounts the WorkflowNavigationTitle component with props/stores adjusted given the parameters
  * @param ownsWorkflow Whether the user owns the workflow associated with the invocation
  * @param hasReturnBtn Whether the component should have a return to invocations list button
  * @param unimportableWorkflow Whether the workflow import should fail
  * @returns The wrapper object
  */
-async function mountWorkflowInvocationHeader(ownsWorkflow = true, hasReturnBtn = false, unimportableWorkflow = false) {
-    const wrapper = shallowMount(WorkflowInvocationHeader as object, {
+async function mountWorkflowNavigationTitle(ownsWorkflow = true, hasReturnBtn = false, unimportableWorkflow = false) {
+    const wrapper = shallowMount(WorkflowNavigationTitle as object, {
         propsData: {
             invocation: {
                 ...sampleInvocation,
@@ -94,10 +94,10 @@ async function mountWorkflowInvocationHeader(ownsWorkflow = true, hasReturnBtn =
     return { wrapper };
 }
 
-describe("WorkflowInvocationHeader renders", () => {
+describe("WorkflowNavigationTitle renders", () => {
     // Included both cases in one test because these are always constant
     it("(always) the workflow name in header and run button in actions", async () => {
-        const { wrapper } = await mountWorkflowInvocationHeader();
+        const { wrapper } = await mountWorkflowNavigationTitle();
 
         const heading = wrapper.find(SELECTORS.INVOKED_WORKFLOW_HEADING);
         expect(heading.text()).toBe(`Invoked Workflow: "${SAMPLE_WORKFLOW.name}"`);
@@ -108,7 +108,7 @@ describe("WorkflowInvocationHeader renders", () => {
     });
 
     it("edit button if user owns the workflow", async () => {
-        const { wrapper } = await mountWorkflowInvocationHeader();
+        const { wrapper } = await mountWorkflowNavigationTitle();
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
         const editButton = actionsGroup.find(SELECTORS.EDIT_WORKFLOW_BUTTON);
         expect(editButton.attributes("to")).toBe(
@@ -117,16 +117,16 @@ describe("WorkflowInvocationHeader renders", () => {
     });
 
     it("import button instead if user does not own the workflow", async () => {
-        const { wrapper } = await mountWorkflowInvocationHeader(false);
+        const { wrapper } = await mountWorkflowNavigationTitle(false);
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
         const importButton = actionsGroup.find(SELECTORS.IMPORT_WORKFLOW_BUTTON);
         expect(importButton.exists()).toBe(true);
     });
 });
 
-describe("Importing a workflow in WorkflowInvocationHeader", () => {
+describe("Importing a workflow in WorkflowNavigationTitle", () => {
     it("should show a confirmation dialog when the import is successful", async () => {
-        const { wrapper } = await mountWorkflowInvocationHeader(false);
+        const { wrapper } = await mountWorkflowNavigationTitle(false);
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
         const importButton = actionsGroup.find(SELECTORS.IMPORT_WORKFLOW_BUTTON);
 
@@ -140,7 +140,7 @@ describe("Importing a workflow in WorkflowInvocationHeader", () => {
     });
 
     it("should show an error dialog when the import fails", async () => {
-        const { wrapper } = await mountWorkflowInvocationHeader(false, false, true);
+        const { wrapper } = await mountWorkflowNavigationTitle(false, false, true);
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
         const importButton = actionsGroup.find(SELECTORS.IMPORT_WORKFLOW_BUTTON);
 

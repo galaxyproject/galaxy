@@ -55,6 +55,9 @@
                                 </WorkflowStorageConfiguration>
                             </b-dropdown-form>
                         </b-dropdown>
+                        <!-- waitingForRequest:{{ waitingForRequest }}<br> -->
+                        <!-- hasValidationErrors:{{ hasValidationErrors }}<br> -->
+                        <!-- !canRunOnHistory:{{ !canRunOnHistory }}<br> -->
                         <ButtonSpinner
                             id="run-workflow"
                             :wait="waitingForRequest"
@@ -65,7 +68,47 @@
                 </div>
             </div>
         </div>
-        <WorkflowRunName v-if="isConfigLoaded" :model="this.model" :embedded="false" />
+        
+
+
+
+            <div class="ui-portlet-section w-100">
+                <div
+                    class="portlet-header cursor-pointer"
+                    role="button"
+                    :tabindex="0"
+                    @keyup.enter="expandAnnotations = !expandAnnotations"
+                    @click="expandAnnotations = !expandAnnotations">
+                    <b class="portlet-operations portlet-title-text">
+                        <span v-localize class="font-weight-bold">About This Workflow</span>
+                    </b>
+                    <span v-b-tooltip.hover.bottom title="Collapse/Expand" variant="link" size="sm" class="float-right">
+                        <FontAwesomeIcon :icon="expandAnnotations ? 'fa fa-chevron-up' : 'fa fa-chevron-up'" fixed-width />
+                    </span>
+                </div>
+                <div class="portlet-content" :style="expandAnnotations ? 'display: none;' : ''">
+                    <!-- TODO confirm timezone consistency -->
+                    <!-- <UtcDate :date="model.runData.annotation.update_time" mode="elapsed" /> -->
+                    <!-- <UtcDate :date="invocation.update_time" mode="elapsed" /> -->
+                    <WorkflowAnnotation 
+                        v-if="true" 
+                        :workflow-id="model.workflowId"
+                        :update-time="model.runData.annotation.update_time"
+                        :history-id="model.historyId"
+                        :from-panel="false" 
+                        :target-history="'current'" />
+                    {{ model.runData.annotation.annotation }}
+                    <br>
+                    <StatelessTags
+                        :value="workflowTags"
+                        :disabled="true" />
+                </div>
+            </div>
+
+
+
+        
+
         <FormDisplay
             :inputs="formInputs"
             :allow-empty-value-on-required-input="true"
@@ -77,27 +120,34 @@
 </template>
 
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import FormDisplay from "components/Form/FormDisplay";
 import { allowCachedJobs } from "components/Tool/utilities";
 import { isWorkflowInput } from "components/Workflow/constants";
-import { storeToRefs } from "pinia";
+import { mapActions,storeToRefs  } from "pinia";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
 
 import { invokeWorkflow } from "./services";
-import WorkflowRunName from "./WorkflowRunName";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
+
+import WorkflowAnnotation from "../../Workflow/WorkflowAnnotation.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+
 
 export default {
     components: {
         ButtonSpinner,
         FormDisplay,
         WorkflowStorageConfiguration,
-        WorkflowRunName,
+        FontAwesomeIcon,
+        WorkflowAnnotation,
+        StatelessTags,
     },
     props: {
         model: {
@@ -138,6 +188,7 @@ export default {
             preferredObjectStoreId: null,
             preferredIntermediateObjectStoreId: null,
             waitingForRequest: false,
+            expandAnnotations: true,
         };
     },
     computed: {
@@ -181,6 +232,21 @@ export default {
         },
         canRunOnHistory() {
             return this.canMutateCurrentHistory || this.sendToNewHistory;
+        },
+        // workflowVersions() {
+        //     return this.getStoredWorkflowByInstanceId(this.workflowID);
+        // },
+        workflowTags() {
+            return this.model.runData.annotation.tags.map((t) => t.user_tname);
+            //TODO remove after confirming new structure:
+            // return {
+            //     id: props.model.runData.id,
+            //     name: props.model.runData.name,
+            //     owner: props.model.runData.owner,
+            //     tags: props.model.runData.annotation.tags.map((t: { user_tname: string }) => t.user_tname),
+            //     annotations: [props.model.runData.annotation.annotation],
+            //     update_time: props.model.runData.annotation.update_time,
+            // };
         },
     },
     methods: {
@@ -255,6 +321,7 @@ export default {
                 })
                 .finally(() => (this.waitingForRequest = false));
         },
+        ...mapActions(useWorkflowStore, ["getStoredWorkflowByInstanceId", "fetchWorkflowForInstanceId"]),
     },
 };
 </script>
