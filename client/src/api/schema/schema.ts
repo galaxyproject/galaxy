@@ -18360,6 +18360,10 @@ export interface components {
              * @description The raw value of the metric as a string.
              */
             raw_value: string;
+            /** Step Index */
+            step_index: number;
+            /** Step Label */
+            step_label: string | null;
             /**
              * Title
              * @description A descriptive title for this metric.

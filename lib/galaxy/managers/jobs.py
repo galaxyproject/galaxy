@@ -60,6 +60,7 @@ from galaxy.model import (
     Workflow,
     WorkflowInvocation,
     WorkflowInvocationStep,
+    WorkflowStep,
     YIELD_PER_ROWS,
 )
 from galaxy.model.base import transaction
@@ -732,7 +733,7 @@ def invocation_job_source_iter(sa_session, invocation_id):
 
 def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation_id: int):
     single_job_stmnt = (
-        select(JobMetricNumeric, Job.tool_id)
+        select(WorkflowStep.order_index, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
         .join(Job, JobMetricNumeric.job_id == Job.id)
         .join(
             WorkflowInvocationStep,
@@ -740,9 +741,10 @@ def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation
                 WorkflowInvocationStep.workflow_invocation_id == invocation_id, WorkflowInvocationStep.job_id == Job.id
             ),
         )
+        .join(WorkflowStep, WorkflowStep.id == WorkflowInvocationStep.workflow_step_id)
     )
     collection_job_stmnt = (
-        select(JobMetricNumeric, Job.tool_id)
+        select(WorkflowStep.order_index, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
         .join(Job, JobMetricNumeric.job_id == Job.id)
         .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
         .join(
@@ -756,10 +758,14 @@ def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation
                 WorkflowInvocationStep.implicit_collection_jobs_id == ImplicitCollectionJobs.id,
             ),
         )
+        .join(WorkflowStep, WorkflowStep.id == WorkflowInvocationStep.workflow_step_id)
     )
     # should be sa_session.execute(single_job_stmnt.union(collection_job_stmnt)).all() but that returns
     # columns instead of the job metrics ORM instance.
-    return list(sa_session.execute(single_job_stmnt).all()) + list(sa_session.execute(collection_job_stmnt).all())
+    return sorted(
+        (*sa_session.execute(single_job_stmnt).all(), *sa_session.execute(collection_job_stmnt).all()),
+        key=lambda row: row[0],
+    )
 
 
 def fetch_job_states(sa_session, job_source_ids, job_source_types):

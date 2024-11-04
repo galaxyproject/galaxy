@@ -2173,6 +2173,8 @@ class JobMetric(Model):
 
 class WorkflowJobMetric(JobMetric):
     tool_id: str
+    step_index: int
+    step_label: Optional[str]
 
 
 class JobMetricCollection(RootModel):

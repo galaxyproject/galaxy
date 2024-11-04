@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { type VisualizationSpec } from "vega-embed";
 import { computed, ref, watch } from "vue";
+import { type ComputedRef } from "vue";
 
 import { type components, GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
-import { type ComputedRef } from "vue";
-import { type VisualizationSpec } from "vega-embed";
 
 import VegaWrapper from "./VegaWrapper.vue";
 
@@ -15,8 +15,14 @@ const props = defineProps({
     },
 });
 
+const groupBy = ref<"tool_id" | "step_id">("tool_id");
 const jobMetrics = ref<components["schemas"]["WorkflowJobMetric"][]>();
 const fetchError = ref<string>();
+
+const attributeToLabel = {
+    tool_id: "Tool ID",
+    step_id: "Step",
+};
 
 async function fetchMetrics() {
     const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}/metrics", {
@@ -35,6 +41,16 @@ async function fetchMetrics() {
 
 watch(props, () => fetchMetrics(), { immediate: true });
 
+function itemToX(item: components["schemas"]["WorkflowJobMetric"]) {
+    if (groupBy.value === "tool_id") {
+        return item.tool_id;
+    } else if (groupBy.value === "step_id") {
+        return `${item.step_index + 1}: ${item.step_label || item.tool_id}`;
+    } else {
+        throw Error("Cannot happen");
+    }
+}
+
 interface boxplotData {
     x_title: string;
     y_title: string;
@@ -46,11 +62,11 @@ const wallclock: ComputedRef<boxplotData> = computed(() => {
     const values = wallclock?.map((item) => {
         return {
             y: parseFloat(item.raw_value),
-            x: item.tool_id,
+            x: itemToX(item),
         };
     });
     return {
-        x_title: "Tool ID",
+        x_title: attributeToLabel[groupBy.value],
         y_title: "Runtime (in Seconds)",
         values,
     };
@@ -61,11 +77,11 @@ const coresAllocated: ComputedRef<boxplotData> = computed(() => {
     const values = coresAllocated?.map((item) => {
         return {
             y: parseFloat(item.raw_value),
-            x: item.tool_id,
+            x: itemToX(item),
         };
     });
     return {
-        x_title: "Tool ID",
+        x_title: attributeToLabel[groupBy.value],
         y_title: "Cores Allocated",
         values,
     };
@@ -76,7 +92,7 @@ const memoryAllocated: ComputedRef<boxplotData> = computed(() => {
     const values = memoryAllocated?.map((item) => {
         return {
             y: parseFloat(item.raw_value),
-            x: item.tool_id,
+            x: itemToX(item),
         };
     });
     return {
@@ -147,9 +163,19 @@ const specs = computed(() => {
 
 <template>
     <div>
-        <div v-for="(spec, key) in specs" :key="key">
-            <h2 class="h-l truncate text-center">{{ key }}</h2>
-            <VegaWrapper :spec="spec" />
-        </div>
+        <b-tabs lazy>
+            <b-tab title="Summary by Tool" @click="groupBy = 'tool_id'">
+                <div v-for="(spec, key) in specs" :key="key">
+                    <h2 class="h-l truncate text-center">{{ key }}</h2>
+                    <VegaWrapper :spec="spec" />
+                </div>
+            </b-tab>
+            <b-tab title="Summary by Workflow Step" @click="groupBy = 'step_id'">
+                <div v-for="(spec, key) in specs" :key="key">
+                    <h2 class="h-l truncate text-center">{{ key }}</h2>
+                    <VegaWrapper :spec="spec" />
+                </div>
+            </b-tab>
+        </b-tabs>
     </div>
 </template>

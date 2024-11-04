@@ -168,12 +168,20 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         extended_job_metrics = get_job_metrics_for_invocation(trans.sa_session, invocation_id)
         job_metrics = []
         tool_ids = []
+        step_indexes = []
+        step_labels = []
         for row in extended_job_metrics:
-            job_metrics.append(row[0])
+            step_indexes.append(row[0])
             tool_ids.append(row[1])
+            step_labels.append(row[2])
+            job_metrics.append(row[3])
         metrics_dict_list = summarize_metrics(trans, job_metrics)
-        for tool_id, metrics_dict in zip(tool_ids, metrics_dict_list):
+        for tool_id, step_index, step_label, metrics_dict in zip(
+            tool_ids, step_indexes, step_labels, metrics_dict_list
+        ):
             metrics_dict["tool_id"] = tool_id
+            metrics_dict["step_index"] = step_index
+            metrics_dict["step_label"] = step_label
         return metrics_dict_list
 
     def update_invocation_step(self, trans, step_id, action):
