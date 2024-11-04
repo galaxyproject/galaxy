@@ -150,7 +150,9 @@ function itemToSpec(item: boxplotData) {
 }
 
 const specs = computed(() => {
-    const items = [wallclock.value, coresAllocated.value, memoryAllocated.value].filter((item) => item.values?.length);
+    const items = [wallclock.value, coresAllocated.value, memoryAllocated.value, peakMemory.value].filter(
+        (item) => item.values?.length
+    );
     const specs = Object.fromEntries(items.map((item) => [item.y_title, itemToSpec(item)]));
     return specs;
 });

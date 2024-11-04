@@ -3,6 +3,7 @@
 </template>
 
 <script setup lang="ts">
+import { useResizeObserver } from "@vueuse/core";
 import embed, { type VisualizationSpec } from "vega-embed";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
@@ -28,6 +29,9 @@ async function embedChart() {
 onMounted(embedChart);
 
 watch(props, embedChart, { immediate: true, deep: true });
+useResizeObserver(chartContainer, () => {
+    embedChart();
+});
 
 // Cleanup the chart when the component is unmounted
 onBeforeUnmount(() => {
