@@ -7,7 +7,6 @@ from typing import (
     cast,
     Dict,
     List,
-    NamedTuple,
     Optional,
     Union,
 )
@@ -25,6 +24,10 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.tools import (
+    get_tool_from_trans,
+    ToolRunReference,
+)
 from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     PostJobAction,
@@ -46,26 +49,6 @@ from galaxy.webapps.galaxy.services.base import ServiceBase
 log = logging.getLogger(__name__)
 
 
-class ToolRunReference(NamedTuple):
-    tool_id: Optional[str]
-    tool_uuid: Optional[str]
-    tool_version: Optional[str]
-
-
-def get_tool(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
-    get_kwds = dict(
-        tool_id=tool_ref.tool_id,
-        tool_uuid=tool_ref.tool_uuid,
-        tool_version=tool_ref.tool_version,
-    )
-
-    tool = trans.app.toolbox.get_tool(**get_kwds)
-    if not tool:
-        log.debug(f"Not found tool with kwds [{tool_ref}]")
-        raise exceptions.ToolMissingException("Tool not found.")
-    return tool
-
-
 def validate_tool_for_running(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
     if trans.user_is_bootstrap_admin:
         raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
@@ -73,7 +56,7 @@ def validate_tool_for_running(trans: ProvidesHistoryContext, tool_ref: ToolRunRe
     if tool_ref.tool_id is None and tool_ref.tool_uuid is None:
         raise exceptions.RequestParameterMissingException("Must specify a valid tool_id to use this endpoint.")
 
-    tool = get_tool(trans, tool_ref)
+    tool = get_tool_from_trans(trans, tool_ref)
     if not tool.allow_user_access(trans.user):
         raise exceptions.ItemAccessibilityException("Tool not accessible.")
     return tool
@@ -97,7 +80,7 @@ class ToolsService(ServiceBase):
         trans: ProvidesHistoryContext,
         tool_ref: ToolRunReference,
     ) -> List[ToolParameterT]:
-        tool = get_tool(trans, tool_ref)
+        tool = get_tool_from_trans(trans, tool_ref)
         return tool.parameters
 
     def create_fetch(
