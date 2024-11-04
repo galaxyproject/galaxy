@@ -70,6 +70,7 @@ function close() {
                     class="heading-button"
                     variant="link"
                     size="md"
+                    title="maximize"
                     @click="inspectorStore.setMaximized(props.step, true)">
                     <ArrowLeftFromLine absolute-stroke-width :size="17" />
                 </BButton>
@@ -78,6 +79,7 @@ function close() {
                     class="heading-button"
                     variant="link"
                     size="md"
+                    title="minimize"
                     @click="inspectorStore.setMaximized(props.step, false)">
                     <ArrowRightToLine absolute-stroke-width :size="17" />
                 </BButton>
@@ -100,7 +102,7 @@ function close() {
                     </BDropdownItemButton>
                 </BDropdown>
 
-                <BButton class="heading-button" variant="link" size="md" @click="close">
+                <BButton class="heading-button" variant="link" size="md" title="close" @click="close">
                     <FontAwesomeIcon :icon="faTimes" fixed-width />
                 </BButton>
             </BButtonGroup>
