@@ -303,8 +303,4 @@ class Vtu(GenericXml):
         >>> Vtu().sniff( fname )
         False
         """
-        if not self._has_root_element_in_prefix(file_prefix, "VTKFile"):
-            return False
-        with open(file_prefix.file, 'rb') as f:
-            header = f.read(100)  
-        return b'type="UnstructuredGrid"' in header
+        return self._has_root_element_in_prefix(file_prefix, 'VTKFile type="UnstructuredGrid"')
