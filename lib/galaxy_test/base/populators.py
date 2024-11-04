@@ -795,12 +795,16 @@ class BaseDatasetPopulator(BasePopulator):
         return self._get(dataset_url)
 
     def create_tool_landing(self, payload: CreateToolLandingRequestPayload) -> ToolLandingRequest:
-        create_url = "tool_landings"
-        json = payload.model_dump(mode="json")
-        create_response = self._post(create_url, json, json=True, anon=True)
+        create_response = self.create_tool_landing_raw(payload)
         api_asserts.assert_status_code_is(create_response, 200)
         create_response.raise_for_status()
         return ToolLandingRequest.model_validate(create_response.json())
+
+    def create_tool_landing_raw(self, payload: CreateToolLandingRequestPayload) -> Response:
+        create_url = "tool_landings"
+        json = payload.model_dump(mode="json")
+        create_response = self._post(create_url, json, json=True, anon=True)
+        return create_response
 
     def create_workflow_landing(self, payload: CreateWorkflowLandingRequestPayload) -> WorkflowLandingRequest:
         create_url = "workflow_landings"

@@ -17,6 +17,7 @@ from fastapi import (
     Request,
     UploadFile,
 )
+from pydantic import UUID4
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from galaxy import (
@@ -26,16 +27,26 @@ from galaxy import (
 )
 from galaxy.datatypes.data import get_params_and_input_name
 from galaxy.managers.collections import DatasetCollectionManager
-from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.landing import LandingRequestManager
+from galaxy.managers.tools import ToolRunReference
 from galaxy.model import ToolRequest
 from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import ToolRequestModel
+from galaxy.schema.schema import (
+    ClaimLandingPayload,
+    CreateToolLandingRequestPayload,
+    ToolLandingRequest,
+    ToolRequestModel,
+)
 from galaxy.tool_util.parameters import ToolParameterT
 from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tools.evaluation import global_tool_errors
@@ -49,16 +60,14 @@ from galaxy.web import (
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.services.base import tool_request_to_model
-from galaxy.webapps.galaxy.services.tools import (
-    ToolRunReference,
-    ToolsService,
-)
+from galaxy.webapps.galaxy.services.tools import ToolsService
 from . import (
     APIContentTypeRoute,
     as_form,
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    LandingUuidPathParam,
     Router,
 )
 
@@ -105,6 +114,7 @@ async def get_files(request: Request, files: Optional[List[UploadFile]] = None):
 @router.cbv
 class FetchTools:
     service: ToolsService = depends(ToolsService)
+    landing_manager: LandingRequestManager = depends(LandingRequestManager)
 
     @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
     def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
@@ -160,6 +170,31 @@ class FetchTools:
             raise exceptions.ObjectNotFound()
         assert tool_request
         return tool_request
+
+    @router.post("/api/tool_landings", public=True)
+    def create_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        tool_landing_request: CreateToolLandingRequestPayload = Body(...),
+    ) -> ToolLandingRequest:
+        return self.landing_manager.create_tool_landing_request(tool_landing_request)
+
+    @router.post("/api/tool_landings/{uuid}/claim")
+    def claim_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        uuid: UUID4 = LandingUuidPathParam,
+        payload: Optional[ClaimLandingPayload] = Body(...),
+    ) -> ToolLandingRequest:
+        return self.landing_manager.claim_tool_landing_request(trans, uuid, payload)
+
+    @router.get("/api/tool_landings/{uuid}")
+    def get_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        uuid: UUID4 = LandingUuidPathParam,
+    ) -> ToolLandingRequest:
+        return self.landing_manager.get_tool_landing_request(trans, uuid)
 
     @router.get(
         "/api/tools/{tool_id}/inputs",

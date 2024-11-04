@@ -30,9 +30,20 @@ from galaxy.schema.schema import (
     WorkflowLandingRequest,
 )
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import (
+    MinimalManagerApp,
+    StructuredApp,
+)
+from galaxy.tool_util.parameters import (
+    landing_decode,
+    LandingRequestToolState,
+)
 from galaxy.util import safe_str_cmp
 from .context import ProvidesUserContext
+from .tools import (
+    get_tool_from_toolbox,
+    ToolRunReference,
+)
 
 LandingRequestModel = Union[ToolLandingRequestModel, WorkflowLandingRequestModel]
 
@@ -44,16 +55,27 @@ class LandingRequestManager:
         sa_session: galaxy_scoped_session,
         security: IdEncodingHelper,
         workflow_contents_manager: WorkflowContentsManager,
+        app: MinimalManagerApp,
     ):
         self.sa_session = sa_session
         self.security = security
         self.workflow_contents_manager = workflow_contents_manager
+        self.app = app
 
     def create_tool_landing_request(self, payload: CreateToolLandingRequestPayload, user_id=None) -> ToolLandingRequest:
+        tool_id = payload.tool_id
+        tool_version = payload.tool_version
+        request_state = payload.request_state
+
+        ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        tool = get_tool_from_toolbox(self.app.toolbox, ref)
+        landing_request_state = LandingRequestToolState(request_state or {})
+        internal_landing_request_state = landing_decode(landing_request_state, tool, self.security.decode_id)
+
         model = ToolLandingRequestModel()
-        model.tool_id = payload.tool_id
-        model.tool_version = payload.tool_version
-        model.request_state = payload.request_state
+        model.tool_id = tool_id
+        model.tool_version = tool_version
+        model.request_state = internal_landing_request_state.input_state
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
         model.public = payload.public

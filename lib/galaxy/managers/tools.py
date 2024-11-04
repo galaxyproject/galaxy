@@ -1,5 +1,6 @@
 import logging
 from typing import (
+    NamedTuple,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -16,8 +17,10 @@ from galaxy import (
     model,
 )
 from galaxy.exceptions import DuplicatedIdentifierException
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import DynamicTool
 from galaxy.tool_util.cwl import tool_proxy
+from galaxy.tools import Tool
 from .base import (
     ModelManager,
     raise_filter_err,
@@ -28,6 +31,30 @@ log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from galaxy.managers.base import OrmFilterParsersType
+
+
+class ToolRunReference(NamedTuple):
+    tool_id: Optional[str]
+    tool_uuid: Optional[str]
+    tool_version: Optional[str]
+
+
+def get_tool_from_trans(trans: ProvidesUserContext, tool_ref: ToolRunReference) -> Tool:
+    return get_tool_from_toolbox(trans.app.toolbox, tool_ref)
+
+
+def get_tool_from_toolbox(toolbox, tool_ref: ToolRunReference) -> Tool:
+    get_kwds = dict(
+        tool_id=tool_ref.tool_id,
+        tool_uuid=tool_ref.tool_uuid,
+        tool_version=tool_ref.tool_version,
+    )
+
+    tool = toolbox.get_tool(**get_kwds)
+    if not tool:
+        log.debug(f"Not found tool with kwds [{tool_ref}]")
+        raise exceptions.ToolMissingException("Tool not found.")
+    return tool
 
 
 class DynamicToolManager(ModelManager):
