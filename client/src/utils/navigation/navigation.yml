@@ -19,6 +19,7 @@ _:  # global stuff
     right_panel_drag: '.flex-panel.right .drag-handle'
     right_panel_collapse: '.collapse-button.right'
     by_attribute: '${scope} [${name}="${value}"]'
+    active_nav_item: '.nav-item-active'
 
     confirm_button:
       type: xpath
@@ -744,6 +745,8 @@ workflow_editor:
       freehand_path: ".freehand-workflow-comment path"
       delete: "button[title='Delete comment']"
   selectors:
+    node_inspector: '.tool-inspector'
+    node_inspector_close: ".tool-inspector [title='close']"
     canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'

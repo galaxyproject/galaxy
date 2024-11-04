@@ -1377,12 +1377,14 @@ steps:
         self.click_center()
 
     def workflow_editor_maximize_center_pane(self, collapse_left=True, collapse_right=True):
-        if collapse_left:
-            self.hover_over(self.components._.left_panel_drag.wait_for_visible())
-            self.components._.left_panel_collapse.wait_for_and_click()
-        if collapse_right:
-            self.hover_over(self.components._.right_panel_drag.wait_for_visible())
-            self.components._.right_panel_collapse.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor = self.components.workflow_editor
+
+        if collapse_right and not editor.node_inspector.is_absent:
+            editor.node_inspector_close.wait_for_and_click()
+        if collapse_left and not self.components._.active_nav_item.is_absent:
+            self.components._.active_nav_item.wait_for_and_click()
+
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_editor_connect(self, source, sink, screenshot_partial=None):
