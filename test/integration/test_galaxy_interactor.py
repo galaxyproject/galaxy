@@ -15,6 +15,17 @@ class TestGalaxyInteractor(integration_util.IntegrationTestCase):
             b"chr1\t147962192\t147962580"
         )
 
+    def test_data_path_error_message(self):
+        with self._different_user(invalid_admin_key=True):  # other user is not admin, attempt to use their key anyway
+            exc = None
+            try:
+                data_path = self.galaxy_interactor.test_data_path("cat1", "1.bed")
+                assert not data_path
+            except Exception as e:
+                exc = e
+            assert exc is not None
+            assert "You must be an administrator" in str(exc)
+
     def test_run_test_select_version(self):
         self._run_tool_test(tool_id="multiple_versions", tool_version="0.1")
 
