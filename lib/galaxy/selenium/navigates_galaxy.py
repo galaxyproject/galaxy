@@ -1231,10 +1231,10 @@ class NavigatesGalaxy(HasDriver):
             raise Exception(f"Failed to find workflow editor option with label [{option_label}]")
 
     def workflow_editor_click_options(self):
-        return self.wait_for_and_click_selector("#workflow-options-button")
+        return self.wait_for_and_click_selector("#activity-settings")
 
     def workflow_editor_options_menu_element(self):
-        return self.wait_for_selector_visible("#workflow-options-button")
+        return self.wait_for_selector_visible("#activity-settings")
 
     def workflow_editor_click_run(self):
         return self.wait_for_and_click_selector("#workflow-run-button")

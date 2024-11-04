@@ -121,7 +121,8 @@
                             <i v-if="hasChanges" class="text-muted"> (unsaved changes) </i>
                             <b-button
                                 v-if="hasChanges"
-                                class="py-1 px-2 editor-button-save"
+                                id="workflow-save-button"
+                                class="py-1 px-2"
                                 variant="link"
                                 :title="saveWorkflowTitle"
                                 @click="saveOrCreate">
