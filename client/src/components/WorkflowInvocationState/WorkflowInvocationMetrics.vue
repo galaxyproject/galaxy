@@ -57,49 +57,44 @@ interface boxplotData {
     values?: { x: string; y: Number }[];
 }
 
-const wallclock: ComputedRef<boxplotData> = computed(() => {
-    const wallclock = jobMetrics.value?.filter((jobMetric) => jobMetric.name == "runtime_seconds");
+function metricToSpecData(
+    jobMetrics: components["schemas"]["WorkflowJobMetric"][] | undefined,
+    metricName: string,
+    yTitle: string,
+    transform?: (param: number) => number
+) {
+    const wallclock = jobMetrics?.filter((jobMetric) => jobMetric.name == metricName);
     const values = wallclock?.map((item) => {
+        let y = parseFloat(item.raw_value);
+        if (transform !== undefined) {
+            y = transform(y);
+        }
         return {
-            y: parseFloat(item.raw_value),
+            y,
             x: itemToX(item),
         };
     });
     return {
         x_title: attributeToLabel[groupBy.value],
-        y_title: "Runtime (in Seconds)",
+        y_title: yTitle,
         values,
     };
+}
+
+const wallclock: ComputedRef<boxplotData> = computed(() => {
+    return metricToSpecData(jobMetrics.value, "runtime_seconds", "Runtime (in Seconds)");
 });
 
 const coresAllocated: ComputedRef<boxplotData> = computed(() => {
-    const coresAllocated = jobMetrics.value?.filter((jobMetric) => jobMetric.name == "galaxy_slots");
-    const values = coresAllocated?.map((item) => {
-        return {
-            y: parseFloat(item.raw_value),
-            x: itemToX(item),
-        };
-    });
-    return {
-        x_title: attributeToLabel[groupBy.value],
-        y_title: "Cores Allocated",
-        values,
-    };
+    return metricToSpecData(jobMetrics.value, "galaxy_slots", "Cores Allocated");
 });
 
 const memoryAllocated: ComputedRef<boxplotData> = computed(() => {
-    const memoryAllocated = jobMetrics.value?.filter((jobMetric) => jobMetric.name == "galaxy_memory_mb");
-    const values = memoryAllocated?.map((item) => {
-        return {
-            y: parseFloat(item.raw_value),
-            x: itemToX(item),
-        };
-    });
-    return {
-        x_title: "Tool ID",
-        y_title: "Memory Allocated (in MB)",
-        values,
-    };
+    return metricToSpecData(jobMetrics.value, "galaxy_memory_mb", "Memory Allocated (in MB)");
+});
+
+const peakMemory: ComputedRef<boxplotData> = computed(() => {
+    return metricToSpecData(jobMetrics.value, "memory.peak", "Max memory usage recorded (in MB)", (v) => v / 1024 ** 2);
 });
 
 function itemToSpec(item: boxplotData) {
