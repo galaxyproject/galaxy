@@ -298,7 +298,7 @@
     <datatype extension="ome_zarr.zip" type="galaxy.datatypes.binary:CompressedOMEZarrZipArchive" display_in_upload="true">
         <converter file="archive_to_directory.xml" target_datatype="ome_zarr" />
     </datatype>
-    <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
+    <datatype extension="tar" auto_compressed_types="gz,bz2" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
       <converter file="archive_to_directory.xml" target_datatype="directory"/>
     </datatype>
     <datatype extension="directory" type="galaxy.datatypes.data:Directory"/>
