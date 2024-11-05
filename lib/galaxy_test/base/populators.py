@@ -523,7 +523,9 @@ class BaseDatasetPopulator(BasePopulator):
         assert len(hdas) == 1
         return hdas[0]
 
-    def create_deferred_hda(self, history_id, uri: str, ext: Optional[str] = None) -> Dict[str, Any]:
+    def create_deferred_hda(
+        self, history_id, uri: str, ext: Optional[str] = None, hashes: Optional[List[Dict[str, str]]] = None
+    ) -> Dict[str, Any]:
         item = {
             "src": "url",
             "url": uri,
@@ -531,6 +533,8 @@ class BaseDatasetPopulator(BasePopulator):
         }
         if ext:
             item["ext"] = ext
+        if hashes:
+            item["hashes"] = hashes
         output = self.fetch_hda(history_id, item)
         details = self.get_history_dataset_details(history_id, dataset=output)
         return details

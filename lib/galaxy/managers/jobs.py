@@ -126,11 +126,15 @@ S = TypeVar("S", bound=Select)
 def has_same_source(stmt: S, a: Type[model.HistoryDatasetAssociation], b: Type[model.HistoryDatasetAssociation]) -> S:
     a_source = aliased(model.DatasetSource)
     b_source = aliased(model.DatasetSource)
+    a_hash = aliased(model.DatasetHash)
+    b_hash = aliased(model.DatasetHash)
     stmt = (
-        stmt.outerjoin(a_source, a.dataset_id == a_source.dataset_id)
+        stmt.outerjoin(a_hash, a.dataset_id == a_hash.dataset_id)
+        .outerjoin(a_source, a.dataset_id == a_source.dataset_id)
         .outerjoin(
             b_source,
             and_(
+                # maybe we don't need the transform / source_uri match if we're using hashes anyway?
                 or_(
                     a_source.transform == b_source.transform,
                     and_(a_source.transform == null(), b_source.transform == null()),
@@ -138,7 +142,7 @@ def has_same_source(stmt: S, a: Type[model.HistoryDatasetAssociation], b: Type[m
                 a_source.source_uri == b_source.source_uri,
             ),
         )
-        .join(
+        .join(  # Join `b` first so it is available for subsequent joins
             b,
             or_(
                 b.dataset_id == a.dataset_id,
@@ -150,6 +154,21 @@ def has_same_source(stmt: S, a: Type[model.HistoryDatasetAssociation], b: Type[m
                     a_source.source_uri == b_source.source_uri,
                 ),
             ),
+        )
+        .outerjoin(  # Now, `b` is available, so we can outer join `b_hash`
+            b_hash,
+            and_(
+                b_hash.dataset_id == b.dataset_id,
+                # If `a_hash` exists, it must match `b_hash`
+                a_hash.hash_function == b_hash.hash_function,
+                a_hash.hash_value == b_hash.hash_value,
+            ),
+        )
+        .where(
+            or_(
+                b.dataset_id == a.dataset_id,
+                b_hash.id != null(),
+            )
         )
     )
     return stmt
@@ -436,7 +455,6 @@ class JobSearch:
         stmt_sq = self._build_job_subquery(tool_id, user.id, tool_version, job_state, wildcard_param_dump)
 
         stmt = select(Job.id).select_from(Job.table.join(stmt_sq, stmt_sq.c.id == Job.id))
-        stmt.add_columns
         data_conditions: List = []
 
         # We now build the stmt filters that relate to the input datasets
@@ -612,7 +630,7 @@ class JobSearch:
             model.HistoryDatasetAssociation.id == e.history_dataset_association_id
         )
         # b is the HDA used for the job
-        stmt = stmt.join(b, a.dataset_id == b.id) # type:ignore[attr-defined]
+        stmt = stmt.join(b, a.dataset_id == b.id)  # type:ignore[attr-defined]
         stmt = has_same_source(stmt, b, c)
         name_condition = []
         if identifier:
