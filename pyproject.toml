@@ -83,6 +83,7 @@ dependencies = [
     "python-dateutil",
     "python-magic",
     "python-multipart",  # required to support form parsing in FastAPI/Starlette
+    "python-slugify",
     "PyYAML",
     "refgenconf>=0.12.0",
     "regex",
@@ -172,6 +173,7 @@ typecheck = [
     "types-Markdown",
     "types-paramiko",
     "types-python-dateutil",
+    "types-python-slugify",
     "types-PyYAML",
     "types-requests",
     "types-setuptools",
