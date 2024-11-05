@@ -99,7 +99,6 @@ class DatasetInstanceMaterializer:
         self,
         dataset_instance: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation],
         target_history: Optional[History] = None,
-        validate_hashes: bool = False,
         in_place: bool = False,
     ) -> HistoryDatasetAssociation:
         """Create a new detached dataset instance from the supplied instance.
@@ -143,9 +142,7 @@ class DatasetInstanceMaterializer:
                     sa_session.commit()
             object_store_populator.set_dataset_object_store_id(materialized_dataset)
             try:
-                path = self._stream_source(
-                    target_source, dataset_instance.datatype, validate_hashes, materialized_dataset_hashes
-                )
+                path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset_hashes)
                 object_store.update_from_file(materialized_dataset, file_name=path)
                 materialized_dataset.set_size()
             except Exception as e:
@@ -157,9 +154,7 @@ class DatasetInstanceMaterializer:
             # TODO: optimize this by streaming right to this path...
             # TODO: take into acount transform and ensure we are and are not modifying the file as appropriate.
             try:
-                path = self._stream_source(
-                    target_source, dataset_instance.datatype, validate_hashes, materialized_dataset_hashes
-                )
+                path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset_hashes)
                 shutil.move(path, transient_paths.external_filename)
                 materialized_dataset.external_filename = transient_paths.external_filename
             except Exception as e:
@@ -211,14 +206,12 @@ class DatasetInstanceMaterializer:
             materialized_dataset_instance.metadata_deferred = False
         return materialized_dataset_instance
 
-    def _stream_source(
-        self, target_source: DatasetSource, datatype, validate_hashes: bool, dataset_hashes: List[DatasetHash]
-    ) -> str:
+    def _stream_source(self, target_source: DatasetSource, datatype, dataset_hashes: List[DatasetHash]) -> str:
         source_uri = target_source.source_uri
         if source_uri is None:
             raise Exception("Cannot stream from dataset source without specified source_uri")
         path = stream_url_to_file(source_uri, file_sources=self._file_sources)
-        if validate_hashes and target_source.hashes:
+        if target_source.hashes:
             for source_hash in target_source.hashes:
                 _validate_hash(path, source_hash, "downloaded file")
 
@@ -244,7 +237,7 @@ class DatasetInstanceMaterializer:
         if datatype_groom:
             datatype.groom_dataset_content(path)
 
-        if validate_hashes and dataset_hashes:
+        if dataset_hashes:
             for dataset_hash in dataset_hashes:
                 _validate_hash(path, dataset_hash, "dataset contents")
 

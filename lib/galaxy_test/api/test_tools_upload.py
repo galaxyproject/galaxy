@@ -1025,7 +1025,6 @@ class TestToolsUpload(ApiTestCase):
             payload = {
                 "history_id": history_id,
                 "targets": targets,
-                "validate_hashes": True,
             }
             fetch_response = self.dataset_populator.fetch(payload)
             self._assert_status_code_is(fetch_response, 200)
@@ -1050,7 +1049,6 @@ class TestToolsUpload(ApiTestCase):
             payload = {
                 "history_id": history_id,
                 "targets": targets,
-                "validate_hashes": True,
             }
             fetch_response = self.dataset_populator.fetch(payload, assert_ok=True, wait=False)
             self._assert_status_code_is(fetch_response, 200)

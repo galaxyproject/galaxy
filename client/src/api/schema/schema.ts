@@ -14083,21 +14083,6 @@ export interface components {
              * @description The source of the content. Can be other history element to be copied or library elements.
              */
             source: components["schemas"]["DatasetSourceType"];
-            /**
-             * Validate hashes
-             * @description Set to true to enable dataset validation during materialization.
-             * @default false
-             */
-            validate_hashes: boolean;
-        };
-        /** MaterializeDatasetOptions */
-        MaterializeDatasetOptions: {
-            /**
-             * Validate hashes
-             * @description Set to true to enable dataset validation during materialization.
-             * @default false
-             */
-            validate_hashes: boolean;
         };
         /** MessageExceptionModel */
         MessageExceptionModel: {
@@ -24415,11 +24400,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["MaterializeDatasetOptions"] | null;
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

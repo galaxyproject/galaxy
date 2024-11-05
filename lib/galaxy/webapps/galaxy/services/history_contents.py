@@ -573,7 +573,6 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             history_id=request.history_id,
             source=request.source,
             content=request.content,
-            validate_hashes=request.validate_hashes,
             user=trans.async_request_user,
         )
         results = materialize_task.delay(request=task_request)

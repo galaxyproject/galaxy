@@ -52,7 +52,6 @@ def test_simple_path_get(hash_value: str, error_message: Optional[str]):
                     ],
                 }
             ],
-            "validate_hashes": True,
         }
         execute_context.execute_request(request)
         output = _unnamed_output(execute_context)
@@ -111,7 +110,6 @@ def test_correct_md5():
                     ],
                 }
             ],
-            "validate_hashes": True,
         }
         execute_context.execute_request(request)
         output = _unnamed_output(execute_context)
@@ -142,7 +140,6 @@ def test_incorrect_md5():
                     ],
                 }
             ],
-            "validate_hashes": True,
         }
         execute_context.execute_request(request)
         output = _unnamed_output(execute_context)
@@ -175,7 +172,6 @@ def test_correct_sha1():
                     ],
                 }
             ],
-            "validate_hashes": True,
         }
         execute_context.execute_request(request)
         output = _unnamed_output(execute_context)
@@ -206,7 +202,6 @@ def test_incorrect_sha1():
                     ],
                 }
             ],
-            "validate_hashes": True,
         }
         execute_context.execute_request(request)
         output = _unnamed_output(execute_context)
