@@ -5,6 +5,9 @@ from base64 import b64encode
 from contextlib import contextmanager
 from shutil import rmtree
 from tempfile import mkdtemp
+from typing import Optional
+
+import pytest
 
 from galaxy.tools.data_fetch import main
 from galaxy.util.unittest_utils import skip_if_github_down
@@ -13,7 +16,17 @@ B64_FOR_1_2_3 = b64encode(b"1 2 3").decode("utf-8")
 URI_FOR_1_2_3 = f"base64://{B64_FOR_1_2_3}"
 
 
-def test_simple_path_get():
+@pytest.mark.parametrize(
+    "hash_value, error_message",
+    [
+        ("471ddd37fc297fba09b893b88739ece9", None),
+        (
+            "thisisbad",
+            "Failed to validate upload with [MD5] - expected [thisisbad] got [471ddd37fc297fba09b893b88739ece9]",
+        ),
+    ],
+)
+def test_simple_path_get(hash_value: str, error_message: Optional[str]):
     with _execute_context() as execute_context:
         job_directory = execute_context.job_directory
         example_path = os.path.join(job_directory, "example_file")
@@ -25,13 +38,30 @@ def test_simple_path_get():
                     "destination": {
                         "type": "hdas",
                     },
-                    "elements": [{"src": "path", "path": example_path}],
+                    "elements": [
+                        {
+                            "src": "path",
+                            "path": example_path,
+                            "hashes": [
+                                {
+                                    "hash_function": "MD5",
+                                    "hash_value": hash_value,
+                                }
+                            ],
+                        }
+                    ],
                 }
-            ]
+            ],
+            "validate_hashes": True,
         }
         execute_context.execute_request(request)
         output = _unnamed_output(execute_context)
         assert output
+        hda_result = output["elements"][0]
+        if error_message is not None:
+            assert hda_result["error_message"] == error_message
+        else:
+            assert "error_message" not in hda_result
 
 
 @skip_if_github_down
