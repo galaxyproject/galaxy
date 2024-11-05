@@ -148,6 +148,13 @@ function scrollStepToView() {
     const stepCardHeader = stepCard.value?.querySelector(".card-header");
     stepCardHeader?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+
+/** On a repetition of the step clicked, scroll to the step */
+function stepClicked(nodeId: number | null) {
+    if (nodeId === activeNodeId.value) {
+        scrollStepToView();
+    }
+}
 </script>
 
 <template>
@@ -174,7 +181,8 @@ function scrollStepToView() {
                             :show-minimap="props.showMinimap"
                             :show-zoom-controls="props.showZoomControls"
                             is-invocation
-                            readonly />
+                            readonly
+                            @stepClicked="stepClicked" />
                     </BCard>
                 </div>
             </div>
