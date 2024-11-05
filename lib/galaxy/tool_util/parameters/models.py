@@ -1489,8 +1489,8 @@ def create_model_strict(*args, **kwd) -> Type[BaseModel]:
 
 def create_model_factory(state_representation: StateRepresentationT):
 
-    def create_method(tool: ToolParameterBundle, name: str = DEFAULT_MODEL_NAME) -> Type[BaseModel]:
-        return create_field_model(tool.parameters, name, state_representation)
+    def create_method(tool: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+        return create_field_model(tool.parameters, name or DEFAULT_MODEL_NAME, state_representation)
 
     return create_method
 
@@ -1546,15 +1546,14 @@ def validate_against_model(pydantic_model: Type[BaseModel], parameter_state: Dic
 
 class ValidationFunctionT(Protocol):
 
-    def __call__(self, tool: ToolParameterBundle, request: RawStateDict, name: str = DEFAULT_MODEL_NAME) -> None: ...
+    def __call__(self, tool: ToolParameterBundle, request: RawStateDict, name: Optional[str] = None) -> None: ...
 
 
 def validate_model_type_factory(state_representation: StateRepresentationT) -> ValidationFunctionT:
 
-    def validate_request(tool: ToolParameterBundle, request: Dict[str, Any], name: str = DEFAULT_MODEL_NAME) -> None:
-        pydantic_model = create_field_model(
-            tool.parameters, name=DEFAULT_MODEL_NAME, state_representation=state_representation
-        )
+    def validate_request(tool: ToolParameterBundle, request: Dict[str, Any], name: Optional[str] = None) -> None:
+        name = name or DEFAULT_MODEL_NAME
+        pydantic_model = create_field_model(tool.parameters, name=name, state_representation=state_representation)
         validate_against_model(pydantic_model, request)
 
     return validate_request
