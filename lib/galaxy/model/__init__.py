@@ -98,7 +98,10 @@ from sqlalchemy import (
     update,
     VARCHAR,
 )
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import (
+    CompileError,
+    OperationalError,
+)
 from sqlalchemy.ext import hybrid
 from sqlalchemy.ext.associationproxy import (
     association_proxy,
@@ -3280,16 +3283,21 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         table = self.__table__
         history_id = cached_id(self)
         update_stmt = update(table).where(table.c.id == history_id).values(hid_counter=table.c.hid_counter + n)
+        update_returning_stmnt = update_stmt.returning(table.c.hid_counter)
 
-        with engine.begin() as conn:
-            if engine.name in ["postgres", "postgresql"]:
-                stmt = update_stmt.returning(table.c.hid_counter)
-                updated_hid = conn.execute(stmt).scalar()
-                hid = updated_hid - n
-            else:
-                select_stmt = select(table.c.hid_counter).where(table.c.id == history_id).with_for_update()
-                hid = conn.execute(select_stmt).scalar()
-                conn.execute(update_stmt)
+        if engine.name != "sqlite":
+            with engine.begin() as conn:
+                hid = conn.execute(update_returning_stmnt).scalar() - n
+        else:
+            try:
+                hid = session.execute(update_returning_stmnt).scalar() - n
+            except (CompileError, OperationalError):
+                # The RETURNING clause was added to SQLite in version 3.35.0.
+                # Not using FOR UPDATE either, since that was added in 3.45.0,
+                # and anyway does a whole-table lock
+                select_stmt = select(table.c.hid_counter).where(table.c.id == history_id)
+                hid = session.execute(select_stmt).scalar()
+                session.execute(update_stmt)
 
         session.expire(self, ["hid_counter"])
         return hid
