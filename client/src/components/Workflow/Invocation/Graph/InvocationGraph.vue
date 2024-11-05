@@ -101,22 +101,6 @@ watch(
     { immediate: true }
 );
 
-// on loading steps, toggle the first one with state === "error" or last one if none are errored
-watch(
-    () => initialLoading.value,
-    (newVal) => {
-        if (!newVal && steps.value) {
-            const errorStep = Object.values(steps.value).find((step) => step.state === "error");
-            if (errorStep) {
-                activeNodeId.value = errorStep.id;
-            } else if (props.isTerminal) {
-                activeNodeId.value = Object.values(steps.value)?.slice(-1)[0]?.id || null;
-            }
-        }
-    },
-    { immediate: true }
-);
-
 onUnmounted(() => {
     clearTimeout(pollTimeout.value);
 });
