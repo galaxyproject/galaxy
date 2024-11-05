@@ -34,6 +34,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.hash_util import (
     HASH_NAMES,
+    HashFunctionNameEnum,
     verify_hash,
 )
 
@@ -85,7 +86,7 @@ def _request_to_galaxy_json(upload_config: "UploadConfig", request):
     return {"__unnamed_outputs": fetched_targets}
 
 
-def _fetch_target(upload_config: "UploadConfig", target):
+def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
     destination = target.get("destination", None)
     assert destination, "No destination defined."
 
@@ -254,14 +255,15 @@ def _fetch_target(upload_config: "UploadConfig", target):
             hash_value = item.get(hash_function)
             if hash_value:
                 hashes.append({"hash_function": hash_function, "hash_value": hash_value})
-        for hash_dict in hashes:
-            hash_function = hash_dict.get("hash_function")
-            hash_value = hash_dict.get("hash_value")
-            try:
-                _handle_hash_validation(upload_config, hash_function, hash_value, path)
-            except Exception as e:
-                error_message = str(e)
-                item["error_message"] = error_message
+        if path:
+            for hash_dict in hashes:
+                hash_function = hash_dict.get("hash_function")
+                hash_value = hash_dict.get("hash_value")
+                try:
+                    _handle_hash_validation(upload_config, hash_function, hash_value, path)
+                except Exception as e:
+                    error_message = str(e)
+                    item["error_message"] = error_message
 
         dbkey = item.get("dbkey", "?")
         link_data_only = upload_config.link_data_only
@@ -422,7 +424,7 @@ def _bagit_to_items(directory):
     return items
 
 
-def _decompress_target(upload_config: "UploadConfig", target):
+def _decompress_target(upload_config: "UploadConfig", target: Dict[str, Any]):
     elements_from_name, elements_from_path = _has_src_to_path(upload_config, target, is_dataset=False)
     # by default Galaxy will check for a directory with a single file and interpret that
     # as the new root for expansion, this is a good user experience for uploading single
@@ -481,12 +483,13 @@ def _has_src_to_name(item) -> Optional[str]:
     return name
 
 
-def _has_src_to_path(upload_config, item, is_dataset=False) -> Tuple[str, str]:
+def _has_src_to_path(upload_config: "UploadConfig", item: Dict[str, Any], is_dataset: bool = False) -> Tuple[str, str]:
     assert "src" in item, item
     src = item.get("src")
     name = item.get("name")
     if src == "url":
         url = item.get("url")
+        assert url, "url cannot be empty"
         try:
             path = stream_url_to_file(url, file_sources=upload_config.file_sources, dir=upload_config.working_directory)
         except Exception as e:
@@ -513,7 +516,9 @@ def _has_src_to_path(upload_config, item, is_dataset=False) -> Tuple[str, str]:
     return name, path
 
 
-def _handle_hash_validation(upload_config, hash_function, hash_value, path):
+def _handle_hash_validation(
+    upload_config: "UploadConfig", hash_function: HashFunctionNameEnum, hash_value: str, path: str
+):
     if upload_config.validate_hashes:
         verify_hash(path, hash_func_name=hash_function, hash_value=hash_value, what="upload")
 
@@ -548,11 +553,11 @@ def get_file_sources(working_directory, file_sources_as_dict=None):
 class UploadConfig:
     def __init__(
         self,
-        request,
-        registry,
-        working_directory,
-        allow_failed_collections,
-        file_sources_dict=None,
+        request: Dict[str, Any],
+        registry: Registry,
+        working_directory: str,
+        allow_failed_collections: bool,
+        file_sources_dict: Optional[Dict] = None,
     ):
         self.registry = registry
         self.working_directory = working_directory
