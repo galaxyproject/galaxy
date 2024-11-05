@@ -42,6 +42,6 @@ else
 fi
 
 # Update pinned requirements files.
-${uv} export --no-hashes --no-dev > "$this_directory/pinned-requirements.txt"
-${uv} export --no-hashes --only-group=dev > "$this_directory/dev-requirements.txt"
-${uv} export --no-hashes --only-group=typecheck > "$this_directory/pinned-typecheck-requirements.txt"
+${uv} export --frozen --no-hashes --no-dev > "$this_directory/pinned-requirements.txt"
+${uv} export --frozen --no-hashes --only-group=dev > "$this_directory/dev-requirements.txt"
+${uv} export --frozen --no-hashes --only-group=typecheck > "$this_directory/pinned-typecheck-requirements.txt"
