@@ -830,30 +830,27 @@ class Vtu(GenericXml):
     def set_meta(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set metadata for VTU files, including number of cells and points."""
         try:
-            with open(dataset.file_name, "r") as file:
+            with open(dataset.get_file_name(), "r") as file:
                 tree = ET.parse(file)
                 root = tree.getroot()
 
-                # Suche nach dem UnstructuredGrid-Knoten
                 unstructured_grid = root.find(".//UnstructuredGrid")
                 if unstructured_grid is not None:
-                    # Suche nach Zell- und Punktinformationen
+                    
                     piece = unstructured_grid.find(".//Piece")
                     if piece is not None:
                         num_cells = piece.get("NumberOfCells")
                         num_points = piece.get("NumberOfPoints")
 
-                        # Setze die Metadaten
+                        
                         dataset.metadata.file_format = "VTK Unstructured Grid"
                         dataset.metadata.num_cells = int(num_cells) if num_cells else None
                         dataset.metadata.num_points = int(num_points) if num_points else None
         except Exception as e:
-            # Logge das Problem und setze Metadaten auf None, falls Parsing fehlschlägt
             dataset.metadata.file_format = None
             dataset.metadata.num_cells = None
             dataset.metadata.num_points = None
-            log.warning(f"Fehler beim Setzen der Metadaten für VTU-Datei: {e}")
-
+            
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
