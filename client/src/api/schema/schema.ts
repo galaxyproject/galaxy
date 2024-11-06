@@ -8755,7 +8755,7 @@ export interface components {
             user_email?: string | null;
             /**
              * User Id
-             * @description User ID of user that ran ran job
+             * @description User ID of user that ran this job
              */
             user_id?: string | null;
         };
@@ -16184,7 +16184,7 @@ export interface components {
             user_email?: string | null;
             /**
              * User Id
-             * @description User ID of user that ran ran job
+             * @description User ID of user that ran this job
              */
             user_id?: string | null;
         };

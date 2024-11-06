@@ -191,7 +191,7 @@ class EncodedJobDetails(JobSummary):
         title="Output collections",
         description="",
     )
-    user_id: Optional[EncodedDatabaseIdField] = Field(default=None, description="User ID of user that ran ran job")
+    user_id: Optional[EncodedDatabaseIdField] = Field(default=None, description="User ID of user that ran this job")
 
 
 class JobDestinationParams(Model):
