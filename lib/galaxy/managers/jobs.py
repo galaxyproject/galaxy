@@ -623,14 +623,14 @@ class JobSearch:
         c = aliased(model.HistoryDatasetAssociation)
         d = aliased(model.JobParameter)
         e = aliased(model.HistoryDatasetAssociationHistory)
-        stmt = stmt.add_columns(a.dataset_id)
+        stmt = cast(S, stmt.add_columns(a.dataset_id))
         used_ids.append(a.dataset_id)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         hda_stmt = select(model.HistoryDatasetAssociation.id).where(
             model.HistoryDatasetAssociation.id == e.history_dataset_association_id
         )
         # b is the HDA used for the job
-        stmt = stmt.join(b, a.dataset_id == b.id)  # type:ignore[attr-defined]
+        stmt = stmt.join(b, a.dataset_id == b.id)
         stmt = has_same_source(stmt, b, c)
         name_condition = []
         if identifier:
@@ -729,7 +729,7 @@ class JobSearch:
                 ),
             )
             .outerjoin(d, d.id == c.hda_id)
-            .outerjoin(e, e.dataset_id == d.dataset_id)  # type:ignore[attr-defined]
+            .outerjoin(e, e.dataset_id == d.dataset_id)
         )
         data_conditions.append(
             and_(
@@ -739,7 +739,7 @@ class JobSearch:
                     and_(
                         c.hda_id == b.hda_id,
                         d.id == c.hda_id,
-                        e.dataset_id == d.dataset_id,  # type:ignore[attr-defined]
+                        e.dataset_id == d.dataset_id,
                     ),
                 ),
                 c.id == v,
