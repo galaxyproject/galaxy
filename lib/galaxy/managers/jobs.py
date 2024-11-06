@@ -54,11 +54,13 @@ from galaxy.model import (
     ImplicitCollectionJobs,
     ImplicitCollectionJobsJobAssociation,
     Job,
+    JobMetricNumeric,
     JobParameter,
     User,
     Workflow,
     WorkflowInvocation,
     WorkflowInvocationStep,
+    WorkflowStep,
     YIELD_PER_ROWS,
 )
 from galaxy.model.base import transaction
@@ -736,6 +738,43 @@ def invocation_job_source_iter(sa_session, invocation_id):
             yield ("ImplicitCollectionJobs", row[1], row[2])
 
 
+def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation_id: int):
+    single_job_stmnt = (
+        select(WorkflowStep.order_index, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
+        .join(Job, JobMetricNumeric.job_id == Job.id)
+        .join(
+            WorkflowInvocationStep,
+            and_(
+                WorkflowInvocationStep.workflow_invocation_id == invocation_id, WorkflowInvocationStep.job_id == Job.id
+            ),
+        )
+        .join(WorkflowStep, WorkflowStep.id == WorkflowInvocationStep.workflow_step_id)
+    )
+    collection_job_stmnt = (
+        select(WorkflowStep.order_index, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
+        .join(Job, JobMetricNumeric.job_id == Job.id)
+        .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
+        .join(
+            ImplicitCollectionJobs,
+            ImplicitCollectionJobs.id == ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id,
+        )
+        .join(
+            WorkflowInvocationStep,
+            and_(
+                WorkflowInvocationStep.workflow_invocation_id == invocation_id,
+                WorkflowInvocationStep.implicit_collection_jobs_id == ImplicitCollectionJobs.id,
+            ),
+        )
+        .join(WorkflowStep, WorkflowStep.id == WorkflowInvocationStep.workflow_step_id)
+    )
+    # should be sa_session.execute(single_job_stmnt.union(collection_job_stmnt)).all() but that returns
+    # columns instead of the job metrics ORM instance.
+    return sorted(
+        (*sa_session.execute(single_job_stmnt).all(), *sa_session.execute(collection_job_stmnt).all()),
+        key=lambda row: row[0],
+    )
+
+
 def fetch_job_states(sa_session, job_source_ids, job_source_types):
     assert len(job_source_ids) == len(job_source_types)
     job_ids = set()
@@ -918,6 +957,10 @@ def summarize_job_metrics(trans, job):
     Precondition: the caller has verified the job is accessible to the user
     represented by the trans parameter.
     """
+    return summarize_metrics(trans, job.metrics)
+
+
+def summarize_metrics(trans: ProvidesUserContext, job_metrics):
     safety_level = Safety.SAFE
     if trans.user_is_admin:
         safety_level = Safety.UNSAFE
@@ -929,7 +972,7 @@ def summarize_job_metrics(trans, job):
             m.metric_value,
             m.plugin,
         )
-        for m in job.metrics
+        for m in job_metrics
     ]
     dictifiable_metrics = trans.app.job_metrics.dictifiable_metrics(raw_metrics, safety_level)
     return [d.dict() for d in dictifiable_metrics]
