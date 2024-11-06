@@ -177,12 +177,7 @@ defineExpose({
         </span>
     </BAlert>
     <BTabs v-else-if="ready">
-        <BTab
-            v-if="showRegular"
-            id="regular"
-            title="Regular"
-            button-id="tab-title-link-regular"
-            :active.sync="regularTabActive">
+        <BTab v-if="showRegular" title="Regular" button-id="tab-title-link-regular" :active.sync="regularTabActive">
         </BTab>
         <BTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
             <CompositeBox
@@ -197,7 +192,6 @@ defineExpose({
         </BTab>
         <BTab
             v-if="showCollection"
-            id="collection"
             title="Collection"
             button-id="tab-title-link-collection"
             :active.sync="collectionTabActive">
@@ -213,6 +207,7 @@ defineExpose({
         <DefaultBox
             v-if="showRegular || showCollection"
             v-show="regularTabActive || collectionTabActive"
+            :id="collectionTabActive ? 'collection' : 'regular'"
             ref="regular"
             :chunk-upload-size="chunkUploadSize"
             :default-db-key="defaultDbKey"

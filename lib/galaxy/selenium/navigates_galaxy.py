@@ -894,7 +894,7 @@ class NavigatesGalaxy(HasDriver):
 
         self.upload_start()
 
-        self.wait_for_and_click_selector("button#btn-close")
+        self.components.upload.close_button.wait_for_and_click()
 
     def perform_upload_of_composite_dataset_pasted_data(self, ext, paste_content):
         self.home()
