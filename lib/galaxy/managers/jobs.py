@@ -493,11 +493,18 @@ class JobSearch:
         self, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump
     ):
         """Build subquery that selects a job with correct job parameters."""
-        stmt = select(model.Job.id).where(
-            and_(
-                model.Job.tool_id == tool_id,
-                model.Job.user_id == user_id,
-                model.Job.copied_from_job_id.is_(None),  # Always pick original job
+        stmt = (
+            select(model.Job.id)
+            .join(model.History, model.Job.history_id == model.History.id)
+            .where(
+                and_(
+                    model.Job.tool_id == tool_id,
+                    or_(
+                        model.Job.user_id == user_id,
+                        model.History.published == true(),
+                    ),
+                    model.Job.copied_from_job_id.is_(None),  # Always pick original job
+                )
             )
         )
         if tool_version:

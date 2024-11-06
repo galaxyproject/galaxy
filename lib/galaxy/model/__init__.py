@@ -1549,6 +1549,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         "galaxy_version",
         "command_version",
         "copied_from_job_id",
+        "user_id",
     ]
 
     _numeric_metric = JobMetricNumeric

@@ -8753,6 +8753,11 @@ export interface components {
              * @description The email of the user that owns this job. Only the owner of the job and administrators can see this value.
              */
             user_email?: string | null;
+            /**
+             * User Id
+             * @description User ID of user that ran this job
+             */
+            user_id?: string | null;
         };
         /** EncodedJobParameterHistoryItem */
         EncodedJobParameterHistoryItem: {
@@ -16177,6 +16182,11 @@ export interface components {
              * @description The email of the user that owns this job. Only the owner of the job and administrators can see this value.
              */
             user_email?: string | null;
+            /**
+             * User Id
+             * @description User ID of user that ran this job
+             */
+            user_id?: string | null;
         };
         /**
          * Src
