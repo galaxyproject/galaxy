@@ -930,9 +930,7 @@ def replace_request_syntax_sugar(obj):
                     new_hashes.append({"hash_function": key, "hash_value": obj[key.lower()]})
                     del obj[key.lower()]
 
-            if "hashes" not in obj:
-                obj["hashes"] = []
-            obj["hashes"].extend(new_hashes)
+            obj.setdefault("hashes", []).extend(new_hashes)
 
 
 class DiscoveredFile(NamedTuple):
