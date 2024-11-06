@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { type VisualizationSpec } from "vega-embed";
+import type { VisualizationSpec } from "vega-embed";
 import { computed, ref, watch } from "vue";
 import { type ComputedRef } from "vue";
 
 import { type components, GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import VegaWrapper from "./VegaWrapper.vue";
+const VegaWrapper = () => import("./VegaWrapper.vue");
 
 const props = defineProps({
     invocationId: {
