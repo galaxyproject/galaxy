@@ -123,52 +123,24 @@ def get_path_key(path_tuple):
 S = TypeVar("S", bound=Select)
 
 
-def has_same_source(stmt: S, a: Type[model.HistoryDatasetAssociation], b: Type[model.HistoryDatasetAssociation]) -> S:
-    a_source = aliased(model.DatasetSource)
-    b_source = aliased(model.DatasetSource)
+def has_same_hash(stmt: S, a: Type[model.HistoryDatasetAssociation], b: Type[model.HistoryDatasetAssociation]) -> S:
     a_hash = aliased(model.DatasetHash)
     b_hash = aliased(model.DatasetHash)
     stmt = (
         stmt.outerjoin(a_hash, a.dataset_id == a_hash.dataset_id)
-        .outerjoin(a_source, a.dataset_id == a_source.dataset_id)
         .outerjoin(
-            b_source,
-            and_(
-                # maybe we don't need the transform / source_uri match if we're using hashes anyway?
-                or_(
-                    a_source.transform == b_source.transform,
-                    and_(a_source.transform == null(), b_source.transform == null()),
-                ),
-                a_source.source_uri == b_source.source_uri,
-            ),
-        )
-        .join(  # Join `b` first so it is available for subsequent joins
-            b,
-            or_(
-                b.dataset_id == a.dataset_id,
-                and_(
-                    or_(
-                        a_source.transform == b_source.transform,
-                        and_(a_source.transform == null(), b_source.transform == null()),
-                    ),
-                    a_source.source_uri == b_source.source_uri,
-                ),
-            ),
-        )
-        .outerjoin(  # Now, `b` is available, so we can outer join `b_hash`
             b_hash,
             and_(
-                b_hash.dataset_id == b.dataset_id,
-                # If `a_hash` exists, it must match `b_hash`
                 a_hash.hash_function == b_hash.hash_function,
                 a_hash.hash_value == b_hash.hash_value,
             ),
         )
-        .where(
+        .join(
+            b,
             or_(
                 b.dataset_id == a.dataset_id,
-                b_hash.id != null(),
-            )
+                b_hash.dataset_id == b.dataset_id,
+            ),
         )
     )
     return stmt
@@ -631,7 +603,7 @@ class JobSearch:
         )
         # b is the HDA used for the job
         stmt = stmt.join(b, a.dataset_id == b.id)
-        stmt = has_same_source(stmt, b, c)
+        stmt = has_same_hash(stmt, b, c)
         name_condition = []
         if identifier:
             stmt = stmt.join(d)
