@@ -191,9 +191,6 @@ class Vtk:
 
     Binary data must be placed into the file immediately after the newline
     ('\\n') character from the previous ASCII keyword and parameter sequence.
-
-    TODO: only legacy formats are currently supported and support for XML formats
-    should be added.
     """
 
     subtype = ""
@@ -817,7 +814,7 @@ def get_next_line(fh):
     return line.strip()
 
 class Vtu(GenericXml):
-    """Format for defining VTU (VTK Unstructured Grid) data https://docs.vtk.org/"""
+    """Format for defining VTU (VTK Unstructured Grid) data https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html"""
 
     edam_data = "edam:data_3671"
     edam_format = "edam:format_3621"
