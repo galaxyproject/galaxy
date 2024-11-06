@@ -2289,7 +2289,7 @@ def test_skip_by_module(lint_ctx):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 137
+    assert len(linter_names) == 139
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [
