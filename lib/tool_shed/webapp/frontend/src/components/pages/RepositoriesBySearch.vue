@@ -8,6 +8,7 @@ import { notifyOnCatch } from "@/util"
 
 const query = ref("")
 const page = ref(1)
+const searching = ref(false)
 const fetchedLastPage = ref(false)
 const hits = ref([] as Array<RepositorySearchHit>)
 
@@ -15,7 +16,11 @@ type RepositorySearchHit = components["schemas"]["RepositorySearchHit"]
 
 async function doQuery() {
     const queryValue = query.value
-
+    if (!queryValue) {
+        hits.value = []
+        return
+    }
+    searching.value = true
     try {
         const { data } = await ToolShedApi().GET("/api/repositories", {
             params: {
@@ -39,10 +44,12 @@ async function doQuery() {
             }
             page.value = page.value + 1
         } else {
-            throw Error("Server response structure error.")
+            throw Error("Server response structure error for [" + queryValue + "]")
         }
     } catch (e) {
         notifyOnCatch(e)
+    } finally {
+        searching.value = false
     }
 }
 
@@ -88,12 +95,26 @@ function rowsFunc() {
     return rows
 }*/
 
+const noDataLabel = computed<string>(() => {
+    if (searching.value) {
+        return "Searching..."
+    } else {
+        return "No repositories matching query"
+    }
+})
+
 const rows = realRows
 </script>
 <template>
     <page-container>
         <q-input debounce="20" filled v-model="query" label="Search Repositories" />
-        <repository-grid v-if="query && query.length > 1" :rows="rows" title="Search Results" :on-scroll="OnScrollImpl">
+        <repository-grid
+            v-if="query && query.length > 1"
+            :rows="rows"
+            title="Search Results"
+            :on-scroll="OnScrollImpl"
+            :no-data-label="noDataLabel"
+        >
         </repository-grid>
     </page-container>
 </template>
