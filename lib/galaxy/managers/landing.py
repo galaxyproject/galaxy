@@ -8,12 +8,13 @@ from pydantic import UUID4
 from sqlalchemy import select
 
 from galaxy.exceptions import (
-    InconsistentDatabase,
     InsufficientPermissionsException,
     ItemAlreadyClaimedException,
+    ItemMustBeClaimed,
     ObjectNotFound,
     RequestParameterMissingException,
 )
+from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.model import (
     ToolLandingRequest as ToolLandingRequestModel,
     WorkflowLandingRequest as WorkflowLandingRequestModel,
@@ -29,6 +30,7 @@ from galaxy.schema.schema import (
     WorkflowLandingRequest,
 )
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.structured_app import StructuredApp
 from galaxy.util import safe_str_cmp
 from .context import ProvidesUserContext
 
@@ -37,17 +39,26 @@ LandingRequestModel = Union[ToolLandingRequestModel, WorkflowLandingRequestModel
 
 class LandingRequestManager:
 
-    def __init__(self, sa_session: galaxy_scoped_session, security: IdEncodingHelper):
+    def __init__(
+        self,
+        sa_session: galaxy_scoped_session,
+        security: IdEncodingHelper,
+        workflow_contents_manager: WorkflowContentsManager,
+    ):
         self.sa_session = sa_session
         self.security = security
+        self.workflow_contents_manager = workflow_contents_manager
 
-    def create_tool_landing_request(self, payload: CreateToolLandingRequestPayload) -> ToolLandingRequest:
+    def create_tool_landing_request(self, payload: CreateToolLandingRequestPayload, user_id=None) -> ToolLandingRequest:
         model = ToolLandingRequestModel()
         model.tool_id = payload.tool_id
         model.tool_version = payload.tool_version
         model.request_state = payload.request_state
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
+        model.public = payload.public
+        if user_id:
+            model.user_id = user_id
         self._save(model)
         return self._tool_response(model)
 
@@ -55,11 +66,16 @@ class LandingRequestManager:
         model = WorkflowLandingRequestModel()
         if payload.workflow_target_type == "stored_workflow":
             model.stored_workflow_id = self.security.decode_id(payload.workflow_id)
-        else:
+        elif payload.workflow_target_type == "workflow":
             model.workflow_id = self.security.decode_id(payload.workflow_id)
-        model.request_state = payload.request_state
+        elif payload.workflow_target_type == "trs_url":
+            model.workflow_source_type = "trs_url"
+            # validate this ?
+            model.workflow_source = payload.workflow_id
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
+        model.request_state = payload.request_state
+        model.public = payload.public
         self._save(model)
         return self._workflow_response(model)
 
@@ -77,9 +93,19 @@ class LandingRequestManager:
     ) -> WorkflowLandingRequest:
         request = self._get_workflow_landing_request(uuid)
         self._check_can_claim(trans, request, claim)
+        self._ensure_workflow(trans, request)
         request.user_id = trans.user.id
         self._save(request)
         return self._workflow_response(request)
+
+    def _ensure_workflow(self, trans: ProvidesUserContext, request: WorkflowLandingRequestModel):
+        if request.workflow_source_type == "trs_url" and isinstance(trans.app, StructuredApp):
+            # trans is always structured app except for unit test
+            assert request.workflow_source
+            workflow = self.workflow_contents_manager.get_or_create_workflow_from_trs(
+                trans, trs_url=request.workflow_source
+            )
+            request.workflow_id = workflow.latest_workflow_id
 
     def get_tool_landing_request(self, trans: ProvidesUserContext, uuid: UUID4) -> ToolLandingRequest:
         request = self._get_claimed_tool_landing_request(trans, uuid)
@@ -87,6 +113,7 @@ class LandingRequestManager:
 
     def get_workflow_landing_request(self, trans: ProvidesUserContext, uuid: UUID4) -> WorkflowLandingRequest:
         request = self._get_claimed_workflow_landing_request(trans, uuid)
+        self._ensure_workflow(trans, request)
         return self._workflow_response(request)
 
     def _check_can_claim(
@@ -139,18 +166,20 @@ class LandingRequestManager:
         return response_model
 
     def _workflow_response(self, model: WorkflowLandingRequestModel) -> WorkflowLandingRequest:
-        workflow_id: Optional[int]
+
+        workflow_id: Optional[Union[int, str]] = None
         if model.stored_workflow_id is not None:
             workflow_id = model.stored_workflow_id
             target_type = "stored_workflow"
-        else:
+        elif model.workflow_id is not None:
             workflow_id = model.workflow_id
             target_type = "workflow"
-        if workflow_id is None:
-            raise InconsistentDatabase()
+        elif model.workflow_source_type == "trs_url":
+            target_type = model.workflow_source_type
+            workflow_id = model.workflow_source
         assert workflow_id
         response_model = WorkflowLandingRequest(
-            workflow_id=self.security.encode_id(workflow_id),
+            workflow_id=self.security.encode_id(workflow_id) if isinstance(workflow_id, int) else workflow_id,
             workflow_target_type=target_type,
             request_state=model.request_state,
             uuid=model.uuid,
@@ -159,7 +188,9 @@ class LandingRequestManager:
         return response_model
 
     def _check_ownership(self, trans: ProvidesUserContext, model: LandingRequestModel):
-        if model.user_id != trans.user.id:
+        if not model.public and self._state(model) == LandingRequestState.UNCLAIMED:
+            raise ItemMustBeClaimed
+        if model.user_id and model.user_id != trans.user.id:
             raise InsufficientPermissionsException()
 
     def _state(self, model: LandingRequestModel) -> LandingRequestState:

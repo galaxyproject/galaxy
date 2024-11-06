@@ -25,6 +25,7 @@ from galaxy_test.base.populators import (
     check_missing_tool,
     DatasetCollectionPopulator,
     DatasetPopulator,
+    DescribeToolInputs,
     get_tool_ids,
     RequiredTool,
     TargetHistory,
@@ -128,6 +129,17 @@ def target_history(
 
 
 @pytest.fixture
+def required_tools(
+    dataset_populator: DatasetPopulator, history_id: str, required_tool_ids: List[str]
+) -> List[RequiredTool]:
+    tools = []
+    for tool_id in required_tool_ids:
+        tool = RequiredTool(dataset_populator, tool_id, history_id)
+        tools.append(tool)
+    return tools
+
+
+@pytest.fixture
 def required_tool(dataset_populator: DatasetPopulator, history_id: str, required_tool_ids: List[str]) -> RequiredTool:
     if len(required_tool_ids) != 1:
         raise AssertionError("required_tool fixture must only be used on methods that require a single tool")
@@ -136,19 +148,33 @@ def required_tool(dataset_populator: DatasetPopulator, history_id: str, required
     return tool
 
 
+@pytest.fixture(params=["legacy", "21.01"])
+def tool_input_format(request) -> Iterator[DescribeToolInputs]:
+    yield DescribeToolInputs(request.param)
+
+
 @pytest.fixture(autouse=True)
 def check_required_tools(anonymous_galaxy_interactor, request):
     for marker in request.node.iter_markers():
         if marker.name == "requires_tool_id":
-            tool_id = marker.args[0]
+            tool_id = _requires_marker_to_effective_tool_id(anonymous_galaxy_interactor, marker)
             check_missing_tool(tool_id not in get_tool_ids(anonymous_galaxy_interactor))
 
 
 @pytest.fixture
-def required_tool_ids(request) -> List[str]:
+def required_tool_ids(anonymous_galaxy_interactor, request) -> List[str]:
     tool_ids = []
     for marker in request.node.iter_markers():
         if marker.name == "requires_tool_id":
-            tool_id = marker.args[0]
+            tool_id = _requires_marker_to_effective_tool_id(anonymous_galaxy_interactor, marker)
             tool_ids.append(tool_id)
     return tool_ids
+
+
+def _requires_marker_to_effective_tool_id(anonymous_galaxy_interactor, marker):
+    tool_id = marker.args[0]
+    if "|" in tool_id:
+        any_of_tool_ids = tool_id.split("|")
+        all_tool_ids = get_tool_ids(anonymous_galaxy_interactor)
+        tool_id = [t for t in any_of_tool_ids if t in all_tool_ids][0]
+    return tool_id

@@ -28,6 +28,7 @@ from typing_extensions import (
 
 from galaxy.util import Element
 from galaxy.util.path import safe_walk
+from .parameter_validators import AnyValidatorModel
 from .util import _parse_name
 
 if TYPE_CHECKING:
@@ -435,6 +436,10 @@ class DynamicOptions(metaclass=ABCMeta):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abstractmethod
+    def get_dynamic_options_code(self) -> Optional[str]:
+        """If dynamic options are a piece of code to eval, return it."""
+
+    @abstractmethod
     def get_data_table_name(self) -> Optional[str]:
         """If dynamic options are loaded from a data table, return the name."""
 
@@ -502,7 +507,7 @@ class InputSource(metaclass=ABCMeta):
         """
         return None
 
-    def parse_validator_elems(self):
+    def parse_validators(self) -> List[AnyValidatorModel]:
         """Return an XML description of sanitizers. This is a stop gap
         until we can rework galaxy.tools.parameters.validation to not
         explicitly depend on XML.

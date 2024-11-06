@@ -452,3 +452,12 @@ class TestParameterParsing(BaseParameterTestCase):
         )
         assert param.type == "data_collection"
         assert param.collection_types == ["list", "list:paired"]
+
+    def test_data_allow_uri_if_protocol(self):
+        param = self._parameter_for(
+            xml="""
+            <param name="deferred" type="data" allow_uri_if_protocol="https,s3">
+            </param>
+        """
+        )
+        assert param.allow_uri_if_protocol == ["https", "s3"]

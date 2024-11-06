@@ -95,6 +95,7 @@ from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
 from galaxy.tool_util.toolbox import (
     AbstractToolBox,
     AbstractToolTagManager,
+    ToolLoadError,
     ToolSection,
 )
 from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
@@ -380,7 +381,10 @@ def create_tool_from_source(app, tool_source: ToolSource, config_file: Optional[
     elif tool_type := tool_source.parse_tool_type():
         ToolClass = tool_types.get(tool_type)
         if not ToolClass:
-            raise ValueError(f"Unrecognized tool type: {tool_type}")
+            if tool_type == "cwl":
+                raise ToolLoadError("Runtime support for CWL tools is not implemented currently")
+            else:
+                raise ToolLoadError(f"Parsed unrecognized tool type ({tool_type}) from tool")
     else:
         # Normal tool
         root = getattr(tool_source, "root", None)
@@ -1832,7 +1836,9 @@ class Tool(UsesDictVisibleKeys):
         # Expand these out to individual parameters for given jobs (tool executions).
         expanded_incomings: List[ToolStateJobInstanceT]
         collection_info: Optional[MatchingCollections]
-        expanded_incomings, collection_info = expand_meta_parameters(request_context, self, incoming)
+        expanded_incomings, collection_info = expand_meta_parameters(
+            request_context, self, incoming, input_format=input_format
+        )
 
         self._ensure_expansion_is_valid(expanded_incomings, rerun_remap_job_id)
 
@@ -1900,16 +1906,20 @@ class Tool(UsesDictVisibleKeys):
                 simple_errors=False,
                 input_format=input_format,
             )
-            # If the tool provides a `validate_input` hook, call it.
-            validate_input = self.get_hook("validate_input")
-            if validate_input:
-                # hooks are so terrible ... this is specifically for https://github.com/galaxyproject/tools-devteam/blob/main/tool_collections/gops/basecoverage/operation_filter.py
-                legacy_non_dce_params = {
-                    k: v.hda if isinstance(v, model.DatasetCollectionElement) and v.hda else v
-                    for k, v in params.items()
-                }
-                validate_input(request_context, errors, legacy_non_dce_params, self.inputs)
+            self._handle_validate_input_hook(request_context, params, errors)
         return params, errors
+
+    def _handle_validate_input_hook(
+        self, request_context, params: ToolStateJobInstancePopulatedT, errors: ParameterValidationErrorsT
+    ):
+        # If the tool provides a `validate_input` hook, call it.
+        validate_input = self.get_hook("validate_input")
+        if validate_input:
+            # hooks are so terrible ... this is specifically for https://github.com/galaxyproject/tools-devteam/blob/main/tool_collections/gops/basecoverage/operation_filter.py
+            legacy_non_dce_params = {
+                k: v.hda if isinstance(v, model.DatasetCollectionElement) and v.hda else v for k, v in params.items()
+            }
+            validate_input(request_context, errors, legacy_non_dce_params, self.inputs)
 
     def completed_jobs(
         self, trans, use_cached_job: bool, all_params: List[ToolStateJobInstancePopulatedT]
@@ -3227,9 +3237,8 @@ class InteractiveTool(Tool):
     produces_entry_points = True
 
     def __init__(self, config_file, tool_source, app, **kwd):
-        assert app.config.interactivetools_enable, ValueError(
-            "Trying to load an InteractiveTool, but InteractiveTools are not enabled."
-        )
+        if not app.config.interactivetools_enable:
+            raise ToolLoadError("Trying to load an InteractiveTool, but InteractiveTools are not enabled.")
         super().__init__(config_file, tool_source, app, **kwd)
 
     def __remove_interactivetool_by_job(self, job):

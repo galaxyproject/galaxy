@@ -1,4 +1,5 @@
 <script setup>
+import { BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
 
@@ -8,6 +9,8 @@ import { useUserHistories } from "@/composables/userHistories";
 import { useUserStore } from "@/stores/userStore";
 import { wait } from "@/utils/utils";
 
+import ExternalLink from "../ExternalLink.vue";
+import HelpText from "../Help/HelpText.vue";
 import UploadContainer from "./UploadContainer.vue";
 
 const { currentUser } = storeToRefs(useUserStore());
@@ -71,7 +74,7 @@ defineExpose({
 </script>
 
 <template>
-    <b-modal
+    <BModal
         v-model="showModal"
         :static="options.modalStatic"
         header-class="no-separator"
@@ -81,12 +84,20 @@ defineExpose({
         no-enforce-focus
         hide-footer>
         <template v-slot:modal-header>
-            <h2 class="title h-sm" tabindex="0">
-                {{ options.title }}
-                <span v-if="currentHistory">
-                    to <b>{{ currentHistory.name }}</b>
+            <div class="d-flex justify-content-between w-100">
+                <h2 class="title h-sm" tabindex="0">
+                    {{ options.title }}
+                    <span v-if="currentHistory">
+                        to <b>{{ currentHistory.name }}</b>
+                    </span>
+                </h2>
+                <span>
+                    <ExternalLink href="https://galaxy-upload.readthedocs.io/en/latest/"> Click here </ExternalLink>
+                    to check out the
+                    <HelpText uri="galaxy.upload.galaxyUploadUtil" text="galaxy-upload" />
+                    util!
                 </span>
-            </h2>
+            </div>
         </template>
         <UploadContainer
             v-if="currentHistoryId"
@@ -95,7 +106,7 @@ defineExpose({
             :current-history-id="currentHistoryId"
             v-bind="options"
             @dismiss="dismiss" />
-    </b-modal>
+    </BModal>
 </template>
 
 <style>

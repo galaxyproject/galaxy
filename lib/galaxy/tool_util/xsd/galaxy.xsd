@@ -312,8 +312,6 @@ A generalisation for macro tokens, templates and xml macros, i.e.
 `<macro name="an_xml_macro" type="xml">` is identical to `<xml name="an_xml_macro">`,
 `<macro name="a_template" type="template">` is identical to `<template name="a_template">`, and
 `<macro name="a_token" type="xml">` is identical to `<token name="a_token">`.
-
-Note that 
        ]]></xs:documentation>
         </xs:annotation>
       </xs:element>
@@ -3499,9 +3497,13 @@ Data source HTTP action (e.g. ``get`` or ``put``) to use.</xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-This is a container for conditional parameters in the tool (must contain 'when'
-tag sets) - the command line (or portions thereof) are then wrapped in an if-else
-statement. A good example tool that demonstrates many conditional parameters is
+This is a container for conditional parameters in the tool (must contain ``when``
+tag sets) - the command line is then wrapped in an if-else statement.
+
+Note that value of a conditional cannot be changed on the workflow run form.
+If you expect users to interact with the element during runtime consider using ``sections`` instead.
+
+An example tool that demonstrates conditional parameters is
 [biom_convert.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tools/biom_format/biom_convert.xml).
 
 ```xml
@@ -3608,7 +3610,7 @@ Referenced parameter to pass method.]]></xs:documentation>
           <xs:annotation>
             <xs:documentation xml:lang="en"><![CDATA[Infrequently used option to dynamically access Galaxy internals, this should be avoided.
 
-Is referenced parameter is the same group.]]></xs:documentation>
+Is referenced parameter in the same group.]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="label" type="xs:string">
@@ -4312,6 +4314,47 @@ template if the parameter is ``true`` or checked by the user. Used only when the
             <xs:documentation xml:lang="en">The parameter value in the Cheetah
 template if the parameter is ``false`` or not checked by the user. Used only
 when the ``type`` attribute value is ``boolean``.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="allow_uri_if_protocol" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"><![CDATA[
+When using `deferred` datasets, Galaxy will try to materialize them into files when
+running the tool. In case we don't want to download them, the `allow_uri_if_protocol` attribute
+can be used to avoid materialization and pass the URI as is to the tool.
+This is useful when the tool can handle the URI directly. Example:
+
+```xml
+<param name="input" type="data" format="txt" allow_uri_if_protocol="http,https,s3" />
+```
+
+You can specify multiple prefixes separated by comma or use the wildcard '*' to always
+treat deferred datasets as URIs. The source URI will be passed to the tool as is.
+
+This attribute is only valid for `data` parameters.
+
+### Handling the input in the tool
+
+Since the input can be a regular file or a URI, the tool should be able to handle both cases.
+The tool should check if the input ``is_deferred`` and if so, treat it as a URI, otherwise
+it should treat it as a regular file. Please note that only deferred datasets with the specified
+protocol will be passed as URIs, the rest will be materialized as files.
+
+Here is an example command section that handles the above sample input:
+
+```python
+<command>
+  ## We should handle the case where the input must be treated as a URI with a specific protocol.
+  #if $input.is_deferred:
+      ## Here, the input is a deferred dataset which source URI has the protocol 'https', 'http' or 's3'.
+      echo '$input' > '$output' ## The ouput will be the source URI of the input.
+  #else:
+      ## Here, the input is a regular dataset or a materialized dataset in case of a 
+      ## deferred dataset which source URI has a protocol different than 'https', 'http' or 's3'.
+      cp '$input' '$output' ## The output will be a copy of the input content.
+</command>
+```
+         ]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="size" type="xs:string" gxdocs:deprecated="true">
@@ -6299,7 +6342,7 @@ Therefore a filter for such a variable looks like the following example.
         <xs:documentation xml:lang="en"><![CDATA[
         A string `[reverse_][SORT_COMP_]SORTBY` describing the desired sort order of the collection elements.
         `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either
-        `lexical` or `numeric`. Default is lexical sorting by filename. 
+        `lexical` or `numeric`. Default is lexical sorting by filename.
         Note that lexical sorting is case sensitive, i.e. upper case characters come before lower case characters (e.g. "Apple" < "Banana" < "apple" < "banana").
         ]]></xs:documentation>
       </xs:annotation>

@@ -26,7 +26,9 @@ from galaxy.tool_util.linters import (
     xsd,
 )
 from galaxy.tool_util.loader_directory import load_tool_sources_from_path
+from galaxy.tool_util.parser.interface import ToolSource
 from galaxy.tool_util.parser.xml import XmlToolSource
+from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.util import (
     ElementTree,
     submodules,
@@ -742,6 +744,11 @@ STDIO_INVALID_MATCH = """
 TESTS_ABSENT = """
 <tool id="id" name="name"/>
 """
+TESTS_ABSENT_YAML = """
+class: GalaxyTool
+name: name
+id: id
+"""
 TESTS_ABSENT_DATA_SOURCE = """
 <tool id="id" name="name" tool_type="data_source"/>
 """
@@ -838,6 +845,38 @@ ASSERTS = """
     </tests>
 </tool>
 """
+INVALID_CENTER_OF_MASS = """
+<tool id="id" name="name">
+    <outputs>
+        <data name="out_image"/>
+    </outputs>
+    <tests>
+        <test>
+            <output name="out_image">
+                <assert_contents>
+                    <has_image_center_of_mass center_of_mass="511.07, 223.34, 2.3" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
+"""
+VALID_CENTER_OF_MASS = """
+<tool id="id" name="name">
+    <outputs>
+        <data name="out_image"/>
+    </outputs>
+    <tests>
+        <test>
+            <output name="out_image">
+                <assert_contents>
+                    <has_image_center_of_mass center_of_mass="511.07, 223.34" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
+"""
 TESTS_VALID = """
 <tool id="id" name="name">
     <outputs>
@@ -845,7 +884,7 @@ TESTS_VALID = """
     </outputs>
     <tests>
         <test>
-            <output name="test"/>
+            <output name="test" value="empty.txt" />
         </test>
     </tests>
 </tool>
@@ -992,6 +1031,19 @@ def get_xml_tree(xml_string: str) -> ElementTree:
 
 def get_xml_tool_source(xml_string: str) -> XmlToolSource:
     return XmlToolSource(get_xml_tree(xml_string))
+
+
+def get_tool_source(source_contents: str) -> ToolSource:
+    if "GalaxyTool" in source_contents:
+        with tempfile.NamedTemporaryFile(mode="w", suffix="tool.yml") as tmp:
+            tmp.write(source_contents)
+            tmp.flush()
+            tool_sources = load_tool_sources_from_path(tmp.name)
+            assert len(tool_sources) == 1, "Expected 1 tool source"
+            tool_source = tool_sources[0][1]
+            return tool_source
+    else:
+        return get_xml_tool_source(source_contents)
 
 
 def run_lint_module(lint_ctx, lint_module, lint_target):
@@ -1838,13 +1890,14 @@ def test_stdio_invalid_match(lint_ctx):
 
 
 def test_tests_absent(lint_ctx):
-    tool_source = get_xml_tool_source(TESTS_ABSENT)
-    run_lint_module(lint_ctx, tests, tool_source)
-    assert "No tests found, most tools should define test cases." in lint_ctx.warn_messages
-    assert not lint_ctx.info_messages
-    assert not lint_ctx.valid_messages
-    assert len(lint_ctx.warn_messages) == 1
-    assert not lint_ctx.error_messages
+    for test_contents in [TESTS_ABSENT, TESTS_ABSENT_YAML]:
+        tool_source = get_tool_source(test_contents)
+        run_lint_module(lint_ctx, tests, tool_source)
+        assert "No tests found, most tools should define test cases." in lint_ctx.warn_messages
+        assert not lint_ctx.info_messages
+        assert not lint_ctx.valid_messages
+        assert len(lint_ctx.warn_messages) == 1
+        assert not lint_ctx.error_messages
 
 
 def test_tests_data_source(lint_ctx):
@@ -1878,7 +1931,6 @@ def test_tests_param_output_names(lint_ctx):
     )
     assert not lint_ctx.info_messages
     assert len(lint_ctx.valid_messages) == 1
-    assert not lint_ctx.warn_messages
     assert len(lint_ctx.error_messages) == 6
 
 
@@ -1893,7 +1945,7 @@ def test_tests_expect_failure_output(lint_ctx):
     )
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
-    assert len(lint_ctx.warn_messages) == 1
+    assert len(lint_ctx.warn_messages) == 3
     assert len(lint_ctx.error_messages) == 2
 
 
@@ -1941,8 +1993,22 @@ def test_tests_asserts(lint_ctx):
     assert "Test 1: 'has_size' must not specify 'value' and 'size'" in lint_ctx.error_messages
     assert "Test 1: 'has_n_columns' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
     assert "Test 1: 'has_n_lines' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
-    assert not lint_ctx.warn_messages
     assert len(lint_ctx.error_messages) == 9
+
+
+def test_tests_assertion_models_valid(lint_ctx):
+    tool_source = get_xml_tool_source(VALID_CENTER_OF_MASS)
+    run_lint_module(lint_ctx, tests, tool_source)
+    assert len(lint_ctx.error_messages) == 0
+    assert len(lint_ctx.warn_messages) == 0
+
+
+def test_tests_assertion_models_invalid(lint_ctx):
+    tool_source = get_xml_tool_source(INVALID_CENTER_OF_MASS)
+    run_lint_module(lint_ctx, tests, tool_source)
+    assert len(lint_ctx.error_messages) == 0
+    assert len(lint_ctx.warn_messages) == 1
+    assert "Test 1: failed to validate assertions. Validation errors are " in lint_ctx.warn_messages
 
 
 def test_tests_output_type_mismatch(lint_ctx):
@@ -1956,7 +2022,6 @@ def test_tests_output_type_mismatch(lint_ctx):
         "Test 1: test collection output 'data_name' does not correspond to a 'output_collection' output, but a 'data'"
         in lint_ctx.error_messages
     )
-    assert not lint_ctx.warn_messages
     assert len(lint_ctx.error_messages) == 2
 
 
@@ -1979,7 +2044,6 @@ def test_tests_discover_outputs(lint_ctx):
         "Test 5: test collection 'collection_name' must contain nested 'element' tags and/or element children with a 'count' attribute"
         in lint_ctx.error_messages
     )
-    assert not lint_ctx.warn_messages
     assert len(lint_ctx.error_messages) == 4
 
 
@@ -1998,7 +2062,6 @@ def test_tests_compare_attrib_incompatibility(lint_ctx):
     assert 'Test 1: Attribute sort is incompatible with compare="contains".' in lint_ctx.error_messages
     assert not lint_ctx.info_messages
     assert len(lint_ctx.valid_messages) == 1
-    assert not lint_ctx.warn_messages
     assert len(lint_ctx.error_messages) == 2
 
 
@@ -2164,14 +2227,8 @@ outputs:
 
 
 def test_linting_yml_tool(lint_ctx):
-    with tempfile.TemporaryDirectory() as tmp:
-        tool_path = os.path.join(tmp, "tool.yml")
-        with open(tool_path, "w") as tmpf:
-            tmpf.write(YAML_TOOL)
-        tool_sources = load_tool_sources_from_path(tmp)
-        assert len(tool_sources) == 1, "Expected 1 tool source"
-        tool_source = tool_sources[0][1]
-        lint_tool_source_with(lint_ctx, tool_source)
+    tool_source = get_tool_source(YAML_TOOL)
+    lint_tool_source_with(lint_ctx, tool_source)
     assert "Tool defines a version [1.0]." in lint_ctx.valid_messages
     assert "Tool defines a name [simple_constructs_y]." in lint_ctx.valid_messages
     assert "Tool defines an id [simple_constructs_y]." in lint_ctx.valid_messages
@@ -2249,6 +2306,23 @@ def test_list_linters():
         "XSD",
     ]:
         assert len([x for x in linter_names if x.startswith(prefix)])
+
+
+def test_linting_functional_tool_multi_select(lint_ctx):
+    tool_source = functional_test_tool_source("multi_select.xml")
+    run_lint_module(lint_ctx, tests, tool_source)
+    warn_message = lint_ctx.warn_messages[0]
+    assert (
+        "Test 2: failed to validate test parameters against inputs - tests won't run on a modern Galaxy tool profile version. Validation errors are [5 validation errors for"
+        in str(warn_message)
+    )
+
+
+def functional_test_tool_source(name: str) -> ToolSource:
+    tool_sources = load_tool_sources_from_path(functional_test_tool_path(name))
+    assert len(tool_sources) == 1, "Expected 1 tool source"
+    tool_source = tool_sources[0][1]
+    return tool_source
 
 
 def test_linter_module_list():

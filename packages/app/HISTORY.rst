@@ -10,6 +10,69 @@ History
 
 
 -------------------
+24.1.3 (2024-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Replace busybox:ubuntu-14.04 image with busybox:1.36.1-glibc by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18428 <https://github.com/galaxyproject/galaxy/pull/18428>`_
+* Update mercurial to non-yanked 6.7.4 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18434 <https://github.com/galaxyproject/galaxy/pull/18434>`_
+* Fix dropped when_expression on step upgrade by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18446 <https://github.com/galaxyproject/galaxy/pull/18446>`_
+* Improve workflow-related exception reporting by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18447 <https://github.com/galaxyproject/galaxy/pull/18447>`_
+* Fix subwofklow tags serialization type by `@arash77 <https://github.com/arash77>`_ in `#18456 <https://github.com/galaxyproject/galaxy/pull/18456>`_
+*  by `@laperlej <https://github.com/laperlej>`_ in `#18459 <https://github.com/galaxyproject/galaxy/pull/18459>`_
+* Add input extra files to `get_input_fnames` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18462 <https://github.com/galaxyproject/galaxy/pull/18462>`_
+* Return generic message for password reset email by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#18479 <https://github.com/galaxyproject/galaxy/pull/18479>`_
+* Increase API robustness to invalid requests, improve compressed data serving by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18494 <https://github.com/galaxyproject/galaxy/pull/18494>`_
+* Prevent job submission if input collection element is deleted by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18517 <https://github.com/galaxyproject/galaxy/pull/18517>`_
+* Strip unicode null from tool stdio by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18527 <https://github.com/galaxyproject/galaxy/pull/18527>`_
+* Fix map over calculation for runtime inputs  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18535 <https://github.com/galaxyproject/galaxy/pull/18535>`_
+* Fix for not-null in 'column_list' object by `@hujambo-dunia <https://github.com/hujambo-dunia>`_ in `#18553 <https://github.com/galaxyproject/galaxy/pull/18553>`_
+* Also fail ``ensure_dataset_on_disk`` if dataset is in new state by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18559 <https://github.com/galaxyproject/galaxy/pull/18559>`_
+* Fix sqlalchemy statement in tooltagmanager reset output by `@dannon <https://github.com/dannon>`_ in `#18591 <https://github.com/galaxyproject/galaxy/pull/18591>`_
+* Set minimum weasyprint version by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18606 <https://github.com/galaxyproject/galaxy/pull/18606>`_
+* Improve relabel identifiers message when number of columns is not 2 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18634 <https://github.com/galaxyproject/galaxy/pull/18634>`_
+* Fix extract workflow from history when implicit collection has no jobs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18661 <https://github.com/galaxyproject/galaxy/pull/18661>`_
+* Make sure we set file size also for purged outputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18681 <https://github.com/galaxyproject/galaxy/pull/18681>`_
+* File source and object store instance api fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18685 <https://github.com/galaxyproject/galaxy/pull/18685>`_
+* Fix change datatype PJA on expression tool data outputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18691 <https://github.com/galaxyproject/galaxy/pull/18691>`_
+* Fill in missing help for cross product tools. by `@jmchilton <https://github.com/jmchilton>`_ in `#18698 <https://github.com/galaxyproject/galaxy/pull/18698>`_
+* Fix subworkflow scheduling for delayed subworkflow steps connected to data inputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18731 <https://github.com/galaxyproject/galaxy/pull/18731>`_
+* Catch and display exceptions when importing malformatted yaml workflows by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18734 <https://github.com/galaxyproject/galaxy/pull/18734>`_
+* Fix infinitely delayed workflow scheduling if skipped step creates HDCA by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18751 <https://github.com/galaxyproject/galaxy/pull/18751>`_
+* Fix directory get or create logic by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18752 <https://github.com/galaxyproject/galaxy/pull/18752>`_
+* Fix job summary for optional unset job data inputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18754 <https://github.com/galaxyproject/galaxy/pull/18754>`_
+* Allow to change only the description of a quota by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18775 <https://github.com/galaxyproject/galaxy/pull/18775>`_
+* Fix wrong extension on pick data output by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18798 <https://github.com/galaxyproject/galaxy/pull/18798>`_
+* Fix unspecified ``oidc_endpoint`` variable overwriting specified ``redirect_url`` by `@bgruening <https://github.com/bgruening>`_ in `#18818 <https://github.com/galaxyproject/galaxy/pull/18818>`_
+* Fix wrong celery_app config on job and workflow handlers by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18819 <https://github.com/galaxyproject/galaxy/pull/18819>`_
+* Fix ``named cursor is not valid anymore`` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18825 <https://github.com/galaxyproject/galaxy/pull/18825>`_
+* Tighten TRS url check by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18841 <https://github.com/galaxyproject/galaxy/pull/18841>`_
+* Fix Workflow index bookmark filter by `@itisAliRH <https://github.com/itisAliRH>`_ in `#18842 <https://github.com/galaxyproject/galaxy/pull/18842>`_
+* Skip metric collection if job working directory doesn't exist by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18845 <https://github.com/galaxyproject/galaxy/pull/18845>`_
+* Extend on disk checks to running, queued and error states by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18846 <https://github.com/galaxyproject/galaxy/pull/18846>`_
+* Raise MessageException instead of assertions on rerun problems by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18858 <https://github.com/galaxyproject/galaxy/pull/18858>`_
+* Fix data_column ref to nested collection by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18875 <https://github.com/galaxyproject/galaxy/pull/18875>`_
+* Fix loading very old workflows with data inputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18876 <https://github.com/galaxyproject/galaxy/pull/18876>`_
+* Access tool data table filters in workflow building mode by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18900 <https://github.com/galaxyproject/galaxy/pull/18900>`_
+* Fix username used in invocation report by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18932 <https://github.com/galaxyproject/galaxy/pull/18932>`_
+* Disable locking when opening h5 files, add missing ``with`` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18976 <https://github.com/galaxyproject/galaxy/pull/18976>`_
+* Fix job search statement building by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19010 <https://github.com/galaxyproject/galaxy/pull/19010>`_
+* Put cached jobs back into queue on handler restart by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19012 <https://github.com/galaxyproject/galaxy/pull/19012>`_
+
+============
+Enhancements
+============
+
+* Include workflow invocation id in exception logs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18594 <https://github.com/galaxyproject/galaxy/pull/18594>`_
+* Implemented the generic OIDC backend from python-social-auth into Gal… by `@Edmontosaurus <https://github.com/Edmontosaurus>`_ in `#18670 <https://github.com/galaxyproject/galaxy/pull/18670>`_
+* Collect job metrics also when job failed by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18809 <https://github.com/galaxyproject/galaxy/pull/18809>`_
+* prevent "missing refresh_token" errors by supporting <extra_scopes> also with Keycloak backend by `@ljocha <https://github.com/ljocha>`_ in `#18826 <https://github.com/galaxyproject/galaxy/pull/18826>`_
+
+-------------------
 24.1.2 (2024-09-25)
 -------------------
 

@@ -1,6 +1,7 @@
 import json
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
@@ -8,6 +9,7 @@ from typing import (
 )
 
 from pydantic import (
+    AfterValidator,
     Field,
     field_validator,
 )
@@ -22,12 +24,72 @@ from galaxy.schema.schema import (
     Organization,
     PauseStep,
     Person,
-    PreferredObjectStoreIdField,
     StoredWorkflowSummary,
     SubworkflowStep,
     ToolStep,
     WorkflowInput,
 )
+
+TargetHistoryIdField = Field(
+    None,
+    title="History ID",
+    # description="The history to import the workflow into.",
+    description="The encoded history id into which to import.",
+)
+INPUTS_BY_DESCRIPTION = (
+    "How the 'inputs' field maps its inputs (datasets/collections/step parameters) to workflows steps."
+)
+STEP_PARAMETERS_NORMALIZED_TITLE = "Legacy Step Parameters Normalized"
+STEP_PARAMETERS_NORMALIZED_DESCRIPTION = "Indicates if legacy parameters are already normalized to be indexed by the order_index and are specified as a dictionary per step. Legacy-style parameters could previously be specified as one parameter per step or by tool ID."
+STEP_PARAMETERS_TITLE = "Legacy Step Parameters"
+STEP_PARAMETERS_DESCRIPTION = "Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead."
+ReplacementParametersField = Field(
+    {},
+    title="Replacement Parameters",
+    description="Class of parameters mostly used for string replacement in PJAs. In best practice workflows, these should be replaced with input parameters",
+)
+UseCachedJobField = Field(
+    False,
+    title="Use cached job",
+    description="Indicated whether to use a cached job for workflow invocation.",
+)
+PreferredObjectStoreIdField = Field(
+    default=None,
+    title="Preferred Object Store ID",
+    description="The ID of the object store that should be used to store all datasets (can instead specify object store IDs for intermediate and outputs datasts separately) -  - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences",
+)
+PreferredIntermediateObjectStoreIdField = Field(
+    None,
+    title="Preferred Intermediate Object Store ID",
+    description="The ID of the object store that should be used to store the intermediate datasets of this workflow -  - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences",
+)
+PreferredOutputsObjectStoreIdField = Field(
+    None,
+    title="Preferred Outputs Object Store ID",
+    description="The ID of the object store that should be used to store the marked output datasets of this workflow - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences.",
+)
+ResourceParametersField = Field(
+    {},
+    title="Resource Parameters",
+    description="If a workflow_resource_params_file file is defined and the target workflow is configured to consumer resource parameters, they can be specified with this parameter. See https://github.com/galaxyproject/galaxy/pull/4830 for more information.",
+)
+
+VALID_INPUTS_BY_ITEMS = ["step_id", "step_index", "step_uuid", "name"]
+
+
+def validateInputsBy(inputsBy: Optional[str]) -> Optional[str]:
+    if inputsBy is not None:
+        if not isinstance(inputsBy, str):
+            raise ValueError(f"Invalid type for inputsBy {inputsBy}")
+        inputsByStr = cast(str, inputsBy)
+        inputsByArray: List[str] = inputsByStr.split("|")
+        for inputsByItem in inputsByArray:
+            if inputsByItem not in VALID_INPUTS_BY_ITEMS:
+                raise ValueError(f"Invalid inputsBy delineation {inputsByItem}")
+    return inputsBy
+
+
+InputsByValidator = AfterValidator(validateInputsBy)
 
 
 class GetTargetHistoryPayload(Model):
@@ -38,12 +100,7 @@ class GetTargetHistoryPayload(Model):
         # description="The encoded history id - passed exactly like this 'hist_id=...' -  to import the workflow into. Or the name of the new history to import the workflow into.",
         description="The encoded history id - passed exactly like this 'hist_id=...' -  into which to import. Or the name of the new history into which to import.",
     )
-    history_id: Optional[str] = Field(
-        None,
-        title="History ID",
-        # description="The history to import the workflow into.",
-        description="The encoded history id into which to import.",
-    )
+    history_id: Optional[str] = TargetHistoryIdField
     new_history_name: Optional[str] = Field(
         None,
         title="New History Name",
@@ -85,15 +142,11 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
         title="Allow tool state corrections",
         description="Indicates if tool state corrections are allowed for workflow invocation.",
     )
-    use_cached_job: Optional[bool] = Field(
-        False,
-        title="Use cached job",
-        description="Indicated whether to use a cached job for workflow invocation.",
-    )
+    use_cached_job: Optional[bool] = UseCachedJobField
     parameters_normalized: Optional[bool] = Field(
         False,
-        title="Parameters Normalized",
-        description="Indicates if parameters are already normalized for workflow invocation.",
+        title=STEP_PARAMETERS_NORMALIZED_TITLE,
+        description=STEP_PARAMETERS_NORMALIZED_DESCRIPTION,
     )
 
     @field_validator(
@@ -102,7 +155,6 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
         "ds_map",
         "resource_params",
         "replacement_params",
-        "step_parameters",
         mode="before",
         check_fields=False,
     )
@@ -114,34 +166,22 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
 
     parameters: Optional[Dict[str, Any]] = Field(
         {},
-        title="Parameters",
-        description="The raw parameters for the workflow invocation.",
+        title=STEP_PARAMETERS_TITLE,
+        description=STEP_PARAMETERS_DESCRIPTION,
     )
     inputs: Optional[Dict[str, Any]] = Field(
         None,
         title="Inputs",
-        description="TODO",
+        description="Specify values for formal inputs to the workflow",
     )
     ds_map: Optional[Dict[str, Dict[str, Any]]] = Field(
         {},
-        title="Dataset Map",
-        description="TODO",
+        title="Legacy Dataset Map",
+        description="An older alternative to specifying inputs using database IDs, do not use this and use inputs instead",
+        deprecated=True,
     )
-    resource_params: Optional[Dict[str, Any]] = Field(
-        {},
-        title="Resource Parameters",
-        description="TODO",
-    )
-    replacement_params: Optional[Dict[str, Any]] = Field(
-        {},
-        title="Replacement Parameters",
-        description="TODO",
-    )
-    step_parameters: Optional[Dict[str, Any]] = Field(
-        None,
-        title="Step Parameters",
-        description="TODO",
-    )
+    resource_params: Optional[Dict[str, Any]] = ResourceParametersField
+    replacement_params: Optional[Dict[str, Any]] = ReplacementParametersField
     no_add_to_history: Optional[bool] = Field(
         False,
         title="No Add to History",
@@ -152,11 +192,11 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
         title="Legacy",
         description="Indicating if to use legacy workflow invocation.",
     )
-    inputs_by: Optional[str] = Field(
+    inputs_by: Annotated[Optional[str], InputsByValidator] = Field(
         None,
         title="Inputs By",
         # lib/galaxy/workflow/run_request.py - see line 60
-        description="How inputs maps to inputs (datasets/collections) to workflows steps.",
+        description=INPUTS_BY_DESCRIPTION,
     )
     effective_outputs: Optional[Any] = Field(
         None,
@@ -164,17 +204,9 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
         # lib/galaxy/workflow/run_request.py - see line 455
         description="TODO",
     )
-    preferred_intermediate_object_store_id: Optional[str] = Field(
-        None,
-        title="Preferred Intermediate Object Store ID",
-        description="The ID of the ? object store that should be used to store ? datasets in this history.",
-    )
-    preferred_outputs_object_store_id: Optional[str] = Field(
-        None,
-        title="Preferred Outputs Object Store ID",
-        description="The ID of the object store that should be used to store ? datasets in this history.",
-    )
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
+    preferred_intermediate_object_store_id: Optional[str] = PreferredIntermediateObjectStoreIdField
+    preferred_outputs_object_store_id: Optional[str] = PreferredOutputsObjectStoreIdField
 
 
 class StoredWorkflowDetailed(StoredWorkflowSummary):

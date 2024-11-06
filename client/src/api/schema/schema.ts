@@ -2645,6 +2645,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/invocations/{invocation_id}/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a description modeling an API request to invoke this workflow - this is recreated and will be more specific in some ways than the initial creation request. */
+        get: operations["invocation_as_request_api_invocations__invocation_id__request_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/invocations/{invocation_id}/step_jobs_summary": {
         parameters: {
             query?: never;
@@ -7175,6 +7192,12 @@ export interface components {
         CreateWorkflowLandingRequestPayload: {
             /** Client Secret */
             client_secret?: string | null;
+            /**
+             * Public
+             * @description If workflow landing request is public anyone with the uuid can use the landing request. If not public the request must be claimed before use and additional verification might occur.
+             * @default false
+             */
+            public: boolean;
             /** Request State */
             request_state?: Record<string, never> | null;
             /** Workflow Id */
@@ -7183,7 +7206,7 @@ export interface components {
              * Workflow Target Type
              * @enum {string}
              */
-            workflow_target_type: "stored_workflow" | "workflow";
+            workflow_target_type: "stored_workflow" | "workflow" | "trs_url";
         };
         /** CreatedEntryResponse */
         CreatedEntryResponse: {
@@ -12385,8 +12408,9 @@ export interface components {
              */
             batch: boolean | null;
             /**
-             * Dataset Map
-             * @description TODO
+             * Legacy Dataset Map
+             * @deprecated
+             * @description An older alternative to specifying inputs using database IDs, do not use this and use inputs instead
              * @default {}
              */
             ds_map: {
@@ -12409,12 +12433,12 @@ export interface components {
             history_id?: string | null;
             /**
              * Inputs
-             * @description TODO
+             * @description Specify values for formal inputs to the workflow
              */
             inputs?: Record<string, never> | null;
             /**
              * Inputs By
-             * @description How inputs maps to inputs (datasets/collections) to workflows steps.
+             * @description How the 'inputs' field maps its inputs (datasets/collections/step parameters) to workflows steps.
              */
             inputs_by?: string | null;
             /**
@@ -12441,35 +12465,35 @@ export interface components {
              */
             no_add_to_history: boolean | null;
             /**
-             * Parameters
-             * @description The raw parameters for the workflow invocation.
+             * Legacy Step Parameters
+             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead.
              * @default {}
              */
             parameters: Record<string, never> | null;
             /**
-             * Parameters Normalized
-             * @description Indicates if parameters are already normalized for workflow invocation.
+             * Legacy Step Parameters Normalized
+             * @description Indicates if legacy parameters are already normalized to be indexed by the order_index and are specified as a dictionary per step. Legacy-style parameters could previously be specified as one parameter per step or by tool ID.
              * @default false
              */
             parameters_normalized: boolean | null;
             /**
              * Preferred Intermediate Object Store ID
-             * @description The ID of the ? object store that should be used to store ? datasets in this history.
+             * @description The ID of the object store that should be used to store the intermediate datasets of this workflow -  - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences
              */
             preferred_intermediate_object_store_id?: string | null;
             /**
              * Preferred Object Store ID
-             * @description The ID of the object store that should be used to store new datasets in this history.
+             * @description The ID of the object store that should be used to store all datasets (can instead specify object store IDs for intermediate and outputs datasts separately) -  - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences
              */
             preferred_object_store_id?: string | null;
             /**
              * Preferred Outputs Object Store ID
-             * @description The ID of the object store that should be used to store ? datasets in this history.
+             * @description The ID of the object store that should be used to store the marked output datasets of this workflow - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences.
              */
             preferred_outputs_object_store_id?: string | null;
             /**
              * Replacement Parameters
-             * @description TODO
+             * @description Class of parameters mostly used for string replacement in PJAs. In best practice workflows, these should be replaced with input parameters
              * @default {}
              */
             replacement_params: Record<string, never> | null;
@@ -12481,7 +12505,7 @@ export interface components {
             require_exact_tool_versions: boolean | null;
             /**
              * Resource Parameters
-             * @description TODO
+             * @description If a workflow_resource_params_file file is defined and the target workflow is configured to consumer resource parameters, they can be specified with this parameter. See https://github.com/galaxyproject/galaxy/pull/4830 for more information.
              * @default {}
              */
             resource_params: Record<string, never> | null;
@@ -12490,11 +12514,6 @@ export interface components {
              * @description Scheduler to use for workflow invocation.
              */
             scheduler?: string | null;
-            /**
-             * Step Parameters
-             * @description TODO
-             */
-            step_parameters?: Record<string, never> | null;
             /**
              * Use cached job
              * @description Indicated whether to use a cached job for workflow invocation.
@@ -18188,6 +18207,86 @@ export interface components {
              */
             workflow_id: string;
         };
+        /**
+         * WorkflowInvocationRequestModel
+         * @description Model a workflow invocation request (InvokeWorkflowPayload) for an existing invocation.
+         */
+        WorkflowInvocationRequestModel: {
+            /**
+             * History ID
+             * @description The encoded history id the workflow was run in.
+             */
+            history_id: string;
+            /**
+             * Inputs
+             * @description Values for inputs
+             */
+            inputs: Record<string, never>;
+            /**
+             * Inputs by
+             * @description How the 'inputs' field maps its inputs (datasets/collections/step parameters) to workflows steps.
+             */
+            inputs_by: string;
+            /**
+             * Is instance
+             * @description This API yields a particular workflow instance, newer workflows belonging to the same storedworkflow may have different state.
+             * @default true
+             * @constant
+             * @enum {boolean}
+             */
+            instance: true;
+            /**
+             * Legacy Step Parameters
+             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. If these are set, the workflow was not executed in a best-practice fashion and we the resulting invocation request may not fully reflect the executed workflow state.
+             */
+            parameters?: Record<string, never> | null;
+            /**
+             * Legacy Step Parameters Normalized
+             * @description Indicates if legacy parameters are already normalized to be indexed by the order_index and are specified as a dictionary per step. Legacy-style parameters could previously be specified as one parameter per step or by tool ID.
+             * @default true
+             * @constant
+             * @enum {boolean}
+             */
+            parameters_normalized: true;
+            /**
+             * Preferred Intermediate Object Store ID
+             * @description The ID of the object store that should be used to store the intermediate datasets of this workflow -  - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences
+             */
+            preferred_intermediate_object_store_id?: string | null;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store all datasets (can instead specify object store IDs for intermediate and outputs datasts separately) -  - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences
+             */
+            preferred_object_store_id?: string | null;
+            /**
+             * Preferred Outputs Object Store ID
+             * @description The ID of the object store that should be used to store the marked output datasets of this workflow - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences.
+             */
+            preferred_outputs_object_store_id?: string | null;
+            /**
+             * Replacement Parameters
+             * @description Class of parameters mostly used for string replacement in PJAs. In best practice workflows, these should be replaced with input parameters
+             * @default {}
+             */
+            replacement_params: Record<string, never> | null;
+            /**
+             * Resource Parameters
+             * @description If a workflow_resource_params_file file is defined and the target workflow is configured to consumer resource parameters, they can be specified with this parameter. See https://github.com/galaxyproject/galaxy/pull/4830 for more information.
+             * @default {}
+             */
+            resource_params: Record<string, never> | null;
+            /**
+             * Use cached job
+             * @description Indicated whether to use a cached job for workflow invocation.
+             * @default false
+             */
+            use_cached_job: boolean;
+            /**
+             * Workflow ID
+             * @description The encoded Workflow ID associated with the invocation.
+             */
+            workflow_id: string;
+        };
         /** WorkflowInvocationResponse */
         WorkflowInvocationResponse:
             | components["schemas"]["WorkflowInvocationElementView"]
@@ -18235,7 +18334,7 @@ export interface components {
              * Workflow Target Type
              * @enum {string}
              */
-            workflow_target_type: "stored_workflow" | "workflow";
+            workflow_target_type: "stored_workflow" | "workflow" | "trs_url";
         };
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
@@ -27035,6 +27134,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    invocation_as_request_api_invocations__invocation_id__request_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Invocation. */
+                invocation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationRequestModel"];
+                };
             };
             /** @description Request Error */
             "4XX": {

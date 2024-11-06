@@ -248,7 +248,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             raise exceptions.ObjectAttributeMissingException("Page name is required")
         elif not payload.slug:
             raise exceptions.ObjectAttributeMissingException("Page id is required")
-        elif not base.is_valid_slug(payload.slug):
+        elif not sharable.SlugBuilder.is_valid_slug(payload.slug):
             raise exceptions.ObjectAttributeInvalidException(
                 "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
             )

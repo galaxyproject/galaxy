@@ -1,3 +1,185 @@
+[project]
+name = "galaxy"
+version = "0.1.0"  # Not the real version, which is instead defined in lib/galaxy/version.py
+description = "Galaxy is an open, web-based platform for accessible, reproducible, and transparent computational research."
+authors = [
+    {name = "Galaxy Contributors"},
+]
+maintainers = [
+    {name = "Galaxy Committers", email = "galaxy-committers@lists.galaxyproject.org"}
+]
+license = {file = "LICENSE.txt"}
+readme = "README.rst"
+requires-python = ">=3.8"
+dependencies = [
+    "a2wsgi",
+    "aiofiles",
+    "alembic",
+    "apispec",
+    "Babel",
+    "bdbag>=1.6.3",
+    "Beaker",
+    "bioblend",
+    "bleach",
+    "boltons",
+    "boto",
+    "bx-python",
+    "celery",
+    "cloudauthz==0.6.0",
+    "cloudbridge",
+    "circus",
+    "conda-package-streaming",
+    "CT3>=3.3.3",  # Python 3.13 support
+    "cwltool>=3.1.20230624081518",  # save time, minimum needed by cwl-1.0 branch
+    "dictobj",
+    "dnspython",
+    "docutils!=0.17,!=0.17.1",
+    "dparse",
+    "edam-ontology",
+    "fastapi-slim>=0.111.0",
+    "fissix ; python_version>='3.13'",
+    "fs",
+    "future>=1.0.0",  # Python 3.12 support
+    "graphene",
+    "graphene-sqlalchemy>=3.0.0rc1",  # need a beta release to be compat. with starlette plugin
+    "graphql-core",
+    "gravity>=1.0.4",
+    "gunicorn",
+    "gxformat2",
+    "h5grove>=1.2.1",
+    "h5py",  # Python 3.8 support
+    "h5py>=3.12 ; python_version>='3.9'",  # Python 3.13 support
+    "importlib-resources ; python_version<'3.9'",  # for importlib.{abc.Traversable,resources.{files, Package}}
+    "isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@master",  # https://github.com/ISA-tools/isa-rwval/pull/17
+    "isal>=1.7.0",  # Python 3.13 support
+    "jinja2",
+    "kombu>=5.3",  # for importlib-metadata fix
+    "lagom",
+    "Mako",
+    "Markdown",
+    "MarkupSafe",
+    "mercurial>=6.8.2",  # Python 3.13 support
+    "mrcfile",
+    "msal",
+    "nodeenv",
+    "numpy",
+    "numpy>=1.26.0 ; python_version=='3.9'",  # Python 3.12 support
+    "numpy>=2.1.0 ; python_version>='3.10'",  # Python 3.13 support
+    "packaging",
+    "paramiko!=2.9.0,!=2.9.1",  # https://github.com/paramiko/paramiko/issues/1961
+    "Parsley",
+    "Paste",
+    "pebble",
+    "pillow",
+    "psutil",
+    "pulsar-galaxy-lib>=0.15.0.dev0",
+    "pycryptodome",
+    "pydantic[email]>=2.7.4",  # https://github.com/pydantic/pydantic/pull/9639
+    "PyJWT",
+    "pykwalify",
+    "pylibmagic",
+    "pyparsing",
+    "pysam>=0.21",  # for Python 3.11 support on macOS
+    "python-dateutil",
+    "python-magic",
+    "python-multipart",  # required to support form parsing in FastAPI/Starlette
+    "python-slugify",
+    "PyYAML",
+    "refgenconf>=0.12.0",
+    "regex",
+    "requests",
+    "rocrate",
+    "Routes",
+    "s3fs>=2023.1.0",
+    "schema-salad>=8.7.20240905150001",  # Python 3.13 support
+    "social-auth-core>=4.5.0",  # to drop dependency on abandoned python-jose
+    "sortedcontainers",
+    "SQLAlchemy>=2.0,<2.1,!=2.0.36",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019,
+    "sqlitedict",
+    "sqlparse",
+    "starlette",
+    "starlette-context",
+    "starlette-graphene3",
+    "svgwrite",
+    "tifffile",
+    "tuswsgi",
+    "typing-extensions",
+    "uvicorn!=0.28.0",  # https://github.com/galaxyproject/galaxy/issues/17669
+    "uvloop>=0.21.0",  # Python 3.13 support
+    "WebOb>=1.8.9",  # Python 3.13 support
+    "Whoosh",
+    "zipstream-new",
+]
+
+[project.urls]
+Homepage = "https://galaxyproject.org/"
+Documentation = "https://docs.galaxyproject.org/"
+Repository = "https://github.com/galaxyproject/galaxy"
+"Bug Tracker" = "https://github.com/galaxyproject/galaxy/issues"
+
+[dependency-groups]
+dev = [
+    "ase>=3.18.1",
+    "axe-selenium-python",
+    "black",
+    "boto3",
+    "codespell",
+    "cwltest>=2.5.20240906231108",  # Python 3.13 support
+    "darker",
+    "fluent-logger",
+    "galaxy-release-util",
+    "httpx",
+    "isort",
+    "lxml!=4.2.2",
+    "markdown-it-reporter",
+    "myst-parser",
+    "onedatafilerestclient==21.2.5.2",
+    "pkce",
+    "playwright>=1.48.0",  # Python 3.13 support
+    "pytest<8",  # https://github.com/galaxyproject/galaxy/issues/17561
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-html",
+    "pytest-httpserver",
+    "python-irodsclient!=1.1.2",  # https://github.com/irods/python-irodsclient/issues/356
+    "pytest-json-report",
+    "pytest-mock",
+    "pytest-playwright",
+    "pytest-postgresql!=3.0.0",  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
+    "pytest-shard",
+    "responses",
+    "rucio-clients>=33.6.0 ; python_version>='3.9'",  # https://github.com/galaxyproject/galaxy/pull/17156
+    "selenium",
+    "seletools",
+    "Sphinx>=4.0",  # support docutils 0.17
+    "sphinx-rtd-theme",
+    "statsd",
+    "testfixtures",
+    "tuspy",
+    "twill>=3.2.5",  # Python 3.13 support
+    "watchdog",
+    "Werkzeug",
+]
+typecheck = [
+    "boto3-stubs[s3]",
+    "lxml-stubs",
+    "mypy",
+    "pydantic>=2.7.4",  # for pydantic.mypy plugin
+    "types-bleach",
+    "types-boto",
+    "types-contextvars",
+    "types-dataclasses",
+    "types-docutils",
+    "types-Markdown",
+    "types-paramiko",
+    "types-python-dateutil",
+    "types-python-slugify",
+    "types-PyYAML",
+    "types-requests",
+    "types-setuptools",
+    "types-six",
+]
+
 [tool.black]
 line-length = 120
 target-version = ['py38']
@@ -12,186 +194,10 @@ extend-exclude = '''
 [tool.darker]
 isort = true
 
-[tool.poetry]
-package-mode = false
-name = "galaxy"
-description = "Galaxy is an open, web-based platform for accessible, reproducible, and transparent computational research."
-authors = ["Galaxy Contributors"]
-license = "AFL-3.0"
-readme = "README.rst"
-homepage = "https://galaxyproject.org/"
-repository = "https://github.com/galaxyproject/galaxy/"
-documentation = "https://docs.galaxyproject.org/"
-
-[[tool.poetry.source]]
-name = "galaxyproject"
-url = "https://wheels.galaxyproject.org/simple"
-priority = "primary"
-
-[[tool.poetry.source]]
-name = "PyPI"
-priority = "primary"
-
-[tool.poetry.dependencies]
-a2wsgi = "*"
-aiofiles = "*"
-alembic = "*"
-apispec = "*"
-Babel = "*"
-bdbag = ">=1.6.3"
-Beaker = "*"
-bioblend = "*"
-bleach = "*"
-boltons = "*"
-boto = "*"
-bx-python = "*"
-celery = "*"
-Cheetah3 = "*"
-cloudauthz = "==0.6.0"
-cloudbridge = "*"
-circus = "*"
-cwltool = ">=3.1.20230624081518"  # save time, minimum needed by cwl-1.0 branch
-conda-package-streaming = "*"
-dictobj = "*"
-dnspython = "*"
-docutils = "!=0.17, !=0.17.1"
-dparse = "*"
-edam-ontology = "*"
-fastapi-slim = ">=0.111.0"
-fs = "*"
-future = ">=1.0.0"  # Python 3.12 support
-graphene = "*"
-graphene-sqlalchemy = ">=3.0.0rc1"  # need a beta release to be compat. with starlette plugin
-graphql-core = "*"
-gravity = ">=1.0.4"
-gunicorn = "*"
-gxformat2 = "*"
-h5grove = ">=1.2.1"
-h5py = "*"
-importlib-resources = { version = "*", python = "<3.9" }  # for importlib.{abc.Traversable,resources.{files, Package}}
-isa-rwval = { git = "https://github.com/nsoranzo/isa-rwval.git", branch = "master" }  # https://github.com/ISA-tools/isa-rwval/pull/17
-jinja2 = "*"
-kombu = ">=5.3"  # for importlib-metadata fix
-isal = "*"
-lagom = "*"
-Mako = "*"
-Markdown = "*"
-MarkupSafe = "*"
-Mercurial = "*"
-mrcfile = "*"
-msal = "*"
-nodeenv = "*"
-numpy = "*"
-packaging = "*"
-paramiko = "!=2.9.0, !=2.9.1"  # https://github.com/paramiko/paramiko/issues/1961
-Parsley = "*"
-Paste = "*"
-pebble = "*"
-pillow = "*"
-psutil = "*"
-pulsar-galaxy-lib = ">=0.15.0.dev0"
-pycryptodome = "*"
-pydantic = {version = ">=2.7.4", extras = ["email"]}  # https://github.com/pydantic/pydantic/pull/9639
-PyJWT = "*"
-pykwalify = "*"
-pylibmagic = "*"
-pyparsing = "*"
-pysam = ">=0.21"  # for Python 3.11 support on macOS
-python = ">=3.8,<3.13"  # Keep maximum version strict to appease numpy and scipy
-python-dateutil = "*"
-python-magic = "*"
-python-multipart = "*"  # required to support form parsing in FastAPI/Starlette
-PyYAML = "*"
-refgenconf = ">=0.12.0"
-regex = "*"
-requests = "*"
-rocrate = "*"
-Routes = "*"
-schema-salad = "!=8.3.20220721194857"  # https://github.com/common-workflow-language/schema_salad/issues/575
-social-auth-core = ">=4.5.0"  # to drop dependency on abandoned python-jose
-sortedcontainers = "*"
-SQLAlchemy = ">=2.0,<2.1,!=2.0.36"  # https://github.com/sqlalchemy/sqlalchemy/issues/12019
-sqlitedict = "*"
-sqlparse = "*"
-starlette = "*"
-starlette-context = "*"
-starlette-graphene3 = "*"
-svgwrite = "*"
-tifffile = "*"
-tuswsgi = "*"
-typing-extensions = "*"
-uvicorn = "!=0.28.0"  # https://github.com/galaxyproject/galaxy/issues/17669
-uvloop = "*"
-WebOb = "*"
-Whoosh = "*"
-zipstream-new = "*"
-s3fs = ">=2023.1.0"
-
-[tool.poetry.group.dev.dependencies]
-ase = ">=3.18.1"
-axe-selenium-python = "*"
-black = "*"
-boto3 = "*"
-codespell = "*"
-cwltest = "*"
-darker = "*"
-fluent-logger = "*"
-galaxy-release-util = "*"
-httpx = "*"
-isort = "*"
-lxml = "!=4.2.2"
-markdown-it-reporter = "*"
-myst-parser = "*"
-onedatafilerestclient = "==21.2.5.2"
-pkce = "*"
-playwright = "*"
-pytest = "*"
-pytest-asyncio = "*"
-pytest-cov = "*"
-pytest-html = "*"
-pytest-httpserver = "*"
-python-irodsclient = "!=1.1.2"  # https://github.com/irods/python-irodsclient/issues/356
-pytest-json-report = "*"
-pytest-mock = "*"
-pytest-playwright = "*"
-pytest-postgresql = "!=3.0.0"  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
-pytest-shard = "*"
-responses = "*"
-rucio-clients = {version = ">=33.6.0", python = ">=3.9"}  # https://github.com/galaxyproject/galaxy/pull/17156
-selenium = "*"
-urllib3 = "<2"  # Necessary for poetry for resolve deps for Python 3.8+
-seletools = "*"
-Sphinx = ">=4.0"  # support docutils 0.17
-sphinx-rtd-theme = "*"
-statsd = "*"
-testfixtures = "*"
-tuspy = "*"
-twill = ">=3.2.1"  # https://github.com/twill-tools/twill/issues/18
-watchdog = "*"
-Werkzeug = "*"
-
-[tool.poetry.group.typecheck.dependencies]
-mypy = "*"
-boto3-stubs = {version = "*", extras = ["s3"]}
-lxml-stubs = "*"
-pydantic = ">=2.7.4"  # for pydantic.mypy plugin
-types-bleach = "*"
-types-boto = "*"
-types-contextvars = "*"
-types-dataclasses = "*"
-types-docutils = "*"
-types-Markdown = "*"
-types-paramiko = "*"
-types-python-dateutil = "*"
-types-PyYAML = "*"
-types-requests = "*"
-types-setuptools = "*"
-types-six = "*"
-
 [tool.ruff]
 target-version = "py38"
 exclude = [
-  "lib/tool_shed/test/test_data/repos"
+    "lib/tool_shed/test/test_data/repos"
 ]
 
 [tool.ruff.lint]
@@ -229,3 +235,9 @@ keep-runtime-typing = true
 "lib/galaxy/schema/drs/*" = ["UP006", "UP007"]
 "lib/tool_shed_client/schema/trs.py" = ["UP006", "UP007"]
 "lib/tool_shed_client/schema/trs_service_info.py" = ["UP006", "UP007"]
+
+[tool.uv]
+default-groups = []
+extra-index-url = ["https://wheels.galaxyproject.org/simple"]
+index-strategy = "unsafe-best-match"
+package = false
