@@ -29,6 +29,8 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
 )
 from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.xml import GenericXml
+from xml.etree import ElementTree as ET
 
 if TYPE_CHECKING:
     from io import TextIOBase
@@ -813,3 +815,63 @@ def get_next_line(fh):
         # Discard the rest of the line
         fh.readline()
     return line.strip()
+
+class Vtu(GenericXml):
+    """Format for defining VTU (VTK Unstructured Grid) data https://docs.vtk.org/"""
+
+    edam_data = "edam:data_3671"
+    edam_format = "edam:format_3621"
+    file_ext = "vtu"
+
+    MetadataElement(name="file_format", default=None, desc="File format", readonly=True, optional=True, visible=True)
+    MetadataElement(name="num_cells", desc="Number of cells in the mesh", param_type="int", optional=True)
+    MetadataElement(name="num_points", desc="Number of points in the mesh", param_type="int", optional=True)
+
+    def set_meta(self, dataset: DatasetProtocol, **kwd) -> None:
+        """Set metadata for VTU files, including number of cells and points."""
+        try:
+            with open(dataset.file_name, "r") as file:
+                tree = ET.parse(file)
+                root = tree.getroot()
+
+                # Suche nach dem UnstructuredGrid-Knoten
+                unstructured_grid = root.find(".//UnstructuredGrid")
+                if unstructured_grid is not None:
+                    # Suche nach Zell- und Punktinformationen
+                    piece = unstructured_grid.find(".//Piece")
+                    if piece is not None:
+                        num_cells = piece.get("NumberOfCells")
+                        num_points = piece.get("NumberOfPoints")
+
+                        # Setze die Metadaten
+                        dataset.metadata.file_format = "VTK Unstructured Grid"
+                        dataset.metadata.num_cells = int(num_cells) if num_cells else None
+                        dataset.metadata.num_points = int(num_points) if num_points else None
+        except Exception as e:
+            # Logge das Problem und setze Metadaten auf None, falls Parsing fehlschlägt
+            dataset.metadata.file_format = None
+            dataset.metadata.num_cells = None
+            dataset.metadata.num_points = None
+            log.warning(f"Fehler beim Setzen der Metadaten für VTU-Datei: {e}")
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
+            "VTK Unstructured Grid file (VTU)"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """ "Checking for keystring - 'VTKFile type="UnstructuredGrid"'.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'data.vtu' )
+        >>> Vtu().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'solid.xml' )
+        >>> Vtu().sniff( fname )
+        False
+        """
+        return self._has_root_element_in_prefix(file_prefix, 'VTKFile type="UnstructuredGrid"')

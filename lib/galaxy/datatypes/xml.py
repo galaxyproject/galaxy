@@ -271,36 +271,3 @@ class Sbml(GenericXml):
         Checking for keyword - '<sbml' in the first 200 lines.
         """
         return file_prefix.search(SBML_MARKER)
-
-class Vtu(GenericXml):
-    """Format for defining VTU (VTK Unstructured Grid) data https://docs.vtk.org/"""
-
-    edam_data = "edam:data_3671"
-    edam_format = "edam:format_3621"
-    file_ext = "vtu"
-
-    MetadataElement(name="file_format", default=None, desc="File format", readonly=True, optional=True, visible=True)
-    MetadataElement(name="num_cells", desc="Number of cells in the mesh", param_type="int", optional=True)
-    MetadataElement(name="num_points", desc="Number of points in the mesh", param_type="int", optional=True)
-
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        """Set the peek and blurb text"""
-        if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.get_file_name())
-            "VTK Unstructured Grid file (VTU)"
-        else:
-            dataset.peek = "file does not exist"
-            dataset.blurb = "file purged from disk"
-
-    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
-        """ "Checking for keystring - 'VTKFile type="UnstructuredGrid"'.
-
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( 'output.vtu' )
-        >>> Vtu().sniff( fname )
-        True
-        >>> fname = get_test_fname( 'solid.xml' )
-        >>> Vtu().sniff( fname )
-        False
-        """
-        return self._has_root_element_in_prefix(file_prefix, 'VTKFile type="UnstructuredGrid"')
