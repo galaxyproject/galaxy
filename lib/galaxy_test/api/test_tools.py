@@ -2436,12 +2436,15 @@ class TestToolsApi(ApiTestCase, TestsTools):
         output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
         assert output_content.strip() == "123\n456\n456\n0ab"
 
-    def _run_deferred(self, history_id: str, use_cached_job=False, expect_cached_job=False):
+    def _run_deferred(self, history_id: str, use_cached_job=False, expect_cached_job=False, include_correct_hash=True):
+        hashes: Optional[List[Dict[str, str]]] = None
+        if include_correct_hash:
+            hashes = [{"hash_function": "SHA-1", "hash_value": "2d7dcdb10964872752bd6d081725792b3f729ac9"}]
         details = self.dataset_populator.create_deferred_hda(
             history_id,
             "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
             ext="bed",
-            hashes=[{"hash_function": "SHA-1", "hash_value": "65e9d53484d28eef5447bc06fe2d754d1090975a"}],
+            hashes=hashes,
         )
         inputs = {
             "input1": dataset_to_param(details),
@@ -2470,6 +2473,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
         self._run_deferred(history_id)
         # Should just work because input is deferred
         self._run_deferred(history_id, use_cached_job=True, expect_cached_job=True)
+        # Should fail because we don't have a hash
+        self._run_deferred(history_id, use_cached_job=True, expect_cached_job=False, include_correct_hash=False)
 
     @skip_without_tool("metadata_bam")
     def test_run_deferred_dataset_with_metadata_options_filter(self, history_id):
