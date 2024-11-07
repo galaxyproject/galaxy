@@ -2,7 +2,7 @@
 import { BAlert, BTab, BTabs } from "bootstrap-vue";
 import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, toRef, watch } from "vue";
 
-import { type InvocationJobsSummary, type WorkflowInvocationElementView } from "@/api/invocations";
+import { type InvocationJobsSummary } from "@/api/invocations";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -120,16 +120,13 @@ async function pollJobStatesUntilTerminal() {
 }
 
 const {
-    invocation: invocationFromState,
+    invocation,
     invocationSchedulingTerminal,
     invocationAndJobTerminal,
     jobStatesSummary,
     monitorState,
     clearStateMonitor,
-} = useInvocationState(toRef(props, "invocationId"));
-
-// TODO: This is a workaround to type invocation; I would've expected it to already be typed
-const invocation = computed(() => invocationFromState.value as WorkflowInvocationElementView | undefined);
+} = useInvocationState(toRef(props, "invocationId"), "legacy");
 
 onMounted(monitorState);
 onBeforeUnmount(clearStateMonitor);

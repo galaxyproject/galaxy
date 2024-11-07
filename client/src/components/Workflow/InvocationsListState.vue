@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, toRef } from "vue";
+import { onBeforeUnmount, onMounted, toRef } from "vue";
 
-import type { WorkflowInvocationElementView } from "@/api/invocations";
 import { useInvocationState } from "@/components/WorkflowInvocationState/usesInvocationState";
 
 import HelpText from "@/components/Help/HelpText.vue";
@@ -17,17 +16,14 @@ interface Props {
 const props = defineProps<Props>();
 
 const {
-    invocation: invocationFromState,
+    invocation,
     invocationState,
     invocationSchedulingTerminal,
     invocationAndJobTerminal,
     jobStatesSummary,
     monitorState,
     clearStateMonitor,
-} = useInvocationState(toRef(props, "invocationId"), true);
-
-// TODO: This is a workaround to type invocation; I would've expected it to already be typed
-const invocation = computed(() => invocationFromState.value as WorkflowInvocationElementView | undefined);
+} = useInvocationState(toRef(props, "invocationId"), "step_states");
 
 onMounted(monitorState);
 onBeforeUnmount(clearStateMonitor);

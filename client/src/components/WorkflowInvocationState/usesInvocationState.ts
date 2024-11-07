@@ -1,20 +1,31 @@
 import { computed, type Ref } from "vue";
 
-import { type InvocationJobsSummary } from "@/api/invocations";
+import {
+    type InvocationJobsSummary,
+    type LegacyWorkflowInvocationElementView,
+    type WorkflowInvocationElementView,
+    type WorkflowInvocationStepStatesView,
+} from "@/api/invocations";
 import { useInvocationStore } from "@/stores/invocationStore";
 
 import { isTerminal, jobCount } from "./util";
 
 type OptionalInterval = ReturnType<typeof setInterval> | null;
 
-export function useInvocationState(invocationId: Ref<string>, fetchMinimal: boolean = false) {
+export function useInvocationState(invocationId: Ref<string>, view: "element" | "step_states" | "legacy" = "element") {
     const invocationStore = useInvocationStore();
 
     const invocation = computed(() => {
-        if (fetchMinimal) {
-            return invocationStore.getInvocationWithStepStatesById(invocationId.value);
+        if (view === "step_states") {
+            return invocationStore.getInvocationWithStepStatesById(
+                invocationId.value
+            ) as WorkflowInvocationStepStatesView;
+        } else if (view === "legacy") {
+            return invocationStore.getInvocationWithJobStepIdsById(
+                invocationId.value
+            ) as LegacyWorkflowInvocationElementView;
         } else {
-            return invocationStore.getInvocationById(invocationId.value);
+            return invocationStore.getInvocationById(invocationId.value) as WorkflowInvocationElementView;
         }
     });
 
@@ -51,8 +62,10 @@ export function useInvocationState(invocationId: Ref<string>, fetchMinimal: bool
 
     async function pollStepStatesUntilTerminal() {
         if (!invocation.value || !invocationSchedulingTerminal.value) {
-            if (fetchMinimal) {
+            if (view === "step_states") {
                 await invocationStore.fetchInvocationWithStepStatesForId({ id: invocationId.value });
+            } else if (view === "legacy") {
+                await invocationStore.fetchInvocationWithJobStepIdsForId({ id: invocationId.value });
             } else {
                 await invocationStore.fetchInvocationForId({ id: invocationId.value });
             }

@@ -8,7 +8,7 @@ import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
 
 import { isRegisteredUser } from "@/api";
-import type { WorkflowInvocationElementView } from "@/api/invocations";
+import type { WorkflowInvocation } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useUserStore } from "@/stores/userStore";
 import type { Workflow } from "@/stores/workflowStore";
@@ -25,7 +25,7 @@ import WorkflowInvocationsCount from "../Workflow/WorkflowInvocationsCount.vue";
 import WorkflowRunButton from "../Workflow/WorkflowRunButton.vue";
 
 interface Props {
-    invocation: WorkflowInvocationElementView;
+    invocation: WorkflowInvocation;
     fromPanel?: boolean;
 }
 

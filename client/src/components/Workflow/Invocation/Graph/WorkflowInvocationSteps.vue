@@ -4,7 +4,7 @@ import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, nextTick, ref, watch } from "vue";
 
-import type { WorkflowInvocationElementView } from "@/api/invocations";
+import type { LegacyWorkflowInvocationElementView } from "@/api/invocations";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import type { GraphStep } from "@/composables/useInvocationGraph";
 import type { Workflow } from "@/stores/workflowStore";
@@ -19,7 +19,7 @@ interface Props {
     /** The store id for the invocation graph */
     storeId: string;
     /** The invocation to display */
-    invocation: WorkflowInvocationElementView;
+    invocation: LegacyWorkflowInvocationElementView;
     /** The workflow which was run */
     workflow: Workflow;
     /** Whether the invocation graph is hidden */

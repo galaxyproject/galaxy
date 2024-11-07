@@ -2,7 +2,7 @@
 import { BAlert, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { type InvocationJobsSummary, type WorkflowInvocationElementView } from "@/api/invocations";
+import { type InvocationJobsSummary, type LegacyWorkflowInvocationElementView } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { getRootFromIndexLink } from "@/onload";
 import { withPrefix } from "@/utils/redirect";
@@ -22,7 +22,7 @@ function getUrl(path: string): string {
 }
 
 interface Props {
-    invocation: WorkflowInvocationElementView;
+    invocation: LegacyWorkflowInvocationElementView;
     invocationAndJobTerminal: boolean;
     invocationSchedulingTerminal: boolean;
     isFullPage?: boolean;

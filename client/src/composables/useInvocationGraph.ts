@@ -11,7 +11,11 @@ import {
 import { computed, type Ref, ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type InvocationStep, type StepJobSummary, type WorkflowInvocationElementView } from "@/api/invocations";
+import {
+    type LegacyInvocationStep,
+    type LegacyWorkflowInvocationElementView,
+    type StepJobSummary,
+} from "@/api/invocations";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
@@ -67,7 +71,7 @@ const ALL_INSTANCES_STATES = ["deleted", "skipped", "new", "queued"];
  * @param workflowId - The id of the workflow that was invoked
  */
 export function useInvocationGraph(
-    invocation: Ref<WorkflowInvocationElementView>,
+    invocation: Ref<LegacyWorkflowInvocationElementView>,
     workflowId: string | undefined,
     workflowVersion: number | undefined
 ) {
@@ -169,7 +173,7 @@ export function useInvocationGraph(
                     invocationStepSummary = stepsJobsSummary.find((stepJobSummary: StepJobSummary) => {
                         if (stepJobSummary.model === "ImplicitCollectionJobs") {
                             return stepJobSummary.id === invocationStep.implicit_collection_jobs_id;
-                        } else {
+                        } else if (stepJobSummary.model === "Job") {
                             return stepJobSummary.id === invocationStep.job_id;
                         }
                     });
@@ -194,7 +198,7 @@ export function useInvocationGraph(
      */
     function updateStep(
         graphStep: GraphStep,
-        invocationStep: InvocationStep | undefined,
+        invocationStep: LegacyInvocationStep | undefined,
         invocationStepSummary: StepJobSummary | undefined
     ) {
         /** The new state for the graph step */
@@ -240,9 +244,11 @@ export function useInvocationGraph(
 
             // If the state still hasn't been set, set it based on the populated state
             if (!newState) {
-                if (populatedState === "scheduled" || populatedState === "ready") {
-                    newState = "queued";
-                } else if (populatedState === "resubmitted") {
+                // These states are apparently not in the schema anymore
+                // if (populatedState === "scheduled" || populatedState === "ready") {
+                //     newState = "queued";
+                // } else
+                if (populatedState === "resubmitted") {
                     newState = "new";
                 } else if (populatedState === "failed") {
                     newState = "error";

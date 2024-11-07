@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { type InvocationStep, type WorkflowInvocationElementView } from "@/api/invocations";
+import {
+    type LegacyWorkflowInvocationElementView,
+    type WorkflowInvocationElementView,
+    type WorkflowInvocationStepStatesView,
+} from "@/api/invocations";
 
 import ProgressBar from "@/components/ProgressBar.vue";
 
 interface Props {
-    invocation?: WorkflowInvocationElementView;
+    invocation?: WorkflowInvocationElementView | WorkflowInvocationStepStatesView | LegacyWorkflowInvocationElementView;
     invocationState: string;
     invocationSchedulingTerminal: boolean;
 }
@@ -24,12 +28,12 @@ const stepStates = computed<StepStateType>(() => {
     if (!props.invocation) {
         return {};
     }
-    const steps: InvocationStep[] = props.invocation?.steps || [];
+    const steps = props.invocation?.steps || [];
     for (const step of steps) {
-        if (!step) {
+        const stepState = step.state;
+        if (!stepState) {
             continue;
         }
-        const stepState: string = step.state;
         if (!stepStates[stepState]) {
             stepStates[stepState] = 1;
         } else {

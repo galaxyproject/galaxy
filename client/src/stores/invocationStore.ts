@@ -21,6 +21,16 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         return data;
     }
 
+    async function fetchInvocationDetailsJobStepIds(params: FetchParams): Promise<WorkflowInvocation> {
+        const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}", {
+            params: { path: { invocation_id: params.id }, query: { legacy_job_state: true } },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+        return data;
+    }
+
     async function fetchInvocationJobsSummary(params: FetchParams): Promise<InvocationJobsSummary> {
         const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}/jobs_summary", {
             params: { path: { invocation_id: params.id } },
@@ -43,7 +53,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
 
     async function fetchInvocationStepStateDetails(params: FetchParams): Promise<WorkflowInvocationStepStatesView> {
         const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}", {
-            params: { path: { invocation_id: params.id }, view: "step_states" },
+            params: { path: { invocation_id: params.id }, query: { view: "step_states" } },
         });
         if (error) {
             rethrowSimple(error);
@@ -53,6 +63,9 @@ export const useInvocationStore = defineStore("invocationStore", () => {
 
     const { getItemById: getInvocationById, fetchItemById: fetchInvocationForId } =
         useKeyedCache<WorkflowInvocation>(fetchInvocationDetails);
+
+    const { getItemById: getInvocationWithJobStepIdsById, fetchItemById: fetchInvocationWithJobStepIdsForId } =
+        useKeyedCache<WorkflowInvocation>(fetchInvocationDetailsJobStepIds);
 
     const { getItemById: getInvocationWithStepStatesById, fetchItemById: fetchInvocationWithStepStatesForId } =
         useKeyedCache<WorkflowInvocation>(fetchInvocationStepStateDetails);
@@ -66,6 +79,8 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     return {
         getInvocationById,
         fetchInvocationForId,
+        getInvocationWithJobStepIdsById,
+        fetchInvocationWithJobStepIdsForId,
         getInvocationJobsSummaryById,
         fetchInvocationJobsSummaryForId,
         getInvocationStepById,
