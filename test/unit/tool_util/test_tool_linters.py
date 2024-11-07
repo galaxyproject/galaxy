@@ -638,11 +638,27 @@ OUTPUTS_DUPLICATED_NAME_LABEL = """
         <data name="valid_name" format="fasta"/>
         <data name="valid_name" format="fasta"/>
         <data name="another_valid_name" format="fasta" label="same label may be OK if there is a filter">
-            <filter>a condition</filter>
+            <filter>a and condition</filter>
         </data>
         <data name="yet_another_valid_name" format="fasta" label="same label may be OK if there is a filter">
-            <filter>another condition</filter>
+            <filter>another or condition</filter>
         </data>
+    </outputs>
+</tool>
+"""
+
+# check if filters are valid python expressions
+OUTPUTS_FILTER_EXPRESSION = """
+<tool id="id" name="name">
+    <outputs>
+        <data name="another_valid_name" format="fasta" label="a label">
+            <filter>an invalid condition</filter>
+            <filter>an and condition</filter>
+        </data>
+        <collection name="yet_another_valid_name" type="list" format="fasta" label="another label">
+            <filter>another invalid condition</filter>
+            <filter>another or condition</filter>
+        </collection>
     </outputs>
 </tool>
 """
@@ -1678,6 +1694,25 @@ def test_outputs_duplicated_name_label(lint_ctx):
     assert len(lint_ctx.error_messages) == 1
 
 
+def test_outputs_filter_expression(lint_ctx):
+    """ """
+    tool_source = get_xml_tool_source(OUTPUTS_FILTER_EXPRESSION)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert "2 outputs found." in lint_ctx.info_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
+    assert (
+        "Filter 'another invalid condition' is no valid expression: invalid syntax (<unknown>, line 1)"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Filter 'another invalid condition' is no valid expression: invalid syntax (<unknown>, line 1)"
+        in lint_ctx.error_messages
+    )
+    assert len(lint_ctx.error_messages) == 2
+
+
 def test_stdio_default_for_default_profile(lint_ctx):
     tool_source = get_xml_tool_source(STDIO_DEFAULT_FOR_DEFAULT_PROFILE)
     run_lint_module(lint_ctx, stdio, tool_source)
@@ -2145,7 +2180,7 @@ def test_skip_by_module(lint_ctx):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 132
+    assert len(linter_names) == 133
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [
