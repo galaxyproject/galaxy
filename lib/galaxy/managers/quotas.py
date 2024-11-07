@@ -153,8 +153,12 @@ class QuotaManager:
                 raise ActionInputError("One or more invalid group id has been provided.")
             self.quota_agent.set_entity_quota_associations(quotas=[quota], users=in_users, groups=in_groups)
             self.sa_session.refresh(quota)
-            if len(quota.users) != len(in_users) or len(quota.groups) != len(in_groups):
+            if len(quota.users) != len(in_users) and len(quota.groups) != len(in_groups):
                 return f"Quota '{quota.name}' has been updated with {len(in_users)} associated users and {len(in_groups)} associated groups."
+            elif len(quota.users) != len(in_users):
+                return f"Quota '{quota.name}' has been updated with {len(in_users)} associated users."
+            elif len(quota.groups) != len(in_groups):
+                return f"Quota '{quota.name}' has been updated with {len(in_groups)} associated groups."
             else:
                 return None
 
