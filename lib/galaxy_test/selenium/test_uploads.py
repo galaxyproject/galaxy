@@ -182,7 +182,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         self.upload_start_click()
         self.upload_queue_local_file(self.get_filename("1.sam"))
         self.upload_paste_data("some pasted data")
-        self.wait_for_and_click_selector("button#btn-close")
+        self.components.upload.close_button.wait_for_and_click()
 
         # reopen modal and check that the files are still there
         self.upload_start_click()
@@ -191,12 +191,12 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
         # perform upload and close modal
         self.upload_start()
-        self.wait_for_and_click_selector("button#btn-close")
+        self.components.upload.close_button.wait_for_and_click()
 
         # add another pasted file, but don't upload it
         self.upload_start_click()
         self.upload_paste_data("some more pasted data")
-        self.wait_for_and_click_selector("button#btn-close")
+        self.components.upload.close_button.wait_for_and_click()
 
         # reopen modal and see 2 uploaded, 1 yet to upload
         self.upload_start_click()
