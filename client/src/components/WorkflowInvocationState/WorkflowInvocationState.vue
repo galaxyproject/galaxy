@@ -128,6 +128,7 @@ const {
     clearStateMonitor,
 } = useInvocationState(toRef(props, "invocationId"));
 
+// TODO: This is a workaround to type invocation; I would've expected it to already be typed
 const invocation = computed(() => invocationFromState.value as WorkflowInvocationElementView | undefined);
 
 onMounted(monitorState);

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { InvocationJobsSummary } from "@/api/invocations";
+import { type InvocationJobsSummary } from "@/api/invocations";
 
 import {
     errorCount as jobStatesSummaryErrorCount,

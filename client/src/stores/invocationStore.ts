@@ -48,7 +48,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         if (error) {
             rethrowSimple(error);
         }
-        return data;
+        return data as WorkflowInvocationStepStatesView;
     }
 
     const { getItemById: getInvocationById, fetchItemById: fetchInvocationForId } =

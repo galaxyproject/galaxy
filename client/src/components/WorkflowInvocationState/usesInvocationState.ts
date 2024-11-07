@@ -1,6 +1,6 @@
 import { computed, type Ref } from "vue";
 
-import { InvocationJobsSummary } from "@/api/invocations";
+import { type InvocationJobsSummary } from "@/api/invocations";
 import { useInvocationStore } from "@/stores/invocationStore";
 
 import { isTerminal, jobCount } from "./util";

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { InvocationStep, WorkflowInvocationElementView } from "@/api/invocations";
+import { type InvocationStep, type WorkflowInvocationElementView } from "@/api/invocations";
 
 import ProgressBar from "@/components/ProgressBar.vue";
 
