@@ -1836,7 +1836,9 @@ class Tool(UsesDictVisibleKeys):
         # Expand these out to individual parameters for given jobs (tool executions).
         expanded_incomings: List[ToolStateJobInstanceT]
         collection_info: Optional[MatchingCollections]
-        expanded_incomings, collection_info = expand_meta_parameters(request_context, self, incoming)
+        expanded_incomings, collection_info = expand_meta_parameters(
+            request_context, self, incoming, input_format=input_format
+        )
 
         self._ensure_expansion_is_valid(expanded_incomings, rerun_remap_job_id)
 

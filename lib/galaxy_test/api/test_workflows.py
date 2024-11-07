@@ -1234,7 +1234,7 @@ steps:
             == "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
         )
         assert original_workflow.get("source_metadata").get("trs_version_id") == "master"
-        assert original_workflow.get("source_metadata").get("trs_server") == ""
+        assert not original_workflow.get("source_metadata").get("trs_server")
         assert original_workflow.get("source_metadata").get("trs_url") == (
             "https://dockstore.org/api/ga4gh/trs/v2/tools/"
             "%23workflow%2Fgithub.com%2Fjmchilton%2Fgalaxy-workflow-dockstore-example-1%2Fmycoolworkflow/"
@@ -1264,7 +1264,7 @@ steps:
         assert "COVID-19: variation analysis reporting" in original_workflow["name"]
         assert original_workflow.get("source_metadata").get("trs_tool_id") == "109"
         assert original_workflow.get("source_metadata").get("trs_version_id") == "5"
-        assert original_workflow.get("source_metadata").get("trs_server") == ""
+        assert not original_workflow.get("source_metadata").get("trs_server")
         assert (
             original_workflow.get("source_metadata").get("trs_url")
             == "https://workflowhub.eu/ga4gh/trs/v2/tools/109/versions/5"
@@ -3498,6 +3498,39 @@ input_c:
         assert history_id != new_history_id
         invocation_id = run_workflow_dict["id"]
         self.workflow_populator.wait_for_invocation_and_jobs(new_history_id, workflow_id, invocation_id)
+
+    def test_invocation_job_metrics_simple(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id, workflow_id=summary.workflow_id, invocation_id=summary.invocation_id
+            )
+            job_metrics = self._get(f"invocations/{summary.invocation_id}/metrics").json()
+            galaxy_slots = [m for m in job_metrics if m["name"] == "galaxy_slots"]
+            assert len(galaxy_slots) == 1
+
+    def test_invocation_job_metrics_map_over(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                WORKFLOW_SIMPLE,
+                test_data={
+                    "input1": {
+                        "collection_type": "list",
+                        "name": "the_dataset_list",
+                        "elements": [
+                            {"identifier": "el1", "value": "1.fastq", "type": "File"},
+                            {"identifier": "el2", "value": "1.fastq", "type": "File"},
+                        ],
+                    }
+                },
+                history_id=history_id,
+            )
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id, workflow_id=summary.workflow_id, invocation_id=summary.invocation_id
+            )
+            job_metrics = self._get(f"invocations/{summary.invocation_id}/metrics").json()
+            galaxy_slots = [m for m in job_metrics if m["name"] == "galaxy_slots"]
+            assert len(galaxy_slots) == 2
 
     def test_workflow_output_dataset(self):
         with self.dataset_populator.test_history() as history_id:

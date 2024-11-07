@@ -2068,6 +2068,7 @@ class DataToolParameter(BaseDataToolParameter):
         self.tag = tag
         self.is_dynamic = True
         self._parse_options(input_source)
+        self._parse_allow_uri_if_protocol(input_source)
         # Load conversions required for the dataset input
         self.conversions = []
         self.default_object = input_source.parse_default()
@@ -2088,6 +2089,12 @@ class DataToolParameter(BaseDataToolParameter):
                         self.name,
                     )
                 self.conversions.append((name, conv_extension, [conv_type]))
+
+    def _parse_allow_uri_if_protocol(self, input_source):
+        # In case of deferred datasets, if the source URI is prefixed with one of the values in this list,
+        # the dataset will behave as an URI and will not be materialized into a file path.
+        allow_uri_if_protocol = input_source.get("allow_uri_if_protocol", None)
+        self.allow_uri_if_protocol = allow_uri_if_protocol.split(",") if allow_uri_if_protocol else []
 
     def from_json(self, value, trans, other_values=None):
         session = trans.sa_session

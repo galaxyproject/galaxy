@@ -41,7 +41,7 @@ class TestLanding(BaseTestCase):
 
     def setUp(self):
         super().setUp()
-        self.workflow_contents_manager = WorkflowContentsManager(self.app)
+        self.workflow_contents_manager = WorkflowContentsManager(self.app, self.app.trs_proxy)
         self.landing_manager = LandingRequestManager(
             self.trans.sa_session, self.app.security, self.workflow_contents_manager
         )

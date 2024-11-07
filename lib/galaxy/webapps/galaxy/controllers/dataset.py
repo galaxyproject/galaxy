@@ -431,8 +431,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
         return data, None
 
-    @web.expose
-    def display_by_username_and_slug(self, trans, username, slug, filename=None, preview=True, **kwargs):
+    def _display_by_username_and_slug(self, trans, username, slug, filename=None, preview=True, **kwargs):
         """Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id."""
         dataset = self._check_dataset(trans, slug)
         # Filename used for composite types.

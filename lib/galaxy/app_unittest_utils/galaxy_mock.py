@@ -156,6 +156,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.interactivetool_manager = Bunch(create_interactivetool=lambda *args, **kwargs: None)
         self.is_job_handler = False
         self.biotools_metadata_source = None
+        self.trs_proxy = Bunch()
         set_thread_app(self)
 
         def url_for(*args, **kwds):

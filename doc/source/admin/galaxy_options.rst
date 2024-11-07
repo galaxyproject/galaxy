@@ -5659,6 +5659,3 @@
     to the user. Currently only affects s3fs file sources.
 :Default: ``60``
 :Type: int
-
-
-

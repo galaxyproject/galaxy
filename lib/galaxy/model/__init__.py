@@ -100,7 +100,10 @@ from sqlalchemy import (
     update,
     VARCHAR,
 )
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import (
+    CompileError,
+    OperationalError,
+)
 from sqlalchemy.ext import hybrid
 from sqlalchemy.ext.associationproxy import (
     association_proxy,
@@ -1546,6 +1549,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         "galaxy_version",
         "command_version",
         "copied_from_job_id",
+        "user_id",
     ]
 
     _numeric_metric = JobMetricNumeric
@@ -2737,6 +2741,7 @@ class FakeDatasetAssociation:
     def __init__(self, dataset: Optional["Dataset"] = None) -> None:
         self.dataset = dataset
         self.metadata: Dict = {}
+        self.has_deferred_data = False
 
     def get_file_name(self, sync_cache: bool = True) -> str:
         assert self.dataset
@@ -3307,16 +3312,21 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         table = self.__table__
         history_id = cached_id(self)
         update_stmt = update(table).where(table.c.id == history_id).values(hid_counter=table.c.hid_counter + n)
+        update_returning_stmnt = update_stmt.returning(table.c.hid_counter)
 
-        with engine.begin() as conn:
-            if engine.name in ["postgres", "postgresql"]:
-                stmt = update_stmt.returning(table.c.hid_counter)
-                updated_hid = conn.execute(stmt).scalar()
-                hid = updated_hid - n
-            else:
-                select_stmt = select(table.c.hid_counter).where(table.c.id == history_id).with_for_update()
-                hid = conn.execute(select_stmt).scalar()
-                conn.execute(update_stmt)
+        if engine.name != "sqlite":
+            with engine.begin() as conn:
+                hid = conn.execute(update_returning_stmnt).scalar() - n
+        else:
+            try:
+                hid = session.execute(update_returning_stmnt).scalar() - n
+            except (CompileError, OperationalError):
+                # The RETURNING clause was added to SQLite in version 3.35.0.
+                # Not using FOR UPDATE either, since that was added in 3.45.0,
+                # and anyway does a whole-table lock
+                select_stmt = select(table.c.hid_counter).where(table.c.id == history_id)
+                hid = session.execute(select_stmt).scalar()
+                session.execute(update_stmt)
 
         session.expire(self, ["hid_counter"])
         return hid
@@ -4684,6 +4694,13 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     @property
     def has_deferred_data(self):
         return self.dataset.state == Dataset.states.DEFERRED
+
+    @property
+    def deferred_source_uri(self):
+        if self.has_deferred_data and self.sources:
+            # Assuming the first source is the deferred source
+            return self.sources[0].source_uri
+        return None
 
     @property
     def state(self):
@@ -7827,7 +7844,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     reports_config: Mapped[Optional[bytes]] = mapped_column(JSONType)
     creator_metadata: Mapped[Optional[bytes]] = mapped_column(JSONType)
     license: Mapped[Optional[str]] = mapped_column(TEXT)
-    source_metadata: Mapped[Optional[bytes]] = mapped_column(JSONType)
+    source_metadata: Mapped[Optional[Dict[str, str]]] = mapped_column(JSONType)
     uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType)
 
     steps = relationship(

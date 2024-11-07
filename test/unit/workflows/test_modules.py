@@ -428,7 +428,9 @@ def _output_step(step_input_def, step_output_def) -> Dict[str, Any]:
 @pytest.mark.parametrize("test_case", _construct_steps_for_map_over())
 def test_subworkflow_map_over_type(test_case):
     trans = MockTrans()
-    new_steps = WorkflowContentsManager(app=trans.app)._resolve_collection_type(test_case.steps)
+    new_steps = WorkflowContentsManager(app=trans.app, trs_proxy=trans.app.trs_proxy)._resolve_collection_type(
+        test_case.steps
+    )
     assert (
         new_steps[1]["outputs"][0].get("collection_type") == test_case.expected_collection_type
     ), "Expected collection_type '{}' for a '{}' input module, a '{}' input and a '{}' output, got collection_type '{}' instead".format(
