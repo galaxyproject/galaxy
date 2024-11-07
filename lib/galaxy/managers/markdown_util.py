@@ -63,7 +63,6 @@ from galaxy.util.sanitize_html import sanitize_html
 from .markdown_parse import (
     EMBED_DIRECTIVE_REGEX,
     GALAXY_MARKDOWN_FUNCTION_CALL_LINE,
-    VALID_ARGUMENTS,
     validate_galaxy_markdown,
 )
 
@@ -97,7 +96,7 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
         if id_match := re.search(ENCODED_ID_PATTERN, line):
             object_id = id_match.group(2)
             decoded_id = trans.security.decode_id(object_id)
-            line = line.replace(id_match.group(), "{}={}".format(id_match.group(1), decoded_id))
+            line = line.replace(id_match.group(), f"{id_match.group(1)}={decoded_id}")
         return (line, False)
 
     def _remap_embed_container(match):
@@ -107,7 +106,7 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
         if id_match := re.search(ENCODED_ID_PATTERN, whole_match):
             object_id = id_match.group(2)
             decoded_id = trans.security.decode_id(object_id)
-            whole_match = whole_match.replace(id_match.group(), "{}={:d}".format(id_match.group(1), decoded_id))
+            whole_match = whole_match.replace(id_match.group(), f"{id_match.group(1)}={decoded_id}")
 
         return whole_match
 
@@ -309,7 +308,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             if id_match := re.search(UNENCODED_ID_PATTERN, whole_match):
                 object_id = id_match.group(2)
                 encoded_id = trans.security.encode_id(object_id)
-                whole_match = whole_match.replace(id_match.group(), "{}={}".format(id_match.group(1), encoded_id))
+                whole_match = whole_match.replace(id_match.group(), f"{id_match.group(1)}={encoded_id}")
 
             return whole_match
 
