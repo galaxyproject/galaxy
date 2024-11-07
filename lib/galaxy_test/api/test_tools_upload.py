@@ -254,6 +254,7 @@ class TestToolsUpload(ApiTestCase):
                 "class": "File",
                 "format": "txt",
                 "path": "test-data/simple_line_no_newline.txt",
+                "hashes": [{"hash_function": "SHA-1", "hash_value": "f030155d3459c233efd37e13bc1061c1dc744ebf"}],
             }
         }
         inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
@@ -261,6 +262,8 @@ class TestToolsUpload(ApiTestCase):
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         # By default this appends the newline.
         assert content == "This is a line of text.\n"
+        dataset = self.dataset_populator.get_history_dataset_details(history_id, content_id=dataset["id"])
+        assert dataset["hashes"][0]["hash_value"] == "f030155d3459c233efd37e13bc1061c1dc744ebf"
 
     def test_stage_object(self, history_id: str) -> None:
         job = {"input1": "randomstr"}
