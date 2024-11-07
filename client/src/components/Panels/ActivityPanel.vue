@@ -77,7 +77,7 @@ const hasGoToAll = computed(() => props.goToAllTitle && props.href);
         display: flex;
         flex-direction: column;
         flex-grow: 1;
-        overflow-y: hidden;
+        overflow-y: auto;
         position: relative;
         button:first-child {
             background: none;
