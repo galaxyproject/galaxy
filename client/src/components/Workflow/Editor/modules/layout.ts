@@ -118,14 +118,12 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }) {
     try {
         const elkNode = await elk.layout(newGraph);
         // Reapply positions to galaxy graph from our relayed out graph.
-        const newSteps = elkNode.children?.map((q) => {
-            const newStep = {
-                ...steps[q.id],
-                position: { top: roundToSnappingDistance(q.y as number), left: roundToSnappingDistance(q.x as number) },
-            };
-            return newStep;
-        });
-        return newSteps;
+        const positions = elkNode.children?.map((q) => ({
+            id: q.id,
+            x: roundToSnappingDistance(q.x as number),
+            y: roundToSnappingDistance(q.y as number),
+        }));
+        return positions;
     } catch (error) {
         console.error(error);
     }

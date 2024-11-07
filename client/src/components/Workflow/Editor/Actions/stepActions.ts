@@ -4,7 +4,7 @@ import { useRefreshFromStore } from "@/stores/refreshFromStore";
 import { LazyUndoRedoAction, UndoRedoAction, type UndoRedoStore } from "@/stores/undoRedoStore";
 import { type Connection, type WorkflowConnectionStore } from "@/stores/workflowConnectionStore";
 import { type WorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { type NewStep, type Step, type WorkflowStepStore } from "@/stores/workflowStepStore";
+import { type NewStep, type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { cloneStepWithUniqueLabel, getLabelSet } from "./cloneStep";
@@ -412,6 +412,74 @@ export class ToggleStepSelectedAction extends UndoRedoAction {
 
     undo() {
         this.stateStore.setStepMultiSelected(this.stepId, !this.toggleTo);
+    }
+}
+
+export class AutoLayoutAction extends UndoRedoAction {
+    stepStore;
+    positions: { id: string; x: number; y: number }[];
+    oldPositions: { id: string; x: number; y: number }[];
+    workflowId;
+    ran;
+
+    constructor(workflowId: string) {
+        super();
+
+        this.workflowId = workflowId;
+        this.stepStore = useWorkflowStepStore(workflowId);
+        this.positions = [];
+        this.oldPositions = [];
+        this.ran = false;
+    }
+
+    get name() {
+        return "auto layout";
+    }
+
+    private mapPositionsToStore(positions: { id: string; x: number; y: number }[]) {
+        positions.map((p) => {
+            const step = this.stepStore.steps[p.id];
+            if (step) {
+                this.stepStore.updateStep({
+                    ...step,
+                    position: {
+                        top: p.y,
+                        left: p.x,
+                    },
+                });
+            }
+        });
+    }
+
+    async run() {
+        this.ran = true;
+
+        this.oldPositions = Object.values(this.stepStore.steps).map((step) => ({
+            id: `${step.id}`,
+            x: step.position?.left ?? 0,
+            y: step.position?.top ?? 0,
+        }));
+
+        const { autoLayout } = await import(
+            /* webpackChunkName: "workflowLayout" */ "@/components/Workflow/Editor/modules/layout"
+        );
+
+        const newPositions = await autoLayout(this.workflowId, this.stepStore.steps);
+        assertDefined(newPositions);
+        this.positions = newPositions;
+
+        if (this.ran) {
+            this.mapPositionsToStore(this.positions);
+        }
+    }
+
+    undo() {
+        this.ran = false;
+        this.mapPositionsToStore(this.oldPositions);
+    }
+
+    redo() {
+        this.mapPositionsToStore(this.positions);
     }
 }
 

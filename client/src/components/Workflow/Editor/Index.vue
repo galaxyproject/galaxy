@@ -202,7 +202,7 @@ import { LastQueue } from "@/utils/lastQueue";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { Services } from "../services";
-import { InsertStepAction, useStepActions } from "./Actions/stepActions";
+import { AutoLayoutAction, InsertStepAction, useStepActions } from "./Actions/stepActions";
 import { CopyIntoWorkflowAction, SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { useSpecialWorkflowActivities, workflowEditorActivities } from "./modules/activities";
@@ -757,11 +757,8 @@ export default {
             }
         },
         onLayout() {
-            return import(/* webpackChunkName: "workflowLayout" */ "./modules/layout.ts").then((layout) => {
-                layout.autoLayout(this.id, this.steps).then((newSteps) => {
-                    newSteps.map((step) => this.stepStore.updateStep(step));
-                });
-            });
+            const action = new AutoLayoutAction(this.id);
+            this.undoRedoStore.applyAction(action);
         },
         onAnnotation(nodeId, newAnnotation) {
             this.stepActions.setAnnotation(this.steps[nodeId], newAnnotation);
