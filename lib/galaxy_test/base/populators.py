@@ -1023,9 +1023,7 @@ class BaseDatasetPopulator(BasePopulator):
     def describe_tool_execution(self, tool_id: str) -> "DescribeToolExecution":
         return DescribeToolExecution(self, tool_id)
 
-    def materialize_dataset_instance(
-        self, history_id: str, id: str, source: str = "hda", validate_hashes: bool = False
-    ):
+    def materialize_dataset_instance(self, history_id: str, id: str, source: str = "hda"):
         payload: Dict[str, Any]
         if source == "ldda":
             url = f"histories/{history_id}/materialize"
@@ -1036,8 +1034,6 @@ class BaseDatasetPopulator(BasePopulator):
         else:
             url = f"histories/{history_id}/contents/datasets/{id}/materialize"
             payload = {}
-        if validate_hashes:
-            payload["validate_hashes"] = True
         create_response = self._post(url, payload, json=True)
         api_asserts.assert_status_code_is_ok(create_response)
         create_response_json = create_response.json()
@@ -2780,7 +2776,6 @@ class LibraryPopulator:
         payload = {
             "history_id": history_id,  # TODO: Shouldn't be needed :(
             "targets": targets,
-            "validate_hashes": True,
         }
         return library, self.dataset_populator.fetch(payload, assert_ok=assert_ok)
 
