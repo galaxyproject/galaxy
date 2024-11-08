@@ -1753,16 +1753,16 @@ def test_outputs_filter_expression(lint_ctx):
     assert "2 outputs found." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
-    assert not lint_ctx.warn_messages
     assert (
         "Filter 'another invalid condition' is no valid expression: invalid syntax (<unknown>, line 1)"
-        in lint_ctx.error_messages
+        in lint_ctx.warn_messages
     )
     assert (
         "Filter 'another invalid condition' is no valid expression: invalid syntax (<unknown>, line 1)"
-        in lint_ctx.error_messages
+        in lint_ctx.warn_messages
     )
-    assert len(lint_ctx.error_messages) == 2
+    assert len(lint_ctx.warn_messages) == 2
+    assert not lint_ctx.error_messages
 
 
 def test_stdio_default_for_default_profile(lint_ctx):

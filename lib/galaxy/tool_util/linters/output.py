@@ -87,7 +87,7 @@ class OutputsFilterExpression(Linter):
             try:
                 ast.parse(filter.text, mode="eval")
             except Exception as e:
-                lint_ctx.error(
+                lint_ctx.warn(
                     f"Filter '{filter.text}' is no valid expression: {str(e)}",
                     linter=cls.name(),
                     node=filter,
