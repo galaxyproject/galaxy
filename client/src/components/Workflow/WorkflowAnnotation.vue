@@ -63,8 +63,8 @@ const workflowTags = computed(() => {
                     <FontAwesomeIcon :icon="faClock" class="mr-1" />edited
                     <UtcDate :date="workflow.update_time" mode="elapsed" />
                 </i>
-                <span v-if="invocationUpdateTime" class="d-flex flex-gapx-1 align-items-center">
-                    <FontAwesomeIcon :icon="faHdd" />History:
+                <span class="d-flex flex-gapx-1 align-items-center">
+                    <FontAwesomeIcon :icon="faHdd" />Input History:
                     <SwitchToHistoryLink :history-id="props.historyId" />
                 </span>
             </div>
