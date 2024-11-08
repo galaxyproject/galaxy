@@ -140,7 +140,7 @@ class FetchUploadToolAction(BaseUploadToolAction):
             if destination_type == "hdca":
                 _precreate_fetched_collection_instance(trans, history, target, outputs)
 
-        incoming["request_json"] = json.dumps(request)
+        incoming["request_json"] = json.dumps(request, ensure_ascii=False)
         return self._create_job(trans, incoming, tool, None, outputs, history=history)
 
 

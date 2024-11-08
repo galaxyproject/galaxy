@@ -86,7 +86,7 @@ class ToolsService(ServiceBase):
             clean_payload[key] = value
         clean_payload["check_content"] = self.config.check_upload_content
         validate_and_normalize_targets(trans, clean_payload)
-        request = dumps(clean_payload)
+        request = dumps(clean_payload, ensure_ascii=False)
         create_payload = {
             "tool_id": "__DATA_FETCH__",
             "history_id": history_id,
