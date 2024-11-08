@@ -15,7 +15,6 @@ const xml2js = require("xml2js");
 const STATIC_PLUGIN_BUILD_IDS = [
     "annotate_image",
     "chiraviz",
-    "cytoscape",
     "drawrna",
     "editor",
     "example",
