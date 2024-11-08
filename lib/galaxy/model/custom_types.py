@@ -29,6 +29,10 @@ log = logging.getLogger(__name__)
 
 
 class SafeJsonEncoder(json.JSONEncoder):
+    def __init__(self, *args, **kwargs):
+        kwargs["ensure_ascii"] = False
+        super().__init__(*args, **kwargs)
+
     def default(self, obj):
         if isinstance(obj, numpy.int_):
             return int(obj)
