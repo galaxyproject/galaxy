@@ -74,6 +74,7 @@ const props = defineProps({
     },
 });
 
+const collectionTabActive = ref(null);
 const extensionsSet = ref(false);
 const datatypesMapper = ref(null);
 const datatypesMapperReady = ref(false);
@@ -81,6 +82,7 @@ const dbKeysSet = ref(false);
 const listExtensions = ref([]);
 const listDbKeys = ref([]);
 const regular = ref(null);
+const regularTabActive = ref(null);
 
 const { percentage, status } = storeToRefs(useUploadStore());
 
@@ -112,12 +114,15 @@ const ready = computed(
 );
 const canUploadToHistory = computed(() => currentHistory.value && canMutateHistory(currentHistory.value));
 const showCollection = computed(() => !props.formats && props.multiple);
-const showComposite = computed(() => !props.formats || hasCompositeExtension);
-const showRegular = computed(() => !props.formats || hasRegularExtension);
+const showComposite = computed(() => !props.formats || hasCompositeExtension.value);
+const showRegular = computed(() => !props.formats || hasRegularExtension.value);
 const showRules = computed(() => !props.formats || props.multiple);
 
 function immediateUpload(files) {
-    regular.value?.addFiles(files, true);
+    if (showRegular.value) {
+        regularTabActive.value = true;
+        regular.value?.addFiles(files, true);
+    }
 }
 
 function toData(items, history_id, composite = false) {
@@ -172,21 +177,7 @@ defineExpose({
         </span>
     </BAlert>
     <BTabs v-else-if="ready">
-        <BTab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
-            <DefaultBox
-                ref="regular"
-                :chunk-upload-size="chunkUploadSize"
-                :default-db-key="defaultDbKey"
-                :default-extension="defaultExtension"
-                :effective-extensions="effectiveExtensions"
-                :file-sources-configured="fileSourcesConfigured"
-                :ftp-upload-site="currentUserId && ftpUploadSite"
-                :has-callback="hasCallback"
-                :history-id="currentHistoryId"
-                :list-db-keys="listDbKeys"
-                :multiple="multiple"
-                @progress="progress"
-                v-on="$listeners" />
+        <BTab v-if="showRegular" title="Regular" button-id="tab-title-link-regular" :active.sync="regularTabActive">
         </BTab>
         <BTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
             <CompositeBox
@@ -199,19 +190,11 @@ defineExpose({
                 :list-db-keys="listDbKeys"
                 v-on="$listeners" />
         </BTab>
-        <BTab v-if="showCollection" id="collection" title="Collection" button-id="tab-title-link-collection">
-            <DefaultBox
-                :chunk-upload-size="chunkUploadSize"
-                :default-db-key="defaultDbKey"
-                :default-extension="defaultExtension"
-                :effective-extensions="effectiveExtensions"
-                :file-sources-configured="fileSourcesConfigured"
-                :ftp-upload-site="currentUserId && ftpUploadSite"
-                :has-callback="hasCallback"
-                :history-id="currentHistoryId"
-                :is-collection="true"
-                :list-db-keys="listDbKeys"
-                v-on="$listeners" />
+        <BTab
+            v-if="showCollection"
+            title="Collection"
+            button-id="tab-title-link-collection"
+            :active.sync="collectionTabActive">
         </BTab>
         <BTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
             <RulesInput
@@ -221,6 +204,24 @@ defineExpose({
                 :history-id="currentHistoryId"
                 v-on="$listeners" />
         </BTab>
+        <DefaultBox
+            v-if="showRegular || showCollection"
+            v-show="regularTabActive || collectionTabActive"
+            :id="collectionTabActive ? 'collection' : 'regular'"
+            ref="regular"
+            :chunk-upload-size="chunkUploadSize"
+            :default-db-key="defaultDbKey"
+            :default-extension="defaultExtension"
+            :effective-extensions="effectiveExtensions"
+            :file-sources-configured="fileSourcesConfigured"
+            :ftp-upload-site="currentUserId && ftpUploadSite"
+            :has-callback="hasCallback"
+            :history-id="currentHistoryId"
+            :list-db-keys="listDbKeys"
+            :multiple="regularTabActive ? multiple : undefined"
+            :is-collection="collectionTabActive"
+            @progress="progress"
+            v-on="$listeners" />
     </BTabs>
     <div v-else>
         <LoadingSpan message="Loading required information from Galaxy server." />
