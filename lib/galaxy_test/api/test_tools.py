@@ -2437,9 +2437,11 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert output_content.strip() == "123\n456\n456\n0ab"
 
     def _run_deferred(self, history_id: str, use_cached_job=False, expect_cached_job=False, include_correct_hash=True):
-        hashes: Optional[List[Dict[str, str]]] = None
-        if include_correct_hash:
-            hashes = [{"hash_function": "SHA-1", "hash_value": "2d7dcdb10964872752bd6d081725792b3f729ac9"}]
+        hashes = (
+            [{"hash_function": "SHA-1", "hash_value": "2d7dcdb10964872752bd6d081725792b3f729ac9"}]
+            if include_correct_hash
+            else None
+        )
         details = self.dataset_populator.create_deferred_hda(
             history_id,
             "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
