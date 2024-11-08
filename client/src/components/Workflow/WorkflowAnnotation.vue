@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faClock } from "@fortawesome/free-regular-svg-icons";
-import { faChevronDown, faChevronUp, faHdd } from "@fortawesome/free-solid-svg-icons";
+import { faHdd } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
@@ -16,8 +15,6 @@ import StatelessTags from "../TagsMultiselect/StatelessTags.vue";
 import UtcDate from "../UtcDate.vue";
 import WorkflowInvocationsCount from "../Workflow/WorkflowInvocationsCount.vue";
 import WorkflowIndicators from "@/components/Workflow/List/WorkflowIndicators.vue";
-
-library.add(faChevronDown, faChevronUp);
 
 interface Props {
     workflowId: string;

@@ -38,12 +38,10 @@ interface Props {
     isFullPage?: boolean;
     success?: boolean;
     newHistoryTarget?: boolean;
-    targetHistory: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     isSubworkflow: false,
-    targetHistory: "current",
 });
 
 const emit = defineEmits<{
