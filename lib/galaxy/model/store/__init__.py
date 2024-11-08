@@ -2174,7 +2174,7 @@ class DirectoryModelExportStore(ModelExportStore):
         history_attrs = history.serialize(app.security, self.serialization_options)
         history_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_HISTORY)
         with open(history_attrs_filename, "w") as history_attrs_out:
-            dump(history_attrs, history_attrs_out)
+            dump(history_attrs, history_attrs_out, ensure_ascii=False)
 
         sa_session = app.model.session
 
