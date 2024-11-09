@@ -187,6 +187,7 @@ class PosixFilesSource(BaseFilesSource):
             "enforce_symlink_security": self.enforce_symlink_security,
             "delete_on_realize": self.delete_on_realize,
             "allow_subdir_creation": self.allow_subdir_creation,
+            "link_only": self.link_only,
         }
 
     @property
