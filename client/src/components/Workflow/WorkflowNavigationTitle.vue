@@ -51,6 +51,7 @@ const owned = computed(() => {
 
 const importErrorMessage = ref<string | null>(null);
 const importedWorkflow = ref<Workflow | null>(null);
+const workflowImportedAttempted = ref(false);
 
 async function onImport() {
     if (!workflow.value || !workflow.value.owner) {
@@ -61,12 +62,24 @@ async function onImport() {
         importedWorkflow.value = wf as unknown as Workflow;
     } catch (error) {
         importErrorMessage.value = errorMessageAsString(error, "Failed to import workflow");
+    } finally {
+        workflowImportedAttempted.value = true;
     }
 }
 
 function getWorkflowName(): string {
     return workflow.value?.name || "...";
 }
+
+const workflowImportTitle = computed(() => {
+    if (isAnonymous.value) {
+        return localize("Login to import this workflow");
+    } else if (workflowImportedAttempted.value) {
+        return localize("Workflow imported");
+    } else {
+        return localize("Import this workflow");
+    }
+});
 </script>
 
 <template>
@@ -116,8 +129,8 @@ function getWorkflowName(): string {
                             v-b-tooltip.hover.noninteractive
                             data-description="import workflow button"
                             size="sm"
-                            :disabled="isAnonymous"
-                            :title="localize(!isAnonymous ? 'Import this workflow' : 'Login to import this workflow')"
+                            :disabled="isAnonymous || workflowImportedAttempted"
+                            :title="workflowImportTitle"
                             :icon="faUpload"
                             variant="link"
                             :action="onImport">
