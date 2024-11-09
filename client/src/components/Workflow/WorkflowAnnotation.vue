@@ -46,6 +46,10 @@ const description = computed(() => {
     }
 });
 
+const timeElapsed = computed(() => {
+    return props.invocationUpdateTime || workflow.value?.update_time;
+});
+
 const workflowTags = computed(() => {
     return workflow.value?.tags || [];
 });
@@ -55,13 +59,12 @@ const workflowTags = computed(() => {
     <div v-if="workflow" class="pb-2 pl-2">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <i v-if="props.invocationUpdateTime">
-                    <FontAwesomeIcon :icon="faClock" class="mr-1" />invoked
-                    <UtcDate :date="props.invocationUpdateTime" mode="elapsed" />
-                </i>
-                <i v-else-if="workflow.update_time">
-                    <FontAwesomeIcon :icon="faClock" class="mr-1" />edited
-                    <UtcDate :date="workflow.update_time" mode="elapsed" />
+                <i v-if="timeElapsed" data-description="workflow annotation time info">
+                    <FontAwesomeIcon :icon="faClock" class="mr-1" />
+                    <span v-localize>
+                        {{ props.invocationUpdateTime ? "invoked" : "edited" }}
+                    </span>
+                    <UtcDate :date="timeElapsed" mode="elapsed" data-description="workflow annotation date" />
                 </i>
                 <span class="d-flex flex-gapx-1 align-items-center">
                     <FontAwesomeIcon :icon="faHdd" />Input History:

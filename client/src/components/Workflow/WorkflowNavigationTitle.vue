@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronDown, faChevronUp, faEdit, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
+import { useRouter } from "vue-router/composables";
 
 import { isRegisteredUser } from "@/api";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
@@ -21,7 +21,7 @@ import AsyncButton from "../Common/AsyncButton.vue";
 import ButtonSpinner from "../Common/ButtonSpinner.vue";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 
-library.add(faChevronDown, faChevronUp);
+const router = useRouter();
 
 interface Props {
     invocation?: WorkflowInvocationElementView;
@@ -85,7 +85,7 @@ function getWorkflowName(): string {
 
             <div class="ui-portlet-section">
                 <div class="d-flex portlet-header align-items-center">
-                    <div class="flex-grow-1">
+                    <div class="flex-grow-1" data-description="workflow heading">
                         <div class="px-1">
                             <FontAwesomeIcon :icon="faSitemap" />
                             <b class="mx-1">
@@ -106,12 +106,13 @@ function getWorkflowName(): string {
                             "
                             variant="link"
                             :disabled="workflow.deleted"
-                            @click="$router.push(`/workflows/edit?id=${workflow.id}&version=${workflow.version}`)">
+                            @click="router.push(`/workflows/edit?id=${workflow.id}&version=${workflow.version}`)">
                             <FontAwesomeIcon :icon="faEdit" fixed-width />
                         </BButton>
                         <AsyncButton
                             v-else
                             v-b-tooltip.hover.noninteractive
+                            data-description="import workflow button"
                             size="sm"
                             :disabled="isAnonymous"
                             :title="localize(!isAnonymous ? 'Import this workflow' : 'Login to import this workflow')"
@@ -125,6 +126,7 @@ function getWorkflowName(): string {
                         <ButtonSpinner
                             v-if="!props.invocation"
                             id="run-workflow"
+                            data-description="execute workflow button"
                             :wait="runWaiting"
                             :disabled="runDisabled"
                             size="sm"
@@ -133,6 +135,7 @@ function getWorkflowName(): string {
                         <WorkflowRunButton
                             v-else
                             :id="workflow.id"
+                            data-description="route to workflow run button"
                             variant="link"
                             :title="
                                 !workflow.deleted

@@ -7,7 +7,7 @@ import { getLocalVue } from "tests/jest/helpers";
 import sampleInvocation from "@/components/Workflow/test/json/invocation.json";
 import { useUserStore } from "@/stores/userStore";
 
-import WorkflowNavigationTitle from "../Workflow/WorkflowNavigationTitle.vue";
+import WorkflowNavigationTitle from "./WorkflowNavigationTitle.vue";
 
 // Constants
 const WORKFLOW_OWNER = "test-user";
@@ -23,12 +23,12 @@ const SAMPLE_WORKFLOW = {
 const IMPORT_ERROR_MESSAGE = "Failed to import workflow";
 
 const SELECTORS = {
-    INVOKED_WORKFLOW_HEADING: "anonymous-stub[h1='true']",
-    RETURN_TO_INVOCATIONS_LIST_BUTTON: "bbutton-stub[title='Return to Invocations List']",
+    WORKFLOW_HEADING: "[data-description='workflow heading']",
     ACTIONS_BUTTON_GROUP: "bbuttongroup-stub",
     EDIT_WORKFLOW_BUTTON: `bbutton-stub[title='<b>Edit</b><br>${SAMPLE_WORKFLOW.name}']`,
-    IMPORT_WORKFLOW_BUTTON: "anonymous-stub[title='Import this workflow']",
-    RUN_WORKFLOW_BUTTON: `anonymous-stub[id='${SAMPLE_WORKFLOW.id}']`,
+    IMPORT_WORKFLOW_BUTTON: "[data-description='import workflow button']",
+    EXECUTE_WORKFLOW_BUTTON: "[data-description='execute workflow button']",
+    ROUTE_TO_RUN_BUTTON: "[data-description='route to workflow run button']",
     ALERT_MESSAGE: "balert-stub",
 };
 
@@ -63,19 +63,42 @@ const localVue = getLocalVue();
 
 /**
  * Mounts the WorkflowNavigationTitle component with props/stores adjusted given the parameters
+ * @param version The version of the component to mount (`run_form` or `invocation` view)
  * @param ownsWorkflow Whether the user owns the workflow associated with the invocation
  * @param unimportableWorkflow Whether the workflow import should fail
- * @returns The wrapper object
+ * @returns The wrapper object, and the mockRouter object
  */
-async function mountWorkflowNavigationTitle(ownsWorkflow = true, unimportableWorkflow = false) {
+async function mountWorkflowNavigationTitle(
+    version: "run_form" | "invocation",
+    ownsWorkflow = true,
+    unimportableWorkflow = false
+) {
+    const mockRouter = {
+        push: jest.fn(),
+    };
+
+    let workflowId: string;
+    let invocation;
+    if (version === "invocation") {
+        workflowId = !unimportableWorkflow ? sampleInvocation.workflow_id : UNIMPORTABLE_WORKFLOW_INSTANCE_ID;
+        invocation = {
+            ...sampleInvocation,
+            workflow_id: workflowId,
+        };
+    } else {
+        workflowId = !unimportableWorkflow ? SAMPLE_WORKFLOW.id : UNIMPORTABLE_WORKFLOW_INSTANCE_ID;
+        invocation = undefined;
+    }
+
     const wrapper = shallowMount(WorkflowNavigationTitle as object, {
         propsData: {
-            invocation: {
-                ...sampleInvocation,
-                workflow_id: !unimportableWorkflow ? sampleInvocation.workflow_id : UNIMPORTABLE_WORKFLOW_INSTANCE_ID,
-            },
+            invocation,
+            workflowId,
         },
         localVue,
+        mocks: {
+            $router: mockRouter,
+        },
         pinia: createTestingPinia(),
     });
 
@@ -84,42 +107,70 @@ async function mountWorkflowNavigationTitle(ownsWorkflow = true, unimportableWor
         username: ownsWorkflow ? WORKFLOW_OWNER : OTHER_USER,
     });
 
-    return { wrapper };
+    return { wrapper, mockRouter };
 }
 
 describe("WorkflowNavigationTitle renders", () => {
-    // Included both cases in one test because these are always constant
-    it("(always) the workflow name in header and run button in actions", async () => {
-        const { wrapper } = await mountWorkflowNavigationTitle();
+    it("the workflow name in header and run button in actions; invocation version", async () => {
+        const { wrapper } = await mountWorkflowNavigationTitle("invocation");
 
-        const heading = wrapper.find(SELECTORS.INVOKED_WORKFLOW_HEADING);
-        expect(heading.text()).toBe(`Invoked Workflow: "${SAMPLE_WORKFLOW.name}"`);
+        const heading = wrapper.find(SELECTORS.WORKFLOW_HEADING);
+        expect(heading.text()).toContain(`Invoked Workflow: ${SAMPLE_WORKFLOW.name}`);
+        expect(heading.text()).toContain(`(version: ${SAMPLE_WORKFLOW.version + 1})`);
 
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
-        const runButton = actionsGroup.find(SELECTORS.RUN_WORKFLOW_BUTTON);
+        const runButton = actionsGroup.find(SELECTORS.ROUTE_TO_RUN_BUTTON);
+        expect(runButton.attributes("title")).toContain("Rerun");
         expect(runButton.attributes("title")).toContain(SAMPLE_WORKFLOW.name);
     });
 
-    it("edit button if user owns the workflow", async () => {
-        const { wrapper } = await mountWorkflowNavigationTitle();
+    it("the workflow name in header and run button in actions; run form version", async () => {
+        const { wrapper } = await mountWorkflowNavigationTitle("run_form");
+
+        const heading = wrapper.find(SELECTORS.WORKFLOW_HEADING);
+        expect(heading.text()).toContain(`Workflow: ${SAMPLE_WORKFLOW.name}`);
+        expect(heading.text()).toContain(`(version: ${SAMPLE_WORKFLOW.version + 1})`);
+
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
-        const editButton = actionsGroup.find(SELECTORS.EDIT_WORKFLOW_BUTTON);
-        expect(editButton.attributes("to")).toBe(
-            `/workflows/edit?id=${SAMPLE_WORKFLOW.id}&version=${SAMPLE_WORKFLOW.version}`
-        );
+        const runButton = actionsGroup.find(SELECTORS.EXECUTE_WORKFLOW_BUTTON);
+        expect(runButton.attributes("title")).toContain("Run");
+    });
+
+    it("edit button if user owns the workflow", async () => {
+        async function findAndClickEditButton(version: "invocation" | "run_form") {
+            const { wrapper, mockRouter } = await mountWorkflowNavigationTitle(version);
+            const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
+
+            const editButton = actionsGroup.find(SELECTORS.EDIT_WORKFLOW_BUTTON);
+            await editButton.trigger("click");
+            await flushPromises();
+
+            expect(mockRouter.push).toHaveBeenCalledTimes(1);
+            expect(mockRouter.push).toHaveBeenCalledWith(
+                `/workflows/edit?id=${SAMPLE_WORKFLOW.id}&version=${SAMPLE_WORKFLOW.version}`
+            );
+        }
+        await findAndClickEditButton("invocation");
+        await findAndClickEditButton("run_form");
     });
 
     it("import button instead if user does not own the workflow", async () => {
-        const { wrapper } = await mountWorkflowNavigationTitle(false);
-        const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
-        const importButton = actionsGroup.find(SELECTORS.IMPORT_WORKFLOW_BUTTON);
-        expect(importButton.exists()).toBe(true);
+        async function findImportButton(version: "invocation" | "run_form") {
+            const { wrapper } = await mountWorkflowNavigationTitle(version, false);
+            const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
+            const importButton = actionsGroup.find(SELECTORS.IMPORT_WORKFLOW_BUTTON);
+            expect(importButton.exists()).toBe(true);
+        }
+        await findImportButton("invocation");
+        await findImportButton("run_form");
     });
 });
 
 describe("Importing a workflow in WorkflowNavigationTitle", () => {
+    // We only need to test the `invocation` version because the button is the same in both versions
+
     it("should show a confirmation dialog when the import is successful", async () => {
-        const { wrapper } = await mountWorkflowNavigationTitle(false);
+        const { wrapper } = await mountWorkflowNavigationTitle("invocation", false);
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
         const importButton = actionsGroup.find(SELECTORS.IMPORT_WORKFLOW_BUTTON);
 
@@ -133,7 +184,7 @@ describe("Importing a workflow in WorkflowNavigationTitle", () => {
     });
 
     it("should show an error dialog when the import fails", async () => {
-        const { wrapper } = await mountWorkflowNavigationTitle(false, true);
+        const { wrapper } = await mountWorkflowNavigationTitle("invocation", false, true);
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
         const importButton = actionsGroup.find(SELECTORS.IMPORT_WORKFLOW_BUTTON);
 

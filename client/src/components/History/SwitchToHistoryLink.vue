@@ -86,7 +86,7 @@ function viewHistoryInNewTab(history: HistorySummary) {
 <template>
     <div>
         <LoadingSpan v-if="!history" />
-        <div v-else class="history-link">
+        <div v-else class="history-link" data-description="switch to history link">
             <BLink
                 v-b-tooltip.hover.top.noninteractive.html
                 data-description="switch to history link"

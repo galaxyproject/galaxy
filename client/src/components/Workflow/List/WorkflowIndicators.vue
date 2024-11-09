@@ -139,6 +139,7 @@ function onViewUserPublished() {
         <BBadge
             v-if="publishedView && workflow.published"
             v-b-tooltip.noninteractive.hover
+            data-description="published owner badge"
             class="outline-badge cursor-pointer mx-1"
             :title="publishedTitle"
             @click="onViewUserPublished">
