@@ -38,7 +38,7 @@ const emit = defineEmits<{
     (e: "on-execute"): void;
 }>();
 
-const { workflow } = useWorkflowInstance(props.workflowId);
+const { workflow, error } = useWorkflowInstance(props.workflowId);
 
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 const owned = computed(() => {
@@ -83,7 +83,9 @@ function getWorkflowName(): string {
                 list.
             </BAlert>
 
-            <div class="ui-portlet-section">
+            <BAlert v-if="error" variant="danger" show>{{ error }}</BAlert>
+
+            <div v-if="workflow" class="ui-portlet-section">
                 <div class="d-flex portlet-header align-items-center">
                     <div class="flex-grow-1" data-description="workflow heading">
                         <div class="px-1">
@@ -91,10 +93,10 @@ function getWorkflowName(): string {
                             <b class="mx-1">
                                 {{ props.invocation ? "Invoked " : "" }}Workflow: {{ getWorkflowName() }}
                             </b>
-                            <i v-if="workflow">(version: {{ workflow.version + 1 }})</i>
+                            <i>(version: {{ workflow.version + 1 }})</i>
                         </div>
                     </div>
-                    <BButtonGroup v-if="workflow">
+                    <BButtonGroup>
                         <BButton
                             v-if="owned && workflow"
                             v-b-tooltip.hover.noninteractive.html
