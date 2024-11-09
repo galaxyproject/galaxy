@@ -106,7 +106,9 @@ class PosixFilesSource(BaseFilesSource):
             source_native_path = os.path.normpath(source_native_path)
             assert source_native_path.startswith(os.path.normpath(effective_root))
 
-        if not self.delete_on_realize:
+        if self.link_only:
+            os.symlink(source_native_path, native_path)
+        elif not self.delete_on_realize:
             shutil.copyfile(source_native_path, native_path)
         else:
             shutil.move(source_native_path, native_path)
