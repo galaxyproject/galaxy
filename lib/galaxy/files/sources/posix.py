@@ -107,6 +107,8 @@ class PosixFilesSource(BaseFilesSource):
             assert source_native_path.startswith(os.path.normpath(effective_root))
 
         if self.link_only:
+            if os.path.exists(native_path) or os.path.islink(native_path):
+                os.remove(native_path)
             os.symlink(source_native_path, native_path)
         elif not self.delete_on_realize:
             shutil.copyfile(source_native_path, native_path)
@@ -138,9 +140,14 @@ class PosixFilesSource(BaseFilesSource):
 
         # Use a temporary name while writing so anything that consumes written files can detect when they've completed,
         # and identify interrupted writes
-        target_native_path_part = os.path.join(target_native_path_parent, f"_{target_native_path_name}.part")
-        shutil.copyfile(native_path, target_native_path_part)
-        os.rename(target_native_path_part, target_native_path)
+        if self.link_only:
+            if os.path.exists(native_path) or os.path.islink(native_path):
+                os.remove(native_path)
+            os.symlink(target_native_path, native_path)
+        else:
+            target_native_path_part = os.path.join(target_native_path_parent, f"_{target_native_path_name}.part")
+            shutil.copyfile(native_path, target_native_path_part)
+            os.rename(target_native_path_part, target_native_path)
 
     def _to_native_path(self, source_path: str, user_context: OptionalUserContext = None):
         source_path = os.path.normpath(source_path)
