@@ -26,6 +26,7 @@ from . import (
 DEFAULT_ENFORCE_SYMLINK_SECURITY = True
 DEFAULT_DELETE_ON_REALIZE = False
 DEFAULT_ALLOW_SUBDIR_CREATION = True
+DEFAULT_LINK_ONLY = False
 
 
 class PosixFilesSourceProperties(FilesSourceProperties, total=False):
@@ -33,6 +34,7 @@ class PosixFilesSourceProperties(FilesSourceProperties, total=False):
     enforce_symlink_security: bool
     delete_on_realize: bool
     allow_subdir_creation: bool
+    link_only: bool
 
 
 class PosixFilesSource(BaseFilesSource):
@@ -50,6 +52,7 @@ class PosixFilesSource(BaseFilesSource):
         self.root = props.get("root")
         if not self.root:
             self.writable = False
+        self.link_only = props.get("link_only", DEFAULT_LINK_ONLY)
         self.enforce_symlink_security = props.get("enforce_symlink_security", DEFAULT_ENFORCE_SYMLINK_SECURITY)
         self.delete_on_realize = props.get("delete_on_realize", DEFAULT_DELETE_ON_REALIZE)
         self.allow_subdir_creation = props.get("allow_subdir_creation", DEFAULT_ALLOW_SUBDIR_CREATION)
