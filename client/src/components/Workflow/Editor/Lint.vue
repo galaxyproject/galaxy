@@ -50,7 +50,7 @@
             :warning-items="warningMissingMetadata"
             @onMouseOver="onHighlight"
             @onMouseLeave="onUnhighlight"
-            @onClick="onScrollTo" />
+            @onClick="openAndFocus" />
         <LintSection
             success-message="This workflow has outputs and they all have valid labels."
             warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
@@ -131,9 +131,9 @@ export default {
     },
     setup() {
         const stores = useWorkflowStores();
-        const { connectionStore, stepStore } = stores;
+        const { connectionStore, stepStore, stateStore } = stores;
         const { hasActiveOutputs } = storeToRefs(stepStore);
-        return { stores, connectionStore, stepStore, hasActiveOutputs };
+        return { stores, connectionStore, stepStore, hasActiveOutputs, stateStore };
     },
     computed: {
         showRefactor() {
@@ -213,7 +213,8 @@ export default {
                 this.$emit("onScrollTo", item.stepId);
             }
         },
-        onScrollTo(item) {
+        openAndFocus(item) {
+            this.stateStore.activeNodeId = item.stepId;
             this.$emit("onScrollTo", item.stepId);
         },
         onHighlight(item) {
