@@ -478,6 +478,14 @@ export class AutoLayoutAction extends UndoRedoAction {
             y: step.position?.top ?? 0,
         }));
 
+        this.oldPositions.comments = this.commentStore.comments.map((comment) => ({
+            id: `${comment.id}`,
+            x: comment.position[0],
+            y: comment.position[1],
+            w: comment.size[0],
+            h: comment.size[1],
+        }));
+
         const { autoLayout } = await import(
             /* webpackChunkName: "workflowLayout" */ "@/components/Workflow/Editor/modules/layout"
         );
