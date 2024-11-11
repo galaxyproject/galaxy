@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Cytoscape">
+    <description>A viewer based on graph theory/ network library for analysis and visualisation hosted at http://js.cytoscape.org.</description>
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test test_attr="ext" result_type="datatype">json</test>
+            <test test_attr="ext" result_type="datatype">sif</test>
+            <to_param param_attr="id">dataset_id</to_param>
+        </data_source>
+    </data_sources>
+    <params>
+        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+    </params>
+    <requirements>
+        <requirement type="npm" version="latest" package="@itisalirh/galaxy-cytoscape"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+    <settings>
+        <input>
+            <label>Curve style</label>
+            <name>curve_style</name>
+            <help>Select a curving method used to separate two or more edges between two nodes.</help>
+            <type>select</type>
+            <display>radio</display>
+            <value>haystack</value>
+            <data>
+                <data>
+                    <label>Haystack</label>
+                    <value>haystack</value>
+                </data>
+                <data>
+                    <label>Bezier</label>
+                    <value>bezier</value>
+                </data>
+                <data>
+                    <label>Unbundled bezier</label>
+                    <value>unbundled-bezier</value>
+                </data>
+                <data>
+                    <label>Segments</label>
+                    <value>segments</value>
+                </data>
+            </data>
+        </input>
+        <input>
+            <label>Layout name</label>
+            <name>layout_name</name>
+            <help>Select a kind of position of nodes in graph.</help>
+            <type>select</type>
+            <display>radio</display>
+            <value>preset</value>
+            <data>
+                <data>
+                    <label>Breadth First</label>
+                    <value>breadthfirst</value>
+                </data>
+                <data>
+                    <label>Circle</label>
+                    <value>circle</value>
+                </data>
+                <data>
+                    <label>Concentric</label>
+                    <value>concentric</value>
+                </data>
+                <data>
+                    <label>Cose</label>
+                    <value>cose</value>
+                </data>
+                <data>
+                    <label>Grid</label>
+                    <value>grid</value>
+                </data>
+                <data>
+                    <label>Null</label>
+                    <value>null</value>
+                </data>
+                <data>
+                    <label>Preset</label>
+                    <value>preset</value>
+                </data>
+                <data>
+                    <label>Random</label>
+                    <value>random</value>
+                </data>
+            </data>
+        </input>
+        <input>
+            <label>Directed/Undirected</label>
+            <name>directed</name>
+            <help>Select a kind of edge.</help>
+            <type>select</type>
+            <display>radio</display>
+            <data>
+                <data>
+                    <label>Directed</label>
+                    <value>triangle</value>
+                </data>
+                <data>
+                    <label>Undirected</label>
+                    <value></value>
+                </data>
+            </data>
+        </input>
+        <input>
+            <label>Graph algorithms</label>
+            <name>search_algorithm</name>
+            <help>Select a search algorithm. For Breadth First Search and Depth First Search, please click on any node of the graph. For A*, please click on two nodes, one for the root and another for the destination.</help>
+            <type>select</type>
+            <display>radio</display>
+            <data>
+                <data>
+                    <label>Breadth First Search</label>
+                    <value>bfs</value>
+                </data>
+                <data>
+                    <label>Depth First Search</label>
+                    <value>dfs</value>
+                </data>
+                <data>
+                    <label>Minimum Spanning Tree (Kruskal)</label>
+                    <value>kruskal</value>
+                </data>
+                <data>
+                    <label>A*</label>
+                    <value>astar</value>
+                </data>
+                <data>
+                    <label>None</label>
+                    <value></value>
+                </data>
+            </data>
+        </input>
+        <input>
+            <label>Graph traversal</label>
+            <name>graph_traversal</name>
+            <help>To select a graph traversal type, please click on any node of the graph.</help>
+            <type>select</type>
+            <display>radio</display>
+            <data>
+                <data>
+                    <label>Successors</label>
+                    <value>successors</value>
+                </data>
+                <data>
+                    <label>Predecessors</label>
+                    <value>predecessors</value>
+                </data>
+                <data>
+                    <label>Outgoers</label>
+                    <value>outgoers</value>
+                </data>
+                <data>
+                    <label>Incomers</label>
+                    <value>incomers</value>
+                </data>
+                <data>
+                    <label>Roots</label>
+                    <value>roots</value>
+                </data>
+                <data>
+                    <label>Leaves</label>
+                    <value>leaves</value>
+                </data>
+                <data>
+                    <label>None</label>
+                    <value></value>
+                </data>
+            </data>
+        </input>
+        <input>
+            <label>Select a color for nodes</label>
+            <name>color_picker_nodes</name>
+            <type>color</type>
+            <value>#548DB8</value>
+        </input>
+        <input>
+            <label>Select a color for edges</label>
+            <name>color_picker_edges</name>
+            <type>color</type>
+            <value>#A5A5A5</value>
+        </input>
+        <input>
+            <label>Select a color for highlighted nodes and edges</label>
+            <name>color_picker_highlighted</name>
+            <type>color</type>
+            <value>#C00000</value>
+        </input>
+    </settings>
+</visualization>
