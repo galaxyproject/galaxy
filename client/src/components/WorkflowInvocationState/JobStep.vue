@@ -8,8 +8,8 @@ import { type JobBaseModel, type JobDetails } from "@/api/jobs";
 import { getHeaderClass, iconClasses } from "@/composables/useInvocationGraph";
 import { rethrowSimple } from "@/utils/simple-error";
 
+import JobDetailsDisplayed from "../JobInformation/JobDetails.vue";
 import LoadingSpan from "../LoadingSpan.vue";
-import WorkflowInvocationJob from "../WorkflowInvocationState/WorkflowInvocationJob.vue";
 
 interface Props {
     jobs: JobBaseModel[];
@@ -69,9 +69,9 @@ function getTabClass(job: JobDetails) {
     </BAlert>
     <BAlert v-else-if="!jobsDetails || !jobCount" variant="info" show> No jobs found for this step. </BAlert>
     <div v-else-if="jobCount === 1 && firstJob">
-        <WorkflowInvocationJob :job="firstJob" />
+        <JobDetailsDisplayed :job="firstJob" />
     </div>
-    <BTabs v-else vertical pills card nav-class="p-0">
+    <BTabs v-else vertical pills card nav-class="p-0" active-tab-class="p-0">
         <BTab
             v-for="job in jobsDetails"
             :key="job.id"
@@ -87,7 +87,7 @@ function getTabClass(job: JobDetails) {
                     :spin="getIcon(job)?.spin" />
             </template>
             <div>
-                <WorkflowInvocationJob :job="job" />
+                <JobDetailsDisplayed :job="job" />
             </div>
         </BTab>
     </BTabs>
