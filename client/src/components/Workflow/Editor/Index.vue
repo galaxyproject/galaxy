@@ -637,7 +637,7 @@ export default {
             this.stepActions.updateStep(nodeId, partialStep);
         },
         onRemove(nodeId) {
-            this.stepActions.removeStep(this.steps[nodeId], this.showAttributes);
+            this.stepActions.removeStep(this.steps[nodeId]);
         },
         onEditSubworkflow(contentId) {
             const editUrl = `/workflows/edit?workflow_id=${contentId}`;

@@ -208,14 +208,12 @@ export class UpdateStepAction extends UndoRedoAction {
     run() {
         const step = this.stepStore.getStep(this.stepId);
         assertDefined(step);
-        this.stateStore.activeNodeId = this.stepId;
         this.stepStore.updateStep({ ...step, ...this.toPartial });
     }
 
     undo() {
         const step = this.stepStore.getStep(this.stepId);
         assertDefined(step);
-        this.stateStore.activeNodeId = this.stepId;
         this.stepStore.updateStep({ ...step, ...this.fromPartial });
         this.onUndoRedo?.();
     }
@@ -297,7 +295,6 @@ export class InsertStepAction extends UndoRedoAction {
     redo() {
         this.run();
         assertDefined(this.stepId);
-        this.stateStore.activeNodeId = this.stepId;
     }
 }
 
@@ -305,7 +302,6 @@ export class RemoveStepAction extends UndoRedoAction {
     stepStore;
     stateStore;
     connectionStore;
-    showAttributesCallback;
     step: Step;
     connections: Connection[];
 
@@ -313,14 +309,12 @@ export class RemoveStepAction extends UndoRedoAction {
         stepStore: WorkflowStepStore,
         stateStore: WorkflowStateStore,
         connectionStore: WorkflowConnectionStore,
-        showAttributesCallback: () => void,
         step: Step
     ) {
         super();
         this.stepStore = stepStore;
         this.stateStore = stateStore;
         this.connectionStore = connectionStore;
-        this.showAttributesCallback = showAttributesCallback;
         this.step = structuredClone(step);
         this.connections = structuredClone(this.connectionStore.getConnectionsForStep(this.step.id));
     }
@@ -331,14 +325,13 @@ export class RemoveStepAction extends UndoRedoAction {
 
     run() {
         this.stepStore.removeStep(this.step.id);
-        this.showAttributesCallback();
+        this.stateStore.activeNodeId = null;
         this.stateStore.hasChanges = true;
     }
 
     undo() {
         this.stepStore.addStep(structuredClone(this.step), false, false);
         this.connections.forEach((connection) => this.connectionStore.addConnection(connection));
-        this.stateStore.activeNodeId = this.step.id;
         this.stateStore.hasChanges = true;
     }
 }
@@ -369,7 +362,6 @@ export class CopyStepAction extends UndoRedoAction {
     run() {
         const newStep = this.stepStore.addStep(structuredClone(this.step));
         this.stepId = newStep.id;
-        this.stateStore.activeNodeId = this.stepId;
         this.stateStore.hasChanges = true;
     }
 
@@ -549,7 +541,6 @@ export function useStepActions(
             undoRedoStore.applyLazyAction(action, timeout);
 
             action.onUndoRedo = () => {
-                stateStore.activeNodeId = step.id;
                 stateStore.hasChanges = true;
             };
 
@@ -615,7 +606,6 @@ export function useStepActions(
 
         if (!action.isEmpty()) {
             action.onUndoRedo = () => {
-                stateStore.activeNodeId = from.id;
                 stateStore.hasChanges = true;
                 refresh();
             };
@@ -623,8 +613,8 @@ export function useStepActions(
         }
     }
 
-    function removeStep(step: Step, showAttributesCallback: () => void) {
-        const action = new RemoveStepAction(stepStore, stateStore, connectionStore, showAttributesCallback, step);
+    function removeStep(step: Step) {
+        const action = new RemoveStepAction(stepStore, stateStore, connectionStore, step);
         undoRedoStore.applyAction(action);
     }
 
@@ -641,7 +631,6 @@ export function useStepActions(
 
         if (!action.isEmpty()) {
             action.onUndoRedo = () => {
-                stateStore.activeNodeId = id;
                 stateStore.hasChanges = true;
                 refresh();
             };
