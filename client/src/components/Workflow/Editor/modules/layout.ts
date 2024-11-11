@@ -59,6 +59,7 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
 
     const childLayoutOptions = {
         "elk.layered.spacing.nodeNodeBetweenLayers": `${horizontalDistance / 2}`,
+        "elk.portConstraints": "FIXED_POS",
     };
 
     // Convert this to ELK compat.
@@ -71,8 +72,6 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
             "elk.algorithm": "layered",
             "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
             "elk.spacing.nodeNode": `${verticalDistance}`,
-            "crossingMinimization.semiInteractive": "true",
-            "elk.alignment": "TOP",
         },
         children: [],
         edges: [],
@@ -185,33 +184,40 @@ function stepToElkStep(
     stateStore: ReturnType<typeof useWorkflowStateStore>,
     roundingFunction: (value: number) => number
 ): ElkNode {
-    const inputs = Object.values(step.inputs).map((input) => {
+    const inputs = Object.values(step.inputs).map((input, index) => {
         return {
             id: `${step.id}/in/${input.name}`,
             properties: {
                 "port.side": "WEST",
-                "port.index": step.id,
+                "port.index": `${index}`,
             },
-        };
-    });
-
-    const outputs = Object.values(step.outputs).map((output) => {
-        return {
-            id: `${step.id}/out/${output.name}`,
-            properties: {
-                "port.side": "EAST",
-                "port.index": step.id,
-            },
+            x: 0,
+            y: index * 20,
         };
     });
 
     const position = stateStore.stepPosition[step.id];
     assertDefined(position, `No StepPosition with step id ${step.id} found in workflowStateStore`);
 
+    const outputs = Object.values(step.outputs).map((output, index) => {
+        return {
+            id: `${step.id}/out/${output.name}`,
+            properties: {
+                "port.side": "EAST",
+                "port.index": `${index}`,
+            },
+            x: position.width,
+            y: index * 20,
+        };
+    });
+
     return {
         id: `${step.id}`,
         height: roundingFunction(position.height),
         width: roundingFunction(position.width),
+        layoutOptions: {
+            "elk.portConstraints": "FIXED_POS",
+        },
         ports: inputs.concat(outputs),
     };
 }
