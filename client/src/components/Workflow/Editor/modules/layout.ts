@@ -1,11 +1,13 @@
 import ELK, { type ElkExtendedEdge, type ElkNode } from "elkjs/lib/elk.bundled";
 
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import type { WorkflowComment } from "@/stores/workflowEditorCommentStore";
+import type { FreehandWorkflowComment, WorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 import { match } from "@/utils/utils";
+
+import { AxisAlignedBoundingBox, rectDistance } from "./geometry";
 
 const elk = new ELK();
 
@@ -55,7 +57,7 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
         return Math.ceil(value / snappingDistance - floatErrorTolerance) * snappingDistance;
     };
 
-    const baseLayoutOptions = {
+    const childLayoutOptions = {
         "elk.layered.spacing.nodeNodeBetweenLayers": `${horizontalDistance / 2}`,
     };
 
@@ -63,7 +65,6 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
     const newGraph: ElkNode = {
         id: "",
         layoutOptions: {
-            ...baseLayoutOptions,
             "elk.padding": elkSpacing(0, 0),
             "elk.hierarchyHandling": "INCLUDE_CHILDREN",
             "elk.layered.spacing.baseValue": `${horizontalDistance}`,
@@ -77,7 +78,27 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
         edges: [],
     };
 
-    newGraph.children = graphToElkGraph(steps, comments, stateStore, roundUpToSnappingDistance, baseLayoutOptions);
+    const freehandComments: FreehandWorkflowComment[] = [];
+    const otherComments: WorkflowComment[] = [];
+
+    comments.forEach((comment) => {
+        if (comment.type === "freehand") {
+            freehandComments.push(comment);
+        } else {
+            otherComments.push(comment);
+        }
+    });
+
+    const collapsedFreehandComments = collapseFreehandComments(freehandComments);
+    populateClosestSteps(collapsedFreehandComments, steps, stateStore);
+
+    newGraph.children = graphToElkGraph(
+        steps,
+        otherComments,
+        stateStore,
+        roundUpToSnappingDistance,
+        childLayoutOptions
+    );
 
     newGraph.edges = connectionStore.connections.map((connection) => {
         const edge: ElkExtendedEdge = {
@@ -93,7 +114,10 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
     try {
         const elkNode = await elk.layout(newGraph);
         const positions = graphToPositions(elkNode.children, roundToSnappingDistance);
-        console.log(positions);
+
+        const freehandPositions = resolveDeltaPositions(collapsedFreehandComments, positions.steps);
+        positions.comments = positions.comments.concat(freehandPositions);
+
         return positions;
     } catch (error) {
         console.error(error);
@@ -122,9 +146,12 @@ function graphToElkGraph(
     flatHierarchicalComments.forEach((c) => {
         if (c.comment.child_comments) {
             c.comment.child_comments.forEach((id) => {
-                const childComment = flatHierarchicalComments.get(id)!;
-                childComment.root = false;
-                c.children.push(childComment);
+                const childComment = flatHierarchicalComments.get(id);
+
+                if (childComment) {
+                    childComment.root = false;
+                    c.children.push(childComment);
+                }
             });
         }
 
@@ -268,6 +295,144 @@ function graphToPositions(
                 positions.steps = positions.steps.concat(childPositions.steps);
                 positions.comments = positions.comments.concat(childPositions.comments);
             }
+        }
+    });
+
+    return positions;
+}
+
+interface CollapsedFreehandComment {
+    aabb: AxisAlignedBoundingBox;
+    comments: FreehandWorkflowComment[];
+    closestStepId?: string;
+    positionFrom?: { x: number; y: number };
+}
+
+/** groups freehand comments into distinct sets with any amount of overlap */
+function collapseFreehandComments(comments: FreehandWorkflowComment[]): CollapsedFreehandComment[] {
+    const commentsAsCollapsed: CollapsedFreehandComment[] = comments.map((c) => {
+        const aabb = new AxisAlignedBoundingBox();
+        aabb.fitRectangle({
+            x: c.position[0],
+            y: c.position[1],
+            width: c.size[0],
+            height: c.size[1],
+        });
+
+        return {
+            aabb,
+            comments: [c],
+        };
+    });
+
+    const collapsedFreehandComments: Set<CollapsedFreehandComment> = new Set(commentsAsCollapsed);
+
+    const compareAgainstOtherCollapsed = (a: CollapsedFreehandComment) => {
+        const iterator = collapsedFreehandComments.values();
+
+        for (const other of iterator) {
+            if (a !== other && a.aabb.intersects(other.aabb)) {
+                mergeCollapsedComments(a, other);
+                break;
+            }
+        }
+    };
+
+    const mergeCollapsedComments = (a: CollapsedFreehandComment, b: CollapsedFreehandComment) => {
+        const aabb = new AxisAlignedBoundingBox();
+        aabb.fitRectangle(a.aabb);
+        aabb.fitRectangle(b.aabb);
+
+        collapsedFreehandComments.delete(a);
+        collapsedFreehandComments.delete(b);
+
+        const merged = {
+            aabb: aabb,
+            comments: [...a.comments, ...b.comments],
+        };
+
+        collapsedFreehandComments.add(merged);
+        compareAgainstOtherCollapsed(merged);
+    };
+
+    const iterator = collapsedFreehandComments.values();
+
+    for (const comment of iterator) {
+        compareAgainstOtherCollapsed(comment);
+    }
+
+    return [...collapsedFreehandComments.values()];
+}
+
+/** find out which step is the closest to each comment, save it's id and position */
+function populateClosestSteps(
+    collapsedFreehandComments: CollapsedFreehandComment[],
+    steps: Record<string, Step>,
+    stateStore: ReturnType<typeof useWorkflowStateStore>
+) {
+    const stepsWidthRect = Object.entries(steps).map(([stepId, step]) => {
+        const position = stateStore.stepPosition[step.id];
+        assertDefined(position, `No StepPosition with step id ${step.id} found in workflowStateStore`);
+
+        return {
+            id: stepId,
+            step,
+            rect: {
+                x: step.position?.left ?? 0,
+                y: step.position?.top ?? 0,
+                width: position.width,
+                height: position.height,
+            },
+        };
+    });
+
+    collapsedFreehandComments.forEach((comment) => {
+        let closestDistance = Infinity;
+
+        stepsWidthRect.forEach((s) => {
+            const distance = rectDistance(comment.aabb, s.rect);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                comment.closestStepId = s.id;
+                comment.positionFrom = {
+                    x: s.rect.x,
+                    y: s.rect.y,
+                };
+            }
+        });
+    });
+}
+
+/** resolve by how much to move the freehand comments */
+function resolveDeltaPositions(
+    collapsedFreehandComments: CollapsedFreehandComment[],
+    stepPositions: Positions["steps"]
+): Positions["comments"] {
+    const positions: Positions["comments"] = [];
+    const stepPositionMap = new Map(stepPositions.map((p) => [p.id, p]));
+
+    collapsedFreehandComments.forEach((collapsed) => {
+        if (!collapsed.closestStepId) {
+            return;
+        }
+
+        const newPosition = stepPositionMap.get(collapsed.closestStepId);
+
+        if (newPosition) {
+            const delta = {
+                x: newPosition.x - (collapsed.positionFrom?.x ?? 0),
+                y: newPosition.y - (collapsed.positionFrom?.y ?? 0),
+            };
+
+            collapsed.comments.forEach((comment) => {
+                positions.push({
+                    id: `${comment.id}`,
+                    x: comment.position[0] + delta.x,
+                    y: comment.position[1] + delta.y,
+                    w: comment.size[0],
+                    h: comment.size[1],
+                });
+            });
         }
     });
 
