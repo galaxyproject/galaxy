@@ -3,6 +3,7 @@ import { useToast } from "@/composables/toast";
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
 import { LazyUndoRedoAction, UndoRedoAction, type UndoRedoStore } from "@/stores/undoRedoStore";
 import { type Connection, type WorkflowConnectionStore } from "@/stores/workflowConnectionStore";
+import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { type WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type NewStep, type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
@@ -407,10 +408,16 @@ export class ToggleStepSelectedAction extends UndoRedoAction {
     }
 }
 
+interface Positions {
+    steps: { id: string; x: number; y: number }[];
+    comments: { id: string; x: number; y: number; w: number; h: number }[];
+}
+
 export class AutoLayoutAction extends UndoRedoAction {
     stepStore;
-    positions: { id: string; x: number; y: number }[];
-    oldPositions: { id: string; x: number; y: number }[];
+    commentStore;
+    positions: Positions;
+    oldPositions: Positions;
     workflowId;
     ran;
 
@@ -419,8 +426,18 @@ export class AutoLayoutAction extends UndoRedoAction {
 
         this.workflowId = workflowId;
         this.stepStore = useWorkflowStepStore(workflowId);
-        this.positions = [];
-        this.oldPositions = [];
+        this.commentStore = useWorkflowCommentStore(workflowId);
+
+        this.positions = {
+            steps: [],
+            comments: [],
+        };
+
+        this.oldPositions = {
+            steps: [],
+            comments: [],
+        };
+
         this.ran = false;
     }
 
@@ -428,8 +445,8 @@ export class AutoLayoutAction extends UndoRedoAction {
         return "auto layout";
     }
 
-    private mapPositionsToStore(positions: { id: string; x: number; y: number }[]) {
-        positions.map((p) => {
+    private mapPositionsToStore(positions: Positions) {
+        positions.steps.map((p) => {
             const step = this.stepStore.steps[p.id];
             if (step) {
                 this.stepStore.updateStep({
@@ -441,12 +458,21 @@ export class AutoLayoutAction extends UndoRedoAction {
                 });
             }
         });
+
+        positions.comments.map((c) => {
+            const id = parseInt(c.id, 10);
+            const comment = this.commentStore.commentsRecord[id];
+            if (comment) {
+                this.commentStore.changePosition(id, [c.x, c.y]);
+                this.commentStore.changeSize(id, [c.w, c.h]);
+            }
+        });
     }
 
     async run() {
         this.ran = true;
 
-        this.oldPositions = Object.values(this.stepStore.steps).map((step) => ({
+        this.oldPositions.steps = Object.values(this.stepStore.steps).map((step) => ({
             id: `${step.id}`,
             x: step.position?.left ?? 0,
             y: step.position?.top ?? 0,
@@ -456,9 +482,14 @@ export class AutoLayoutAction extends UndoRedoAction {
             /* webpackChunkName: "workflowLayout" */ "@/components/Workflow/Editor/modules/layout"
         );
 
-        const newPositions = await autoLayout(this.workflowId, this.stepStore.steps);
+        this.commentStore.resolveCommentsInFrames();
+        this.commentStore.resolveStepsInFrames();
+
+        const newPositions = await autoLayout(this.workflowId, this.stepStore.steps, this.commentStore.comments);
+
         assertDefined(newPositions);
-        this.positions = newPositions;
+
+        this.positions = newPositions as Positions;
 
         if (this.ran) {
             this.mapPositionsToStore(this.positions);
