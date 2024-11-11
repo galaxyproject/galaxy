@@ -69,7 +69,7 @@ DEFAULT_WORKING_DIR = "/source/"
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
 DEST_BASE_IMAGE = os.environ.get("DEST_BASE_IMAGE", None)
-CONDA_IMAGE = os.environ.get("CONDA_IMAGE", None)
+CONDA_IMAGE = os.environ.get("CONDA_IMAGE", "quay.io/condaforge/miniforge3:latest")
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
 From: %(base_image)s
@@ -374,13 +374,12 @@ class CondaInDockerContext(CondaContext):
         condarc_override=None,
     ):
         if not conda_exec:
-            conda_image = CONDA_IMAGE or "quay.io/condaforge/miniforge3:latest"
             binds = []
             for channel in ensure_channels:
                 if channel.startswith("file://"):
                     bind_path = channel[7:]
                     binds.extend(["-v", f"{bind_path}:{bind_path}"])
-            conda_exec = docker_command_list("run", binds + [conda_image, "conda"])
+            conda_exec = docker_command_list("run", binds + [CONDA_IMAGE, "conda"])
         super().__init__(
             conda_prefix=conda_prefix,
             conda_exec=conda_exec,
