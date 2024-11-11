@@ -527,8 +527,8 @@ def add_single_image_arguments(parser):
     )
 
 
-def target_str_to_targets(targets_raw):
-    def parse_target(target_str):
+def target_str_to_targets(targets_raw: str) -> List[CondaTarget]:
+    def parse_target(target_str: str) -> CondaTarget:
         if "=" in target_str:
             package_name, version = target_str.split("=", 1)
             build = None
@@ -541,8 +541,10 @@ def target_str_to_targets(targets_raw):
             target = build_target(target_str)
         return target
 
-    targets = [parse_target(_) for _ in targets_raw.split(",")]
-    return targets
+    if targets_raw.strip() == "":
+        return []
+    else:
+        return [parse_target(_) for _ in targets_raw.split(",")]
 
 
 def args_to_mull_targets_kwds(args):
