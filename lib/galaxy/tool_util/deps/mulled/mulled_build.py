@@ -374,7 +374,7 @@ class CondaInDockerContext(CondaContext):
         condarc_override=None,
     ):
         if not conda_exec:
-            conda_image = CONDA_IMAGE or "continuumio/miniconda3:latest"
+            conda_image = CONDA_IMAGE or "quay.io/condaforge/miniforge3:latest"
             binds = []
             for channel in ensure_channels:
                 if channel.startswith("file://"):
