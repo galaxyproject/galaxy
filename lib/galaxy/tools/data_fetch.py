@@ -260,7 +260,7 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
                 hash_function = hash_dict.get("hash_function")
                 hash_value = hash_dict.get("hash_value")
                 try:
-                    _handle_hash_validation(upload_config, hash_function, hash_value, path)
+                    _handle_hash_validation(hash_function, hash_value, path)
                 except Exception as e:
                     error_message = str(e)
                     item["error_message"] = error_message
@@ -501,7 +501,7 @@ def _has_src_to_path(upload_config: "UploadConfig", item: Dict[str, Any], is_dat
             for hash_function in HASH_NAMES:
                 hash_value = item.get(hash_function)
                 if hash_value:
-                    _handle_hash_validation(upload_config, hash_function, hash_value, path)
+                    _handle_hash_validation(hash_function, hash_value, path)
         if name is None:
             name = url.split("/")[-1]
     elif src == "pasted":
@@ -516,11 +516,8 @@ def _has_src_to_path(upload_config: "UploadConfig", item: Dict[str, Any], is_dat
     return name, path
 
 
-def _handle_hash_validation(
-    upload_config: "UploadConfig", hash_function: HashFunctionNameEnum, hash_value: str, path: str
-):
-    if upload_config.validate_hashes:
-        verify_hash(path, hash_func_name=hash_function, hash_value=hash_value, what="upload")
+def _handle_hash_validation(hash_function: HashFunctionNameEnum, hash_value: str, path: str):
+    verify_hash(path, hash_func_name=hash_function, hash_value=hash_value, what="upload")
 
 
 def _arg_parser():
@@ -566,7 +563,6 @@ class UploadConfig:
         self.to_posix_lines = request.get("to_posix_lines", False)
         self.space_to_tab = request.get("space_to_tab", False)
         self.auto_decompress = request.get("auto_decompress", False)
-        self.validate_hashes = request.get("validate_hashes", False)
         self.deferred = request.get("deferred", False)
         self.link_data_only = _link_data_only(request)
         self.file_sources_dict = file_sources_dict

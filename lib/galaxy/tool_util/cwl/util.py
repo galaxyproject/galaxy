@@ -235,6 +235,8 @@ def galactic_job_json(
             kwd["dbkey"] = value.get("dbkey")
         if "decompress" in value:
             kwd["decompress"] = value["decompress"]
+        if value.get("hashes"):
+            kwd["hashes"] = value["hashes"]
         if composite_data_raw:
             composite_data = []
             for entry in composite_data_raw:

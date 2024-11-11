@@ -349,7 +349,6 @@ class WorkflowRequestMonitor(Monitors):
                     history_id=workflow_invocation.history.id,
                     source="hda",
                     content=hda.id,
-                    validate_hashes=True,
                 )
                 materialized_okay = self.app.hda_manager.materialize(task_request, in_place=True)
                 if not materialized_okay:

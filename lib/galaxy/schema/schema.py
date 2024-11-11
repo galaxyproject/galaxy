@@ -2171,6 +2171,12 @@ class JobMetric(Model):
     )
 
 
+class WorkflowJobMetric(JobMetric):
+    tool_id: str
+    step_index: int
+    step_label: Optional[str]
+
+
 class JobMetricCollection(RootModel):
     """Represents a collection of metrics associated with a Job."""
 
@@ -3682,15 +3688,7 @@ class PageSummaryBase(Model):
     )
 
 
-class MaterializeDatasetOptions(Model):
-    validate_hashes: bool = Field(
-        False,
-        title="Validate hashes",
-        description="Set to true to enable dataset validation during materialization.",
-    )
-
-
-class MaterializeDatasetInstanceAPIRequest(MaterializeDatasetOptions):
+class MaterializeDatasetInstanceAPIRequest(Model):
     source: DatasetSourceType = Field(
         title="Source",
         description="The source of the content. Can be other history element to be copied or library elements.",

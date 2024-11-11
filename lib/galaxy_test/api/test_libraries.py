@@ -340,7 +340,6 @@ class TestLibrariesApi(ApiTestCase):
         payload = {
             "history_id": history_id,  # TODO: Shouldn't be needed :(
             "targets": targets,
-            "validate_hashes": True,
         }
         tool_response = self.dataset_populator.fetch(payload, assert_ok=False)
         job = self.dataset_populator.check_run(tool_response)

@@ -8,7 +8,9 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
 )
+from uuid import uuid4
 
 import pytest
 from requests import (
@@ -974,15 +976,19 @@ class TestToolsApi(ApiTestCase, TestsTools):
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
             assert output1_content.strip() == "Cat1Test"
 
+    def _get_cat1_inputs(self, history_id):
+        new_dataset = self.dataset_populator.new_dataset(history_id, content="Cat1Test")
+        inputs = dict(
+            input1=dataset_to_param(new_dataset),
+        )
+        return inputs
+
     @skip_without_tool("cat1")
     @requires_new_history
     def test_run_cat1_use_cached_job(self):
         with self.dataset_populator.test_history_for(self.test_run_cat1_use_cached_job) as history_id:
             # Run simple non-upload tool with an input data parameter.
-            new_dataset = self.dataset_populator.new_dataset(history_id, content="Cat1Test")
-            inputs = dict(
-                input1=dataset_to_param(new_dataset),
-            )
+            inputs = self._get_cat1_inputs(history_id)
             outputs_one = self._run_cat1(history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
             outputs_two = self._run_cat1(
                 history_id, inputs=inputs, use_cached_job=False, assert_ok=True, wait_for_job=True
@@ -997,6 +1003,31 @@ class TestToolsApi(ApiTestCase, TestsTools):
             filenames = [dd["file_name"] for dd in dataset_details]
             assert len(filenames) == 3, filenames
             assert len(set(filenames)) <= 2, filenames
+
+    @skip_without_tool("cat1")
+    @requires_new_history
+    def test_run_cat1_use_cached_job_from_public_history(self):
+        with self.dataset_populator.test_history_for(self.test_run_cat1_use_cached_job) as history_id:
+            # Run simple non-upload tool with an input data parameter.
+            inputs = self._get_cat1_inputs(history_id)
+            original_output = self._run_cat1(history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
+            original_job = self.dataset_populator.get_job_details(original_output["jobs"][0]["id"], full=True).json()
+
+            def run_again(user_email):
+                with self._different_user_and_history(user_email=user_email) as different_history_id:
+                    cached_output = self._run_cat1(
+                        different_history_id, inputs=inputs, use_cached_job=True, assert_ok=True, wait_for_job=True
+                    )
+                    return self.dataset_populator.get_job_details(cached_output["jobs"][0]["id"], full=True).json()
+
+            job = run_again(f"{uuid4()}@test.com")
+            assert job["user_id"] != original_job["user_id"]
+            assert not job["copied_from_job_id"]
+            # publish history, now we can use cached job
+            self.dataset_populator.make_public(history_id=history_id)
+            cached_job = run_again(f"{uuid4()}@test.com")
+            assert cached_job["user_id"] != original_job["user_id"]
+            assert cached_job["copied_from_job_id"] == original_output["jobs"][0]["id"]
 
     @skip_without_tool("cat1")
     def test_run_cat1_listified_param(self):
@@ -2809,8 +2840,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
         # assert "User does not have permission to use a dataset" in err_message, err_message
 
     @contextlib.contextmanager
-    def _different_user_and_history(self):
-        with self._different_user():
+    def _different_user_and_history(self, user_email: Optional[str] = None):
+        with self._different_user(email=user_email):
             with self.dataset_populator.test_history() as other_history_id:
                 yield other_history_id
 

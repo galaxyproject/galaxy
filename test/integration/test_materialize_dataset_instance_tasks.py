@@ -89,7 +89,7 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert deferred_hda["state"] == "deferred"
         assert not deferred_hda["deleted"]
 
-        self.dataset_populator.materialize_dataset_instance(history_id, deferred_hda["id"], validate_hashes=True)
+        self.dataset_populator.materialize_dataset_instance(history_id, deferred_hda["id"])
         self.dataset_populator.wait_on_history_length(history_id, 2)
         new_hda_details = self.dataset_populator.get_history_dataset_details(
             history_id, hid=2, assert_ok=False, wait=False

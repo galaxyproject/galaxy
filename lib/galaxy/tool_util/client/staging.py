@@ -107,6 +107,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
                     dbkey=dbkey,
                     to_posix_lines=to_posix_lines,
                     decompress=upload_target.properties.get("decompress") or DEFAULT_DECOMPRESS,
+                    hashes=upload_target.properties.get("hashes"),
                 )
                 name = _file_path_to_name(file_path)
                 if file_path is not None:
@@ -177,11 +178,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
                 file_path = upload_target.path
                 file_type = upload_target.properties.get("filetype", None) or DEFAULT_FILE_TYPE
                 dbkey = upload_target.properties.get("dbkey", None) or DEFAULT_DBKEY
-                upload_payload = _upload_payload(
-                    history_id,
-                    file_type=file_type,
-                    to_posix_lines=dbkey,
-                )
+                upload_payload = _upload_payload(history_id, file_type=file_type, to_posix_lines=dbkey)
                 name = _file_path_to_name(file_path)
                 upload_payload["inputs"]["files_0|auto_decompress"] = False
                 upload_payload["inputs"]["auto_decompress"] = False
@@ -334,6 +331,8 @@ def _fetch_payload(history_id, file_type=DEFAULT_FILE_TYPE, dbkey=DEFAULT_DBKEY,
     for arg in ["to_posix_lines", "space_to_tab"]:
         if arg in kwd:
             element[arg] = kwd[arg]
+    if kwd.get("hashes"):
+        element["hashes"] = kwd["hashes"]
     if "file_name" in kwd:
         element["name"] = kwd["file_name"]
     if "decompress" in kwd:

@@ -1,5 +1,6 @@
 """This module contains a linting functions for tool outputs."""
 
+import ast
 from typing import TYPE_CHECKING
 
 from packaging.version import Version
@@ -74,6 +75,23 @@ class OutputsNameDuplicated(Linter):
             if name in names:
                 lint_ctx.error(f"Tool output [{name}] has duplicated name", linter=cls.name(), node=output)
             names.add(name)
+
+
+class OutputsFilterExpression(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        for filter in tool_xml.findall("./outputs//filter"):
+            try:
+                ast.parse(filter.text, mode="eval")
+            except Exception as e:
+                lint_ctx.warn(
+                    f"Filter '{filter.text}' is no valid expression: {str(e)}",
+                    linter=cls.name(),
+                    node=filter,
+                )
 
 
 class OutputsLabelDuplicatedFilter(Linter):
