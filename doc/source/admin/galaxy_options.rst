@@ -509,8 +509,9 @@
 :Description:
     Set to true to instruct Galaxy to install Conda from the web
     automatically if it cannot find a local copy and conda_exec is not
-    configured.
-:Default: ``true``
+    configured. The default is true if running Galaxy from source, and
+    false if running from installed packages.
+:Default: ``None``
 :Type: bool
 
 
@@ -5124,7 +5125,7 @@
     'deferred' are "materialized" (or undeferred) by the workflow
     scheduler. This might be a lengthy process. Setting this to 'True'
     will place the invocation back in the queue after materialization
-    before scheduling the workflow so it is less  likely to starve
+    before scheduling the workflow so it is less likely to starve
     other workflow scheduling. Ideally, Galaxy would allow more fine
     grain control of handlers but until then, this provides a way to
     tip the balance between "doing more work" and "being more fair".
@@ -5658,6 +5659,3 @@
     to the user. Currently only affects s3fs file sources.
 :Default: ``60``
 :Type: int
-
-
-

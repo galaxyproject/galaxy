@@ -1,11 +1,14 @@
 from uuid import uuid4
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
     InsufficientPermissionsException,
     ItemAlreadyClaimedException,
+    ItemMustBeClaimed,
     ObjectNotFound,
 )
 from galaxy.managers.landing import LandingRequestManager
+from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.model import (
     StoredWorkflow,
     Workflow,
@@ -19,6 +22,7 @@ from galaxy.schema.schema import (
     ToolLandingRequest,
     WorkflowLandingRequest,
 )
+from galaxy.workflow.trs_proxy import TrsProxy
 from .base import BaseTestCase
 
 TEST_TOOL_ID = "cat1"
@@ -37,7 +41,11 @@ class TestLanding(BaseTestCase):
 
     def setUp(self):
         super().setUp()
-        self.landing_manager = LandingRequestManager(self.trans.sa_session, self.app.security)
+        self.workflow_contents_manager = WorkflowContentsManager(self.app, self.app.trs_proxy)
+        self.landing_manager = LandingRequestManager(
+            self.trans.sa_session, self.app.security, self.workflow_contents_manager
+        )
+        self.trans.app.trs_proxy = TrsProxy(GalaxyAppConfiguration(override_tempdir=False))
 
     def test_tool_landing_requests_typical_flow(self):
         landing_request: ToolLandingRequest = self.landing_manager.create_tool_landing_request(self._tool_request)
@@ -69,7 +77,7 @@ class TestLanding(BaseTestCase):
         exception = None
         try:
             self.landing_manager.get_tool_landing_request(self.trans, uuid)
-        except InsufficientPermissionsException as e:
+        except ItemMustBeClaimed as e:
             exception = e
         assert exception is not None
 

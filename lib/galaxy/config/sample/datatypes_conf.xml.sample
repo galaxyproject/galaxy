@@ -288,13 +288,14 @@
       <display file="qiime/qiime2/q2view.xml"/>
     </datatype>
     <datatype extension='qiime2.tabular' type="galaxy.datatypes.qiime2:QIIME2Metadata" display_in_upload="true"/>
-    <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="true"/>
+    <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="true">
+        <converter file="archive_to_directory.xml" target_datatype="directory" />
+    </datatype>
     <datatype extension="ncbi_genome_dataset.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="true"/>
-    <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
-      <converter file="tar_to_directory.xml" target_datatype="directory"/>
+    <datatype extension="tar" auto_compressed_types="gz,bz2" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
+      <converter file="archive_to_directory.xml" target_datatype="directory"/>
     </datatype>
-    <datatype extension="directory" type="galaxy.datatypes.data:Directory">
-    </datatype>
+    <datatype extension="directory" type="galaxy.datatypes.data:Directory"/>
     <datatype extension="yaml" type="galaxy.datatypes.text:Yaml" display_in_upload="true" />
     <!-- Proteomics Datatypes -->
     <datatype extension="mrm" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="true"/>

@@ -32,6 +32,18 @@ gx_int:
   job_internal_invalid:
    - parameter: null
    - {}
+  landing_request_valid:
+    - {}
+    - parameter: 5
+  landing_request_invalid:
+    - parameter: "moo"
+    - parameter: "5"
+  landing_request_internal_valid:
+    - {}
+    - parameter: 5
+  landing_request_internal_invalid:
+    - parameter: "moo"
+    - parameter: "5"
   test_case_xml_valid:
     - parameter: 5
     - {}
@@ -71,6 +83,21 @@ gx_boolean:
    - parameter: false
   job_internal_invalid:
    - {}
+  landing_request_valid:
+    - {}
+    - parameter: true
+    - parameter: false
+  landing_request_invalid:
+    - parameter: "true"
+    - parameter: "5"
+  landing_request_internal_valid:
+    - {}
+    - parameter: true
+    - parameter: false
+  landing_request_internal_invalid:
+    - parameter: "moo"
+    - parameter: "true"
+    - parameter: "5"
   workflow_step_valid:
     - parameter: True
     - {}
@@ -102,6 +129,20 @@ gx_int_optional:
    - parameter: null
   job_internal_invalid:
    - {}
+  landing_request_valid:
+    - {}
+    - parameter: 5
+    - parameter: null
+  landing_request_invalid:
+    - parameter: "moo"
+    - parameter: "5"
+  landing_request_internal_valid:
+    - {}
+    - parameter: 5
+    - parameter: null
+  landing_request_internal_invalid:
+    - parameter: "moo"
+    - parameter: "5"
   workflow_step_valid:
    - parameter: 5
    - parameter: null
@@ -132,9 +173,88 @@ gx_int_required: &gx_int_required
    - parameter: 5
   job_internal_invalid:
    - {}
+  # and actual request will require a value but the landing only needs to specify parameters
+  # of interest - forcing users to make the rest of the selections.
+  landing_request_valid:
+    - {}
+    - parameter: 5
+  landing_request_invalid:
+    - parameter: "moo"
+    - parameter: "5"
+  landing_request_internal_valid:
+    - {}
+    - parameter: 5
+  landing_request_internal_invalid:
+    - parameter: "moo"
+    - parameter: "5"
 
 gx_int_required_via_empty_string:
   <<: *gx_int_required
+
+gx_int_validation_range:
+  request_valid:
+  - parameter: 1
+  - parameter: 9
+  request_invalid:
+  - parameter: {}
+  - parameter: {__class__: 'ConnectedValue'}
+  - parameter: -1
+  - parameter: 11
+  - parameter: 10
+  workflow_step_linked_valid:
+   - parameter: {__class__: 'ConnectedValue'}
+
+gx_int_min_max:
+  request_valid:
+  - parameter: 1
+  - parameter: 9
+  - parameter: 10
+  request_invalid:
+  - parameter: -1
+  - parameter: 11
+  workflow_step_linked_valid:
+  - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+  - parameter: -1
+
+gx_text_regex_validation:
+  request_valid:
+  - parameter: acgt
+  - parameter: a
+  - parameter: aaaggttac
+  request_invalid:
+  - parameter: acgu
+  - parameter: nucleic
+  workflow_step_linked_valid:
+   - parameter: {__class__: 'ConnectedValue'}
+
+gx_text_expression_validation:
+  request_valid:
+  - parameter: the code was foobar
+  - parameter: foobar
+  request_invalid:
+  - parameter: the code was not foo bar
+  - parameter: ''
+  workflow_step_linked_valid:
+  - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+  - parameter: ''
+
+gx_text_empty_validation:
+  request_valid:
+  - parameter: foobar
+  - {}
+  request_invalid:
+  - parameter: ''
+  job_internal_valid:
+  - parameter: foobar
+  job_internal_invalid:
+  - {}
+  - parameter: ''
+  workflow_step_linked_valid:
+  - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+  - parameter: ''
 
 gx_text:
   request_valid: &gx_text_request_valid
@@ -142,9 +262,10 @@ gx_text:
     - parameter: 'some spaces'
     - parameter: ''
     - {}
+    # need to explicitly mark these as non-optional
+    - parameter: null
   request_invalid: &gx_text_request_invalid
     - parameter: 5
-    - parameter: null
     - parameter: {}
     - parameter: { "moo": "cow" }
     - parameter: {__class__: 'ConnectedValue'}
@@ -156,22 +277,30 @@ gx_text:
     *gx_text_request_valid
   request_internal_dereferenced_invalid:
     *gx_text_request_invalid
+  landing_request_valid:
+    *gx_text_request_valid
+  landing_request_invalid:
+    *gx_text_request_invalid
+  landing_request_internal_valid:
+    *gx_text_request_valid
+  landing_request_internal_invalid:
+    *gx_text_request_invalid
   job_internal_valid:
     - parameter: moocow
     - parameter: 'some spaces'
     - parameter: ''
+    - parameter: null
   job_internal_invalid:
     - {}
-    - parameter: null
     - parameter: { "moo": "cow" }
   workflow_step_valid:
     - parameter: moocow
     - parameter: 'some spaces'
     - parameter: ''
     - {}
+    - parameter: null
   workflow_step_invalid:
     - parameter: 5
-    - parameter: null
     - parameter: {}
     - parameter: { "moo": "cow" }
     - parameter: {__class__: 'ConnectedValue'}
@@ -181,9 +310,9 @@ gx_text:
     - parameter: ''
     - {}
     - parameter: {__class__: 'ConnectedValue'}
+    - parameter: null
   workflow_step_linked_invalid:
     - parameter: 5
-    - parameter: null
     - parameter: {}
     - parameter: { "moo": "cow" }
     - parameter: {"class": 'ConnectedValue'}
@@ -198,6 +327,18 @@ gx_text_optional:
     - parameter: 5
     - parameter: {}
     - parameter: { "moo": "cow" }
+  landing_request_valid: &gx_text_optional_landing_request_valid
+    - parameter: "moo cow"
+    - {}
+    - parameter: null
+  landing_request_invalid: &gx_text_optional_landing_request_invalid
+    - parameter: 5
+    - parameter: 6
+  landing_request_internal_valid:
+    *gx_text_optional_landing_request_valid
+  landing_request_internal_invalid:
+    *gx_text_optional_landing_request_invalid
+
   workflow_step_valid:
     - parameter: moocow
     - parameter: 'some spaces'
@@ -218,6 +359,21 @@ gx_text_optional:
     - parameter: 5
     - parameter: {}
     - parameter: { "moo": "cow" }
+
+gx_text_length_validation: 
+  request_valid:
+  - parameter: "mytext"
+  - parameter: "mytext123"
+  request_invalid:
+  - parameter: "s"  # too short
+  - parameter: "mytext1231231231sd"  # too long
+
+gx_text_length_validation_negate: 
+  request_valid:
+  - parameter: "m"
+  - parameter: "mytext123mocowdowees"
+  request_invalid:
+  - parameter: "goldilocks"
 
 gx_select:
   request_valid:
@@ -243,6 +399,18 @@ gx_select:
    *gx_select_request_valid
   request_internal_dereferenced_invalid:
    *gx_select_request_invalid
+  landing_request_valid: &gx_select_landing_request_valid
+    - parameter: "--ex1"
+    - parameter: "ex2"
+    - {}
+  landing_request_invalid: &gx_select_landing_request_invalid
+    - parameter: 5
+    - parameter: null
+    - parameter: "Ex1"
+  landing_request_internal_valid:
+    *gx_select_landing_request_valid
+  landing_request_internal_invalid:
+    *gx_select_landing_request_invalid
   job_internal_valid:
   - parameter: '--ex1'
   - parameter: 'ex2'
@@ -283,6 +451,19 @@ gx_select_optional:
   - parameter: ["ex2"]
   - parameter: {}
   - parameter: 5
+  landing_request_valid: &gx_select_optional_landing_request_valid
+  - parameter: "--ex1"
+  - parameter: "ex2"
+  - parameter: null
+  - {}
+  landing_request_invalid: &gx_select_optional_landing_request_invalid
+  - parameter: 5
+  - parameter: "Ex1"
+  - parameter: {}
+  landing_request_internal_valid:
+    *gx_select_optional_landing_request_valid
+  landing_request_internal_invalid:
+    *gx_select_optional_landing_request_invalid
   job_internal_valid:
   - parameter: '--ex1'
   - parameter: 'ex2'
@@ -326,6 +507,20 @@ gx_select_multiple:
   - parameter: ["Ex1"]
   - parameter: {}
   - parameter: 5
+  landing_request_valid: &gx_select_multiple_landing_request_valid
+  - parameter: ["--ex1"]
+  - parameter: ["ex2"]
+  - parameter: null
+  - {}
+  landing_request_invalid: &gx_select_multiple_landing_request_invalid
+  - parameter: 5
+  - parameter: ["Ex1"]
+  - parameter: {}
+  - parameter: false
+  landing_request_internal_valid:
+    *gx_select_multiple_landing_request_valid
+  landing_request_internal_invalid:
+    *gx_select_multiple_landing_request_invalid
   workflow_step_valid:
   - parameter: ["--ex1"]
   - parameter: ["ex2"]
@@ -370,6 +565,12 @@ gx_select_multiple_optional:
   - parameter: {}
   - parameter: 5
 
+gx_select_no_options_validation:
+  job_internal_valid:
+  - parameter: "--ex1"
+  job_internal_invalid:
+  - {}
+
 gx_genomebuild:
   request_valid:
   - parameter: hg19
@@ -379,6 +580,17 @@ gx_genomebuild:
   request_invalid:
   - parameter: null
   - parameter: 9
+  landing_request_valid: &gx_genomebuild_landing_request_valid
+  - parameter: hg19
+  - parameter: hg18
+  - {}
+  landing_request_invalid: &gx_genomebuild_landing_request_invalid
+  - parameter: null
+  - parameter: 9
+  landing_request_internal_valid:
+    *gx_genomebuild_landing_request_valid
+  landing_request_internal_invalid:
+    *gx_genomebuild_landing_request_invalid
   job_internal_valid:
   - parameter: hg19
   job_internal_invalid:
@@ -394,6 +606,17 @@ gx_genomebuild_optional:
   request_invalid:
   - parameter: 8
   - parameter: true
+  landing_request_valid: &gx_genomebuild_optional_landing_request_valid
+  - parameter: hg19
+  - parameter: hg18
+  - {}
+  - parameter: null
+  landing_request_invalid: &gx_genomebuild_optional_landing_request_invalid
+  - parameter: 9
+  landing_request_internal_valid:
+    *gx_genomebuild_optional_landing_request_valid
+  landing_request_internal_invalid:
+    *gx_genomebuild_optional_landing_request_invalid
   job_internal_valid:
   - parameter: null
   job_internal_invalid:
@@ -415,6 +638,18 @@ gx_directory_uri:
   - parameter: "justsomestring"
   - parameter: true
   - parameter: null
+  landing_request_valid: &gx_directory_uri_landing_request_valid
+  - parameter: "gxfiles://foobar/"
+  - parameter: "gxfiles://foobar"
+  - {}
+  landing_request_invalid: &gx_directory_uri_landing_request_invalid
+  - parameter: true
+  - parameter: null
+  - parameter: 8
+  landing_request_internal_valid:
+    *gx_directory_uri_landing_request_valid
+  landing_request_internal_invalid:
+    *gx_directory_uri_landing_request_invalid
   job_internal_valid:
   - parameter: "gxfiles://foobar/"
   - parameter: "gxfiles://foobar"
@@ -422,6 +657,22 @@ gx_directory_uri:
   - parameter: "justsomestring"
   - parameter: true
   - parameter: null
+
+gx_directory_uri_validation:
+  request_valid:
+  - parameter: "gxfiles://mycoolsource/api/index.json"
+  request_invalid:
+  - parameter: {__class__: 'ConnectedValue'}
+  - parameter: "gxfiles://tooshort/index.json"
+  - parameter: "gxfiles://mycoolsource/api/wrongex.js"
+  - parameter: "gxfiles://mycoolsource/badexp.json"
+  workflow_step_linked_valid:
+  - parameter: {__class__: 'ConnectedValue'}
+  - parameter: "gxfiles://mycoolsource/api/index.json"
+  workflow_step_linked_invalid:
+  - parameter: "gxfiles://tooshort/index.json"
+  - parameter: "gxfiles://mycoolsource/api/wrongex.js"
+  - parameter: "gxfiles://mycoolsource/badexp.json"
 
 gx_hidden:
   request_valid:
@@ -435,6 +686,20 @@ gx_hidden:
     - parameter: 5
     - parameter: {}
     - parameter: { "moo": "cow" }
+  landing_request_valid: &gx_hidden_landing_request_valid
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - {}
+  landing_request_invalid: &gx_hidden_landing_request_invalid
+    - parameter: null
+    - parameter: 5
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+  landing_request_internal_valid:
+    *gx_hidden_landing_request_valid
+  landing_request_internal_invalid:
+    *gx_hidden_landing_request_invalid
   job_internal_valid:
     - parameter: moocow
     - parameter: 'some spaces'
@@ -445,7 +710,7 @@ gx_hidden:
     - parameter: moocow
     - {}
   workflow_step_invalid:
-    - parmaeter: 5
+    - parameter: 5
     - parameter: {}
     - parameter: { "moo": "cow" }
   workflow_step_linked_valid:
@@ -465,12 +730,26 @@ gx_hidden_optional:
     - parameter: 5
     - parameter: {}
     - parameter: { "moo": "cow" }
+  landing_request_valid: &gx_hidden_optional_landing_request_valid
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - {}
+    - parameter: null
+  landing_request_invalid: &gx_hidden_optional_landing_request_invalid
+    - parameter: 5
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+  landing_request_internal_valid:
+    *gx_hidden_optional_landing_request_valid
+  landing_request_internal_invalid:
+    *gx_hidden_optional_landing_request_invalid
   workflow_step_valid:
     - parameter: moocow
     - {}
     - parameter: null
   workflow_step_invalid:
-    - parmaeter: 5
+    - parameter: 5
     - parameter: {}
     - parameter: { "moo": "cow" }
   workflow_step_linked_valid:
@@ -479,6 +758,22 @@ gx_hidden_optional:
     - parameter: null
   workflow_step_linked_invalid:
     - parameter: 5
+
+gx_hidden_validation:
+  request_valid:
+  - parameter: "http://mycoolservice.com/api/index.json"
+  request_invalid:
+  - parameter: {__class__: 'ConnectedValue'}
+  - parameter: "http://mycoolservice.com/index.json"
+  - parameter: "http://mycoolservice.com/api/wrongex.js"
+  - parameter: "http://mycoolservice.com/badexp.json"
+  workflow_step_linked_valid:
+  - parameter: {__class__: 'ConnectedValue'}
+  - parameter: "http://mycoolservice.com/api/index.json"
+  workflow_step_linked_invalid:
+  - parameter: "http://mycoolservice.com/index.json"
+  - parameter: "http://mycoolservice.com/api/wrongex.js"
+  - parameter: "http://mycoolservice.com/badexp.json"
 
 gx_float:
   request_valid:
@@ -492,6 +787,30 @@ gx_float:
     - parameter: "5"
     - parameter: "5.0"
     - parameter: { "moo": "cow" }
+  job_internal_valid:
+   - parameter: 5
+   - parameter: 5.0
+  job_internal_invalid:
+   - {}
+   - parameter: "5"
+   - parameter: "5.0"
+   - parameter: null
+  landing_request_valid:
+    - {}
+    - parameter: 5
+    - parameter: 5.0
+  landing_request_invalid:
+    - parameter: "moo"
+    - parameter: "5"
+    - parameter: "5.0"
+  landing_request_internal_valid:
+    - {}
+    - parameter: 5
+    - parameter: 5.0
+  landing_request_internal_invalid:
+    - parameter: "moo"
+    - parameter: "5"
+    - parameter: "5.0"
   test_case_xml_valid:
     - parameter: 5
     - parameter: 5.0
@@ -529,6 +848,32 @@ gx_float_optional:
     - parameter: "5.0"
     - parameter: {}
     - parameter: { "moo": "cow" }
+  job_internal_valid:
+   - parameter: 5
+   - parameter: 5.0
+   - parameter: null
+  job_internal_invalid:
+   - {}
+   - parameter: "5"
+   - parameter: "5.0"
+  landing_request_valid:
+    - {}
+    - parameter: 5
+    - parameter: 5.0
+    - parameter: null
+  landing_request_invalid:
+    - parameter: "moo"
+    - parameter: "5"
+    - parameter: "5.0"
+  landing_request_internal_valid:
+    - {}
+    - parameter: 5
+    - parameter: 5.0
+    - parameter: null
+  landing_request_internal_invalid:
+    - parameter: "moo"
+    - parameter: "5"
+    - parameter: "5.0"
   test_case_xml_valid:
     - parameter: 5
     - parameter: 5.0
@@ -552,6 +897,26 @@ gx_float_optional:
   workflow_step_linked_invalid:
     - parameter: 'foobar'
     - parameter: {__class__: 'ConnectedValue2'}
+
+gx_float_validation_range:
+  request_valid:
+  - parameter: 0.1
+  - parameter: 9.7
+  - parameter: 5
+  request_invalid:
+  - parameter: 10
+  - parameter: 0
+  - parameter: 9.8  # endpoint not included because specified in validator
+
+gx_float_min_max:
+  request_valid:
+  - parameter: 0.1
+  - parameter: 9.7
+  - parameter: 5
+  - parameter: 9.8  # endpoint implicitly included when max attribute set on param
+  request_invalid:
+  - parameter: 10
+  - parameter: 0
 
 gx_color:
   request_valid:
@@ -616,6 +981,24 @@ gx_data:
    # the difference between request internal and request internal dereferenced is that these have been converted
    # to datasets.
    - parameter: {src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", ext: "txt"}
+  landing_request_valid:
+   - parameter: {src: hda, id: abcdabcd}
+   - parameter: {src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", "ext": "txt"}
+   - parameter: {__class__: "Batch", values: [{src: hdca, id: abcdabcd}]}
+   - {}
+   - parameter: {src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", "ext": "txt"}
+  landing_request_invalid:
+   - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
+   - parameter: {src: hda, id: 5}
+   - parameter: {src: hda, id: 0}
+  landing_request_internal_valid:
+   - parameter: {src: hda, id: 5}
+   - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
+   - {}
+   - parameter: {src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", "ext": "txt"}
+  landing_request_internal_invalid:
+   - parameter: {src: hda, id: abcdabcd}
+   - parameter: {__class__: "Batch", values: [{src: hdca, id: abcdabcd}]}
   job_internal_valid:
    - parameter: {src: hda, id: 7}
   job_internal_invalid:
@@ -744,6 +1127,16 @@ gx_data_multiple:
    # the difference between request internal and request internal dereferenced is that these have been converted
    # to datasets.
    - parameter: [{src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", ext: "txt"}]
+  landing_request_valid:
+   - parameter: [{src: hda, id: abcdabcd}]
+   - {}
+  landing_request_invalid:
+   - parameter: [{src: hda, id: 6}]
+  landing_request_internal_valid:
+   - parameter: [{src: hda, id: 6}]
+   - {}
+  landing_request_internal_invalid:
+   - parameter: [{src: hda, id: abcdabcd}]
   job_internal_valid:
    - parameter: {src: hda, id: 5}
    - parameter: [{src: hda, id: 5}, {src: hda, id: 6}]
@@ -824,6 +1217,18 @@ gx_data_collection:
    - parameter: {src: hdca, id: 5}
   request_internal_dereferenced_invalid:
    - parameter: {src: hdca, id: abcdabcd}
+  landing_request_valid:
+   - parameter: {src: hdca, id: abcdabcd}
+   - {}
+  landing_request_invalid:
+   - parameter: {src: hdca, id: 5}
+   - parameter: [{src: hdca, id: abcdabcd}]
+  landing_request_internal_valid:
+   - parameter: {src: hdca, id: 5}
+   - {}
+  landing_request_internal_invalid:
+   - parameter: {src: hdca, id: abcdabcd}
+   - parameter: [{src: hdca, id: abcdabcd}]
   workflow_step_valid:
   - {}
   workflow_step_invalid:
@@ -909,6 +1314,20 @@ gx_data_collection_optional:
    - parameter: 5
    - parameter: "5"
    - parameter: {}
+  landing_request_valid:
+   - parameter: {src: hdca, id: abcdabcd}
+   - parameter: null
+   - {}
+  landing_request_invalid:
+   - parameter: {src: hdca, id: 5}
+   - parameter: [{src: hdca, id: abcdabcd}]
+  landing_request_internal_valid:
+   - parameter: {src: hdca, id: 5}
+   - parameter: null
+   - {}
+  landing_request_internal_invalid:
+   - parameter: {src: hdca, id: abcdabcd}
+   - parameter: [{src: hdca, id: abcdabcd}]
   job_internal_valid:
     - parameter: {src: hdca, id: 5}
     - parameter: null
@@ -957,6 +1376,16 @@ gx_conditional_boolean:
     # in that case having an integer_parameter is not acceptable.
     - conditional_parameter: 
         integer_parameter: 5
+  landing_request_valid: &gx_conditional_boolean_landing_request_valid
+    - {}
+  landing_request_invalid: &gx_conditional_boolean_landing_request_invalid
+    - conditional_parameter:
+        test_parameter: false
+        integer_parameter: 1
+  landing_request_internal_valid:
+    *gx_conditional_boolean_landing_request_valid
+  landing_request_internal_invalid:
+    *gx_conditional_boolean_landing_request_invalid
   job_internal_valid:
     - conditional_parameter:
         test_parameter: true
@@ -1106,6 +1535,20 @@ gx_repeat_boolean:
       - { boolean_parameter: false }
       - { boolean_parameter: 4 }
     - parameter: 5
+  landing_request_valid: &gx_repeat_boolean_landing_request_valid
+    - {}
+    - parameter:
+      - { boolean_parameter: true }
+      - { boolean_parameter: false }
+    - parameter: [{}]
+    - parameter: [{}, {}]
+  landing_request_invalid: &gx_repeat_boolean_landing_request_invalid
+    - parameter:
+      - { boolean_parameter: 4 }
+  landing_request_internal_valid:
+    *gx_repeat_boolean_landing_request_valid
+  landing_request_internal_invalid:
+    *gx_repeat_boolean_landing_request_invalid
   job_internal_valid:
     - parameter:
       - { boolean_parameter: true }
@@ -1174,6 +1617,16 @@ gx_repeat_data:
   request_internal_invalid:
     - parameter:
       - { data_parameter: { src: hda, id: abcdabcd } }
+  landing_request_valid: &gx_repeat_data_landing_request_valid
+    - {}
+    # unlike above - in landing mode all parameters are optional so it is find to have an unset data parameters
+    - parameter: [{}]
+  landing_request_invalid: &gx_repeat_data_landing_request_invalid
+    - parameter: 5
+  landing_request_internal_valid:
+    *gx_repeat_data_landing_request_valid
+  landing_request_internal_invalid:
+    *gx_repeat_data_landing_request_invalid
   job_internal_valid:
     - parameter:
       - { data_parameter: { src: hda, id: 5 } }
@@ -1197,6 +1650,22 @@ gx_repeat_data_min:
     - parameter: [{}, {}]
     - parameter: [{}]
     - parameter: 5
+  landing_request_valid:
+  - {}
+  # ignore the min here - can just specify the first set of parameters and I think that should work
+  - parameter:
+    - { data_parameter: {src: hda, id: abcdabcd} }
+  landing_request_invalid:
+  - parameter:
+    - { data_parameter: {src: hda, id: 5} }
+  landing_request_internal_valid:
+  - {}
+  # ignore the min here - can just specify the first set of parameters and I think that should work
+  - parameter:
+    - { data_parameter: {src: hda, id: 5} }
+  landing_request_internal_invalid:
+  - parameter:
+    - { data_parameter: {src: hda, id: abcdabcd} }
   request_internal_valid:
     - parameter:
       - { data_parameter: { src: hda, id: 5 } }

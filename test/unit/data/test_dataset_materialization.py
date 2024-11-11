@@ -71,7 +71,7 @@ def test_hash_validate():
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
-    materialized_hda = materializer.ensure_materialized(deferred_hda, validate_hashes=True)
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset.state == "ok"
 
@@ -86,7 +86,7 @@ def test_hash_invalid():
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
-    materialized_hda = materializer.ensure_materialized(deferred_hda, validate_hashes=True)
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset.state == "error"
 
@@ -103,7 +103,7 @@ def test_hash_validate_source_of_download():
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
-    materialized_hda = materializer.ensure_materialized(deferred_hda, validate_hashes=True)
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset.state == "ok", materialized_hda.info
 
@@ -120,7 +120,7 @@ def test_hash_invalid_source_of_download():
     _assert_2_bed_metadata(deferred_hda)
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
-    materialized_hda = materializer.ensure_materialized(deferred_hda, validate_hashes=True)
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset.state == "error", materialized_hda.info
 

@@ -164,12 +164,12 @@ def test_case_state(
 
 
 def test_case_validation(
-    test_dict: ToolSourceTest, tool_parameter_bundle: List[ToolParameterT], profile: str
+    test_dict: ToolSourceTest, tool_parameter_bundle: List[ToolParameterT], profile: str, name: Optional[str] = None
 ) -> TestCaseStateValidationResult:
     test_case_state_and_warnings = test_case_state(test_dict, tool_parameter_bundle, profile, validate=False)
     exception: Optional[Exception] = None
     try:
-        test_case_state_and_warnings.tool_state.validate(tool_parameter_bundle)
+        test_case_state_and_warnings.tool_state.validate(tool_parameter_bundle, name=name)
         for input_name in test_case_state_and_warnings.unhandled_inputs:
             raise Exception(f"Invalid parameter name found {input_name}")
     except Exception as e:
@@ -323,8 +323,9 @@ def _input_for(flat_state_path: str, inputs: ToolSourceTestInputs) -> Optional[T
 
 
 def validate_test_cases_for_tool_source(
-    tool_source: ToolSource, use_latest_profile: bool = False
+    tool_source: ToolSource, use_latest_profile: bool = False, name: Optional[str] = None
 ) -> List[TestCaseStateValidationResult]:
+    name = name or f"PydanticModelFor[{tool_source.parse_id()}]"
     tool_parameter_bundle = input_models_for_tool_source(tool_source)
     if use_latest_profile:
         # this might get old but it is fine, just needs to be updated when test case changes are made
@@ -334,6 +335,6 @@ def validate_test_cases_for_tool_source(
     test_cases: List[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
     results_by_test: List[TestCaseStateValidationResult] = []
     for test_case in test_cases:
-        validation_result = test_case_validation(test_case, tool_parameter_bundle.parameters, profile)
+        validation_result = test_case_validation(test_case, tool_parameter_bundle.parameters, profile, name=name)
         results_by_test.append(validation_result)
     return results_by_test

@@ -2171,6 +2171,12 @@ class JobMetric(Model):
     )
 
 
+class WorkflowJobMetric(JobMetric):
+    tool_id: str
+    step_index: int
+    step_label: Optional[str]
+
+
 class JobMetricCollection(RootModel):
     """Represents a collection of metrics associated with a Job."""
 
@@ -3678,19 +3684,11 @@ class PageSummaryBase(Model):
         ...,  # Required
         title="Identifier",
         description="The title slug for the page URL, must be unique.",
-        pattern=r"^[a-z0-9\-]+$",
+        pattern=r"^[^/:?#]+$",
     )
 
 
-class MaterializeDatasetOptions(Model):
-    validate_hashes: bool = Field(
-        False,
-        title="Validate hashes",
-        description="Set to true to enable dataset validation during materialization.",
-    )
-
-
-class MaterializeDatasetInstanceAPIRequest(MaterializeDatasetOptions):
+class MaterializeDatasetInstanceAPIRequest(Model):
     source: DatasetSourceType = Field(
         title="Source",
         description="The source of the content. Can be other history element to be copied or library elements.",
@@ -3867,13 +3865,18 @@ class CreateToolLandingRequestPayload(Model):
     tool_version: Optional[str] = None
     request_state: Optional[Dict[str, Any]] = None
     client_secret: Optional[str] = None
+    public: bool = False
 
 
 class CreateWorkflowLandingRequestPayload(Model):
     workflow_id: str
-    workflow_target_type: Literal["stored_workflow", "workflow"]
+    workflow_target_type: Literal["stored_workflow", "workflow", "trs_url"]
     request_state: Optional[Dict[str, Any]] = None
     client_secret: Optional[str] = None
+    public: bool = Field(
+        False,
+        description="If workflow landing request is public anyone with the uuid can use the landing request. If not public the request must be claimed before use and additional verification might occur.",
+    )
 
 
 class ClaimLandingPayload(Model):
@@ -3891,7 +3894,7 @@ class ToolLandingRequest(Model):
 class WorkflowLandingRequest(Model):
     uuid: UuidField
     workflow_id: str
-    workflow_target_type: Literal["stored_workflow", "workflow"]
+    workflow_target_type: Literal["stored_workflow", "workflow", "trs_url"]
     request_state: Dict[str, Any]
     state: LandingRequestState
 

@@ -315,6 +315,8 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             self.job_wrapper(job).fail(
                 "This tool was disabled before the job completed.  Please contact your Galaxy administrator."
             )
+        elif job.copied_from_job_id:
+            self.queue.put((job.id, job.tool_id))
         elif job.job_runner_name is not None and job.job_runner_external_id is None:
             # This could happen during certain revisions of Galaxy where a runner URL was persisted before the job was dispatched to a runner.
             log.debug(f"({job.id}) Job runner assigned but no external ID recorded, adding to the job handler queue")
