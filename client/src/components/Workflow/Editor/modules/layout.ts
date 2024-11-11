@@ -202,6 +202,7 @@ function commentToElkStep(
         width: hierarchicalComment.comment.size[0],
         height: hierarchicalComment.comment.size[1],
         layoutOptions: {
+            "elk.commentBox": hierarchicalComment.comment.type === "frame" ? "false" : "true",
             ...layoutOptions,
             "elk.padding": elkSpacing(20, 40, 20, 20),
         },
