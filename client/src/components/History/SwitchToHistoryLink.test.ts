@@ -1,10 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
-import { type HistorySummary } from "@/api";
+import { type HistorySummaryExtended } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
+import { useUserStore } from "@/stores/userStore";
 
 import SwitchToHistoryLink from "./SwitchToHistoryLink.vue";
 
@@ -16,7 +17,19 @@ const selectors = {
     historyLink: ".history-link",
 } as const;
 
-function mountSwitchToHistoryLinkForHistory(history: HistorySummary) {
+// Mock the history store to always return the same current history id
+jest.mock("@/stores/historyStore", () => {
+    const originalModule = jest.requireActual("@/stores/historyStore");
+    return {
+        ...originalModule,
+        useHistoryStore: () => ({
+            ...originalModule.useHistoryStore(),
+            currentHistoryId: "current-history-id",
+        }),
+    };
+});
+
+function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended) {
     const pinia = createTestingPinia();
 
     server.use(
@@ -25,7 +38,7 @@ function mountSwitchToHistoryLinkForHistory(history: HistorySummary) {
         })
     );
 
-    const wrapper = shallowMount(SwitchToHistoryLink as object, {
+    const wrapper = mount(SwitchToHistoryLink as object, {
         propsData: {
             historyId: history.id,
         },
@@ -35,10 +48,26 @@ function mountSwitchToHistoryLinkForHistory(history: HistorySummary) {
             FontAwesomeIcon: true,
         },
     });
+
+    const userStore = useUserStore();
+    userStore.currentUser = {
+        email: "email",
+        id: "user_id",
+        tags_used: [],
+        isAnonymous: false,
+        total_disk_usage: 0,
+        nice_total_disk_usage: "0 bytes",
+        purged: false,
+        deleted: false,
+        is_admin: false,
+        username: "user",
+        preferences: {},
+        quota: "abcdef",
+    };
     return wrapper;
 }
 
-async function expectOptionForHistory(option: string, history: HistorySummary) {
+async function expectOptionForHistory(option: string, history: HistorySummaryExtended) {
     const wrapper = mountSwitchToHistoryLinkForHistory(history);
 
     // Wait for the history to be loaded
@@ -56,7 +85,7 @@ describe("SwitchToHistoryLink", () => {
             deleted: false,
             archived: false,
             purged: false,
-        } as HistorySummary;
+        } as HistorySummaryExtended;
         const wrapper = mountSwitchToHistoryLinkForHistory(history);
 
         expect(wrapper.find(selectors.historyLink).exists()).toBe(false);
@@ -76,8 +105,21 @@ describe("SwitchToHistoryLink", () => {
             deleted: false,
             purged: false,
             archived: false,
-        } as HistorySummary;
+            user_id: "user_id",
+        } as HistorySummaryExtended;
         await expectOptionForHistory("Switch", history);
+    });
+
+    it("should display the appropriate text when the history is the Current history", async () => {
+        const history = {
+            id: "current-history-id",
+            name: "History Current",
+            deleted: false,
+            purged: false,
+            archived: false,
+            user_id: "user_id",
+        } as HistorySummaryExtended;
+        await expectOptionForHistory("This is your current history", history);
     });
 
     it("should display the View option when the history is purged", async () => {
@@ -87,7 +129,8 @@ describe("SwitchToHistoryLink", () => {
             deleted: false,
             purged: true,
             archived: false,
-        } as HistorySummary;
+            user_id: "user_id",
+        } as HistorySummaryExtended;
         await expectOptionForHistory("View", history);
     });
 
@@ -98,7 +141,23 @@ describe("SwitchToHistoryLink", () => {
             deleted: false,
             purged: false,
             archived: true,
-        } as HistorySummary;
+            user_id: "user_id",
+        } as HistorySummaryExtended;
         await expectOptionForHistory("View", history);
     });
+
+    it("should view in new tab when the history is accessible", async () => {
+        const history = {
+            id: "public-history-id",
+            name: "History Published",
+            deleted: false,
+            purged: false,
+            archived: false,
+            published: true,
+            user_id: "other_user_id",
+        } as HistorySummaryExtended;
+        await expectOptionForHistory("View", history);
+    });
+
+    // if the history is inaccessible, the HistorySummary would never be fetched in the first place
 });

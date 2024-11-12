@@ -41,11 +41,13 @@ from galaxy.model import (
 )
 from galaxy.model.dataset_collections import builder
 from galaxy.schema.fetch_data import FilesPayload
+from galaxy.tool_util.parameters.factory import get_color_value
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.tool_util.parser.util import (
     boolean_is_checked,
     boolean_true_and_false_values,
     ParameterParseException,
+    text_input_is_optional,
 )
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.util import (
@@ -121,6 +123,8 @@ def parse_dynamic_options(param, input_source):
     if not dynamic_options_config:
         return None
     options_elem = dynamic_options_config.elem()
+    if options_elem is None:
+        return None
     return dynamic_options.DynamicOptions(options_elem, param)
 
 
@@ -186,7 +190,6 @@ class ToolParameter(UsesDictVisibleKeys):
         self.hidden = input_source.get_bool("hidden", False)
         self.refresh_on_change = input_source.get_bool("refresh_on_change", False)
         self.optional = input_source.parse_optional()
-        self.optionality_inferred = False
         self.is_dynamic = False
         self.label = input_source.parse_label()
         self.help = input_source.parse_help()
@@ -194,9 +197,7 @@ class ToolParameter(UsesDictVisibleKeys):
             self.sanitizer = ToolParameterSanitizer.from_element(sanitizer_elem)
         else:
             self.sanitizer = None
-        self.validators = []
-        for elem in input_source.parse_validator_elems():
-            self.validators.append(validation.Validator.from_element(self, elem))
+        self.validators = validation.to_validators(tool.app if tool else None, input_source.parse_validators())
 
     @property
     def visible(self) -> bool:
@@ -207,7 +208,7 @@ class ToolParameter(UsesDictVisibleKeys):
         """Return user friendly name for the parameter"""
         return self.label if self.label else self.name
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         """
         Convert a value from an HTML POST into the parameters preferred value
         format.
@@ -358,18 +359,7 @@ class SimpleTextToolParameter(ToolParameter):
         else:
             # Optionality not explicitly defined, default to False
             optional = False
-            if self.type == "text":
-                # A text parameter that doesn't raise a validation error on empty string
-                # is considered to be optional
-                try:
-                    for validator in self.validators:
-                        validator.validate("")
-                    optional = True
-                    self.optionality_inferred = True
-                except ValueError:
-                    pass
         self.optional = optional
-
         if self.optional:
             self.value = None
         else:
@@ -404,9 +394,16 @@ class TextToolParameter(SimpleTextToolParameter):
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
+        self.profile = tool.profile if tool else None
         self.datalist = []
         for title, value, _ in input_source.parse_static_options():
             self.datalist.append({"label": title, "value": value})
+
+        # why does Integer and Float subclass this :_(
+        if self.type == "text":
+            self.optional, self.optionality_inferred = text_input_is_optional(input_source)
+        else:
+            self.optionality_inferred = False
         self.value = input_source.get("value")
         self.area = input_source.get_bool("area", False)
 
@@ -418,6 +415,16 @@ class TextToolParameter(SimpleTextToolParameter):
             and contains_workflow_parameter(value, search=search)
         ):
             return super().validate(value, trans)
+
+    @property
+    def wrapper_default(self) -> Optional[str]:
+        """Handle change in default handling pre and post 23.0 profiles."""
+        profile = self.profile
+        legacy_behavior = profile is None or Version(str(profile)) < Version("23.0")
+        default_value = None
+        if self.optional and self.optionality_inferred and legacy_behavior:
+            default_value = ""
+        return default_value
 
     def to_dict(self, trans, other_values=None):
         d = super().to_dict(trans)
@@ -466,9 +473,9 @@ class IntegerToolParameter(TextToolParameter):
             except ValueError:
                 raise ParameterValueError("attribute 'max' must be an integer", self.name, self.max)
         if self.min is not None or self.max is not None:
-            self.validators.append(validation.InRangeValidator(None, self.min, self.max))
+            self.validators.append(validation.InRangeValidator.simple_range_validator(self.min, self.max))
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         other_values = other_values or {}
         try:
             return int(value)
@@ -539,9 +546,9 @@ class FloatToolParameter(TextToolParameter):
             except ValueError:
                 raise ParameterValueError("attribute 'max' must be a real number", self.name, self.max)
         if self.min is not None or self.max is not None:
-            self.validators.append(validation.InRangeValidator(None, self.min, self.max))
+            self.validators.append(validation.InRangeValidator.simple_range_validator(self.min, self.max))
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         other_values = other_values or {}
         try:
             return float(value)
@@ -587,11 +594,11 @@ class BooleanToolParameter(ToolParameter):
     >>> print(p.name)
     _name
     >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', True)]
-    >>> print(p.from_json('true'))
+    >>> print(p.from_json('true', trans))
     True
     >>> print(p.to_param_dict_string(True))
     _truevalue
-    >>> print(p.from_json('false'))
+    >>> print(p.from_json('false', trans))
     False
     >>> print(p.to_param_dict_string(False))
     _falsevalue
@@ -615,7 +622,7 @@ class BooleanToolParameter(ToolParameter):
         self.optional = input_source.get_bool("optional", False)
         self.checked = boolean_is_checked(input_source)
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         return self.to_python(value)
 
     def to_python(self, value, app=None):
@@ -666,7 +673,7 @@ class FileToolParameter(ToolParameter):
     def __init__(self, tool, input_source):
         super().__init__(tool, input_source)
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
         if isinstance(value, FilesPayload):
@@ -765,7 +772,7 @@ class FTPFileToolParameter(ToolParameter):
         else:
             return lst[0]
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         return self.to_python(value, trans.app, validate=True)
 
     def to_json(self, value, app, use_security):
@@ -848,7 +855,7 @@ class ColorToolParameter(ToolParameter):
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
-        self.value = input_source.get("value", "#000000")
+        self.value = get_color_value(input_source)
         self.rgb = input_source.get_bool("rgb", False)
 
     def get_initial_value(self, trans, other_values):
@@ -885,7 +892,7 @@ class BaseURLToolParameter(HiddenToolParameter):
     def get_initial_value(self, trans, other_values):
         return self._get_value(trans)
 
-    def from_json(self, value=None, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         return self._get_value(trans)
 
     def _get_value(self, trans):
@@ -1004,7 +1011,7 @@ class SelectToolParameter(ToolParameter):
         """
         return {n: v for n, v, _ in self.get_options(trans, other_values)}
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         return self._select_from_json(value, trans, other_values=other_values, require_legal_value=True)
 
     def _select_from_json(self, value, trans, other_values=None, require_legal_value=True):
@@ -1284,7 +1291,7 @@ class SelectTagParameter(SelectToolParameter):
             self.default_value = input_source.get("value", None)
         self.is_dynamic = True
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         other_values = other_values or {}
         if self.multiple:
             tag_list = []
@@ -1412,7 +1419,7 @@ class ColumnListParameter(SelectToolParameter):
             return value.strip()
         return value
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         """
         Label convention prepends column number with a 'c', but tool uses the integer. This
         removes the 'c' when entered into a workflow.
@@ -1447,10 +1454,9 @@ class ColumnListParameter(SelectToolParameter):
 
     @staticmethod
     def _strip_c(column):
-        if isinstance(column, str):
-            column = column.strip()
-            if column.startswith("c") and len(column) > 1 and all(c.isdigit() for c in column[1:]):
-                column = column.lower()[1:]
+        column = str(column).strip()
+        if column.startswith("c") and len(column) > 1 and all(c.isdigit() for c in column[1:]):
+            column = column.lower()[1:]
         return column
 
     def get_column_list(self, trans, other_values):
@@ -1468,8 +1474,8 @@ class ColumnListParameter(SelectToolParameter):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
-            if isinstance(dataset, DatasetCollectionElement) and dataset.hda:
-                dataset = dataset.hda
+            if isinstance(dataset, DatasetCollectionElement):
+                dataset = dataset.first_dataset_instance()
             if isinstance(dataset, HistoryDatasetAssociation) and self.ref_input and self.ref_input.formats:
                 direct_match, target_ext, converted_dataset = dataset.find_conversion_destination(
                     self.ref_input.formats
@@ -1507,6 +1513,9 @@ class ColumnListParameter(SelectToolParameter):
         Show column labels rather than c1..cn if use_header_names=True
         """
         options: List[Tuple[str, Union[str, Tuple[str, str]], bool]] = []
+        column_list = self.get_column_list(trans, other_values)
+        if not column_list:
+            return options
         # if available use column_names metadata for option names
         # otherwise read first row - assume is a header with tab separated names
         if self.usecolnames:
@@ -1516,29 +1525,23 @@ class ColumnListParameter(SelectToolParameter):
                 and hasattr(dataset.metadata, "column_names")
                 and dataset.metadata.element_is_set("column_names")
             ):
-                column_list = [
-                    ("%d" % (i + 1), "c%d: %s" % (i + 1, x)) for i, x in enumerate(dataset.metadata.column_names)
-                ]
+                try:
+                    options = [(f"c{c}: {dataset.metadata.column_names[int(c) - 1]}", c, False) for c in column_list]
+                except IndexError:
+                    # ignore and rely on fallback
+                    pass
             else:
                 try:
                     with open(dataset.get_file_name()) as f:
                         head = f.readline()
                     cnames = head.rstrip("\n\r ").split("\t")
-                    column_list = [("%d" % (i + 1), "c%d: %s" % (i + 1, x)) for i, x in enumerate(cnames)]
+                    options = [(f"c{c}: {cnames[int(c) - 1]}", c, False) for c in column_list]
                 except Exception:
-                    column_list = self.get_column_list(trans, other_values)
-            if self.numerical:  # If numerical was requested, filter columns based on metadata
-                if hasattr(dataset, "metadata") and getattr(dataset.metadata, "column_types", None) is not None:
-                    if len(dataset.metadata.column_types) >= len(column_list):
-                        numerics = [i for i, x in enumerate(dataset.metadata.column_types) if x in ["int", "float"]]
-                        column_list = [column_list[i] for i in numerics]
-        else:
-            column_list = self.get_column_list(trans, other_values)
-        for col in column_list:
-            if isinstance(col, tuple) and len(col) == 2:
-                options.append((col[1], col[0], False))
-            else:
-                options.append((f"Column: {col}", col, False))
+                    # ignore and rely on fallback
+                    pass
+        if not options:
+            # fallback if no options list could be built so far
+            options = [(f"Column: {col}", col, False) for col in column_list]
         return options
 
     def get_initial_value(self, trans, other_values):
@@ -1564,9 +1567,13 @@ class ColumnListParameter(SelectToolParameter):
         for dataset in util.listify(other_values.get(self.data_ref)):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, HistoryDatasetCollectionAssociation):
-                dataset = dataset.to_hda_representative()
+                if dataset.populated:
+                    dataset = dataset.to_hda_representative()
+                else:
+                    # That's fine, we'll check again on execution
+                    return True
             if isinstance(dataset, DatasetCollectionElement):
-                dataset = dataset.hda
+                dataset = dataset.first_dataset_instance()
             if isinstance(dataset, DatasetInstance):
                 return not dataset.has_data()
             if is_runtime_value(dataset):
@@ -1646,13 +1653,11 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         drill_down_dynamic_options = input_source.parse_drill_down_dynamic_options(tool_data_path)
         if drill_down_dynamic_options is not None:
             self.is_dynamic = True
-            self.dynamic_options = drill_down_dynamic_options.code_block
-            self.filtered = drill_down_dynamic_options.filters
+            self.dynamic_options = drill_down_dynamic_options.from_code_block()
             self.options = []
         else:
             self.is_dynamic = False
             self.dynamic_options = None
-            self.filtered = {}
             self.options = input_source.parse_drill_down_static_options(tool_data_path)
 
     def _get_options_from_code(self, trans=None, other_values=None):
@@ -1673,20 +1678,6 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                 options = self._get_options_from_code(trans=trans, other_values=other_values)
             else:
                 options = []
-            for filter_key, filter_value in self.filtered.items():
-                dataset = other_values.get(filter_key)
-                if dataset.__class__.__name__.endswith(
-                    "DatasetFilenameWrapper"
-                ):  # this is a bad way to check for this, but problems importing class (due to circular imports?)
-                    dataset = dataset.dataset
-                if dataset:
-                    for meta_key, meta_dict in filter_value.items():
-                        if hasattr(dataset, "metadata") and hasattr(dataset.metadata, "spec"):
-                            check_meta_val = dataset.metadata.spec[meta_key].param.to_string(
-                                dataset.metadata.get(meta_key)
-                            )
-                            if check_meta_val in meta_dict:
-                                options.extend(meta_dict[check_meta_val])
             return options
         return self.options
 
@@ -1700,7 +1691,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         recurse_options(legal_values, self.get_options(trans=trans, other_values=other_values))
         return legal_values
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         other_values = other_values or {}
         legal_values = self.get_legal_values(trans, other_values, value)
         if not legal_values and trans.workflow_building_mode:
@@ -1830,10 +1821,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         return "Nothing selected."
 
     def get_dependencies(self):
-        """
-        Get the *names* of the other params this param depends on.
-        """
-        return list(self.filtered.keys())
+        return []
 
     def to_dict(self, trans, other_values=None):
         other_values = other_values or {}
@@ -2063,7 +2051,7 @@ class DataToolParameter(BaseDataToolParameter):
         self.load_contents = int(input_source.get("load_contents", 0))
         # Add metadata validator
         if not input_source.get_bool("no_validation", False):
-            self.validators.append(validation.MetadataValidator())
+            self.validators.append(validation.MetadataValidator.default_metadata_validator())
         self._parse_formats(trans, input_source)
         tag = input_source.get("tag")
         self.multiple = input_source.get_bool("multiple", False)
@@ -2080,6 +2068,7 @@ class DataToolParameter(BaseDataToolParameter):
         self.tag = tag
         self.is_dynamic = True
         self._parse_options(input_source)
+        self._parse_allow_uri_if_protocol(input_source)
         # Load conversions required for the dataset input
         self.conversions = []
         self.default_object = input_source.parse_default()
@@ -2101,7 +2090,13 @@ class DataToolParameter(BaseDataToolParameter):
                     )
                 self.conversions.append((name, conv_extension, [conv_type]))
 
-    def from_json(self, value, trans=None, other_values=None):
+    def _parse_allow_uri_if_protocol(self, input_source):
+        # In case of deferred datasets, if the source URI is prefixed with one of the values in this list,
+        # the dataset will behave as an URI and will not be materialized into a file path.
+        allow_uri_if_protocol = input_source.get("allow_uri_if_protocol", None)
+        self.allow_uri_if_protocol = allow_uri_if_protocol.split(",") if allow_uri_if_protocol else []
+
+    def from_json(self, value, trans, other_values=None):
         session = trans.sa_session
 
         other_values = other_values or {}
@@ -2458,7 +2453,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if match:
                 yield history_dataset_collection, match.implicit_conversion
 
-    def from_json(self, value, trans=None, other_values=None):
+    def from_json(self, value, trans, other_values=None):
         session = trans.sa_session
 
         other_values = other_values or {}

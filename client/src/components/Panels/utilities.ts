@@ -15,6 +15,7 @@ import levenshteinDistance from "@/utils/levenshtein";
 const FILTER_KEYS = {
     id: ["id", "tool_id"],
     panel_section_name: ["section", "panel_section_name"],
+    labels: ["label", "labels", "tag"],
 };
 const STRING_REPLACEMENTS: string[] = [" ", "-", "\\(", "\\)", "'", ":", `"`];
 const MINIMUM_DL_LENGTH = 5; // for Demerau-Levenshtein distance
@@ -286,7 +287,14 @@ export function searchToolsByKeys(
                 if (key === "combined") {
                     actualValue = `${tool.name.trim()} ${tool.description.trim()}`.toLowerCase();
                 } else {
-                    actualValue = (tool[key as keyof Tool] as string)?.trim().toLowerCase();
+                    const toolVal = tool[key as keyof Tool];
+                    if (typeof toolVal === "string") {
+                        actualValue = toolVal.trim().toLowerCase();
+                    } else if (Array.isArray(toolVal)) {
+                        actualValue = toolVal.join(" ").trim().toLowerCase();
+                    } else if (typeof toolVal === "number") {
+                        actualValue = toolVal.toString().trim().toLowerCase();
+                    }
                 }
 
                 // get all (space separated) words in actualValue for tool (for DL)

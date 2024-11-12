@@ -79,6 +79,10 @@ class GalaxyDataTestConfig(Bunch):
         self.ftp_upload_dir = None
         self.ftp_upload_purge = False
 
+        self.file_source_temp_dir = None
+        self.file_source_webdav_use_temp_files = False
+        self.file_source_listings_expiry_time = 60
+
     def __del__(self):
         if self._remove_root:
             shutil.rmtree(self.root)

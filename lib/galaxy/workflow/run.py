@@ -144,7 +144,12 @@ def queue_invoke(
         )
     workflow_invocation = workflow_run_config_to_request(trans, workflow_run_config, workflow)
     workflow_invocation.workflow = workflow
-    return trans.app.workflow_scheduling_manager.queue(workflow_invocation, request_params, flush=flush)
+    initial_state = model.WorkflowInvocation.states.NEW
+    if workflow_run_config.requires_materialization:
+        initial_state = model.WorkflowInvocation.states.REQUIRES_MATERIALIZATION
+    return trans.app.workflow_scheduling_manager.queue(
+        workflow_invocation, request_params, flush=flush, initial_state=initial_state
+    )
 
 
 class WorkflowInvoker:

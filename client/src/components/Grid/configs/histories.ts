@@ -12,6 +12,7 @@ import {
 import { useEventBus } from "@vueuse/core";
 
 import { GalaxyApi } from "@/api";
+import { type HistorySortByLiteral } from "@/api";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
@@ -26,7 +27,6 @@ const { emit } = useEventBus<string>("grid-router-push");
  * Local types
  */
 type HistoryEntry = Record<string, unknown>;
-type SortKeyLiteral = "create_time" | "name" | "update_time" | undefined;
 
 /**
  * Request and return data from server
@@ -40,7 +40,7 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
                 limit,
                 offset,
                 search,
-                sort_by: sort_by as SortKeyLiteral,
+                sort_by: sort_by as HistorySortByLiteral,
                 sort_desc,
                 show_own: true,
                 show_published: false,

@@ -224,6 +224,11 @@ class UserActivationRequiredException(MessageException):
     err_code = error_codes_by_name["USER_ACTIVATION_REQUIRED"]
 
 
+class ItemAlreadyClaimedException(MessageException):
+    status_code = 403
+    err_code = error_codes_by_name["ITEM_IS_CLAIMED"]
+
+
 class ObjectNotFound(MessageException):
     """Accessed object was not found"""
 
@@ -234,6 +239,10 @@ class ObjectNotFound(MessageException):
 class Conflict(MessageException):
     status_code = 409
     err_code = error_codes_by_name["CONFLICT"]
+
+
+class ItemMustBeClaimed(Conflict):
+    err_code = error_codes_by_name["MUST_CLAIM"]
 
 
 class DeprecatedMethod(MessageException):

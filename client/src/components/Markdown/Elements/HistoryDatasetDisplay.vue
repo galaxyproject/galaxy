@@ -152,7 +152,7 @@ export default {
             return `${getAppRoot()}dataset/display?dataset_id=${this.args.history_dataset_id}`;
         },
         displayUrl() {
-            return `${getAppRoot()}datasets/${this.args.history_dataset_id}/display`;
+            return `${getAppRoot()}datasets/${this.args.history_dataset_id}/display/?preview=True`;
         },
         importUrl() {
             return `${getAppRoot()}dataset/imp?dataset_id=${this.args.history_dataset_id}`;

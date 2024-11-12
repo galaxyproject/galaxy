@@ -122,30 +122,78 @@ def test_import_export_history_allow_discarded_data():
     assert imported_job.output_datasets[0].dataset == datasets[1]
 
 
-def test_import_export_history_with_implicit_conversion():
+def setup_history_with_implicit_conversion():
     app = _mock_app()
 
     u, h, d1, d2, j = _setup_simple_cat_job(app)
 
+    intermediate_ext = "bam"
+    intermediate_implicit_hda = model.HistoryDatasetAssociation(
+        extension=intermediate_ext, create_dataset=True, flush=False, history=h
+    )
+    intermediate_implicit_hda.hid = d2.hid
     convert_ext = "fasta"
     implicit_hda = model.HistoryDatasetAssociation(extension=convert_ext, create_dataset=True, flush=False, history=h)
     implicit_hda.hid = d2.hid
     # this adds and flushes the result...
-    d2.attach_implicitly_converted_dataset(app.model.context, implicit_hda, convert_ext)
+    intermediate_implicit_hda.attach_implicitly_converted_dataset(app.model.context, implicit_hda, convert_ext)
+    d2.attach_implicitly_converted_dataset(app.model.context, intermediate_implicit_hda, intermediate_ext)
+
+    app.object_store.update_from_file(intermediate_implicit_hda.dataset, file_name=TEST_PATH_2_CONVERTED, create=True)
     app.object_store.update_from_file(implicit_hda.dataset, file_name=TEST_PATH_2_CONVERTED, create=True)
 
-    assert len(h.active_datasets) == 3
+    assert len(h.active_datasets) == 4
+    return app, h, implicit_hda
+
+
+def test_import_export_history_with_implicit_conversion():
+    app, h, _ = setup_history_with_implicit_conversion()
     imported_history = _import_export_history(app, h, export_files="copy", include_hidden=True)
 
-    assert len(imported_history.active_datasets) == 3
+    assert len(imported_history.active_datasets) == 4
     recovered_hda_2 = imported_history.active_datasets[1]
     assert recovered_hda_2.implicitly_converted_datasets
-    imported_conversion = recovered_hda_2.implicitly_converted_datasets[0]
-    assert imported_conversion.type == "fasta"
-    assert imported_conversion.dataset == imported_history.active_datasets[2]
+    intermediate_conversion = recovered_hda_2.implicitly_converted_datasets[0]
+    assert intermediate_conversion.type == "bam"
+    intermediate_hda = intermediate_conversion.dataset
+    assert intermediate_hda.implicitly_converted_datasets
+    final_conversion = intermediate_hda.implicitly_converted_datasets[0]
+
+    assert final_conversion.type == "fasta"
+    assert final_conversion.dataset == imported_history.active_datasets[-1]
 
     # implicit conversions have the same HID... ensure this property is recovered...
     assert imported_history.active_datasets[2].hid == imported_history.active_datasets[1].hid
+
+
+def test_import_export_history_with_implicit_conversion_parents_purged():
+    app, h, implicit_hda = setup_history_with_implicit_conversion()
+    # Purge parents
+    parent = implicit_hda.implicitly_converted_parent_datasets[0].parent_hda
+    parent.dataset.purged = True
+    grandparent = parent.implicitly_converted_parent_datasets[0].parent_hda
+    grandparent.dataset.purged = True
+    app.model.context.commit()
+    imported_history = _import_export_history(app, h, export_files="copy", include_hidden=True)
+
+    assert len(imported_history.active_datasets) == 2
+    assert len(imported_history.datasets) == 4
+    imported_implicit_hda = imported_history.active_datasets[1]
+    assert imported_implicit_hda.extension == "fasta"
+
+    # implicit conversions have the same HID... ensure this property is recovered...
+    assert imported_implicit_hda.hid == implicit_hda.hid
+    assert imported_implicit_hda.implicitly_converted_parent_datasets
+    intermediate_implicit_conversion = imported_implicit_hda.implicitly_converted_parent_datasets[0]
+    intermediate_hda = intermediate_implicit_conversion.parent_hda
+    assert intermediate_hda.hid == implicit_hda.hid
+    assert intermediate_hda.extension == "bam"
+    assert intermediate_hda.implicitly_converted_datasets
+    assert intermediate_hda.implicitly_converted_parent_datasets
+    first_implicit_conversion = intermediate_hda.implicitly_converted_parent_datasets[0]
+    source_hda = first_implicit_conversion.parent_hda
+    assert source_hda.hid == implicit_hda.hid
+    assert source_hda.extension == "txt"
 
 
 def test_import_export_history_with_implicit_conversion_and_extra_files():
@@ -1018,7 +1066,7 @@ def _setup_collection_invocation(app):
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_collection_input"
-    workflow_step_1.tool_inputs = {}  # type:ignore[assignment]
+    workflow_step_1.tool_inputs = {}
     sa_session.add(workflow_step_1)
     workflow_1 = _workflow_from_steps(u, [workflow_step_1])
     workflow_1.license = "MIT"
@@ -1044,7 +1092,7 @@ def _setup_simple_invocation(app):
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_input"
-    workflow_step_1.tool_inputs = {}  # type:ignore[assignment]
+    workflow_step_1.tool_inputs = {}
     sa_session.add(workflow_step_1)
     workflow = _workflow_from_steps(u, [workflow_step_1])
     workflow.license = "MIT"

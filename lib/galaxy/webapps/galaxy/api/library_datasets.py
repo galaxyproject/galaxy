@@ -487,9 +487,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                     os.path.realpath(path),
                 )
                 raise exceptions.RequestParameterInvalidException("The given path is invalid.")
-            if trans.app.config.user_library_import_check_permissions and not full_path_permission_for_user(
-                full_dir, path, username
-            ):
+            if username is not None and not full_path_permission_for_user(full_dir, path, username):
                 log.error(
                     "User attempted to import a path that resolves to a path outside of their import dir: "
                     "%s -> %s and cannot be read by them.",

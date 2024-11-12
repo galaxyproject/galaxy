@@ -597,7 +597,7 @@ class CommonConfigurationMixin:
     @admin_users.setter
     def admin_users(self, value):
         self._admin_users = value
-        self.admin_users_list = listify(value)
+        self.admin_users_list = listify(value, do_strip=True)
 
     def is_admin_user(self, user: Optional["User"]) -> bool:
         """Determine if the provided user is listed in `admin_users`."""
@@ -704,6 +704,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     drmaa_external_runjob_script: str
     email_from: Optional[str]
     enable_tool_shed_check: bool
+    file_source_temp_dir: str
     galaxy_data_manager_data_path: str
     galaxy_infrastructure_url: str
     hours_between_check: int
@@ -981,6 +982,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             # self, populate config_dict
             self.config_dict["conda_mapping_files"] = [self.local_conda_mapping_file, _default_mapping]
 
+        if kwargs.get("conda_auto_init") is None:
+            self.config_dict["conda_auto_init"] = running_from_source
+
         if self.container_resolvers_config_file:
             self.container_resolvers_config_file = self._in_config_dir(self.container_resolvers_config_file)
 
@@ -1236,6 +1240,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         else:
             _load_theme(self.themes_config_file, self.themes)
 
+        if self.file_source_temp_dir:
+            self.file_source_temp_dir = os.path.abspath(self.file_source_temp_dir)
+
     def _process_celery_config(self):
         if self.celery_conf and self.celery_conf.get("result_backend") is None:
             # If the result_backend is not set, use a SQLite database in the data directory
@@ -1348,6 +1355,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.template_cache_path,
             self.tool_data_path,
             self.user_library_import_dir,
+            self.file_source_temp_dir,
         ]
         for path in paths_to_check:
             self._ensure_directory(path)

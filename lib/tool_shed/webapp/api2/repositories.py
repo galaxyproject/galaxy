@@ -497,7 +497,7 @@ class FastAPIRepositories:
                 dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
             ) as dest:
                 upload_file_like: IO[bytes] = the_file.file
-                shutil.copyfileobj(upload_file_like, dest)  # type: ignore[misc] # https://github.com/python/mypy/issues/15031
+                shutil.copyfileobj(upload_file_like, dest)
             the_file.file.close()
             filename = dest.name
             try:

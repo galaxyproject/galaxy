@@ -14,6 +14,7 @@ from typing import (
     Any,
     Dict,
     Optional,
+    Tuple,
 )
 from urllib.parse import urlparse
 
@@ -325,6 +326,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.galaxy_session = None
         self.error_message = None
         self.host = self.request.host
+        self._short_term_cache: Dict[Tuple[str, ...], Any] = {}
 
         # set any cross origin resource sharing headers if configured to do so
         self.set_cors_headers()
@@ -1154,19 +1156,34 @@ def build_url_map(app, global_conf, **local_conf):
     # Send to dynamic app by default
     urlmap["/"] = app
 
-    def get_static_from_config(option_name, default_path):
-        config_val = conf.get(option_name, default_url_path(default_path))
+    def get_static_from_config(option_name, default_path, sample=None):
+        config_val = conf.get(option_name)
+        default = default_url_path(default_path)
+        if not config_val:
+            if not os.path.exists(default) and sample:
+                config_val = os.path.abspath(f"{sample}")
+            else:
+                config_val = default
         per_host_config_option = f"{option_name}_by_host"
         per_host_config = conf.get(per_host_config_option)
         return Static(config_val, cache_time, directory_per_host=per_host_config)
 
     # Define static mappings from config
-    urlmap["/static"] = get_static_from_config("static_dir", "static/")
-    urlmap["/images"] = get_static_from_config("static_images_dir", "static/images")
-    urlmap["/static/scripts"] = get_static_from_config("static_scripts_dir", "static/scripts/")
-    urlmap["/static/welcome.html"] = get_static_from_config("static_welcome_html", "static/welcome.html")
-    urlmap["/favicon.ico"] = get_static_from_config("static_favicon_dir", "static/favicon.ico")
-    urlmap["/robots.txt"] = get_static_from_config("static_robots_txt", "static/robots.txt")
+    static_dir = get_static_from_config("static_dir", "static/")
+    static_dir_bare = static_dir.directory.rstrip("/")
+    urlmap["/static"] = static_dir
+    urlmap["/images"] = get_static_from_config("static_images_dir", f"{static_dir_bare}/images")
+    urlmap["/static/scripts"] = get_static_from_config("static_scripts_dir", f"{static_dir_bare}/scripts/")
+
+    urlmap["/static/welcome.html"] = get_static_from_config(
+        "static_welcome_html", f"{static_dir_bare}/welcome.html", sample=default_url_path("static/welcome.sample.html")
+    )
+    urlmap["/favicon.ico"] = get_static_from_config(
+        "static_favicon_dir", f"{static_dir_bare}/favicon.ico", sample=default_url_path("static/favicon.ico")
+    )
+    urlmap["/robots.txt"] = get_static_from_config(
+        "static_robots_txt", f"{static_dir_bare}/robots.txt", sample=default_url_path("static/robots.txt")
+    )
 
     if "static_local_dir" in conf:
         urlmap["/static_local"] = Static(conf["static_local_dir"], cache_time)

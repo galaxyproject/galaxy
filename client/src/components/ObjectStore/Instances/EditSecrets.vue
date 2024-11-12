@@ -17,8 +17,8 @@ const props = defineProps<Props>();
 const title = computed(() => `Update Storage Location ${props.objectStore?.name} Secrets`);
 
 async function onUpdate(secretName: string, secretValue: string) {
-    const { error } = await GalaxyApi().PUT("/api/object_store_instances/{user_object_store_id}", {
-        params: { path: { user_object_store_id: props.objectStore.uuid } },
+    const { error } = await GalaxyApi().PUT("/api/object_store_instances/{uuid}", {
+        params: { path: { uuid: props.objectStore.uuid } },
         body: {
             secret_name: secretName,
             secret_value: secretValue,

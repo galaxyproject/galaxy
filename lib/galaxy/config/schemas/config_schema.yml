@@ -382,11 +382,11 @@ mapping:
 
       conda_auto_init:
         type: bool
-        default: true
         required: false
         desc: |
           Set to true to instruct Galaxy to install Conda from the web automatically
-          if it cannot find a local copy and conda_exec is not configured.
+          if it cannot find a local copy and conda_exec is not configured. The default is
+          true if running Galaxy from source, and false if running from installed packages.
 
       conda_copy_dependencies:
         type: bool
@@ -3738,6 +3738,21 @@ mapping:
           Optional configuration file similar to `job_config_file` to specify
           which Galaxy processes should schedule workflows.
 
+      workflow_scheduling_separate_materialization_iteration:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Workflows launched with URI/URL inputs that are not marked as 'deferred'
+          are "materialized" (or undeferred) by the workflow scheduler. This might be
+          a lengthy process. Setting this to 'True' will place the invocation back in
+          the queue after materialization before scheduling the workflow so it is less
+          likely to starve other workflow scheduling. Ideally, Galaxy would allow more
+          fine grain control of handlers but until then, this provides a way to tip the
+          balance between "doing more work" and "being more fair". The default here is
+          pretty arbitrary - it has been to False to optimize Galaxy for automated,
+          single user applications where "fairness" is mostly irrelevant.
+
       cache_user_job_count:
         type: bool
         default: false
@@ -4089,3 +4104,23 @@ mapping:
         per_host: true
         desc: |
           Enable the integration of the Galaxy Help Forum in the tool panel. This requires the help_forum_api_url to be set.
+
+      file_source_temp_dir:
+        type: str
+        required: false
+        desc: |
+          Directory to store temporary files for file sources. This defaults to new_file_path if not set.
+
+      file_source_webdav_use_temp_files:
+        type: bool
+        default: true
+        desc: |
+          Default value for use_temp_files for webdav plugins that don't explicitly declare this.
+
+      file_source_listings_expiry_time:
+        type: int
+        default: 60
+        desc: |
+          Number of seconds before file source content listings are refreshed. Shorter times will result in more
+          queries while browsing a file sources. Longer times will result in fewer requests to file sources but
+          outdated contents might be displayed to the user. Currently only affects s3fs file sources.

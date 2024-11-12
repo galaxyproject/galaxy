@@ -38,10 +38,10 @@ from galaxy import util
 from galaxy.tool_util.parser.interface import (
     AssertionList,
     TestCollectionDef,
-    TestCollectionDefDict,
     TestCollectionOutputDef,
     TestSourceTestOutputColllection,
     ToolSourceTestOutputs,
+    XmlTestCollectionDefDict,
 )
 from galaxy.util import requests
 from galaxy.util.bunch import Bunch
@@ -390,14 +390,17 @@ class GalaxyInteractorApi:
 
     @contextlib.contextmanager
     def test_history(
-        self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None
+        self,
+        require_new: bool = True,
+        cleanup_callback: Optional[Callable[[str], None]] = None,
+        name: Optional[str] = None,
     ) -> Generator[str, None, None]:
         history_id = None
         if not require_new:
             history_id = DEFAULT_TARGET_HISTORY
 
         cleanup = CLEANUP_TEST_HISTORIES
-        history_id = history_id or self.new_history()
+        history_id = history_id or self.new_history(name)
         try:
             yield history_id
         except Exception:
@@ -407,7 +410,8 @@ class GalaxyInteractorApi:
             if cleanup and cleanup_callback is not None:
                 cleanup_callback(history_id)
 
-    def new_history(self, history_name: str = "test_history", publish_history: bool = False) -> str:
+    def new_history(self, history_name: Optional[str] = None, publish_history: bool = False) -> str:
+        history_name = history_name or "test_history"
         create_response = self._post("histories", {"name": history_name})
         try:
             create_response.raise_for_status()
@@ -517,12 +521,12 @@ class GalaxyInteractorApi:
         metadata = test_data.get("metadata", {})
         if not hasattr(metadata, "items"):
             raise Exception(f"Invalid metadata description found for input [{fname}] - [{metadata}]")
-        for name, value in test_data.get("metadata", {}).items():
-            tool_input[f"files_metadata|{name}"] = value
+        for metadata_name, value in test_data.get("metadata", {}).items():
+            tool_input[f"files_metadata|{metadata_name}"] = value
 
         composite_data = test_data["composite_data"]
+        files = {}
         if composite_data:
-            files = {}
             for i, file_name in enumerate(composite_data):
                 if force_path_paste:
                     file_path = self.test_data_path(tool_id, file_name, tool_version=tool_version)
@@ -542,26 +546,24 @@ class GalaxyInteractorApi:
             file_name = None
             file_name_exists = False
             location = self._ensure_valid_location_in(test_data)
-            if fname:
+            if fname and force_path_paste:
                 file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
-                file_name_exists = os.path.exists(f"{file_name}")
-            upload_from_location = not file_name_exists and location is not None
-            name = os.path.basename(location if upload_from_location else fname)
-            tool_input.update(
-                {
-                    "files_0|NAME": name,
-                    "files_0|type": "upload_dataset",
-                }
-            )
-            files = {}
-            if upload_from_location:
-                tool_input.update({"files_0|url_paste": location})
-            elif force_path_paste:
-                file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
-                tool_input.update({"files_0|url_paste": f"file://{file_name}"})
+                file_name_exists = os.path.exists(file_name)
+            tool_input["files_0|type"] = "upload_dataset"
+            if not file_name_exists and location is not None:
+                name = location
+                tool_input["files_0|url_paste"] = location
             else:
-                file_content = self.test_data_download(tool_id, fname, is_output=False, tool_version=tool_version)
-                files = {"files_0|file_data": file_content}
+                name = fname
+                if force_path_paste:
+                    if file_name is None:
+                        file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
+                    tool_input["files_0|url_paste"] = f"file://{file_name}"
+                else:
+                    file_content = self.test_data_download(tool_id, fname, is_output=False, tool_version=tool_version)
+                    files["files_0|file_data"] = file_content
+            name = os.path.basename(name)
+            tool_input["files_0|NAME"] = name
         submit_response_object = self.__submit_tool(
             history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files
         )
@@ -583,12 +585,13 @@ class GalaxyInteractorApi:
 
     def _ensure_valid_location_in(self, test_data: dict) -> Optional[str]:
         location: Optional[str] = test_data.get("location")
-        has_valid_location = location and util.is_url(location)
-        if location and not has_valid_location:
+        if location and not util.is_url(location):
             raise ValueError(f"Invalid `location` URL: `{location}`")
         return location
 
-    def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
+    def run_tool(
+        self, testdef: "ToolTestDescription", history_id: str, resource_parameters: Optional[Dict[str, Any]] = None
+    ) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         resource_parameters = resource_parameters or {}
@@ -1130,7 +1133,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
             raise AssertionError(message)
 
     expected_element_count = output_collection_def.count
-    if expected_element_count:
+    if expected_element_count is not None:
         actual_element_count = len(data_collection["elements"])
         if expected_element_count != actual_element_count:
             message = f"Output collection '{name}': expected to have {expected_element_count} elements, but it had {actual_element_count}."
@@ -1183,7 +1186,8 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
                     message = f"Output collection '{name}': identifier '{identifier}' found out of order, expected order of {expected_sort_order} for the tool generated collection elements {eo_ids}"
                     raise AssertionError(message)
 
-    verify_elements(data_collection["elements"], output_collection_def.element_tests)
+    if output_collection_def.element_tests:
+        verify_elements(data_collection["elements"], output_collection_def.element_tests)
 
 
 def _verify_composite_datatype_file_content(
@@ -1754,7 +1758,7 @@ def expanded_inputs_from_json(expanded_inputs_json: ExpandedToolInputsJsonified)
     loaded_inputs: ExpandedToolInputs = {}
     for key, value in expanded_inputs_json.items():
         if isinstance(value, dict) and value.get("model_class"):
-            collection_def_dict = cast(TestCollectionDefDict, value)
+            collection_def_dict = cast(XmlTestCollectionDefDict, value)
             loaded_inputs[key] = TestCollectionDef.from_dict(collection_def_dict)
         else:
             loaded_inputs[key] = value

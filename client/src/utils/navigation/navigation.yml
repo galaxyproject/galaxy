@@ -349,7 +349,10 @@ edit_dataset_attributes:
     name_input: '[aria-labelledby="dataset-attributes-heading"] input#name'
     info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
     annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
+    datatypes_tab: '.dataset-edit-datatype-tab'
+    datatype_dropdown: ' #datatype .multiselect'
     save_button: '#dataset-attributes-default-save'
+    auto_detect_datatype_button: '#dataset-attributes-autodetect-datatype'
     alert: '.dataset-attributes-alert'
 
   dbkey_dropdown_results:
@@ -374,6 +377,7 @@ edit_collection_attributes:
 
 tool_panel:
   selectors:
+    tool_box: '[data-description="panel toolbox"]'
     tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
     data_source_tool_link: 'a[href$$="tool_runner/data_source_redirect?tool_id=${tool_id}"]'
@@ -679,7 +683,8 @@ workflow_run:
     validation_error: ".validation-error"
     expand_form_link: '.workflow-expand-form-link'
     expanded_form: '.workflow-expanded-form'
-    new_history_target_link: '.workflow-new-history-target-link'
+    new_history_badge: '[data-description="new history badge"]'
+    history_target_link: '[data-description="switch to history link"]'
     runtime_setting_button: '.workflow-run-settings'
     runtime_setting_target: '.workflow-run-settings-target'
     simplified_input:
@@ -847,6 +852,8 @@ invocations:
     activity_expand: ".activity-panel-footer"
     invocations_table: '#invocations-grid .grid-table'
     invocations_table_rows: '#invocations-grid .grid-table [data-description="grid item"]'
+    invocations_panel_list: '[data-description="Workflow Invocations"] .scroll-list'
+    invocations_panel_list_items: '[data-description="Workflow Invocations"] .scroll-list button.panel-item'
     pager: '[data-description="grid pager"]'
     pager_page: '[data-description="grid pager"] .gx-grid-pager-page [aria-posinset=${page}]'
     pager_page_next: '[data-description="grid pager"] .gx-grid-pager-next button'
@@ -854,11 +861,9 @@ invocations:
     pager_page_first: '[data-description="grid pager"] .gx-grid-pager-first button'
     pager_page_previous: '[data-description="grid pager"] .gx-grid-pager-prev button'
     pager_page_active: '[data-description="grid pager"] .gx-grid-pager-page.active button'
-    state_details: '.workflow-invocation-state-component'
-    toggle_invocation_details: '[data-description="toggle row details"]'
-    progress_steps_note: '.workflow-invocation-state-component .steps-progress .progressNote'
-    progress_jobs_note: '.workflow-invocation-state-component .jobs-progress .progressNote'
-    hide_invocation_graph: '.workflow-invocation-state-component [data-description="hide invocation graph"]'
+    state_details: '[data-description="workflow invocation state"]'
+    progress_steps_note: '[data-description="workflow invocation state"] .steps-progress .progress-note'
+    progress_jobs_note: '[data-description="workflow invocation state"] .jobs-progress .progress-note'
     invocation_tab:
       type: xpath
       selector: '//a[text()="${label}"]'
@@ -870,16 +875,14 @@ invocations:
     step_title: '[data-step="${order_index}"] .step-title'
     step_details: '[data-step="${order_index}"] .portlet-operations'
     step_output_collection: '[data-step="${order_index}"] .invocation-step-output-collection-details'
-    step_output_collection_toggle: '[data-step="${order_index}"] .invocation-step-output-collection-details .name'
+    step_output_collection_toggle: '[data-step="${order_index}"] .invocation-step-output-collection-details .content-title'
     step_output_collection_element_identifier:
       type: xpath
       selector: '//span[contains(@class, "content-title name")][text()="${element_identifier}"]'
     step_output_collection_element_datatype: '[data-step="${order_index}"] .invocation-step-output-collection-details .not-loading .datatype .value'
     step_job_details: '[data-step="${order_index}"] .invocation-step-job-details'
-    step_job_table: '[data-step="${order_index}"] .invocation-step-job-details table'
-    step_job_table_rows: '[data-step="${order_index}"] .invocation-step-job-details table tbody tr'
-    step_job_information: '[data-step="${order_index}"] .invocation-step-job-details table tbody .b-table-details .info_data_table'
-    step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details table tbody .b-table-details .info_data_table #galaxy-tool-id'
+    step_job_information: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table'
+    step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table #galaxy-tool-id'
 
 tour:
   popover:
@@ -1031,17 +1034,30 @@ libraries:
       add_to_history_collection: '.add-to-history-collection'
       # TODO: Most of these aren't very good selectors but the same DOM elements
       # are reused without adding specific classes, IDs, or roles to anything.
-      import_modal: '.modal'
-      import_datasets_ok_button: '.modal-footer .buttons #button-0'
-      import_datasets_cancel_button: '.modal-footer .buttons #button-1'
+      import_modal: '.directory-dataset-picker'
+      import_datasets_from_history_modal: '.selection-dialog-modal'
+      import_datasets_from_history_modal_history_search: '.selection-dialog-modal .search-query'
+      import_datasets_from_history_modal_dataset_search: '.selection-dialog-modal input[placeholder="search datasets"]'
+      import_datasets_from_history_modal_list_is_ready: '.selection-dialog-modal .selection-dialog-table[aria-busy="false"]'
+      import_datasets_from_history_modal_select_list_items: '.selection-dialog-modal table tbody tr'
+      import_datasets_from_history_modal_select_list_item_by_index: '.selection-dialog-modal table tbody tr[aria-rowindex="${row_index}"] td[aria-colindex="1"]'
+      import_datasets_from_history_modal_ok: '.selection-dialog-modal [data-description="selection dialog ok"]'
+      import_datasets_from_history_modal_cancel: '.selection-dialog-modal [data-description="selection dialog cancel"]'
+      add_to_history_as_collection:
+        type: xpath
+        selector: '//button[contains(text(), "Continue")]'
+      import_datasets_ok_button:
+        type: xpath
+        selector: '//button[contains(text(), "Import")]'
+      import_datasets_cancel_button:
+        type: xpath
+        selector: '//button[contains(text(), "Close")]'
       export_to_history_options: '#library-collection-type-select'
       export_to_history_paired_option: 'option[value="${collection_option}"]'
       export_to_history_collection_name: '.collection-name'
       export_to_history_new_history: 'input[name=history_name]'
       clear_filters: '.clear-filters-link'
       import_progress_bar: '.progress-bar-import'
-      import_history_content: '.library_selected_history_content'
-      import_history_contents_items: '.library_selected_history_content tbody > tr'
       import_from_path_textarea: '#import_paths'
       select_all: '#select-all-checkboxes'
       select_one: '.lib-folder-checkbox'
@@ -1059,8 +1075,10 @@ libraries:
       download_button: '#download-btn'
       delete_btn: '.toolbtn-bulk-delete'
       toast_msg: '.b-toast'
-      toast_warning: '.b-toast-warning'
-      select_import_dir_item: 'li[full_path="${name}"] .jstree-anchor'
+      alert_not_exists_user_import_dir:
+        type: xpath
+        selector: //div[contains(@class, "alert-danger") and contains(normalize-space(text()), "Your user import directory does not exist")]
+      select_import_dir_item: '[for="drilldown-option-${name}"]'
       import_dir_btn:
         type: xpath
         selector: '//button[contains(text(), "Import")]'
@@ -1070,7 +1088,6 @@ libraries:
       private_dataset_icon: '.fa-key'
       open_location_details_btn: '.details-btn'
       location_details_ok_btn: '#details-modal .btn-primary'
-      add_history_items: '#dataset_add_bulk'
 
     labels:
       from_history: 'from History'

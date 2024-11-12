@@ -286,7 +286,7 @@ class WorkflowModule:
 
     # ---- Saving in various forms ------------------------------------------
 
-    def save_to_step(self, step, detached=False):
+    def save_to_step(self, step, detached: bool = False) -> None:
         step.type = self.type
         step.tool_inputs = self.get_state()
 
@@ -647,7 +647,7 @@ class SubWorkflowModule(WorkflowModule):
         module.subworkflow = step.subworkflow
         return module
 
-    def save_to_step(self, step, **kwd):
+    def save_to_step(self, step, detached=False):
         step.type = self.type
         step.subworkflow = self.subworkflow
         ensure_object_added_to_session(step, object_in_session=self.subworkflow)
@@ -715,7 +715,7 @@ class SubWorkflowModule(WorkflowModule):
         if hasattr(self.subworkflow, "workflow_outputs"):
             from galaxy.managers.workflows import WorkflowContentsManager
 
-            workflow_contents_manager = WorkflowContentsManager(self.trans.app)
+            workflow_contents_manager = WorkflowContentsManager(self.trans.app, self.trans.app.trs_proxy)
             subworkflow_dict = workflow_contents_manager._workflow_to_dict_editor(
                 trans=self.trans,
                 stored=self.subworkflow.stored_workflow,
@@ -1027,7 +1027,7 @@ class InputModule(WorkflowModule):
         state = json.dumps(state)
         return state
 
-    def save_to_step(self, step, **kwd):
+    def save_to_step(self, step, detached=False):
         step.type = self.type
         step.tool_inputs = self._parse_state_into_dict()
 
@@ -1423,7 +1423,7 @@ class InputParameterModule(WorkflowModule):
 
                     def callback(input, prefixed_name, context, **kwargs):
                         if prefixed_name == connection.input_name and hasattr(input, "get_options"):  # noqa: B023
-                            static_options.append(input.get_options(self.trans, {}))
+                            static_options.append(input.get_options(self.trans, context))
 
                     visit_input_values(tool_inputs, module.state.inputs, callback)
                 elif isinstance(module, SubWorkflowModule):
@@ -1677,7 +1677,7 @@ class InputParameterModule(WorkflowModule):
             rval.update({"parameter_type": self.default_parameter_type, "optional": self.default_optional})
         return rval
 
-    def save_to_step(self, step, **kwd):
+    def save_to_step(self, step, detached=False):
         step.type = self.type
         step.tool_inputs = self._parse_state_into_dict()
 

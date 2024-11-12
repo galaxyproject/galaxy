@@ -5,7 +5,16 @@ from typing import (
     Optional,
     Type,
 )
+from unittest import SkipTest
+from uuid import uuid4
 
+from fs.osfs import OSFS
+
+try:
+    from fs.dropboxfs import DropboxFS
+except ImportError:
+    DropboxFS = None
+from requests.exceptions import HTTPError
 from yaml import safe_load
 
 from galaxy.exceptions import (
@@ -13,12 +22,15 @@ from galaxy.exceptions import (
     RequestParameterMissingException,
 )
 from galaxy.files import FileSourcesUserContext
+from galaxy.files.sources import dropbox
 from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.files.templates.examples import get_example
 from galaxy.managers.file_source_instances import (
     CreateInstancePayload,
     FileSourceInstancesManager,
     ModifyInstancePayload,
+    TestUpdateInstancePayload,
+    TestUpgradeInstancePayload,
     UpdateInstancePayload,
     UpdateInstanceSecretPayload,
     UpgradeInstancePayload,
@@ -27,6 +39,12 @@ from galaxy.managers.file_source_instances import (
     UserDefinedFileSourcesImpl,
     UserFileSourceModel,
 )
+from galaxy.model import (
+    get_uuid,
+    UserFileSource,
+)
+from galaxy.schema.schema import OAuth2State
+from galaxy.util import config_templates
 from galaxy.util.config_templates import RawTemplateConfig
 from .base import BaseTestCase
 
@@ -204,6 +222,138 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert file_source.doc == SIMPLE_FILE_SOURCE_DESCRIPTION
         assert file_source.get_scheme() == USER_FILE_SOURCES_SCHEME
         assert file_source.get_uri_root() == uri_root
+
+    def test_oauth2_flow(self, tmp_path, monkeypatch):
+
+        json = {
+            "refresh_token": "my_test_refresh_token",
+        }
+
+        def mock_get_token_from_code_raw(
+            code,
+            client_pair,
+            config,
+            redirect_uri,
+        ):
+            return MockResponse(json)
+
+        monkeypatch.setattr(config_templates, "get_token_from_code_raw", mock_get_token_from_code_raw)
+
+        self._init_dropbox_env(tmp_path, monkeypatch)
+
+        authorize_url = self.manager.template_oauth2(self.trans, "dropbox", 0).authorize_url
+        from urllib.parse import (
+            parse_qs,
+            urlparse,
+        )
+
+        parse_result = urlparse(authorize_url)
+        assert parse_result.hostname == "www.dropbox.com"
+        assert parse_result.path == "/oauth2/authorize"
+        query_params = parse_qs(parse_result.query)
+        assert "state" in query_params
+        state_param = query_params["state"]
+        state = OAuth2State.decode(state_param[0])
+        assert state.route == "file_source_instances/dropbox/0"
+        redirect_url = self.manager.handle_authorization_code(
+            self.trans,
+            "moocow",
+            state,
+        )
+        parse_result = urlparse(redirect_url)
+        query_params = parse_qs(parse_result.query)
+        assert "uuid" in query_params
+        uuid_param = query_params["uuid"]
+        uuid = uuid_param[0]
+
+        user_vault = self.trans.user_vault
+        config_secret_key = UserFileSource.vault_key_from_uuid(uuid, "_oauth2_refresh_token", None)
+        assert user_vault.read_secret(config_secret_key)
+
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="dropbox",
+            template_version=0,
+            variables={},
+            secrets={},
+            uuid=uuid,
+        )
+        user_object = self._create_instance(create_payload)
+        assert get_uuid(user_object.uuid) == get_uuid(uuid)
+
+    def test_oauth2_access_token_injection_during_verify(self, tmp_path, monkeypatch):
+        if DropboxFS is None:
+            raise SkipTest("Optional dropbpox dependency not available")
+        self._init_dropbox_env(tmp_path, monkeypatch)
+
+        uuid = uuid4().hex
+        user_vault = self.trans.user_vault
+        config_secret_key = UserFileSource.vault_key_from_uuid(uuid, "_oauth2_refresh_token", None)
+        user_vault.write_secret(config_secret_key, "test_refresh_token")
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="dropbox",
+            template_version=0,
+            variables={},
+            secrets={},
+            uuid=uuid,
+        )
+        self._create_instance(create_payload)
+        json = {
+            "access_token": "my_test_access_token",
+        }
+
+        def mock_get_token_from_refresh_raw(refresh_token, client_pair, config):
+            return MockResponse(json)
+
+        pyfilesystem_fs_init_kwd = {}
+
+        class MockDropboxFS(OSFS):
+
+            def __init__(self, **kwd):
+                pyfilesystem_fs_init_kwd.update(kwd)
+                root = tmp_path / "foobar"
+                root.mkdir()
+                super().__init__(root)
+
+        monkeypatch.setattr(config_templates, "get_token_from_refresh_raw", mock_get_token_from_refresh_raw)
+        monkeypatch.setattr(dropbox, "DropboxFS", MockDropboxFS)
+        status = self.manager.plugin_status(self.trans, create_payload)
+        assert status.oauth2_access_token_generation
+        assert not status.oauth2_access_token_generation.is_not_ok
+        assert status.connection
+        assert not status.connection.is_not_ok
+        assert pyfilesystem_fs_init_kwd["access_token"] == "my_test_access_token"
+
+    def test_report_oauth2_access_token_generation_failure(self, tmp_path, monkeypatch):
+        self._init_dropbox_env(tmp_path, monkeypatch)
+
+        uuid = uuid4().hex
+        user_vault = self.trans.user_vault
+        config_secret_key = UserFileSource.vault_key_from_uuid(uuid, "_oauth2_refresh_token", None)
+        user_vault.write_secret(config_secret_key, "test_refresh_token")
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="dropbox",
+            template_version=0,
+            variables={},
+            secrets={},
+            uuid=uuid,
+        )
+        self._create_instance(create_payload)
+        excepton_message = "There is an issue with the refresh_token"
+
+        def mock_get_token_from_refresh_raw(refresh_token, client_pair, config):
+            return MockExceptionResponse(excepton_message)
+
+        monkeypatch.setattr(config_templates, "get_token_from_refresh_raw", mock_get_token_from_refresh_raw)
+        status = self.manager.plugin_status(self.trans, create_payload)
+        assert status.oauth2_access_token_generation
+        assert status.oauth2_access_token_generation.is_not_ok
+        assert excepton_message in status.oauth2_access_token_generation.message
 
     def test_io(self, tmp_path):
         self._init_managers(tmp_path)
@@ -532,6 +682,100 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert "Input should be a valid boolean" in status.template_settings.message
         assert status.connection is None
 
+    def test_status_existing_valid(self, tmp_path):
+        self.init_user_in_database()
+        self._init_managers(tmp_path)
+        (tmp_path / self.trans.user.username).mkdir()
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="home_directory",
+            template_version=0,
+            variables={},
+            secrets={},
+        )
+        user_file_source = self._create_instance(create_payload)
+        status = self.manager.plugin_status_for_instance(self.trans, user_file_source.uuid)
+        assert status.connection
+        assert not status.connection.is_not_ok
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+
+    def test_status_update_valid(self, tmp_path):
+        self._init_managers(tmp_path, config_dict=simple_variable_template(tmp_path))
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="simple_variable",
+            template_version=0,
+            variables={"var1": "originalvarval"},
+            secrets={},
+        )
+        user_file_source = self._create_instance(create_payload)
+
+        update = TestUpdateInstancePayload(
+            variables={
+                "var1": "newval",
+            }
+        )
+
+        status = self.manager.test_modify_instance(self.trans, user_file_source.uuid, update)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+        assert status.connection
+        assert status.connection.is_not_ok
+
+    def test_status_upgrade_valid(self, tmp_path):
+        user_file_source = self._init_upgrade_test_case(tmp_path)
+        assert "sec1" in user_file_source.secrets
+        assert "sec2" not in user_file_source.secrets
+        self._assert_secret_is(user_file_source, "sec1", "moocow")
+        self._assert_secret_absent(user_file_source, "foobarxyz")
+        self._assert_secret_absent(user_file_source, "sec2")
+        upgrade_to_1 = TestUpgradeInstancePayload(
+            template_version=1,
+            secrets={
+                "sec1": "moocow",
+                "sec2": "aftersec2",
+            },
+            variables={},
+        )
+        status = self.manager.test_modify_instance(self.trans, user_file_source.uuid, upgrade_to_1)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+        assert status.connection
+        assert status.connection.is_not_ok
+
+    def test_status_upgrade_invalid(self, tmp_path):
+        user_file_source = self._init_invalid_upgrade_test_case(tmp_path)
+        upgrade_to_1 = TestUpgradeInstancePayload(
+            template_version=1,
+            secrets={},
+            variables={},
+        )
+        status = self.manager.test_modify_instance(self.trans, user_file_source.uuid, upgrade_to_1)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert status.template_settings.is_not_ok
+        assert "Input should be a valid boolean" in status.template_settings.message
+        assert status.connection is None
+
+    def _init_invalid_upgrade_test_case(self, tmp_path) -> UserFileSourceModel:
+        version_0 = home_directory_template(tmp_path)
+        version_0["version"] = 0
+        version_1 = invalid_home_directory_template_type_error(tmp_path)
+        version_1["version"] = 1
+        version_1["id"] = version_0["id"]
+        config_dict = [
+            version_0,
+            version_1,
+        ]
+        self._init_managers(tmp_path, config_dict=config_dict)
+        return self._create_user_file_source()
+
     def _init_upgrade_test_case(self, tmp_path) -> UserFileSourceModel:
         example_yaml_str = UPGRADE_EXAMPLE
         example_yaml_str.replace("/data", str(tmp_path))
@@ -544,6 +788,13 @@ class TestFileSourcesTestCase(BaseTestCase):
         self._init_managers(tmp_path)
         user_file_source = self._create_user_file_source()
         return user_file_source
+
+    def _init_dropbox_env(self, tmp_path, monkeypatch):
+        self.init_user_in_database()
+        self._init_managers(tmp_path, safe_load(get_example("production_dropbox.yml")))
+
+        monkeypatch.setenv("GALAXY_DROPBOX_APP_CLIENT_ID", "mock_client_id")
+        monkeypatch.setenv("GALAXY_DROPBOX_APP_CLIENT_SECRET", "mock_client_secret")
 
     def _create_user_file_source(self, template_id="home_directory") -> UserFileSourceModel:
         create_payload = CreateInstancePayload(
@@ -608,3 +859,28 @@ class TestFileSourcesTestCase(BaseTestCase):
         manager = self.app[FileSourceInstancesManager]
         self.file_sources = file_sources
         self.manager = manager
+
+
+class MockResponse:
+    _error_checked = False
+
+    def __init__(self, json):
+        self._json = json
+
+    def raise_for_status(self):
+        self._error_checked = True
+
+    def json(self):
+        return self._json
+
+    def assert_error_checked(self):
+        assert self._error_checked
+
+
+class MockExceptionResponse:
+
+    def __init__(self, exception_msg: str):
+        self._exception_msg = exception_msg
+
+    def raise_for_status(self):
+        raise HTTPError(self._exception_msg, self._exception_msg, response=None)  # type: ignore[arg-type]

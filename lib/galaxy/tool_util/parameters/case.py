@@ -12,10 +12,13 @@ from typing import (
 from packaging.version import Version
 
 from galaxy.tool_util.parser.interface import (
+    TestCollectionDef,
     ToolSource,
     ToolSourceTest,
     ToolSourceTestInput,
     ToolSourceTestInputs,
+    xml_data_input_to_json,
+    XmlTestCollectionDefDict,
 )
 from galaxy.util import asbool
 from .factory import input_models_for_tool_source
@@ -25,6 +28,7 @@ from .models import (
     ConditionalWhen,
     DataCollectionParameterModel,
     DataColumnParameterModel,
+    DataParameterModel,
     FloatParameterModel,
     IntegerParameterModel,
     RepeatParameterModel,
@@ -39,6 +43,7 @@ from .visitor import (
 )
 
 INTEGER_STR_PATTERN = compile(r"^(\d+)$")
+INTEGERS_STR_PATTERN = compile(r"^(\d+)(\s*,\s*(\d+))*$")
 COLUMN_NAME_STR_PATTERN = compile(r"^c(\d+): .*$")
 # In an effort to squeeze all the ambiguity out of test cases - at some point Marius and John
 # agree tools should be using value_json for typed inputs to parameters but John has come around on
@@ -107,22 +112,31 @@ def legacy_from_string(parameter: ToolParameterT, value: Optional[Any], warnings
                     "Likely using deprected truevalue/falsevalue in tool parameter - switch to 'true' or 'false'"
                 )
         elif isinstance(parameter, (DataColumnParameterModel,)):
-            integer_match = INTEGER_STR_PATTERN.match(value_str)
-            if integer_match:
-                if WARN_ON_UNTYPED_XML_STRINGS:
+            if parameter.multiple:
+                integers_match = INTEGER_STR_PATTERN.match(value_str)
+                if integers_match:
+                    if WARN_ON_UNTYPED_XML_STRINGS:
+                        warnings.append(
+                            f"Implicitly converted {parameter.name} to a column index integer from a string value, please use 'value_json' to define this test input parameter value instead."
+                        )
+                    result_value = [int(v.strip()) for v in value_str.split(",")]
+            else:
+                integer_match = INTEGER_STR_PATTERN.match(value_str)
+                if integer_match:
+                    if WARN_ON_UNTYPED_XML_STRINGS:
+                        warnings.append(
+                            f"Implicitly converted {parameter.name} to a column index integer from a string value, please use 'value_json' to define this test input parameter value instead."
+                        )
+                    result_value = int(value_str)
+                elif Version(profile) < Version("24.2"):
+                    # allow this for older tools but new tools will just require the integer index
                     warnings.append(
-                        f"Implicitly converted {parameter.name} to a column index integer from a string value, please use 'value_json' to define this test input parameter value instead."
+                        f"Using column names as test case values is deprecated, please adjust {parameter.name} to just use an integer column index."
                     )
-                result_value = int(value_str)
-            elif Version(profile) < Version("24.2"):
-                # allow this for older tools but new tools will just require the integer index
-                warnings.append(
-                    f"Using column names as test case values is deprecated, please adjust {parameter.name} to just use an integer column index."
-                )
-                column_name_value_match = COLUMN_NAME_STR_PATTERN.match(value_str)
-                if column_name_value_match:
-                    column_part = column_name_value_match.group(1)
-                    result_value = int(column_part)
+                    column_name_value_match = COLUMN_NAME_STR_PATTERN.match(value_str)
+                    if column_name_value_match:
+                        column_part = column_name_value_match.group(1)
+                        result_value = int(column_part)
     return result_value
 
 
@@ -150,12 +164,12 @@ def test_case_state(
 
 
 def test_case_validation(
-    test_dict: ToolSourceTest, tool_parameter_bundle: List[ToolParameterT], profile: str
+    test_dict: ToolSourceTest, tool_parameter_bundle: List[ToolParameterT], profile: str, name: Optional[str] = None
 ) -> TestCaseStateValidationResult:
     test_case_state_and_warnings = test_case_state(test_dict, tool_parameter_bundle, profile, validate=False)
     exception: Optional[Exception] = None
     try:
-        test_case_state_and_warnings.tool_state.validate(tool_parameter_bundle)
+        test_case_state_and_warnings.tool_state.validate(tool_parameter_bundle, name=name)
         for input_name in test_case_state_and_warnings.unhandled_inputs:
             raise Exception(f"Invalid parameter name found {input_name}")
     except Exception as e:
@@ -249,8 +263,26 @@ def _merge_into_state(
     else:
         test_input = _input_for(state_path, inputs)
         if test_input is not None:
+            input_value: Any
             if isinstance(tool_input, (DataCollectionParameterModel,)):
-                input_value = test_input.get("attributes", {}).get("collection")
+                input_value = TestCollectionDef.from_dict(
+                    cast(XmlTestCollectionDefDict, test_input.get("attributes", {}).get("collection"))
+                ).test_format_to_dict()
+            elif isinstance(tool_input, (DataParameterModel,)):
+                data_tool_input = cast(DataParameterModel, tool_input)
+                if data_tool_input.multiple:
+                    value = test_input["value"]
+                    input_value_list = []
+                    if value:
+                        test_input_values = cast(str, value).split(",")
+                        for test_input_value in test_input_values:
+                            instance_test_input = test_input.copy()
+                            instance_test_input["value"] = test_input_value
+                            input_value_json = xml_data_input_to_json(instance_test_input)
+                            input_value_list.append(input_value_json)
+                    input_value = input_value_list
+                else:
+                    input_value = xml_data_input_to_json(test_input)
             else:
                 input_value = test_input["value"]
                 input_value = legacy_from_string(tool_input, input_value, warnings, profile)
@@ -264,11 +296,14 @@ def _select_which_when(
     conditional: ConditionalParameterModel, state: dict, inputs: ToolSourceTestInputs, prefix: str
 ) -> ConditionalWhen:
     test_parameter = conditional.test_parameter
+    is_boolean = test_parameter.parameter_type == "gx_boolean"
     test_parameter_name = test_parameter.name
     test_parameter_flat_path = flat_state_path(test_parameter_name, prefix)
 
     test_input = _input_for(test_parameter_flat_path, inputs)
     explicit_test_value = test_input["value"] if test_input else None
+    if is_boolean and isinstance(explicit_test_value, str):
+        explicit_test_value = asbool(explicit_test_value)
     test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
     for when in conditional.whens:
         if test_value is None and when.is_default_when:
@@ -288,8 +323,9 @@ def _input_for(flat_state_path: str, inputs: ToolSourceTestInputs) -> Optional[T
 
 
 def validate_test_cases_for_tool_source(
-    tool_source: ToolSource, use_latest_profile: bool = False
+    tool_source: ToolSource, use_latest_profile: bool = False, name: Optional[str] = None
 ) -> List[TestCaseStateValidationResult]:
+    name = name or f"PydanticModelFor[{tool_source.parse_id()}]"
     tool_parameter_bundle = input_models_for_tool_source(tool_source)
     if use_latest_profile:
         # this might get old but it is fine, just needs to be updated when test case changes are made
@@ -299,6 +335,6 @@ def validate_test_cases_for_tool_source(
     test_cases: List[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
     results_by_test: List[TestCaseStateValidationResult] = []
     for test_case in test_cases:
-        validation_result = test_case_validation(test_case, tool_parameter_bundle.input_models, profile)
+        validation_result = test_case_validation(test_case, tool_parameter_bundle.parameters, profile, name=name)
         results_by_test.append(validation_result)
     return results_by_test

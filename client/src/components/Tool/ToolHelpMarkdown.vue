@@ -60,7 +60,7 @@ onMounted(setupPopovers);
         -->
         <!-- eslint-disable-next-line vue/no-v-html -->
         <div ref="helpHtml" v-html="formattedContent" />
-        <span v-for="(value, i) in internalHelpReferences" v-bind:key="i">
+        <span v-for="(value, i) in internalHelpReferences" :key="i">
             <HelpPopover :target="value.element" :term="value.term" />
         </span>
     </span>

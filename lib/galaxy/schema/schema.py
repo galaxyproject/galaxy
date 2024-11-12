@@ -1,5 +1,6 @@
 """This module contains general pydantic models and common schema field annotations for them."""
 
+import base64
 from datetime import (
     date,
     datetime,
@@ -911,6 +912,9 @@ class HDADetailed(HDASummary, WithModelClass):
             title="Sources",
             description="The list of sources associated with this dataset.",
         ),
+    ]
+    copied_from_history_dataset_association_id: Annotated[
+        Optional[EncodedDatabaseIdField], Field(None, description="ID of HDA this HDA was copied from.")
     ]
 
 
@@ -2167,6 +2171,12 @@ class JobMetric(Model):
     )
 
 
+class WorkflowJobMetric(JobMetric):
+    tool_id: str
+    step_index: int
+    step_label: Optional[str]
+
+
 class JobMetricCollection(RootModel):
     """Represents a collection of metrics associated with a Job."""
 
@@ -3335,7 +3345,7 @@ class HDACustom(HDADetailed):
     # TODO: Fix this workaround for partial_model not supporting UUID fields for some reason.
     # The error otherwise is: `PydanticUserError: 'UuidVersion' cannot annotate 'nullable'.`
     # Also ignoring mypy complaints about the type redefinition.
-    uuid: Optional[UUID4]  # type: ignore
+    uuid: Optional[UUID4]  # type: ignore[assignment]
 
     # Add fields that are not part of any view here
     visualizations: Annotated[
@@ -3674,7 +3684,7 @@ class PageSummaryBase(Model):
         ...,  # Required
         title="Identifier",
         description="The title slug for the page URL, must be unique.",
-        pattern=r"^[a-z0-9\-]+$",
+        pattern=r"^[^/:?#]+$",
     )
 
 
@@ -3732,6 +3742,22 @@ class AsyncTaskResultSummary(Model):
         None,
         title="Queue of task being done derived from Celery AsyncResult",
     )
+
+
+ToolRequestIdField = Field(title="ID", description="Encoded ID of the role")
+
+
+class ToolRequestState(str, Enum):
+    NEW = "new"
+    SUBMITTED = "submitted"
+    FAILED = "failed"
+
+
+class ToolRequestModel(Model):
+    id: EncodedDatabaseIdField = ToolRequestIdField
+    request: Dict[str, Any]
+    state: ToolRequestState
+    state_message: Optional[str]
 
 
 class AsyncFile(Model):
@@ -3798,6 +3824,18 @@ GenerateTimeField = Field(
 )
 
 
+class OAuth2State(BaseModel):
+    route: str
+    nonce: str
+
+    def encode(self) -> str:
+        return base64.b64encode(self.model_dump_json().encode("utf-8")).decode("utf-8")
+
+    @staticmethod
+    def decode(base64_param: str) -> "OAuth2State":
+        return OAuth2State.model_validate_json(base64.b64decode(base64_param.encode("utf-8")))
+
+
 class PageDetails(PageSummary):
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
@@ -3811,6 +3849,54 @@ class PageSummaryList(RootModel):
         default=[],
         title="List with summary information of Pages.",
     )
+
+
+class LandingRequestState(str, Enum):
+    UNCLAIMED = "unclaimed"
+    CLAIMED = "claimed"
+
+
+ToolLandingRequestIdField = Field(title="ID", description="Encoded ID of the tool landing request")
+WorkflowLandingRequestIdField = Field(title="ID", description="Encoded ID of the workflow landing request")
+
+
+class CreateToolLandingRequestPayload(Model):
+    tool_id: str
+    tool_version: Optional[str] = None
+    request_state: Optional[Dict[str, Any]] = None
+    client_secret: Optional[str] = None
+    public: bool = False
+
+
+class CreateWorkflowLandingRequestPayload(Model):
+    workflow_id: str
+    workflow_target_type: Literal["stored_workflow", "workflow", "trs_url"]
+    request_state: Optional[Dict[str, Any]] = None
+    client_secret: Optional[str] = None
+    public: bool = Field(
+        False,
+        description="If workflow landing request is public anyone with the uuid can use the landing request. If not public the request must be claimed before use and additional verification might occur.",
+    )
+
+
+class ClaimLandingPayload(Model):
+    client_secret: Optional[str] = None
+
+
+class ToolLandingRequest(Model):
+    uuid: UuidField
+    tool_id: str
+    tool_version: Optional[str] = None
+    request_state: Optional[Dict[str, Any]] = None
+    state: LandingRequestState
+
+
+class WorkflowLandingRequest(Model):
+    uuid: UuidField
+    workflow_id: str
+    workflow_target_type: Literal["stored_workflow", "workflow", "trs_url"]
+    request_state: Dict[str, Any]
+    state: LandingRequestState
 
 
 class MessageExceptionModel(BaseModel):

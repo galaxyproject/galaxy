@@ -20,6 +20,7 @@ from galaxy.datatypes.display_applications.util import (
 )
 from galaxy.datatypes.sniff import guess_ext
 from galaxy.exceptions import (
+    InsufficientPermissionsException,
     MessageException,
     RequestParameterInvalidException,
 )
@@ -28,7 +29,6 @@ from galaxy.managers.hdas import (
     HDAManager,
 )
 from galaxy.managers.histories import HistoryManager
-from galaxy.model import Dataset
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import (
     UsesAnnotations,
@@ -107,25 +107,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if not data:
             raise web.httpexceptions.HTTPNotFound(f"Invalid reference dataset id: {str(hda_id)}.")
         if not self._can_access_dataset(trans, data):
-            return trans.show_error_message("You are not allowed to access this dataset")
-        if data.purged or data.dataset.purged:
-            return trans.show_error_message("The dataset you are attempting to view has been purged.")
-        elif data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.user)):
-            return trans.show_error_message("The dataset you are attempting to view has been deleted.")
-        elif data.state == Dataset.states.UPLOAD:
-            return trans.show_error_message(
-                "Please wait until this dataset finishes uploading before attempting to view it."
-            )
-        elif data.state == Dataset.states.DISCARDED:
-            return trans.show_error_message("The dataset you are attempting to view has been discarded.")
-        elif data.state == Dataset.states.DEFERRED:
-            return trans.show_error_message(
-                "The dataset you are attempting to view has deferred data. You can only use this dataset as input for jobs."
-            )
-        elif data.state == Dataset.states.PAUSED:
-            return trans.show_error_message(
-                "The dataset you are attempting to view is in paused state. One of the inputs for the job that creates this dataset has failed."
-            )
+            raise InsufficientPermissionsException("You are not allowed to access this dataset")
+        self.app.hda_manager.ensure_dataset_on_disk(trans, data)
         return data
 
     @web.expose
@@ -133,8 +116,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd
     ):
         data = self._check_dataset(trans, dataset_id)
-        if not isinstance(data, trans.app.model.DatasetInstance):
-            return data
         if "hdca" in kwd:
             raise RequestParameterInvalidException("Invalid request parameter 'hdca' encountered.")
         if hdca_id := kwd.get("hdca_id", None):
@@ -391,8 +372,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         trans.app.datatypes_registry.set_external_metadata_tool,
                         trans,
                         incoming={"input1": data},
-                        overwrite=False,
-                    )  # overwrite is False as per existing behavior
+                    )
                     trans.app.job_manager.enqueue(job, tool=trans.app.datatypes_registry.set_external_metadata_tool)
                     message = f"Detection was finished and changed the datatype to {datatype}."
             else:
@@ -451,12 +431,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
         return data, None
 
-    @web.expose
-    def display_by_username_and_slug(self, trans, username, slug, filename=None, preview=True, **kwargs):
+    def _display_by_username_and_slug(self, trans, username, slug, filename=None, preview=True, **kwargs):
         """Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id."""
         dataset = self._check_dataset(trans, slug)
-        if not isinstance(dataset, trans.app.model.DatasetInstance):
-            return dataset
         # Filename used for composite types.
         if filename:
             return self.display(trans, dataset_id=slug, filename=filename)

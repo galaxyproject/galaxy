@@ -13,7 +13,7 @@
     {
         "model_class": "Job",
         "id": "2",
-        "state": "new",
+        "state": "running",
         "exit_code": 0,
         "update_time": "2021-01-15T10:38:36.015269",
         "create_time": "2021-01-15T10:38:21.462106",

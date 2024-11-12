@@ -45,6 +45,7 @@ BACKENDS = {
     "okta": "social_core.backends.okta_openidconnect.OktaOpenIdConnect",
     "azure": "social_core.backends.azuread_tenant.AzureADV2TenantOAuth2",
     "egi_checkin": "social_core.backends.egi_checkin.EGICheckinOpenIdConnect",
+    "oidc": "social_core.backends.open_id_connect.OpenIdConnectAuth",
 }
 
 BACKENDS_NAME = {
@@ -54,6 +55,7 @@ BACKENDS_NAME = {
     "okta": "okta-openidconnect",
     "azure": "azuread-v2-tenant-oauth2",
     "egi_checkin": "egi-checkin",
+    "oidc": "oidc",
 }
 
 AUTH_PIPELINE = (
@@ -135,6 +137,8 @@ class PSAAuthnz(IdentityProvider):
         self.config["TENANT_ID"] = oidc_backend_config.get("tenant_id")
         self.config["redirect_uri"] = oidc_backend_config.get("redirect_uri")
         self.config["EXTRA_SCOPES"] = oidc_backend_config.get("extra_scopes")
+        if oidc_backend_config.get("oidc_endpoint"):
+            self.config["OIDC_ENDPOINT"] = oidc_backend_config["oidc_endpoint"]
         if oidc_backend_config.get("prompt") is not None:
             self.config[setting_name("AUTH_EXTRA_ARGUMENTS")]["prompt"] = oidc_backend_config.get("prompt")
         if oidc_backend_config.get("api_url") is not None:

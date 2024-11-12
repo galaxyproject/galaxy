@@ -22,6 +22,7 @@ from galaxy.model.orm.util import (
     get_object_session,
 )
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.model.unittest_utils.utils import random_email
 from galaxy.objectstore import QuotaSourceMap
 from galaxy.util.unittest import TestCase
 
@@ -78,7 +79,7 @@ class BaseModelTestCase(TestCase):
 class TestMappings(BaseModelTestCase):
 
     def test_dataset_instance_order(self) -> None:
-        u = model.User(email="mary@example.com", password="password")
+        u = model.User(email=random_email(), password="password")
         h1 = model.History(name="History 1", user=u)
         elements = []
         list_pair = model.DatasetCollection(collection_type="list:paired")
@@ -213,7 +214,7 @@ class TestMappings(BaseModelTestCase):
         assert c4.dataset_elements == [dce1, dce2]
 
     def test_history_audit(self):
-        u = model.User(email="contents@foo.bar.baz", password="password")
+        u = model.User(email=random_email(), password="password")
         h1 = model.History(name="HistoryAuditHistory", user=u)
         h2 = model.History(name="HistoryAuditHistory", user=u)
 
@@ -272,7 +273,7 @@ class TestMappings(BaseModelTestCase):
         # states and flushing in SQL Alchemy is very subtle and it is good to have a executable
         # reference for how it behaves in the context of Galaxy objects.
         model = self.model
-        user = model.User(email="testworkflows@bx.psu.edu", password="password")
+        user = model.User(email=random_email(), password="password")
         galaxy_session = model.GalaxySession()
         galaxy_session_other = model.GalaxySession()
         galaxy_session.user = user
@@ -345,7 +346,7 @@ class TestMappings(BaseModelTestCase):
         assert "id" not in inspect(galaxy_model_object_new).unloaded
 
     def test_workflows(self):
-        user = model.User(email="testworkflows@bx.psu.edu", password="password")
+        user = model.User(email=random_email(), password="password")
 
         child_workflow = _workflow_from_steps(user, [])
         self.persist(child_workflow)
@@ -455,7 +456,7 @@ class TestMappings(BaseModelTestCase):
         assert counts.root["scheduled"] == 1
 
     def test_role_creation(self):
-        security_agent = GalaxyRBACAgent(self.model)
+        security_agent = GalaxyRBACAgent(self.model.session)
 
         def check_private_role(private_role, email):
             assert private_role.type == model.Role.types.PRIVATE
@@ -488,7 +489,7 @@ class TestMappings(BaseModelTestCase):
         check_private_role(role, email)
 
     def test_private_share_role(self):
-        security_agent = GalaxyRBACAgent(self.model)
+        security_agent = GalaxyRBACAgent(self.model.session)
 
         u_from, u_to, u_other = self._three_users("private_share_role")
 
@@ -503,7 +504,7 @@ class TestMappings(BaseModelTestCase):
         assert not security_agent.can_access_dataset(u_other.all_roles(), d1.dataset)
 
     def test_make_dataset_public(self):
-        security_agent = GalaxyRBACAgent(self.model)
+        security_agent = GalaxyRBACAgent(self.model.session)
         u_from, u_to, u_other = self._three_users("make_dataset_public")
 
         h = model.History(name="History for Annotation", user=u_from)
@@ -519,7 +520,7 @@ class TestMappings(BaseModelTestCase):
         assert security_agent.can_access_dataset(u_other.all_roles(), d1.dataset)
 
     def test_set_all_dataset_permissions(self):
-        security_agent = GalaxyRBACAgent(self.model)
+        security_agent = GalaxyRBACAgent(self.model.session)
         u_from, _, u_other = self._three_users("set_all_perms")
 
         h = model.History(name="History for Annotation", user=u_from)
@@ -540,7 +541,7 @@ class TestMappings(BaseModelTestCase):
         assert not security_agent.can_access_dataset(u_other.all_roles(), d1.dataset)
 
     def test_can_manage_privately_shared_dataset(self):
-        security_agent = GalaxyRBACAgent(self.model)
+        security_agent = GalaxyRBACAgent(self.model.session)
         u_from, u_to, u_other = self._three_users("can_manage_dataset")
 
         h = model.History(name="History for Prevent Sharing", user=u_from)
@@ -555,7 +556,7 @@ class TestMappings(BaseModelTestCase):
         assert not security_agent.can_manage_dataset(u_to.all_roles(), d1.dataset)
 
     def test_can_manage_private_dataset(self):
-        security_agent = GalaxyRBACAgent(self.model)
+        security_agent = GalaxyRBACAgent(self.model.session)
         u_from, _, u_other = self._three_users("can_manage_dataset_ps")
 
         h = model.History(name="History for Prevent Sharing", user=u_from)
@@ -569,7 +570,7 @@ class TestMappings(BaseModelTestCase):
         assert not security_agent.can_manage_dataset(u_other.all_roles(), d1.dataset)
 
     def test_cannot_make_private_objectstore_dataset_public(self):
-        security_agent = GalaxyRBACAgent(self.model)
+        security_agent = GalaxyRBACAgent(self.model.session)
         u_from, u_to, _ = self._three_users("cannot_make_private_public")
 
         h = self.model.History(name="History for Prevent Sharing", user=u_from)
@@ -586,7 +587,7 @@ class TestMappings(BaseModelTestCase):
         assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
 
     def test_cannot_make_private_objectstore_dataset_shared(self):
-        security_agent = GalaxyRBACAgent(self.model)
+        security_agent = GalaxyRBACAgent(self.model.session)
         u_from, u_to, _ = self._three_users("cannot_make_private_shared")
 
         h = self.model.History(name="History for Prevent Sharing", user=u_from)
@@ -603,7 +604,7 @@ class TestMappings(BaseModelTestCase):
         assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
 
     def test_cannot_set_dataset_permisson_on_private(self):
-        security_agent = GalaxyRBACAgent(self.model)
+        security_agent = GalaxyRBACAgent(self.model.session)
         u_from, u_to, _ = self._three_users("cannot_set_permissions_on_private")
 
         h = self.model.History(name="History for Prevent Sharing", user=u_from)
@@ -623,7 +624,7 @@ class TestMappings(BaseModelTestCase):
         assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
 
     def test_cannot_make_private_dataset_public(self):
-        security_agent = GalaxyRBACAgent(self.model)
+        security_agent = GalaxyRBACAgent(self.model.session)
         u_from, u_to, u_other = self._three_users("cannot_make_private_dataset_public")
 
         h = self.model.History(name="History for Annotation", user=u_from)

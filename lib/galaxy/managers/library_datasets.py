@@ -17,7 +17,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.base import ModelManager
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.datasets import DatasetAssociationManager
+from galaxy.managers.lddas import LDDAManager
 from galaxy.model import (
     LibraryDataset,
     LibraryDatasetDatasetAssociation,
@@ -37,7 +37,7 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
 
     def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
-        self.dataset_assoc_manager = DatasetAssociationManager(app)
+        self.ldda_manager = LDDAManager(app)
 
     def get(self, trans, decoded_library_dataset_id, check_accessible=True) -> LibraryDataset:
         """
@@ -112,10 +112,10 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
             changed = True
         new_file_ext = new_data.get("file_ext", None)
         if new_file_ext == "auto":
-            self.dataset_assoc_manager.detect_datatype(trans, ldda)
+            self.ldda_manager.detect_datatype(trans, ldda)
         elif new_file_ext is not None and new_file_ext != ldda.extension:
             ldda.extension = new_file_ext
-            self.dataset_assoc_manager.set_metadata(trans, ldda)
+            self.ldda_manager.set_metadata(trans, ldda)
             changed = True
         new_genome_build = new_data.get("genome_build", None)
         if new_genome_build is not None and new_genome_build != ldda.dbkey:

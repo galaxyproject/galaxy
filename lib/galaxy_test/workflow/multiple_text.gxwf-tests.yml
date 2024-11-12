@@ -9,6 +9,7 @@
       type: raw
   outputs:
     output:
+      class: File
       asserts:
         - that: has_line
           line: '--ex1,ex2,--ex3'

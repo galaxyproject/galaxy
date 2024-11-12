@@ -30,6 +30,9 @@ from pydantic import (
     WrapSerializer,
 )
 from sqlalchemy import (
+    and_,
+    Cast,
+    ColumnElement,
     desc,
     false,
     func,
@@ -37,6 +40,7 @@ from sqlalchemy import (
     select,
     true,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     aliased,
     joinedload,
@@ -134,6 +138,7 @@ from galaxy.workflow.steps import (
     attach_ordered_steps,
     has_cycles,
 )
+from galaxy.workflow.trs_proxy import TrsProxy
 
 log = logging.getLogger(__name__)
 
@@ -242,6 +247,12 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
                                 raise exceptions.RequestParameterInvalidException(message)
                             stmt = stmt.where(StoredWorkflowUserShareAssociation.user == user)
+                        elif q == "bookmarked":
+                            stmt = (
+                                stmt.join(model.StoredWorkflowMenuEntry)
+                                .where(model.StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id)
+                                .where(model.StoredWorkflowMenuEntry.user_id == user.id)
+                            )
                 elif isinstance(term, RawTextTerm):
                     tf = w_tag_filter(term.text, False)
                     alias = aliased(User)
@@ -587,8 +598,10 @@ class WorkflowSerializer(sharable.SharableModelSerializer):
 
 
 class WorkflowContentsManager(UsesAnnotations):
-    def __init__(self, app: MinimalManagerApp):
+
+    def __init__(self, app: MinimalManagerApp, trs_proxy: TrsProxy):
         self.app = app
+        self.trs_proxy = trs_proxy
         self._resource_mapper_function = get_resource_mapper_function(app)
 
     def ensure_raw_description(self, dict_or_raw_description):
@@ -803,18 +816,17 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow.license = data.get("license")
         workflow.creator_metadata = data.get("creator")
 
-        if hasattr(workflow_state_resolution_options, "archive_source"):
-            if workflow_state_resolution_options.archive_source:
-                source_metadata = {}
-                if workflow_state_resolution_options.archive_source == "trs_tool":
-                    source_metadata["trs_tool_id"] = workflow_state_resolution_options.trs_tool_id
-                    source_metadata["trs_version_id"] = workflow_state_resolution_options.trs_version_id
-                    source_metadata["trs_server"] = workflow_state_resolution_options.trs_server
-                    source_metadata["trs_url"] = workflow_state_resolution_options.trs_url
-                elif not workflow_state_resolution_options.archive_source.startswith("file://"):  # URL import
-                    source_metadata["url"] = workflow_state_resolution_options.archive_source
-                workflow_state_resolution_options.archive_source = None  # so trs_id is not set for subworkflows
-                workflow.source_metadata = source_metadata  # type:ignore[assignment]
+        if getattr(workflow_state_resolution_options, "archive_source", None):
+            source_metadata = {}
+            if workflow_state_resolution_options.archive_source in ("trs_tool", "trs_url"):
+                source_metadata["trs_tool_id"] = workflow_state_resolution_options.trs_tool_id
+                source_metadata["trs_version_id"] = workflow_state_resolution_options.trs_version_id
+                source_metadata["trs_server"] = workflow_state_resolution_options.trs_server
+                source_metadata["trs_url"] = workflow_state_resolution_options.trs_url
+            elif not workflow_state_resolution_options.archive_source.startswith("file://"):  # URL import
+                source_metadata["url"] = workflow_state_resolution_options.archive_source
+            workflow_state_resolution_options.archive_source = None  # so trs_id is not set for subworkflows
+            workflow.source_metadata = source_metadata
 
         # Assume no errors until we find a step that has some
         workflow.has_errors = False
@@ -1654,7 +1666,7 @@ class WorkflowContentsManager(UsesAnnotations):
         inputs = {}
         for step in workflow.input_steps:
             step_type = step.type
-            step_label = step.label or step.tool_inputs.get("name")
+            step_label = step.label or step.tool_inputs and step.tool_inputs.get("name")
             if step_label:
                 label = step_label
             elif step_type == "data_input":
@@ -1948,7 +1960,7 @@ class WorkflowContentsManager(UsesAnnotations):
         to the actual `label` attribute which is available for all module types, unique, and mapped to its own database column.
         """
         if not module.label and module.type in ["data_input", "data_collection_input"]:
-            new_state = safe_loads(state)
+            new_state = safe_loads(state) or {}
             default_label = new_state.get("name")
             if default_label and util.unicodify(default_label).lower() not in [
                 "input dataset",
@@ -2005,6 +2017,84 @@ class WorkflowContentsManager(UsesAnnotations):
                 tools.extend(self.get_all_tools(step.subworkflow))
         return tools
 
+    def get_or_create_workflow_from_trs(
+        self,
+        trans: ProvidesUserContext,
+        trs_url: Optional[str],
+        trs_id: Optional[str] = None,
+        trs_version: Optional[str] = None,
+        trs_server: Optional[str] = None,
+    ):
+        user_id = trans.user and trans.user.id
+        assert user_id, "Cannot create workflow for anonymous user"
+        if not trs_url:
+            assert trs_server and trs_id and trs_version, "trs_url or trs_server, trs_version and trs_id must be passed"
+            server = self.trs_proxy.get_server(trs_server)
+            trs_url = server.get_trs_url(trs_id, trs_version)
+        else:
+            _, trs_id, trs_version = self.trs_proxy.get_trs_id_and_version_from_trs_url(trs_url=trs_url)
+        assert trs_id and trs_version and trs_url
+
+        workflow = self.get_workflow_by_trs_id_and_version(trs_id=trs_id, trs_version=trs_version, user_id=user_id)
+        if not workflow:
+            workflow = self.create_workflow_from_trs_url(trans, trs_url, trs_server)
+        return workflow
+
+    def create_workflow_from_trs_url(
+        self, trans: ProvidesUserContext, trs_url: str, trs_server: Optional[str] = None
+    ) -> StoredWorkflow:
+        _, trs_tool_id, trs_version_id = self.trs_proxy.get_trs_id_and_version_from_trs_url(trs_url=trs_url)
+        data = self.trs_proxy.get_version_from_trs_url(trs_url)
+        as_dict = yaml.safe_load(data)
+        raw_workflow_description = self.normalize_workflow_format(trans, as_dict)
+        created_workflow = self.build_workflow_from_raw_description(
+            trans,
+            raw_workflow_description,
+            WorkflowCreateOptions(
+                trs_tool_id=trs_tool_id,
+                trs_version_id=trs_version_id,
+                trs_url=trs_url,
+                trs_server=trs_server,
+                archive_source="trs_url",
+            ),
+        )
+        return created_workflow.stored_workflow
+
+    def get_workflow_by_trs_id_and_version(
+        self, trs_id: str, trs_version: str, user_id: Optional[int] = None
+    ) -> Optional[model.StoredWorkflow]:
+        sa_session = self.app.model.session
+
+        def to_json(column, keys: List[str]):
+            assert sa_session.bind
+            if sa_session.bind.dialect.name == "postgresql":
+                cast: Union[ColumnElement[Any], Cast[Any]] = func.cast(func.convert_from(column, "UTF8"), JSONB)
+                for key in keys:
+                    cast = cast.__getitem__(key)
+                return cast.astext
+            else:
+                for key in keys:
+                    column = func.json_extract(column, f"$.{key}")
+                return column
+
+        stmnt = (
+            select(model.StoredWorkflow)
+            .join(model.Workflow, model.Workflow.id == model.StoredWorkflow.latest_workflow_id)
+            .filter(
+                and_(
+                    to_json(model.Workflow.source_metadata, ["trs_tool_id"]) == trs_id,
+                    to_json(model.Workflow.source_metadata, ["trs_version_id"]) == trs_version,
+                )
+            )
+        )
+        if user_id:
+            stmnt = stmnt.filter(
+                model.StoredWorkflow.user_id == user_id,
+            )
+        else:
+            stmnt = stmnt.filter(model.StoredWorkflow.importable == true())
+        return sa_session.execute(stmnt).scalar()
+
 
 class RefactorRequest(RefactorActions):
     style: str = "export"
@@ -2060,11 +2150,11 @@ class WorkflowCreateOptions(WorkflowStateResolutionOptions):
     shed_tool_conf: Optional[str] = None
 
     # for workflows imported by archive source
-    archive_source: Optional[str] = ""
-    trs_tool_id: str = ""
-    trs_version_id: str = ""
-    trs_server: str = ""
-    trs_url: str = ""
+    archive_source: Optional[str] = None
+    trs_tool_id: Optional[str] = None
+    trs_version_id: Optional[str] = None
+    trs_server: Optional[str] = None
+    trs_url: Optional[str] = None
 
     @property
     def is_importable(self):

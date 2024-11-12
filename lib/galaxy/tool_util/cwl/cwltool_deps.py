@@ -72,11 +72,6 @@ except ImportError:
     normalizeFilesDirs = None  # type: ignore[assignment]
 
 try:
-    import shellescape
-except ImportError:
-    shellescape = None
-
-try:
     import schema_salad
     from schema_salad import (
         ref_resolver,
@@ -105,7 +100,7 @@ def ensure_cwltool_available():
 
     Throw an ImportError with a description of the problem if they do not exist.
     """
-    if main is None or workflow is None or shellescape is None:
+    if main is None or workflow is None:
         message = "This feature requires cwltool and dependencies to be available, they are not."
         if main is None:
             message += " cwltool is not unavailable."
@@ -113,8 +108,6 @@ def ensure_cwltool_available():
             message += " cwltool.load_tool.resolve_and_validate_document is unavailable - cwltool version is too old."
         if requests is None:
             message += " Library 'requests' unavailable."
-        if shellescape is None:
-            message += " Library 'shellescape' unavailable."
         if schema_salad is None:
             message += " Library 'schema_salad' unavailable."
         raise ImportError(message)
@@ -137,7 +130,6 @@ __all__ = (
     "resolve_and_validate_document",
     "RuntimeContext",
     "schema_salad",
-    "shellescape",
     "sourceline",
     "StdFsAccess",
     "visit_class",

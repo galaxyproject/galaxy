@@ -227,6 +227,8 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/login/start")
     webapp.add_client_route("/tools/list")
     webapp.add_client_route("/tools/json")
+    webapp.add_client_route("/tool_landings/{uuid}")
+    webapp.add_client_route("/workflow_landings/{uuid}")
     webapp.add_client_route("/tours")
     webapp.add_client_route("/tours/{tour_id}")
     webapp.add_client_route("/user")
@@ -849,19 +851,6 @@ def populate_api_routes(webapp, app):
         controller="library_datasets",
         action="download",
         conditions=dict(method=["POST", "GET"]),
-    )
-
-    webapp.mapper.resource(
-        "content",
-        "contents",
-        controller="library_contents",
-        name_prefix="library_",
-        path_prefix="/api/libraries/{library_id}",
-        parent_resources=dict(member_name="library", collection_name="libraries"),
-    )
-
-    _add_item_extended_metadata_controller(
-        webapp, name_prefix="library_dataset_", path_prefix="/api/libraries/{library_id}/contents/{library_content_id}"
     )
 
     webapp.mapper.connect(

@@ -15,8 +15,8 @@ const props = defineProps<Props>();
 const title = computed(() => `Update File Source ${props.fileSource?.name} Secrets`);
 
 async function onUpdate(secretName: string, secretValue: string) {
-    const { error } = await GalaxyApi().PUT("/api/file_source_instances/{user_file_source_id}", {
-        params: { path: { user_file_source_id: props.fileSource.uuid } },
+    const { error } = await GalaxyApi().PUT("/api/file_source_instances/{uuid}", {
+        params: { path: { uuid: props.fileSource.uuid } },
         body: {
             secret_name: secretName,
             secret_value: secretValue,

@@ -5,10 +5,8 @@ from sqlalchemy import inspect
 
 from galaxy import model as m
 from galaxy.model.unittest_utils.db_helpers import get_hdca_by_name
-from . import (
-    MockTransaction,
-    PRIVATE_OBJECT_STORE_ID,
-)
+from . import MockTransaction
+from .. import PRIVATE_OBJECT_STORE_ID
 
 
 def test_history_update(make_history, make_hda, session):

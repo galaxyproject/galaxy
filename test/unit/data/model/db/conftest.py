@@ -8,12 +8,13 @@ from sqlalchemy import (
     create_engine,
     text,
 )
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from galaxy import model as m
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.model.triggers.update_audit_table import install as install_timestamp_triggers
-from . import MockObjectStore
+from .. import MockObjectStore
 
 if TYPE_CHECKING:
     from sqlalchemy.engine import Engine
@@ -35,7 +36,11 @@ def engine(db_url: str) -> "Engine":
 
 @pytest.fixture
 def session(engine: "Engine") -> Session:
-    return Session(engine)
+    session = Session(engine)
+    # For sqlite, we need to explicitly enale foreign key constraints.
+    if engine.name == "sqlite":
+        session.execute(text("PRAGMA foreign_keys = ON;"))
+    return session
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -58,12 +63,35 @@ def init_datatypes() -> None:
 
 
 @pytest.fixture(autouse=True)
-def clear_database(engine: "Engine") -> "Generator":
+def clear_database(engine: "Engine", session) -> "Generator":
     """Delete all rows from all tables. Called after each test."""
     yield
-    with engine.begin() as conn:
-        for table in m.mapper_registry.metadata.tables:
-            # Unless db is sqlite, disable foreign key constraints to delete out of order
-            if engine.name != "sqlite":
-                conn.execute(text(f"ALTER TABLE {table} DISABLE TRIGGER ALL"))
-            conn.execute(text(f"DELETE FROM {table}"))
+
+    # If a test left an open transaction, rollback to prevent database locking.
+    if session.in_transaction():
+        session.rollback()
+
+    with engine.connect() as conn:
+        if engine.name == "sqlite":
+            conn.execute(text("PRAGMA foreign_keys = OFF;"))
+            for table in m.mapper_registry.metadata.tables:
+                conn.execute(text(f"DELETE FROM {table}"))
+        else:
+            # For postgres, we can disable foreign key constraints with this statement:
+            #   conn.execute(text(f"ALTER TABLE {table} DISABLE TRIGGER ALL"))
+            # However, unless running as superuser, this will raise an error when trying
+            #   to disable a system trigger. Disabling USER triggers instead of ALL
+            #   won't work because the USER option excludes foreign key constraints.
+            # The following is an alternative: we do multiple passes until all tables have been cleared:
+            to_delete = list(m.mapper_registry.metadata.tables)
+            failed = []
+            while to_delete:
+                for table in to_delete:
+                    try:
+                        conn.execute(text(f"DELETE FROM {table}"))
+                    except IntegrityError:
+                        failed.append(table)
+                        conn.rollback()
+                to_delete, failed = failed, []
+
+        conn.commit()

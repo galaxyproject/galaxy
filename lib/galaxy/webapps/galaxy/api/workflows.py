@@ -42,6 +42,7 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.landing import LandingRequestManager
 from galaxy.managers.workflows import (
     MissingToolsException,
     RefactorRequest,
@@ -63,17 +64,22 @@ from galaxy.schema.invocation import (
     InvocationStepJobsResponseJobModel,
     InvocationStepJobsResponseStepModel,
     InvocationUpdatePayload,
+    WorkflowInvocationRequestModel,
     WorkflowInvocationResponse,
 )
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
+    ClaimLandingPayload,
+    CreateWorkflowLandingRequestPayload,
     InvocationSortByEnum,
     InvocationsStateCounts,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+    WorkflowJobMetric,
+    WorkflowLandingRequest,
     WorkflowSortByEnum,
 )
 from galaxy.schema.workflows import (
@@ -101,7 +107,9 @@ from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    DependsOnUser,
     IndexQueryTag,
+    LandingUuidPathParam,
     Router,
     search_query_param,
 )
@@ -239,27 +247,14 @@ class WorkflowsAPIController(
                     payload["workflow"] = workflow_src
                     return self.__api_import_new_workflow(trans, payload, **kwd)
                 elif archive_source == "trs_tool":
-                    server = None
-                    trs_tool_id = None
-                    trs_version_id = None
-                    import_source = None
-                    if "trs_url" in payload:
-                        parts = self.app.trs_proxy.match_url(payload["trs_url"])
-                        if parts:
-                            server = self.app.trs_proxy.server_from_url(parts["trs_base_url"])
-                            trs_tool_id = parts["tool_id"]
-                            trs_version_id = parts["version_id"]
-                            payload["trs_tool_id"] = trs_tool_id
-                            payload["trs_version_id"] = trs_version_id
-                        else:
-                            raise exceptions.MessageException("Invalid TRS URL.")
-                    else:
-                        trs_server = payload.get("trs_server")
-                        server = self.app.trs_proxy.get_server(trs_server)
-                        trs_tool_id = payload.get("trs_tool_id")
-                        trs_version_id = payload.get("trs_version_id")
-
-                    archive_data = server.get_version_descriptor(trs_tool_id, trs_version_id)
+                    workflow = self.workflow_contents_manager.get_or_create_workflow_from_trs(
+                        trans,
+                        trs_url=payload.get("trs_url"),
+                        trs_id=payload.get("trs_tool_id"),
+                        trs_version=payload.get("trs_version_id"),
+                        trs_server=payload.get("trs_server"),
+                    )
+                    return self.__api_import_response(workflow)
                 else:
                     try:
                         archive_data = stream_url_to_str(
@@ -594,13 +589,15 @@ class WorkflowsAPIController(
         workflow, missing_tool_tups = self._workflow_from_dict(
             trans, raw_workflow_description, workflow_create_options, source=source
         )
-        workflow_id = workflow.id
-        workflow = workflow.latest_workflow
+        return self.__api_import_response(workflow)
 
+    def __api_import_response(self, stored_workflow: model.StoredWorkflow):
+        workflow = stored_workflow.latest_workflow
+        assert workflow
         response = {
             "message": f"Workflow '{workflow.name}' imported successfully.",
             "status": "success",
-            "id": trans.security.encode_id(workflow_id),
+            "id": self.app.security.encode_id(stored_workflow.id),
         }
         if workflow.has_errors:
             response["message"] = "Imported, but some steps in this workflow have validation errors."
@@ -856,8 +853,20 @@ query_tags = [
         "Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.",
     ),
     IndexQueryTag(
-        "is:share_with_me",
+        "is:importable",
+        "Include only importable workflows in the final result.",
+    ),
+    IndexQueryTag(
+        "is:deleted",
+        "Include only deleted workflows in the final result.",
+    ),
+    IndexQueryTag(
+        "is:shared_with_me",
         "Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.",
+    ),
+    IndexQueryTag(
+        "is:bookmarked",
+        "Include only workflows bookmarked by the requesting user.",
     ),
 ]
 
@@ -895,6 +904,7 @@ RefactorWorkflowBody = Annotated[
 @router.cbv
 class FastAPIWorkflows:
     service: WorkflowsService = depends(WorkflowsService)
+    landing_manager: LandingRequestManager = depends(LandingRequestManager)
 
     @router.get(
         "/api/workflows",
@@ -1144,6 +1154,33 @@ class FastAPIWorkflows:
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> StoredWorkflowDetailed:
         return self.service.show_workflow(trans, workflow_id, instance, legacy, version)
+
+    @router.post("/api/workflow_landings", public=True, allow_cors=True)
+    def create_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_landing_request: CreateWorkflowLandingRequestPayload = Body(...),
+    ) -> WorkflowLandingRequest:
+        return self.landing_manager.create_workflow_landing_request(workflow_landing_request)
+
+    @router.post("/api/workflow_landings/{uuid}/claim")
+    def claim_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        uuid: UUID4 = LandingUuidPathParam,
+        payload: Optional[ClaimLandingPayload] = Body(...),
+        user: model.User = DependsOnUser,
+    ) -> WorkflowLandingRequest:
+        return self.landing_manager.claim_workflow_landing_request(trans, uuid, payload)
+
+    @router.get("/api/workflow_landings/{uuid}")
+    def get_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        uuid: UUID4 = LandingUuidPathParam,
+        user: model.User = DependsOnUser,
+    ) -> WorkflowLandingRequest:
+        return self.landing_manager.get_workflow_landing_request(trans, uuid)
 
 
 StepDetailQueryParam = Annotated[
@@ -1415,6 +1452,17 @@ class FastAPIInvocations:
             step_details=step_details, legacy_job_state=legacy_job_state
         )
         return self.invocations_service.show(trans, invocation_id, serialization_params, eager=True)
+
+    @router.get(
+        "/api/invocations/{invocation_id}/request",
+        summary="Get a description modeling an API request to invoke this workflow - this is recreated and will be more specific in some ways than the initial creation request.",
+    )
+    def invocation_as_request(
+        self,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> WorkflowInvocationRequestModel:
+        return self.invocations_service.as_request(trans, invocation_id)
 
     @router.get(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}",
@@ -1712,3 +1760,11 @@ class FastAPIInvocations:
     ) -> InvocationJobsResponse:
         """An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored."""
         return self.invocation_jobs_summary(trans=trans, invocation_id=invocation_id)
+
+    @router.get("/api/invocations/{invocation_id}/metrics")
+    def get_invocation_metrics(
+        self,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> List[WorkflowJobMetric]:
+        return self.invocations_service.show_invocation_metrics(trans=trans, invocation_id=invocation_id)

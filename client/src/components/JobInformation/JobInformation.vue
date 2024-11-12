@@ -4,17 +4,18 @@ import HelpText from "components/Help/HelpText";
 import { JobConsoleOutputProvider, JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
 import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
-import { formatDuration, intervalToDuration } from "date-fns";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
+
+import { getJobDuration } from "./utilities";
 
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
 
 const job = ref(null);
-const invocationId = ref(null);
+const invocationId = ref(undefined);
 
 const props = defineProps({
     job_id: {
@@ -35,11 +36,13 @@ const stderr_text = ref("");
 const stdout_position = computed(() => stdout_text.value.length);
 const stderr_position = computed(() => stderr_text.value.length);
 
-const runTime = computed(() =>
-    formatDuration(intervalToDuration({ start: new Date(job.value.create_time), end: new Date(job.value.update_time) }))
-);
+const runTime = computed(() => getJobDuration(job.value));
 
-const jobIsTerminal = computed(() => job.value && !NON_TERMINAL_STATES.includes(job.value.state));
+function jobStateIsTerminal(jobState) {
+    return jobState && !NON_TERMINAL_STATES.includes(job.value.state);
+}
+
+const jobIsTerminal = computed(() => jobStateIsTerminal(job?.value?.state));
 
 const routeToInvocation = computed(() => `/workflows/invocations/${invocationId.value}`);
 
@@ -50,10 +53,7 @@ const metadataDetail = ref({
 
 function updateJob(newJob) {
     job.value = newJob;
-    if (newJob) {
-        fetchInvocation(newJob.id);
-    }
-    if (jobIsTerminal.value) {
+    if (jobStateIsTerminal(newJob?.state)) {
         if (newJob.tool_stdout) {
             stdout_text.value = newJob.tool_stdout;
         }
@@ -86,9 +86,9 @@ function filterMetadata(jobMessages) {
     });
 }
 
-async function fetchInvocation(jobId) {
+async function fetchInvocationForJob(jobId) {
     if (jobId) {
-        const { data: invocation, error } = await GalaxyApi().GET("/api/invocations", {
+        const { data: invocations, error } = await GalaxyApi().GET("/api/invocations", {
             params: {
                 query: { job_id: jobId },
             },
@@ -98,9 +98,29 @@ async function fetchInvocation(jobId) {
             rethrowSimple(error);
         }
 
-        invocationId.value = invocation.id;
+        if (invocations.length) {
+            return invocations[0];
+        }
+
+        return null;
     }
 }
+
+// Fetches the invocation for the given job id to get the associated invocation id
+watch(
+    () => props.job_id,
+    async (newId, oldId) => {
+        if (newId && (invocationId.value === undefined || newId !== oldId)) {
+            const invocation = await fetchInvocationForJob({ jobId: newId });
+            if (invocation) {
+                invocationId.value = invocation.id;
+            } else {
+                invocationId.value = null;
+            }
+        }
+    },
+    { immediate: true }
+);
 </script>
 
 <template>

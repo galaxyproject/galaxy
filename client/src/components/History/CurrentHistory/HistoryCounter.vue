@@ -57,6 +57,9 @@ const showPreferredObjectStoreModal = ref(false);
 const historyPreferredObjectStoreId = ref(props.history.preferred_object_store_id);
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
+const canManageStorage = computed(
+    () => userOwnsHistory(currentUser.value, props.history) && !currentUser.value?.isAnonymous
+);
 
 const storageLocationTitle = computed(() => {
     if (isOnlyPreference.value) {
@@ -137,7 +140,7 @@ onMounted(() => {
             variant="link"
             size="sm"
             class="rounded-0 text-decoration-none history-storage-overview-button"
-            :disabled="!userOwnsHistory(currentUser, props.history)"
+            :disabled="!canManageStorage"
             data-description="storage dashboard button"
             @click="onDashboard">
             <FontAwesomeIcon :icon="faDatabase" />

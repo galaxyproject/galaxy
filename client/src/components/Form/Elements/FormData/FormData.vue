@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
+import { isDatasetElement, isDCE } from "@/api";
 import { getGalaxyInstance } from "@/app";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
@@ -318,11 +319,21 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
             const incomingValues: Array<DataOption> = [];
             values.forEach((v) => {
                 // Map incoming objects to data option values
+                let newSrc;
+                if (isDCE(v)) {
+                    if (isDatasetElement(v)) {
+                        newSrc = SOURCE.DATASET;
+                        v = v.object;
+                    } else {
+                        newSrc = SOURCE.COLLECTION_ELEMENT;
+                    }
+                } else {
+                    newSrc =
+                        v.src || (v.history_content_type === "dataset_collection" ? SOURCE.COLLECTION : SOURCE.DATASET);
+                }
                 const newHid = v.hid;
                 const newId = v.id;
                 const newName = v.name ? v.name : newId;
-                const newSrc =
-                    v.src || (v.history_content_type === "dataset_collection" ? SOURCE.COLLECTION : SOURCE.DATASET);
                 const newValue: DataOption = {
                     id: newId,
                     src: newSrc,
@@ -400,7 +411,7 @@ function onBrowse() {
 }
 
 function canAcceptDatatype(itemDatatypes: string | Array<string>) {
-    if (!(props.extensions?.length > 0)) {
+    if (!(props.extensions?.length > 0) || props.extensions.includes("data")) {
         return true;
     }
     let datatypes: Array<string>;
