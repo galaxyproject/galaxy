@@ -116,13 +116,8 @@ const jobStatesSummary = computed(() => {
     return (!jobsSummary ? null : jobsSummary) as InvocationJobsSummary;
 });
 const invocationStateSuccess = computed(() => {
-    return (
-        invocationState.value == "scheduled" &&
-        runningCount.value === 0 &&
-        invocationAndJobTerminal.value
-    );
+    return invocationState.value == "scheduled" && runningCount.value === 0 && invocationAndJobTerminal.value;
 });
-
 
 type StepStateType = { [state: string]: number };
 

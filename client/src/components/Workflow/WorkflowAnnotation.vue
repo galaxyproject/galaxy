@@ -71,6 +71,7 @@ const workflowTags = computed(() => {
                     <SwitchToHistoryLink :history-id="props.historyId" />
                 </span>
             </div>
+            <slot name="middle-content" />
             <div class="d-flex align-items-center">
                 <div class="d-flex flex-column align-items-end mr-2">
                     <WorkflowIndicators :workflow="workflow" published-view no-edit-time />
