@@ -26,7 +26,18 @@ async function jobConsoleOutput({
         `${getAppRoot()}api/jobs/${jobId}/console_output?stdout_position=${stdout_position}&stdout_length=${stdout_length}` +
         `&stderr_position=${stderr_position}&stderr_length=${stderr_length}`;
     try {
-        const { data } = await axios.get(url);
+        const { status, data } = await axios.get(url, {
+            validateStatus: function (status) {
+                return status == 200 || status == 403;
+            },
+        });
+        if (status == 403) {
+            if (data.err_code == 403004) {
+                console.log("This job destination does not support console output");
+                return { state: "ok" };
+            }
+            throw Error("Problem fetching state");
+        }
         return data;
     } catch (e) {
         rethrowSimple(e);
