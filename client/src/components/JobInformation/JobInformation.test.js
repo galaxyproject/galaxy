@@ -30,6 +30,12 @@ describe("JobInformation/JobInformation.vue", () => {
             }),
             http.get("/api/invocations", ({ response }) => {
                 return response(200).json([]);
+            }),
+            http.get("/api/jobs/{job_id}/console_output", ({ response }) => {
+                return response(200).json({
+                    stdout: "stdout",
+                    stderr: "stderr",
+                });
             })
         );
     });
