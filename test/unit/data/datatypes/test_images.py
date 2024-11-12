@@ -1,5 +1,6 @@
 from galaxy.datatypes.images import (
     Image,
+    Pdf,
     Tiff,
 )
 from .util import (
@@ -127,3 +128,10 @@ test_png_channels_0 = __create_test(Image, "im1_uint8.png", "channels", 0)
 test_png_channels_3 = __create_test(Image, "im3_a.png", "channels", 3)
 test_png_depth_0 = __create_test(Image, "im1_uint8.png", "depth", 0)
 test_png_frames_1 = __create_test(Image, "im1_uint8.png", "frames", 1)
+
+
+# Test with files that neither Pillow nor tifffile can open
+
+@__test(Pdf, "454Score.pdf")
+def test_unsupported_metadata(metadata):
+    __assert_empty_metadata(metadata)
