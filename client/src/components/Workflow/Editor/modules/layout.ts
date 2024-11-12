@@ -7,7 +7,7 @@ import { type Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 import { match } from "@/utils/utils";
 
-import { AxisAlignedBoundingBox, rectDistance } from "./geometry";
+import { AxisAlignedBoundingBox, type Rectangle, rectDistance } from "./geometry";
 
 const elk = new ELK();
 
@@ -88,8 +88,24 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
         }
     });
 
+    const stepsWithRect = Object.entries(steps).map(([stepId, step]) => {
+        const position = stateStore.stepPosition[step.id];
+        assertDefined(position, `No StepPosition with step id ${step.id} found in workflowStateStore`);
+
+        return {
+            id: stepId,
+            step,
+            rect: {
+                x: step.position?.left ?? 0,
+                y: step.position?.top ?? 0,
+                width: position.width,
+                height: position.height,
+            },
+        };
+    });
+
     const collapsedFreehandComments = collapseFreehandComments(freehandComments);
-    populateClosestSteps(collapsedFreehandComments, steps, stateStore);
+    populateClosestSteps(collapsedFreehandComments, stepsWithRect);
 
     newGraph.children = graphToElkGraph(
         steps,
@@ -99,7 +115,7 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
         childLayoutOptions
     );
 
-    newGraph.edges = connectionStore.connections.map((connection) => {
+    const dataEdges = connectionStore.connections.map((connection) => {
         const edge: ElkExtendedEdge = {
             id: `e_${connection.input.stepId}_${connection.output.stepId}`,
             sources: [`${connection.output.stepId}/out/${connection.output.name}`],
@@ -107,6 +123,10 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
         };
         return edge;
     });
+
+    const commentEdges = getCommentEdges(otherComments, stepsWithRect);
+
+    newGraph.edges = [...dataEdges, ...commentEdges];
 
     const roundToSnappingDistance = (value: number) => Math.round(value / snappingDistance) * snappingDistance;
 
@@ -307,6 +327,46 @@ function graphToPositions(
     return positions;
 }
 
+function getCommentEdges(comments: WorkflowComment[], stepsWithRect: StepWithRect[]): ElkExtendedEdge[] {
+    const edges: ElkExtendedEdge[] = [];
+
+    comments.forEach((comment) => {
+        if (comment.type === "freehand") {
+            return;
+        }
+
+        let closestDistance = Infinity;
+        let closestId: string | null = null;
+
+        const commentRect = {
+            x: comment.position[0],
+            y: comment.position[1],
+            width: comment.size[0],
+            height: comment.size[1],
+        };
+
+        stepsWithRect.forEach((step) => {
+            const distance = rectDistance(step.rect, commentRect);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestId = step.id;
+            }
+        });
+
+        if (closestId) {
+            const edge: ElkExtendedEdge = {
+                id: `comment_edge_${closestId}_${comment.id}`,
+                sources: [closestId],
+                targets: [`comment_${comment.id}`],
+            };
+
+            edges.push(edge);
+        }
+    });
+
+    return edges;
+}
+
 interface CollapsedFreehandComment {
     aabb: AxisAlignedBoundingBox;
     comments: FreehandWorkflowComment[];
@@ -370,32 +430,18 @@ function collapseFreehandComments(comments: FreehandWorkflowComment[]): Collapse
     return [...collapsedFreehandComments.values()];
 }
 
+interface StepWithRect {
+    id: string;
+    step: Step;
+    rect: Rectangle;
+}
+
 /** find out which step is the closest to each comment, save it's id and position */
-function populateClosestSteps(
-    collapsedFreehandComments: CollapsedFreehandComment[],
-    steps: Record<string, Step>,
-    stateStore: ReturnType<typeof useWorkflowStateStore>
-) {
-    const stepsWidthRect = Object.entries(steps).map(([stepId, step]) => {
-        const position = stateStore.stepPosition[step.id];
-        assertDefined(position, `No StepPosition with step id ${step.id} found in workflowStateStore`);
-
-        return {
-            id: stepId,
-            step,
-            rect: {
-                x: step.position?.left ?? 0,
-                y: step.position?.top ?? 0,
-                width: position.width,
-                height: position.height,
-            },
-        };
-    });
-
+function populateClosestSteps(collapsedFreehandComments: CollapsedFreehandComment[], stepsWithRect: StepWithRect[]) {
     collapsedFreehandComments.forEach((comment) => {
         let closestDistance = Infinity;
 
-        stepsWidthRect.forEach((s) => {
+        stepsWithRect.forEach((s) => {
             const distance = rectDistance(comment.aabb, s.rect);
             if (distance < closestDistance) {
                 closestDistance = distance;
