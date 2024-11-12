@@ -339,6 +339,7 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     "__BUILD_LIST__": safe_update(parse_version("1.0.0"), parse_version("1.1.0")),
     "__APPLY_RULES__": safe_update(parse_version("1.0.0"), parse_version("1.1.0")),
     "__EXTRACT_DATASET__": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
+    "__RELABEL_FROM_FILE__": safe_update(parse_version("1.0.0"), parse_version("1.1.0")),
     "Grep1": safe_update(parse_version("1.0.1"), parse_version("1.0.4")),
     "Show beginning1": safe_update(parse_version("1.0.0"), parse_version("1.0.2")),
     "Show tail1": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
@@ -3983,24 +3984,38 @@ class RelabelFromFileTool(DatabaseOperationTool):
             new_labels = fh.readlines(1024 * 1000000)
         if strict and len(hdca.collection.elements) != len(new_labels):
             raise exceptions.MessageException("Relabel mapping file contains incorrect number of identifiers")
-        if how_type == "tabular":
-            # We have a tabular file, where the first column is an existing element identifier,
-            # and the second column is the new element identifier.
+        if how_type in ["tabular", "tabular_extended"]:
+            # We have a tabular file, where one column lists existing element identifiers,
+            # another one the corresponding new element identifiers.
+            # In tabular_extended mode the two columns ("from" and "to") are user-specified,
+            # while in simple tabular mode they default to the first and second column and
+            # these must be the only two columns in the input.
+            from_index = int(incoming["how"].get("from", 1)) - 1
+            to_index = int(incoming["how"].get("to", 2)) - 1
+            if from_index < 0 or to_index < 0:
+                raise exceptions.MessageException(
+                    "Column < 1 specified for relabel mapping file. Column count starts at 1."
+                )
             new_labels_dict = {}
-            source_new_label = (line.strip().split("\t") for line in new_labels)
-            for i, label_pair in enumerate(source_new_label):
-                if not len(label_pair) == 2:
-                    raise exceptions.MessageException(
-                        f"Relabel mapping file line {i + 1} contains {len(label_pair)} columns, but 2 are required"
-                    )
-                new_labels_dict[label_pair[0]] = label_pair[1]
+            try:
+                for i, line in enumerate(new_labels, 1):
+                    cols = line.strip().split("\t")
+                    if how_type == "tabular" and len(cols) != 2:
+                        raise exceptions.MessageException(
+                            f"Relabel mapping file contains {len(cols)} columns on line {i}, but 2 are required"
+                        )
+                    new_labels_dict[cols[from_index]] = cols[to_index]
+            except IndexError:
+                raise exceptions.MessageException(
+                    f"Specified column number > number of columns [{len(cols)}] on line {i} of relabel mapping file."
+                )
             for dce in hdca.collection.elements:
                 dce_object = dce.element_object
                 element_identifier = dce.element_identifier
                 default = None if strict else element_identifier
                 new_label = new_labels_dict.get(element_identifier, default)
                 if not new_label:
-                    raise exceptions.MessageException(f"Failed to find new label for identifier [{element_identifier}]")
+                    raise exceptions.MessageException(f"Failed to find original identifier [{element_identifier}]")
                 add_copied_value_to_new_elements(new_label, dce_object)
         else:
             # If new_labels_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset
