@@ -2,6 +2,7 @@ import { type components } from "./schema";
 
 export type WorkflowInvocationElementView = components["schemas"]["WorkflowInvocationElementView"];
 export type WorkflowInvocationCollectionView = components["schemas"]["WorkflowInvocationCollectionView"];
+export type WorkflowInvocationStepStatesView = components["schemas"]["WorkflowInvocationStepStatesView"];
 export type InvocationJobsSummary = components["schemas"]["InvocationJobsResponse"];
 export type InvocationStep = components["schemas"]["InvocationStep"];
 export type InvocationMessage = components["schemas"]["InvocationMessageResponseUnion"];

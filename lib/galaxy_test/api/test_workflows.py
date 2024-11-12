@@ -7330,29 +7330,20 @@ steps: []
         usage_details = self._invocation_details(workflow_id, invocation_id)
 
         invocation_steps = usage_details["steps"]
-        invocation_input_step, invocation_tool_step = {}, {}
+        invocation_tool_step = {}
         for invocation_step in invocation_steps:
             self._assert_has_keys(invocation_step, "workflow_step_id", "order_index", "id")
             order_index = invocation_step["order_index"]
             assert order_index in [0, 1, 2], order_index
-            if order_index == 0:
-                invocation_input_step = invocation_step
-            elif order_index == 2:
+            if order_index == 2:
                 invocation_tool_step = invocation_step
-
-        # Tool steps have non-null job_ids (deprecated though they may be)
-        assert invocation_input_step.get("job_id", None) is None
-        job_id = invocation_tool_step.get("job_id", None)
-        assert job_id is not None
 
         invocation_tool_step_id = invocation_tool_step["id"]
         invocation_tool_step_response = self._get(
             f"workflows/{workflow_id}/invocations/{invocation_id}/steps/{invocation_tool_step_id}"
         )
         self._assert_status_code_is(invocation_tool_step_response, 200)
-        self._assert_has_keys(invocation_tool_step_response.json(), "id", "order_index", "job_id")
-
-        assert invocation_tool_step_response.json()["job_id"] == job_id
+        self._assert_has_keys(invocation_tool_step_response.json(), "id", "order_index")
 
     def test_invocation_with_collection_mapping(self):
         workflow_id, invocation_id = self._run_mapping_workflow()
