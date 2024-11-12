@@ -666,6 +666,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
             InstalledRepositoryManager, InstalledRepositoryManager(self)
         )
         self.dynamic_tool_manager = self._register_singleton(DynamicToolManager)
+        self.trs_proxy = self._register_singleton(TrsProxy, TrsProxy(self.config))
         self._configure_datatypes_registry(
             use_converters=use_converters,
             use_display_applications=use_display_applications,
@@ -843,7 +844,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
 
-        self.trs_proxy = self._register_singleton(TrsProxy, TrsProxy(self.config))
         # We need InteractiveToolManager before the job handler starts
         self.interactivetool_manager = InteractiveToolManager(self)
         # Start the job manager

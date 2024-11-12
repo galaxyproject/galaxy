@@ -111,8 +111,7 @@ class VisualizationController(
                 use_panels=True,
             )
 
-    @web.expose
-    def display_by_username_and_slug(self, trans, username, slug, **kwargs):
+    def _display_by_username_and_slug(self, trans, username, slug, **kwargs):
         """Display visualization based on a username and slug."""
 
         # Get visualization.

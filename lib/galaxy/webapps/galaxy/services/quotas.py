@@ -96,7 +96,8 @@ class QuotasService(ServiceBase):
         messages = []
         for method in methods:
             message = method(quota, params)
-            messages.append(message)
+            if message:
+                messages.append(message)
         return "; ".join(messages)
 
     def delete(

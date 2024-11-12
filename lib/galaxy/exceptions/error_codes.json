@@ -165,6 +165,11 @@
         "message": "Database conflict prevented fulfilling the request."
     },
     {
+        "name": "MUST_CLAIM",
+        "code": 409010,
+        "message": "Private request must be claimed before use"
+    },
+    {
         "name": "DEPRECATED_API_CALL",
         "code": 410001,
         "message": "This API method or call signature has been deprecated and is no longer available"

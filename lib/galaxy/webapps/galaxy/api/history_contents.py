@@ -54,7 +54,6 @@ from galaxy.schema.schema import (
     HistoryContentType,
     MaterializeDatasetInstanceAPIRequest,
     MaterializeDatasetInstanceRequest,
-    MaterializeDatasetOptions,
     StoreExportPayload,
     UpdateHistoryContentsBatchPayload,
     UpdateHistoryContentsPayload,
@@ -1073,17 +1072,12 @@ class FastAPIHistoryContents:
         history_id: HistoryIDPathParam,
         id: HistoryItemIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        materialize_api_payload: Optional[MaterializeDatasetOptions] = Body(None),
     ) -> AsyncTaskResultSummary:
-        validate_hashes: bool = (
-            materialize_api_payload.validate_hashes if materialize_api_payload is not None else False
-        )
         # values are already validated, use model_construct
         materialize_request = MaterializeDatasetInstanceRequest.model_construct(
             history_id=history_id,
             source=DatasetSourceType.hda,
             content=id,
-            validate_hashes=validate_hashes,
         )
         rval = self.service.materialize(trans, materialize_request)
         return rval

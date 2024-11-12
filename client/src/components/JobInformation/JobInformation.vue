@@ -5,7 +5,7 @@ import { JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
 import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { formatDuration, intervalToDuration } from "date-fns";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -14,7 +14,7 @@ import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
 
 const job = ref(null);
-const invocationId = ref(null);
+const invocationId = ref(undefined);
 
 const props = defineProps({
     job_id: {
@@ -42,9 +42,6 @@ const metadataDetail = ref({
 
 function updateJob(newJob) {
     job.value = newJob;
-    if (newJob) {
-        fetchInvocation(newJob.id);
-    }
 }
 
 function filterMetadata(jobMessages) {
@@ -58,9 +55,9 @@ function filterMetadata(jobMessages) {
     });
 }
 
-async function fetchInvocation(jobId) {
+async function fetchInvocationForJob(jobId) {
     if (jobId) {
-        const { data: invocation, error } = await GalaxyApi().GET("/api/invocations", {
+        const { data: invocations, error } = await GalaxyApi().GET("/api/invocations", {
             params: {
                 query: { job_id: jobId },
             },
@@ -70,9 +67,29 @@ async function fetchInvocation(jobId) {
             rethrowSimple(error);
         }
 
-        invocationId.value = invocation.id;
+        if (invocations.length) {
+            return invocations[0];
+        }
+
+        return null;
     }
 }
+
+// Fetches the invocation for the given job id to get the associated invocation id
+watch(
+    () => props.job_id,
+    async (newId, oldId) => {
+        if (newId && (invocationId.value === undefined || newId !== oldId)) {
+            const invocation = await fetchInvocationForJob({ jobId: newId });
+            if (invocation) {
+                invocationId.value = invocation.id;
+            } else {
+                invocationId.value = null;
+            }
+        }
+    },
+    { immediate: true }
+);
 </script>
 
 <template>

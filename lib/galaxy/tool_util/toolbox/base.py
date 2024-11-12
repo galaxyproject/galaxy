@@ -133,6 +133,10 @@ class NullToolTagManager(AbstractToolTagManager):
         return None
 
 
+class ToolLoadError(Exception):
+    pass
+
+
 class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     """
     Abstract container for managing a ToolPanel - containing tools and
@@ -1073,6 +1077,10 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                     self._load_tool_panel_views()
                     self._save_integrated_tool_panel()
                 return tool.id
+            except ToolLoadError as e:
+                # no need for full stack trace - ToolLoadError corresponds to a known load
+                # error with defined cause that is included in the message
+                log.error(f"Failed to load potential tool {tool_file} - {e}")
             except Exception:
                 log.exception("Failed to load potential tool %s.", tool_file)
                 return None

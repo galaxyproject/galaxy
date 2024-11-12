@@ -40,12 +40,15 @@ from .models import (
 )
 from .state import (
     JobInternalToolState,
+    LandingRequestInternalToolState,
+    LandingRequestToolState,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
     RequestToolState,
     TestCaseToolState,
 )
 from .visitor import (
+    Callback,
     validate_explicit_conditional_test_value,
     visit_input_values,
     VISITOR_NO_REPLACEMENT,
@@ -54,40 +57,22 @@ from .visitor import (
 log = logging.getLogger(__name__)
 
 
+DecodeFunctionT = Callable[[str], int]
+EncodeFunctionT = Callable[[int], str]
+DereferenceCallable = Callable[[DataRequestUri], DataRequestInternalHda]
+# interfaces for adapting test data dictionaries to tool request dictionaries
+# e.g. {class: File, path: foo.bed} => {src: hda, id: ab1235cdfea3}
+AdaptDatasets = Callable[[JsonTestDatasetDefDict], DataRequestHda]
+AdaptCollections = Callable[[JsonTestCollectionDefDict], DataCollectionRequest]
+
+
 def decode(
     external_state: RequestToolState, input_models: ToolParameterBundle, decode_id: Callable[[str], int]
 ) -> RequestInternalToolState:
-    """Prepare an external representation of tool state (request) for storing in the database (request_internal)."""
+    """Prepare an internal representation of tool state (request_internal) for storing in the database."""
 
     external_state.validate(input_models)
-
-    def decode_src_dict(src_dict: dict):
-        if "id" in src_dict:
-            decoded_dict = src_dict.copy()
-            decoded_dict["id"] = decode_id(src_dict["id"])
-            return decoded_dict
-        else:
-            return src_dict
-
-    def decode_callback(parameter: ToolParameterT, value: Any):
-        if parameter.parameter_type == "gx_data":
-            if value is None:
-                return VISITOR_NO_REPLACEMENT
-            data_parameter = cast(DataParameterModel, parameter)
-            if data_parameter.multiple:
-                assert isinstance(value, list), str(value)
-                return list(map(decode_src_dict, value))
-            else:
-                assert isinstance(value, dict), str(value)
-                return decode_src_dict(value)
-        elif parameter.parameter_type == "gx_data_collection":
-            if value is None:
-                return VISITOR_NO_REPLACEMENT
-            assert isinstance(value, dict), str(value)
-            return decode_src_dict(value)
-        else:
-            return VISITOR_NO_REPLACEMENT
-
+    decode_callback = _decode_callback_for(decode_id)
     internal_state_dict = visit_input_values(
         input_models,
         external_state,
@@ -100,36 +85,14 @@ def decode(
 
 
 def encode(
-    external_state: RequestInternalToolState, input_models: ToolParameterBundle, encode_id: Callable[[int], str]
+    internal_state: RequestInternalToolState, input_models: ToolParameterBundle, encode_id: EncodeFunctionT
 ) -> RequestToolState:
-    """Prepare an external representation of tool state (request) for storing in the database (request_internal)."""
+    """Prepare an external representation of tool state (request) from persisted state in the database (request_internal)."""
 
-    def encode_src_dict(src_dict: dict):
-        if "id" in src_dict:
-            encoded_dict = src_dict.copy()
-            encoded_dict["id"] = encode_id(src_dict["id"])
-            return encoded_dict
-        else:
-            return src_dict
-
-    def encode_callback(parameter: ToolParameterT, value: Any):
-        if parameter.parameter_type == "gx_data":
-            data_parameter = cast(DataParameterModel, parameter)
-            if data_parameter.multiple:
-                assert isinstance(value, list), str(value)
-                return list(map(encode_src_dict, value))
-            else:
-                assert isinstance(value, dict), str(value)
-                return encode_src_dict(value)
-        elif parameter.parameter_type == "gx_data_collection":
-            assert isinstance(value, dict), str(value)
-            return encode_src_dict(value)
-        else:
-            return VISITOR_NO_REPLACEMENT
-
+    encode_callback = _encode_callback_for(encode_id)
     request_state_dict = visit_input_values(
         input_models,
-        external_state,
+        internal_state,
         encode_callback,
     )
     request_state = RequestToolState(request_state_dict)
@@ -137,7 +100,38 @@ def encode(
     return request_state
 
 
-DereferenceCallable = Callable[[DataRequestUri], DataRequestInternalHda]
+def landing_decode(
+    external_state: LandingRequestToolState, input_models: ToolParameterBundle, decode_id: Callable[[str], int]
+) -> LandingRequestInternalToolState:
+    """Prepare an external representation of tool state (request) for storing in the database (request_internal)."""
+
+    external_state.validate(input_models)
+    decode_callback = _decode_callback_for(decode_id)
+    internal_state_dict = visit_input_values(
+        input_models,
+        external_state,
+        decode_callback,
+    )
+
+    internal_request_state = LandingRequestInternalToolState(internal_state_dict)
+    internal_request_state.validate(input_models)
+    return internal_request_state
+
+
+def landing_encode(
+    internal_state: LandingRequestInternalToolState, input_models: ToolParameterBundle, encode_id: EncodeFunctionT
+) -> LandingRequestToolState:
+    """Prepare an external representation of tool state (request) for storing in the database (request_internal)."""
+
+    encode_callback = _encode_callback_for(encode_id)
+    request_state_dict = visit_input_values(
+        input_models,
+        internal_state,
+        encode_callback,
+    )
+    request_state = LandingRequestToolState(request_state_dict)
+    request_state.validate(input_models)
+    return request_state
 
 
 def dereference(
@@ -175,12 +169,6 @@ def dereference(
     request_state = RequestInternalDereferencedToolState(request_state_dict)
     request_state.validate(input_models)
     return request_state
-
-
-# interfaces for adapting test data dictionaries to tool request dictionaries
-# e.g. {class: File, path: foo.bed} => {src: hda, id: ab1235cdfea3}
-AdaptDatasets = Callable[[JsonTestDatasetDefDict], DataRequestHda]
-AdaptCollections = Callable[[JsonTestCollectionDefDict], DataCollectionRequest]
 
 
 def encode_test(
@@ -324,7 +312,6 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
         )
         test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
         when = _select_which_when(conditional, test_value, conditional_state)
-        test_parameter = conditional.test_parameter
         _fill_default_for(conditional_state, test_parameter)
         _fill_defaults(conditional_state, when)
     elif parameter_type in ["gx_repeat"]:
@@ -358,3 +345,63 @@ def _select_which_when(
         raise Exception(
             f"Invalid conditional test value ({test_value}) for parameter ({conditional.test_parameter.name})"
         )
+
+
+def _encode_callback_for(encode_id: EncodeFunctionT) -> Callback:
+
+    def encode_src_dict(src_dict: dict):
+        if "id" in src_dict:
+            encoded_dict = src_dict.copy()
+            encoded_dict["id"] = encode_id(src_dict["id"])
+            return encoded_dict
+        else:
+            return src_dict
+
+    def encode_callback(parameter: ToolParameterT, value: Any):
+        if parameter.parameter_type == "gx_data":
+            data_parameter = cast(DataParameterModel, parameter)
+            if data_parameter.multiple:
+                assert isinstance(value, list), str(value)
+                return list(map(encode_src_dict, value))
+            else:
+                assert isinstance(value, dict), str(value)
+                return encode_src_dict(value)
+        elif parameter.parameter_type == "gx_data_collection":
+            assert isinstance(value, dict), str(value)
+            return encode_src_dict(value)
+        else:
+            return VISITOR_NO_REPLACEMENT
+
+    return encode_callback
+
+
+def _decode_callback_for(decode_id: DecodeFunctionT) -> Callback:
+
+    def decode_src_dict(src_dict: dict):
+        if "id" in src_dict:
+            decoded_dict = src_dict.copy()
+            decoded_dict["id"] = decode_id(src_dict["id"])
+            return decoded_dict
+        else:
+            return src_dict
+
+    def decode_callback(parameter: ToolParameterT, value: Any):
+        if parameter.parameter_type == "gx_data":
+            if value is None:
+                return VISITOR_NO_REPLACEMENT
+            data_parameter = cast(DataParameterModel, parameter)
+            if data_parameter.multiple:
+                assert isinstance(value, list), str(value)
+                return list(map(decode_src_dict, value))
+            else:
+                assert isinstance(value, dict), str(value)
+                return decode_src_dict(value)
+        elif parameter.parameter_type == "gx_data_collection":
+            if value is None:
+                return VISITOR_NO_REPLACEMENT
+            assert isinstance(value, dict), str(value)
+            return decode_src_dict(value)
+        else:
+            return VISITOR_NO_REPLACEMENT
+
+    return decode_callback

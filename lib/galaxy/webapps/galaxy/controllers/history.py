@@ -88,8 +88,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             "allow_user_dataset_purge": trans.app.config.allow_user_dataset_purge,
         }
 
-    @web.expose
-    def display_by_username_and_slug(self, trans, username, slug, **kwargs):
+    def _display_by_username_and_slug(self, trans, username, slug, **kwargs):
         """
         Display history based on a username and slug.
         """

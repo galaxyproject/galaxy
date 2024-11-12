@@ -1,5 +1,6 @@
 """This module contains a linting functions for tool tests."""
 
+from io import StringIO
 from typing import (
     Iterator,
     List,
@@ -8,6 +9,8 @@ from typing import (
 )
 
 from galaxy.tool_util.lint import Linter
+from galaxy.tool_util.parameters import validate_test_cases_for_tool_source
+from galaxy.tool_util.verify.assertion_models import assertion_list
 from galaxy.util import asbool
 from ._util import is_datasource
 
@@ -132,6 +135,65 @@ class TestsAssertsHasSizeOrValueQuant(Linter):
                         linter=cls.name(),
                         node=a,
                     )
+
+
+class TestsAssertionValidation(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        try:
+            raw_tests_dict = tool_source.parse_tests_to_dict()
+        except Exception:
+            lint_ctx.warn("Failed to parse test dictionaries from tool - cannot lint assertions")
+            return
+        assert "tests" in raw_tests_dict
+        for test_idx, test in enumerate(raw_tests_dict["tests"], start=1):
+            # TODO: validate command, command_version, element tests. What about children?
+            for output in test["outputs"]:
+                asserts_raw = output.get("attributes", {}).get("assert_list") or []
+                to_yaml_assertions = []
+                for raw_assert in asserts_raw:
+                    to_yaml_assertions.append({"that": raw_assert["tag"], **raw_assert.get("attributes", {})})
+                try:
+                    assertion_list.model_validate(to_yaml_assertions)
+                except Exception as e:
+                    error_str = _cleanup_pydantic_error(e)
+                    lint_ctx.warn(
+                        f"Test {test_idx}: failed to validate assertions. Validation errors are [{error_str}]"
+                    )
+
+
+class TestsCaseValidation(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        try:
+            validation_results = validate_test_cases_for_tool_source(tool_source, use_latest_profile=True)
+        except Exception as e:
+            lint_ctx.warn(
+                f"Serious problem parsing tool source or tests - cannot validate test cases. The exception is [{e}]",
+                linter=cls.name(),
+            )
+            return
+        for test_idx, validation_result in enumerate(validation_results, start=1):
+            error = validation_result.validation_error
+            if error:
+                error_str = _cleanup_pydantic_error(error)
+                lint_ctx.warn(
+                    f"Test {test_idx}: failed to validate test parameters against inputs - tests won't run on a modern Galaxy tool profile version. Validation errors are [{error_str}]",
+                    linter=cls.name(),
+                )
+
+
+def _cleanup_pydantic_error(error) -> str:
+    full_validation_error = f"{error}"
+    new_error = StringIO("")
+    for line in full_validation_error.splitlines():
+        # this repeated over and over isn't useful in the context of how we're building the dynamic models,
+        # tool authors should not be looking up pydantic docs on models they cannot even really inspect
+        if line.strip().startswith("For further information visit https://errors.pydantic"):
+            continue
+        else:
+            new_error.write(f"{line}\n")
+    return new_error.getvalue().strip()
 
 
 class TestsExpectNumOutputs(Linter):

@@ -8,18 +8,17 @@ jobs:
     name: Update dependencies
     if: github.repository_owner == 'galaxyproject'
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.8']
     steps:
       - uses: actions/checkout@v4
+      # Install Python 3.8 for update_lint_requirements.sh
+      # Install Python 3.9 (as default) to allow `uv lock` to generate metadata for rucio-clients
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: |
+            3.8
+            3.9
       - name: Update dependencies
-        run: | 
-          python -m venv .venv
-          make update-dependencies
+        run: make update-dependencies
       - name: Create pull request
         uses: peter-evans/create-pull-request@v6
         with:

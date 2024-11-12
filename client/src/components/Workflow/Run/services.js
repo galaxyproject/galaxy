@@ -12,8 +12,8 @@ import { rethrowSimple } from "utils/simple-error";
  * @param {String} workflowId - (Stored?) Workflow ID to fetch data for.
  * @param {String} version - Version of the workflow to fetch.
  */
-export async function getRunData(workflowId, version = null) {
-    let url = `${getAppRoot()}api/workflows/${workflowId}/download?style=run`;
+export async function getRunData(workflowId, version = null, instance = false) {
+    let url = `${getAppRoot()}api/workflows/${workflowId}/download?style=run&instance=${instance}`;
     if (version) {
         url += `&version=${version}`;
     }
