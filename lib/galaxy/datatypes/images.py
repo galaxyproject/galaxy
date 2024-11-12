@@ -163,11 +163,11 @@ class Image(data.Data):
                 with PIL.Image.open(dataset.get_file_name()) as im:
 
                     # Determine the metadata values that are available without loading the image data
-                    dataset.metadata.width = str(im.size[1])
-                    dataset.metadata.height = str(im.size[0])
-                    dataset.metadata.depth = "0"
-                    dataset.metadata.frames = str(getattr(im, "n_frames", 0))
-                    dataset.metadata.num_unique_values = str(sum(val > 0 for val in im.histogram()))
+                    dataset.metadata.width = im.size[1]
+                    dataset.metadata.height = im.size[0]
+                    dataset.metadata.depth = 0
+                    dataset.metadata.frames = getattr(im, "n_frames", 0)
+                    dataset.metadata.num_unique_values = sum(val > 0 for val in im.histogram())
 
                     # Peek into a small 2x2 section of the image data
                     im_peek_arr = np.array(im.crop((0, 0, min((2, im.size[1])), min((2, im.size[0])))))
@@ -176,10 +176,10 @@ class Image(data.Data):
                     dataset.metadata.dtype = str(im_peek_arr.dtype)
                     if im_peek_arr.ndim == 2:
                         dataset.metadata.axes = "YX"
-                        dataset.metadata.channels = "0"
+                        dataset.metadata.channels = 0
                     elif im_peek_arr.ndim == 3:
                         dataset.metadata.axes = "YXC"
-                        dataset.metadata.channels = str(im_peek_arr.shape[2])
+                        dataset.metadata.channels = im_peek_arr.shape[2]
 
             except PIL.UnidentifiedImageError:
                 pass
@@ -246,7 +246,7 @@ class Tiff(Image):
 
                     # Determine the metadata values that should be generally available
                     metadata["axes"].append(page.axes.upper())
-                    metadata["dtype"].append(page.dtype)
+                    metadata["dtype"].append(str(page.dtype))
 
                     axes = metadata["axes"][-1].replace("S", "C")
                     metadata["width"].append(Tiff._get_axis_size(page.shape, axes, "X"))
@@ -265,7 +265,12 @@ class Tiff(Image):
                 # Populate the metadata fields based on the values determined above
                 for key, values in metadata.items():
                     if len(values) > 0:
-                        setattr(dataset.metadata, key, ",".join(str(value) for value in values))
+
+                        # Populate as plain value, if there is just one value, and as a list otherwise
+                        if len(values) == 1:
+                            setattr(dataset.metadata, key, values[0])
+                        else:
+                            setattr(dataset.metadata, key, values)
 
             # Populate the "offsets" file and metadata field
             with open(offsets_file.get_file_name(), "w") as f:

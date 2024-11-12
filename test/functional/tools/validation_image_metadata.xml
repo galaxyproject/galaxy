@@ -35,76 +35,76 @@
         </param>
         <!-- Checks for "num_unique_values" metadata -->
         <param name="input_num_unique_values_1" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value="1" />
+            <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value_json="1" />
         </param>
         <param name="input_num_unique_values_2" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value="2" />
+            <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value_json="2" />
         </param>
         <param name="input_num_unique_values_618" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value="618" />
+            <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value_json="618" />
         </param>
         <!-- Checks for "width" metadata -->
         <param name="input_width_16" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="width" value="16" />
+            <validator type="dataset_metadata_equal" metadata_name="width" value_json="16" />
         </param>
         <param name="input_width_32" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="width" value="32" />
+            <validator type="dataset_metadata_equal" metadata_name="width" value_json="32" />
         </param>
         <!-- Checks for "height" metadata -->
         <param name="input_height_8" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="height" value="8" />
+            <validator type="dataset_metadata_equal" metadata_name="height" value_json="8" />
         </param>
         <param name="input_height_32" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="height" value="32" />
+            <validator type="dataset_metadata_equal" metadata_name="height" value_json="32" />
         </param>
         <!-- Checks for "channels" metadata -->
         <param name="input_channels_0" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="channels" value="0" />
+            <validator type="dataset_metadata_equal" metadata_name="channels" value_json="0" />
         </param>
         <param name="input_channels_2" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="channels" value="2" />
+            <validator type="dataset_metadata_equal" metadata_name="channels" value_json="2" />
         </param>
         <param name="input_channels_3" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="channels" value="3" />
+            <validator type="dataset_metadata_equal" metadata_name="channels" value_json="3" />
         </param>
         <!-- Checks for "depth" metadata -->
         <param name="input_depth_0" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="depth" value="0" />
+            <validator type="dataset_metadata_equal" metadata_name="depth" value_json="0" />
         </param>
         <param name="input_depth_25" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="depth" value="25" />
+            <validator type="dataset_metadata_equal" metadata_name="depth" value_json="25" />
         </param>
         <!-- Checks for "frames" metadata -->
         <param name="input_frames_0" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="frames" value="0" />
+            <validator type="dataset_metadata_equal" metadata_name="frames" value_json="0" />
         </param>
         <param name="input_frames_1" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="frames" value="1" />
+            <validator type="dataset_metadata_equal" metadata_name="frames" value_json="1" />
         </param>
         <param name="input_frames_5" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="frames" value="5" />
+            <validator type="dataset_metadata_equal" metadata_name="frames" value_json="5" />
         </param>
         <!-- Checks for TIFF files with multiple pages -->
         <param name="input_multipage_tiff" type="data" format="data" optional="true">
-            <validator type="dataset_metadata_equal" metadata_name="axes" value="YXS,YX" />
-            <validator type="dataset_metadata_equal" metadata_name="dtype" value="uint8,uint16" />
-            <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value="2,255" />
-            <validator type="dataset_metadata_equal" metadata_name="width" value="32,256" />
-            <validator type="dataset_metadata_equal" metadata_name="height" value="32,256" />
-            <validator type="dataset_metadata_equal" metadata_name="channels" value="3,0" />
-            <validator type="dataset_metadata_equal" metadata_name="depth" value="0,0" />
-            <validator type="dataset_metadata_equal" metadata_name="frames" value="0,0" />
+            <validator type="dataset_metadata_equal" metadata_name="axes" value_json='["YXS", "YX"]' />
+            <validator type="dataset_metadata_equal" metadata_name="dtype" value_json='["uint8", "uint16"]' />
+            <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value_json="[2, 255]" />
+            <validator type="dataset_metadata_equal" metadata_name="width" value_json="[32, 256]" />
+            <validator type="dataset_metadata_equal" metadata_name="height" value_json="[32, 256]" />
+            <validator type="dataset_metadata_equal" metadata_name="channels" value_json="[3, 0]" />
+            <validator type="dataset_metadata_equal" metadata_name="depth" value_json="[0, 0]" />
+            <validator type="dataset_metadata_equal" metadata_name="frames" value_json="[0, 0]" />
         </param>
         <!-- Checks for failing metadata extraction -->
         <param name="input_unsupported_tiff_compression" type="data" format="data" optional="true">
             <!-- If the compression of a TIFF is unsupported, the fields "axes" and "dtype" should still be there -->
             <validator type="dataset_metadata_equal" metadata_name="axes" value="YX" />
             <validator type="dataset_metadata_equal" metadata_name="dtype" value="bool" />
-            <validator type="dataset_metadata_equal" metadata_name="width" value="1728" />
-            <validator type="dataset_metadata_equal" metadata_name="height" value="2376" />
-            <validator type="dataset_metadata_equal" metadata_name="channels" value="0" />
-            <validator type="dataset_metadata_equal" metadata_name="depth" value="0" />
-            <validator type="dataset_metadata_equal" metadata_name="frames" value="0" />
+            <validator type="dataset_metadata_equal" metadata_name="width" value_json="1728" />
+            <validator type="dataset_metadata_equal" metadata_name="height" value_json="2376" />
+            <validator type="dataset_metadata_equal" metadata_name="channels" value_json="0" />
+            <validator type="dataset_metadata_equal" metadata_name="depth" value_json="0" />
+            <validator type="dataset_metadata_equal" metadata_name="frames" value_json="0" />
             <!-- The other fields should be missing -->
             <validator type="dataset_metadata_equal" metadata_name="num_unique_values" value="" />
         </param>
