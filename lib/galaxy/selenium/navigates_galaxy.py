@@ -1257,7 +1257,7 @@ class NavigatesGalaxy(HasDriver):
         self.components.masthead.user.wait_for_and_click()
         self.components.masthead.preferences.wait_for_and_click()
 
-    def navigate_to_invocations(self):
+    def navigate_to_invocations_grid(self):
         self.home()
         self.components.invocations.activity.wait_for_and_click()
         self.components.invocations.activity_expand.wait_for_and_click()

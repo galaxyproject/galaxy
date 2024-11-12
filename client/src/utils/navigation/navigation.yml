@@ -683,7 +683,8 @@ workflow_run:
     validation_error: ".validation-error"
     expand_form_link: '.workflow-expand-form-link'
     expanded_form: '.workflow-expanded-form'
-    new_history_target_link: '.workflow-new-history-target-link'
+    new_history_badge: '[data-description="new history badge"]'
+    history_target_link: '[data-description="switch to history link"]'
     runtime_setting_button: '.workflow-run-settings'
     runtime_setting_target: '.workflow-run-settings-target'
     simplified_input:
@@ -851,6 +852,8 @@ invocations:
     activity_expand: ".activity-panel-footer"
     invocations_table: '#invocations-grid .grid-table'
     invocations_table_rows: '#invocations-grid .grid-table [data-description="grid item"]'
+    invocations_panel_list: '[data-description="Workflow Invocations"] .scroll-list'
+    invocations_panel_list_items: '[data-description="Workflow Invocations"] .scroll-list button.panel-item'
     pager: '[data-description="grid pager"]'
     pager_page: '[data-description="grid pager"] .gx-grid-pager-page [aria-posinset=${page}]'
     pager_page_next: '[data-description="grid pager"] .gx-grid-pager-next button'
@@ -858,11 +861,9 @@ invocations:
     pager_page_first: '[data-description="grid pager"] .gx-grid-pager-first button'
     pager_page_previous: '[data-description="grid pager"] .gx-grid-pager-prev button'
     pager_page_active: '[data-description="grid pager"] .gx-grid-pager-page.active button'
-    state_details: '.workflow-invocation-state-component'
-    toggle_invocation_details: '[data-description="toggle row details"]'
-    progress_steps_note: '.workflow-invocation-state-component .steps-progress .progressNote'
-    progress_jobs_note: '.workflow-invocation-state-component .jobs-progress .progressNote'
-    hide_invocation_graph: '.workflow-invocation-state-component [data-description="hide invocation graph"]'
+    state_details: '[data-description="workflow invocation state"]'
+    progress_steps_note: '[data-description="workflow invocation state"] .steps-progress .progress-note'
+    progress_jobs_note: '[data-description="workflow invocation state"] .jobs-progress .progress-note'
     invocation_tab:
       type: xpath
       selector: '//a[text()="${label}"]'
@@ -874,16 +875,14 @@ invocations:
     step_title: '[data-step="${order_index}"] .step-title'
     step_details: '[data-step="${order_index}"] .portlet-operations'
     step_output_collection: '[data-step="${order_index}"] .invocation-step-output-collection-details'
-    step_output_collection_toggle: '[data-step="${order_index}"] .invocation-step-output-collection-details .name'
+    step_output_collection_toggle: '[data-step="${order_index}"] .invocation-step-output-collection-details .content-title'
     step_output_collection_element_identifier:
       type: xpath
       selector: '//span[contains(@class, "content-title name")][text()="${element_identifier}"]'
     step_output_collection_element_datatype: '[data-step="${order_index}"] .invocation-step-output-collection-details .not-loading .datatype .value'
     step_job_details: '[data-step="${order_index}"] .invocation-step-job-details'
-    step_job_table: '[data-step="${order_index}"] .invocation-step-job-details table'
-    step_job_table_rows: '[data-step="${order_index}"] .invocation-step-job-details table tbody tr'
-    step_job_information: '[data-step="${order_index}"] .invocation-step-job-details table tbody .b-table-details .info_data_table'
-    step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details table tbody .b-table-details .info_data_table #galaxy-tool-id'
+    step_job_information: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table'
+    step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table #galaxy-tool-id'
 
 tour:
   popover:

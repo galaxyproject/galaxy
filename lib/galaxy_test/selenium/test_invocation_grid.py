@@ -21,7 +21,7 @@ class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
             wait=True,
             invocations=30,
         )
-        gx_selenium_context.navigate_to_invocations()
+        gx_selenium_context.navigate_to_invocations_grid()
         invocations = gx_selenium_context.components.invocations
         invocations.invocations_table.wait_for_visible()
 

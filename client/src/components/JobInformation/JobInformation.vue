@@ -4,11 +4,12 @@ import HelpText from "components/Help/HelpText";
 import { JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
 import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
-import { formatDuration, intervalToDuration } from "date-fns";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
+
+import { getJobDuration } from "./utilities";
 
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
@@ -27,9 +28,7 @@ const props = defineProps({
     },
 });
 
-const runTime = computed(() =>
-    formatDuration(intervalToDuration({ start: new Date(job.value.create_time), end: new Date(job.value.update_time) }))
-);
+const runTime = computed(() => getJobDuration(job.value));
 
 const jobIsTerminal = computed(() => job.value && !NON_TERMINAL_STATES.includes(job.value.state));
 
