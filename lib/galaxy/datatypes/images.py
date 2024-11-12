@@ -219,11 +219,14 @@ class Tiff(Image):
         Populate the metadata of the TIFF image using the tifffile library.
         """
         spec_key = "offsets"
-        offsets_file = dataset.metadata.offsets
-        if not offsets_file:
-            offsets_file = dataset.metadata.spec[spec_key].param.new_file(
-                dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
-            )
+        if hasattr(dataset.metadata, spec_key):
+            offsets_file = dataset.metadata.offsets
+            if not offsets_file:
+                offsets_file = dataset.metadata.spec[spec_key].param.new_file(
+                    dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
+                )
+        else:
+            offsets_file = None
         try:
             with tifffile.TiffFile(dataset.get_file_name()) as tif:
                 offsets = [page.offset for page in tif.pages]
@@ -273,9 +276,10 @@ class Tiff(Image):
                             setattr(dataset.metadata, key, values)
 
             # Populate the "offsets" file and metadata field
-            with open(offsets_file.get_file_name(), "w") as f:
-                json.dump(offsets, f)
-            dataset.metadata.offsets = offsets_file
+            if offsets_file:
+                with open(offsets_file.get_file_name(), "w") as f:
+                    json.dump(offsets, f)
+                dataset.metadata.offsets = offsets_file
 
         # Catch errors from deep inside the tifffile library
         except (
