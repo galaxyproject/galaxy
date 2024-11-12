@@ -202,7 +202,7 @@ import { LastQueue } from "@/utils/lastQueue";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { Services } from "../services";
-import { AutoLayoutAction, InsertStepAction, useStepActions } from "./Actions/stepActions";
+import { InsertStepAction, useStepActions } from "./Actions/stepActions";
 import { CopyIntoWorkflowAction, SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { useSpecialWorkflowActivities, workflowEditorActivities } from "./modules/activities";
@@ -744,10 +744,6 @@ export default {
                 this.onUpgrade();
             }
 
-            if (activityId === "workflow-auto-layout") {
-                this.onLayout();
-            }
-
             if (activityId === "workflow-run") {
                 this.onRun();
             }
@@ -755,10 +751,6 @@ export default {
             if (activityId === "save-workflow") {
                 await this.saveOrCreate();
             }
-        },
-        onLayout() {
-            const action = new AutoLayoutAction(this.id);
-            this.undoRedoStore.applyAction(action);
         },
         onAnnotation(nodeId, newAnnotation) {
             this.stepActions.setAnnotation(this.steps[nodeId], newAnnotation);
