@@ -23,6 +23,7 @@ from galaxy.datatypes.upload_util import (
     UploadProblemException,
 )
 from galaxy.files.uris import (
+    ensure_file_sources,
     stream_to_file,
     stream_url_to_file,
 )
@@ -97,13 +98,13 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
                 decompressed_directory = _decompress_target(upload_config, target_or_item)
                 items = _directory_to_items(decompressed_directory)
             elif elements_from == "bagit":
-                _, elements_from_path = _has_src_to_path(upload_config, target_or_item, is_dataset=False)
+                _, elements_from_path, _ = _has_src_to_path(upload_config, target_or_item, is_dataset=False)
                 items = _bagit_to_items(elements_from_path)
             elif elements_from == "bagit_archive":
                 decompressed_directory = _decompress_target(upload_config, target_or_item)
                 items = _bagit_to_items(decompressed_directory)
             elif elements_from == "directory":
-                _, elements_from_path = _has_src_to_path(upload_config, target_or_item, is_dataset=False)
+                _, elements_from_path, _ = _has_src_to_path(upload_config, target_or_item, is_dataset=False)
                 items = _directory_to_items(elements_from_path)
             else:
                 raise Exception(f"Unknown elements from type encountered [{elements_from}]")
@@ -205,7 +206,7 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
                     pass
                 key = keys[composite_item_idx]
                 writable_file = writable_files[key]
-                _, src_target = _has_src_to_path(upload_config, composite_item)
+                _, src_target, _ = _has_src_to_path(upload_config, composite_item)
                 # do the writing
                 sniff.handle_composite_file(
                     datatype,
@@ -238,10 +239,23 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
         converted_path = None
 
         deferred = upload_config.get_option(item, "deferred")
+
+        link_data_only = upload_config.link_data_only
+        link_data_only_explicit = upload_config.link_data_only_explicit
+        if "link_data_only" in item:
+            # Allow overriding this on a per file basis.
+            link_data_only, link_data_only_explicit = _link_data_only(item)
+
         name: str
         path: Optional[str]
+        default_in_place = False
         if not deferred:
-            name, path = _has_src_to_path(upload_config, item, is_dataset=True)
+            name, path, is_link = _has_src_to_path(
+                upload_config, item, is_dataset=True, link_data_only_explicitly_set=link_data_only_explicit
+            )
+            if is_link:
+                link_data_only = True
+                default_in_place = True
         else:
             name, path = _has_src_to_name(item) or "Deferred Dataset", None
         sources = []
@@ -266,10 +280,6 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
                     item["error_message"] = error_message
 
         dbkey = item.get("dbkey", "?")
-        link_data_only = upload_config.link_data_only
-        if "link_data_only" in item:
-            # Allow overriding this on a per file basis.
-            link_data_only = _link_data_only(item)
 
         ext = "data"
         staged_extra_files = None
@@ -281,7 +291,7 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
 
         effective_state = "ok"
         if not deferred and not error_message:
-            in_place = item.get("in_place", False)
+            in_place = item.get("in_place", default_in_place)
             purge_source = item.get("purge_source", True)
 
             registry = upload_config.registry
@@ -339,7 +349,7 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
                                 item_prefix = os.path.join(prefix, name)
                             walk_extra_files(item.get("elements"), prefix=item_prefix)
                         else:
-                            src_name, src_path = _has_src_to_path(upload_config, item)
+                            src_name, src_path, _ = _has_src_to_path(upload_config, item)
                             if prefix:
                                 rel_path = os.path.join(prefix, src_name)
                             else:
@@ -425,7 +435,7 @@ def _bagit_to_items(directory):
 
 
 def _decompress_target(upload_config: "UploadConfig", target: Dict[str, Any]):
-    elements_from_name, elements_from_path = _has_src_to_path(upload_config, target, is_dataset=False)
+    elements_from_name, elements_from_path, _ = _has_src_to_path(upload_config, target, is_dataset=False)
     # by default Galaxy will check for a directory with a single file and interpret that
     # as the new root for expansion, this is a good user experience for uploading single
     # files in a archive but not great from an API perspective. Allow disabling by setting
@@ -483,13 +493,33 @@ def _has_src_to_name(item) -> Optional[str]:
     return name
 
 
-def _has_src_to_path(upload_config: "UploadConfig", item: Dict[str, Any], is_dataset: bool = False) -> Tuple[str, str]:
+def _has_src_to_path(
+    upload_config: "UploadConfig",
+    item: Dict[str, Any],
+    is_dataset: bool = False,
+    link_data_only: bool = False,
+    link_data_only_explicitly_set: bool = False,
+) -> Tuple[str, str, bool]:
     assert "src" in item, item
     src = item.get("src")
     name = item.get("name")
+    is_link = False
     if src == "url":
         url = item.get("url")
+        file_sources = ensure_file_sources(upload_config.file_sources)
         assert url, "url cannot be empty"
+        if not link_data_only_explicitly_set:
+            file_source, rel_path = file_sources.get_file_source_path(url)
+            prefer_links = file_source.prefer_links()
+            if prefer_links:
+                if rel_path.startswith("/"):
+                    rel_path = rel_path[1:]
+                path = os.path.abspath(os.path.join(file_source.root, rel_path))
+                if name is None:
+                    name = url.split("/")[-1]
+                is_link = True
+                return name, path, is_link
+
         try:
             path = stream_url_to_file(url, file_sources=upload_config.file_sources, dir=upload_config.working_directory)
         except Exception as e:
@@ -513,7 +543,7 @@ def _has_src_to_path(upload_config: "UploadConfig", item: Dict[str, Any], is_dat
         path = item["path"]
         if name is None:
             name = os.path.basename(path)
-    return name, path
+    return name, path, is_link
 
 
 def _handle_hash_validation(hash_function: HashFunctionNameEnum, hash_value: str, path: str):
@@ -564,7 +594,7 @@ class UploadConfig:
         self.space_to_tab = request.get("space_to_tab", False)
         self.auto_decompress = request.get("auto_decompress", False)
         self.deferred = request.get("deferred", False)
-        self.link_data_only = _link_data_only(request)
+        self.link_data_only, self.link_data_only_explicit = _link_data_only(request)
         self.file_sources_dict = file_sources_dict
         self._file_sources = None
 
@@ -616,12 +646,19 @@ class UploadConfig:
         return new_path
 
 
-def _link_data_only(has_config_dict):
-    link_data_only = has_config_dict.get("link_data_only", False)
-    if not isinstance(link_data_only, bool):
-        # Allow the older string values of 'copy_files' and 'link_to_files'
-        link_data_only = link_data_only == "copy_files"
-    return link_data_only
+def _link_data_only(has_config_dict) -> Tuple[bool, bool]:
+    if "link_data_only" in has_config_dict:
+        link_data_only_raw = has_config_dict["link_data_only"]
+        if not isinstance(link_data_only_raw, bool):
+            # Allow the older string values of 'copy_files' and 'link_to_files'
+            link_data_only = link_data_only_raw == "copy_files"
+        else:
+            link_data_only = link_data_only_raw
+        link_data_only_explicit = True
+    else:
+        link_data_only = False
+        link_data_only_explicit = False
+    return link_data_only, link_data_only_explicit
 
 
 def _for_each_src(f, obj):
