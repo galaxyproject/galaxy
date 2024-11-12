@@ -77,7 +77,7 @@ define({
     // ---- history-view
     "This history is empty": "ヒストリーは空です",
     "No matching datasets found": "一致するデータセットが見つかりませんでした",
-    "An error occurred while getting updates from the server" : "サーバーから更新を取得中にエラーが起こりました",
+    "An error occurred while getting updates from the server": "サーバーから更新を取得中にエラーが起こりました",
     //false,
     //"Please contact a Galaxy administrator if the problem persists" :
     //false,
@@ -87,7 +87,8 @@ define({
     "Search datasets": "データセットを検索する",
     "You are currently viewing a deleted history!": "消去したヒストリーをみています。",
     "You are over your disk quota": "あなたはディスククォータを超えている",
-    "Tool execution is on hold until your disk usage drops below your allocated quota" : "ディスク使用料があなたに割り当てられたクォータを下回るまでツールの実行は停止します",
+    "Tool execution is on hold until your disk usage drops below your allocated quota":
+        "ディスク使用料があなたに割り当てられたクォータを下回るまでツールの実行は停止します",
     //false,
     All: "一式",
     None: "なし",
@@ -99,13 +100,13 @@ define({
     "Click to rename history": "ヒストリーの名前を変更するにはクリック",
     // multi operations
     "Operations on multiple datasets": "複数のデータセットに対する操作",
-    "Hide datasets" : "データセットを隠す",
+    "Hide datasets": "データセットを隠す",
     //false,
-    "Unhide datasets" : "隠れたデータセットの回復",
+    "Unhide datasets": "隠れたデータセットの回復",
     //false,
-    "Delete datasets" : "データセットの削除",
+    "Delete datasets": "データセットの削除",
     //false,
-    "Undelete datasets" : "削除されたデータセットの回復",
+    "Undelete datasets": "削除されたデータセットの回復",
     //false,
     "Permanently delete datasets": "永久にデータセットを削除",
     "This will permanently remove the data in your datasets. Are you sure?":
@@ -113,7 +114,7 @@ define({
 
     // ---- history-view-annotated
     Dataset: "データセット",
-    "Annotation" : "アノテーション",
+    Annotation: "アノテーション",
     //false,
 
     // ---- history-view-edit-current
@@ -123,53 +124,56 @@ define({
     //TODO:
     //"You can <% loadYourOwn %> or <% externalSource %>" :
     //false,
-    "load your own data" : "自分のデータをロード",
+    "load your own data": "自分のデータをロード",
     //false,
-    "get data from an external source" : "外部のソースからデータを取得",
+    "get data from an external source": "外部のソースからデータを取得",
     //false,
 
     // these aren't in zh/ginga.po and the template doesn't localize
-    "Include Deleted Datasets" : "削除されたデータセットを含める",
+    "Include Deleted Datasets": "削除されたデータセットを含める",
     //false,
-    "Include Hidden Datasets" : "隠れたデータセットを含める",
+    "Include Hidden Datasets": "隠れたデータセットを含める",
     //false,
 
     // ---------------------------------------------------------------------------- datasets
     // ---- hda-model
-    "Unable to purge dataset" : "データセットを完全削除出来ません",
+    "Unable to purge dataset": "データセットを完全削除出来ません",
     //false,
 
     // ---- hda-base
     // display button
-    "Cannot display datasets removed from disk" : "ディスクから消去されたデータは表示できません",
+    "Cannot display datasets removed from disk": "ディスクから消去されたデータは表示できません",
     //false,
-    "This dataset must finish uploading before it can be viewed" : "このデータセットは見る前にアップロードが完了する必要があります",
+    "This dataset must finish uploading before it can be viewed":
+        "このデータセットは見る前にアップロードが完了する必要があります",
     //false,
-    "This dataset is not yet viewable" : "このデータセットはまだ見ることができません",
+    "This dataset is not yet viewable": "このデータセットはまだ見ることができません",
     //false,
     "View data": "データを表示",
     // download button
     Download: "ダウンロード",
     "Download dataset": "データセットをダウンロード",
-    "Additional files" : "追加のファイル",
+    "Additional files": "追加のファイル",
     //false,
     // info/show_params
     "View details": "細部を表示",
 
     // dataset states
     // state: new
-    "This is a new dataset and not all of its data are available yet" : "これは新しいデータセットですが、まだすべてのデータが利用可能にはなっていません",
+    "This is a new dataset and not all of its data are available yet":
+        "これは新しいデータセットですが、まだすべてのデータが利用可能にはなっていません",
     //false,
     // state: noPermission
-    "You do not have permission to view this dataset" : "このデータセットを見るための権限がありません",
+    "You do not have permission to view this dataset": "このデータセットを見るための権限がありません",
     //false,
     // state: discarded
-    "The job creating this dataset was cancelled before completion" :"このデータセットを作成するジョブは、完了する前にキャンセルされました",
+    "The job creating this dataset was cancelled before completion":
+        "このデータセットを作成するジョブは、完了する前にキャンセルされました",
     //false,
     // state: queued
     "This job is waiting to run": "ジョブは実行待ちです",
     // state: upload
-    "This dataset is currently uploading" : "このデータセットは現在アップロード中です",
+    "This dataset is currently uploading": "このデータセットは現在アップロード中です",
     //false,
     // state: setting_metadata
     //"Metadata is being auto-detected" :
@@ -184,11 +188,12 @@ define({
     // state: empty
     "No data": "データ無し",
     // state: failed_metadata
-    "An error occurred setting the metadata for this dataset" : "このデータセットのメタデータを設定する際にエラーがでました",
+    "An error occurred setting the metadata for this dataset":
+        "このデータセットのメタデータを設定する際にエラーがでました",
     //false,
 
     // ajax error prefix
-    "There was an error getting the data for this dataset" : "このデータセットのデータを取得する際にエラーがでました",
+    "There was an error getting the data for this dataset": "このデータセットのデータを取得する際にエラーがでました",
     //false,
 
     // purged'd/del'd msg
@@ -201,17 +206,18 @@ define({
 
     // ---- hda-edit
     "Edit attributes": "変数を編集する",
-    "Cannot edit attributes of datasets removed from disk" : "ディスクから削除されたデータセットの属性は編集できない",
+    "Cannot edit attributes of datasets removed from disk": "ディスクから削除されたデータセットの属性は編集できない",
     //false,
     //"Undelete dataset to edit attributes" :
     //false,
-    "This dataset must finish uploading before it can be edited" : "このデータセットは編集する前にアップロードが完了する必要がある",
+    "This dataset must finish uploading before it can be edited":
+        "このデータセットは編集する前にアップロードが完了する必要がある",
     //false,
-    "This dataset is not yet editable" : "このデータセットは、まだ編集可能ではない",
+    "This dataset is not yet editable": "このデータセットは、まだ編集可能ではない",
     //false,
 
     Delete: "削除する",
-    "Dataset is already deleted" : "データセットは、既に削除されている",
+    "Dataset is already deleted": "データセットは、既に削除されている",
     //false,
 
     "View or report this error": "このエラーを届け出る",
@@ -233,9 +239,9 @@ define({
     //"set it manually or retry auto-detection" :
     //false,
 
-    "Edit dataset tags" : "データセットのタグを編集",
+    "Edit dataset tags": "データセットのタグを編集",
     //false,
-    "Edit dataset annotation" : "データセットのアノテーションを編集",
+    "Edit dataset annotation": "データセットのアノテーションを編集",
     //false,
 
     // ---------------------------------------------------------------------------- admin
@@ -266,11 +272,11 @@ define({
     Data: "データ",
     "Form Definitions": "フォーム定義",
     // ---------------------------------------------------------------------------- misc. MVC
-    "Tags" : "タグ",
+    Tags: "タグ",
     //false,
-    "Annotation" : "アノテーション",
+    Annotation: "アノテーション",
     //false,
-    "Edit annotation" : "アノテーションを編集",
+    "Edit annotation": "アノテーションを編集",
     //false,
     "Your workflows": "あなたのワークフロー",
 });
