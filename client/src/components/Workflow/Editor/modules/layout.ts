@@ -235,6 +235,8 @@ function stepToElkStep(
         id: `${step.id}`,
         height: roundingFunction(position.height),
         width: roundingFunction(position.width),
+        x: step.position?.left,
+        y: step.position?.top,
         layoutOptions: {
             "elk.portConstraints": "FIXED_POS",
         },
