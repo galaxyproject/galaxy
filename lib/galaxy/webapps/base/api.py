@@ -260,3 +260,13 @@ def include_all_package_routers(app: FastAPI, package_name: str):
         router = getattr(module, "router", None)
         if router:
             app.include_router(router, responses=responses)
+
+    # handle CORS preflight requests - synchronize with wsgi behavior.
+    # this needs to happen last so it doesn't clobber routes with explicit cors handling
+    # it doesn't affect the CORS middleware since the middleware terminates the request handling before routing
+    @app.options("/api/{rest_of_path:path}", include_in_schema=False)
+    async def preflight_handler(request: Request, rest_of_path: str) -> Response:
+        response = Response()
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Max-Age"] = "600"
+        return response

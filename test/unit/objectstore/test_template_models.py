@@ -1,5 +1,7 @@
 import os
+import sys
 
+import pytest
 from yaml import safe_load
 
 from galaxy.objectstore.templates.examples import get_example
@@ -13,6 +15,10 @@ from galaxy.objectstore.templates.models import (
     template_to_configuration,
 )
 from galaxy.util.config_templates import VariablesDict
+
+if sys.version_info < (3, 8):  # noqa: UP036
+    pytest.skip(reason="Pydantic tool parameter models require python3.8 or higher", allow_module_level=True)
+
 
 LIBRARY_1 = """
 - id: amazon_bucket

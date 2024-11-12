@@ -27,7 +27,7 @@ class HasExt(Protocol):
 
 class HasExtraFilesPath(Protocol):
     @property
-    def extra_files_path(self): ...
+    def extra_files_path(self) -> str: ...
 
 
 class HasFileName(Protocol):

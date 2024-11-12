@@ -103,7 +103,7 @@ def load_app_properties(
         config_section = config_section or ini_section
 
     # read from file or init w/no file
-    if config_file:
+    if config_file and os.path.exists(config_file):
         properties = read_properties_from_file(config_file, config_section)
     else:
         properties = {"__file__": None}
@@ -208,6 +208,8 @@ def get_data_dir(properties):
     if data_dir is None:
         if running_from_source:
             data_dir = "./database"
+        elif properties["__file__"] is None:
+            data_dir = "./data"
         else:
             config_dir = properties.get("config_dir", os.path.dirname(properties["__file__"]))
             data_dir = os.path.join(config_dir, "data")

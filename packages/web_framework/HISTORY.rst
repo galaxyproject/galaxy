@@ -10,6 +10,19 @@ History
 
 
 -------------------
+24.1.3 (2024-10-25)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Increase API robustness to invalid requests, improve compressed data serving by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18494 <https://github.com/galaxyproject/galaxy/pull/18494>`_
+* Apply statsd arg sanitization to all pages by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18509 <https://github.com/galaxyproject/galaxy/pull/18509>`_
+* Close install model session when request ends by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18629 <https://github.com/galaxyproject/galaxy/pull/18629>`_
+
+-------------------
 24.1.2 (2024-09-25)
 -------------------
 

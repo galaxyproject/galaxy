@@ -8,6 +8,7 @@ from string import Template
 from typing import (
     Any,
     AsyncGenerator,
+    Callable,
     cast,
     NamedTuple,
     Optional,
@@ -379,6 +380,18 @@ def get_admin_user(trans: SessionRequestContext = DependsOnTrans):
 AdminUserRequired = Depends(get_admin_user)
 
 
+def cors_preflight(response: Response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    # Only allow CORS safe-listed headers for now (https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_request_header)
+    response.headers["Access-Control-Allow-Headers"] = "Accept,Accept-Language,Content-Language,Content-Type,Range"
+    response.headers["Access-Control-Max-Age"] = "600"
+    response.status_code = 200
+    return response
+
+
+CORSPreflightRequired = Depends(cors_preflight)
+
+
 class BaseGalaxyAPIController(BaseAPIController):
     def __init__(self, app: StructuredApp):
         super().__init__(app)
@@ -401,13 +414,20 @@ class FrameworkRouter(APIRouter):
 
     def wrap_with_alias(self, verb: RestVerb, *args, alias: Optional[str] = None, **kwd):
         """
-        Wraps FastAPI methods with additional alias keyword and require_admin handling.
+        Wraps FastAPI methods with additional alias keyword, require_admin and CORS handling.
 
         @router.get("/api/thing", alias="/api/deprecated_thing") will then create
         routes for /api/thing and /api/deprecated_thing.
         """
         kwd = self._handle_galaxy_kwd(kwd)
         include_in_schema = kwd.pop("include_in_schema", True)
+
+        allow_cors = kwd.pop("allow_cors", False)
+        if allow_cors:
+            assert (
+                "route_class_override" not in kwd
+            ), "Cannot use allow_cors=True on route and specify `route_class_override`"
+            kwd["route_class_override"] = APICorsRoute
 
         def decorate_route(route, include_in_schema=include_in_schema):
             # Decorator solely exists to allow passing `route_class_override` to add_api_route
@@ -419,6 +439,21 @@ class FrameworkRouter(APIRouter):
                     include_in_schema=include_in_schema,
                     **kwd,
                 )
+
+                if allow_cors:
+
+                    dependencies = kwd.pop("dependencies", [])
+                    dependencies.append(CORSPreflightRequired)
+
+                    self.add_api_route(
+                        route,
+                        endpoint=lambda: None,
+                        methods=[RestVerb.options],
+                        include_in_schema=False,
+                        dependencies=dependencies,
+                        **kwd,
+                    )
+
                 return func
 
             return decorated_route
@@ -502,6 +537,23 @@ class FrameworkRouter(APIRouter):
 class Router(FrameworkRouter):
     admin_user_dependency = AdminUserRequired
     user_dependency = DependsOnUser
+
+
+class APICorsRoute(APIRoute):
+    """
+    Sends CORS headers
+    """
+
+    def get_route_handler(self) -> Callable:
+        original_route_handler = super().get_route_handler()
+
+        async def custom_route_handler(request: Request) -> Response:
+            response: Response = await original_route_handler(request)
+            response.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+            response.headers["Access-Control-Max-Age"] = "600"
+            return response
+
+        return custom_route_handler
 
 
 class APIContentTypeRoute(APIRoute):

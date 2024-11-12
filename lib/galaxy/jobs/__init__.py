@@ -328,7 +328,7 @@ class JobConfiguration(ConfiguresHandlers):
         """Parse the job configuration XML."""
         self.app = app
         self.runner_plugins = []
-        self.dynamic_params = None
+        self.dynamic_params: Optional[Dict[str, Any]] = None
         self.handlers = {}
         self.handler_runner_plugins = {}
         self.default_handler_id = None
@@ -432,7 +432,7 @@ class JobConfiguration(ConfiguresHandlers):
                 continue
             self.runner_plugins.append(runner_info)
         if "dynamic" in job_config_dict:
-            self.dynamic_params = job_config_dict.get("dynamic", None)
+            self.dynamic_params = job_config_dict["dynamic"]
 
         # Parse handlers
         handling_config_dict = job_config_dict.get("handling", {})
@@ -830,12 +830,12 @@ class JobConfiguration(ConfiguresHandlers):
         """
         return self.destinations.get(id_or_tag, [])
 
-    def get_job_runner_plugins(self, handler_id):
+    def get_job_runner_plugins(self, handler_id: str):
         """Load all configured job runner plugins
 
         :returns: list of job runner plugins
         """
-        rval = {}
+        rval: Dict[str, BaseJobRunner] = {}
         if handler_id in self.handler_runner_plugins:
             plugins_to_load = [rp for rp in self.runner_plugins if rp["id"] in self.handler_runner_plugins[handler_id]]
             log.info(
@@ -871,11 +871,9 @@ class JobConfiguration(ConfiguresHandlers):
                     # If the name included a '.' or loading from the static runners path failed, try the original name
                     module = __import__(load)
                     module_name = load
-            if module is None:
-                # Module couldn't be loaded, error should have already been displayed
-                continue
             for comp in module_name.split(".")[1:]:
                 module = getattr(module, comp)
+            assert module  # make mypy happy
             if not class_names:
                 # If there's not a ':', we check <module>.__all__ for class names
                 try:
@@ -2157,7 +2155,9 @@ class MinimalJobWrapper(HasResourceParameters):
                         if e.errno != errno.ENOENT:
                             raise
             if delete_files:
-                self.object_store.delete(self.get_job(), base_dir="job_work", entire_dir=True, obj_dir=True)
+                self.object_store.delete(
+                    self.get_job(), base_dir="job_work", entire_dir=True, dir_only=True, obj_dir=True
+                )
         except Exception:
             log.exception("Unable to cleanup job %d", self.job_id)
 
@@ -2517,7 +2517,9 @@ class MinimalJobWrapper(HasResourceParameters):
     def user_system_pwent(self):
         if self.__user_system_pwent is None:
             job = self.get_job()
-            self.__user_system_pwent = job.user.system_user_pwent(self.app.config.real_system_username)
+            self.__user_system_pwent = job.user.system_user_pwent(
+                self.get_destination_configuration("real_system_username", None)
+            )
         return self.__user_system_pwent
 
     @property

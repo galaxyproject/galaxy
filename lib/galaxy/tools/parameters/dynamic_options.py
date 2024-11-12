@@ -24,6 +24,7 @@ from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    LibraryDatasetDatasetAssociation,
     MetadataFile,
     User,
 )
@@ -621,8 +622,9 @@ class DynamicOptions:
             self.filters.append(Filter.from_element(self, filter_elem))
 
         # Load Validators
-        for validator in elem.findall("validator"):
-            self.validators.append(validation.Validator.from_element(self.tool_param, validator))
+        validators = validation.parse_xml_validators(self.tool_param.tool.app, elem)
+        if validators:
+            self.validators = validators
 
         if self.dataset_ref_name:
             tool_param.data_ref = self.dataset_ref_name
@@ -965,6 +967,7 @@ def _get_ref_data(other_values, ref_name):
         (
             DatasetFilenameWrapper,
             HistoryDatasetAssociation,
+            LibraryDatasetDatasetAssociation,
             DatasetCollectionElement,
             DatasetListWrapper,
             HistoryDatasetCollectionAssociation,
@@ -976,7 +979,7 @@ def _get_ref_data(other_values, ref_name):
         raise ValueError
     if isinstance(ref, DatasetCollectionElement) and ref.hda:
         ref = ref.hda
-    if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation)):
+    if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation, LibraryDatasetDatasetAssociation)):
         ref = [ref]
     elif isinstance(ref, HistoryDatasetCollectionAssociation):
         ref = ref.to_hda_representative(multiple=True)

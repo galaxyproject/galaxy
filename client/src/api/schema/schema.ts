@@ -906,7 +906,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/file_source_instances/{user_file_source_id}": {
+    "/api/file_source_instances/{uuid}": {
         parameters: {
             query?: never;
             header?: never;
@@ -925,6 +925,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/file_source_instances/{uuid}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Test a file source instance and return status. */
+        get: operations["file_sources__instances_test_instance"];
+        put?: never;
+        /** Test updating or upgrading user file source instance. */
+        post: operations["file_sources__test_instances_update"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/file_source_templates": {
         parameters: {
             query?: never;
@@ -934,6 +952,23 @@ export interface paths {
         };
         /** Get a list of file source templates available to build user defined file sources from */
         get: operations["file_sources__templates_index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/file_source_templates/{template_id}/{template_version}/oauth2": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Template Oauth2 */
+        get: operations["file_sources__template_oauth2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2559,6 +2594,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/invocations/{invocation_id}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Invocation Metrics */
+        get: operations["get_invocation_metrics_api_invocations__invocation_id__metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/invocations/{invocation_id}/prepare_store_download": {
         parameters: {
             query?: never;
@@ -2602,6 +2654,23 @@ export interface paths {
         };
         /** Get PDF summarizing invocation for reporting. */
         get: operations["show_invocation_report_pdf_api_invocations__invocation_id__report_pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invocations/{invocation_id}/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a description modeling an API request to invoke this workflow - this is recreated and will be more specific in some ways than the initial creation request. */
+        get: operations["invocation_as_request_api_invocations__invocation_id__request_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3344,7 +3413,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/object_store_instances/{user_object_store_id}": {
+    "/api/object_store_instances/{uuid}": {
         parameters: {
             query?: never;
             header?: never;
@@ -3358,6 +3427,24 @@ export interface paths {
         post?: never;
         /** Purge user object store instance. */
         delete: operations["object_stores__instances_purge"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/object_store_instances/{uuid}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a persisted user object store instance. */
+        get: operations["object_stores__instances_test_instance"];
+        put?: never;
+        /** Test updating or upgrading user object source instance. */
+        post: operations["object_stores__test_instances_update"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5647,6 +5734,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/oauth2_callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Callback entry point for remote resource responses with OAuth2 authorization codes */
+        get: operations["oauth2_callback_oauth2_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6818,6 +6922,8 @@ export interface components {
             template_id: string;
             /** Template Version */
             template_version: number;
+            /** Uuid */
+            uuid?: string | null;
             /** Variables */
             variables: {
                 [key: string]: string | boolean | number;
@@ -7103,6 +7209,12 @@ export interface components {
         CreateWorkflowLandingRequestPayload: {
             /** Client Secret */
             client_secret?: string | null;
+            /**
+             * Public
+             * @description If workflow landing request is public anyone with the uuid can use the landing request. If not public the request must be claimed before use and additional verification might occur.
+             * @default false
+             */
+            public: boolean;
             /** Request State */
             request_state?: Record<string, never> | null;
             /** Workflow Id */
@@ -7111,7 +7223,7 @@ export interface components {
              * Workflow Target Type
              * @enum {string}
              */
-            workflow_target_type: "stored_workflow" | "workflow";
+            workflow_target_type: "stored_workflow" | "workflow" | "trs_url";
         };
         /** CreatedEntryResponse */
         CreatedEntryResponse: {
@@ -8658,6 +8770,11 @@ export interface components {
              * @description The email of the user that owns this job. Only the owner of the job and administrators can see this value.
              */
             user_email?: string | null;
+            /**
+             * User Id
+             * @description User ID of user that ran this job
+             */
+            user_id?: string | null;
         };
         /** EncodedJobParameterHistoryItem */
         EncodedJobParameterHistoryItem: {
@@ -9035,7 +9152,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata";
+            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata" | "webdav" | "dropbox" | "googledrive";
             /** Variables */
             variables?:
                 | (
@@ -12313,8 +12430,9 @@ export interface components {
              */
             batch: boolean | null;
             /**
-             * Dataset Map
-             * @description TODO
+             * Legacy Dataset Map
+             * @deprecated
+             * @description An older alternative to specifying inputs using database IDs, do not use this and use inputs instead
              * @default {}
              */
             ds_map: {
@@ -12337,12 +12455,12 @@ export interface components {
             history_id?: string | null;
             /**
              * Inputs
-             * @description TODO
+             * @description Specify values for formal inputs to the workflow
              */
             inputs?: Record<string, never> | null;
             /**
              * Inputs By
-             * @description How inputs maps to inputs (datasets/collections) to workflows steps.
+             * @description How the 'inputs' field maps its inputs (datasets/collections/step parameters) to workflows steps.
              */
             inputs_by?: string | null;
             /**
@@ -12369,35 +12487,35 @@ export interface components {
              */
             no_add_to_history: boolean | null;
             /**
-             * Parameters
-             * @description The raw parameters for the workflow invocation.
+             * Legacy Step Parameters
+             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead.
              * @default {}
              */
             parameters: Record<string, never> | null;
             /**
-             * Parameters Normalized
-             * @description Indicates if parameters are already normalized for workflow invocation.
+             * Legacy Step Parameters Normalized
+             * @description Indicates if legacy parameters are already normalized to be indexed by the order_index and are specified as a dictionary per step. Legacy-style parameters could previously be specified as one parameter per step or by tool ID.
              * @default false
              */
             parameters_normalized: boolean | null;
             /**
              * Preferred Intermediate Object Store ID
-             * @description The ID of the ? object store that should be used to store ? datasets in this history.
+             * @description The ID of the object store that should be used to store the intermediate datasets of this workflow -  - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences
              */
             preferred_intermediate_object_store_id?: string | null;
             /**
              * Preferred Object Store ID
-             * @description The ID of the object store that should be used to store new datasets in this history.
+             * @description The ID of the object store that should be used to store all datasets (can instead specify object store IDs for intermediate and outputs datasts separately) -  - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences
              */
             preferred_object_store_id?: string | null;
             /**
              * Preferred Outputs Object Store ID
-             * @description The ID of the object store that should be used to store ? datasets in this history.
+             * @description The ID of the object store that should be used to store the marked output datasets of this workflow - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences.
              */
             preferred_outputs_object_store_id?: string | null;
             /**
              * Replacement Parameters
-             * @description TODO
+             * @description Class of parameters mostly used for string replacement in PJAs. In best practice workflows, these should be replaced with input parameters
              * @default {}
              */
             replacement_params: Record<string, never> | null;
@@ -12409,7 +12527,7 @@ export interface components {
             require_exact_tool_versions: boolean | null;
             /**
              * Resource Parameters
-             * @description TODO
+             * @description If a workflow_resource_params_file file is defined and the target workflow is configured to consumer resource parameters, they can be specified with this parameter. See https://github.com/galaxyproject/galaxy/pull/4830 for more information.
              * @default {}
              */
             resource_params: Record<string, never> | null;
@@ -12418,11 +12536,6 @@ export interface components {
              * @description Scheduler to use for workflow invocation.
              */
             scheduler?: string | null;
-            /**
-             * Step Parameters
-             * @description TODO
-             */
-            step_parameters?: Record<string, never> | null;
             /**
              * Use cached job
              * @description Indicated whether to use a cached job for workflow invocation.
@@ -13992,21 +14105,6 @@ export interface components {
              * @description The source of the content. Can be other history element to be copied or library elements.
              */
             source: components["schemas"]["DatasetSourceType"];
-            /**
-             * Validate hashes
-             * @description Set to true to enable dataset validation during materialization.
-             * @default false
-             */
-            validate_hashes: boolean;
-        };
-        /** MaterializeDatasetOptions */
-        MaterializeDatasetOptions: {
-            /**
-             * Validate hashes
-             * @description Set to true to enable dataset validation during materialization.
-             * @default false
-             */
-            validate_hashes: boolean;
         };
         /** MessageExceptionModel */
         MessageExceptionModel: {
@@ -14441,6 +14539,11 @@ export interface components {
              * @description The number of notifications that were updated.
              */
             updated_count: number;
+        };
+        /** OAuth2Info */
+        OAuth2Info: {
+            /** Authorize Url */
+            authorize_url: string;
         };
         /** ObjectExportTaskResponse */
         ObjectExportTaskResponse: {
@@ -14981,6 +15084,7 @@ export interface components {
         /** PluginStatus */
         PluginStatus: {
             connection?: components["schemas"]["PluginAspectStatus"] | null;
+            oauth2_access_token_generation?: components["schemas"]["PluginAspectStatus"] | null;
             template_definition: components["schemas"]["PluginAspectStatus"];
             template_settings?: components["schemas"]["PluginAspectStatus"] | null;
         };
@@ -16080,6 +16184,11 @@ export interface components {
              * @description The email of the user that owns this job. Only the owner of the job and administrators can see this value.
              */
             user_email?: string | null;
+            /**
+             * User Id
+             * @description User ID of user that ran this job
+             */
+            user_id?: string | null;
         };
         /**
          * Src
@@ -16514,6 +16623,26 @@ export interface components {
              * @enum {string}
              */
             type: "string";
+        };
+        /** TestUpdateInstancePayload */
+        TestUpdateInstancePayload: {
+            /** Variables */
+            variables?: {
+                [key: string]: string | boolean | number;
+            } | null;
+        };
+        /** TestUpgradeInstancePayload */
+        TestUpgradeInstancePayload: {
+            /** Secrets */
+            secrets: {
+                [key: string]: string;
+            };
+            /** Template Version */
+            template_version: number;
+            /** Variables */
+            variables: {
+                [key: string]: string | boolean | number;
+            };
         };
         /** ToolDataDetails */
         ToolDataDetails: {
@@ -17366,7 +17495,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata";
+            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata" | "webdav" | "dropbox" | "googledrive";
             /** Uri Root */
             uri_root: string;
             /**
@@ -18090,6 +18219,86 @@ export interface components {
              */
             workflow_id: string;
         };
+        /**
+         * WorkflowInvocationRequestModel
+         * @description Model a workflow invocation request (InvokeWorkflowPayload) for an existing invocation.
+         */
+        WorkflowInvocationRequestModel: {
+            /**
+             * History ID
+             * @description The encoded history id the workflow was run in.
+             */
+            history_id: string;
+            /**
+             * Inputs
+             * @description Values for inputs
+             */
+            inputs: Record<string, never>;
+            /**
+             * Inputs by
+             * @description How the 'inputs' field maps its inputs (datasets/collections/step parameters) to workflows steps.
+             */
+            inputs_by: string;
+            /**
+             * Is instance
+             * @description This API yields a particular workflow instance, newer workflows belonging to the same storedworkflow may have different state.
+             * @default true
+             * @constant
+             * @enum {boolean}
+             */
+            instance: true;
+            /**
+             * Legacy Step Parameters
+             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. If these are set, the workflow was not executed in a best-practice fashion and we the resulting invocation request may not fully reflect the executed workflow state.
+             */
+            parameters?: Record<string, never> | null;
+            /**
+             * Legacy Step Parameters Normalized
+             * @description Indicates if legacy parameters are already normalized to be indexed by the order_index and are specified as a dictionary per step. Legacy-style parameters could previously be specified as one parameter per step or by tool ID.
+             * @default true
+             * @constant
+             * @enum {boolean}
+             */
+            parameters_normalized: true;
+            /**
+             * Preferred Intermediate Object Store ID
+             * @description The ID of the object store that should be used to store the intermediate datasets of this workflow -  - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences
+             */
+            preferred_intermediate_object_store_id?: string | null;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store all datasets (can instead specify object store IDs for intermediate and outputs datasts separately) -  - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences
+             */
+            preferred_object_store_id?: string | null;
+            /**
+             * Preferred Outputs Object Store ID
+             * @description The ID of the object store that should be used to store the marked output datasets of this workflow - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences.
+             */
+            preferred_outputs_object_store_id?: string | null;
+            /**
+             * Replacement Parameters
+             * @description Class of parameters mostly used for string replacement in PJAs. In best practice workflows, these should be replaced with input parameters
+             * @default {}
+             */
+            replacement_params: Record<string, never> | null;
+            /**
+             * Resource Parameters
+             * @description If a workflow_resource_params_file file is defined and the target workflow is configured to consumer resource parameters, they can be specified with this parameter. See https://github.com/galaxyproject/galaxy/pull/4830 for more information.
+             * @default {}
+             */
+            resource_params: Record<string, never> | null;
+            /**
+             * Use cached job
+             * @description Indicated whether to use a cached job for workflow invocation.
+             * @default false
+             */
+            use_cached_job: boolean;
+            /**
+             * Workflow ID
+             * @description The encoded Workflow ID associated with the invocation.
+             */
+            workflow_id: string;
+        };
         /** WorkflowInvocationResponse */
         WorkflowInvocationResponse:
             | components["schemas"]["WorkflowInvocationElementView"]
@@ -18120,6 +18329,49 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /**
+         * WorkflowJobMetric
+         * @example {
+         *       "name": "start_epoch",
+         *       "plugin": "core",
+         *       "raw_value": "1614261340.0000000",
+         *       "title": "Job Start Time",
+         *       "value": "2021-02-25 14:55:40"
+         *     }
+         */
+        WorkflowJobMetric: {
+            /**
+             * Name
+             * @description The name of the metric variable.
+             */
+            name: string;
+            /**
+             * Plugin
+             * @description The instrumenter plugin that generated this metric.
+             */
+            plugin: string;
+            /**
+             * Raw Value
+             * @description The raw value of the metric as a string.
+             */
+            raw_value: string;
+            /** Step Index */
+            step_index: number;
+            /** Step Label */
+            step_label: string | null;
+            /**
+             * Title
+             * @description A descriptive title for this metric.
+             */
+            title: string;
+            /** Tool Id */
+            tool_id: string;
+            /**
+             * Value
+             * @description The textual representation of the metric value.
+             */
+            value: string;
+        };
         /** WorkflowLandingRequest */
         WorkflowLandingRequest: {
             /** Request State */
@@ -18137,7 +18389,7 @@ export interface components {
              * Workflow Target Type
              * @enum {string}
              */
-            workflow_target_type: "stored_workflow" | "workflow";
+            workflow_target_type: "stored_workflow" | "workflow" | "trs_url";
         };
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
@@ -20744,7 +20996,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID index for a persisted UserFileSourceStore object. */
-                user_file_source_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -20788,7 +21040,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID index for a persisted UserFileSourceStore object. */
-                user_file_source_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -20839,7 +21091,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID index for a persisted UserFileSourceStore object. */
-                user_file_source_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -20851,6 +21103,100 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    file_sources__instances_test_instance: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID index for a persisted UserFileSourceStore object. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    file_sources__test_instances_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID index for a persisted UserFileSourceStore object. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json":
+                    | components["schemas"]["TestUpgradeInstancePayload"]
+                    | components["schemas"]["TestUpdateInstancePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
             };
             /** @description Request Error */
             "4XX": {
@@ -20891,6 +21237,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FileSourceTemplateSummaries"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    file_sources__template_oauth2: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The template ID of the target file source template. */
+                template_id: string;
+                /** @description The template version of the target file source template. */
+                template_version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OAuth2 authorization url to redirect user to prior to creation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuth2Info"];
                 };
             };
             /** @description Request Error */
@@ -24078,11 +24470,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["MaterializeDatasetOptions"] | null;
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -26684,6 +27072,50 @@ export interface operations {
             };
         };
     };
+    get_invocation_metrics_api_invocations__invocation_id__metrics_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Invocation. */
+                invocation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowJobMetric"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     prepare_store_download_api_invocations__invocation_id__prepare_store_download_post: {
         parameters: {
             query?: never;
@@ -26797,6 +27229,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    invocation_as_request_api_invocations__invocation_id__request_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Invocation. */
+                invocation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationRequestModel"];
+                };
             };
             /** @description Request Error */
             "4XX": {
@@ -29314,7 +29790,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID used to identify a persisted UserObjectStore object. */
-                user_object_store_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -29358,7 +29834,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID used to identify a persisted UserObjectStore object. */
-                user_object_store_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -29409,7 +29885,7 @@ export interface operations {
             };
             path: {
                 /** @description The UUID used to identify a persisted UserObjectStore object. */
-                user_object_store_id: string;
+                uuid: string;
             };
             cookie?: never;
         };
@@ -29421,6 +29897,100 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    object_stores__instances_test_instance: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted UserObjectStore object. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    object_stores__test_instances_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted UserObjectStore object. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json":
+                    | components["schemas"]["TestUpgradeInstancePayload"]
+                    | components["schemas"]["TestUpdateInstancePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
             };
             /** @description Request Error */
             "4XX": {
@@ -36437,6 +37007,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Service"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    oauth2_callback_oauth2_callback_get: {
+        parameters: {
+            query: {
+                /** @description Base-64 encoded JSON used to route request within Galaxy. */
+                state: string;
+                code?: string | null;
+                error?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Request Error */

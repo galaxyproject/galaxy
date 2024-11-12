@@ -11,7 +11,6 @@ A sharable Galaxy object:
 """
 
 import logging
-import re
 from typing import (
     Any,
     List,
@@ -20,6 +19,7 @@ from typing import (
     Type,
 )
 
+from slugify import slugify
 from sqlalchemy import (
     exists,
     false,
@@ -291,7 +291,7 @@ class SharableModelManager(
         Validate and set the new slug for `item`.
         """
         # precondition: has been validated
-        if not self.is_valid_slug(new_slug):
+        if not SlugBuilder.is_valid_slug(new_slug):
             raise exceptions.RequestParameterInvalidException("Invalid slug", slug=new_slug)
 
         if item.slug == new_slug:
@@ -309,23 +309,6 @@ class SharableModelManager(
                 session.commit()
         return item
 
-    def is_valid_slug(self, slug):
-        """
-        Returns true if `slug` is valid.
-        """
-        VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
-        return VALID_SLUG_RE.match(slug)
-
-    def _slugify(self, start_with):
-        # Replace whitespace with '-'
-        slug_base = re.sub(r"\s+", "-", start_with)
-        # Remove all non-alphanumeric characters.
-        slug_base = re.sub(r"[^a-zA-Z0-9\-]", "", slug_base)
-        # Remove trailing '-'.
-        if slug_base.endswith("-"):
-            slug_base = slug_base[:-1]
-        return slug_base
-
     def _default_slug_base(self, item):
         # override in subclasses
         if hasattr(item, "title"):
@@ -341,7 +324,7 @@ class SharableModelManager(
 
         # Setup slug base.
         if cur_slug is None or cur_slug == "":
-            slug_base = self._slugify(self._default_slug_base(item))
+            slug_base = slugify(self._default_slug_base(item), allow_unicode=True)
         else:
             slug_base = cur_slug
 
@@ -579,6 +562,11 @@ class SlugBuilder:
         # Set slug and return.
         item.slug = new_slug
         return item.slug == cur_slug
+
+    @classmethod
+    def is_valid_slug(self, slug):
+        """Returns true if slug is valid."""
+        return slugify(slug, allow_unicode=True) == slug
 
 
 def slug_exists(session, model_class, user, slug, ignore_deleted=False):

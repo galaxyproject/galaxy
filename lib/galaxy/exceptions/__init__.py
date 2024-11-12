@@ -241,6 +241,10 @@ class Conflict(MessageException):
     err_code = error_codes_by_name["CONFLICT"]
 
 
+class ItemMustBeClaimed(Conflict):
+    err_code = error_codes_by_name["MUST_CLAIM"]
+
+
 class DeprecatedMethod(MessageException):
     """
     Method (or a particular form/arg signature) has been removed and won't be available later

@@ -715,7 +715,7 @@ class SubWorkflowModule(WorkflowModule):
         if hasattr(self.subworkflow, "workflow_outputs"):
             from galaxy.managers.workflows import WorkflowContentsManager
 
-            workflow_contents_manager = WorkflowContentsManager(self.trans.app)
+            workflow_contents_manager = WorkflowContentsManager(self.trans.app, self.trans.app.trs_proxy)
             subworkflow_dict = workflow_contents_manager._workflow_to_dict_editor(
                 trans=self.trans,
                 stored=self.subworkflow.stored_workflow,

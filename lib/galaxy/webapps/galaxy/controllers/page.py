@@ -170,8 +170,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             raise web.httpexceptions.HTTPNotFound()
         return self.display_by_username_and_slug(trans, page.user.username, page.slug)
 
-    @web.expose
-    def display_by_username_and_slug(self, trans, username, slug, **kwargs):
+    def _display_by_username_and_slug(self, trans, username, slug, **kwargs):
         """Display page based on a username and slug."""
 
         # Get page.

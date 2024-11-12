@@ -395,6 +395,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "file_source_instances/create",
                         component: CreateUserFileSource,
+                        props: (route) => {
+                            return {
+                                error: route.params.error,
+                            };
+                        },
                     },
                     {
                         path: "file_source_instances/index",
@@ -416,7 +421,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "file_source_templates/:templateId/new",
                         component: CreateFileSourceInstance,
-                        props: true,
+                        props: (route) => ({
+                            templateId: route.params.templateId,
+                            uuid: route.query.uuid,
+                        }),
                     },
                     {
                         path: "pages/create",
@@ -504,7 +512,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflow_landings/:uuid",
                         component: WorkflowLanding,
-                        props: true,
+                        props: (route) => ({
+                            uuid: route.params.uuid,
+                            public: route.query.public.toLowerCase() === "true",
+                            secret: route.query.client_secret,
+                        }),
                     },
                     {
                         path: "user",

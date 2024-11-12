@@ -17,6 +17,18 @@ const selectors = {
     historyLink: ".history-link",
 } as const;
 
+// Mock the history store to always return the same current history id
+jest.mock("@/stores/historyStore", () => {
+    const originalModule = jest.requireActual("@/stores/historyStore");
+    return {
+        ...originalModule,
+        useHistoryStore: () => ({
+            ...originalModule.useHistoryStore(),
+            currentHistoryId: "current-history-id",
+        }),
+    };
+});
+
 function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended) {
     const pinia = createTestingPinia();
 
@@ -96,6 +108,18 @@ describe("SwitchToHistoryLink", () => {
             user_id: "user_id",
         } as HistorySummaryExtended;
         await expectOptionForHistory("Switch", history);
+    });
+
+    it("should display the appropriate text when the history is the Current history", async () => {
+        const history = {
+            id: "current-history-id",
+            name: "History Current",
+            deleted: false,
+            purged: false,
+            archived: false,
+            user_id: "user_id",
+        } as HistorySummaryExtended;
+        await expectOptionForHistory("This is your current history", history);
     });
 
     it("should display the View option when the history is purged", async () => {

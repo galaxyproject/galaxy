@@ -299,6 +299,13 @@ class NavigatesGalaxy(HasDriver):
         except SeleniumTimeoutException as e:
             raise ClientBuildException(e)
 
+    def go_to_workflow_landing(self, uuid: str, public: Literal["false", "true"], client_secret: Optional[str]):
+        path = f"workflow_landings/{uuid}?public={public}"
+        if client_secret:
+            path = f"{path}&client_secret={client_secret}"
+        self.driver.get(self.build_url(path))
+        self.components.workflow_run.run_workflow.wait_for_visible()
+
     def go_to_trs_search(self) -> None:
         self.driver.get(self.build_url("workflows/trs_search"))
         self.components.masthead._.wait_for_visible()
@@ -1250,7 +1257,7 @@ class NavigatesGalaxy(HasDriver):
         self.components.masthead.user.wait_for_and_click()
         self.components.masthead.preferences.wait_for_and_click()
 
-    def navigate_to_invocations(self):
+    def navigate_to_invocations_grid(self):
         self.home()
         self.components.invocations.activity.wait_for_and_click()
         self.components.invocations.activity_expand.wait_for_and_click()

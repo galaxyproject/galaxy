@@ -47,7 +47,7 @@ const showRerun = computed(() => {
 });
 const showVisualizations = computed(() => {
     // TODO: Check hasViz, if visualizations are activated in the config
-    return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
+    return !props.item.purged && ["ok", "failed_metadata", "error", "deferred"].includes(props.item.state);
 });
 const reportErrorUrl = computed(() => {
     return prependPath(props.itemUrls.reportError!);

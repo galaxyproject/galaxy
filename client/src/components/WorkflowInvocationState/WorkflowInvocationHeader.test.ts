@@ -75,7 +75,12 @@ async function mountWorkflowInvocationHeader(ownsWorkflow = true, hasReturnBtn =
                 ...sampleInvocation,
                 workflow_id: !unimportableWorkflow ? sampleInvocation.workflow_id : UNIMPORTABLE_WORKFLOW_INSTANCE_ID,
             },
+            invocationState: "scheduled",
+            isFullPage: true,
+            jobStatesSummary: {},
             fromPanel: !hasReturnBtn,
+            invocationSchedulingTerminal: true,
+            invocationAndJobTerminal: true,
         },
         localVue,
         pinia: createTestingPinia(),
@@ -100,12 +105,6 @@ describe("WorkflowInvocationHeader renders", () => {
         const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
         const runButton = actionsGroup.find(SELECTORS.RUN_WORKFLOW_BUTTON);
         expect(runButton.attributes("title")).toContain(SAMPLE_WORKFLOW.name);
-    });
-
-    it("return to invocations list button if not from panel", async () => {
-        const { wrapper } = await mountWorkflowInvocationHeader(false, true);
-        const returnButton = wrapper.find(SELECTORS.RETURN_TO_INVOCATIONS_LIST_BUTTON);
-        expect(returnButton.text()).toBe("Invocations List");
     });
 
     it("edit button if user owns the workflow", async () => {

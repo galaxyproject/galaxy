@@ -125,8 +125,9 @@ class LibraryActions:
             raise exceptions.InvalidFileFormatError("Invalid folder specified")
         # Proceed with (mostly) regular upload processing if we're still errorless
         if payload.upload_option == "upload_file":
-            for i, upload_dataset in enumerate(tool_params["files"]):
-                upload_dataset["file_data"] = payload.upload_files[i]
+            if payload.upload_files:
+                for i, upload_dataset in enumerate(tool_params["files"]):
+                    upload_dataset["file_data"] = payload.upload_files[i]
             tool_params = upload_common.persist_uploads(tool_params, trans)
             uploaded_datasets = upload_common.get_uploaded_datasets(
                 trans, cntrller, tool_params, dataset_upload_inputs, library_bunch=library_bunch

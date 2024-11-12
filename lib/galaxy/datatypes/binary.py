@@ -441,6 +441,103 @@ class CompressedZipArchive(CompressedArchive):
         return False
 
 
+class CompressedZarrZipArchive(CompressedZipArchive):
+    """A zarr store compressed in a zip file.
+
+    The zarr store must be in the root of the zip file.
+    """
+
+    file_ext = "zarr.zip"
+
+    MetadataElement(
+        name="zarr_format",
+        default=None,
+        desc="Zarr format version",
+        readonly=True,
+        optional=False,
+        visible=False,
+    )
+
+    MetadataElement(
+        name="compression",
+        default=None,
+        desc="Compression type used in the Zip zarr store",
+        readonly=True,
+        optional=False,
+        visible=False,
+    )
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.blurb = f"{nice_size(dataset.get_size())}"
+            dataset.blurb += f"\nFormat v{dataset.metadata.zarr_format}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        with zipfile.ZipFile(dataset.get_file_name()) as zf:
+            dataset.metadata.compression = zf.compression
+            meta_file = self._find_zarr_metadata_file(zf)
+            if meta_file:
+                with zf.open(meta_file) as f:
+                    meta = json.load(f)
+                    format_version = meta.get("zarr_format")
+                    if not format_version:
+                        log.debug("Could not determine Zarr format version")
+                        return
+                    dataset.metadata.zarr_format = format_version
+
+    def sniff(self, filename: str) -> bool:
+        # Check if the zip file contains a zarr store.
+        # In theory, the zarr store must be in the root of the zip file.
+        # See: https://github.com/zarr-developers/zarr-python/issues/756#issuecomment-852134901
+        # But in practice, many examples online have the zarr store in a subfolder in the zip file,
+        # so we will check for that as well.
+        meta_file = None
+        with zipfile.ZipFile(filename) as zf:
+            meta_file = self._find_zarr_metadata_file(zf)
+        return meta_file is not None
+
+    def _find_zarr_metadata_file(self, zip_file: zipfile.ZipFile) -> Optional[str]:
+        """Returns the path to the metadata file in the Zarr store if found."""
+        # Depending on the Zarr version, the metadata file can be in different locations
+        # In v1 the metadata is in a file named "meta" https://zarr-specs.readthedocs.io/en/latest/v1/v1.0.html
+        # In v2 it can be in .zarray or .zgroup https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
+        # In v3 the metadata is in a file named "zarr.json" https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html
+        possible_meta_files = ["meta", ".zarray", ".zgroup", "zarr.json"]
+        for file in zip_file.namelist():
+            if any(file.endswith(meta_file) for meta_file in possible_meta_files):
+                return file
+        return None
+
+
+class CompressedOMEZarrZipArchive(CompressedZarrZipArchive):
+    file_ext = "ome_zarr.zip"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "OME-Zarr directory"
+            dataset.blurb = f"{nice_size(dataset.get_size())}"
+            dataset.blurb += f"\nZarr Format v{dataset.metadata.zarr_format}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def sniff(self, filename: str) -> bool:
+        meta_file = None
+        with zipfile.ZipFile(filename) as zf:
+            meta_file = self._find_ome_zarr_metadata_file(zf)
+        return meta_file is not None
+
+    def _find_ome_zarr_metadata_file(self, zip_file: zipfile.ZipFile) -> Optional[str]:
+        expected_meta_file_name = "OME/METADATA.ome.xml"
+        for file in zip_file.namelist():
+            if file.endswith(expected_meta_file_name):
+                return file
+        return None
+
+
 class GenericAsn1Binary(Binary):
     """Class for generic ASN.1 binary format"""
 
@@ -1299,7 +1396,7 @@ class Loom(H5):
 
     def sniff(self, filename: str) -> bool:
         if super().sniff(filename):
-            with h5py.File(filename, "r") as loom_file:
+            with h5py.File(filename, "r", locking=False) as loom_file:
                 # Check the optional but distinctive LOOM_SPEC_VERSION attribute
                 if bool(loom_file.attrs.get("LOOM_SPEC_VERSION")):
                     return True
@@ -1328,7 +1425,7 @@ class Loom(H5):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
-            with h5py.File(dataset.get_file_name(), "r") as loom_file:
+            with h5py.File(dataset.get_file_name(), "r", locking=False) as loom_file:
                 dataset.metadata.title = loom_file.attrs.get("title")
                 dataset.metadata.description = loom_file.attrs.get("description")
                 dataset.metadata.url = loom_file.attrs.get("url")
@@ -1464,7 +1561,7 @@ class Anndata(H5):
     def sniff(self, filename: str) -> bool:
         if super().sniff(filename):
             try:
-                with h5py.File(filename, "r") as f:
+                with h5py.File(filename, "r", locking=False) as f:
                     return all(attr in f for attr in ["X", "obs", "var"])
             except Exception:
                 return False
@@ -1472,7 +1569,7 @@ class Anndata(H5):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
-        with h5py.File(dataset.get_file_name(), "r") as anndata_file:
+        with h5py.File(dataset.get_file_name(), "r", locking=False) as anndata_file:
             dataset.metadata.title = anndata_file.attrs.get("title")
             dataset.metadata.description = anndata_file.attrs.get("description")
             dataset.metadata.url = anndata_file.attrs.get("url")
@@ -1822,7 +1919,7 @@ class Biom2(H5):
         False
         """
         if super().sniff(filename):
-            with h5py.File(filename, "r") as f:
+            with h5py.File(filename, "r", locking=False) as f:
                 required_fields = {"id", "format-url", "type", "generated-by", "creation-date", "nnz", "shape"}
                 return required_fields.issubset(f.attrs.keys())
         return False
@@ -1830,7 +1927,7 @@ class Biom2(H5):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
-            with h5py.File(dataset.get_file_name(), "r") as f:
+            with h5py.File(dataset.get_file_name(), "r", locking=False) as f:
                 attributes = f.attrs
 
                 dataset.metadata.id = util.unicodify(attributes["id"])
@@ -1853,7 +1950,7 @@ class Biom2(H5):
         if not dataset.dataset.purged:
             lines = ["Biom2 (HDF5) file"]
             try:
-                with h5py.File(dataset.get_file_name()) as f:
+                with h5py.File(dataset.get_file_name(), locking=False) as f:
                     for k, v in f.attrs.items():
                         lines.append(f"{k}:  {util.unicodify(v)}")
             except Exception as e:
@@ -1900,7 +1997,7 @@ class Cool(H5):
 
         if super().sniff(filename):
             keys = ["chroms", "bins", "pixels", "indexes"]
-            with h5py.File(filename, "r") as handle:
+            with h5py.File(filename, "r", locking=False) as handle:
                 fmt = util.unicodify(handle.attrs.get("format"))
                 url = util.unicodify(handle.attrs.get("format-url"))
                 if fmt == MAGIC or url == URL:
@@ -1956,7 +2053,7 @@ class MCool(H5):
 
         if super().sniff(filename):
             keys0 = ["resolutions"]
-            with h5py.File(filename, "r") as handle:
+            with h5py.File(filename, "r", locking=False) as handle:
                 if not all(name in handle.keys() for name in keys0):
                     return False
                 res0 = next(iter(handle["resolutions"].keys()))
@@ -2022,7 +2119,7 @@ class H5MLM(H5):
                 params_file = dataset.metadata.spec[spec_key].param.new_file(
                     dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
                 )
-            with h5py.File(dataset.get_file_name(), "r") as handle:
+            with h5py.File(dataset.get_file_name(), "r", locking=False) as handle:
                 hyper_params = handle[self.HYPERPARAMETER][()]
             hyper_params = json.loads(util.unicodify(hyper_params))
             with open(params_file.get_file_name(), "w") as f:
@@ -2036,7 +2133,7 @@ class H5MLM(H5):
     def sniff(self, filename: str) -> bool:
         if super().sniff(filename):
             keys = [self.CONFIG]
-            with h5py.File(filename, "r") as handle:
+            with h5py.File(filename, "r", locking=False) as handle:
                 if not all(name in handle.keys() for name in keys):
                     return False
                 url = util.unicodify(handle.attrs.get(self.URL))
@@ -2046,7 +2143,7 @@ class H5MLM(H5):
 
     def get_attribute(self, filename: str, attr_key: str) -> str:
         try:
-            with h5py.File(filename, "r") as handle:
+            with h5py.File(filename, "r", locking=False) as handle:
                 attr = util.unicodify(handle.attrs.get(attr_key))
             return attr
         except Exception as e:
@@ -2069,7 +2166,7 @@ class H5MLM(H5):
 
     def get_config_string(self, filename: str) -> str:
         try:
-            with h5py.File(filename, "r") as handle:
+            with h5py.File(filename, "r", locking=False) as handle:
                 config = util.unicodify(handle[self.CONFIG][()])
             return config
         except Exception as e:
@@ -2109,7 +2206,7 @@ class H5MLM(H5):
 
         out_dict: Dict = {}
         try:
-            with h5py.File(dataset.get_file_name(), "r") as handle:
+            with h5py.File(dataset.get_file_name(), "r", locking=False) as handle:
                 out_dict["Attributes"] = {}
                 attributes = handle.attrs
                 for k in set(attributes.keys()) - {self.HTTP_REPR, self.REPR, self.URL}:
@@ -2199,7 +2296,7 @@ class HexrdMaterials(H5):
     def sniff(self, filename: str) -> bool:
         if super().sniff(filename):
             req = {"AtomData", "Atomtypes", "CrystalSystem", "LatticeParameters"}
-            with h5py.File(filename, "r") as mat_file:
+            with h5py.File(filename, "r", locking=False) as mat_file:
                 for k in mat_file.keys():
                     if isinstance(mat_file[k], h5py._hl.group.Group) and set(mat_file[k].keys()) >= req:
                         return True
@@ -2208,7 +2305,7 @@ class HexrdMaterials(H5):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
-            with h5py.File(dataset.get_file_name(), "r") as mat_file:
+            with h5py.File(dataset.get_file_name(), "r", locking=False) as mat_file:
                 dataset.metadata.materials = list(mat_file.keys())
                 sgn = {}
                 lp = {}

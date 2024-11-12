@@ -1,16 +1,3 @@
-import { useRouter } from "vue-router/composables";
+import { buildInstanceRoutingComposable } from "@/components/ConfigTemplates/routing";
 
-export function useInstanceRouting() {
-    const router = useRouter();
-
-    async function goToIndex(query: Record<"message", string>) {
-        router.push({
-            path: "/object_store_instances/index",
-            query: query,
-        });
-    }
-
-    return {
-        goToIndex,
-    };
-}
+export const useInstanceRouting = buildInstanceRoutingComposable("/object_store_instances/index");
