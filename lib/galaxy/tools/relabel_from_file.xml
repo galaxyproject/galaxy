@@ -13,18 +13,23 @@
         <param type="data_collection" name="input" label="Input Collection" help="collection to change identifiers in"/>
         <conditional name="how">
             <param type="select" name="how_select" label="How should the new labels be specified?">
-                <option value="txt">Using lines in a simple text file.</option>
-                <option value="tabular">Map original identifiers to new ones using a two column table.</option>
+                <option value="txt">Use lines in a simple text file as new identifiers.</option>
+                <option value="tabular">Map original identifiers to new ones using a two-column table.</option>
+                <option value="tabular_extended">Use any two columns of a table for identifier mapping.</option>
             </param>
             <when value="txt">
                 <param type="data" name="labels" format="txt" label="New Identifiers" />
-                <param name="strict" type="boolean" label="Ensure strict mapping" help="If selected, the target file must contain exactly the correct number of lines." truevalue="true" falsevalue="false" />
+                <param name="strict" type="boolean" label="Ensure strict mapping" help="If selected, the text file must contain exactly the correct number of lines." truevalue="true" falsevalue="false" />
             </when>
             <when value="tabular">
                 <param type="data" name="labels" format="tabular" label="Identifier mapping" />
+                <param name="strict" type="boolean" label="Ensure strict mapping" help="If checked, the table must contain exactly the correct number of lines and each original identifier must match exactly one element of the input collection." truevalue="true" falsevalue="false" />
+            </when>
+            <when value="tabular_extended">
+                <param type="data" name="labels" format="tabular" label="Identifier mapping" />
                 <param name="from" type="data_column" data_ref="labels" value="1" label="Column with current identifiers"/>
                 <param name="to" type="data_column" data_ref="labels" value="2" label="Column with new identifiers"/>
-                <param name="strict" type="boolean" label="Ensure strict mapping" help="If checked, the target file must contain exactly the correct number of lines and each input identifier must match exactly one element of the input collection." truevalue="true" falsevalue="false" />
+                <param name="strict" type="boolean" label="Ensure strict mapping" help="If checked, the table must contain exactly the correct number of lines and each original identifier must match exactly one element of the input collection." truevalue="true" falsevalue="false" />
             </when>
         </conditional>
     </inputs>
@@ -101,7 +106,7 @@
                     </element>
                 </collection>
             </param>
-            <param name="how_select" value="tabular" />
+            <param name="how_select" value="tabular_extended" />
             <param name="labels" value="new_labels_3.txt" ftype="tabular" />
             <param name="from" value="3" />
             <param name="to" value="1" />
@@ -180,9 +185,9 @@ Changes identifiers of datasets within a collection using identifiers from a sup
 Description
 ===========
 
-New identifiers can be supplied as either a simple list or a tab-delimited file mapping old identifier to the new ones. This is controlled using **How should the new identifiers be specified?** drop-down:
+New identifiers can be supplied as either a simple list or a tab-delimited file mapping old identifiers to new ones. This is controlled using **How should the new identifiers be specified?** drop-down:
 
-**Using lines in a simple text file**
+**Use lines in a simple text file as new identifiers**
 
 Given a collection::
 
@@ -208,7 +213,7 @@ the tool will return::
 
 -------
 
-**Map original identifiers to new ones using a two column table**
+**Map original identifiers to new ones using a two-column table**
 
 Given a collection::
 
@@ -216,7 +221,7 @@ Given a collection::
              [Dataset B] 
              [Dataset X]
 
-and a simple text file (you can see that entries do not have to be in order here)::
+and a simple tabular file (you can see that entries do not have to be in order here)::
 
              B Beta
              X Gamma
@@ -228,6 +233,13 @@ the tool will return::
              [Dataset Beta] 
              [Dataset Gamma]
 
+-------
+
+**Map original identifiers to new ones using a two-column table**
+
+This mode works exactly as the previous one, but the tabular mapping file is allowed to have more than two columns, and you can specify which of them holds the original and new element identifiers, respectively.
+
+-------
 
 .. class:: warningmark
 
