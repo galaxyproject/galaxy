@@ -1,3 +1,8 @@
+from typing import (
+    Any,
+    Type,
+)
+
 from galaxy.datatypes.images import (
     Image,
     Pdf,
@@ -7,10 +12,9 @@ from .util import (
     get_input_files,
     MockDataset,
 )
-from typing import Any, Type
-
 
 # Define test decorator
+
 
 def __test(image_cls: Type[Image], input_filename: str):
 
@@ -21,7 +25,7 @@ def __test(image_cls: Type[Image], input_filename: str):
             with get_input_files(input_filename) as input_files:
                 dataset = MockDataset(1)
                 dataset.set_file_name(input_files[0])
-                image.set_meta(dataset)
+                image.set_meta(dataset)  # type: ignore[arg-type]
                 test_impl(dataset.metadata)
 
         return test
@@ -30,6 +34,7 @@ def __test(image_cls: Type[Image], input_filename: str):
 
 
 # Define test factory
+
 
 def __create_test(image_cls: Type[Image], input_filename: str, metadata_key: str, expected_value: Any):
 
@@ -41,6 +46,7 @@ def __create_test(image_cls: Type[Image], input_filename: str, metadata_key: str
 
 
 # Define test utilities
+
 
 def __assert_empty_metadata(metadata):
     for key in (
@@ -131,6 +137,7 @@ test_png_frames_1 = __create_test(Image, "im1_uint8.png", "frames", 1)
 
 
 # Test with files that neither Pillow nor tifffile can open
+
 
 @__test(Pdf, "454Score.pdf")
 def test_unsupported_metadata(metadata):
