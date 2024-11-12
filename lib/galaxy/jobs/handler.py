@@ -231,7 +231,7 @@ class StopSignalException(Exception):
 class BaseJobHandlerQueue(Monitors):
     STOP_SIGNAL = object()
 
-    def __init__(self, app: MinimalManagerApp, dispatcher):
+    def __init__(self, app: MinimalManagerApp, dispatcher: "DefaultJobDispatcher"):
         """
         Initializes the Queue, creates (unstarted) monitoring thread.
         """
@@ -309,7 +309,8 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             with transaction(session):
                 session.commit()
 
-    def _check_job_at_startup(self, job):
+    def _check_job_at_startup(self, job: model.Job):
+        assert job.tool_id is not None
         if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
             log.warning(f"({job.id}) Tool '{job.tool_id}' removed from tool config, unable to recover job")
             self.job_wrapper(job).fail(
@@ -1207,7 +1208,7 @@ class DefaultJobDispatcher:
         for runner in self.job_runners.values():
             runner.start()
 
-    def url_to_destination(self, url):
+    def url_to_destination(self, url: str):
         """This is used by the runner mapper (a.k.a. dynamic runner) and
         recovery methods to have runners convert URLs to destinations.
 
