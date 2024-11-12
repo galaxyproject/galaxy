@@ -3994,7 +3994,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
                     if how_type == "tabular" and len(cols) != 2:
                         raise exceptions.MessageException(
                             f"Relabel mapping file contains {len(cols)} columns on line {i}, but 2 are required"
-                            )
+                        )
                     new_labels_dict[cols[from_index]] = cols[to_index]
             except IndexError:
                 raise exceptions.MessageException(
