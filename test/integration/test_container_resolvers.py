@@ -480,6 +480,11 @@ class MulledTestCase:
     mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
 
 
+class MulledTestCaseWithBuildInfo:
+    tool_id = "mulled_example_multi_2"
+    mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
+
+
 class TestDefaultContainerResolvers(DockerContainerResolverTestCase, ContainerResolverTestCases, MulledTestCase):
     """
     Test default container resolvers
