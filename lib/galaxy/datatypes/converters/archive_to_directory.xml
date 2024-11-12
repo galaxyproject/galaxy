@@ -20,6 +20,8 @@
         <param format="tar,zip" name="input1" type="data"/>
         <param name="__target_datatype__" type="select" label="Target data type">
             <option value="directory">directory</option>
+            <option value="zarr">zarr</option>
+            <option value="ome_zarr">ome_zarr</option>
         </param>
     </inputs>
     <outputs provided_metadata_file="metadata_json">
