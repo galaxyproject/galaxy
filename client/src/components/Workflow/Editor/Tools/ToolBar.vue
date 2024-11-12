@@ -17,7 +17,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { BButton, BButtonGroup, BFormInput } from "bootstrap-vue";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
-import { BoxSelect } from "lucide-vue";
+import { BoxSelect, Workflow } from "lucide-vue";
 import { storeToRefs } from "pinia";
 import { computed, toRefs, watch } from "vue";
 
@@ -27,6 +27,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import { type CommentTool } from "@/stores/workflowEditorToolbarStore";
 import { match } from "@/utils/utils";
 
+import { AutoLayoutAction } from "../Actions/stepActions";
 import { useSelectionOperations } from "./useSelectionOperations";
 import { useToolLogic } from "./useToolLogic";
 
@@ -46,7 +47,7 @@ library.add(
     faTrash
 );
 
-const { toolbarStore, undoRedoStore, commentStore } = useWorkflowStores();
+const { toolbarStore, undoRedoStore, commentStore, workflowId } = useWorkflowStores();
 const { snapActive, currentTool } = toRefs(toolbarStore);
 
 const { commentOptions } = toolbarStore;
@@ -128,7 +129,7 @@ function onRemoveAllFreehand() {
 
 useToolLogic();
 
-const { ctrl_1, ctrl_2, ctrl_3, ctrl_4, ctrl_5, ctrl_6, ctrl_7, ctrl_8 } = useMagicKeys();
+const { ctrl_1, ctrl_2, ctrl_3, ctrl_4, ctrl_5, ctrl_6, ctrl_7, ctrl_8, ctrl_9 } = useMagicKeys();
 
 whenever(ctrl_1!, () => (toolbarStore.currentTool = "pointer"));
 whenever(ctrl_2!, () => (toolbarStore.snapActive = !toolbarStore.snapActive));
@@ -138,6 +139,7 @@ whenever(ctrl_5!, () => (toolbarStore.currentTool = "frameComment"));
 whenever(ctrl_6!, () => (toolbarStore.currentTool = "freehandComment"));
 whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
 whenever(ctrl_8!, () => (toolbarStore.currentTool = "boxSelect"));
+whenever(ctrl_9!, () => autoLayout());
 
 const toggleVisibilityButtonTitle = computed(() => {
     if (toolbarVisible.value) {
@@ -148,6 +150,10 @@ const toggleVisibilityButtonTitle = computed(() => {
 });
 
 const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateSelection } = useSelectionOperations();
+
+function autoLayout() {
+    undoRedoStore.applyAction(new AutoLayoutAction(workflowId));
+}
 </script>
 
 <template>
@@ -241,6 +247,16 @@ const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateS
                     variant="outline-primary"
                     @click="onClickBoxSelect">
                     <BoxSelect />
+                </BButton>
+
+                <BButton
+                    v-b-tooltip.hover.noninteractive.right
+                    title="Auto Layout (Ctrl + 9)"
+                    data-tool="auto_layout"
+                    class="button"
+                    variant="outline-primary"
+                    @click="autoLayout">
+                    <Workflow />
                 </BButton>
             </template>
 

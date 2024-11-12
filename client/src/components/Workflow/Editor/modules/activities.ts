@@ -1,6 +1,5 @@
 import { faSave as farSave } from "@fortawesome/free-regular-svg-icons";
 import {
-    faAlignLeft,
     faDownload,
     faEdit,
     faHistory,
@@ -93,16 +92,6 @@ export const workflowEditorActivities = [
         title: "Save as",
         tooltip: "Save a copy of this workflow",
         visible: false,
-        click: true,
-        optional: true,
-    },
-    {
-        title: "Auto Layout",
-        id: "workflow-auto-layout",
-        description: "Automatically align the nodes in this workflow.",
-        tooltip: "Automatically align nodes",
-        icon: faAlignLeft,
-        visible: true,
         click: true,
         optional: true,
     },
