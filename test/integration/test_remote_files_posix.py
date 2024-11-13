@@ -112,6 +112,7 @@ class TestPosixFileSourceIntegration(PosixFileSourceSetup, integration_util.Inte
 
 class TestPreferLinksPosixFileSourceIntegration(PosixFileSourceSetup, integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
+    framework_tool_and_types = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -146,3 +147,14 @@ class TestPreferLinksPosixFileSourceIntegration(PosixFileSourceSetup, integratio
             assert dataset.external_filename.endswith("/root/a")
             assert os.path.exists(dataset.external_filename)
             assert open(dataset.external_filename).read() == "a\n"
+            payload = self.dataset_populator.run_tool(
+                tool_id="cat",
+                inputs={
+                    "input1": {"src": "hda", "id": new_dataset["id"]},
+                },
+                history_id=history_id,
+            )
+            derived_dataset = payload["outputs"][0]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            derived_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=derived_dataset)
+            assert derived_content.strip() == "a"
