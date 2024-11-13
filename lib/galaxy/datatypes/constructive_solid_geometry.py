@@ -813,18 +813,19 @@ def get_next_line(fh):
         fh.readline()
     return line.strip()
 
+
 class VtkXml(GenericXml):
     """Format for defining VTK (XML based) and its sub-datatypes. https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html"""
 
     edam_format = "edam:format_2332"
     file_ext = "vtkxml"
 
-    #The same MetadataElements are also available for legacy VTK datatypes.
+    # The same MetadataElements are also available for legacy VTK datatypes.
     MetadataElement(name="vtk_version", default=None, desc="Vtk version", readonly=True, optional=True, visible=True)
     MetadataElement(name="file_format", default=None, desc="File format", readonly=True, optional=True, visible=True)
     MetadataElement(name="dataset_type", default=None, desc="Dataset type", readonly=True, optional=True, visible=True)
 
-    def extract_version(self, line: str) -> str:      
+    def extract_version(self, line: str) -> str:
         match = re.search(r'version="([^"]+)"', line)
         if match:
             return match.group(1)
@@ -843,10 +844,9 @@ class VtkXml(GenericXml):
             first_line = file.readline()
             if first_line.startswith("<?xml"):
                 first_line = file.readline()
-            dataset.metadata.vtk_version = self.extract_version(first_line) 
+            dataset.metadata.vtk_version = self.extract_version(first_line)
             dataset.metadata.dataset_type = self.extract_type(first_line)
-        
-            
+
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text for VTK dataset files."""
         if not dataset.dataset.purged:
@@ -868,4 +868,3 @@ class VtkXml(GenericXml):
         False
         """
         return self._has_root_element_in_prefix(file_prefix, "VTKFile")
-    
