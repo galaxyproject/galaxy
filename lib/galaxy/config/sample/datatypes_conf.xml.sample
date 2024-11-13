@@ -975,7 +975,7 @@
     <datatype extension="gmsh.msh" type="galaxy.datatypes.constructive_solid_geometry:GmshMsh" display_in_upload="true"/>
     <datatype extension="gmsh.geo" type="galaxy.datatypes.constructive_solid_geometry:GmshGeo" display_in_upload="true"/>
     <datatype extension="zset.geof" type="galaxy.datatypes.constructive_solid_geometry:ZsetGeof" display_in_upload="true"/>
-    <datatype extension="vtu" type="galaxy.datatypes.constructive_solid_geometry:Vtu" display_in_upload="true"/>
+    <datatype extension="vtkxml" type="galaxy.datatypes.constructive_solid_geometry:VtkXml" display_in_upload="true"/>
     <datatype extension="stl" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" description="STL is a file format native to the stereolithography CAD software created by 3D Systems."/>
     <!-- Povray script -->
     <datatype extension="pov" type="galaxy.datatypes.text:Text" subclass="true" display_in_upload="true"/>
@@ -1008,7 +1008,7 @@
     <datatype extension="fits" type="galaxy.datatypes.binary:FITS" mimetype="application/octet-stream" display_in_upload="true" description="Flexible Image Transport System (FITS) used in Astronomy"/>
     <datatype extension="chain" type="galaxy.datatypes.chain:Chain" display_in_upload="true" description_url="https://genome.ucsc.edu/goldenPath/help/chain.html"/>
     <datatype extension="ucsc.net" type="galaxy.datatypes.chain:Net" display_in_upload="true" description_url="https://genome.ucsc.edu/goldenPath/help/net.html"/>
-    </registration>
+  </registration>
   <sniffers>
     <!--
     The order in which Galaxy attempts to determine data types is
@@ -1034,7 +1034,7 @@
     <sniffer type="galaxy.datatypes.mothur:Axes"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyBinary"/>
-    <sniffer type="galaxy.datatypes.constructive_solid_geometry:Vtu"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkXml"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkBinary"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:NeperTess"/>

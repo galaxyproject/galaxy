@@ -5,6 +5,7 @@ Constructive Solid Geometry file formats.
 """
 
 import abc
+import re
 from typing import (
     List,
     Optional,
@@ -816,41 +817,57 @@ def get_next_line(fh):
 class VtkXml(GenericXml):
     """Format for defining VTK (XML based) and its sub-datatypes. https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html"""
 
-    edam_data = "edam:data_3671"
-    edam_format = "edam:format_3621"
+    edam_format = "edam:format_2332"
     file_ext = "vtkxml"
 
+    #The same MetadataElements are also available for legacy VTK datatypes.
     MetadataElement(name="vtk_version", default=None, desc="Vtk version", readonly=True, optional=True, visible=True)
     MetadataElement(name="file_format", default=None, desc="File format", readonly=True, optional=True, visible=True)
     MetadataElement(name="dataset_type", default=None, desc="Dataset type", readonly=True, optional=True, visible=True)
 
+    def extract_version(self, line: str) -> str:      
+        match = re.search(r'version="([^"]+)"', line)
+        if match:
+            return match.group(1)
+        return "?"
+
+    def extract_type(self, line: str) -> str:
+        match = re.search(r'type="([^"]+)"', line)
+        if match:
+            return match.group(1)
+        return "?"
+
     def set_meta(self, dataset: DatasetProtocol, **kwd) -> None:
-        """
-        Sets metadata for the VTK dataset, including VTK version, file format, and dataset type.
-        """
+        file_format = "XML"; 
         file_path = dataset.file_name
         try:
-            tree = ET.parse(file_path)
-            root = tree.getroot()
+            with open(file_path, 'r') as file:
+                first_line = file.readline().strip()  
+          
+            if "version" in first_line:
+                vtk_version = self.extract_version(first_line) 
+            if "type" in first_line:
+                dataset_type = self.extract_type(first_line) 
 
-            vtk_version = root.attrib.get("version", "unknown")  
-            file_format = root.attrib.get("type", "unknown")   
-            dataset_type = root.tag                              
             self.vtk_version = vtk_version
             self.file_format = file_format
             self.dataset_type = dataset_type
 
-        except ET.ParseError:
-            self.vtk_version = "unknown"
-            self.file_format = "unknown"
-            self.dataset_type = "unknown"
-
+        except FileNotFoundError:
+            self.vtk_version = "?"
+            self.file_format = "?"
+            self.dataset_type = "?"
+        except Exception as e:
+            self.vtk_version = "?"
+            self.file_format = "?"
+            self.dataset_type = "?"
+            print(f"Error processing file {file_path}: {e}")
             
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text for VTK dataset files."""
         if not dataset.dataset.purged:
             dataset.peek = "VTK Dataset file"
-            dataset.blurb = data.get_file_peek(dataset.get_file_name())
+            dataset.blurb = f"type {dataset.metadata.dataset_type} version {dataset.metadata.vtk_version}"
         else:
             dataset.peek = "File does not exist"
             dataset.blurb = "File purged from disk"
@@ -859,11 +876,25 @@ class VtkXml(GenericXml):
         """Check for the key string 'VTKFile' to determine if this is a VTK dataset file.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('data.vtk')
-        >>> Vtk().sniff(fname)
+        >>> fname = get_test_fname('data.vtu')
+        >>> VtkXml().sniff(fname)
         True
         >>> fname = get_test_fname('solid.xml')
-        >>> Vtk().sniff(fname)
+        >>> VtkXml().sniff(fname)
         False
         """
         return self._has_root_element_in_prefix(file_prefix, "VTKFile")
+    
+
+
+    def test_vtkXml_set_meta():
+        vtkXml = VtkXml()
+        with util.get_input_files("data.vtu") as input_files:
+            dataset = util.MockDataset(1)
+            dataset.set_file_name(input_files[0])
+
+            vtkXml.set_meta(dataset)
+
+        assert dataset.metadata.vtk_version == "1.0"  
+        assert dataset.metadata.file_format == "XML"  
+        assert dataset.metadata.dataset_type == "UnstructuredGrid"
