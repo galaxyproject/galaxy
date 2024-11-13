@@ -12,9 +12,10 @@ import {
     faSitemap,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
+import { watchImmediate } from "@vueuse/core";
 import { computed, type Ref } from "vue";
 
-import type { Activity } from "@/stores/activityStore";
+import { type Activity, useActivityStore } from "@/stores/activityStore";
 
 export const workflowEditorActivities = [
     {
@@ -127,9 +128,23 @@ export const workflowEditorActivities = [
     },
 ] as const satisfies Readonly<Activity[]>;
 
-interface SpecialActivityOptions {
+interface ActivityLogicOptions {
+    activityBarId: string;
     isNewTempWorkflow: boolean;
-    hasChanges: boolean;
+}
+
+export function useActivityLogic(options: Ref<ActivityLogicOptions>) {
+    const store = useActivityStore(options.value.activityBarId);
+
+    watchImmediate(
+        () => options.value.isNewTempWorkflow,
+        (value) => {
+            store.setMeta("workflow-run", "disabled", value);
+        }
+    );
+}
+
+interface SpecialActivityOptions {
     hasInvalidConnections: boolean;
 }
 

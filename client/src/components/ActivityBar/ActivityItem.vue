@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { Placement } from "@popperjs/core";
+import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import type { ActivityVariant } from "@/stores/activityStore";
+import { type ActivityVariant, useActivityStore } from "@/stores/activityStore";
 import localize from "@/utils/localization";
 
 import TextShort from "@/components/Common/TextShort.vue";
@@ -18,6 +19,7 @@ interface Option {
 
 export interface Props {
     id: string;
+    activityBarId: string;
     title?: string;
     icon?: string | object;
     indicator?: number;
@@ -55,17 +57,21 @@ function onClick(evt: MouseEvent): void {
         router.push(props.to);
     }
 }
+
+const store = useActivityStore(props.activityBarId);
+const meta = computed(() => store.metaForId(props.id));
 </script>
 
 <template>
     <Popper reference-is="span" popper-is="span" :placement="tooltipPlacement">
         <template v-slot:reference>
             <b-nav-item
-                :id="id"
+                :id="`activity-${id}`"
                 class="activity-item position-relative my-1 p-2"
                 :class="{ 'nav-item-active': isActive }"
                 :link-classes="`variant-${props.variant}`"
                 :aria-label="localize(title)"
+                :disabled="meta?.disabled"
                 @click="onClick">
                 <span v-if="progressStatus" class="progress">
                     <div
