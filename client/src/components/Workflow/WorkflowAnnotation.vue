@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { faClock } from "@fortawesome/free-regular-svg-icons";
-import { faHdd } from "@fortawesome/free-solid-svg-icons";
+import { faExclamation, faHdd } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import { isRegisteredUser } from "@/api";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
+import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import TextSummary from "../Common/TextSummary.vue";
@@ -21,6 +23,7 @@ interface Props {
     invocationUpdateTime?: string;
     historyId: string;
     showDetails?: boolean;
+    newHistoryTarget?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -69,6 +72,15 @@ const workflowTags = computed(() => {
                 <span class="d-flex flex-gapx-1 align-items-center">
                     <FontAwesomeIcon :icon="faHdd" />Input History:
                     <SwitchToHistoryLink :history-id="props.historyId" />
+                    <BBadge
+                        v-if="props.newHistoryTarget && useHistoryStore().currentHistoryId !== props.historyId"
+                        v-b-tooltip.hover.noninteractive
+                        data-description="new history badge"
+                        role="button"
+                        variant="info"
+                        title="Results generated in a new history. Click on history name to switch to that history.">
+                        <FontAwesomeIcon :icon="faExclamation" />
+                    </BBadge>
                 </span>
             </div>
             <slot name="middle-content" />
