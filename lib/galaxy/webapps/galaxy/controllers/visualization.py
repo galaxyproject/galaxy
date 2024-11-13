@@ -11,7 +11,7 @@ from galaxy import (
     model,
     web,
 )
-from galaxy.exceptions import MessageException
+from galaxy.exceptions import MessageException, ObjectNotFound
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.model.base import transaction
@@ -40,6 +40,16 @@ class VisualizationController(
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
+
+    def get_visualization(self, trans, visualization_id, check_ownership=True, check_accessible=False):
+        """
+        Get a Visualization from the database by id, verifying ownership.
+        """
+        visualization = trans.sa_session.get(model.Visualization, trans.security.decode_id(visualization_id))
+        if not visualization:
+            raise ObjectNotFound("Visualization not found")
+        else:
+            return self.security_check(trans, visualization, check_ownership, check_accessible)
 
     #
     # -- Functions for operating on visualizations. --
