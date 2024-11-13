@@ -838,30 +838,15 @@ class VtkXml(GenericXml):
         return "?"
 
     def set_meta(self, dataset: DatasetProtocol, **kwd) -> None:
-        file_format = "XML"; 
-        file_path = dataset.file_name
-        try:
-            with open(file_path, 'r') as file:
-                first_line = file.readline().strip()  
-          
-            if "version" in first_line:
-                vtk_version = self.extract_version(first_line) 
-            if "type" in first_line:
-                dataset_type = self.extract_type(first_line) 
-
-            self.vtk_version = vtk_version
-            self.file_format = file_format
-            self.dataset_type = dataset_type
-
-        except FileNotFoundError:
-            self.vtk_version = "?"
-            self.file_format = "?"
-            self.dataset_type = "?"
-        except Exception as e:
-            self.vtk_version = "?"
-            self.file_format = "?"
-            self.dataset_type = "?"
-            print(f"Error processing file {file_path}: {e}")
+        dataset.metadata.file_format = "XML"; 
+        with open(dataset.get_file_name(), errors="ignore") as file:
+            # first line might be the xml header, so we take two
+            first_line = file.readline()
+            if first_line.startswith("<?xml"):
+                first_line = file.readline()
+            dataset.metadata.vtk_version = self.extract_version(first_line) 
+            dataset.metadata.dataset_type = self.extract_type(first_line)
+        
             
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text for VTK dataset files."""
@@ -885,16 +870,3 @@ class VtkXml(GenericXml):
         """
         return self._has_root_element_in_prefix(file_prefix, "VTKFile")
     
-
-
-    def test_vtkXml_set_meta():
-        vtkXml = VtkXml()
-        with util.get_input_files("data.vtu") as input_files:
-            dataset = util.MockDataset(1)
-            dataset.set_file_name(input_files[0])
-
-            vtkXml.set_meta(dataset)
-
-        assert dataset.metadata.vtk_version == "1.0"  
-        assert dataset.metadata.file_format == "XML"  
-        assert dataset.metadata.dataset_type == "UnstructuredGrid"
