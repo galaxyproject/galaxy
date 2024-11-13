@@ -31,7 +31,6 @@ from galaxy.datatypes.sniff import (
 )
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.xml import GenericXml
-from xml.etree import ElementTree as ET
 
 if TYPE_CHECKING:
     from io import TextIOBase
@@ -838,7 +837,7 @@ class VtkXml(GenericXml):
         return "?"
 
     def set_meta(self, dataset: DatasetProtocol, **kwd) -> None:
-        dataset.metadata.file_format = "XML"; 
+        dataset.metadata.file_format = "XML"
         with open(dataset.get_file_name(), errors="ignore") as file:
             # first line might be the xml header, so we take two
             first_line = file.readline()
