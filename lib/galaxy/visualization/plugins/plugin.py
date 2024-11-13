@@ -242,6 +242,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         else:
             self.config["logo"] = None
 
+
 class ScriptVisualizationPlugin(VisualizationPlugin):
     """
     A visualization plugin that starts by loading a single (js) script.
