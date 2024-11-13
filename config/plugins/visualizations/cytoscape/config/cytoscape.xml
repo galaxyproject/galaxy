@@ -13,7 +13,10 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="chart" src="script.js"/>
+    <requirements>
+        <requirement type="npm" version="0.0.2" package="@galaxyproject/cytoscape"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>
         <input>
             <label>Curve style</label>
@@ -70,10 +73,6 @@
                     <value>grid</value>
                 </data>
                 <data>
-                    <label>Null</label>
-                    <value>null</value>
-                </data>
-                <data>
                     <label>Preset</label>
                     <value>preset</value>
                 </data>
@@ -87,18 +86,7 @@
             <label>Directed/Undirected</label>
             <name>directed</name>
             <help>Select a kind of edge.</help>
-            <type>select</type>
-            <display>radio</display>
-            <data>
-                <data>
-                    <label>Directed</label>
-                    <value>triangle</value>
-                </data>
-                <data>
-                    <label>Undirected</label>
-                    <value></value>
-                </data>
-            </data>
+            <type>boolean</type>
         </input>
         <input>
             <label>Graph algorithms</label>
@@ -110,10 +98,6 @@
                 <data>
                     <label>Breadth First Search</label>
                     <value>bfs</value>
-                </data>
-                <data>
-                    <label>Depth First Search</label>
-                    <value>dfs</value>
                 </data>
                 <data>
                     <label>Depth First Search</label>
