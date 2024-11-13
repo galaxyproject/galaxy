@@ -238,9 +238,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
                 logo_path = os.path.join(self.static_path, f"logo.{file_format}")
                 if os.path.isfile(logo_path):
                     self.config["logo"] = logo_path
-                    break
-        else:
-            self.config["logo"] = None
+                    return
 
 
 class ScriptVisualizationPlugin(VisualizationPlugin):
