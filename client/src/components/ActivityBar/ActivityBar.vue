@@ -237,8 +237,9 @@ defineExpose({
                                 @click="toggleSidebar()" />
                             <ActivityItem
                                 v-else-if="activity.id === 'admin' || activity.panel"
-                                :id="`activity-${activity.id}`"
+                                :id="`${activity.id}`"
                                 :key="activity.id"
+                                :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
                                 :is-active="panelActivityIsActive(activity)"
                                 :title="activity.title"
@@ -247,8 +248,9 @@ defineExpose({
                                 @click="toggleSidebar(activity.id, activity.to)" />
                             <ActivityItem
                                 v-else
-                                :id="`activity-${activity.id}`"
+                                :id="`${activity.id}`"
                                 :key="activity.id"
+                                :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
                                 :is-active="isActiveRoute(activity.to)"
                                 :title="activity.title"
@@ -269,7 +271,8 @@ defineExpose({
                     title="Notifications"
                     @click="toggleSidebar('notifications')" />
                 <ActivityItem
-                    id="activity-settings"
+                    id="settings"
+                    :activity-bar-id="props.activityBarId"
                     :icon="props.optionsIcon"
                     :is-active="isActiveSideBar('settings')"
                     :title="props.optionsTitle"
@@ -277,7 +280,8 @@ defineExpose({
                     @click="toggleSidebar('settings')" />
                 <ActivityItem
                     v-if="isAdmin && showAdmin"
-                    id="activity-admin"
+                    id="admin"
+                    :activity-bar-id="props.activityBarId"
                     icon="user-cog"
                     :is-active="isActiveSideBar('admin')"
                     title="Admin"
@@ -287,8 +291,9 @@ defineExpose({
                 <template v-for="activity in props.specialActivities">
                     <ActivityItem
                         v-if="activity.panel"
-                        :id="`activity-${activity.id}`"
+                        :id="`${activity.id}`"
                         :key="activity.id"
+                        :activity-bar-id="props.activityBarId"
                         :icon="activity.icon"
                         :is-active="panelActivityIsActive(activity)"
                         :title="activity.title"
@@ -298,8 +303,9 @@ defineExpose({
                         @click="toggleSidebar(activity.id, activity.to)" />
                     <ActivityItem
                         v-else
-                        :id="`activity-${activity.id}`"
+                        :id="`${activity.id}`"
                         :key="activity.id"
+                        :activity-bar-id="props.activityBarId"
                         :icon="activity.icon"
                         :is-active="isActiveRoute(activity.to)"
                         :title="activity.title"

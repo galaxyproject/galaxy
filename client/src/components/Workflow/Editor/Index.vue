@@ -205,7 +205,7 @@ import { Services } from "../services";
 import { InsertStepAction, useStepActions } from "./Actions/stepActions";
 import { CopyIntoWorkflowAction, SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
-import { useSpecialWorkflowActivities, workflowEditorActivities } from "./modules/activities";
+import { useActivityLogic, useSpecialWorkflowActivities, workflowEditorActivities } from "./modules/activities";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
@@ -449,9 +449,7 @@ export default {
 
         const { specialWorkflowActivities } = useSpecialWorkflowActivities(
             computed(() => ({
-                hasChanges: hasChanges.value,
                 hasInvalidConnections: hasInvalidConnections.value,
-                isNewTempWorkflow: isNewTempWorkflow.value,
             }))
         );
 
@@ -459,6 +457,13 @@ export default {
             hasInvalidConnections.value
                 ? "Workflow has invalid connections, review and remove invalid connections"
                 : "Save Workflow"
+        );
+
+        useActivityLogic(
+            computed(() => ({
+                activityBarId: "workflow-editor",
+                isNewTempWorkflow: isNewTempWorkflow.value,
+            }))
         );
 
         return {

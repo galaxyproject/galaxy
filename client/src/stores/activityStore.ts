@@ -2,10 +2,11 @@
  * Stores the Activity Bar state
  */
 import { useDebounceFn, watchImmediate } from "@vueuse/core";
-import { computed, type Ref, ref } from "vue";
+import { computed, type Ref, ref, set } from "vue";
 
 import { useHashedUserId } from "@/composables/hashedUserId";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import { ensureDefined } from "@/utils/assertions";
 
 import { defaultActivities } from "./activitySetup";
 import { defineScopedStore } from "./scopedStore";
@@ -40,8 +41,19 @@ export interface Activity {
     variant?: ActivityVariant;
 }
 
+export interface ActivityMeta {
+    disabled: boolean;
+}
+
+function defaultActivityMeta(): ActivityMeta {
+    return {
+        disabled: false,
+    };
+}
+
 export const useActivityStore = defineScopedStore("activityStore", (scope) => {
     const activities: Ref<Array<Activity>> = useUserLocalStorage(`activity-store-activities-${scope}`, []);
+    const activityMeta: Ref<Record<string, ActivityMeta>> = ref({});
 
     const { hashedUserId } = useHashedUserId();
 
@@ -154,6 +166,28 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         }
     }
 
+    const metaForId = computed(() => (activityId: string) => {
+        let meta = activityMeta.value[activityId];
+
+        if (!meta) {
+            set(activityMeta.value, activityId, defaultActivityMeta());
+            meta = ensureDefined(activityMeta.value[activityId]);
+        }
+
+        return meta;
+    });
+
+    function setMeta<K extends keyof ActivityMeta>(activityId: string, metaKey: K, value: ActivityMeta[K]) {
+        let meta = activityMeta.value[activityId];
+
+        if (!meta) {
+            set(activityMeta.value, activityId, defaultActivityMeta());
+            meta = ensureDefined(activityMeta.value[activityId]);
+        }
+
+        set(meta, metaKey, value);
+    }
+
     watchImmediate(
         () => hashedUserId.value,
         () => {
@@ -165,6 +199,9 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         toggledSideBar,
         toggleSideBar,
         activities,
+        activityMeta,
+        metaForId,
+        setMeta,
         getAll,
         remove,
         setAll,
