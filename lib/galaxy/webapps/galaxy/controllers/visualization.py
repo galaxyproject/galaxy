@@ -11,7 +11,7 @@ from galaxy import (
     model,
     web,
 )
-from galaxy.exceptions import MessageException, ObjectNotFound
+from galaxy.exceptions import MessageException
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.model.base import transaction
@@ -47,7 +47,7 @@ class VisualizationController(
         """
         visualization = trans.sa_session.get(model.Visualization, trans.security.decode_id(visualization_id))
         if not visualization:
-            raise ObjectNotFound("Visualization not found")
+            raise MessageException("Visualization not found")
         else:
             return self.security_check(trans, visualization, check_ownership, check_accessible)
 
