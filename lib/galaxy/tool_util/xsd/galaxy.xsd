@@ -68,6 +68,10 @@ List of behavior changes associated with profile versions:
 - Do not use Galaxy python environment for `data_source_async` tools.
 - Drop request parameters received by data source tools that are not declared in `<request_param_translation>` section.
 
+### 24.2
+
+- require a valid `data_ref` attribute for `data_column` parameters
+
 ### Examples
 
 A normal tool:
