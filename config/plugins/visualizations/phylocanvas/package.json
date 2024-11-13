@@ -15,6 +15,7 @@
         "build": "parcel build src/script.js --dist-dir static"
     },
     "devDependencies": {
+        "buffer": "^6.0.3",
         "parcel": "^2.12.0",
         "process": "^0.11.10"
     }
