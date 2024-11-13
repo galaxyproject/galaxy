@@ -847,23 +847,23 @@ class VtkXml(GenericXml):
 
             
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        """Set the peek and blurb text"""
+        """Set the peek and blurb text for VTK dataset files."""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.get_file_name())
-            "VTK Unstructured Grid file (VTU)"
+            dataset.peek = "VTK Dataset file"
+            dataset.blurb = data.get_file_peek(dataset.get_file_name())
         else:
-            dataset.peek = "file does not exist"
-            dataset.blurb = "file purged from disk"
+            dataset.peek = "File does not exist"
+            dataset.blurb = "File purged from disk"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
-        """ "Checking for keystring - 'VTKFile type="UnstructuredGrid"'.
+        """Check for the key string 'VTKFile' to determine if this is a VTK dataset file.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( 'data.vtu' )
-        >>> Vtu().sniff( fname )
+        >>> fname = get_test_fname('data.vtk')
+        >>> Vtk().sniff(fname)
         True
-        >>> fname = get_test_fname( 'solid.xml' )
-        >>> Vtu().sniff( fname )
+        >>> fname = get_test_fname('solid.xml')
+        >>> Vtk().sniff(fname)
         False
         """
-        return self._has_root_element_in_prefix(file_prefix, 'VTKFile type="UnstructuredGrid"')
+        return self._has_root_element_in_prefix(file_prefix, "VTKFile")
