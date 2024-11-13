@@ -813,40 +813,38 @@ def get_next_line(fh):
         fh.readline()
     return line.strip()
 
-class Vtu(GenericXml):
-    """Format for defining VTU (VTK Unstructured Grid) data https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html"""
+class VtkXml(GenericXml):
+    """Format for defining VTK (XML based) and its sub-datatypes. https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html"""
 
     edam_data = "edam:data_3671"
     edam_format = "edam:format_3621"
-    file_ext = "vtu"
+    file_ext = "vtkxml"
 
+    MetadataElement(name="vtk_version", default=None, desc="Vtk version", readonly=True, optional=True, visible=True)
     MetadataElement(name="file_format", default=None, desc="File format", readonly=True, optional=True, visible=True)
-    MetadataElement(name="num_cells", desc="Number of cells in the mesh", param_type="int", optional=True)
-    MetadataElement(name="num_points", desc="Number of points in the mesh", param_type="int", optional=True)
+    MetadataElement(name="dataset_type", default=None, desc="Dataset type", readonly=True, optional=True, visible=True)
 
     def set_meta(self, dataset: DatasetProtocol, **kwd) -> None:
-        """Set metadata for VTU files, including number of cells and points."""
+        """
+        Sets metadata for the VTK dataset, including VTK version, file format, and dataset type.
+        """
+        file_path = dataset.file_name
         try:
-            with open(dataset.get_file_name(), "r") as file:
-                tree = ET.parse(file)
-                root = tree.getroot()
+            tree = ET.parse(file_path)
+            root = tree.getroot()
 
-                unstructured_grid = root.find(".//UnstructuredGrid")
-                if unstructured_grid is not None:
-                    
-                    piece = unstructured_grid.find(".//Piece")
-                    if piece is not None:
-                        num_cells = piece.get("NumberOfCells")
-                        num_points = piece.get("NumberOfPoints")
+            vtk_version = root.attrib.get("version", "unknown")  
+            file_format = root.attrib.get("type", "unknown")   
+            dataset_type = root.tag                              
+            self.vtk_version = vtk_version
+            self.file_format = file_format
+            self.dataset_type = dataset_type
 
-                        
-                        dataset.metadata.file_format = "VTK Unstructured Grid"
-                        dataset.metadata.num_cells = int(num_cells) if num_cells else None
-                        dataset.metadata.num_points = int(num_points) if num_points else None
-        except Exception as e:
-            dataset.metadata.file_format = None
-            dataset.metadata.num_cells = None
-            dataset.metadata.num_points = None
+        except ET.ParseError:
+            self.vtk_version = "unknown"
+            self.file_format = "unknown"
+            self.dataset_type = "unknown"
+
             
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
