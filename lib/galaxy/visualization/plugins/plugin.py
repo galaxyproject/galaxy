@@ -80,12 +80,11 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         base_url = context.get("base_url", "")
         self.base_url = "/".join((base_url, self.name)) if base_url else self.name
         self.static_path = self._get_static_path(self.path)
-        if self.static_path and os.path.exists(os.path.join(self.static_path, "logo.png")):
-            self.config["logo"] = f"{self.static_path}/logo.png"
         template_cache_dir = context.get("template_cache_dir", None)
         additional_template_paths = context.get("additional_template_paths", [])
         self._set_up_template_plugin(template_cache_dir, additional_template_paths=additional_template_paths)
         self.resource_parser = resource_parser.ResourceParser(app)
+        self._set_logo()
 
     def render(self, trans=None, embedded=None, **kwargs):
         """
@@ -232,6 +231,16 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         # as is for now
         return embedded
 
+    def _set_logo(self):
+        if self.static_path:
+            supported_formats = ["png", "svg"]
+            for file_format in supported_formats:
+                logo_path = os.path.join(self.static_path, f"logo.{file_format}")
+                if os.path.isfile(logo_path):
+                    self.config["logo"] = logo_path
+                    break
+        else:
+            self.config["logo"] = None
 
 class ScriptVisualizationPlugin(VisualizationPlugin):
     """
