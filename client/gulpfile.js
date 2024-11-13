@@ -37,7 +37,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "ts_visjs",
     "venn",
 ];
-const INSTALL_PLUGIN_BUILD_IDS = ["ngl", "msa", "openlayers"]; // todo: derive from XML
+const INSTALL_PLUGIN_BUILD_IDS = ["ngl", "msa", "openlayers", "vizarr"]; // todo: derive from XML
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
 
