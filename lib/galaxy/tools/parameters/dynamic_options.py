@@ -34,7 +34,6 @@ from galaxy.tools.parameters.workflow_utils import (
 )
 from galaxy.util import (
     Element,
-    safe_contains,
     string_as_bool,
 )
 from galaxy.util.template import fill_template
