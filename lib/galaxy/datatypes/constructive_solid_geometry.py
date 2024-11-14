@@ -863,7 +863,7 @@ class VtkXml(GenericXml):
         >>> fname = get_test_fname('data.vtu')
         >>> VtkXml().sniff(fname)
         True
-        >>> fname = get_test_fname('solid.xml')
+        >>> fname = get_test_fname('1.phyloxml')
         >>> VtkXml().sniff(fname)
         False
         """
