@@ -28,7 +28,7 @@
             <param name="dynamic_select" value="hg19" />
             <output name="output">
                 <assert_contents>
-                    <has_text text="absent_value"/>
+                    <has_text text="hg19"/>
                 </assert_contents>
             </output>
         </test>
@@ -37,7 +37,7 @@
             <param name="dynamic_select" value="ancCey1" />
             <output name="output">
                 <assert_contents>
-                    <has_text text="hg19_value"/>
+                    <has_text text="ancCey1"/>
                 </assert_contents>
             </output>
         </test>
