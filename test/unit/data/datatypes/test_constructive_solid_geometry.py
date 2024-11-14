@@ -1,16 +1,14 @@
 from galaxy.datatypes.constructive_solid_geometry import VtkXml
 from .util import (
-    get_input_files,
-    MockDataset,
+    get_dataset,
+    MockDatasetDataset,
 )
 
 
 def test_vtkXml_set_meta():
     vtkXml = VtkXml()
-    with get_input_files("data.vtu") as input_files:
-        dataset = MockDataset(1)
-        dataset.set_file_name(input_files[0])
-
+    with get_dataset("data.vtu") as dataset:
+        dataset.dataset = MockDatasetDataset(dataset.get_file_name())
         vtkXml.set_meta(dataset)
 
     assert dataset.metadata.vtk_version == "0.1"
