@@ -35,11 +35,6 @@
         <!-- selecting the value that is already in the data table (and therefor filtered) fails -->
         <test expect_failure="true">
             <param name="dynamic_select" value="ancCey1" />
-            <output name="output">
-                <assert_contents>
-                    <has_text text="ancCey1"/>
-                </assert_contents>
-            </output>
         </test>
     </tests>
     <help>
