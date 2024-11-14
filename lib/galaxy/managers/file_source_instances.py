@@ -334,45 +334,45 @@ class FileSourceInstancesManager:
         self._save(persisted_file_source)
         return self._to_model(trans, persisted_file_source)
 
-    def test_modify_instance(
+    async def test_modify_instance(
         self, trans: ProvidesUserContext, id: UUID4, payload: TestModifyInstancePayload
     ) -> PluginStatus:
         persisted_file_source = self._get(trans, id)
         if isinstance(payload, TestUpgradeInstancePayload):
-            return self._plugin_status_for_upgrade(trans, payload, persisted_file_source)
+            return await self._plugin_status_for_upgrade(trans, payload, persisted_file_source)
         else:
             assert isinstance(payload, TestUpdateInstancePayload)
-            return self._plugin_status_for_update(trans, payload, persisted_file_source)
+            return await self._plugin_status_for_update(trans, payload, persisted_file_source)
 
-    def _plugin_status_for_update(
+    async def _plugin_status_for_update(
         self, trans: ProvidesUserContext, payload: TestUpdateInstancePayload, persisted_file_source: UserFileSource
     ) -> PluginStatus:
         template = self._get_template(persisted_file_source)
         target = UpdateTestTarget(persisted_file_source, payload)
-        return self._plugin_status_for_template(trans, target, template)
+        return await self._plugin_status_for_template(trans, target, template)
 
-    def _plugin_status_for_upgrade(
+    async def _plugin_status_for_upgrade(
         self, trans: ProvidesUserContext, payload: TestUpgradeInstancePayload, persisted_file_source: UserFileSource
     ) -> PluginStatus:
         template = self._get_and_validate_target_upgrade_template(persisted_file_source, payload)
         target = UpgradeTestTarget(persisted_file_source, payload)
-        return self._plugin_status_for_template(trans, target, template)
+        return await self._plugin_status_for_template(trans, target, template)
 
-    def plugin_status_for_instance(self, trans: ProvidesUserContext, id: UUID4):
+    async def plugin_status_for_instance(self, trans: ProvidesUserContext, id: UUID4):
         persisted_file_source = self._get(trans, id)
-        return self._plugin_status(trans, persisted_file_source, to_template_reference(persisted_file_source))
+        return await self._plugin_status(trans, persisted_file_source, to_template_reference(persisted_file_source))
 
-    def plugin_status(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> PluginStatus:
+    async def plugin_status(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> PluginStatus:
         target = CreateTestTarget(payload, UserFileSource)
-        return self._plugin_status(trans, target, payload)
+        return await self._plugin_status(trans, target, payload)
 
-    def _plugin_status(
+    async def _plugin_status(
         self, trans: ProvidesUserContext, target: CanTestPluginStatus, template_reference: TemplateReference
     ):
         template = self._catalog.find_template(template_reference)
-        return self._plugin_status_for_template(trans, target, template)
+        return await self._plugin_status_for_template(trans, target, template)
 
-    def _plugin_status_for_template(
+    async def _plugin_status_for_template(
         self, trans: ProvidesUserContext, payload: CanTestPluginStatus, template: FileSourceTemplate
     ):
         template_definition_status = status_template_definition(template)
@@ -396,7 +396,7 @@ class FileSourceInstancesManager:
         if template_settings_status.is_not_ok:
             return PluginStatus(**status_kwds)
         assert configuration
-        file_source, connection_status = self._connection_status(trans, payload, configuration)
+        file_source, connection_status = await self._connection_status(trans, payload, configuration)
         status_kwds["connection"] = connection_status
         if connection_status.is_not_ok:
             return PluginStatus(**status_kwds)
@@ -443,7 +443,7 @@ class FileSourceInstancesManager:
             exception = e
         return configuration, settings_exception_to_status(exception)
 
-    def _connection_status(
+    async def _connection_status(
         self, trans: ProvidesUserContext, target: CanTestPluginStatus, configuration: FileSourceConfiguration
     ) -> Tuple[Optional[BaseFilesSource], PluginAspectStatus]:
         file_source = None
@@ -471,7 +471,7 @@ class FileSourceInstancesManager:
                 # a connection problem if we cannot
                 browsable_file_source = cast(SupportsBrowsing, file_source)
                 user_context = ProvidesFileSourcesUserContext(trans)
-                browsable_file_source.list("/", recursive=False, user_context=user_context)
+                await browsable_file_source.list("/", recursive=False, user_context=user_context)
         except Exception as e:
             exception = e
         return file_source, connection_exception_to_status("file source", exception)

@@ -15,5 +15,6 @@ skip_if_no_google_drive_access_token = pytest.mark.skipif(
 
 
 @skip_if_no_google_drive_access_token
-def test_file_source():
-    assert_simple_file_realize(FILE_SOURCES_CONF)
+@pytest.mark.asyncio
+async def test_file_source():
+    await assert_simple_file_realize(FILE_SOURCES_CONF)

@@ -2,4 +2,5 @@ mock-ssh-server
 pkce
 pykwalify
 pytest
+pytest-asyncio
 testfixtures
