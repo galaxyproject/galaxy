@@ -33,7 +33,7 @@ ID_MAP: Dict[int, str] = {
 }
 
 
-def test_encode_data():
+def test_decode_data():
     tool_source = tool_source_for("parameters/gx_data")
     bundle = input_models_for_tool_source(tool_source)
     request_state = RequestToolState({"parameter": {"src": "hda", "id": EXAMPLE_ID_1_ENCODED}})
@@ -53,7 +53,7 @@ def test_encode_collection():
     assert decoded_state.input_state["parameter"]["id"] == EXAMPLE_ID_1
 
 
-def test_encode_repeat():
+def test_decode_repeat():
     tool_source = tool_source_for("parameters/gx_repeat_data")
     bundle = input_models_for_tool_source(tool_source)
     request_state = RequestToolState({"parameter": [{"data_parameter": {"src": "hda", "id": EXAMPLE_ID_1_ENCODED}}]})
@@ -63,7 +63,7 @@ def test_encode_repeat():
     assert decoded_state.input_state["parameter"][0]["data_parameter"]["id"] == EXAMPLE_ID_1
 
 
-def test_encode_section():
+def test_decode_section():
     tool_source = tool_source_for("parameters/gx_section_data")
     bundle = input_models_for_tool_source(tool_source)
     request_state = RequestToolState({"parameter": {"data_parameter": {"src": "hda", "id": EXAMPLE_ID_1_ENCODED}}})
@@ -73,7 +73,7 @@ def test_encode_section():
     assert decoded_state.input_state["parameter"]["data_parameter"]["id"] == EXAMPLE_ID_1
 
 
-def test_encode_conditional():
+def test_decode_conditional():
     tool_source = tool_source_for("identifier_in_conditional")
     bundle = input_models_for_tool_source(tool_source)
     request_state = RequestToolState(
