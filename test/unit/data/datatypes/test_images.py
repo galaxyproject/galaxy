@@ -9,8 +9,8 @@ from galaxy.datatypes.images import (
     Tiff,
 )
 from .util import (
-    get_input_files,
-    MockDataset,
+    get_dataset,
+    MockDatasetDataset,
 )
 
 # Define test decorator
@@ -22,10 +22,9 @@ def __test(image_cls: Type[Image], input_filename: str):
 
         def test():
             image = image_cls()
-            with get_input_files(input_filename) as input_files:
-                dataset = MockDataset(1)
-                dataset.set_file_name(input_files[0])
-                image.set_meta(dataset)  # type: ignore[arg-type]
+            with get_dataset(input_filename) as dataset:
+                dataset.dataset = MockDatasetDataset(dataset.get_file_name())
+                image.set_meta(dataset)
                 test_impl(dataset.metadata)
 
         return test
