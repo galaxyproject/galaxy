@@ -14,6 +14,7 @@ import { BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { undeleteWorkflow } from "@/components/Workflow/workflows.services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
@@ -25,7 +26,7 @@ import AsyncButton from "@/components/Common/AsyncButton.vue";
 import WorkflowRunButton from "@/components/Workflow/WorkflowRunButton.vue";
 
 interface Props {
-    workflow: any;
+    workflow: StoredWorkflowDetailed;
     published?: boolean;
     editor?: boolean;
     current?: boolean;
