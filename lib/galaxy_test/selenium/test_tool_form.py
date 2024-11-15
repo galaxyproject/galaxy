@@ -191,9 +191,9 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
         assert (
             error_input1.text
-            == "parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
+            == "Parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
         )
-        assert error_col.text == "parameter 'col': an invalid option ('3') was selected (valid options: 1)"
+        assert error_col.text == "Parameter 'col': an invalid option ('3') was selected (valid options: 1)"
         # validate errors when inputs are missing
         self.components.tool_form.parameter_data_input_collection(parameter="input1").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
@@ -201,8 +201,8 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
         error_col_names = self.components.tool_form.parameter_error(parameter="col_names").wait_for_visible()
         assert error_input1.text == "Please provide a value for this option."
-        assert error_col.text == "parameter 'col': requires a value, but no legal values defined"
-        assert error_col_names.text == "parameter 'col_names': requires a value, but no legal values defined"
+        assert error_col.text == "Parameter 'col': requires a value, but no legal values defined"
+        assert error_col_names.text == "Parameter 'col_names': requires a value, but no legal values defined"
         # validate warnings when inputs are restored
         self.components.tool_form.parameter_data_input_single(parameter="input1").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
@@ -210,9 +210,9 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
         assert (
             error_input1.text
-            == "parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
+            == "Parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
         )
-        assert error_col.text == "parameter 'col': an invalid option ('3') was selected (valid options: 1)"
+        assert error_col.text == "Parameter 'col': an invalid option ('3') was selected (valid options: 1)"
 
     @selenium_test
     def test_rerun_dataset_collection_element(self):

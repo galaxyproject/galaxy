@@ -11941,6 +11941,21 @@ export interface components {
              */
             workflow_step_id: number;
         };
+        /** InvocationFailureWorkflowParameterInvalidResponse */
+        InvocationFailureWorkflowParameterInvalidResponse: {
+            /**
+             * Details
+             * @description Message raised by validator
+             */
+            details: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            reason: "workflow_parameter_invalid";
+            /** Workflow parameter step that failed validation */
+            workflow_step_id: number;
+        };
         /** InvocationInput */
         InvocationInput: {
             /**
@@ -12022,7 +12037,8 @@ export interface components {
             | components["schemas"]["InvocationFailureExpressionEvaluationFailedResponse"]
             | components["schemas"]["InvocationFailureWhenNotBooleanResponse"]
             | components["schemas"]["InvocationUnexpectedFailureResponse"]
-            | components["schemas"]["InvocationEvaluationWarningWorkflowOutputNotFoundResponse"];
+            | components["schemas"]["InvocationEvaluationWarningWorkflowOutputNotFoundResponse"]
+            | components["schemas"]["InvocationFailureWorkflowParameterInvalidResponse"];
         /** InvocationOutput */
         InvocationOutput: {
             /**

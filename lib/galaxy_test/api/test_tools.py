@@ -934,7 +934,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             with self.dataset_populator.test_history(require_new=False) as history_id:
                 response = self._run("gx_data_column_multiple", history_id, inputs, assert_ok=False).json()
                 assert "err_msg" in response, str(response)
-                assert "parameter 'parameter': an invalid option" in response["err_msg"]
+                assert "Parameter 'parameter': an invalid option" in response["err_msg"]
 
             with self.dataset_populator.test_history(require_new=True) as history_id:
                 response = self._run("gx_data_column_optional", history_id, inputs, assert_ok=True)
@@ -2217,7 +2217,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 self._run_implicit_collection_and_reduce(history_id=history_id, param="X")
         details = self.dataset_populator.get_history_dataset_details(history_id=history_id, hid=3, assert_ok=False)
         assert details["state"] == "error"
-        assert "parameter 'col': an invalid option" in details["misc_info"]
+        assert "Parameter 'col': an invalid option" in details["misc_info"]
 
     def _run_implicit_collection_and_reduce(self, history_id, param):
         fasta_path = self.test_data_resolver.get_filename("1.fasta")

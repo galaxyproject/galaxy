@@ -12,7 +12,7 @@ defineProps<Props>();
 </script>
 
 <template>
-    <BPopover :target="target" triggers="hover" placement="bottom">
+    <BPopover v-if="target" :target="target" triggers="hover" placement="bottom">
         <HelpTerm :term="term" />
     </BPopover>
 </template>

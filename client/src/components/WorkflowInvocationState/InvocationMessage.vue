@@ -20,6 +20,7 @@ type ReasonToLevel = {
     when_not_boolean: "error";
     unexpected_failure: "error";
     workflow_output_not_found: "warning";
+    workflow_parameter_invalid: "error";
 };
 
 const level: ReasonToLevel = {
@@ -34,6 +35,7 @@ const level: ReasonToLevel = {
     when_not_boolean: "error",
     unexpected_failure: "error",
     workflow_output_not_found: "warning",
+    workflow_parameter_invalid: "error",
 };
 
 const levelClasses = {
@@ -165,6 +167,10 @@ const infoString = computed(() => {
         return `Defined workflow output '${invocationMessage.output_name}' was not found in step ${
             invocationMessage.workflow_step_id + 1
         }.`;
+    } else if (reason === "workflow_parameter_invalid") {
+        return `Workflow parameter on step ${invocationMessage.workflow_step_id + 1} failed validation: ${
+            invocationMessage.details
+        }`;
     } else {
         return reason;
     }

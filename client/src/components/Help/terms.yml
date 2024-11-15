@@ -27,7 +27,12 @@ unix:
     debug what is wrong with the execution of an application.
 
     More information on stack traces can be found on [Wikipedia](https://en.wikipedia.org/wiki/Stack_trace).
+programming:
+  python:
+    regex: |
+      Regular expressions are patterns used to match character combinations in strings. This input accepts Python-style regular expressions, find more information about these in [this Python for Biologists tutorial](https://pythonforbiologists.com/tutorial/regex.html).
 
+      The website [regex101](https://regex101.com/) is a useful playground to explore regular expressions (be sure to enable "Python" as your flavor) and language models such as ChatGPT can help interactively build up and explain regular expressions from natural language prompts or examples.
 galaxy:
   collections:
     flatList: |
