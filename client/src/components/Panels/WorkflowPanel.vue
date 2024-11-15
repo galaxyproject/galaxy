@@ -7,6 +7,7 @@ import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScr
 import { useToast } from "@/composables/toast";
 
 import ActivityPanel from "./ActivityPanel.vue";
+import FavoritesButton from "./Buttons/FavoritesButton.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
 import WorkflowCardList from "@/components/Workflow/List/WorkflowCardList.vue";
@@ -31,6 +32,21 @@ const allLoaded = computed(() => totalWorkflowsCount.value <= workflows.value.le
 const filterText = ref("");
 
 const workflows = ref<Workflow[]>([]);
+
+const showFavorites = computed({
+    get() {
+        return filterText.value.includes("is:bookmarked");
+    },
+    set(value) {
+        if (value) {
+            if (!filterText.value.includes("is:bookmarked")) {
+                filterText.value = `is:bookmarked ${filterText.value}`.trim();
+            }
+        } else {
+            filterText.value = filterText.value.replace("is:bookmarked", "").trim();
+        }
+    },
+});
 
 const loadWorkflowsOptions = {
     sortBy: "update_time",
@@ -102,7 +118,8 @@ function refresh() {
 
 watchImmediate(
     () => filterText.value,
-    () => {
+    (newFilterText) => {
+        showFavorites.value = newFilterText.includes("#favorites");
         resetWorkflows();
         fetchKey = filterText.value;
         load();
@@ -125,10 +142,9 @@ function scrollToTop() {
 
 <template>
     <ActivityPanel title="Workflows">
-        <!-- favorites Button disabled until workflows api is fixed -->
-        <!--template v-slot:header-buttons>
-            <FavoritesButton v-model="showFavorites"></FavoritesButton>
-        </template-->
+        <template v-slot:header-buttons>
+            <FavoritesButton v-model="showFavorites" tooltip="Show bookmarked" />
+        </template>
 
         <DelayedInput
             v-model="filterText"
