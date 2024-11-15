@@ -1,6 +1,7 @@
 /**
  * Stores the Activity Bar state
  */
+import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { useDebounceFn, watchImmediate } from "@vueuse/core";
 import { computed, type Ref, ref, set } from "vue";
 
@@ -21,7 +22,7 @@ export interface Activity {
     // unique identifier
     id: string;
     // icon to be displayed in activity bar
-    icon: string | object;
+    icon: IconDefinition;
     // indicate if this activity can be modified and/or deleted
     mutable?: boolean;
     // indicate wether this activity can be disabled by the user

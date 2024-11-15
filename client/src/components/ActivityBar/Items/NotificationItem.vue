@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
@@ -11,7 +12,7 @@ const { totalUnreadCount } = storeToRefs(useNotificationsStore());
 export interface Props {
     id: string;
     title: string;
-    icon: string;
+    icon: IconDefinition;
     isActive: boolean;
 }
 

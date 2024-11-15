@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { faEllipsisH, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { faBell, faEllipsisH, faUserCog } from "@fortawesome/free-solid-svg-icons";
 import { watchImmediate } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref } from "vue";
@@ -263,7 +264,7 @@ defineExpose({
                 <NotificationItem
                     v-if="isConfigLoaded && config.enable_notification_system"
                     id="activity-notifications"
-                    icon="bell"
+                    :icon="faBell"
                     :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
                     title="Notifications"
                     @click="toggleSidebar('notifications')" />
@@ -279,7 +280,7 @@ defineExpose({
                     v-if="isAdmin && showAdmin"
                     id="admin"
                     :activity-bar-id="props.activityBarId"
-                    icon="user-cog"
+                    :icon="faUserCog"
                     :is-active="isActiveSideBar('admin')"
                     title="Admin"
                     tooltip="Administer this Galaxy"

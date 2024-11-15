@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { Placement } from "@popperjs/core";
 import { computed } from "vue";
@@ -21,7 +23,7 @@ export interface Props {
     id: string;
     activityBarId: string;
     title?: string;
-    icon?: string | object;
+    icon?: IconDefinition;
     indicator?: number;
     isActive?: boolean;
     tooltip?: string;
@@ -35,7 +37,7 @@ export interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     title: undefined,
-    icon: "question",
+    icon: () => faQuestion,
     indicator: 0,
     isActive: false,
     options: undefined,

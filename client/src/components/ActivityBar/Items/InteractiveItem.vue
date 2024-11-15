@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
@@ -13,7 +14,7 @@ const totalCount = computed(() => entryPoints.value.length);
 export interface Props {
     id: string;
     title: string;
-    icon: string | object;
+    icon: IconDefinition;
     isActive: boolean;
     to: string;
 }
