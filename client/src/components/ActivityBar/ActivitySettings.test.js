@@ -50,7 +50,7 @@ describe("ActivitySettings", () => {
                 activityBarId: undefined,
             },
             stubs: {
-                icon: { template: "<div></div>" },
+                FontAwesomeIcon: { template: "<div></div>" },
             },
         });
         await activityStore.sync();
@@ -102,7 +102,7 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const trash = items.at(0).find("[data-icon='trash']");
+        const trash = items.at(0).find("[data-description='delete activity']");
         expect(trash.exists()).toBeTruthy();
         expect(activityStore.getAll().length).toBe(1);
         trash.trigger("click");
