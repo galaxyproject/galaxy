@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
@@ -15,8 +14,6 @@ import FavoritesButton from "./Buttons/FavoritesButton.vue";
 import PanelViewMenu from "./Menus/PanelViewMenu.vue";
 import ToolBox from "./ToolBox.vue";
 import Heading from "@/components/Common/Heading.vue";
-
-library.add(faCaretDown);
 
 const props = defineProps({
     workflow: { type: Boolean, default: false },
@@ -185,7 +182,7 @@ watch(
                                 </Heading>
                             </div>
                             <div v-if="!showAdvanced" class="panel-header-buttons">
-                                <FontAwesomeIcon icon="caret-down" />
+                                <FontAwesomeIcon :icon="faCaretDown" />
                             </div>
                         </div>
                     </template>
