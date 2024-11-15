@@ -149,7 +149,6 @@ dev = [
     "pytest-shard",
     "responses",
     "rucio-clients>=33.6.0 ; python_version>='3.9'",  # https://github.com/galaxyproject/galaxy/pull/17156
-    "scipy>=1.14.1; python_version>='3.10'",  # ase dependency, Python 3.13 support
     "selenium",
     "seletools",
     "Sphinx>=4.0",  # support docutils 0.17
@@ -238,6 +237,9 @@ keep-runtime-typing = true
 "lib/tool_shed_client/schema/trs_service_info.py" = ["UP006", "UP007"]
 
 [tool.uv]
+constraint-dependencies = [
+    "scipy>=1.14.1; python_version>='3.10'",  # Python 3.13 support
+]
 default-groups = []
 extra-index-url = ["https://wheels.galaxyproject.org/simple"]
 index-strategy = "unsafe-best-match"
