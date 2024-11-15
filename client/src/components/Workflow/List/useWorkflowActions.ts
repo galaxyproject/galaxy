@@ -5,7 +5,6 @@ import {
     deleteWorkflow as deleteWorkflowService,
     updateWorkflow as updateWorkflowService,
 } from "@/components/Workflow/workflows.services";
-import { useConfig } from "@/composables/config";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import { copy } from "@/utils/clipboard";
@@ -17,7 +16,6 @@ type Workflow = any;
 
 export function useWorkflowActions(workflow: Ref<Workflow>, refreshCallback: () => void) {
     const toast = useToast();
-    const { config } = useConfig() as { config: Record<string, any> };
 
     const bookmarkLoading = ref(false);
 
@@ -30,18 +28,6 @@ export function useWorkflowActions(workflow: Ref<Workflow>, refreshCallback: () 
             });
 
             toast.info(`Workflow ${checked ? "added to" : "removed from"} bookmarks`);
-
-            if (checked) {
-                config.stored_workflow_menu_entries.push({
-                    id: workflow.value.id,
-                    name: workflow.value.name,
-                });
-            } else {
-                const indexToRemove = config.stored_workflow_menu_entries.findIndex(
-                    (w: Workflow) => w.id === workflow.value.id
-                );
-                config.stored_workflow_menu_entries.splice(indexToRemove, 1);
-            }
         } catch (error) {
             toast.error("Failed to update workflow bookmark status");
         } finally {
