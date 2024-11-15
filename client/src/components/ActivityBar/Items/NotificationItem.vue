@@ -4,7 +4,7 @@ import { computed } from "vue";
 
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
-import ActivityItem from "components/ActivityBar/ActivityItem.vue";
+import ActivityItem from "@/components/ActivityBar/ActivityItem.vue";
 
 const { totalUnreadCount } = storeToRefs(useNotificationsStore());
 
@@ -31,6 +31,7 @@ const tooltip = computed(() =>
 <template>
     <ActivityItem
         :id="id"
+        :activity-bar-id="'notifications'"
         :icon="icon"
         :indicator="totalUnreadCount"
         :is-active="isActive"
