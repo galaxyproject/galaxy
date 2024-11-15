@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
@@ -12,6 +13,7 @@ describe("ActivityItem", () => {
         wrapper = mount(mountTarget, {
             propsData: {
                 id: "activity-test-id",
+                activityBarId: "activity-bar-test-id",
                 icon: "activity-test-icon",
                 indicator: 0,
                 progressPercentage: 0,
@@ -20,6 +22,7 @@ describe("ActivityItem", () => {
                 to: null,
                 tooltip: "activity-test-tooltip",
             },
+            pinia: createTestingPinia(),
             localVue,
             stubs: {
                 FontAwesomeIcon: true,
