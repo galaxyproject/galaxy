@@ -1,6 +1,22 @@
 /**
  * List of built-in activities
  */
+import {
+    faChartBar,
+    faColumns,
+    faDatabase,
+    faFile,
+    faFileContract,
+    faFolder,
+    faHdd,
+    faLaptop,
+    faList,
+    faPlay,
+    faSitemap,
+    faUpload,
+    faWrench,
+} from "@fortawesome/free-solid-svg-icons";
+
 import { type Activity } from "@/stores/activityStore";
 import { type EventData } from "@/stores/eventStore";
 
@@ -8,7 +24,7 @@ export const defaultActivities = [
     {
         anonymous: false,
         description: "Displays currently running interactive tools (ITs), if these are enabled by the administrator.",
-        icon: "fa-laptop",
+        icon: faLaptop,
         id: "interactivetools",
         mutable: false,
         optional: false,
@@ -21,7 +37,7 @@ export const defaultActivities = [
     {
         anonymous: true,
         description: "Opens a data dialog, allowing uploads from URL, pasted content or disk.",
-        icon: "upload",
+        icon: faUpload,
         id: "upload",
         mutable: false,
         optional: false,
@@ -34,7 +50,7 @@ export const defaultActivities = [
     {
         anonymous: true,
         description: "Displays the tool panel to search and access all available tools.",
-        icon: "wrench",
+        icon: faWrench,
         id: "tools",
         mutable: false,
         optional: false,
@@ -47,7 +63,7 @@ export const defaultActivities = [
     {
         anonymous: true,
         description: "Displays a panel to search and access workflows.",
-        icon: "sitemap",
+        icon: faSitemap,
         id: "workflows",
         mutable: false,
         optional: true,
@@ -60,7 +76,7 @@ export const defaultActivities = [
     {
         anonymous: false,
         description: "Displays all workflow runs.",
-        icon: "fa-list",
+        icon: faList,
         id: "invocation",
         mutable: false,
         optional: true,
@@ -73,7 +89,7 @@ export const defaultActivities = [
     {
         anonymous: true,
         description: "Displays the list of available visualizations.",
-        icon: "chart-bar",
+        icon: faChartBar,
         id: "visualizations",
         mutable: false,
         optional: true,
@@ -86,7 +102,7 @@ export const defaultActivities = [
     {
         anonymous: true,
         description: "Displays the list of all histories.",
-        icon: "fa-hdd",
+        icon: faHdd,
         id: "histories",
         mutable: false,
         optional: true,
@@ -99,7 +115,7 @@ export const defaultActivities = [
     {
         anonymous: false,
         description: "Displays the history selector panel and opens History Multiview in the center panel.",
-        icon: "fa-columns",
+        icon: faColumns,
         id: "multiview",
         mutable: false,
         optional: true,
@@ -112,7 +128,7 @@ export const defaultActivities = [
     {
         anonymous: false,
         description: "Displays all of your datasets across all histories.",
-        icon: "fa-folder",
+        icon: faFolder,
         id: "datasets",
         mutable: false,
         optional: true,
@@ -125,7 +141,7 @@ export const defaultActivities = [
     {
         anonymous: true,
         description: "Display and create new pages.",
-        icon: "fa-file-contract",
+        icon: faFileContract,
         id: "pages",
         mutable: false,
         optional: true,
@@ -138,7 +154,7 @@ export const defaultActivities = [
     {
         anonymous: false,
         description: "Display Data Libraries with datasets available to all users.",
-        icon: "fa-database",
+        icon: faDatabase,
         id: "libraries",
         mutable: false,
         optional: true,
@@ -155,7 +171,7 @@ export function convertDropData(data: EventData): Activity | null {
         return {
             anonymous: true,
             description: "Displays this dataset.",
-            icon: "fa-file",
+            icon: faFile,
             id: `dataset-${data.id}`,
             mutable: true,
             optional: true,
@@ -170,7 +186,7 @@ export function convertDropData(data: EventData): Activity | null {
         return {
             anonymous: false,
             description: data.description as string,
-            icon: "fa-play",
+            icon: faPlay,
             id: `workflow-${data.id}`,
             mutable: true,
             optional: true,

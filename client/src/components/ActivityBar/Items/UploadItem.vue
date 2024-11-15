@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { storeToRefs } from "pinia";
 import { onMounted } from "vue";
 
@@ -11,7 +12,7 @@ import ActivityItem from "@/components/ActivityBar/ActivityItem.vue";
 export interface Props {
     id: string;
     title: string;
-    icon: string | object;
+    icon: IconDefinition;
     tooltip: string;
 }
 

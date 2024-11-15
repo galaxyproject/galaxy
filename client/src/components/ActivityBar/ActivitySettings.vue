@@ -1,21 +1,11 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSquare, faStar as faStarRegular } from "@fortawesome/free-regular-svg-icons";
-import { faCheckSquare, faStar, faThumbtack, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faStar as faStarRegular } from "@fortawesome/free-regular-svg-icons";
+import { faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, type ComputedRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { type Activity, useActivityStore } from "@/stores/activityStore";
-
-library.add({
-    faCheckSquare,
-    faSquare,
-    faStar,
-    faStarRegular,
-    faTrash,
-    faThumbtack,
-});
 
 const props = defineProps<{
     activityBarId: string;
@@ -90,7 +80,7 @@ function executeActivity(activity: Activity) {
                 <div class="d-flex justify-content-between align-items-start">
                     <span class="d-flex justify-content-between w-100">
                         <span>
-                            <icon class="mr-1" :icon="activity.icon" />
+                            <FontAwesomeIcon class="mr-1" :icon="activity.icon" />
                             <span v-localize class="font-weight-bold">{{
                                 activity.title || "No title available"
                             }}</span>
@@ -104,7 +94,7 @@ function executeActivity(activity: Activity) {
                                 title="Delete Activity"
                                 variant="link"
                                 @click.stop="onRemove(activity)">
-                                <FontAwesomeIcon icon="fa-trash" fa-fw />
+                                <FontAwesomeIcon :icon="faTrash" fa-fw />
                             </BButton>
                             <BButton
                                 v-if="activity.visible"
@@ -113,7 +103,7 @@ function executeActivity(activity: Activity) {
                                 title="Hide in Activity Bar"
                                 variant="link"
                                 @click.stop="onFavorite(activity)">
-                                <FontAwesomeIcon icon="fas fa-star" fa-fw />
+                                <FontAwesomeIcon :icon="faStar" fa-fw />
                             </BButton>
                             <BButton
                                 v-else
@@ -122,7 +112,7 @@ function executeActivity(activity: Activity) {
                                 title="Show in Activity Bar"
                                 variant="link"
                                 @click.stop="onFavorite(activity)">
-                                <FontAwesomeIcon icon="far fa-star" fa-fw />
+                                <FontAwesomeIcon :icon="faStarRegular" fa-fw />
                             </BButton>
                         </div>
                     </span>
