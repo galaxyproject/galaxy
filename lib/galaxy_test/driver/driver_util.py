@@ -192,6 +192,7 @@ def setup_galaxy_config(
     data_manager_config_file = _resolve_relative_config_paths(data_manager_config_file)
     tool_config_file = _resolve_relative_config_paths(tool_conf)
     tool_data_table_config_path = _resolve_relative_config_paths(tool_data_table_config_path)
+
     config = dict(
         admin_users="test@bx.psu.edu",
         allow_library_path_paste=True,
