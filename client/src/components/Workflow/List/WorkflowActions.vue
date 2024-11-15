@@ -18,12 +18,13 @@ import { BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
 
 import { useWorkflowActions } from "./useWorkflowActions";
 
 interface Props {
-    workflow: any;
+    workflow: StoredWorkflowDetailed;
     published?: boolean;
     editor?: boolean;
     current?: boolean;
