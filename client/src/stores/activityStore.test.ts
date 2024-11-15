@@ -1,3 +1,4 @@
+import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { createPinia, setActivePinia } from "pinia";
 
 import { useActivityStore } from "@/stores/activityStore";
@@ -8,7 +9,7 @@ jest.mock("./activitySetup", () => ({
         {
             anonymous: false,
             description: "a-description",
-            icon: "a-icon",
+            icon: "a-icon" as unknown as IconDefinition,
             id: "a-id",
             mutable: false,
             optional: false,
@@ -25,7 +26,7 @@ const newActivities = [
     {
         anonymous: false,
         description: "a-description-new",
-        icon: "a-icon-new",
+        icon: "a-icon-new" as unknown as IconDefinition,
         id: "a-id",
         mutable: false,
         optional: false,
@@ -38,7 +39,7 @@ const newActivities = [
     {
         anonymous: false,
         description: "b-description-new",
-        icon: "b-icon-new",
+        icon: "b-icon-new" as unknown as IconDefinition,
         id: "b-id",
         mutable: true,
         optional: false,
