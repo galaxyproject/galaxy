@@ -120,7 +120,6 @@ import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import { mapActions, mapState, storeToRefs } from "pinia";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
-import { debounce } from "underscore";
 import { refreshContentsWrapper } from "utils/data";
 
 import { canMutateHistory } from "@/api";
@@ -288,7 +287,7 @@ export default {
                 this.onUpdate();
             }
         },
-        onUpdate: debounce(function (e) {
+        onUpdate() {
             this.disabled = true;
             console.debug("ToolForm - Updating input parameters.", this.formData);
             updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData)
@@ -298,7 +297,7 @@ export default {
                 .finally(() => {
                     this.disabled = false;
                 });
-        }, 500),
+        },
         onChangeVersion(newVersion) {
             this.requestTool(newVersion);
         },
