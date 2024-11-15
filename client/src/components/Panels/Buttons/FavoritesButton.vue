@@ -15,9 +15,14 @@ library.add(faStar, faRegStar);
 interface Props {
     value?: boolean;
     query?: string;
+    tooltip?: string;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    value: false,
+    query: undefined,
+    tooltip: "Show favorites",
+});
 
 const currentValue = computed(() => props.value ?? false);
 const toggle = ref(false);
@@ -43,7 +48,7 @@ const tooltipText = computed(() => {
         if (toggle.value) {
             return "Clear";
         } else {
-            return "Show favorites";
+            return props.tooltip;
         }
     }
 });
