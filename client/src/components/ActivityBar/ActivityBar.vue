@@ -115,10 +115,7 @@ const isSideBarOpen = computed(() => activityStore.toggledSideBar !== "");
  * Checks if an activity that has a panel should have the `is-active` prop
  */
 function panelActivityIsActive(activity: Activity) {
-    return (
-        isActiveSideBar(activity.id) ||
-        (activity.to !== undefined && activity.to !== null && isActiveRoute(activity.to))
-    );
+    return isActiveSideBar(activity.id) || isActiveRoute(activity.to);
 }
 
 /**
