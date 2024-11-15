@@ -223,7 +223,6 @@ def setup_galaxy_config(
         running_functional_tests=True,
         template_cache_path=template_cache_path,
         tool_config_file=tool_config_file,
-        tool_data_path="test/functional/tool-data/",
         tool_data_table_config_path=tool_data_table_config_path,
         tool_path=tool_path,
         update_integrated_tool_panel=update_integrated_tool_panel,
