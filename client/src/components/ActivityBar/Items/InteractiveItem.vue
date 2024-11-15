@@ -4,7 +4,7 @@ import { computed } from "vue";
 
 import { useEntryPointStore } from "@/stores/entryPointStore";
 
-import ActivityItem from "components/ActivityBar/ActivityItem.vue";
+import ActivityItem from "@/components/ActivityBar/ActivityItem.vue";
 
 const { entryPoints } = storeToRefs(useEntryPointStore());
 
@@ -35,6 +35,7 @@ const tooltip = computed(() =>
     <ActivityItem
         v-if="totalCount > 0"
         :id="id"
+        :activity-bar-id="id"
         :icon="icon"
         :indicator="totalCount"
         :is-active="isActive"
