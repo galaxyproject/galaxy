@@ -142,9 +142,7 @@ describe("WorkflowAnnotation renders", () => {
 
             const indicatorsLink = wrapper.find(SELECTORS.INDICATORS_LINK);
             expect(indicatorsLink.text()).toBe(WORKFLOW_OWNER);
-            expect(indicatorsLink.attributes("title")).toContain(
-                `Click to view all published workflows by '${WORKFLOW_OWNER}'`
-            );
+            expect(indicatorsLink.attributes("title")).toContain(`Published by '${WORKFLOW_OWNER}'`);
         }
         await checkHasIndicators("run_form");
         await checkHasIndicators("invocation");
