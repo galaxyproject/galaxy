@@ -82,7 +82,7 @@ const runPath = computed(
                 title="Add to bookmarks"
                 tooltip="Add to bookmarks. This workflow will appear in the left tool panel."
                 size="sm"
-                @click="toggleBookmark">
+                @click="toggleBookmark(true)">
                 <FontAwesomeIcon v-if="!bookmarkLoading" :icon="farStar" fixed-width />
                 <FontAwesomeIcon v-else :icon="faSpinner" spin fixed-width />
             </BButton>
@@ -93,7 +93,7 @@ const runPath = computed(
                 variant="link"
                 title="Remove bookmark"
                 size="sm"
-                @click="toggleBookmark">
+                @click="toggleBookmark(false)">
                 <FontAwesomeIcon v-if="!bookmarkLoading" :icon="faStar" fixed-width />
                 <FontAwesomeIcon v-else :icon="faSpinner" spin fixed-width />
             </BButton>
