@@ -100,6 +100,21 @@ const viewIcon = computed(() => {
     }
 });
 
+const showFavorites = computed({
+    get() {
+        return query.value.includes("#favorites");
+    },
+    set(value) {
+        if (value) {
+            if (!query.value.includes("#favorites")) {
+                query.value = `#favorites ${query.value}`.trim();
+            }
+        } else {
+            query.value = query.value.replace("#favorites", "").trim();
+        }
+    },
+});
+
 async function initializeTools() {
     try {
         await toolStore.fetchTools();
@@ -131,13 +146,12 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
     emit("onInsertWorkflowSteps", workflowId, workflowStepCount);
 }
 
-function onFavorites(favorites: boolean) {
-    if (favorites) {
-        query.value = "#favorites";
-    } else {
-        query.value = "";
+watch(
+    () => query.value,
+    (newQuery) => {
+        showFavorites.value = newQuery.includes("#favorites");
     }
-}
+);
 </script>
 
 <template>
@@ -177,7 +191,7 @@ function onFavorites(favorites: boolean) {
                     </template>
                 </PanelViewMenu>
                 <div v-if="!showAdvanced" class="panel-header-buttons">
-                    <FavoritesButton :query="query" @toggleFavorites="onFavorites" />
+                    <FavoritesButton v-model="showFavorites" />
                 </div>
             </div>
         </div>
