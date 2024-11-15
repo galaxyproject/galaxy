@@ -119,7 +119,7 @@ function refresh() {
 watchImmediate(
     () => filterText.value,
     (newFilterText) => {
-        showFavorites.value = newFilterText.includes("#favorites");
+        showFavorites.value = newFilterText.includes("is:bookmarked");
         resetWorkflows();
         fetchKey = filterText.value;
         load();
