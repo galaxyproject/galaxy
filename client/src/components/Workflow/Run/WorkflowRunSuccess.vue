@@ -33,7 +33,7 @@ const targetHistories = props.invocations.reduce((histories, invocation) => {
 }, [] as string[]);
 const wasNewHistoryTarget =
     props.invocations.length > 0 &&
-    props.invocations[0]?.history_id &&
+    !!props.invocations[0]?.history_id &&
     historyStore.currentHistoryId !== props.invocations[0].history_id;
 </script>
 
@@ -51,7 +51,7 @@ const wasNewHistoryTarget =
         <WorkflowInvocationState
             v-else-if="props.invocations.length === 1 && props.invocations[0]"
             :invocation-id="props.invocations[0].id"
-            :new-history-target="wasNewHistoryTarget ? props.invocations[0].history_id : undefined"
+            :new-history-target="wasNewHistoryTarget"
             is-full-page
             success />
         <div id="webhook-view"></div>

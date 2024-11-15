@@ -109,7 +109,7 @@ function refreshTable() {
             :extra-props="extraProps"
             :embedded="forStoredWorkflow || forHistory || forBatch">
             <template v-slot:expanded="{ rowData }">
-                <span class="position-absolute ml-4" :data-invocation-id="rowData.id">
+                <span class="mb-2" :data-invocation-id="rowData.id">
                     <small>
                         <b>Last updated: <UtcDate :date="rowData.update_time" mode="elapsed" />; Invocation ID:</b>
                     </small>

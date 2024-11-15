@@ -15,6 +15,9 @@ export interface Workflow {
     version: number;
     deleted?: boolean;
     owner?: string;
+    annotation?: string;
+    tags?: string[];
+    update_time?: string;
 }
 
 export const useWorkflowStore = defineStore("workflowStore", () => {

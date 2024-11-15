@@ -1,56 +1,59 @@
 <template>
     <div>
-        <div v-if="isConfigLoaded" class="h4 clearfix mb-3">
+        <div v-if="isConfigLoaded">
             <BAlert v-if="!canRunOnHistory" variant="warning" show>
                 <span v-localize>
                     The workflow cannot run because the current history is immutable. Please select a different history
                     or send the results to a new one using the run settings ⚙️
                 </span>
             </BAlert>
-            <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
-            <ButtonSpinner
-                id="run-workflow"
-                :wait="waitingForRequest"
-                :disabled="hasValidationErrors || !canRunOnHistory"
-                class="float-right"
-                title="Run Workflow"
-                @onClick="onExecute" />
-            <b-dropdown
-                v-if="showRuntimeSettings(currentUser)"
-                id="dropdown-form"
-                ref="dropdown"
-                class="workflow-run-settings float-right"
-                style="margin-right: 10px"
-                title="Workflow Run Settings"
-                no-caret>
-                <template v-slot:button-content>
-                    <span class="fa fa-cog" />
+            <WorkflowNavigationTitle
+                :workflow-id="model.runData.workflow_id"
+                :run-disabled="hasValidationErrors || !canRunOnHistory"
+                :run-waiting="waitingForRequest"
+                @on-execute="onExecute">
+                <template v-slot:workflow-run-actions>
+                    <b-dropdown
+                        v-if="showRuntimeSettings(currentUser)"
+                        id="dropdown-form"
+                        ref="dropdown"
+                        class="workflow-run-settings"
+                        title="Workflow Run Settings"
+                        size="sm"
+                        variant="link"
+                        no-caret>
+                        <template v-slot:button-content>
+                            <span class="fa fa-cog" />
+                        </template>
+                        <b-dropdown-form>
+                            <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target">
+                                Send results to a new history
+                            </b-form-checkbox>
+                            <b-form-checkbox
+                                v-if="reuseAllowed(currentUser)"
+                                v-model="useCachedJobs"
+                                title="This may skip executing jobs that you have already run.">
+                                Attempt to re-use jobs with identical parameters?
+                            </b-form-checkbox>
+                            <b-form-checkbox
+                                v-if="isConfigLoaded && config.object_store_allows_id_selection"
+                                v-model="splitObjectStore">
+                                Send outputs and intermediate to different storage locations?
+                            </b-form-checkbox>
+                            <WorkflowStorageConfiguration
+                                v-if="isConfigLoaded && config.object_store_allows_id_selection"
+                                :split-object-store="splitObjectStore"
+                                :invocation-preferred-object-store-id="preferredObjectStoreId"
+                                :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
+                                @updated="onStorageUpdate">
+                            </WorkflowStorageConfiguration>
+                        </b-dropdown-form>
+                    </b-dropdown>
                 </template>
-                <b-dropdown-form>
-                    <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target">
-                        Send results to a new history
-                    </b-form-checkbox>
-                    <b-form-checkbox
-                        v-if="reuseAllowed(currentUser)"
-                        v-model="useCachedJobs"
-                        title="This may skip executing jobs that you have already run.">
-                        Attempt to re-use jobs with identical parameters?
-                    </b-form-checkbox>
-                    <b-form-checkbox
-                        v-if="isConfigLoaded && config.object_store_allows_id_selection"
-                        v-model="splitObjectStore">
-                        Send outputs and intermediate to different storage locations?
-                    </b-form-checkbox>
-                    <WorkflowStorageConfiguration
-                        v-if="isConfigLoaded && config.object_store_allows_id_selection"
-                        :split-object-store="splitObjectStore"
-                        :invocation-preferred-object-store-id="preferredObjectStoreId"
-                        :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
-                        @updated="onStorageUpdate">
-                    </WorkflowStorageConfiguration>
-                </b-dropdown-form>
-            </b-dropdown>
+            </WorkflowNavigationTitle>
         </div>
+
+        <WorkflowAnnotation :workflow-id="model.runData.workflow_id" :history-id="model.historyId" show-details />
         <FormDisplay
             :inputs="formInputs"
             :allow-empty-value-on-required-input="true"
@@ -62,7 +65,6 @@
 </template>
 
 <script>
-import ButtonSpinner from "components/Common/ButtonSpinner";
 import FormDisplay from "components/Form/FormDisplay";
 import { allowCachedJobs } from "components/Tool/utilities";
 import { isWorkflowInput } from "components/Workflow/constants";
@@ -76,10 +78,14 @@ import { useUserStore } from "@/stores/userStore";
 import { invokeWorkflow } from "./services";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
 
+import WorkflowAnnotation from "../../Workflow/WorkflowAnnotation.vue";
+import WorkflowNavigationTitle from "../WorkflowNavigationTitle.vue";
+
 export default {
     components: {
-        ButtonSpinner,
         FormDisplay,
+        WorkflowAnnotation,
+        WorkflowNavigationTitle,
         WorkflowStorageConfiguration,
     },
     props: {

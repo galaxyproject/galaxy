@@ -6,6 +6,8 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import JobMetrics from "./JobMetrics";
 
+const NO_METRICS_MESSAGE = "No metrics available for this job.";
+
 // Ignore all axios calls, data is mocked locally -- just say "OKAY!"
 jest.mock("axios", () => ({
     get: async () => {
@@ -26,7 +28,8 @@ describe("JobMetrics/JobMetrics.vue", () => {
         });
 
         await wrapper.vm.$nextTick();
-        expect(wrapper.find("div").exists()).toBe(false);
+        const alert = wrapper.find(".alert-info");
+        expect(alert.text()).toBe(NO_METRICS_MESSAGE);
     });
 
     it("should group plugins by type", async () => {
