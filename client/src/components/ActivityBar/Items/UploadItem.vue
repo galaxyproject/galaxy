@@ -39,6 +39,7 @@ function onUploadModal() {
 <template>
     <ActivityItem
         :id="id"
+        :activity-bar-id="id"
         :title="title"
         :tooltip="tooltip"
         :icon="icon"
