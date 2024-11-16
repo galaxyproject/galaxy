@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Tiff Viewer">
-    <description>Basic Tiff Image visualization</description>
+    <description>Tiff Image Viewer</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
-
             <test type="isinstance" test_attr="datatype" result_type="datatype">images.Tiff</test>
-
             <to_param param_attr="id">dataset_id</to_param>
         </data_source>
     </data_sources>
