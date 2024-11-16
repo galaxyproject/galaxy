@@ -14,5 +14,5 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="chart" src="script.js" css="script.css"/>
+    <entry_point entry_point_type="script" src="script.js" css="script.css"/>
 </visualization>
