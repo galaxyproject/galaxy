@@ -463,7 +463,7 @@ function render(downloadUrl) {
         });
 };
 
-const { visualization_config, root } = JSON.parse(document.getElementById("app").dataset.incoming);
+const { root, visualization_config } = JSON.parse(document.getElementById("app").dataset.incoming);
 
 const datasetId = visualization_config.dataset_id;
 
