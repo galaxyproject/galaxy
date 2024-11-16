@@ -1,4 +1,4 @@
-const { visualization_config, visualization_plugin, root } = JSON.parse(document.getElementById("app").dataset.incoming);
+const { root, visualization_config, visualization_plugin } = JSON.parse(document.getElementById("app").dataset.incoming);
 
 const div = Object.assign(document.createElement("div"), {
     style: "border: 2px solid #25537b; border-radius: 1rem; padding: 1rem"
