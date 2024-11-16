@@ -5,12 +5,6 @@ import _ from "underscore";
 // Use lighter weight 'core' version of paper since we don't need paperscript
 import paper from "../node_modules/paper/dist/paper-core.js";
 
-/* This will be part of the charts/viz standard lib in 23.1 */
-const slashCleanup = /(\/)+/g;
-function prefixedDownloadUrl(root, path) {
-    return `${root}/${path}`.replace(slashCleanup, "/");
-}
-
 const CommandManager = (function () {
     function CommandManager() {}
 
@@ -60,10 +54,7 @@ const generateUUID = function () {
     return uuid;
 };
 
-window.bundleEntries = window.bundleEntries || {};
-window.bundleEntries.load = function (opt) {
-    const chart = opt.chart;
-    const dataset = opt.dataset;
+function render(downloadUrl) {
     const defaults = { color: "red", width: 4, opacity: 0.5 };
     $.fn.createCanvas = function (options) {
         let settings = $.extend({}, defaults, options || {});
@@ -441,17 +432,13 @@ window.bundleEntries.load = function (opt) {
         });
     };
 
-    const downloadUrl = prefixedDownloadUrl(opt.root, dataset.download_url);
-
     fetch(downloadUrl)
         .then((response) => {
             if (!response.ok) {
                 throw new Error("Failed to access dataset.");
             }
-            return response.text();
-        })
-        .then((content) => {
-            const $chartViewer = $("#" + opt.target);
+
+            const $chartViewer = $("#app");
             $chartViewer.html("<img id='image-annotate' src='" + downloadUrl + "' />");
             $chartViewer.css("overflow", "auto");
             $chartViewer.css("position", "relative");
@@ -470,12 +457,16 @@ window.bundleEntries.load = function (opt) {
                     img_height: height,
                 });
             });
-
-            chart.state("ok", "Chart drawn.");
-            opt.process.resolve();
         })
         .catch((error) => {
-            chart.state("failed", error.message);
-            opt.process.resolve();
+            console.error(error.message);
         });
 };
+
+const { visualization_config, root } = JSON.parse(document.getElementById("app").dataset.incoming);
+
+const datasetId = visualization_config.dataset_id;
+
+const downloadUrl = window.location.origin + root + "api/datasets/" + datasetId + "/display";
+
+render(downloadUrl);
