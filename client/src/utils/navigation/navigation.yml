@@ -747,15 +747,10 @@ workflow_editor:
     canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
-    license_selector:
-      selector: 'license selector'
-      type: data-description
-    edit_license_link:
-      selector: 'edit license link'
-      type: data-description
-    license_select:
-      selector: 'license select'
-      type: data-description
+    license_selector: '[data-description="license select"]'
+    license_current_value: '[data-description="license select"] .multiselect__single'
+    license_selector_input: '[data-description="license select"] input.multiselect__input'
+    license_selector_option: '[data-description="license select"] .multiselect__element'
     license_save:
       selector: 'license save'
       type: data-description
