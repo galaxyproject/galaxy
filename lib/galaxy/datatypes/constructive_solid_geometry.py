@@ -5,6 +5,7 @@ Constructive Solid Geometry file formats.
 """
 
 import abc
+import re
 from typing import (
     List,
     Optional,
@@ -29,6 +30,7 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
 )
 from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.xml import GenericXml
 
 if TYPE_CHECKING:
     from io import TextIOBase
@@ -189,9 +191,6 @@ class Vtk:
 
     Binary data must be placed into the file immediately after the newline
     ('\\n') character from the previous ASCII keyword and parameter sequence.
-
-    TODO: only legacy formats are currently supported and support for XML formats
-    should be added.
     """
 
     subtype = ""
@@ -813,3 +812,59 @@ def get_next_line(fh):
         # Discard the rest of the line
         fh.readline()
     return line.strip()
+
+
+class VtkXml(GenericXml):
+    """Format for defining VTK (XML based) and its sub-datatypes. https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html"""
+
+    edam_format = "edam:format_2332"
+    file_ext = "vtkxml"
+
+    # The same MetadataElements are also available for legacy VTK datatypes.
+    MetadataElement(name="vtk_version", default=None, desc="Vtk version", readonly=True, optional=True, visible=True)
+    MetadataElement(name="file_format", default=None, desc="File format", readonly=True, optional=True, visible=True)
+    MetadataElement(name="dataset_type", default=None, desc="Dataset type", readonly=True, optional=True, visible=True)
+
+    def extract_version(self, line: str) -> str:
+        match = re.search(r'version="([^"]+)"', line)
+        if match:
+            return match.group(1)
+        return "?"
+
+    def extract_type(self, line: str) -> str:
+        match = re.search(r'type="([^"]+)"', line)
+        if match:
+            return match.group(1)
+        return "?"
+
+    def set_meta(self, dataset: DatasetProtocol, **kwd) -> None:
+        dataset.metadata.file_format = "XML"
+        with open(dataset.get_file_name(), errors="ignore") as file:
+            # first line might be the xml header, so we take two
+            first_line = file.readline()
+            if first_line.startswith("<?xml"):
+                first_line = file.readline()
+            dataset.metadata.vtk_version = self.extract_version(first_line)
+            dataset.metadata.dataset_type = self.extract_type(first_line)
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        """Set the peek and blurb text for VTK dataset files."""
+        if not dataset.dataset.purged:
+            dataset.peek = "VTK Dataset file"
+            dataset.blurb = f"type {dataset.metadata.dataset_type} version {dataset.metadata.vtk_version}"
+        else:
+            dataset.peek = "File does not exist"
+            dataset.blurb = "File purged from disk"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """Check for the key string 'VTKFile' to determine if this is a VTK dataset file.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('data.vtu')
+        >>> VtkXml().sniff(fname)
+        True
+        >>> fname = get_test_fname('1.phyloxml')
+        >>> VtkXml().sniff(fname)
+        False
+        """
+        return self._has_root_element_in_prefix(file_prefix, "VTKFile")
