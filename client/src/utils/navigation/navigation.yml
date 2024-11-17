@@ -734,6 +734,7 @@ workflow_editor:
       clear_selection: "[title='clear selection']"
       duplicate_selection: "[title='duplicate selected']"
       delete_selection: "[title='delete selected']"
+      auto_layout: "#auto-layout-button"
   comment:
     selectors:
       _: ".workflow-editor-comment"
