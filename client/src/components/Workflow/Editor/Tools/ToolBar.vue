@@ -250,6 +250,7 @@ function autoLayout() {
                 </BButton>
 
                 <BButton
+                    id="auto-layout-button"
                     v-b-tooltip.hover.noninteractive.right
                     title="Auto Layout (Ctrl + 9)"
                     data-tool="auto_layout"

@@ -795,7 +795,9 @@ steps:
         editor.label_input.wait_for_and_send_keys("downstream_step")
         # Insert head tool
         self.tool_open("head")
-        self.workflow_editor_click_option("Auto Layout")
+
+        self.components.workflow_editor.tool_bar.auto_layout.wait_for_and_click()
+
         self.sleep_for(self.wait_types.UX_RENDER)
         editor.label_input.wait_for_and_send_keys("conditional_step")
         # Connect head to cat
@@ -845,7 +847,7 @@ steps:
         param_type_element = editor.param_type_form.wait_for_present()
         self.switch_param_type(param_type_element, "Boolean")
         editor.label_input.wait_for_and_send_keys("param_input")
-        self.workflow_editor_click_option("Auto Layout")
+        self.components.workflow_editor.tool_bar.auto_layout.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         conditional_node = editor.node._(label=child_workflow_name)
         conditional_node.wait_for_and_click()
@@ -1219,8 +1221,6 @@ steps:
         self.workflow_create_new(annotation="simple workflow")
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        editor.tool_menu.wait_for_visible()
-
         self.tool_open("cat")
         self.sleep_for(self.wait_types.UX_RENDER)
         editor.label_input.wait_for_and_send_keys("tool_node")
@@ -1417,7 +1417,7 @@ steps:
         self.workflow_index_open()
         self.workflow_index_open_with_name(name)
         if auto_layout:
-            self.workflow_editor_click_option("Auto Layout")
+            self.components.workflow_editor.tool_bar.auto_layout.wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
         return name
 
