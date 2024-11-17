@@ -1659,6 +1659,9 @@ class NavigatesGalaxy(HasDriver):
         return invocations.invocations_table_rows.all()
 
     def tool_open(self, tool_id, outer=False):
+        if self.wait_for_selector_absent_or_hidden("#toolbox-panel", wait_type=WAIT_TYPES.UX_RENDER):
+            self.components.tools.workflows_activity.wait_for_and_click()
+
         if outer:
             tool_link = self.components.tool_panel.outer_tool_link(tool_id=tool_id)
         else:

@@ -896,6 +896,7 @@ tour:
 tools:
   selectors:
     activity: '#activity-tools'
+    workflows_activity: '#activity-workflow-editor-tools'
     body: '#center #tool-card-body'
     execute: '#execute'
     help: 'div.form-help'
