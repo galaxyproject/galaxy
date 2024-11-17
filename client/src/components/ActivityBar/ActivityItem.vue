@@ -69,7 +69,7 @@ const meta = computed(() => store.metaForId(props.id));
         <template v-slot:reference>
             <b-nav-item
                 :id="`activity-${id}`"
-                class="activity-item position-relative my-1 p-2"
+                class="activity-item my-1 p-2"
                 :class="{ 'nav-item-active': isActive }"
                 :link-classes="`variant-${props.variant}`"
                 :aria-label="localize(title)"
@@ -113,6 +113,7 @@ const meta = computed(() => store.metaForId(props.id));
 @import "theme/blue.scss";
 
 .activity-item {
+    position: relative;
     display: flex;
     flex-direction: column;
 
@@ -126,6 +127,7 @@ const meta = computed(() => store.metaForId(props.id));
 }
 
 .nav-icon {
+    position: relative;
     display: flex;
     justify-content: center;
     cursor: pointer;
@@ -162,6 +164,7 @@ const meta = computed(() => store.metaForId(props.id));
 }
 
 .nav-title {
+    position: relative;
     display: flex;
     justify-content: center;
     width: 4rem;
