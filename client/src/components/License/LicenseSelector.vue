@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { watchImmediate } from "@vueuse/core";
 import { BAlert } from "bootstrap-vue";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { GalaxyApi } from "@/api";
@@ -31,7 +32,7 @@ const emit = defineEmits<{
     (e: "onLicense", license: string | null): void;
 }>();
 
-const licensesLoading = ref(true);
+const licensesLoading = ref(false);
 const errorMessage = ref<string>("");
 const currentLicense = ref<LicenseType>();
 const licenses = ref<LicenseMetadataModel[] | undefined>([]);
@@ -70,7 +71,9 @@ async function fetchLicenses() {
 }
 
 async function setCurrentLicense() {
-    if (!licenses.value?.length) {
+    if (!licenses.value?.length && !licensesLoading.value) {
+        licensesLoading.value = true;
+
         await fetchLicenses();
     }
 
@@ -79,14 +82,12 @@ async function setCurrentLicense() {
     currentLicense.value = (licenses.value || []).find((l) => l.licenseId == inputLicense) || defaultLicense;
 }
 
-watch(
+watchImmediate(
     () => props.inputLicense,
     () => {
         setCurrentLicense();
     }
 );
-
-setCurrentLicense();
 </script>
 
 <template>
