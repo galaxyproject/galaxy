@@ -152,7 +152,7 @@ watch(
 </script>
 
 <template>
-    <div v-if="arePanelsFetched" class="unified-panel" aria-labelledby="toolbox-heading">
+    <div v-if="arePanelsFetched" id="toolbox-panel" class="unified-panel" aria-labelledby="toolbox-heading">
         <div unselectable="on">
             <div class="unified-panel-header-inner mx-3 my-2 d-flex justify-content-between">
                 <PanelViewMenu
