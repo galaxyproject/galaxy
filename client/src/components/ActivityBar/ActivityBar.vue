@@ -218,14 +218,14 @@ defineExpose({
                         <div v-if="activity.visible && (activity.anonymous || !isAnonymous)">
                             <UploadItem
                                 v-if="activity.id === 'upload'"
-                                :id="`activity-${activity.id}`"
+                                :id="`${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip" />
                             <InteractiveItem
                                 v-else-if="activity.to && activity.id === 'interactivetools'"
-                                :id="`activity-${activity.id}`"
+                                :id="`${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
                                 :is-active="isActiveRoute(activity.to)"
@@ -263,7 +263,7 @@ defineExpose({
             <b-nav v-if="!isAnonymous" vertical class="activity-footer flex-nowrap p-1">
                 <NotificationItem
                     v-if="isConfigLoaded && config.enable_notification_system"
-                    id="activity-notifications"
+                    id="notifications"
                     :icon="faBell"
                     :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
                     title="Notifications"
