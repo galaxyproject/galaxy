@@ -12,6 +12,10 @@ from typing import (
 
 from boltons.iterutils import remap
 
+from galaxy.model import (
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+)
 from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import safe_loads
@@ -20,6 +24,7 @@ from .basic import (
     DataToolParameter,
     ParameterValueError,
     SelectToolParameter,
+    TextToolParameter,
     ToolParameter,
 )
 from .grouping import (
@@ -654,6 +659,185 @@ def _populate_state_legacy(
             if error:
                 errors[key] = error
             state[input.name] = value
+
+
+def populate_state_async(
+    request_context,
+    inputs: ToolInputsT,
+    incoming: ToolStateJobInstanceT,
+    state: ToolStateJobInstancePopulatedT,
+    errors: ParameterValidationErrorsT,
+    context=None,
+):
+    context = ExpressionContext(state, context)
+    for input in inputs.values():
+        initial_value = input.get_initial_value(request_context, context)
+        input_name = input.name
+        state[input_name] = initial_value
+        group_state = state[input_name]
+        if input.type == "repeat":
+            repeat_input = cast(Repeat, input)
+            if (
+                len(incoming[repeat_input.name]) > repeat_input.max
+                or len(incoming[repeat_input.name]) < repeat_input.min
+            ):
+                errors[repeat_input.name] = "The number of repeat elements is outside the range specified by the tool."
+            else:
+                del group_state[:]
+                for rep in incoming[repeat_input.name]:
+                    new_state: ToolStateJobInstancePopulatedT = {}
+                    group_state.append(new_state)
+                    repeat_errors: ParameterValidationErrorsT = {}
+                    populate_state_async(
+                        request_context,
+                        repeat_input.inputs,
+                        rep,
+                        new_state,
+                        repeat_errors,
+                        context=context,
+                    )
+                    if repeat_errors:
+                        errors[repeat_input.name] = repeat_errors
+
+        elif input.type == "conditional":
+            conditional_input = cast(Conditional, input)
+            test_param = cast(ToolParameter, conditional_input.test_param)
+            test_param_value = incoming.get(conditional_input.name, {}).get(test_param.name)
+            value, error = check_param(request_context, test_param, test_param_value, context)
+            if error:
+                errors[test_param.name] = error
+            else:
+                try:
+                    current_case = conditional_input.get_current_case(value)
+                    group_state = state[conditional_input.name] = {}
+                    cast_errors: ParameterValidationErrorsT = {}
+                    populate_state_async(
+                        request_context,
+                        conditional_input.cases[current_case].inputs,
+                        cast(ToolStateJobInstanceT, incoming.get(conditional_input.name)),
+                        group_state,
+                        cast_errors,
+                        context=context,
+                    )
+                    if cast_errors:
+                        errors[conditional_input.name] = cast_errors
+                    group_state["__current_case__"] = current_case
+                except Exception:
+                    errors[test_param.name] = "The selected case is unavailable/invalid."
+            group_state[test_param.name] = value
+
+        elif input.type == "section":
+            section_input = cast(Section, input)
+            section_errors: ParameterValidationErrorsT = {}
+            populate_state_async(
+                request_context,
+                section_input.inputs,
+                cast(ToolStateJobInstanceT, incoming.get(section_input.name)),
+                group_state,
+                section_errors,
+                context=context,
+            )
+            if section_errors:
+                errors[section_input.name] = section_errors
+
+        elif input.type == "upload_dataset":
+            raise NotImplementedError
+
+        else:
+            param_value = _get_incoming_value(incoming, input.name, state.get(input.name))
+            value, error = check_param(request_context, input, param_value, context, simple_errors=False)
+            if error:
+                errors[input.name] = error
+            state[input.name] = value
+
+            def to_internal_single(value):
+                if isinstance(value, HistoryDatasetCollectionAssociation):
+                    return {"src": "hdca", "id": value.id}
+                elif isinstance(value, HistoryDatasetAssociation):
+                    return {"src": "hda", "id": value.id}
+                else:
+                    # tests and such to confirm we need DCE, LDDA, etc...
+                    return value
+
+            def to_internal(value):
+                if isinstance(value, list):
+                    return [to_internal_single(v) for v in value]
+                else:
+                    return to_internal_single(value)
+
+            if input_name not in incoming:
+                if input.type == "data_column":
+                    if isinstance(value, str):
+                        incoming[input_name] = int(value)
+                    elif isinstance(value, list):
+                        incoming[input_name] = [int(v) for v in value]
+                    else:
+                        incoming[input_name] = value
+                elif input.type == "text":
+                    text_input = cast(TextToolParameter, input)
+                    # see behavior of tools in test_tools.py::test_null_to_text_tools
+                    # these parameters act as empty string in this context
+                    if value is None and not text_input.optional:
+                        incoming[input_name] = ""
+                    else:
+                        incoming[input_name] = value
+                else:
+                    incoming[input_name] = to_internal(value)
+
+
+def fill_dynamic_defaults(
+    request_context,
+    inputs: ToolInputsT,
+    incoming: ToolStateJobInstanceT,
+    context=None,
+):
+    """
+    Expands incoming parameters with default values.
+    """
+    if context is None:
+        context = flat_to_nested_state(incoming)
+    for input in inputs.values():
+        if input.type == "repeat":
+            repeat_input = cast(Repeat, input)
+            for rep in incoming[repeat_input.name]:
+                fill_dynamic_defaults(
+                    request_context,
+                    repeat_input.inputs,
+                    rep,
+                    context=context,
+                )
+
+        elif input.type == "conditional":
+            conditional_input = cast(Conditional, input)
+            test_param = cast(ToolParameter, conditional_input.test_param)
+            test_param_value = incoming.get(conditional_input.name, {}).get(test_param.name)
+            try:
+                current_case = conditional_input.get_current_case(test_param_value)
+                fill_dynamic_defaults(
+                    request_context,
+                    conditional_input.cases[current_case].inputs,
+                    cast(ToolStateJobInstanceT, incoming.get(conditional_input.name)),
+                    context=context,
+                )
+            except Exception:
+                raise Exception("The selected case is unavailable/invalid.")
+
+        elif input.type == "section":
+            section_input = cast(Section, input)
+            fill_dynamic_defaults(
+                request_context,
+                section_input.inputs,
+                cast(ToolStateJobInstanceT, incoming.get(section_input.name)),
+                context=context,
+            )
+
+        elif input.type == "upload_dataset":
+            raise NotImplementedError
+
+        else:
+            if input.name not in incoming:
+                param_value = input.get_initial_value(request_context, context)
+                incoming[input.name] = param_value
 
 
 def _get_incoming_value(incoming, key, default):
