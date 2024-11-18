@@ -207,7 +207,6 @@ class RoleListGrid(grids.GridData):
                     if key == "name":
                         query = query.filter(text_column_filter(self.model_class._name, term))
                     if key == "description":
-                        pass
                         query = query.filter(text_column_filter(self.model_class.description, term))
                     elif key == "is":
                         if q == "deleted":
