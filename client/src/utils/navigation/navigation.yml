@@ -20,6 +20,7 @@ _:  # global stuff
     right_panel_collapse: '.collapse-button.right'
     by_attribute: '${scope} [${name}="${value}"]'
     active_nav_item: '.nav-item-active'
+    toolbox_panel: '#toolbox_panel'
 
     confirm_button:
       type: xpath
