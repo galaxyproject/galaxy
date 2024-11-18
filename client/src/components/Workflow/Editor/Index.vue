@@ -39,6 +39,7 @@
             options-search-placeholder="Search options"
             initial-activity="workflow-editor-attributes"
             :options-icon="faCog"
+            :hide-panel="reportActive"
             @activityClicked="onActivityClicked">
             <template v-slot:side-panel="{ isActiveSideBar }">
                 <ToolPanel
@@ -87,7 +88,6 @@
                     @creator="onCreator"
                     @update:nameCurrent="setName"
                     @update:annotationCurrent="setAnnotation" />
-                <MarkdownToolBox v-else-if="isActiveSideBar('workflow-editor-report')" @insert="insertMarkdown" />
             </template>
         </ActivityBar>
         <template v-if="reportActive">
@@ -97,6 +97,7 @@
                 mode="report"
                 :title="'Workflow Report: ' + name"
                 :steps="steps"
+                @insert="insertMarkdown"
                 @update="onReportUpdate">
                 <template v-slot:buttons>
                     <b-button
@@ -220,7 +221,6 @@ import WorkflowAttributes from "./WorkflowAttributes.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
-import MarkdownToolBox from "@/components/Markdown/MarkdownToolBox.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
@@ -242,7 +242,6 @@ export default {
         FontAwesomeIcon,
         UndoRedoStack,
         WorkflowPanel,
-        MarkdownToolBox,
         NodeInspector,
     },
     props: {

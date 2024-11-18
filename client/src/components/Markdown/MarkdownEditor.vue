@@ -1,5 +1,8 @@
 <template>
     <div id="columns" class="d-flex">
+        <FlexPanel side="left">
+            <MarkdownToolBox :steps="steps" @insert="insertMarkdown" />
+        </FlexPanel>
         <div id="center" class="overflow-auto w-100">
             <div class="markdown-editor h-100">
                 <div class="unified-panel-header" unselectable="on">
@@ -39,10 +42,12 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
+import FlexPanel from "components/Panels/FlexPanel";
 import _ from "underscore";
 import Vue from "vue";
 
 import MarkdownHelpModal from "./MarkdownHelpModal";
+import MarkdownToolBox from "./MarkdownToolBox";
 
 Vue.use(BootstrapVue);
 
@@ -52,8 +57,10 @@ const FENCE = "```";
 
 export default {
     components: {
+        FlexPanel,
         FontAwesomeIcon,
         MarkdownHelpModal,
+        MarkdownToolBox,
     },
     props: {
         markdownText: {
