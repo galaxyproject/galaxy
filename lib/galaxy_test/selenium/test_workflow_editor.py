@@ -42,7 +42,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         self.assert_wf_annotation_is(annotation)
 
         editor.canvas_body.wait_for_visible()
-        editor.tool_menu.wait_for_visible()
 
         # shouldn't have changes on fresh load
         save_button = self.components.workflow_editor.save_button
@@ -744,9 +743,7 @@ steps:
         self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
         editor.canvas_body.wait_for_visible()
-        editor.tool_menu.wait_for_visible()
-        editor.tool_menu_section_link(section_name="workflows").wait_for_and_click()
-        editor.workflow_link(workflow_title=child_workflow_name).wait_for_and_click()
+        self.workflow_editor_add_subworkflow(child_workflow_name)
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(parent_workflow_id)
