@@ -1204,11 +1204,12 @@ class NavigatesGalaxy(HasDriver):
         text_area_elem.send_keys(json)
 
     def workflow_editor_set_license(self, license: str) -> None:
-        editor = self.components.workflow_editor
-        editor.edit_license_link.wait_for_and_click()
-        select = editor.license_select.wait_for_select()
-        select.select_by_value(license)
-        editor.license_save.wait_for_and_click()
+        license_selector = self.components.workflow_editor.license_selector
+        license_selector.wait_for_and_click()
+        license_selector.wait_for_and_send_keys(license)
+
+        license_selector_option = self.components.workflow_editor.license_selector_option
+        license_selector_option.wait_for_and_click()
 
     def workflow_editor_click_option(self, option_label):
         self.workflow_editor_click_options()
