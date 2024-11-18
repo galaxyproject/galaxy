@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNavItem, BTab, BTabs } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
-import { type InvocationJobsSummary, type WorkflowInvocationElementView } from "@/api/invocations";
+import { type InvocationJobsSummary, type InvocationStep, type WorkflowInvocationElementView } from "@/api/invocations";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { getRootFromIndexLink } from "@/onload";
 import { useInvocationStore } from "@/stores/invocationStore";
@@ -12,12 +12,21 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { cancelWorkflowScheduling } from "./services";
-import { isTerminal, jobCount, runningCount } from "./util";
+import {
+    errorCount as jobStatesSummaryErrorCount,
+    isTerminal,
+    jobCount as jobStatesSummaryJobCount,
+    numTerminal,
+    okCount as jobStatesSummaryOkCount,
+    runningCount as jobStatesSummaryRunningCount,
+} from "./util";
 
+import ProgressBar from "../ProgressBar.vue";
 import WorkflowInvocationSteps from "../Workflow/Invocation/Graph/WorkflowInvocationSteps.vue";
 import InvocationReport from "../Workflow/InvocationReport.vue";
+import WorkflowAnnotation from "../Workflow/WorkflowAnnotation.vue";
+import WorkflowNavigationTitle from "../Workflow/WorkflowNavigationTitle.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
-import WorkflowInvocationHeader from "./WorkflowInvocationHeader.vue";
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
 import WorkflowInvocationMetrics from "./WorkflowInvocationMetrics.vue";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
@@ -27,14 +36,12 @@ interface Props {
     invocationId: string;
     isSubworkflow?: boolean;
     isFullPage?: boolean;
-    fromPanel?: boolean;
     success?: boolean;
-    newHistoryTarget?: string;
+    newHistoryTarget?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     isSubworkflow: false,
-    newHistoryTarget: undefined,
 });
 
 const emit = defineEmits<{
@@ -69,10 +76,8 @@ const disabledReportTooltip = computed(() => {
     const state = invocationState.value;
     if (state != "scheduled") {
         return `This workflow is not currently scheduled. The current state is ${state}. Once the workflow is fully scheduled and jobs have complete this option will become available.`;
-    } else if (runningCount(jobStatesSummary.value) != 0) {
-        return `The workflow invocation still contains ${runningCount(
-            jobStatesSummary.value
-        )} running job(s). Once these jobs have completed this option will become available.`;
+    } else if (runningCount.value != 0) {
+        return `The workflow invocation still contains ${runningCount.value} running job(s). Once these jobs have completed this option will become available.`;
     } else {
         return "Steps for this workflow are still running. A report will be available once complete.";
     }
@@ -100,7 +105,7 @@ const invocationSchedulingTerminal = computed(() => {
     );
 });
 const jobStatesTerminal = computed(() => {
-    if (invocationSchedulingTerminal.value && jobCount(jobStatesSummary.value as InvocationJobsSummary) === 0) {
+    if (invocationSchedulingTerminal.value && jobCount.value === 0) {
         // no jobs for this invocation (think subworkflow or just inputs)
         return true;
     }
@@ -111,11 +116,63 @@ const jobStatesSummary = computed(() => {
     return (!jobsSummary ? null : jobsSummary) as InvocationJobsSummary;
 });
 const invocationStateSuccess = computed(() => {
-    return (
-        invocationState.value == "scheduled" &&
-        runningCount(jobStatesSummary.value) === 0 &&
-        invocationAndJobTerminal.value
-    );
+    return invocationState.value == "scheduled" && runningCount.value === 0 && invocationAndJobTerminal.value;
+});
+
+type StepStateType = { [state: string]: number };
+
+const stepStates = computed<StepStateType>(() => {
+    const stepStates: StepStateType = {};
+    const steps: InvocationStep[] = invocation.value?.steps || [];
+    for (const step of steps) {
+        if (!step) {
+            continue;
+        }
+        // the API defined state here allowing null and undefined is odd...
+        const stepState: string = step.state || "unknown";
+        if (!stepStates[stepState]) {
+            stepStates[stepState] = 1;
+        } else {
+            stepStates[stepState] += 1;
+        }
+    }
+    return stepStates;
+});
+
+const stepCount = computed<number>(() => {
+    return invocation.value?.steps.length || 0;
+});
+
+const stepStatesStr = computed<string>(() => {
+    return `${stepStates.value?.scheduled || 0} of ${stepCount.value} steps successfully scheduled.`;
+});
+
+const okCount = computed<number>(() => {
+    return jobStatesSummaryOkCount(jobStatesSummary.value);
+});
+
+const errorCount = computed<number>(() => {
+    return jobStatesSummaryErrorCount(jobStatesSummary.value);
+});
+
+const runningCount = computed<number>(() => {
+    return jobStatesSummaryRunningCount(jobStatesSummary.value);
+});
+
+const jobCount = computed<number>(() => {
+    return jobStatesSummaryJobCount(jobStatesSummary.value);
+});
+
+const newCount = computed<number>(() => {
+    return jobCount.value - okCount.value - runningCount.value - errorCount.value;
+});
+
+const jobStatesStr = computed(() => {
+    let jobStr = `${numTerminal(jobStatesSummary.value) || 0} of ${jobCount.value} jobs complete`;
+    if (!invocationSchedulingTerminal.value) {
+        jobStr += " (total number of jobs will change until all steps fully scheduled)";
+    }
+    return `${jobStr}.`;
 });
 
 const workflowStore = useWorkflowStore();
@@ -171,16 +228,52 @@ function cancelWorkflowSchedulingLocal() {
 
 <template>
     <div v-if="invocation" class="d-flex flex-column w-100" data-description="workflow invocation state">
-        <WorkflowInvocationHeader
-            :is-full-page="props.isFullPage"
+        <WorkflowNavigationTitle
+            v-if="props.isFullPage && !props.success"
             :invocation="invocation"
-            :invocation-state="invocationState"
-            :from-panel="props.fromPanel"
-            :job-states-summary="jobStatesSummary"
-            :success="props.success"
-            :new-history-target="props.newHistoryTarget"
-            :invocation-scheduling-terminal="invocationSchedulingTerminal"
-            :invocation-and-job-terminal="invocationAndJobTerminal" />
+            :workflow-id="invocation.workflow_id" />
+        <WorkflowAnnotation
+            v-if="props.isFullPage"
+            :workflow-id="invocation.workflow_id"
+            :invocation-update-time="invocation.update_time"
+            :history-id="invocation.history_id"
+            :new-history-target="props.newHistoryTarget">
+            <template v-slot:middle-content>
+                <div class="progress-bars mx-1">
+                    <ProgressBar
+                        v-if="!stepCount"
+                        note="Loading step state summary..."
+                        :loading="true"
+                        class="steps-progress" />
+                    <ProgressBar
+                        v-else-if="invocationState == 'cancelled'"
+                        note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
+                        :error-count="1"
+                        class="steps-progress" />
+                    <ProgressBar
+                        v-else-if="invocationState == 'failed'"
+                        note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
+                        :error-count="1"
+                        class="steps-progress" />
+                    <ProgressBar
+                        v-else
+                        :note="stepStatesStr"
+                        :total="stepCount"
+                        :ok-count="stepStates.scheduled"
+                        :loading="!invocationSchedulingTerminal"
+                        class="steps-progress" />
+                    <ProgressBar
+                        :note="jobStatesStr"
+                        :total="jobCount"
+                        :ok-count="okCount"
+                        :running-count="runningCount"
+                        :new-count="newCount"
+                        :error-count="errorCount"
+                        :loading="!invocationAndJobTerminal"
+                        class="jobs-progress" />
+                </div>
+            </template>
+        </WorkflowAnnotation>
         <BTabs
             ref="invocationTabs"
             class="mt-1 d-flex flex-column overflow-auto"
@@ -271,3 +364,19 @@ function cancelWorkflowSchedulingLocal() {
         <span v-localize>Invocation not found.</span>
     </BAlert>
 </template>
+
+<style scoped lang="scss">
+.progress-bars {
+    // progress bar shrinks to fit divs on either side
+    flex-grow: 1;
+    flex-shrink: 1;
+    max-width: 50%;
+
+    .steps-progress,
+    .jobs-progress {
+        // truncate text in progress bars
+        white-space: nowrap;
+        overflow: hidden;
+    }
+}
+</style>

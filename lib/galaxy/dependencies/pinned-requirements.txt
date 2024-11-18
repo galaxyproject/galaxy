@@ -6,18 +6,18 @@ aiobotocore==2.15.2
 aiodataloader==0.4.0
 aiofiles==24.1.0
 aiohappyeyeballs==2.4.3
-aiohttp==3.10.10
+aiohttp==3.10.11
 aioitertools==0.12.0
 aiosignal==1.3.1
 alembic==1.14.0
-amqp==5.2.0
+amqp==5.3.1
 annotated-types==0.7.0
 anyio==4.5.2
 apispec==6.6.1
 appdirs==1.4.4
 arcp==0.2.1
 argcomplete==3.5.1
-async-timeout==4.0.3 ; python_full_version < '3.11'
+async-timeout==5.0.1 ; python_full_version < '3.11'
 attmap==0.13.2
 attrs==24.2.0
 babel==2.16.0
@@ -64,7 +64,7 @@ dparse==0.6.4
 edam-ontology==1.25.2
 email-validator==2.2.0
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
-fastapi-slim==0.115.4
+fastapi-slim==0.115.5
 filelock==3.16.1
 fissix==24.4.24 ; python_full_version >= '3.13'
 frozenlist==1.5.0
@@ -184,7 +184,7 @@ sortedcontainers==2.4.0
 spython==0.3.14
 sqlalchemy==2.0.35
 sqlitedict==2.1.0
-sqlparse==0.5.1
+sqlparse==0.5.2
 starlette==0.41.2
 starlette-context==0.3.6
 starlette-graphene3==0.6.0
@@ -194,7 +194,7 @@ tenacity==9.0.0
 text-unidecode==1.3
 tifffile==2023.7.10
 tinydb==4.8.2
-tomli==2.0.2 ; python_full_version < '3.11'
+tomli==2.1.0 ; python_full_version < '3.11'
 tornado==6.4.1
 tqdm==4.67.0
 tuspy==1.0.3

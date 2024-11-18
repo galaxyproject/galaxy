@@ -546,7 +546,7 @@ steps:
         self.components.workflows.edit_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
-        self.assert_modal_has_text("parameter 'inttest': an integer or workflow parameter is required")
+        self.assert_modal_has_text("Parameter 'inttest': an integer or workflow parameter is required")
         self.screenshot("workflow_editor_subworkflow_tool_upgrade")
         self.components.workflow_editor.modal_button_continue.wait_for_and_click()
         self.assert_workflow_has_changes_and_save()

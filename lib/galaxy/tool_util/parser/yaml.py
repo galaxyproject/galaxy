@@ -34,6 +34,10 @@ from .output_objects import (
     ToolOutputCollection,
     ToolOutputCollectionStructure,
 )
+from .parameter_validators import (
+    AnyValidatorModel,
+    parse_dict_validators,
+)
 from .stdio import error_on_exit_code
 from .util import is_dict
 
@@ -329,8 +333,9 @@ class YamlPageSource(PageSource):
 
 
 class YamlInputSource(InputSource):
-    def __init__(self, input_dict):
+    def __init__(self, input_dict, trusted: bool = True):
         self.input_dict = input_dict
+        self.trusted = trusted
 
     def get(self, key, default=None):
         return self.input_dict.get(key, default)
@@ -377,6 +382,9 @@ class YamlInputSource(InputSource):
             case_page_source = YamlPageSource(block)
             sources.append((value, case_page_source))
         return sources
+
+    def parse_validators(self) -> List[AnyValidatorModel]:
+        return parse_dict_validators(self.input_dict.get("validators", []), trusted=self.trusted)
 
     def parse_static_options(self) -> List[Tuple[str, str, bool]]:
         static_options = []

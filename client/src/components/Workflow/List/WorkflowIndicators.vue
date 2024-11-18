@@ -17,6 +17,7 @@ library.add(faFileImport, faGlobe, faShieldAlt, faUsers, faUser);
 interface Props {
     workflow: any;
     publishedView: boolean;
+    noEditTime?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -118,7 +119,7 @@ function onViewUserPublished() {
             <FontAwesomeIcon :icon="faFileImport" fixed-width @click="onCopyLink" />
         </BButton>
 
-        <span class="mr-1">
+        <span v-if="!noEditTime" class="mr-1">
             <small>
                 edited
                 <UtcDate :date="workflow.update_time" mode="elapsed" />
@@ -136,8 +137,9 @@ function onViewUserPublished() {
         </BBadge>
 
         <BBadge
-            v-if="publishedView"
+            v-if="publishedView && workflow.published"
             v-b-tooltip.noninteractive.hover
+            data-description="published owner badge"
             class="outline-badge cursor-pointer mx-1"
             :title="publishedTitle"
             @click="onViewUserPublished">

@@ -38,7 +38,7 @@ uv="${uv_venv}/bin/uv"
 if [ -n "$pkg" ]; then
     ${uv} lock --upgrade-package "$pkg"
 else
-    ${uv} lock
+    ${uv} lock --upgrade
 fi
 
 # Update pinned requirements files.

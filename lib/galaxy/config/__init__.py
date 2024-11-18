@@ -115,6 +115,14 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
             "level": "INFO",
             "qualname": "watchdog.observers.inotify_buffer",
         },
+        "py.warnings": {
+            "level": "ERROR",
+            "qualname": "py.warnings",
+        },
+        "celery.utils.functional": {
+            "level": "INFO",
+            "qualname": "celery.utils.functional",
+        },
     },
     "filters": {
         "stack": {

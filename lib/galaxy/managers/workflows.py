@@ -1078,6 +1078,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_models.append(step_model)
         return {
             "id": trans.app.security.encode_id(stored.id),
+            "workflow_id": trans.app.security.encode_id(workflow.id),
             "history_id": trans.app.security.encode_id(history.id) if history else None,
             "name": stored.name,
             "owner": stored.user.username,

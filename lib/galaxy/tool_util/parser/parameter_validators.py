@@ -2,6 +2,7 @@ import json
 from typing import (
     Any,
     cast,
+    Dict,
     List,
     Optional,
     Sequence,
@@ -14,6 +15,7 @@ from pydantic import (
     Field,
     model_validator,
     PrivateAttr,
+    TypeAdapter,
 )
 from typing_extensions import (
     Annotated,
@@ -96,6 +98,9 @@ class ParameterValidatorModel(StrictModel):
     implicit: bool = False
     _static: bool = PrivateAttr(False)
     _deprecated: bool = PrivateAttr(False)
+    # validators must be explicitly set as 'safe' to operate as user-defined workflow parameters or to be used
+    # within future user-defined tool parameters
+    _safe: bool = PrivateAttr(False)
 
     @model_validator(mode="after")
     def set_default_message(self) -> Self:
@@ -163,6 +168,7 @@ class RegexParameterValidatorModel(StaticValidatorModel):
     type: Literal["regex"] = "regex"
     negate: Negate = NEGATE_DEFAULT
     expression: Annotated[str, ValidationArgument("Regular expression to validate against.", xml_body=True)]
+    _safe: bool = PrivateAttr(True)
 
     @property
     def default_message(self) -> str:
@@ -189,6 +195,7 @@ class InRangeParameterValidatorModel(StaticValidatorModel):
     exclude_min: bool = False
     exclude_max: bool = False
     negate: Negate = NEGATE_DEFAULT
+    _safe: bool = PrivateAttr(True)
 
     def statically_validate(self, value: Any):
         if isinstance(value, (int, float)):
@@ -211,7 +218,9 @@ class InRangeParameterValidatorModel(StaticValidatorModel):
             op1 = "<"
         if self.exclude_max:
             op2 = "<"
-        range_description_str = f"({self.min} {op1} value {op2} {self.max})"
+        min_str = str(self.min) if self.min is not None else "-infinity"
+        max_str = str(self.max) if self.max is not None else "+infinity"
+        range_description_str = f"({min_str} {op1} value {op2} {max_str})"
         return f"Value ('%s') must {'not ' if self.negate else ''}fulfill {range_description_str}"
 
 
@@ -220,6 +229,7 @@ class LengthParameterValidatorModel(StaticValidatorModel):
     min: Optional[int] = None
     max: Optional[int] = None
     negate: Negate = NEGATE_DEFAULT
+    _safe: bool = PrivateAttr(True)
 
     def statically_validate(self, value: Any):
         if isinstance(value, str):
@@ -456,6 +466,20 @@ AnyValidatorModel = Annotated[
     ],
     Field(discriminator="type"),
 ]
+
+
+DiscriminatedAnyValidatorModel = TypeAdapter(AnyValidatorModel)  # type:ignore[var-annotated]
+
+
+def parse_dict_validators(validator_dicts: List[Dict[str, Any]], trusted: bool) -> List[AnyValidatorModel]:
+    validator_models = []
+    for validator_dict in validator_dicts:
+        validator = DiscriminatedAnyValidatorModel.validate_python(validator_dict)
+        if not trusted:
+            # Don't risk instantiating unsafe validators for user-defined code
+            assert validator._safe
+        validator_models.append(validator)
+    return validator_models
 
 
 def parse_xml_validators(input_elem: Element) -> List[AnyValidatorModel]:

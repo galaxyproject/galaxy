@@ -1027,7 +1027,7 @@ class PulsarMQJobRunner(PulsarJobRunner):
 
 
 DEFAULT_PULSAR_CONTAINER = "galaxy/pulsar-pod-staging:0.15.0.2"
-COEXECUTION_DESTENTATION_DEFAULTS = {
+COEXECUTION_DESTINATION_DEFAULTS = {
     "default_file_action": "remote_transfer",
     "rewrite_parameters": "true",
     "jobs_directory": "/pulsar_staging",
@@ -1039,7 +1039,7 @@ COEXECUTION_DESTENTATION_DEFAULTS = {
 
 
 class PulsarCoexecutionJobRunner(PulsarMQJobRunner):
-    destination_defaults = COEXECUTION_DESTENTATION_DEFAULTS
+    destination_defaults = COEXECUTION_DESTINATION_DEFAULTS
 
     def _populate_parameter_defaults(self, job_destination):
         super()._populate_parameter_defaults(job_destination)
@@ -1053,7 +1053,7 @@ class PulsarCoexecutionJobRunner(PulsarMQJobRunner):
             pulsar_app_config["staging_directory"] = params.get("jobs_directory")
 
 
-KUBERNETES_DESTINATION_DEFAULTS: Dict[str, Any] = {"k8s_enabled": True, **COEXECUTION_DESTENTATION_DEFAULTS}
+KUBERNETES_DESTINATION_DEFAULTS: Dict[str, Any] = {"k8s_enabled": True, **COEXECUTION_DESTINATION_DEFAULTS}
 
 
 class PulsarKubernetesJobRunner(PulsarCoexecutionJobRunner):
@@ -1061,14 +1061,14 @@ class PulsarKubernetesJobRunner(PulsarCoexecutionJobRunner):
     poll = True  # Poll so we can check API for pod IP for ITs.
 
 
-TES_DESTENTATION_DEFAULTS: Dict[str, Any] = {
+TES_DESTINATION_DEFAULTS: Dict[str, Any] = {
     "tes_url": PARAMETER_SPECIFICATION_REQUIRED,
-    **COEXECUTION_DESTENTATION_DEFAULTS,
+    **COEXECUTION_DESTINATION_DEFAULTS,
 }
 
 
 class PulsarTesJobRunner(PulsarCoexecutionJobRunner):
-    destination_defaults = TES_DESTENTATION_DEFAULTS
+    destination_defaults = TES_DESTINATION_DEFAULTS
 
 
 class PulsarRESTJobRunner(PulsarJobRunner):

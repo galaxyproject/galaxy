@@ -27,6 +27,7 @@ import FormSelection from "./Elements/FormSelection.vue";
 import FormTags from "./Elements/FormTags.vue";
 import FormText from "./Elements/FormText.vue";
 import FormUpload from "./Elements/FormUpload.vue";
+import FormElementHelpMarkdown from "./FormElementHelpMarkdown.vue";
 
 interface FormElementProps {
     id?: string;
@@ -35,6 +36,7 @@ interface FormElementProps {
     title?: string;
     refreshOnChange?: boolean;
     help?: string;
+    helpFormat?: string;
     error?: string;
     warning?: string;
     disabled?: boolean;
@@ -63,6 +65,7 @@ const props = withDefaults(defineProps<FormElementProps>(), {
     connectedDisableText: "Add connection to module.",
     connectedEnableIcon: "fa fa-times",
     connectedDisableIcon: "fa fa-arrows-alt-h",
+    helpFormat: "html",
     workflowBuildingMode: false,
 });
 
@@ -337,7 +340,13 @@ function onAlert(value: string | undefined) {
         </div>
 
         <div v-if="showPreview" class="ui-form-preview pt-1 pl-2 mt-1">{{ previewText }}</div>
-        <span v-if="Boolean(helpText)" class="ui-form-info form-text text-muted" v-html="helpText" />
+        <span
+            v-if="Boolean(helpText) && helpFormat != 'markdown'"
+            class="ui-form-info form-text text-muted"
+            v-html="helpText" />
+        <span v-else-if="Boolean(helpText)" class="ui-form-info form-text text-muted"
+            ><FormElementHelpMarkdown :content="helpText"
+        /></span>
     </div>
 </template>
 

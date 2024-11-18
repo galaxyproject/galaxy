@@ -656,7 +656,6 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             invocationId: route.params.invocationId,
                             isFullPage: true,
-                            fromPanel: Boolean(route.query.from_panel),
                         }),
                     },
                     {
