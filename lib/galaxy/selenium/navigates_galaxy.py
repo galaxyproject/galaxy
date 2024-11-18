@@ -1273,6 +1273,14 @@ class NavigatesGalaxy(HasDriver):
 
         self.sleep_for(self.wait_types.UX_RENDER)
 
+    def workflow_editor_add_subworkflow(self, name: str):
+        self.workflow_editor_search_for_workflow(name)
+
+        insert_button = self.wait_for_selector(".activity-panel button[title='Insert as sub-workflow']")
+        insert_button.click()
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
     def navigate_to_histories_page(self):
         self.home()
         self.components.histories.activity.wait_for_and_click()
