@@ -1243,6 +1243,23 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click_selector("#workflow-save-button")
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
 
+    def workflow_editor_search_for_workflow(self, name: str):
+        self.wait_for_and_click(self.components.workflow_editor.workflow_activity)
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        input = self.wait_for_selector(".activity-panel input")
+        input.send_keys(name)
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+    def workflow_editor_add_steps(self, name: str):
+        self.workflow_editor_search_for_workflow(name)
+
+        insert_button = self.wait_for_selector(".activity-panel button[title='Copy steps into workflow']")
+        insert_button.click()
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
     def navigate_to_histories_page(self):
         self.home()
         self.components.histories.activity.wait_for_and_click()
