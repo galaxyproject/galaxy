@@ -38,6 +38,7 @@ const props = withDefaults(
         optionsIcon?: IconDefinition;
         optionsSearchPlaceholder?: string;
         initialActivity?: string;
+        hidePanel?: boolean;
     }>(),
     {
         defaultActivities: undefined,
@@ -50,6 +51,7 @@ const props = withDefaults(
         optionsSearchPlaceholder: "Search Activities",
         optionsTooltip: "View additional activities",
         initialActivity: undefined,
+        hidePanel: false,
     }
 );
 
@@ -314,7 +316,7 @@ defineExpose({
                 </template>
             </b-nav>
         </div>
-        <FlexPanel v-if="isSideBarOpen" side="left" :collapsible="false">
+        <FlexPanel v-if="isSideBarOpen && !hidePanel" side="left" :collapsible="false">
             <ToolPanel v-if="isActiveSideBar('tools')" />
             <InvocationsPanel v-else-if="isActiveSideBar('invocation')" :activity-bar-id="props.activityBarId" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
