@@ -512,7 +512,7 @@ def dispatch_pending_notifications(notification_manager: NotificationManager):
 
 
 @galaxy_task(action="clean up job working directories")
-def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStore, days: Optional[float] = 5):
+def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStore, days: int = 5):
     """Cleanup job working directories for failed jobs that are older than X days"""
 
     def get_failed_jobs():
