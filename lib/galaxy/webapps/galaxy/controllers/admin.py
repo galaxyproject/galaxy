@@ -205,7 +205,6 @@ class RoleListGrid(grids.GridData):
                     key = term.filter
                     q = term.text
                     if key == "name":
-                        pass
                         query = query.filter(text_column_filter(self.model_class._name, term))
                     if key == "description":
                         pass
