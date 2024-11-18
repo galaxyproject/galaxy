@@ -12,5 +12,5 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <template>fits_graph_viewer.mako</template>
+    <entry_point entry_point_type="script" src="fits_graph_viewer.js"/>
 </visualization>
