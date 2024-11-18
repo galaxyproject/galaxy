@@ -78,9 +78,6 @@ class TestEmbeddedMessageQueuePulsarPurge(integration_util.IntegrationTestCase):
     def handle_galaxy_config_kwds(cls, config):
         _handle_galaxy_config_kwds(cls, config)
 
-    @pytest.mark.xfail(
-        reason="broken with https://github.com/galaxyproject/galaxy/pull/16975, @jmchilton must fix prior to full release 25.0"
-    )
     def test_purge_while_job_running(self):
         purge_while_job_running(self.dataset_populator)
 
