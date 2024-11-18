@@ -1,6 +1,5 @@
 import datetime
 import json
-import os
 import shutil
 from concurrent.futures import TimeoutError
 from functools import lru_cache
@@ -519,7 +518,7 @@ def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStor
     def get_failed_jobs():
         return sa_session.query(model.Job.id).filter(
             model.Job.state == "error",
-            model.Job.update_time > datetime.datetime.now() - datetime.timedelta(days=days),
+            model.Job.update_time < datetime.datetime.now() - datetime.timedelta(days=days),
             model.Job.object_store_id is not None,
         )
 
