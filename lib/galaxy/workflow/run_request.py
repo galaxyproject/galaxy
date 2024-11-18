@@ -379,7 +379,7 @@ def build_workflow_run_configs(
                 module_injector.inject(step)
                 input_param = step.module.get_runtime_inputs(step.module)["input"]
                 try:
-                    input_param.validate(input_dict)
+                    input_param.validate(input_dict, trans=trans)
                 except ParameterValueError as e:
                     raise exceptions.RequestParameterInvalidException(
                         f"{step.label or step.order_index + 1}: {e.message_suffix}"

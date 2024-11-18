@@ -125,7 +125,7 @@ RUNTIME_STEP_META_STATE_KEY = "__STEP_META_STATE__"
 # ones.
 RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
 
-INPUT_PARAMETER_TYPES = Literal["text", "integer", "float", "boolean", "color"]
+INPUT_PARAMETER_TYPES = Literal["text", "integer", "float", "boolean", "color", "directory_uri"]
 POSSIBLE_PARAMETER_TYPES: Tuple[INPUT_PARAMETER_TYPES] = get_args(INPUT_PARAMETER_TYPES)
 
 
@@ -1210,6 +1210,7 @@ class InputParameterModule(WorkflowModule):
             {"value": "float", "label": "Float"},
             {"value": "boolean", "label": "Boolean (True or False)"},
             {"value": "color", "label": "Color"},
+            {"value": "directory_uri", "label": "Directory URI"},
         ]
         input_parameter_type = SelectToolParameter(None, select_source)
         # encode following loop in description above instead
@@ -1269,17 +1270,7 @@ class InputParameterModule(WorkflowModule):
             optional_cases = [when_true, when_false]
             optional_cond.cases = optional_cases
 
-            if param_type == "text":
-
-                specify_multiple_source = dict(
-                    name="multiple",
-                    label="Allow multiple selection",
-                    help="Only applies when connected to multi-select parameter(s)",
-                    type="boolean",
-                )
-
-                specify_multiple = BooleanToolParameter(None, specify_multiple_source)
-
+            def regex_validator_definition():
                 add_validators_repeat = Repeat("validators")
                 add_validators_repeat.title = "Add validator to restrict valid input"
                 add_validators_repeat.min = 0
@@ -1306,10 +1297,23 @@ class InputParameterModule(WorkflowModule):
                     ),
                 }
 
+                return add_validators_repeat
+
+            if param_type == "text":
+
+                specify_multiple_source = dict(
+                    name="multiple",
+                    label="Allow multiple selection",
+                    help="Only applies when connected to multi-select parameter(s)",
+                    type="boolean",
+                )
+
+                specify_multiple = BooleanToolParameter(None, specify_multiple_source)
+
                 # Insert multiple option as first option, which is determined by dictionary insert order
                 when_this_type.inputs = {
                     "multiple": specify_multiple,
-                    "validators": add_validators_repeat,
+                    "validators": regex_validator_definition(),
                     **when_this_type.inputs,
                 }
 
@@ -1427,6 +1431,8 @@ class InputParameterModule(WorkflowModule):
                         "label": "Set a maximum value for this input",
                     },
                 )
+            if param_type == "directory_uri":
+                when_this_type.inputs["validators"] = regex_validator_definition()
 
             cases.append(when_this_type)
 
@@ -1499,7 +1505,7 @@ class InputParameterModule(WorkflowModule):
         parameter_type = parameter_def["parameter_type"]
         optional = parameter_def["optional"]
         default_value = parameter_def.get("default", self.default_default_value)
-        if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
+        if parameter_type not in ["text", "boolean", "integer", "float", "color", "directory_uri"]:
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
         # Optional parameters for tool input source definition.
@@ -1610,7 +1616,7 @@ class InputParameterModule(WorkflowModule):
         input_param = self.get_runtime_inputs(self)["input"]
         # TODO: raise DelayedWorkflowEvaluation if replacement not ready ? Need test
         try:
-            input_param.validate(input_value)
+            input_param.validate(input_value, trans)
         except ValueError as e:
             raise FailWorkflowEvaluation(
                 why=InvocationFailureWorkflowParameterInvalid(
