@@ -841,6 +841,7 @@ workflow_editor:
     save_workflow_confirmation_button: '#save-workflow-confirmation .btn-primary'
     state_modal_body: '.state-upgrade-modal'
     modal_button_continue: '.modal-footer .btn'
+    workflow_activity: '#activity-workflow-editor-workflows'
 
 workflow_show:
   selectors:

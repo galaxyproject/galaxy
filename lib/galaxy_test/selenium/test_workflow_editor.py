@@ -846,8 +846,7 @@ steps:
         self.workflow_editor_add_input(item_name="data_input")
         editor = self.components.workflow_editor
         editor.canvas_body.wait_for_visible()
-        editor.tool_menu_section_link(section_name="workflows").wait_for_and_click()
-        editor.insert_steps(workflow_title=steps_to_insert).wait_for_and_click()
+        self.workflow_editor_add_steps(steps_to_insert)
         self.assert_connected("input1#output", "first_cat#input1")
         self.assert_workflow_has_changes_and_save()
         workflow_id = self.driver.current_url.split("id=")[1]
