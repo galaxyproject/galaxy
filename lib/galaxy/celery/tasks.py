@@ -31,6 +31,7 @@ from galaxy.managers.datasets import (
     DatasetManager,
 )
 from galaxy.managers.hdas import HDAManager
+from galaxy.managers.jobs import JobSubmitter
 from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
@@ -57,6 +58,7 @@ from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
     PrepareDatasetCollectionDownload,
     PurgeDatasetsTaskRequest,
+    QueueJobs,
     SetupHistoryExportJob,
     WriteHistoryContentTo,
     WriteHistoryTo,
@@ -78,8 +80,10 @@ def setup_data_table_manager(app):
 
 
 @lru_cache
-def cached_create_tool_from_representation(app: MinimalManagerApp, raw_tool_source: str):
-    return create_tool_from_representation(app=app, raw_tool_source=raw_tool_source, tool_source_class="XmlToolSource")
+def cached_create_tool_from_representation(app: MinimalManagerApp, raw_tool_source: str, tool_dir: str = ""):
+    return create_tool_from_representation(
+        app=app, raw_tool_source=raw_tool_source, tool_dir=tool_dir, tool_source_class="XmlToolSource"
+    )
 
 
 @galaxy_task(action="recalculate a user's disk usage")
@@ -334,6 +338,17 @@ def fetch_data(
     mini_job_wrapper = MinimalJobWrapper(job=job, app=app)
     mini_job_wrapper.change_state(model.Job.states.RUNNING, flush=True, job=job)
     return abort_when_job_stops(_fetch_data, session=sa_session, job_id=job_id, setup_return=setup_return)
+
+
+@galaxy_task(action="queuing up submitted jobs")
+def queue_jobs(request: QueueJobs, app: MinimalManagerApp, job_submitter: JobSubmitter):
+    tool = cached_create_tool_from_representation(
+        app, request.tool_source.raw_tool_source, tool_dir=request.tool_source.tool_dir
+    )
+    job_submitter.queue_jobs(
+        tool,
+        request,
+    )
 
 
 @galaxy_task(ignore_result=True, action="setting up export history job")

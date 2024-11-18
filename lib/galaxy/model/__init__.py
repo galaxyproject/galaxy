@@ -1356,6 +1356,27 @@ class ToolRequest(Base, Dictifiable, RepresentById):
 
     tool_source: Mapped["ToolSource"] = relationship()
     history: Mapped[Optional["History"]] = relationship(back_populates="tool_requests")
+    implicit_collections: Mapped[List["ToolRequestImplicitCollectionAssociation"]] = relationship(
+        back_populates="tool_request"
+    )
+
+
+class ToolRequestImplicitCollectionAssociation(Base, Dictifiable, RepresentById):
+    __tablename__ = "tool_request_implicit_collection_association"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tool_request_id: Mapped[int] = mapped_column(ForeignKey("tool_request.id", name="fk_trica_tri"), index=True)
+    dataset_collection_id: Mapped[int] = mapped_column(
+        ForeignKey("history_dataset_collection_association.id", name="fk_trica_dci"), index=True
+    )
+    output_name: Mapped[str] = mapped_column(String(255))
+
+    tool_request: Mapped["ToolRequest"] = relationship(back_populates="implicit_collections")
+    dataset_collection: Mapped["HistoryDatasetCollectionAssociation"] = relationship(
+        back_populates="tool_request_association", uselist=False
+    )
+
+    dict_collection_visible_keys = ["id", "tool_request_id", "dataset_collection_id", "output_name"]
 
 
 class DynamicTool(Base, Dictifiable, RepresentById):
@@ -7046,6 +7067,9 @@ class HistoryDatasetCollectionAssociation(
         back_populates="dataset_collection",
     )
     creating_job_associations: Mapped[List["JobToOutputDatasetCollectionAssociation"]] = relationship(viewonly=True)
+    tool_request_association: Mapped[Optional["ToolRequestImplicitCollectionAssociation"]] = relationship(
+        back_populates="dataset_collection"
+    )
 
     dict_dbkeysandextensions_visible_keys = ["dbkeys", "extensions"]
     editable_keys = ("name", "deleted", "visible")

@@ -8,6 +8,8 @@ provide strong traditional typing semantics.
 +================================+============+=================================+============+===========+
 | ToolRequestT                   | request    | src dicts of encoded ids        | nope        |          |
 | ToolStateJobInstanceT          | a job      | src dicts of encoded ids        | nope        |          |
+| ToolStateJobInstanceExpansionT | a job      | a mix I think, things that were | nope        |          |
+|                                |            | expanded are objects            | nope        |          |
 | ToolStateJobInstancePopulatedT | a job      | model objs loaded from db       | check_param |          |
 | ToolStateDumpedToJsonT         | a job      | src dicts of encoded ids        | "           |          |
 |                                |            | (normalized into values attr)   | "           |          |
@@ -34,6 +36,10 @@ ToolRequestT = Dict[str, Any]
 # by "src" dictionaries with encoded IDs still but batch instructions have been pulled out. Parameters have not
 # been "checked" (check_param has not been called).
 ToolStateJobInstanceT = Dict[str, Any]
+
+# After meta.expand_incoming stuff I think expanded parameters are in model object form but the other stuff is likely
+# still encoded IDs? None of this is verified though.
+ToolStateJobInstanceExpansionT = Dict[str, Any]
 
 # Input dictionary for an individual job where objects are their model objects and parameters have been
 # "checked" (check_param has been called).

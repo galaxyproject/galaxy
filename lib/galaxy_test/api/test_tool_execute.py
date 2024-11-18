@@ -23,15 +23,33 @@ from galaxy_test.base.populators import (
 
 
 @requires_tool_id("multi_data_param")
-def test_multidata_param(target_history: TargetHistory, required_tool: RequiredTool):
+def test_multidata_param(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
     hda1 = target_history.with_dataset("1\t2\t3").src_dict
     hda2 = target_history.with_dataset("4\t5\t6").src_dict
-    execution = required_tool.execute.with_inputs(
-        {
-            "f1": {"batch": False, "values": [hda1, hda2]},
-            "f2": {"batch": False, "values": [hda2, hda1]},
-        }
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "f1": {"batch": False, "values": [hda1, hda2]},
+                "f2": {"batch": False, "values": [hda2, hda1]},
+            }
+        )
+        .when.nested(
+            {
+                "f1": {"batch": False, "values": [hda1, hda2]},
+                "f2": {"batch": False, "values": [hda2, hda1]},
+                "advanced": {"full": "no"},  # this shouldn't be needed is it outside branch?
+            }
+        )
+        .when.request(
+            {
+                "f1": [hda1, hda2],
+                "f2": [hda2, hda1],
+            }
+        )
     )
+    execution = required_tool.execute.with_inputs(inputs)
     execution.assert_has_job(0).with_output("out1").with_contents("1\t2\t3\n4\t5\t6\n")
     execution.assert_has_job(0).with_output("out2").with_contents("4\t5\t6\n1\t2\t3\n")
 
@@ -249,20 +267,33 @@ def test_multi_run_in_repeat(
     multi_run_in_repeat_datasets: MultiRunInRepeatFixtures,
     tool_input_format: DescribeToolInputs,
 ):
-    inputs = tool_input_format.when.flat(
-        {
-            "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
-            "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
-        }
-    ).when.nested(
-        {
-            "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
-            "queries": [
-                {
-                    "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
-                }
-            ],
-        }
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
+                "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+            }
+        )
+        .when.nested(
+            {
+                "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
+                "queries": [
+                    {
+                        "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+                    }
+                ],
+            }
+        )
+        .when.request(
+            {
+                "input1": multi_run_in_repeat_datasets.common_dataset,
+                "queries": [
+                    {
+                        "input2": {"__class__": "Batch", "values": multi_run_in_repeat_datasets.repeat_datasets},
+                    }
+                ],
+            }
+        )
     )
     execute = required_tool.execute.with_inputs(inputs)
     _check_multi_run_in_repeat(execute)
@@ -275,20 +306,33 @@ def test_multi_run_in_repeat_mismatch(
     tool_input_format: DescribeToolInputs,
 ):
     """Same test as above but without the batch wrapper around the common dataset shared between multirun."""
-    inputs = tool_input_format.when.flat(
-        {
-            "input1": multi_run_in_repeat_datasets.common_dataset,
-            "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
-        }
-    ).when.nested(
-        {
-            "input1": multi_run_in_repeat_datasets.common_dataset,
-            "queries": [
-                {
-                    "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
-                }
-            ],
-        }
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "input1": multi_run_in_repeat_datasets.common_dataset,
+                "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+            }
+        )
+        .when.nested(
+            {
+                "input1": multi_run_in_repeat_datasets.common_dataset,
+                "queries": [
+                    {
+                        "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+                    }
+                ],
+            }
+        )
+        .when.request(
+            {
+                "input1": multi_run_in_repeat_datasets.common_dataset,
+                "queries": [
+                    {
+                        "input2": {"__class__": "Batch", "values": multi_run_in_repeat_datasets.repeat_datasets},
+                    }
+                ],
+            }
+        )
     )
     execute = required_tool.execute.with_inputs(inputs)
     _check_multi_run_in_repeat(execute)
@@ -346,18 +390,39 @@ def test_multirun_on_multiple_inputs_unlinked(
     two_multi_run_datasets: TwoMultiRunsFixture,
     tool_input_format: DescribeToolInputs,
 ):
-    inputs = tool_input_format.when.flat(
-        {
-            "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
-            "queries_0|input2": {"batch": True, "linked": False, "values": two_multi_run_datasets.second_two_datasets},
-        }
-    ).when.nested(
-        {
-            "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
-            "queries": [
-                {"input2": {"batch": True, "linked": False, "values": two_multi_run_datasets.second_two_datasets}},
-            ],
-        }
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
+                "queries_0|input2": {
+                    "batch": True,
+                    "linked": False,
+                    "values": two_multi_run_datasets.second_two_datasets,
+                },
+            }
+        )
+        .when.nested(
+            {
+                "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
+                "queries": [
+                    {"input2": {"batch": True, "linked": False, "values": two_multi_run_datasets.second_two_datasets}},
+                ],
+            }
+        )
+        .when.request(
+            {
+                "input1": {"__class__": "Batch", "linked": False, "values": two_multi_run_datasets.first_two_datasets},
+                "queries": [
+                    {
+                        "input2": {
+                            "__class__": "Batch",
+                            "linked": False,
+                            "values": two_multi_run_datasets.second_two_datasets,
+                        }
+                    },
+                ],
+            }
+        )
     )
     execute = required_tool.execute.with_inputs(inputs)
     execute.assert_has_n_jobs(4)
@@ -372,7 +437,9 @@ def test_map_over_collection(
     target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
 ):
     hdca = target_history.with_pair(["123", "456"])
-    inputs = tool_input_format.when.any({"input1": {"batch": True, "values": [hdca.src_dict]}})
+    legacy = {"input1": {"batch": True, "values": [hdca.src_dict]}}
+    request = {"input1": {"__class__": "Batch", "values": [hdca.src_dict]}}
+    inputs = tool_input_format.when.flat(legacy).when.nested(legacy).when.request(request)
     execute = required_tool.execute.with_inputs(inputs)
     execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
     output_collection = execute.assert_creates_implicit_collection(0)

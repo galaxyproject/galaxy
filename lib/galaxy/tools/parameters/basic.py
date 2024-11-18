@@ -13,6 +13,7 @@ import urllib.parse
 from collections.abc import MutableMapping
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
@@ -2484,7 +2485,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             rval = value
         elif isinstance(value, MutableMapping) and "src" in value and "id" in value:
             if value["src"] == "hdca":
-                rval = session.get(HistoryDatasetCollectionAssociation, trans.security.decode_id(value["id"]))
+                rval = cast(HistoryDatasetCollectionAssociation, src_id_to_item(sa_session=trans.sa_session, value=value, security=trans.security))
         elif isinstance(value, list):
             if len(value) > 0:
                 value = value[0]

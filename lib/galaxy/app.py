@@ -674,6 +674,10 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         self._register_singleton(Registry, self.datatypes_registry)
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
         self.configure_sentry_client()
+        # Load dbkey / genome build manager
+        self._configure_genome_builds(data_table_name="__dbkeys__", load_old_style=True)
+        # Tool Data Tables
+        self._configure_tool_data_tables(from_shed_config=False)
 
         self._configure_tool_shed_registry()
         self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
@@ -751,11 +755,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             TestDataResolver, TestDataResolver(file_dirs=self.config.tool_test_data_directories)
         )
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
-
-        # Tool Data Tables
-        self._configure_tool_data_tables(from_shed_config=False)
-        # Load dbkey / genome build manager
-        self._configure_genome_builds(data_table_name="__dbkeys__", load_old_style=True)
 
         # Genomes
         self.genomes = self._register_singleton(Genomes)

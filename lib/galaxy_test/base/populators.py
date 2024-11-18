@@ -144,6 +144,7 @@ workflow_random_x2_str = resource_string(__package__, "data/test_workflow_2.ga")
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
 
 SKIP_FLAKEY_TESTS_ON_ERROR = os.environ.get("GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR", None)
+INPUT_FORMAT_T = Literal["legacy", "21.01", "request"]
 
 PRIVATE_ROLE_TYPE = "private"
 
@@ -1013,6 +1014,15 @@ class BaseDatasetPopulator(BasePopulator):
         payload = self.run_tool_payload(tool_id, inputs, history_id, **kwds)
         return self.tools_post(payload)
 
+    def tool_request_raw(self, tool_id: str, inputs: Dict[str, Any], history_id: str) -> Response:
+        payload = {
+            "tool_id": tool_id,
+            "history_id": history_id,
+            "inputs": inputs,
+        }
+        response = self._post("jobs", data=payload, json=True)
+        return response
+
     def run_tool(self, tool_id: str, inputs: dict, history_id: str, **kwds):
         tool_response = self.run_tool_raw(tool_id, inputs, history_id, **kwds)
         api_asserts.assert_status_code_is(tool_response, 200)
@@ -1528,8 +1538,38 @@ class BaseDatasetPopulator(BasePopulator):
         wait_on(is_ready, "waiting for download to become ready")
         assert is_ready()
 
+    def wait_on_tool_request(self, tool_request_id: str):
+        # should this to defer to interactor's copy of this method?
+
+        def state():
+            state_response = self._get(f"tool_requests/{tool_request_id}/state")
+            state_response.raise_for_status()
+            return state_response.json()
+
+        def is_ready():
+            is_complete = state() in ["submitted", "failed"]
+            return True if is_complete else None
+
+        wait_on(is_ready, "waiting for tool request to submit")
+        return state() == "submitted"
+
+    def get_tool_request(self, tool_request_id: str) -> Dict[str, Any]:
+        response = self._get(f"tool_requests/{tool_request_id}")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
+    def get_history_tool_requests(self, history_id: str) -> List[Dict[str, Any]]:
+        response = self._get(f"histories/{history_id}/tool_requests")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
     def wait_on_task(self, async_task_response: Response):
-        task_id = async_task_response.json()["id"]
+        response_json = async_task_response.json()
+        self.wait_on_task_object(response_json)
+
+    def wait_on_task_object(self, async_task_json: Dict[str, Any]):
+        assert "id" in async_task_json, f"Task response {async_task_json} does not contain expected 'id' field."
+        task_id = async_task_json["id"]
         return self.wait_on_task_id(task_id)
 
     def wait_on_task_id(self, task_id: str):
@@ -3680,10 +3720,10 @@ class RequiredTool:
 
 
 class DescribeToolInputs:
-    _input_format: str = "legacy"
+    _input_format: INPUT_FORMAT_T = "legacy"
     _inputs: Optional[Dict[str, Any]]
 
-    def __init__(self, input_format: str):
+    def __init__(self, input_format: INPUT_FORMAT_T):
         self._input_format = input_format
         self._inputs = None
 
@@ -3697,7 +3737,12 @@ class DescribeToolInputs:
         return self
 
     def nested(self, inputs: Dict[str, Any]) -> Self:
-        if self._input_format == "21.01":
+        if self._input_format in ["21.01", "request"]:
+            self._inputs = inputs
+        return self
+
+    def request(self, inputs: Dict[str, Any]) -> Self:
+        if self._input_format in ["request"]:
             self._inputs = inputs
         return self
 
@@ -3710,7 +3755,8 @@ class DescribeToolInputs:
 class DescribeToolExecution:
     _history_id: Optional[str] = None
     _execute_response: Optional[Response] = None
-    _input_format: Optional[str] = None
+    _tool_request_id: Optional[str] = None  # if input_format == "request" request ID
+    _input_format: Optional[INPUT_FORMAT_T] = None
     _inputs: Dict[str, Any]
 
     def __init__(self, dataset_populator: BaseDatasetPopulator, tool_id: str):
@@ -3739,14 +3785,27 @@ class DescribeToolExecution:
         self._input_format = "21.01"
         return self
 
+    def with_request(self, inputs: Dict[str, Any]) -> Self:
+        self._inputs = inputs
+        self._input_format = "request"
+        return self
+
     def _execute(self):
         kwds = {}
         if self._input_format is not None:
             kwds["input_format"] = self._input_format
         history_id = self._ensure_history_id
-        self._execute_response = self._dataset_populator.run_tool_raw(
-            self._tool_id, self._inputs, history_id, assert_ok=False, **kwds
-        )
+        if self._input_format == "request":
+            execute_response = self._dataset_populator.tool_request_raw(self._tool_id, self._inputs, history_id)
+            api_asserts.assert_status_code_is_ok(execute_response)
+            response_json = execute_response.json()
+            tool_request_id = response_json.get("tool_request_id")
+            self._dataset_populator.wait_on_tool_request(tool_request_id)
+            self._execute_response = execute_response
+        else:
+            self._execute_response = self._dataset_populator.run_tool_raw(
+                self._tool_id, self._inputs, history_id, assert_ok=False, **kwds
+            )
 
     @property
     def _ensure_history_id(self) -> str:
@@ -3764,25 +3823,56 @@ class DescribeToolExecution:
         execute_response = self._execute_response
         assert execute_response is not None
         api_asserts.assert_status_code_is_ok(execute_response)
+        if self._input_format == "request":
+            response_json = execute_response.json()
+            tool_request_id = response_json.get("tool_request_id")
+            task_result = response_json["task_result"]
+            self._dataset_populator.wait_on_task_object(task_result)
+            self._tool_request_id = tool_request_id
+
         return execute_response.json()
 
+    @property
+    def _jobs(self) -> List[Dict[str, Any]]:
+        if self._input_format == "request":
+            tool_request_id = self._tool_request_id
+            assert tool_request_id, "request not exected"
+            jobs = list(reversed(self._dataset_populator.galaxy_interactor.jobs_for_tool_request(tool_request_id)))
+        else:
+            response = self._assert_executed_ok()
+            jobs = response["jobs"]
+        return jobs
+
+    @property
+    def _implicit_collections(self) -> List[Dict[str, Any]]:
+        if self._input_format == "request":
+            tool_request_id = self._tool_request_id
+            assert tool_request_id, "request not exected"
+            response = self._dataset_populator.get_tool_request(tool_request_id)
+            collections = [c["dataset_collection_instance"] for c in response["implicit_collection_outputs"]]
+        else:
+            response = self._assert_executed_ok()
+            collections = response["implicit_collections"]
+        return collections
+
     def assert_has_n_jobs(self, n: int) -> Self:
-        response = self._assert_executed_ok()
-        jobs = response["jobs"]
-        if len(jobs) != n:
-            raise AssertionError(f"Expected tool execution to produce {n} jobs but it produced {len(jobs)}")
+        self._assert_executed_ok()
+        jobs = self._jobs
+        num_jobs = len(jobs)
+        if num_jobs != n:
+            raise AssertionError(f"Expected tool execution to produce {n} jobs but it produced {num_jobs}")
         return self
 
     def assert_creates_n_implicit_collections(self, n: int) -> Self:
-        response = self._assert_executed_ok()
-        collections = response["implicit_collections"]
+        self._assert_executed_ok()
+        collections = self._implicit_collections
         if len(collections) != n:
             raise AssertionError(f"Expected tool execution to produce {n} implicit but it produced {len(collections)}")
         return self
 
     def assert_creates_implicit_collection(self, index: Union[str, int]) -> "DescribeToolExecutionOutputCollection":
-        response = self._assert_executed_ok()
-        collections = response["implicit_collections"]
+        self._assert_executed_ok()
+        collections = self._implicit_collections
         assert isinstance(index, int)  # TODO: implement and then prefer str.
         history_id = self._ensure_history_id
         return DescribeToolExecutionOutputCollection(self._dataset_populator, history_id, collections[index]["id"])
@@ -3792,8 +3882,8 @@ class DescribeToolExecution:
         return self.assert_has_n_jobs(1).assert_has_job(0)
 
     def assert_has_job(self, job_index: int = 0) -> DescribeJob:
-        response = self._assert_executed_ok()
-        job = response["jobs"][job_index]
+        self._assert_executed_ok()
+        job = self._jobs[job_index]
         history_id = self._ensure_history_id
         return DescribeJob(self._dataset_populator, history_id, job["id"])
 
@@ -3805,8 +3895,8 @@ class DescribeToolExecution:
         if execute_response.status_code != 200:
             return DescribeFailure(execute_response)
         else:
-            response = self._assert_executed_ok()
-            jobs = response["jobs"]
+            self._assert_executed_ok()
+            jobs = self._jobs
             for job in jobs:
                 final_state = self._dataset_populator.wait_for_job(job["id"])
                 assert final_state == "error"

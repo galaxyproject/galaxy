@@ -1531,6 +1531,7 @@ class JobIndexQueryPayload(Model):
     workflow_id: Optional[DecodedDatabaseIdField] = None
     invocation_id: Optional[DecodedDatabaseIdField] = None
     implicit_collection_jobs_id: Optional[DecodedDatabaseIdField] = None
+    tool_request_id: Optional[DecodedDatabaseIdField] = None
     order_by: JobIndexSortByEnum = JobIndexSortByEnum.update_time
     search: Optional[str] = None
     limit: int = 500
@@ -3758,11 +3759,25 @@ class ToolRequestState(str, Enum):
     FAILED = "failed"
 
 
+class ToolRequestOutputCollectionAssociation(Model):
+    name: str = Field(
+        default=...,
+        title="name",
+        description="Name of the job output.",
+    )
+    dataset_collection_instance: EncodedDataItemSourceId = Field(
+        default=...,
+        title="dataset_collection_instance",
+        description="Reference to the associated item.",
+    )
+
+
 class ToolRequestModel(Model):
     id: EncodedDatabaseIdField = ToolRequestIdField
     request: Dict[str, Any]
     state: ToolRequestState
     state_message: Optional[str]
+    implicit_collection_outputs: List[ToolRequestOutputCollectionAssociation]
 
 
 class AsyncFile(Model):
