@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBug } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert, BButton, BCard } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
@@ -155,6 +155,21 @@ onMounted(async () => {
                 >.
             </p>
 
+            <h4 class="mb-3 h-md">Possible Causes</h4>
+            <p>
+                <span>
+                    We can use AI to analyze the issue and suggest possible fixes. Please note that the diagnosis may
+                    not always be accurate.
+                </span>
+            </p>
+            <BCard class="mb-2">
+                <GalaxyWizard
+                    view="error"
+                    :query="jobDetails.tool_stderr"
+                    context="tool_error"
+                    :job-id="jobDetails.id" />
+            </BCard>
+
             <DatasetErrorDetails
                 :tool-stderr="jobDetails.tool_stderr"
                 :job-stderr="jobDetails.job_stderr"
@@ -188,11 +203,6 @@ onMounted(async () => {
                     </a>
                 </b>
             </p>
-
-            <h4 class="mb-3 h-md">What might have happened?</h4>
-            <b-card>
-                <GalaxyWizard view="error" :query="jobDetails.tool_stderr" context="tool_error" />
-            </b-card>
 
             <h4 class="mb-3 h-md">Issue Report</h4>
             <BAlert v-for="(resultMessage, index) in resultMessages" :key="index" :variant="resultMessage[1]" show>

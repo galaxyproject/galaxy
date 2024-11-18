@@ -2979,15 +2979,15 @@ class ChatExchange(Base, RepresentById):
     __tablename__ = "chat_exchange"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
+    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
 
     user: Mapped["User"] = relationship()
-    messages: Mapped[List["ChatExchangeMessage"]] = relationship(
-        back_populates="chat_exchange", cascade_backrefs=False
-    )
+    messages: Mapped[List["ChatExchangeMessage"]] = relationship(back_populates="chat_exchange", cascade_backrefs=False)
 
-    def __init__(self, user, message, **kwargs):
+    def __init__(self, user, job_id, message, **kwargs):
         self.user = user
+        self.job_id = job_id
         self.messages = [ChatExchangeMessage(message=message)]
 
     def add_message(self, message):
@@ -2998,10 +2998,15 @@ class ChatExchangeMessage(Base, RepresentById):
     __tablename__ = "chat_exchange_message"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    chat_exchange_id: Mapped[int] = mapped_column(Integer, ForeignKey("chat_exchange.id"), index=True)
-    create_time: Mapped[datetime] = mapped_column(DateTime, default=func.now)
+    chat_exchange_id: Mapped[int] = mapped_column(ForeignKey("chat_exchange.id"), index=True)
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     message: Mapped[str] = mapped_column(Text)
+    feedback: Mapped[int] = mapped_column(Integer, nullable=True)
     chat_exchange: Mapped["ChatExchange"] = relationship("ChatExchange", back_populates="messages")
+
+    def __init__(self, message, feedback=None):
+        self.message = message
+        self.feedback = feedback
 
 
 class Group(Base, Dictifiable, RepresentById):

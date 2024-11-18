@@ -1261,7 +1261,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
             if os.path.exists(chat_prompts_path):
                 try:
-                    with open(chat_prompts_path, "r", encoding="utf-8") as file:
+                    with open(chat_prompts_path, encoding="utf-8") as file:
                         data = json.load(file)
                         self.chat_prompts = data.get("prompts", {})
                 except json.JSONDecodeError as e:

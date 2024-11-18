@@ -22,11 +22,44 @@ export interface paths {
         trace?: never;
     };
     "/api/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /**
          * Query
          * @description We're off to ask the wizard
          */
         post: operations["query_api_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/{job_id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Feedback
+         * @description Provide feedback on the chatbot response.
+         */
+        put: operations["feedback_api_chat__job_id__feedback_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/configuration": {
         parameters: {
@@ -6551,16 +6584,16 @@ export interface components {
         /** ChatPayload */
         ChatPayload: {
             /**
-             * Message
-             * @description The message to be sent to the chat.
+             * Context
+             * @description The context for the chatbot.
+             * @default
+             */
+            context: string | null;
+            /**
+             * Query
+             * @description The query to be sent to the chatbot.
              */
             query: string;
-            /**
-             * Context
-             * @description The context identifier to be used by the chat.
-             * @enum {string}
-             */
-            context?: "username" | "tool_error";
         };
         /** CheckForUpdatesResponse */
         CheckForUpdatesResponse: {
@@ -18680,10 +18713,17 @@ export interface operations {
         };
     };
     query_api_chat_post: {
-        /**
-         * Query
-         * @description We're off to ask the wizard
-         */
+        parameters: {
+            query: {
+                job_id: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ChatPayload"];
@@ -18692,14 +18732,74 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": string;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    feedback_api_chat__job_id__feedback_put: {
+        parameters: {
+            query: {
+                feedback: number;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                job_id: string | null;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };

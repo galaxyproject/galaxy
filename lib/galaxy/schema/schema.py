@@ -3710,13 +3710,13 @@ class MaterializeDatasetInstanceRequest(MaterializeDatasetInstanceAPIRequest):
 class ChatPayload(Model):
     query: str = Field(
         ...,
-        title="Message",
-        description="The message to be sent to the chat.",
+        title="Query",
+        description="The query to be sent to the chatbot.",
     )
     context: Optional[str] = Field(
         default="",
         title="Context",
-        description="A context identifier to be used by the chat.",
+        description="The context for the chatbot.",
     )
 
 
