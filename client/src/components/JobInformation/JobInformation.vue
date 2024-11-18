@@ -1,7 +1,7 @@
 <script setup>
 import CopyToClipboard from "components/CopyToClipboard";
 import HelpText from "components/Help/HelpText";
-import { JobDetailsProvider } from "components/providers/JobProvider";
+import { JobConsoleOutputProvider, JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
 import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { computed, ref, watch } from "vue";
@@ -28,9 +28,21 @@ const props = defineProps({
     },
 });
 
+const stdout_length = ref(50000);
+const stdout_text = ref("");
+const stderr_length = ref(50000);
+const stderr_text = ref("");
+
+const stdout_position = computed(() => stdout_text.value.length);
+const stderr_position = computed(() => stderr_text.value.length);
+
 const runTime = computed(() => getJobDuration(job.value));
 
-const jobIsTerminal = computed(() => job.value && !NON_TERMINAL_STATES.includes(job.value.state));
+function jobStateIsTerminal(jobState) {
+    return jobState && !NON_TERMINAL_STATES.includes(job.value.state);
+}
+
+const jobIsTerminal = computed(() => jobStateIsTerminal(job?.value?.state));
 
 const routeToInvocation = computed(() => `/workflows/invocations/${invocationId.value}`);
 
@@ -41,6 +53,26 @@ const metadataDetail = ref({
 
 function updateJob(newJob) {
     job.value = newJob;
+    if (jobStateIsTerminal(newJob?.state)) {
+        if (newJob.tool_stdout) {
+            stdout_text.value = newJob.tool_stdout;
+        }
+        if (newJob.tool_stderr) {
+            stderr_text.value = newJob.tool_stderr;
+        }
+    }
+}
+
+function updateConsoleOutputs(output) {
+    // Keep stdout in memory and only fetch new text via JobProvider
+    if (output) {
+        if (output.stdout != null) {
+            stdout_text.value += output.stdout;
+        }
+        if (output.stderr != null) {
+            stderr_text.value += output.stderr;
+        }
+    }
 }
 
 function filterMetadata(jobMessages) {
@@ -94,6 +126,14 @@ watch(
 <template>
     <div>
         <JobDetailsProvider auto-refresh :job-id="props.job_id" @update:result="updateJob" />
+        <JobConsoleOutputProvider
+            auto-refresh
+            :job-id="props.job_id"
+            :stdout_position="stdout_position"
+            :stdout_length="stdout_length"
+            :stderr_position="stderr_position"
+            :stderr_length="stderr_length"
+            @update:result="updateConsoleOutputs" />
         <h2 class="h-md">Job Information</h2>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
@@ -146,13 +186,13 @@ watch(
                     id="stdout"
                     help-uri="unix.stdout"
                     :code-label="'Tool Standard Output'"
-                    :code-item="job.tool_stdout" />
+                    :code-item="stdout_text" />
                 <CodeRow
                     v-if="job"
                     id="stderr"
                     help-uri="unix.stderr"
                     :code-label="'Tool Standard Error'"
-                    :code-item="job.tool_stderr" />
+                    :code-item="stderr_text" />
                 <CodeRow
                     v-if="job && job.traceback"
                     id="traceback"
@@ -211,7 +251,6 @@ watch(
         </table>
     </div>
 </template>
-
 <style scoped>
 .tooltipJobInfo {
     text-decoration-line: underline;

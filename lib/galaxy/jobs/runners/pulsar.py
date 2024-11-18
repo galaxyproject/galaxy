@@ -652,6 +652,18 @@ class PulsarJobRunner(AsynchronousJobRunner):
             remote_metadata_directory = run_results.get("metadata_directory", None)
             tool_stdout = unicodify(run_results.get("stdout", ""), strip_null=True)
             tool_stderr = unicodify(run_results.get("stderr", ""), strip_null=True)
+            for file in ("tool_stdout", "tool_stderr"):
+                if tool_stdout and tool_stderr:
+                    pass
+                try:
+                    file_path = os.path.join(job_wrapper.working_directory, "outputs", file)
+                    file_content = open(file_path)
+                    if tool_stdout is None and file == "tool_stdout":
+                        tool_stdout = file_content.read()
+                    elif tool_stderr is None and file == "tool_stderr":
+                        tool_stderr = file_content.read()
+                except Exception:
+                    pass
             job_stdout = run_results.get("job_stdout")
             job_stderr = run_results.get("job_stderr")
             exit_code = run_results.get("returncode")

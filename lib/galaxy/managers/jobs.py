@@ -4,6 +4,7 @@ from datetime import (
     date,
     datetime,
 )
+from pathlib import Path
 from typing import (
     Any,
     cast,
@@ -33,6 +34,7 @@ from typing_extensions import TypedDict
 
 from galaxy import model
 from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
     ItemAccessibilityException,
     ObjectNotFound,
     RequestParameterInvalidException,
@@ -83,6 +85,7 @@ from galaxy.util import (
     defaultdict,
     ExecutionTimer,
     listify,
+    string_as_bool_or_none,
 )
 from galaxy.util.search import (
     FilteredTerm,
@@ -94,6 +97,10 @@ log = logging.getLogger(__name__)
 
 JobStateT = str
 JobStatesT = Union[JobStateT, List[JobStateT]]
+
+
+STDOUT_LOCATION = "outputs/tool_stdout"
+STDERR_LOCATION = "outputs/tool_stderr"
 
 
 class JobLock(BaseModel):
@@ -295,6 +302,47 @@ class JobManager:
                     raise ItemAccessibilityException("You are not allowed to rerun this job.")
         trans.sa_session.refresh(job)
         return job
+
+    def get_job_console_output(
+        self, trans, job, stdout_position=-1, stdout_length=0, stderr_position=-1, stderr_length=0
+    ):
+        if job is None:
+            raise ObjectNotFound()
+
+        # Check job destination params to see if stdout reporting is enabled
+        dest_params = job.destination_params
+        if not string_as_bool_or_none(dest_params.get("live_tool_output_reporting", False)):
+            raise ConfigDoesNotAllowException()
+
+        # If stdout_length and stdout_position are good values, then load standard out and add it to status
+        console_output = {}
+        console_output["state"] = job.state
+        if job.state == job.states.RUNNING:
+            working_directory = trans.app.object_store.get_filename(
+                job, base_dir="job_work", dir_only=True, obj_dir=True
+            )
+            if stdout_length > -1 and stdout_position > -1:
+                try:
+                    stdout_path = Path(working_directory) / STDOUT_LOCATION
+                    stdout_file = open(stdout_path)
+                    stdout_file.seek(stdout_position)
+                    console_output["stdout"] = stdout_file.read(stdout_length)
+                except Exception as e:
+                    log.error("Could not read STDOUT: %s", e)
+                    console_output["stdout"] = ""
+            if stderr_length > -1 and stderr_position > -1:
+                try:
+                    stderr_path = Path(working_directory) / STDERR_LOCATION
+                    stderr_file = open(stderr_path)
+                    stderr_file.seek(stderr_position)
+                    console_output["stderr"] = stderr_file.read(stderr_length)
+                except Exception as e:
+                    log.error("Could not read STDERR: %s", e)
+                    console_output["stderr"] = ""
+        else:
+            console_output["stdout"] = job.tool_stdout
+            console_output["stderr"] = job.tool_stderr
+        return console_output
 
     def stop(self, job, message=None):
         if not job.finished:

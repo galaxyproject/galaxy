@@ -2838,6 +2838,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/jobs/{job_id}/console_output": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns STDOUT and STDERR from the tool running in a specific job.
+         * @description Get the stdout and/or stderr from the tool running in a specific job. The position parameters are the index
+         *     of where to start reading stdout/stderr. The length parameters control how much
+         *     stdout/stderr is read.
+         */
+        get: operations["get_console_output_api_jobs__job_id__console_output_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/jobs/{job_id}/destination_params": {
         parameters: {
             query?: never;
@@ -12669,6 +12691,24 @@ export interface components {
              * @description The last time and date this item was updated.
              */
             update_time: string;
+        };
+        /** JobConsoleOutput */
+        JobConsoleOutput: {
+            /**
+             * Job State
+             * @description The current job's state
+             */
+            state?: components["schemas"]["JobState"] | null;
+            /**
+             * STDERR
+             * @description Tool STDERR from job.
+             */
+            stderr?: string | null;
+            /**
+             * STDOUT
+             * @description Tool STDOUT from job.
+             */
+            stdout?: string | null;
         };
         /** JobDestinationParams */
         JobDestinationParams: {
@@ -27865,6 +27905,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobInputSummary"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_console_output_api_jobs__job_id__console_output_get: {
+        parameters: {
+            query: {
+                stdout_position: number;
+                stdout_length: number;
+                stderr_position: number;
+                stderr_length: number;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobConsoleOutput"];
                 };
             };
             /** @description Request Error */
