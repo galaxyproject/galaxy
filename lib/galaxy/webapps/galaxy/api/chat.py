@@ -45,30 +45,25 @@ class ChatAPI:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> str:
         """We're off to ask the wizard"""
-
-        answer = None
+        # Currently job-based chat exchanges are the only ones supported,
+        # and will only have the one message.
 
         if job_id:
-            existing_response = self.chat_manager.get(trans, job_id)
-            # Currently job-based chat exchanges are the only ones supported,
-            # and will only have the one message.
+            # If there's an existing response for this job, just return that one for now.
             # TODO: Support regenerating the response as a new message, and
             # asking follow-up questions.
+            existing_response = self.chat_manager.get(trans, job_id)
             if existing_response and existing_response.messages[0]:
-                answer = existing_response.messages[0].message
+                return existing_response.messages[0].message
 
-        if not answer:
-            self._ensure_openai_configured()
+        self._ensure_openai_configured()
 
-            messages = self._build_messages(payload, trans)
-            log.debug(f"CHATGPT messages: {messages}")
+        messages = self._build_messages(payload, trans)
+        response = self._call_openai(messages)
+        answer = response.choices[0].message.content
 
-            response = self._call_openai(messages)
-            answer = response.choices[0].message.content
-
-            # TODO: Maybe we need to first check if the job_id exists (in the `job` table)?
-            if job_id:
-                self.chat_manager.create(trans, job_id, answer)
+        if job_id:
+            self.chat_manager.create(trans, job_id, answer)
 
         return answer
 
@@ -78,7 +73,7 @@ class ChatAPI:
         job_id: JobIdPathParam,
         feedback: int,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> int:
+    ) -> int | None:
         """Provide feedback on the chatbot response."""
         chat_response = self.chat_manager.set_feedback_for_job(trans, job_id, feedback)
         return chat_response.messages[0].feedback

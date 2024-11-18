@@ -18781,7 +18781,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": number;
+                    "application/json": number | null;
                 };
             };
             /** @description Request Error */

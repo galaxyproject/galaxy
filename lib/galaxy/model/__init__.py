@@ -2985,10 +2985,12 @@ class ChatExchange(Base, RepresentById):
     user: Mapped["User"] = relationship()
     messages: Mapped[List["ChatExchangeMessage"]] = relationship(back_populates="chat_exchange", cascade_backrefs=False)
 
-    def __init__(self, user, job_id, message, **kwargs):
+    def __init__(self, user, job_id=None, message=None, **kwargs):
         self.user = user
         self.job_id = job_id
-        self.messages = [ChatExchangeMessage(message=message)]
+        self.messages = []
+        if message:
+            self.add_message(message)
 
     def add_message(self, message):
         self.messages.append(ChatExchangeMessage(message=message))

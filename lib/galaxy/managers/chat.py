@@ -13,7 +13,6 @@ from galaxy.exceptions import (
     InternalServerError,
     RequestParameterInvalidException,
 )
-from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import ChatExchange
 from galaxy.model.base import transaction
@@ -35,14 +34,12 @@ MessageIdPathParam = Optional[
 ]
 
 
-class ChatManager(base.ModelManager[ChatExchange]):
+class ChatManager:
     """
     Business logic for chat exchanges.
     """
 
-    model_class = ChatExchange
-
-    def create(self, trans: ProvidesUserContext, job_id: JobIdPathParam, response: str) -> ChatExchange:
+    def create(self, trans: ProvidesUserContext, job_id: JobIdPathParam, message: str) -> ChatExchange:
         """
         Create a new chat exchange in the DB.  Currently these are *only* job-based chat exchanges, will need to generalize down the road.
         :param  job_id:      id of the job to associate the response with
@@ -53,13 +50,13 @@ class ChatManager(base.ModelManager[ChatExchange]):
         :rtype:     galaxy.model.ChatExchange
         :raises: InternalServerError
         """
-        chat_exchange = ChatExchange(user=trans.user, job_id=job_id, message=response)
+        chat_exchange = ChatExchange(user=trans.user, job_id=job_id, message=message)
         trans.sa_session.add(chat_exchange)
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         return chat_exchange
 
-    def get(self, trans: ProvidesUserContext, job_id: JobIdPathParam) -> ChatExchange:
+    def get(self, trans: ProvidesUserContext, job_id: JobIdPathParam) -> ChatExchange | None:
         """
         Returns the chat response from the DB based on the given job id.
         :param  job_id:      id of the job to load a response for from the DB
@@ -70,7 +67,7 @@ class ChatManager(base.ModelManager[ChatExchange]):
         """
         try:
             stmt = select(ChatExchange).where(ChatExchange.job_id == job_id)
-            chat_response = self.session().execute(stmt).scalar_one()
+            chat_response = trans.sa_session.execute(stmt).scalar_one()
         except MultipleResultsFound:
             # TODO: Unsure about this, isn't this more applicable when we're getting the response for response.id instead of response.job_id?
             raise InconsistentDatabase("Multiple chat responses found with the same job id.")
@@ -101,6 +98,9 @@ class ChatManager(base.ModelManager[ChatExchange]):
             raise RequestParameterInvalidException("Feedback should be 0 or 1.")
 
         chat_exchange = self.get(trans, job_id)
+
+        if not chat_exchange:
+            raise RequestParameterInvalidException("No accessible response found with the id provided.")
 
         # There is only one message in an exchange currently, so we can set the feedback on the first message
         chat_exchange.messages[0].feedback = feedback
