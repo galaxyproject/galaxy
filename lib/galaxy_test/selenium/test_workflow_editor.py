@@ -846,7 +846,6 @@ steps:
         self.workflow_editor_add_input(item_name="data_input")
         editor = self.components.workflow_editor
         editor.canvas_body.wait_for_visible()
-        editor.tool_menu.wait_for_visible()
         editor.tool_menu_section_link(section_name="workflows").wait_for_and_click()
         editor.insert_steps(workflow_title=steps_to_insert).wait_for_and_click()
         self.assert_connected("input1#output", "first_cat#input1")
@@ -864,7 +863,6 @@ steps:
         param_type_element = editor.param_type_form.wait_for_present()
         self.switch_param_type(param_type_element, "Boolean")
         editor.label_input.wait_for_and_send_keys("param_input")
-        editor.tool_menu.wait_for_visible()
         # Insert cat tool
         self.tool_open("cat")
         self.sleep_for(self.wait_types.UX_RENDER)
