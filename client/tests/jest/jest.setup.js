@@ -4,6 +4,9 @@ import "fake-indexeddb/auto";
 
 import Vue from "vue";
 
+// not available in jsdom, mock it out
+Element.prototype.scrollIntoView = jest.fn();
+
 // Set Vue to suppress production / devtools / etc. warnings
 Vue.config.productionTip = false;
 Vue.config.devtools = false;
