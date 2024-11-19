@@ -1671,12 +1671,19 @@ class NavigatesGalaxy(HasDriver):
     def open_toolbox(self):
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        if self.element_absent(self.components._.toolbox_panel):
-            self.components.tools.workflows_activity.wait_for_and_click()
-            self.sleep_for(self.wait_types.UX_RENDER)
+        if self.element_absent(self.components.tools.tools_activity_workflow_editor):
+            if self.element_absent(self.components._.toolbox_panel):
+                self.components.tools.activity.wait_for_and_click()
+        else:
+            if self.element_absent(self.components._.toolbox_panel):
+                self.components.tools.tools_activity_workflow_editor.wait_for_and_click()
+
+        self.sleep_for(self.wait_types.UX_RENDER)
 
     def tool_open(self, tool_id, outer=False):
         self.open_toolbox()
+
+        self.components.tools.search.wait_for_and_send_keys(f"id:{tool_id}")
 
         if outer:
             tool_link = self.components.tool_panel.outer_tool_link(tool_id=tool_id)
