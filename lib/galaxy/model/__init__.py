@@ -4801,8 +4801,6 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         self.set_total_size()
 
     def get_file_name(self, sync_cache: bool = True) -> str:
-        if self.dataset.purged:
-            return ""
         return self.dataset.get_file_name(sync_cache=sync_cache)
 
     def set_file_name(self, filename: str):
