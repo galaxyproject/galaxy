@@ -7,7 +7,10 @@ from pathlib import PurePath
 
 try:
     from pykube.config import KubeConfig
-    from pykube.exceptions import HTTPError
+    from pykube.exceptions import (
+        HTTPError,
+        ObjectDoesNotExist,
+    )
     from pykube.http import HTTPClient
     from pykube.objects import (
         Ingress,
@@ -112,7 +115,12 @@ def is_pod_unschedulable(pykube_api, pod, namespace=None):
 def delete_job(job, cleanup="always"):
     job_failed = job.obj["status"]["failed"] > 0 if "failed" in job.obj["status"] else False
     # Scale down the job just in case even if cleanup is never
-    job.scale(replicas=0)
+    try:
+        job.scale(replicas=0)
+    except ObjectDoesNotExist as e:
+        # Okay, job does no longer exist
+        log.info(e)
+
     api_delete = cleanup == "always"
     if not api_delete and cleanup == "onsuccess" and not job_failed:
         api_delete = True
@@ -336,3 +344,13 @@ __all__ = (
     "get_volume_mounts_for_job",
     "parse_pvc_param_line",
 )
+
+
+def reload_job(job):
+    try:
+        job.reload()
+    except HTTPError as e:
+        if e.code == 404:
+            pass
+        else:
+            raise e
