@@ -5366,6 +5366,27 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~
+``openai_api_key``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    API key for OpenAI (https://openai.com/) to enable the wizard (or
+    more?)
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~
+``openai_model``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    OpenAI model to enable the wizard.
+:Default: ``gpt-4o``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_tool_recommendations``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5659,3 +5680,6 @@
     to the user. Currently only affects s3fs file sources.
 :Default: ``60``
 :Type: int
+
+
+

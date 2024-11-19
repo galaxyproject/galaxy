@@ -805,6 +805,7 @@ class User(Base, Dictifiable, RepresentById):
         back_populates="user", order_by=lambda: desc(UserAddress.update_time), cascade_backrefs=False
     )
     custos_auth: Mapped[List["CustosAuthnzToken"]] = relationship(back_populates="user")
+    chat_exchanges: Mapped[List["ChatExchange"]] = relationship(back_populates="user")
     default_permissions: Mapped[List["DefaultUserPermissions"]] = relationship(back_populates="user")
     groups: Mapped[List["UserGroupAssociation"]] = relationship(back_populates="user")
     histories: Mapped[List["History"]] = relationship(
@@ -2970,6 +2971,43 @@ class GenomeIndexToolData(Base, RepresentById):  # TODO: params arg is lost
     job: Mapped[Optional["Job"]] = relationship()
     dataset: Mapped[Optional["Dataset"]] = relationship()
     user: Mapped[Optional["User"]] = relationship()
+
+
+class ChatExchange(Base, RepresentById):
+
+    __tablename__ = "chat_exchange"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
+    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
+
+    user: Mapped["User"] = relationship(back_populates="chat_exchanges")
+    messages: Mapped[List["ChatExchangeMessage"]] = relationship(back_populates="chat_exchange")
+
+    def __init__(self, user, job_id=None, message=None, **kwargs):
+        self.user = user
+        self.job_id = job_id
+        self.messages = []
+        if message:
+            self.add_message(message)
+
+    def add_message(self, message):
+        self.messages.append(ChatExchangeMessage(message=message))
+
+
+class ChatExchangeMessage(Base, RepresentById):
+    __tablename__ = "chat_exchange_message"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chat_exchange_id: Mapped[int] = mapped_column(ForeignKey("chat_exchange.id"), index=True)
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    message: Mapped[str] = mapped_column(Text)
+    feedback: Mapped[Optional[int]] = mapped_column(Integer)
+    chat_exchange: Mapped["ChatExchange"] = relationship("ChatExchange", back_populates="messages")
+
+    def __init__(self, message, feedback=None):
+        self.message = message
+        self.feedback = feedback
 
 
 class Group(Base, Dictifiable, RepresentById):
