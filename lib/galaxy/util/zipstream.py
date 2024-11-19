@@ -42,7 +42,10 @@ class ZipstreamWrapper:
         headers = {}
         if self.archive_name:
             archive_name = self.archive_name.encode("latin-1", "replace").decode("latin-1")
-            headers["Content-Disposition"] = f'attachment; filename="{archive_name}.zip"'
+            utf8_encoded_filename = quote(self.archive_name, safe="")
+            headers["Content-Disposition"] = (
+                f"attachment; filename=\"{archive_name}.zip\"; filename*=UTF-8''{utf8_encoded_filename}.zip"
+            )
         if self.upstream_mod_zip:
             headers["X-Archive-Files"] = "zip"
         else:
