@@ -718,7 +718,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                 # Try to set metadata directly. @mvdbeek thinks we should only record the datasets
                                 try:
                                     if dataset_instance.has_metadata_files:
-                                        dataset_instance.datatype.set_meta(dataset_instance)  # type:ignore[arg-type]
+                                        dataset_instance.datatype.set_meta(dataset_instance)
                                 except Exception:
                                     log.debug(f"Metadata setting failed on {dataset_instance}", exc_info=True)
                                     dataset_instance.state = dataset_instance.dataset.states.FAILED_METADATA
