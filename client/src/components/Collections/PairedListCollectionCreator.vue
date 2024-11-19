@@ -9,10 +9,12 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import { Toast } from "@/composables/toast";
+import STATES from "@/mvc/dataset/states";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 // import levenshteinDistance from '@/utils/levenshtein';
 import localize from "@/utils/localization";
@@ -25,6 +27,7 @@ import PairedElementView from "./PairedElementView.vue";
 import UnpairedDatasetElementView from "./UnpairedDatasetElementView.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
+const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
 const COMMON_FILTERS = {
     illumina: ["_1", "_2"],
     Rs: ["_R1", "_R2"],
@@ -173,14 +176,21 @@ const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
 /** Are we filtering by datatype? */
 const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
 
-_elementsSetUp();
-
 function removeExtensionsToggle() {
     removeExtensions.value = !removeExtensions.value;
     generatedPairs.value.forEach((pair, index) => {
         pair.name = _guessNameForPair(pair.forward, pair.reverse, removeExtensions.value);
     });
 }
+
+watch(
+    () => props.initialElements,
+    () => {
+        // initialize; and then for any new/removed elements, sync working elements
+        _elementsSetUp();
+    },
+    { immediate: true }
+);
 
 /** Set up main data */
 function _elementsSetUp() {
@@ -195,6 +205,11 @@ function _elementsSetUp() {
     // copy initial list, sort, // TODO: add ids if needed
     // copy initial list, sort, add ids if needed
     workingElements.value = JSON.parse(JSON.stringify(props.initialElements.slice(0)));
+
+    // TODO: Here, we do what we do in other 2 creators; we check the already built pairs
+    //       and sync them with the workingElements, ensuring that there aren't any elements
+    //       in built pairs that no longer exist in workingElements
+
     // _ensureElementIds();
     _validateElements();
     _sortInitialList();
@@ -258,7 +273,7 @@ function _isElementInvalid(element: HistoryItemSummary) {
     if (element.history_content_type === "dataset_collection") {
         return localize("is a collection, this is not allowed");
     }
-    var validState = element.state === "ok" || ["error", "paused"].includes(element.state);
+    var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state as string);
     if (!validState) {
         return localize("has errored, is paused, or is not accessible");
     }
@@ -719,6 +734,21 @@ function changeFilters(filter: keyof typeof COMMON_FILTERS) {
     reverseFilter.value = COMMON_FILTERS[filter][1] as string;
 }
 
+function addUploadedFiles(files: HDASummary[]) {
+    // Any uploaded files are added to workingElements in _elementsSetUp
+    // The user will have to manually select the files to add them to the pair
+
+    // Check for validity of uploads
+    files.forEach((file) => {
+        const problem = _isElementInvalid(file);
+        if (problem) {
+            const invalidMsg = `${file.hid}: ${file.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+            invalidElements.value.push(invalidMsg);
+            Toast.error(invalidMsg, localize("Uploaded item invalid for pair"));
+        }
+    });
+}
+
 async function clickedCreate(collectionName: string) {
     checkForDuplicates();
     if (state.value == "build") {
@@ -907,6 +937,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                     render-extensions-toggle
                     :extensions-toggle="removeExtensions"
                     :extensions="extensions"
+                    @add-uploaded-files="addUploadedFiles"
                     @onUpdateHideSourceItems="hideSourceItems = $event"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle">

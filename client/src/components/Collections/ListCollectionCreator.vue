@@ -5,10 +5,11 @@ import { faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faMinus, faSortAlphaDown, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import localize from "@/utils/localization";
@@ -16,6 +17,8 @@ import localize from "@/utils/localization";
 import FormSelectMany from "../Form/Elements/FormSelectMany/FormSelectMany.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 import DatasetCollectionElementView from "@/components/Collections/ListDatasetCollectionElementView.vue";
+
+const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
 
 interface Props {
     historyId: string;
@@ -75,15 +78,6 @@ const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
 /** Are we filtering by datatype? */
 const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
 
-// TODO: This needs to be done in the other creators as well
-watch(
-    () => props.initialElements,
-    () => {
-        // for any new/removed elements, add them to working elements
-        _elementsSetUp();
-    }
-);
-
 /** set up instance vars function */
 function _instanceSetUp() {
     /** Ids of elements that have been selected by the user - to preserve over renders */
@@ -106,6 +100,26 @@ function _elementsSetUp() {
 
     // reverse the order of the elements to emulate what we have in the history panel
     workingElements.value.reverse();
+
+    // for inListElements, reset their values (in order) to datasets from workingElements
+    const inListElementsPrev = inListElements.value;
+    inListElements.value = [];
+    inListElementsPrev.forEach((prevElem) => {
+        const element = workingElements.value.find((e) => e.id === prevElem.id);
+        const problem = _isElementInvalid(prevElem);
+
+        if (element) {
+            inListElements.value.push(element);
+        } else if (problem) {
+            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+            invalidElements.value.push(invalidMsg);
+            Toast.error(invalidMsg, localize("Invalid element"));
+        } else {
+            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("has been removed from the collection")}`;
+            invalidElements.value.push(invalidMsg);
+            Toast.error(invalidMsg, localize("Invalid element"));
+        }
+    });
 
     // _ensureElementIds();
     _validateElements();
@@ -285,12 +299,17 @@ function onUpdateHideSourceItems(newHideSourceItems: boolean) {
     hideSourceItems.value = newHideSourceItems;
 }
 
-// TODO: No need to use `onMounted` here, this can be done in the `setup`
-onMounted(() => {
-    _instanceSetUp();
-    _elementsSetUp();
-    saveOriginalNames();
-});
+_instanceSetUp();
+saveOriginalNames();
+
+watch(
+    () => props.initialElements,
+    () => {
+        // for any new/removed elements, add them to working elements
+        _elementsSetUp();
+    },
+    { immediate: true }
+);
 
 watch(
     () => datatypesMapper.value,
@@ -301,6 +320,29 @@ watch(
     },
     { immediate: true }
 );
+
+function addUploadedFiles(files: HDASummary[]) {
+    const returnedElements = props.fromSelection ? workingElements : inListElements;
+    files.forEach((f) => {
+        const file = props.fromSelection ? f : workingElements.value.find((e) => e.id === f.id);
+        const problem = _isElementInvalid(f);
+        if (file && !returnedElements.value.find((e) => e.id === file.id)) {
+            returnedElements.value.push(file);
+        } else if (problem) {
+            invalidElements.value.push("Uploaded item: " + f.name + "  " + problem);
+            Toast.error(
+                localize(`Dataset ${f.hid}: ${f.name} ${problem} and is an invalid element for this collection`),
+                localize("Uploaded item is invalid")
+            );
+        } else {
+            invalidElements.value.push("Uploaded item: " + f.name + " could not be added to the collection");
+            Toast.error(
+                localize(`Dataset ${f.hid}: ${f.name} could not be added to the collection`),
+                localize("Uploaded item is invalid")
+            );
+        }
+    });
+}
 
 /** find the element in the workingElements array and update its name */
 function renameElement(element: any, name: string) {
@@ -420,6 +462,7 @@ function renameElement(element: any, name: string) {
                     :history-id="props.historyId"
                     :hide-source-items="hideSourceItems"
                     :extensions="extensions"
+                    @add-uploaded-files="addUploadedFiles"
                     @on-update-datatype-toggle="changeDatatypeFilter"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate">

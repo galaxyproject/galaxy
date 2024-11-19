@@ -2,9 +2,10 @@
 import { faArrowsAltV } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton } from "bootstrap-vue";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import localize from "@/utils/localization";
@@ -13,6 +14,8 @@ import type { DatasetPair } from "../History/adapters/buildCollectionModal";
 
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
+
+const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
 
 interface SelectedDatasetPair {
     forward: HDASummary | undefined;
@@ -71,6 +74,24 @@ const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
 /** Are we filtering by datatype? */
 const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
 
+watch(
+    () => props.initialElements,
+    () => {
+        // initialize; and then for any new/removed elements, sync working elements
+        _elementsSetUp();
+
+        // TODO: fix this, now either of those will almost always be empty
+        if (props.fromSelection && !initialSuggestedName.value) {
+            initialSuggestedName.value = _guessNameForPair(
+                workingElements.value[0] as HDASummary,
+                workingElements.value[1] as HDASummary,
+                removeExtensions.value
+            );
+        }
+    },
+    { immediate: true }
+);
+
 function _elementsSetUp() {
     /** a list of invalid elements and the reasons they aren't valid */
     invalidElements.value = [];
@@ -84,6 +105,35 @@ function _elementsSetUp() {
 
     // reverse the order of the elements to emulate what we have in the history panel
     workingElements.value.reverse();
+
+    // for inListElements, reset their values (in order) to datasets from workingElements
+    const inListElementsPrev = inListElements.value;
+    inListElements.value = { forward: undefined, reverse: undefined };
+
+    for (const key of ["forward", "reverse"]) {
+        const prevElem = inListElementsPrev[key as keyof SelectedDatasetPair];
+        if (!prevElem) {
+            continue;
+        }
+        const element = workingElements.value.find(
+            (e) => e.id === inListElementsPrev[key as keyof SelectedDatasetPair]?.id
+        );
+        const problem = _isElementInvalid(prevElem);
+        if (element) {
+            inListElements.value[key as keyof SelectedDatasetPair] = element;
+        } else if (problem) {
+            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+            invalidElements.value.push(invalidMsg);
+            Toast.error(invalidMsg, localize("Invalid element"));
+        } else {
+            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("has been removed from the collection")}`;
+            invalidElements.value.push(invalidMsg);
+            Toast.error(invalidMsg, localize("Invalid element"));
+        }
+    }
+
+    // TODO: Next thing to add is: If the user adds an uploaded file, that is eventually nuked from workingElements
+    //       because it is invalid, Toast an error for that file by keeping track of uploaded ids in a separate list
 
     _ensureElementIds();
     _validateElements();
@@ -174,6 +224,21 @@ function swapButton() {
             reverse: inListElements.value.forward,
         };
     }
+}
+
+function addUploadedFiles(files: HDASummary[]) {
+    // Any added files are added to workingElements in _elementsSetUp
+    // The user will have to manually select the files to add them to the pair
+
+    // Check for validity of uploads
+    files.forEach((file) => {
+        const problem = _isElementInvalid(file);
+        if (problem) {
+            const invalidMsg = `${file.hid}: ${file.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+            invalidElements.value.push(invalidMsg);
+            Toast.error(invalidMsg, localize("Uploaded item invalid for pair"));
+        }
+    });
 }
 
 function clickedCreate(collectionName: string) {
@@ -270,17 +335,6 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
 
     return fwdLCS + revLCS;
 }
-
-onMounted(() => {
-    _elementsSetUp();
-
-    // TODO: fix this, now either of those will almost always be empty
-    initialSuggestedName.value = _guessNameForPair(
-        workingElements.value[0] as HDASummary,
-        workingElements.value[1] as HDASummary,
-        removeExtensions.value
-    );
-});
 </script>
 
 <template>
@@ -377,7 +431,9 @@ onMounted(() => {
                     :history-id="props.historyId"
                     :hide-source-items="hideSourceItems"
                     :suggested-name="initialSuggestedName"
+                    :extensions="props.extensions"
                     :extensions-toggle="removeExtensions"
+                    @add-uploaded-files="addUploadedFiles"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle">

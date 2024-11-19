@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { faChevronDown, faChevronUp, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp, faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BFormCheckbox, BFormGroup, BFormInput, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import type { HDASummary } from "@/api";
+import type { CompositeFileInfo } from "@/api/datatypes";
+import { AUTO_EXTENSION, getUploadDatatypes } from "@/components/Upload/utils";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -16,6 +19,15 @@ import DefaultBox from "@/components/Upload/DefaultBox.vue";
 const Tabs = {
     create: 0,
     upload: 1,
+};
+
+type ExtensionDetails = {
+    id: string;
+    text: string;
+    description: string | null;
+    description_url: string | null;
+    composite_files?: CompositeFileInfo[] | null;
+    upload_warning?: string | null;
 };
 
 interface Props {
@@ -39,15 +51,23 @@ const emit = defineEmits<{
     (e: "clicked-create", value: string): void;
     (e: "onUpdateHideSourceItems", value: boolean): void;
     (e: "on-update-datatype-toggle", value: "all" | "datatype" | "ext"): void;
+    (e: "add-uploaded-files", value: HDASummary[]): void;
 }>();
 
 const isExpanded = ref(false);
 const currentTab = ref(Tabs.create);
 const collectionName = ref(props.suggestedName);
 const localHideSourceItems = ref(props.hideSourceItems);
+const listExtensions = ref<ExtensionDetails[]>([]);
+const extensionsSet = ref(false);
 
 const validInput = computed(() => {
     return collectionName.value.length > 0;
+});
+
+// If there are props.extensions, filter the list of extensions to only include those
+const validExtensions = computed(() => {
+    return listExtensions.value.filter((ext) => props.extensions?.includes(ext.id));
 });
 
 // Upload properties
@@ -61,8 +81,8 @@ const configOptions = computed(() =>
               chunkUploadSize: config.value.chunk_upload_size,
               fileSourcesConfigured: config.value.file_sources_configured,
               ftpUploadSite: config.value.ftp_upload_site,
-              defaultDbKey: config.value.default_genome,
-              defaultExtension: config.value.default_extension,
+              defaultDbKey: config.value.default_genome || "",
+              defaultExtension: config.value.default_extension || "",
           }
         : {}
 );
@@ -70,6 +90,22 @@ const configOptions = computed(() =>
 const ftpUploadSite = computed(() =>
     currentUser.value && "id" in currentUser.value ? configOptions.value.ftpUploadSite : null
 );
+
+const defaultExtension = computed(() => {
+    if (!configOptions.value || !extensionsSet.value) {
+        return "auto";
+    } else if (!props.extensions?.length) {
+        return configOptions.value.defaultExtension || "auto";
+    } else {
+        return props.extensions[0];
+    }
+});
+
+function addUploadedFiles(value: HDASummary[]) {
+    // TODO: We really need to wait for each of these items to get `state = 'ok'`
+    //       before we can add them to the collection.
+    emit("add-uploaded-files", value);
+}
 
 function clickForHelp() {
     isExpanded.value = !isExpanded.value;
@@ -79,6 +115,13 @@ function clickForHelp() {
 function cancelCreate() {
     props.oncancel();
 }
+
+async function loadExtensions() {
+    listExtensions.value = await getUploadDatatypes(false, AUTO_EXTENSION);
+    extensionsSet.value = true;
+}
+
+loadExtensions();
 
 watch(
     () => localHideSourceItems.value,
@@ -195,18 +238,35 @@ watch(
             </template>
             <!-- TODO: This is incomplete; need to return uploadValues to parent -->
             <DefaultBox
-                v-if="configOptions"
+                v-if="configOptions && extensionsSet"
                 :chunk-upload-size="configOptions.chunkUploadSize"
                 :default-db-key="configOptions.defaultDbKey"
-                :default-extension="configOptions.defaultExtension"
-                :effective-extensions="extensions"
+                :default-extension="defaultExtension"
+                :effective-extensions="props.extensions?.length ? validExtensions : listExtensions"
                 :file-sources-configured="configOptions.fileSourcesConfigured"
                 :ftp-upload-site="ftpUploadSite"
                 :has-callback="false"
                 :history-id="historyId"
-                :is-collection="true"
-                :list-db-keys="listDbKeys"
-                @dismiss="currentTab = Tabs.create" />
+                :list-db-keys="[]"
+                disable-footer
+                emit-uploaded
+                @uploaded="addUploadedFiles"
+                @dismiss="currentTab = Tabs.create">
+                <template v-slot:footer>
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                        <BAlert v-if="extensions?.length" class="w-100 py-0" variant="secondary" show>
+                            <HelpText
+                                uri="galaxy.collections.collectionBuilder.requiredUploadExtensions"
+                                :text="localize('Required extensions: ')" />
+                            <strong>{{ orList(extensions) }}</strong>
+                        </BAlert>
+                    </div>
+                </template>
+                <template v-slot:emit-btn-txt>
+                    <FontAwesomeIcon :icon="faPlus" fixed-width />
+                    {{ localize("Add Uploaded") }}
+                </template>
+            </DefaultBox>
         </BTab>
     </BTabs>
 </template>
