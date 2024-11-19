@@ -754,6 +754,10 @@ export default {
             if (activityId === "save-workflow") {
                 await this.saveOrCreate();
             }
+
+            if (activityId === "save-workflow-as") {
+                this.onSaveAs();
+            }
         },
         onAnnotation(nodeId, newAnnotation) {
             this.stepActions.setAnnotation(this.steps[nodeId], newAnnotation);
