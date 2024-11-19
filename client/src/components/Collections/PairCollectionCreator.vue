@@ -82,6 +82,9 @@ function _elementsSetUp() {
     // copy initial list, sort, add ids if needed
     workingElements.value = JSON.parse(JSON.stringify(props.initialElements.slice(0)));
 
+    // reverse the order of the elements to emulate what we have in the history panel
+    workingElements.value.reverse();
+
     _ensureElementIds();
     _validateElements();
 }
