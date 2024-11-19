@@ -805,7 +805,6 @@ class User(Base, Dictifiable, RepresentById):
         back_populates="user", order_by=lambda: desc(UserAddress.update_time), cascade_backrefs=False
     )
     custos_auth: Mapped[List["CustosAuthnzToken"]] = relationship(back_populates="user")
-    # TODO: Fixme, this rebase predates sqlalchemy2.0 and needs an update.
     chat_exchanges: Mapped[List["ChatExchange"]] = relationship(back_populates="user")
     default_permissions: Mapped[List["DefaultUserPermissions"]] = relationship(back_populates="user")
     groups: Mapped[List["UserGroupAssociation"]] = relationship(back_populates="user")
