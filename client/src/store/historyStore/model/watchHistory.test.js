@@ -4,6 +4,7 @@ import MockAdapter from "axios-mock-adapter";
 import { createPinia, mapState } from "pinia";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
+import { suppressDebugConsole } from "tests/jest/helpers";
 
 import { watchHistoryOnce } from "./watchHistory";
 
@@ -77,6 +78,8 @@ describe("watchHistory", () => {
     });
 
     it("survives a failing request", async () => {
+        suppressDebugConsole(); // we log that 500, totally expected, do not include it in test output
+
         // Setup a failing request, then update history content
         axiosMock
             .onGet(`/history/current_history_json`)
@@ -92,7 +95,6 @@ describe("watchHistory", () => {
         try {
             await watchHistoryOnce();
         } catch (error) {
-            console.log(error);
             expect(error.message).toContain("500");
         }
         // Need to reset axios mock here. Smells like a bug,
