@@ -1,7 +1,7 @@
-import { useMagicKeys } from "@vueuse/core";
 import { computed, onScopeDispose, reactive, ref, watch } from "vue";
 
 import { type Rectangle } from "@/components/Workflow/Editor/modules/geometry";
+import { useMagicKeys } from "@/composables/useMagicKeys";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 import { defineScopedStore } from "./scopedStore";
