@@ -3002,7 +3002,7 @@ class ChatExchangeMessage(Base, RepresentById):
     chat_exchange_id: Mapped[int] = mapped_column(ForeignKey("chat_exchange.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     message: Mapped[str] = mapped_column(Text)
-    feedback: Mapped[int] = mapped_column(Integer, nullable=True)
+    feedback: Mapped[Optional[int]] = mapped_column(Integer)
     chat_exchange: Mapped["ChatExchange"] = relationship("ChatExchange", back_populates="messages")
 
     def __init__(self, message, feedback=None):
