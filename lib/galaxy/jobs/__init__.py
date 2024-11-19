@@ -75,6 +75,7 @@ from galaxy.objectstore import (
     ObjectStorePopulator,
     serialize_static_object_store_config,
 )
+from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
@@ -2037,6 +2038,25 @@ class MinimalJobWrapper(HasResourceParameters):
                 # Purge, in case job wrote directly to object store
                 dataset.full_delete()
                 collected_bytes = 0
+
+        # Calculate dataset hash
+        for dataset_assoc in output_dataset_associations:
+            dataset = dataset_assoc.dataset.dataset
+            if not dataset.purged and dataset.state != Dataset.states.DEFERRED and not dataset.hashes:
+                if self.app.config.calculate_dataset_hash == "always" or (
+                    self.app.config.calculate_dataset_hash == "upload" and job.tool_id in ("upload1", "__DATA_FETCH__")
+                ):
+                    # Calculate dataset hash via a celery task
+                    if self.app.config.enable_celery_tasks:
+                        from galaxy.celery.tasks import compute_dataset_hash
+
+                        extra_files_path = dataset.extra_files_path if dataset.extra_files_path_exists() else None
+                        request = ComputeDatasetHashTaskRequest(
+                            dataset_id=dataset.id,
+                            extra_files_path=extra_files_path,
+                            hash_function=self.app.config.hash_function,
+                        )
+                        compute_dataset_hash.delay(request=request)
 
         user = job.user
         if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:

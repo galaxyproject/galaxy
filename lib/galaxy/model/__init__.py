@@ -4290,7 +4290,7 @@ class Dataset(Base, StorableObject, Serializable):
             if not file_name and self.state not in (self.states.NEW, self.states.QUEUED):
                 # Queued datasets can be assigned an object store and have a filename, but they aren't guaranteed to.
                 # Anything after queued should have a file name.
-                log.warning(f"Failed to determine file name for dataset {self.id}")
+                log.warning(f"Failed to determine file name for dataset {self.id} in state {self.state}")
             return file_name
         else:
             filename = self.external_filename
