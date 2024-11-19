@@ -3,27 +3,28 @@ import "jest-location-mock";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import toolsList from "components/ToolsView/testData/toolsList";
-import toolsListInPanel from "components/ToolsView/testData/toolsListInPanel";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { useConfig } from "@/composables/config";
+import toolsList from "@/components/ToolsView/testData/toolsList.json";
+import toolsListInPanel from "@/components/ToolsView/testData/toolsListInPanel.json";
 
-import viewsList from "./testData/viewsList";
-import ToolPanel from "./ToolPanel";
+import viewsList from "./testData/viewsList.json";
 import { types_to_icons } from "./utilities";
+
+import ToolPanel from "./ToolPanel.vue";
 
 const localVue = getLocalVue();
 
 const TEST_PANELS_URI = "/api/tool_panels";
 
-jest.mock("composables/config");
-useConfig.mockReturnValue({
-    config: {},
-    isConfigLoaded: true,
-});
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: {},
+        isConfigLoaded: true,
+    })),
+}));
 
 describe("ToolPanel", () => {
     it("test navigation of tool panel views menu", async () => {
@@ -37,7 +38,7 @@ describe("ToolPanel", () => {
             .reply(200, { default_panel_view: "default", views: viewsList });
 
         const pinia = createPinia();
-        const wrapper = mount(ToolPanel, {
+        const wrapper = mount(ToolPanel as object, {
             propsData: {
                 workflow: false,
                 editorWorkflows: null,
@@ -88,7 +89,9 @@ describe("ToolPanel", () => {
 
                 // Test: check if the panel header now has an icon and a changed name
                 const panelViewIcon = wrapper.find("[data-description='panel view header icon']");
-                expect(panelViewIcon.classes()).toContain(`fa-${types_to_icons[value.view_type]}`);
+                expect(panelViewIcon.classes()).toContain(
+                    `fa-${types_to_icons[value.view_type as keyof typeof types_to_icons]}`
+                );
                 expect(wrapper.find("#toolbox-heading").text()).toBe(value.name);
             } else {
                 // Test: check if the default panel view is already selected, and no icon
