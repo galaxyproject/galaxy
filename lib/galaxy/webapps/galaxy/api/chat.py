@@ -3,15 +3,20 @@ API Controller providing Chat functionality
 """
 
 import logging
+from typing import (
+    Optional,
+    Union,
+)
+
+from fastapi import Path
+from typing_extensions import Annotated
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ConfigurationError
-from galaxy.managers.chat import (
-    ChatManager,
-    JobIdPathParam,
-)
+from galaxy.managers.chat import ChatManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import ChatPayload
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -31,6 +36,13 @@ router = Router(tags=["chat"])
 DEFAULT_PROMPT = """
 Please only say that something went wrong when configuing the ai prompt in your response.
 """
+
+JobIdPathParam = Optional[
+    Annotated[
+        DecodedDatabaseIdField,
+        Path(title="Job ID", description="The Job ID the chat exchange is linked to."),
+    ]
+]
 
 
 @router.cbv
@@ -54,7 +66,7 @@ class ChatAPI:
             # If there's an existing response for this job, just return that one for now.
             # TODO: Support regenerating the response as a new message, and
             # asking follow-up questions.
-            existing_response = self.chat_manager.get(trans, job_id)
+            existing_response = self.chat_manager.get(trans, job.id)
             if existing_response and existing_response.messages[0]:
                 return existing_response.messages[0].message
 
@@ -75,7 +87,7 @@ class ChatAPI:
         job_id: JobIdPathParam,
         feedback: int,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> int | None:
+    ) -> Union[int, None]:
         """Provide feedback on the chatbot response."""
         job = self.job_manager.get_accessible_job(trans, job_id)
         chat_response = self.chat_manager.set_feedback_for_job(trans, job.id, feedback)

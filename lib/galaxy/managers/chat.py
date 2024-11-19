@@ -1,6 +1,5 @@
-from typing import Optional
+from typing import Union
 
-from fastapi import Path
 from sqlalchemy import (
     and_,
     select,
@@ -9,7 +8,6 @@ from sqlalchemy.exc import (
     MultipleResultsFound,
     NoResultFound,
 )
-from typing_extensions import Annotated
 
 from galaxy.exceptions import (
     InconsistentDatabase,
@@ -19,22 +17,7 @@ from galaxy.exceptions import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import ChatExchange
 from galaxy.model.base import transaction
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.util import unicodify
-
-JobIdPathParam = Optional[
-    Annotated[
-        DecodedDatabaseIdField,
-        Path(title="Job ID", description="The Job ID the chat exchange is linked to."),
-    ]
-]
-
-MessageIdPathParam = Optional[
-    Annotated[
-        DecodedDatabaseIdField,
-        Path(title="Job ID", description="The ChatMessage ID."),
-    ]
-]
 
 
 class ChatManager:
@@ -42,7 +25,7 @@ class ChatManager:
     Business logic for chat exchanges.
     """
 
-    def create(self, trans: ProvidesUserContext, job_id: JobIdPathParam, message: str) -> ChatExchange:
+    def create(self, trans: ProvidesUserContext, job_id: int, message: str) -> ChatExchange:
         """
         Create a new chat exchange in the DB.  Currently these are *only* job-based chat exchanges, will need to generalize down the road.
         :param  job_id:      id of the job to associate the response with
@@ -59,7 +42,7 @@ class ChatManager:
             trans.sa_session.commit()
         return chat_exchange
 
-    def get(self, trans: ProvidesUserContext, job_id: JobIdPathParam) -> ChatExchange | None:
+    def get(self, trans: ProvidesUserContext, job_id: int) -> Union[ChatExchange, None]:
         """
         Returns the chat response from the DB based on the given job id.
         :param  job_id:      id of the job to load a response for from the DB
@@ -84,7 +67,7 @@ class ChatManager:
             raise InternalServerError(f"Error loading from the database.{unicodify(e)}")
         return chat_response
 
-    def set_feedback_for_job(self, trans: ProvidesUserContext, job_id: JobIdPathParam, feedback: int) -> ChatExchange:
+    def set_feedback_for_job(self, trans: ProvidesUserContext, job_id: int, feedback: int) -> ChatExchange:
         """
         Set the feedback for a chat response.
         :param  message_id:      id of the job to associate the feedback with
