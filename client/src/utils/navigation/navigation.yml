@@ -20,7 +20,7 @@ _:  # global stuff
     right_panel_collapse: '.collapse-button.right'
     by_attribute: '${scope} [${name}="${value}"]'
     active_nav_item: '.nav-item-active'
-    toolbox_panel: '#toolbox_panel'
+    toolbox_panel: '#toolbox-panel'
 
     confirm_button:
       type: xpath
@@ -899,11 +899,12 @@ tour:
 tools:
   selectors:
     activity: '#activity-tools'
+    tools_activity_workflow_editor: '#activity-workflow-editor-tools'
     workflows_activity: '#activity-workflow-editor-workflows'
     body: '#center #tool-card-body'
     execute: '#execute'
     help: 'div.form-help'
-    search: '.search-query'
+    search: '#toolbox-panel .search-query'
     title: '.toolSectionTitle'
 
 admin:
