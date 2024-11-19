@@ -1,4 +1,4 @@
-import { computed, onScopeDispose, reactive, ref, watch } from "vue";
+import { computed, getCurrentScope, onScopeDispose, reactive, ref, watch } from "vue";
 
 import { type Rectangle } from "@/components/Workflow/Editor/modules/geometry";
 import { useMagicKeys } from "@/composables/useMagicKeys";
@@ -66,9 +66,11 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
 
         inputCatcherEventListeners.add(listener);
 
-        onScopeDispose(() => {
-            inputCatcherEventListeners.delete(listener);
-        });
+        if (getCurrentScope()) {
+            onScopeDispose(() => {
+                inputCatcherEventListeners.delete(listener);
+            });
+        }
     }
 
     onInputCatcherEvent("pointerdown", () => (inputCatcherPressed.value = true));
