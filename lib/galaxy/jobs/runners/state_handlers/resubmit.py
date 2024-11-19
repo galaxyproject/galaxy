@@ -1,5 +1,8 @@
 import logging
-from datetime import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 
 from galaxy import model
 from galaxy.jobs.runners import JobState
@@ -123,7 +126,7 @@ class _ExpressionContext:
         if self._lazy_context is None:
             runner_state = getattr(self._job_state, "runner_state", None) or JobState.runner_states.UNKNOWN_ERROR
             attempt = 1
-            now = datetime.utcnow()
+            now = datetime.now(tz=timezone.utc)
             last_running_state = None
             last_queued_state = None
             for state in self._job_state.job_wrapper.get_job().state_history:

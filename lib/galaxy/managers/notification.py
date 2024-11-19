@@ -1,5 +1,8 @@
 import logging
-from datetime import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 from enum import Enum
 from typing import (
     cast,
@@ -135,7 +138,7 @@ class NotificationManager:
 
     @property
     def _now(self):
-        return datetime.utcnow()
+        return datetime.now(tz=timezone.utc)
 
     @property
     def _notification_is_active(self):
