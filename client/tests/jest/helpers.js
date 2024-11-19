@@ -277,3 +277,12 @@ export function injectTestRouter(localVue) {
 export function suppressDebugConsole() {
     jest.spyOn(console, "debug").mockImplementation(jest.fn());
 }
+
+export function stubHelpPopovers() {
+    // bootstrap vue will try to match targets to actual HTML elements in DOM but there
+    // may be no DOM for jest tests, just stub out an alternative minimal implementation.
+    jest.mock("@/components/Help/HelpPopover.vue", () => ({
+        name: "HelpPopover",
+        render: (h) => h("div", "Mocked Popover"),
+    }));
+}

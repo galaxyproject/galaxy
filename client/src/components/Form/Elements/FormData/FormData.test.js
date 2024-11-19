@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { dispatchEvent, getLocalVue } from "tests/jest/helpers";
+import { dispatchEvent, getLocalVue, stubHelpPopovers } from "tests/jest/helpers";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
@@ -50,6 +50,8 @@ const defaultOptions = {
 
 const SELECT_OPTIONS = ".multiselect__element";
 const SELECTED_VALUE = ".multiselect__option--selected span";
+
+stubHelpPopovers();
 
 describe("FormData", () => {
     it("regular data", async () => {

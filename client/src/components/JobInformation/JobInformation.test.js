@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, stubHelpPopovers } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -15,6 +15,8 @@ const JOB_ID = "test_id";
 const localVue = getLocalVue();
 
 const { server, http } = useServerMock();
+
+stubHelpPopovers();
 
 describe("JobInformation/JobInformation.vue", () => {
     let wrapper;
