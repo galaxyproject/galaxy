@@ -1279,8 +1279,8 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         <div>
                             <div class="pairing-split-child">
                                 <div class="column-header">
-                                    <div class="column-title paired-column-title">
-                                        <span class="title"> {{ numOfPairs }} {{ localize(" pairs") }}</span>
+                                    <div class="column-title paired-column-title" data-description="number of pairs">
+                                        <span class="title"> {{ numOfPairs }} {{ localize("pairs") }}</span>
                                     </div>
                                     <BButton
                                         v-if="generatedPairs.length > 0"
