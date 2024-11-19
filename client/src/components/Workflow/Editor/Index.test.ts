@@ -38,7 +38,7 @@ describe("Index", () => {
         const datatypesStore = useDatatypesMapperStore();
         datatypesStore.datatypesMapper = testDatatypesMapper;
         mockLoadWorkflow.mockResolvedValue({ steps: {} });
-        MockGetVersions.mockResolvedValue(() => []);
+        MockGetVersions.mockResolvedValue([]);
         mockGetStateUpgradeMessages.mockImplementation(() => []);
         mockGetAppRoot.mockImplementation(() => "prefix/");
         Object.defineProperty(window, "onbeforeunload", {
