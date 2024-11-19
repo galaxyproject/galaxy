@@ -1,7 +1,10 @@
 from typing import Optional
 
 from fastapi import Path
-from sqlalchemy import select
+from sqlalchemy import (
+    and_,
+    select,
+)
 from sqlalchemy.exc import (
     MultipleResultsFound,
     NoResultFound,
@@ -66,10 +69,12 @@ class ChatManager:
         :raises: InconsistentDatabase, InternalServerError
         """
         try:
-            stmt = select(ChatExchange).where(ChatExchange.job_id == job_id)
+            stmt = select(ChatExchange).where(
+                and_(ChatExchange.job_id == job_id, ChatExchange.user_id == trans.user.id)
+            )
             chat_response = trans.sa_session.execute(stmt).scalar_one()
         except MultipleResultsFound:
-            # TODO: Unsure about this, isn't this more applicable when we're getting the response for response.id instead of response.job_id?
+            # TODO: Unsure about this, isn't this more applicable when we're getting the response for response.id instead of response.
             raise InconsistentDatabase("Multiple chat responses found with the same job id.")
         except NoResultFound:
             # TODO: Would there be cases where we raise an exception here? Or, is there a better way to return None?

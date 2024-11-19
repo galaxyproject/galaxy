@@ -11,6 +11,7 @@ from galaxy.managers.chat import (
     JobIdPathParam,
 )
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.jobs import JobManager
 from galaxy.schema.schema import ChatPayload
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -36,6 +37,7 @@ Please only say that something went wrong when configuing the ai prompt in your 
 class ChatAPI:
     config: GalaxyAppConfiguration = depends(GalaxyAppConfiguration)
     chat_manager: ChatManager = depends(ChatManager)
+    job_manager: JobManager = depends(JobManager)
 
     @router.post("/api/chat")
     def query(
@@ -47,8 +49,8 @@ class ChatAPI:
         """We're off to ask the wizard"""
         # Currently job-based chat exchanges are the only ones supported,
         # and will only have the one message.
-
-        if job_id:
+        job = self.job_manager.get_accessible_job(trans, job_id)
+        if job:
             # If there's an existing response for this job, just return that one for now.
             # TODO: Support regenerating the response as a new message, and
             # asking follow-up questions.
@@ -62,8 +64,8 @@ class ChatAPI:
         response = self._call_openai(messages)
         answer = response.choices[0].message.content
 
-        if job_id:
-            self.chat_manager.create(trans, job_id, answer)
+        if job:
+            self.chat_manager.create(trans, job.id, answer)
 
         return answer
 
@@ -75,7 +77,8 @@ class ChatAPI:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> int | None:
         """Provide feedback on the chatbot response."""
-        chat_response = self.chat_manager.set_feedback_for_job(trans, job_id, feedback)
+        job = self.job_manager.get_accessible_job(trans, job_id)
+        chat_response = self.chat_manager.set_feedback_for_job(trans, job.id, feedback)
         return chat_response.messages[0].feedback
 
     def _ensure_openai_configured(self):
