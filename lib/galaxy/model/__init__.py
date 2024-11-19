@@ -2982,7 +2982,7 @@ class ChatExchange(Base, RepresentById):
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
 
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(back_populates="chat_exchanges")
     messages: Mapped[List["ChatExchangeMessage"]] = relationship(back_populates="chat_exchange", cascade_backrefs=False)
 
     def __init__(self, user, job_id=None, message=None, **kwargs):
