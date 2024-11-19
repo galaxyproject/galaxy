@@ -736,6 +736,7 @@ workflow_editor:
       duplicate_selection: "[title='duplicate selected']"
       delete_selection: "[title='delete selected']"
       auto_layout: "#auto-layout-button"
+      option_save_as: ".activity-settings-item[contains(text(), 'Save as')]"
   comment:
     selectors:
       _: ".workflow-editor-comment"
