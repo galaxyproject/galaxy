@@ -273,3 +273,7 @@ export function injectTestRouter(localVue) {
     const router = new VueRouter();
     return router;
 }
+
+export function suppressDebugConsole() {
+    jest.spyOn(console, "debug").mockImplementation(jest.fn());
+}
