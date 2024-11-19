@@ -2502,6 +2502,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/histories/{history_id}/tool_requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return all the tool requests for the tools submitted to this history. */
+        get: operations["tool_requests_api_histories__history_id__tool_requests_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/histories/{history_id}/unpublish": {
         parameters: {
             query?: never;
@@ -2814,7 +2831,8 @@ export interface paths {
         /** Index */
         get: operations["index_api_jobs_get"];
         put?: never;
-        post?: never;
+        /** Create */
+        post: operations["create_api_jobs_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4381,6 +4399,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tool_requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tool request state. */
+        get: operations["get_tool_request_api_tool_requests__id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tool_requests/{id}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tool request state. */
+        get: operations["tool_request_state_api_tool_requests__id__state_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tool_shed_repositories": {
         parameters: {
             query?: never;
@@ -4443,6 +4495,23 @@ export interface paths {
         put?: never;
         /** Upload files to Galaxy */
         post: operations["fetch_form_api_tools_fetch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/{tool_id}/inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tool inputs. */
+        get: operations["tool_inputs_api_tools__tool_id__inputs_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6276,6 +6345,39 @@ export interface components {
                   )
                 | ("cloud" | "quota" | "no_quota" | "restricted" | "user_defined");
         };
+        /** BaseUrlParameterModel */
+        BaseUrlParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_baseurl
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_baseurl";
+        };
         /** BasicRoleModel */
         BasicRoleModel: {
             /**
@@ -6390,6 +6492,48 @@ export interface components {
             history_id: unknown;
             /** Targets */
             targets: unknown;
+        };
+        /** BooleanParameterModel */
+        BooleanParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Falsevalue */
+            falsevalue?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_boolean
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_boolean";
+            /** Truevalue */
+            truevalue?: string | null;
+            /**
+             * Value
+             * @default false
+             */
+            value: boolean | null;
         };
         /** BroadcastNotificationContent */
         BroadcastNotificationContent: {
@@ -6705,6 +6849,41 @@ export interface components {
          * @enum {string}
          */
         ColletionSourceType: "hda" | "ldda" | "hdca" | "new_collection";
+        /** ColorParameterModel */
+        ColorParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_color
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_color";
+            /** Value */
+            value?: string | null;
+        };
         /** CompositeDataElement */
         CompositeDataElement: {
             /** Md5 */
@@ -6853,6 +7032,82 @@ export interface components {
              * @description The quota source label corresponding to the object store the dataset is stored in (or would be stored in)
              */
             source: string | null;
+        };
+        /** ConditionalParameterModel */
+        ConditionalParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_conditional
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_conditional";
+            /** Test Parameter */
+            test_parameter:
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["SelectParameterModel"];
+            /** Whens */
+            whens: components["schemas"]["ConditionalWhen"][];
+        };
+        /** ConditionalWhen */
+        ConditionalWhen: {
+            /** Discriminator */
+            discriminator: boolean | string;
+            /** Is Default When */
+            is_default_when: boolean;
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
+            )[];
         };
         /** ConnectAction */
         ConnectAction: {
@@ -7769,6 +8024,155 @@ export interface components {
              */
             username_and_slug?: string | null;
         };
+        /** CwlBooleanParameterModel */
+        CwlBooleanParameterModel: {
+            /** Name */
+            name: string;
+            /**
+             * Parameter Type
+             * @default cwl_boolean
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_boolean";
+        };
+        /** CwlDirectoryParameterModel */
+        CwlDirectoryParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default cwl_directory
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_directory";
+        };
+        /** CwlFileParameterModel */
+        CwlFileParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default cwl_file
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_file";
+        };
+        /** CwlFloatParameterModel */
+        CwlFloatParameterModel: {
+            /** Name */
+            name: string;
+            /**
+             * Parameter Type
+             * @default cwl_float
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_float";
+        };
+        /** CwlIntegerParameterModel */
+        CwlIntegerParameterModel: {
+            /** Name */
+            name: string;
+            /**
+             * Parameter Type
+             * @default cwl_integer
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_integer";
+        };
+        /** CwlNullParameterModel */
+        CwlNullParameterModel: {
+            /** Name */
+            name: string;
+            /**
+             * Parameter Type
+             * @default cwl_null
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_null";
+        };
+        /** CwlStringParameterModel */
+        CwlStringParameterModel: {
+            /** Name */
+            name: string;
+            /**
+             * Parameter Type
+             * @default cwl_string
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_string";
+        };
+        /** CwlUnionParameterModel */
+        CwlUnionParameterModel: {
+            /** Name */
+            name: string;
+            /**
+             * Parameter Type
+             * @default cwl_union
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "cwl_union";
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+            )[];
+        };
         /**
          * DCESummary
          * @description Dataset Collection Element summary information.
@@ -7858,6 +8262,85 @@ export interface components {
              */
             populated?: boolean;
         };
+        /** DataCollectionParameterModel */
+        DataCollectionParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Collection Type */
+            collection_type?: string | null;
+            /**
+             * Extensions
+             * @default [
+             *       "data"
+             *     ]
+             */
+            extensions: string[];
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_data_collection
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_data_collection";
+            /** Value */
+            value: Record<string, never> | null;
+        };
+        /** DataColumnParameterModel */
+        DataColumnParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Multiple */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_data_column
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_data_column";
+        };
         /** DataElementsFromTarget */
         DataElementsFromTarget: {
             /**
@@ -7914,6 +8397,55 @@ export interface components {
          * @enum {string}
          */
         DataItemSourceType: "hda" | "ldda" | "hdca" | "dce" | "dc";
+        /** DataParameterModel */
+        DataParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /**
+             * Extensions
+             * @default [
+             *       "data"
+             *     ]
+             */
+            extensions: string[];
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /**
+             * Multiple
+             * @default false
+             */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_data
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_data";
+        };
         /** DatasetAssociationRoles */
         DatasetAssociationRoles: {
             /**
@@ -8544,6 +9076,49 @@ export interface components {
              */
             username: string;
         };
+        /** DirectoryUriParameterModel */
+        DirectoryUriParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_directory_uri
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_directory_uri";
+            /**
+             * Validators
+             * @default []
+             */
+            validators: (
+                | components["schemas"]["LengthParameterValidatorModel"]
+                | components["schemas"]["RegexParameterValidatorModel"]
+                | components["schemas"]["ExpressionParameterValidatorModel"]
+                | components["schemas"]["EmptyFieldParameterValidatorModel"]
+            )[];
+        };
         /** DisconnectAction */
         DisconnectAction: {
             /**
@@ -8586,6 +9161,59 @@ export interface components {
             name: string;
             /** Version */
             version: string;
+        };
+        /** DrillDownOptionsDict */
+        DrillDownOptionsDict: {
+            /** Name */
+            name: string | null;
+            /** Options */
+            options: components["schemas"]["DrillDownOptionsDict"][];
+            /** Selected */
+            selected: boolean;
+            /** Value */
+            value: string;
+        };
+        /** DrillDownParameterModel */
+        DrillDownParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Hierarchy
+             * @enum {string}
+             */
+            hierarchy: "recurse" | "exact";
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Multiple */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /** Options */
+            options?: components["schemas"]["DrillDownOptionsDict"][] | null;
+            /**
+             * Parameter Type
+             * @default gx_drill_down
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_drill_down";
         };
         /** DrsObject */
         DrsObject: {
@@ -8679,6 +9307,28 @@ export interface components {
          * @enum {string}
          */
         ElementsFromType: "archive" | "bagit" | "bagit_archive" | "directory";
+        /** EmptyFieldParameterValidatorModel */
+        EmptyFieldParameterValidatorModel: {
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean;
+            /** Message */
+            message?: string | null;
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            /**
+             * Type
+             * @default empty_field
+             * @constant
+             * @enum {string}
+             */
+            type: "empty_field";
+        };
         /** EncodedDataItemSourceId */
         EncodedDataItemSourceId: {
             /**
@@ -8994,6 +9644,35 @@ export interface components {
         };
         /** ExportTaskListResponse */
         ExportTaskListResponse: components["schemas"]["ObjectExportTaskResponse"][];
+        /**
+         * ExpressionParameterValidatorModel
+         * @description Check if a one line python expression given expression evaluates to True.
+         *
+         *     The expression is given is the content of the validator tag.
+         */
+        ExpressionParameterValidatorModel: {
+            /** Expression */
+            expression: string;
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean;
+            /** Message */
+            message?: string | null;
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            /**
+             * Type
+             * @default expression
+             * @constant
+             * @enum {string}
+             */
+            type: "expression";
+        };
         /** ExtraFileEntry */
         ExtraFileEntry: {
             /** @description The class of this entry, either File or Directory. */
@@ -9360,6 +10039,50 @@ export interface components {
             /** Step */
             step: components["schemas"]["StepReferenceByOrderIndex"] | components["schemas"]["StepReferenceByLabel"];
         };
+        /** FloatParameterModel */
+        FloatParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_float
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_float";
+            /**
+             * Validators
+             * @default []
+             */
+            validators: components["schemas"]["InRangeParameterValidatorModel"][];
+            /** Value */
+            value?: number | null;
+        };
         /** FolderLibraryFolderItem */
         FolderLibraryFolderItem: {
             /** Can Manage */
@@ -9489,6 +10212,41 @@ export interface components {
             /** Tags */
             tags?: string[] | null;
         };
+        /** GenomeBuildParameterModel */
+        GenomeBuildParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Multiple */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_genomebuild
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_genomebuild";
+        };
         /**
          * GroupCreatePayload
          * @description Payload schema for creating a group.
@@ -9598,6 +10356,41 @@ export interface components {
              * @description The relative URL to access this item.
              */
             url: string;
+        };
+        /** GroupTagParameterModel */
+        GroupTagParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Multiple */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_group_tag
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_group_tag";
         };
         /** GroupUpdatePayload */
         GroupUpdatePayload: {
@@ -11198,6 +11991,51 @@ export interface components {
         HelpForumUser: {
             [key: string]: unknown;
         };
+        /** HiddenParameterModel */
+        HiddenParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_hidden
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_hidden";
+            /**
+             * Validators
+             * @default []
+             */
+            validators: (
+                | components["schemas"]["LengthParameterValidatorModel"]
+                | components["schemas"]["RegexParameterValidatorModel"]
+                | components["schemas"]["ExpressionParameterValidatorModel"]
+                | components["schemas"]["EmptyFieldParameterValidatorModel"]
+            )[];
+            /** Value */
+            value: string | null;
+        };
         /**
          * HistoryActiveContentCounts
          * @description Contains the number of active, deleted or hidden items in a History.
@@ -11610,6 +12448,42 @@ export interface components {
              */
             uri: string;
         };
+        /** InRangeParameterValidatorModel */
+        InRangeParameterValidatorModel: {
+            /**
+             * Exclude Max
+             * @default false
+             */
+            exclude_max: boolean;
+            /**
+             * Exclude Min
+             * @default false
+             */
+            exclude_min: boolean;
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean;
+            /** Max */
+            max?: number | null;
+            /** Message */
+            message?: string | null;
+            /** Min */
+            min?: number | null;
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            /**
+             * Type
+             * @default in_range
+             * @constant
+             * @enum {string}
+             */
+            type: "in_range";
+        };
         /** InputDataCollectionStep */
         InputDataCollectionStep: {
             /**
@@ -11852,6 +12726,47 @@ export interface components {
             tool_shed_status: components["schemas"]["InstalledRepositoryToolShedStatus"] | null;
             /** Uninstalled */
             uninstalled: boolean;
+        };
+        /** IntegerParameterModel */
+        IntegerParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /** Name */
+            name: string;
+            /** Optional */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_integer
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_integer";
+            /**
+             * Validators
+             * @default []
+             */
+            validators: components["schemas"]["InRangeParameterValidatorModel"][];
+            /** Value */
+            value?: number | null;
         };
         /** InvocationCancellationHistoryDeletedResponse */
         InvocationCancellationHistoryDeletedResponse: {
@@ -12778,6 +13693,15 @@ export interface components {
              */
             stdout?: string | null;
         };
+        /** JobCreateResponse */
+        JobCreateResponse: {
+            task_result: components["schemas"]["AsyncTaskResultSummary"];
+            /**
+             * Tool Request Id
+             * @example 0123456789ABCDEF
+             */
+            tool_request_id: string;
+        };
         /** JobDestinationParams */
         JobDestinationParams: {
             /**
@@ -13056,6 +13980,19 @@ export interface components {
              */
             name: string;
         };
+        /** JobOutputCollectionAssociation */
+        JobOutputCollectionAssociation: {
+            /**
+             * dataset_collection_instance
+             * @description Reference to the associated item.
+             */
+            dataset_collection_instance: components["schemas"]["EncodedDataItemSourceId"];
+            /**
+             * name
+             * @description Name of the job parameter.
+             */
+            name: string;
+        };
         /** JobParameter */
         JobParameter: {
             /**
@@ -13083,6 +14020,47 @@ export interface components {
                 | boolean
                 | string
                 | null;
+        };
+        /** JobRequest */
+        JobRequest: {
+            /**
+             * history_id
+             * @description TODO
+             */
+            history_id?: string | null;
+            /**
+             * Inputs
+             * @description TODO
+             */
+            inputs?: Record<string, never> | null;
+            /**
+             * rerun_remap_job_id
+             * @description TODO
+             */
+            rerun_remap_job_id?: string | null;
+            /**
+             * Send Email Notification
+             * @description TODO
+             * @default false
+             */
+            send_email_notification: boolean;
+            /**
+             * tool_id
+             * @description TODO
+             */
+            tool_id?: string | null;
+            /**
+             * tool_uuid
+             * @description TODO
+             */
+            tool_uuid?: string | null;
+            /**
+             * tool_version
+             * @description TODO
+             */
+            tool_version?: string | null;
+            /** use_cached_jobs */
+            use_cached_jobs?: boolean | null;
         };
         /**
          * JobSourceType
@@ -13216,6 +14194,15 @@ export interface components {
              */
             user_email?: string | null;
         };
+        /** LabelValue */
+        LabelValue: {
+            /** Label */
+            label: string;
+            /** Selected */
+            selected: boolean;
+            /** Value */
+            value: string;
+        };
         /**
          * LabelValuePair
          * @description Generic Label/Value pair model.
@@ -13263,6 +14250,32 @@ export interface components {
              * @default []
              */
             LIBRARY_MODIFY_in: string[] | string | null;
+        };
+        /** LengthParameterValidatorModel */
+        LengthParameterValidatorModel: {
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean;
+            /** Max */
+            max?: number | null;
+            /** Message */
+            message?: string | null;
+            /** Min */
+            min?: number | null;
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            /**
+             * Type
+             * @default length
+             * @constant
+             * @enum {string}
+             */
+            type: "length";
         };
         /** LibraryAvailablePermissions */
         LibraryAvailablePermissions: {
@@ -14399,6 +15412,28 @@ export interface components {
              * @description The slug of the shared item. Used for the link to the item.
              */
             slug: string;
+        };
+        /** NoOptionsParameterValidatorModel */
+        NoOptionsParameterValidatorModel: {
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean;
+            /** Message */
+            message?: string | null;
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            /**
+             * Type
+             * @default no_options
+             * @constant
+             * @enum {string}
+             */
+            type: "no_options";
         };
         /**
          * NotificationBroadcastUpdateRequest
@@ -15537,6 +16572,37 @@ export interface components {
             /** Workflow */
             workflow: string;
         };
+        /**
+         * RegexParameterValidatorModel
+         * @description Check if a regular expression **matches** the value, i.e. appears
+         *     at the beginning of the value. To enforce a match of the complete value use
+         *     ``$`` at the end of the expression. The expression is given is the content
+         *     of the validator tag. Note that for ``selects`` each option is checked
+         *     separately.
+         */
+        RegexParameterValidatorModel: {
+            /** Expression */
+            expression: string;
+            /**
+             * Implicit
+             * @default false
+             */
+            implicit: boolean;
+            /** Message */
+            message?: string | null;
+            /**
+             * Negate
+             * @default false
+             */
+            negate: boolean;
+            /**
+             * Type
+             * @default regex
+             * @constant
+             * @enum {string}
+             */
+            type: "regex";
+        };
         /** ReloadFeedback */
         ReloadFeedback: {
             /** Failed */
@@ -15627,6 +16693,73 @@ export interface components {
              * @enum {string}
              */
             action_type: "remove_unlabeled_workflow_outputs";
+        };
+        /** RepeatParameterModel */
+        RepeatParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_repeat
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_repeat";
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
+            )[];
         };
         /** Report */
         Report: {
@@ -15735,6 +16868,39 @@ export interface components {
         RootModel_Dict_str__int__: {
             [key: string]: number;
         };
+        /** RulesParameterModel */
+        RulesParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_rules
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_rules";
+        };
         /** SearchJobsPayload */
         SearchJobsPayload: {
             /**
@@ -15754,6 +16920,108 @@ export interface components {
             tool_id: string;
         } & {
             [key: string]: unknown;
+        };
+        /** SectionParameterModel */
+        SectionParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_section
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_section";
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
+            )[];
+        };
+        /** SelectParameterModel */
+        SelectParameterModel: {
+            /** Argument */
+            argument?: string | null;
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Multiple */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /** Options */
+            options?: components["schemas"]["LabelValue"][] | null;
+            /**
+             * Parameter Type
+             * @default gx_select
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_select";
+            /** Validators */
+            validators: components["schemas"]["NoOptionsParameterValidatorModel"][];
         };
         /** ServerDirElement */
         ServerDirElement: {
@@ -16768,6 +18036,61 @@ export interface components {
                 [key: string]: string | boolean | number;
             };
         };
+        /** TextParameterModel */
+        TextParameterModel: {
+            /**
+             * Area
+             * @default false
+             */
+            area: boolean;
+            /** Argument */
+            argument?: string | null;
+            /**
+             * Default Options
+             * @default []
+             */
+            default_options: components["schemas"]["LabelValue"][];
+            /** Help */
+            help?: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic: boolean;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameter Type
+             * @default gx_text
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_text";
+            /**
+             * Validators
+             * @default []
+             */
+            validators: (
+                | components["schemas"]["LengthParameterValidatorModel"]
+                | components["schemas"]["RegexParameterValidatorModel"]
+                | components["schemas"]["ExpressionParameterValidatorModel"]
+                | components["schemas"]["EmptyFieldParameterValidatorModel"]
+            )[];
+            /** Value */
+            value?: string | null;
+        };
         /** ToolDataDetails */
         ToolDataDetails: {
             /**
@@ -16848,6 +18171,40 @@ export interface components {
              */
             values: string;
         };
+        /** ToolRequestModel */
+        ToolRequestModel: {
+            /**
+             * ID
+             * @description Encoded ID of the role
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Implicit Collection Outputs */
+            implicit_collection_outputs: components["schemas"]["ToolRequestOutputCollectionAssociation"][];
+            /** Request */
+            request: Record<string, never>;
+            state: components["schemas"]["ToolRequestState"];
+            /** State Message */
+            state_message: string | null;
+        };
+        /** ToolRequestOutputCollectionAssociation */
+        ToolRequestOutputCollectionAssociation: {
+            /**
+             * dataset_collection_instance
+             * @description Reference to the associated item.
+             */
+            dataset_collection_instance: components["schemas"]["EncodedDataItemSourceId"];
+            /**
+             * name
+             * @description Name of the job output.
+             */
+            name: string;
+        };
+        /**
+         * ToolRequestState
+         * @enum {string}
+         */
+        ToolRequestState: "new" | "submitted" | "failed";
         /** ToolStep */
         ToolStep: {
             /**
@@ -26892,6 +28249,50 @@ export interface operations {
             };
         };
     };
+    tool_requests_api_histories__history_id__tool_requests_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolRequestModel"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     unpublish_api_histories__history_id__unpublish_put: {
         parameters: {
             query?: never;
@@ -27809,6 +29210,8 @@ export interface operations {
                 invocation_id?: string | null;
                 /** @description Limit listing of jobs to those that match the specified implicit collection job ID. If none, jobs from any implicit collection execution (or from no implicit collection execution) may be returned. */
                 implicit_collection_jobs_id?: string | null;
+                /** @description Limit listing of jobs to those that were created from the supplied tool request ID. If none, jobs from any tool request (or from no workflows) may be returned. */
+                tool_request_id?: string | null;
                 /** @description Sort results by specified field. */
                 order_by?: components["schemas"]["JobIndexSortByEnum"];
                 /** @description A mix of free text and GitHub-style tags used to filter the index operation.
@@ -27879,6 +29282,51 @@ export interface operations {
                         | components["schemas"]["EncodedJobDetails"]
                         | components["schemas"]["JobSummary"]
                     )[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_api_jobs_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobCreateResponse"];
                 };
             };
             /** @description Request Error */
@@ -28390,7 +29838,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobOutputAssociation"][];
+                    "application/json": (
+                        | components["schemas"]["JobOutputAssociation"]
+                        | components["schemas"]["JobOutputCollectionAssociation"]
+                    )[];
                 };
             };
             /** @description Request Error */
@@ -32738,6 +34189,92 @@ export interface operations {
             };
         };
     };
+    get_tool_request_api_tool_requests__id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolRequestModel"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tool_request_state_api_tool_requests__id__state_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     index_api_tool_shed_repositories_get: {
         parameters: {
             query?: {
@@ -32894,6 +34431,80 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tool_inputs_api_tools__tool_id__inputs_get: {
+        parameters: {
+            query?: {
+                tool_version?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The tool ID for the lineage stored in Galaxy's toolbox. */
+                tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": (
+                        | components["schemas"]["CwlIntegerParameterModel"]
+                        | components["schemas"]["CwlFloatParameterModel"]
+                        | components["schemas"]["CwlStringParameterModel"]
+                        | components["schemas"]["CwlBooleanParameterModel"]
+                        | components["schemas"]["CwlNullParameterModel"]
+                        | components["schemas"]["CwlFileParameterModel"]
+                        | components["schemas"]["CwlDirectoryParameterModel"]
+                        | components["schemas"]["CwlUnionParameterModel"]
+                        | components["schemas"]["TextParameterModel"]
+                        | components["schemas"]["IntegerParameterModel"]
+                        | components["schemas"]["FloatParameterModel"]
+                        | components["schemas"]["BooleanParameterModel"]
+                        | components["schemas"]["HiddenParameterModel"]
+                        | components["schemas"]["SelectParameterModel"]
+                        | components["schemas"]["DataParameterModel"]
+                        | components["schemas"]["DataCollectionParameterModel"]
+                        | components["schemas"]["DataColumnParameterModel"]
+                        | components["schemas"]["DirectoryUriParameterModel"]
+                        | components["schemas"]["RulesParameterModel"]
+                        | components["schemas"]["DrillDownParameterModel"]
+                        | components["schemas"]["GroupTagParameterModel"]
+                        | components["schemas"]["BaseUrlParameterModel"]
+                        | components["schemas"]["GenomeBuildParameterModel"]
+                        | components["schemas"]["ColorParameterModel"]
+                        | components["schemas"]["ConditionalParameterModel"]
+                        | components["schemas"]["RepeatParameterModel"]
+                        | components["schemas"]["SectionParameterModel"]
+                    )[];
                 };
             };
             /** @description Request Error */
