@@ -3124,7 +3124,7 @@ class LibraryAvailablePermissions(Model):
     roles: List[BasicRoleModel] = Field(
         ...,
         title="Roles",
-        description="A list available roles that can be assigned to a particular permission.",
+        description="A list containing available roles that can be assigned to a particular permission.",
     )
     page: int = Field(
         ...,

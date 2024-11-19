@@ -30,6 +30,7 @@ from galaxy.schema.schema import (
     FlexibleUserIdType,
     LimitedUserModel,
     MaybeLimitedUserModel,
+    RoleListResponse,
     UserModel,
 )
 from galaxy.security.idencoding import IdEncodingHelper
@@ -37,6 +38,7 @@ from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ServiceBase,
 )
+from galaxy.webapps.galaxy.services.roles import role_to_model
 
 
 class UsersService(ServiceBase):
@@ -248,3 +250,8 @@ class UsersService(ServiceBase):
             else:
                 rval.append(UserModel(**user_dict))
         return rval
+
+    def get_user_roles(self, trans, user_id):
+        user = self.get_user(trans, user_id)
+        roles = [ura.role for ura in user.roles]
+        return RoleListResponse(root=[role_to_model(r) for r in roles])

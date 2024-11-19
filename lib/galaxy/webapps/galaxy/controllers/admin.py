@@ -190,6 +190,7 @@ class RoleListGrid(grids.GridData):
     ]
 
     def apply_query_filter(self, query, **kwargs):
+        # Note: we use Role._name (the column), not Role.name (which is a property)
         INDEX_SEARCH_FILTERS = {
             "description": "description",
             "name": "name",
@@ -204,7 +205,7 @@ class RoleListGrid(grids.GridData):
                     key = term.filter
                     q = term.text
                     if key == "name":
-                        query = query.filter(text_column_filter(self.model_class.name, term))
+                        query = query.filter(text_column_filter(self.model_class._name, term))
                     if key == "description":
                         query = query.filter(text_column_filter(self.model_class.description, term))
                     elif key == "is":
@@ -215,7 +216,7 @@ class RoleListGrid(grids.GridData):
                         raw_text_column_filter(
                             [
                                 self.model_class.description,
-                                self.model_class.name,
+                                self.model_class._name,
                             ],
                             term,
                         )

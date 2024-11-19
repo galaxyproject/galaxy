@@ -7,6 +7,7 @@ from galaxy_test.base.decorators import (
 )
 from galaxy_test.base.populators import (
     DatasetPopulator,
+    PRIVATE_ROLE_TYPE,
     skip_without_tool,
 )
 
@@ -20,6 +21,7 @@ TEST_USER_EMAIL_SHOW = "user_for_show_test@bx.psu.edu"
 
 
 class TestUsersApi(ApiTestCase):
+
     @requires_admin
     @requires_new_user
     def test_index(self):
@@ -356,3 +358,12 @@ class TestUsersApi(ApiTestCase):
         response = self._get(f"users/{user_id}/beacon")
         user_beacon_settings = response.json()
         assert user_beacon_settings["enabled"]
+
+    @requires_admin
+    @requires_new_user
+    def test_user_roles(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        response = self._get(f"users/{user['id']}/roles", admin=True)
+        user_roles = response.json()
+        assert len(user_roles) == 1
+        assert user_roles[0]["type"] == PRIVATE_ROLE_TYPE

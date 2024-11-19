@@ -57,6 +57,7 @@ from galaxy.schema.schema import (
     FlexibleUserIdType,
     MaybeLimitedUserModel,
     RemoteUserCreationPayload,
+    RoleListResponse,
     UserBeaconSetting,
     UserCreationPayload,
     UserDeletionPayload,
@@ -729,6 +730,19 @@ class FastAPIUsers:
             raise exceptions.ObjectNotFound("User not found for given id.")
         if not self.service.user_manager.send_activation_email(trans, user.email, user.username):
             raise exceptions.MessageException("Unable to send activation email.")
+
+    @router.get(
+        "/api/users/{user_id}/roles",
+        name="get user roles",
+        description="Return a collection of roles associated with this user. Only admins can see user roles.",
+        require_admin=True,
+    )
+    def get_user_roles(
+        self,
+        user_id: UserIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> RoleListResponse:
+        return self.service.get_user_roles(trans=trans, user_id=user_id)
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
