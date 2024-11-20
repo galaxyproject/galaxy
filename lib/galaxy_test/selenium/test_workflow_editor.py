@@ -45,8 +45,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
 
         # shouldn't have changes on fresh load
         save_button = self.components.workflow_editor.save_button
-        save_button.wait_for_visible()
-        assert save_button.has_class("disabled")
+        assert save_button.is_absent
 
         self.screenshot("workflow_editor_blank")
 
