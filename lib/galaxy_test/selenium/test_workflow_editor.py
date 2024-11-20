@@ -50,18 +50,11 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         self.screenshot("workflow_editor_blank")
 
         self.hover_over(self.components._.left_panel_drag.wait_for_visible())
-        self.components._.left_panel_collapse.wait_for_and_click()
-
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-        self.screenshot("workflow_editor_left_collapsed")
-
         self.hover_over(self.components._.right_panel_drag.wait_for_visible())
-        self.components._.right_panel_collapse.wait_for_and_click()
 
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_editor_maximize_center_pane()
 
-        self.screenshot("workflow_editor_left_and_right_collapsed")
+        self.screenshot("workflow_editor_center_pane_maximized")
 
     @selenium_test
     def test_edit_annotation(self):
