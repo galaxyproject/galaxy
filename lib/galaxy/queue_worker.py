@@ -27,6 +27,7 @@ from galaxy.model import User
 from galaxy.tools import ToolBox
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.special_tools import load_lib_tools
+from galaxy.util.logging import set_log_levels
 
 logging.getLogger("kombu").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
@@ -299,6 +300,16 @@ def admin_job_lock(app, **kwargs):
     log.info(f"Administrative Job Lock is now set to {job_lock}. Jobs will {'not' if job_lock else 'now'} dispatch.")
 
 
+def set_logging_levels(app, **kwargs):
+    """
+    Set levels for loggers.
+    """
+    name = kwargs.get("name")
+    level = kwargs.get("level")
+    log.debug("Setting logging levels for %s to %s.", name, level)
+    set_log_levels(name, level)
+
+
 control_message_to_task = {
     "create_panel_section": create_panel_section,
     "reload_tool": reload_tool,
@@ -314,6 +325,7 @@ control_message_to_task = {
     "reconfigure_watcher": reconfigure_watcher,
     "reload_tour": reload_tour,
     "reload_core_config": reload_core_config,
+    "set_logging_levels": set_logging_levels
 }
 
 

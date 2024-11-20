@@ -55,6 +55,7 @@ from galaxy.util.resources import (
     resource_path,
 )
 from galaxy.util.themes import flatten_theme
+from ..util.logging import set_logging_levels_from_config
 from ..version import (
     VERSION_MAJOR,
     VERSION_MINOR,
@@ -167,8 +168,7 @@ def configure_logging(config, facts=None):
     or a simple dictionary of configuration variables.
     """
     facts = facts or get_facts(config=config)
-    # Get root logger
-    logging.addLevelName(LOGLV_TRACE, "TRACE")
+
     # PasteScript will have already configured the logger if the
     # 'loggers' section was found in the config file, otherwise we do
     # some simple setup using the 'log_*' values from the config.
@@ -197,6 +197,10 @@ def configure_logging(config, facts=None):
                 conf["filename"] = conf.pop("filename_template").format(**facts)
                 logging_conf["handlers"][name] = conf
         logging.config.dictConfig(logging_conf)
+        logging_levels = config.get("logging_levels", None)
+        if logging_levels:
+            set_logging_levels_from_config(logging_levels)
+
 
 
 def find_root(kwargs) -> str:
@@ -540,6 +544,9 @@ class BaseAppConfiguration(HasDynamicProperties):
 
     def _check_against_root(self, key):
         def get_path(current_path, initial_path):
+            # TODO: Not sure why this is needed for the logging API tests...
+            if initial_path is None:
+                return current_path
             # if path does not exist and was set as relative:
             if not self._path_exists(current_path) and not os.path.isabs(initial_path):
                 new_path = self._in_root_dir(initial_path)
