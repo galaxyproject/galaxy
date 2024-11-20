@@ -341,6 +341,19 @@ function cancelWorkflowSchedulingLocal() {
             <BTab title="Metrics" :lazy="true">
                 <WorkflowInvocationMetrics :invocation-id="invocation.id"></WorkflowInvocationMetrics>
             </BTab>
+            <template v-slot:tabs-end>
+                <BButton
+                    v-if="!props.isFullPage && !invocationAndJobTerminal"
+                    v-b-tooltip.noninteractive.hover
+                    class="ml-auto my-1"
+                    title="Cancel scheduling of workflow invocation"
+                    data-description="cancel invocation button"
+                    size="sm"
+                    @click="onCancel">
+                    <FontAwesomeIcon :icon="faTimes" fixed-width />
+                    Cancel Workflow
+                </BButton>
+            </template>
         </BTabs>
     </div>
     <BAlert v-else-if="errorMessage" variant="danger" show>
