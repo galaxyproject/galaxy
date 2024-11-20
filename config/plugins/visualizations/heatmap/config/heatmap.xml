@@ -1,5 +1,10 @@
-<macros>
-<xml name="shared">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Heatmap" embeddable="false">
+    <description>Renders a heatmap from matrix data provided in 3-column format (x, y, observation).</description>
+    <requirements>
+        <requirement type="npm" version="0.0.4" package="@galaxyproject/heatmap"/>
+    </requirements>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -11,7 +16,8 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <groups>
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+    <tracks>
         <input>
             <label>Provide a label</label>
             <name>key</name>
@@ -23,23 +29,19 @@
             <label>Column labels</label>
             <name>x</name>
             <type>data_column</type>
-            <is_label>true</is_label>
-            <is_numeric>true</is_numeric>
         </input>
         <input>
             <label>Row labels</label>
             <name>y</name>
             <type>data_column</type>
-            <is_label>true</is_label>
-            <is_numeric>true</is_numeric>
         </input>
         <input>
             <label>Observation</label>
             <name>z</name>
             <type>data_column</type>
-            <is_numeric>true</is_numeric>
+            <is_number>true</is_number>
         </input>
-    </groups>
+    </tracks>
     <settings>
         <input>
             <name>color_set</name>
@@ -480,5 +482,11 @@
             <value>true</value>
         </input>
     </settings>
-</xml>
-</macros>
+    <specs>
+        <exports>
+            <exports>pdf</exports>
+            <exports>png</exports>
+            <exports>svg</exports>
+        </exports>
+    </specs>
+</visualization>
