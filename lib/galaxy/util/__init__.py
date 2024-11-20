@@ -49,6 +49,7 @@ from typing import (
     Union,
 )
 from urllib.parse import (
+    quote,
     urlencode,
     urlparse,
     urlsplit,
@@ -2006,3 +2007,8 @@ def lowercase_alphanum_to_hex(lowercase_alphanum: str) -> str:
     import numpy as np
 
     return np.base_repr(int(lowercase_alphanum, 36), 16).lower()
+
+
+def toContentDisposition(filename: str) -> str:
+    utf8_encoded_filename = quote(filename, safe="")
+    return f"attachment; filename=\"{utf8_encoded_filename}\"; filename*=UTF-8''{utf8_encoded_filename}"

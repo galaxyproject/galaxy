@@ -19,7 +19,6 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
-from urllib.parse import quote
 
 from markupsafe import escape
 from typing_extensions import Literal
@@ -51,6 +50,7 @@ from galaxy.util import (
     FILENAME_VALID_CHARS,
     inflector,
     iter_start_of_line,
+    toContentDisposition,
     unicodify,
     UNKNOWN,
 )
@@ -431,16 +431,14 @@ class Data(metaclass=DataMeta):
         headers["content-type"] = (
             "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
         )
-        filename, utf8_encoded_filename = self._download_filename(
+        filename = self._download_filename(
             dataset,
             to_ext,
             hdca=kwd.get("hdca"),
             element_identifier=kwd.get("element_identifier"),
             filename_pattern=kwd.get("filename_pattern"),
         )
-        headers["Content-Disposition"] = (
-            f"attachment; filename=\"{filename}\"; filename*=UTF-8''{utf8_encoded_filename}"
-        )
+        headers["Content-Disposition"] = toContentDisposition(filename)
         return open(dataset.get_file_name(), mode="rb"), headers
 
     def to_archive(self, dataset: DatasetProtocol, name: str = "") -> Iterable:
@@ -476,7 +474,7 @@ class Data(metaclass=DataMeta):
             return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get("do_action", "zip"))
         else:
             headers["Content-Length"] = str(file_size)
-            filename, utf8_encoded_filename = self._download_filename(
+            filename = self._download_filename(
                 data,
                 to_ext,
                 hdca=kwd.get("hdca"),
@@ -486,9 +484,7 @@ class Data(metaclass=DataMeta):
             headers["content-type"] = (
                 "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
             )
-            headers["Content-Disposition"] = (
-                f"attachment; filename=\"{filename}\"; filename*=UTF-8''{utf8_encoded_filename}"
-            )
+            headers["Content-Disposition"] = toContentDisposition(filename)
             return open(data.get_file_name(), "rb"), headers
 
     def _serve_binary_file_contents_as_text(self, trans, data, headers, file_size, max_peek_size):
@@ -664,17 +660,14 @@ class Data(metaclass=DataMeta):
         hdca: Optional[DatasetHasHidProtocol] = None,
         element_identifier: Optional[str] = None,
         filename_pattern: Optional[str] = None,
-    ) -> Tuple[str, str]:
-        def escape(raw_identifier):
-            return "".join(c in FILENAME_VALID_CHARS and c or "_" for c in raw_identifier)[0:150]
-
+    ) -> str:
         if not to_ext or to_ext == "data":
             # If a client requests to_ext with the extension 'data', they are
             # deferring to the server, set it based on datatype.
             to_ext = dataset.extension
 
         template_values = {
-            "name": escape(dataset.name),
+            "name": dataset.name,
             "ext": to_ext,
             "hid": dataset.hid,
         }
@@ -687,13 +680,12 @@ class Data(metaclass=DataMeta):
 
         if hdca is not None:
             # Use collection context to build up filename.
-            template_values["element_identifier"] = element_identifier
-            template_values["hdca_name"] = escape(hdca.name)
+            if element_identifier is not None:
+                template_values["element_identifier"] = element_identifier
+            template_values["hdca_name"] = hdca.name
             template_values["hdca_hid"] = hdca.hid
-        filename = string.Template(filename_pattern).substitute(**template_values)
-        template_values["name"] = quote(dataset.name, safe="")
-        utf8_encoded_filename = string.Template(filename_pattern).substitute(**template_values)
-        return filename, utf8_encoded_filename
+
+        return string.Template(filename_pattern).substitute(**template_values)
 
     def display_name(self, dataset: HasName) -> str:
         """Returns formatted html of dataset name"""
