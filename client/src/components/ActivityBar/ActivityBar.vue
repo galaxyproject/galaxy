@@ -265,13 +265,13 @@ defineExpose({
             <b-nav v-if="!isAnonymous" vertical class="activity-footer flex-nowrap p-1">
                 <NotificationItem
                     v-if="isConfigLoaded && config.enable_notification_system"
-                    id="activity-notifications"
+                    id="notifications"
                     :icon="faBell"
                     :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
                     title="Notifications"
                     @click="toggleSidebar('notifications')" />
                 <ActivityItem
-                    id="activity-settings"
+                    id="settings"
                     :activity-bar-id="props.activityBarId"
                     :icon="props.optionsIcon"
                     :is-active="isActiveSideBar('settings')"
@@ -280,7 +280,7 @@ defineExpose({
                     @click="toggleSidebar('settings')" />
                 <ActivityItem
                     v-if="isAdmin && showAdmin"
-                    id="activity-admin"
+                    id="admin"
                     :activity-bar-id="props.activityBarId"
                     :icon="faUserCog"
                     :is-active="isActiveSideBar('admin')"
