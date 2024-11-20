@@ -2009,7 +2009,8 @@ def lowercase_alphanum_to_hex(lowercase_alphanum: str) -> str:
     return np.base_repr(int(lowercase_alphanum, 36), 16).lower()
 
 
-def toContentDisposition(filename: str) -> str:
-    sanitized_filename = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in filename)[0:150]
-    utf8_encoded_filename = quote(filename, safe="")
+def to_content_disposition(target: str) -> str:
+    filename, ext = os.path.splitext(target)
+    sanitized_filename = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in filename)[0:255] + ext
+    utf8_encoded_filename = quote(re.sub(r'[\/\\\?%*:|"<>]', "_", filename), safe="")[0:255] + ext
     return f"attachment; filename=\"{sanitized_filename}\"; filename*=UTF-8''{utf8_encoded_filename}"

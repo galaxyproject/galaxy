@@ -50,7 +50,7 @@ from galaxy.util import (
     FILENAME_VALID_CHARS,
     inflector,
     iter_start_of_line,
-    toContentDisposition,
+    to_content_disposition,
     unicodify,
     UNKNOWN,
 )
@@ -438,7 +438,7 @@ class Data(metaclass=DataMeta):
             element_identifier=kwd.get("element_identifier"),
             filename_pattern=kwd.get("filename_pattern"),
         )
-        headers["Content-Disposition"] = toContentDisposition(filename)
+        headers["Content-Disposition"] = to_content_disposition(filename)
         return open(dataset.get_file_name(), mode="rb"), headers
 
     def to_archive(self, dataset: DatasetProtocol, name: str = "") -> Iterable:
@@ -484,7 +484,7 @@ class Data(metaclass=DataMeta):
             headers["content-type"] = (
                 "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
             )
-            headers["Content-Disposition"] = toContentDisposition(filename)
+            headers["Content-Disposition"] = to_content_disposition(filename)
             return open(data.get_file_name(), "rb"), headers
 
     def _serve_binary_file_contents_as_text(self, trans, data, headers, file_size, max_peek_size):
