@@ -92,7 +92,7 @@ export const workflowEditorActivities = [
         id: "save-workflow-as",
         title: "Save as",
         tooltip: "Save a copy of this workflow",
-        visible: false,
+        visible: true,
         click: true,
         optional: true,
     },

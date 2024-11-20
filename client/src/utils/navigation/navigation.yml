@@ -734,7 +734,6 @@ workflow_editor:
       duplicate_selection: "[title='duplicate selected']"
       delete_selection: "[title='delete selected']"
       auto_layout: "#auto-layout-button"
-      option_save_as: ".activity-settings-item[contains(text(), 'Save as')]"
   comment:
     selectors:
       _: ".workflow-editor-comment"
@@ -841,6 +840,7 @@ workflow_editor:
     state_modal_body: '.state-upgrade-modal'
     modal_button_continue: '.modal-footer .btn'
     workflow_activity: '#activity-workflow-editor-workflows'
+    save_as_activity: "#save-workflow-as"
 
 workflow_show:
   selectors:
