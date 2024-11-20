@@ -277,3 +277,13 @@ export function injectTestRouter(localVue) {
 export function suppressDebugConsole() {
     jest.spyOn(console, "debug").mockImplementation(jest.fn());
 }
+
+export function suppressBootstrapVueWarnings() {
+    jest.spyOn(console, "warn").mockImplementation(
+        jest.fn((msg) => {
+            if (msg.indexOf("BootstrapVue warn") < 0) {
+                console.warn(msg);
+            }
+        })
+    );
+}

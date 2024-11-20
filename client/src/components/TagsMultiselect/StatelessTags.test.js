@@ -1,7 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { useToast } from "composables/toast";
-import { getLocalVue } from "tests/jest/helpers";
-import { computed } from "vue";
+import { getLocalVue, suppressBootstrapVueWarnings } from "tests/jest/helpers";
 
 import { normalizeTag, useUserTagsStore } from "@/stores/userTagsStore";
 
@@ -19,10 +18,12 @@ const mountWithProps = (props) => {
     });
 };
 
+suppressBootstrapVueWarnings();
+
 jest.mock("@/stores/userTagsStore");
 const onNewTagSeenMock = jest.fn((tag) => tag);
 useUserTagsStore.mockReturnValue({
-    userTags: computed(() => autocompleteTags),
+    userTags: autocompleteTags,
     onNewTagSeen: onNewTagSeenMock,
     onTagUsed: jest.fn(),
     onMultipleNewTagsSeen: jest.fn(),
