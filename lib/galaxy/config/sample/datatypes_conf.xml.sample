@@ -190,7 +190,7 @@
     <datatype extension="gif" type="galaxy.datatypes.images:Gif" mimetype="image/gif"/>
     <datatype extension="gmaj.zip" type="galaxy.datatypes.images:Gmaj" mimetype="application/zip"/>
     <datatype extension="graph_dot" type="galaxy.datatypes.data:Text" subclass="true"/>
-    <datatype extension="gtf" type="galaxy.datatypes.interval:Gtf" display_in_upload="true">
+    <datatype extension="gtf" auto_compressed_types="gz" type="galaxy.datatypes.interval:Gtf" display_in_upload="true">
       <converter file="gff_to_interval_index_converter.xml" target_datatype="interval_index"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <display file="igb/gtf.xml"/>
