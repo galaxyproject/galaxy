@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faExclamation, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faExclamation, faSquare, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BButton, BTab, BTabs } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
@@ -233,7 +233,22 @@ function cancelWorkflowSchedulingLocal() {
             v-if="props.isFullPage && !props.success"
             :invocation="invocation"
             :workflow-id="invocation.workflow_id"
-            :invocation-running="!invocationAndJobTerminal" />
+            :invocation-running="!invocationAndJobTerminal">
+            <template v-slot:workflow-title-actions>
+                <BButton
+                    v-if="!invocationAndJobTerminal"
+                    v-b-tooltip.noninteractive.hover
+                    title="Cancel scheduling of workflow invocation"
+                    data-description="header cancel invocation button"
+                    size="sm"
+                    class="text-decoration-none"
+                    variant="link"
+                    @click="onCancel">
+                    <FontAwesomeIcon :icon="faSquare" fixed-width />
+                    Cancel
+                </BButton>
+            </template>
+        </WorkflowNavigationTitle>
         <WorkflowAnnotation
             v-if="props.isFullPage"
             :workflow-id="invocation.workflow_id"
@@ -274,17 +289,6 @@ function cancelWorkflowSchedulingLocal() {
                         :loading="!invocationAndJobTerminal"
                         class="jobs-progress" />
                 </div>
-                <BButton
-                    v-if="!invocationAndJobTerminal"
-                    v-b-tooltip.noninteractive.hover
-                    title="Cancel scheduling of workflow invocation"
-                    data-description="cancel invocation button"
-                    size="sm"
-                    pill
-                    variant="outline-danger"
-                    @click="onCancel">
-                    <FontAwesomeIcon :icon="faTimes" fixed-width />
-                </BButton>
             </template>
         </WorkflowAnnotation>
         <BTabs

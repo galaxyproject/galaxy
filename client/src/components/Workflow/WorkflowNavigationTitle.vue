@@ -138,7 +138,7 @@ const workflowImportTitle = computed(() => {
                             :action="onImport">
                         </AsyncButton>
 
-                        <slot name="workflow-run-actions" />
+                        <slot name="workflow-title-actions" />
 
                         <ButtonSpinner
                             v-if="!props.invocation"
