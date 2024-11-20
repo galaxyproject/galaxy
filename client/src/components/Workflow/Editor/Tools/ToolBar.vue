@@ -272,6 +272,22 @@ function autoLayout() {
             </BButton>
         </div>
         <div v-if="toolbarVisible" class="options">
+            <div v-if="anySelected" class="selection-options">
+                <span>{{ selectedCountText }}</span>
+
+                <BButtonGroup>
+                    <BButton class="button" title="clear selection" @click="deselectAll">
+                        Clear <FontAwesomeIcon icon="fa-times" />
+                    </BButton>
+                    <BButton class="button" title="duplicate selected" @click="duplicateSelection">
+                        Duplicate <FontAwesomeIcon icon="fa-clone" />
+                    </BButton>
+                    <BButton class="button" title="delete selected" @click="deleteSelection">
+                        Delete <FontAwesomeIcon icon="fa-trash" />
+                    </BButton>
+                </BButtonGroup>
+            </div>
+
             <div
                 v-if="
                     toolbarStore.snapActive &&
@@ -398,22 +414,6 @@ function autoLayout() {
                 </BButtonGroup>
             </div>
         </div>
-
-        <div v-if="anySelected" class="selection-options">
-            <span>{{ selectedCountText }}</span>
-
-            <BButtonGroup>
-                <BButton class="button" title="clear selection" @click="deselectAll">
-                    Clear <FontAwesomeIcon icon="fa-times" />
-                </BButton>
-                <BButton class="button" title="duplicate selected" @click="duplicateSelection">
-                    Duplicate <FontAwesomeIcon icon="fa-clone" />
-                </BButton>
-                <BButton class="button" title="delete selected" @click="deleteSelection">
-                    Delete <FontAwesomeIcon icon="fa-trash" />
-                </BButton>
-            </BButtonGroup>
-        </div>
     </div>
 </template>
 
@@ -524,7 +524,7 @@ function autoLayout() {
         display: flex;
         padding: 0.25rem;
         gap: 0.25rem;
-        align-items: end;
+        align-items: start;
         flex-direction: column-reverse;
         align-self: flex-start;
 
