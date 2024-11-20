@@ -723,6 +723,20 @@ export default {
             this.showSaveAsModal = true;
         },
         async saveOrCreate() {
+            if (this.hasInvalidConnections) {
+                const confirmed = await confirm(
+                    `Workflow has invalid connections. You can save the workflow, but it may not run correctly.`,
+                    {
+                        id: "save-workflow-confirmation",
+                        okTitle: "Save Workflow",
+                    }
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+            }
+
             if (this.isNewTempWorkflow) {
                 await this.onCreate();
             } else {
