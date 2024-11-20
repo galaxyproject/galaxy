@@ -675,6 +675,12 @@ resolver.
     </xs:simpleContent>
   </xs:complexType>
   <xs:complexType name="Resource">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Allows to describe a resource requirement of a tool. At the moment this tag is mostly descriptive,
+It can be used by dynamic job rules and serves to guide Galaxy admins.
+]]></xs:documentation>
+    </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ResourceType" use="required">
