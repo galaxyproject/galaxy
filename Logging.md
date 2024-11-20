@@ -64,7 +64,7 @@ These are not mutually exclusive options, but in some situations, e.g. AnVIL, us
 
 The proof of concept provides a simple API that allows the level to be changed at runtime. Adding a config watcher can be added at a later date if needed.
 
-<img width="775" alt="Screenshot 2024-11-04 at 4 33 19 PM" src="https://github.com/user-attachments/assets/ce7e650d-2cfe-4449-8de3-adab21ac4fca">
+<img width="835" alt="Screenshot 2024-11-20 at 3 59 52 PM" src="https://github.com/user-attachments/assets/df0b6689-5832-4d7b-98b1-ada2fc5a5b97">
 
 ```
 curl http://localhost:8080/api/logging
