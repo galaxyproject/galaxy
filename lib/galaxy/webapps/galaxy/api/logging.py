@@ -33,7 +33,7 @@ class FastApiLoggingManager:
         return get_log_levels(logger_name)
 
     @router.post(
-        "/api/logging/{logger_name}", summary="Set the level of a logger", require_admin=True
+        "/api/logging/{logger_name}", summary="Set the logging level for one or more loggers", require_admin=True
     )
     def set(self, logger_name, level, trans: ProvidesUserContext = DependsOnTrans):
         log.info("Setting log level for %s to %s", logger_name, level)
