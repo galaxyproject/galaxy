@@ -1263,7 +1263,7 @@ class NavigatesGalaxy(HasDriver):
         input = self.wait_for_selector(".activity-panel input")
         input.send_keys(name)
 
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.sleep_for(self.wait_types.DATABASE_OPERATION)
 
     def workflow_editor_add_steps(self, name: str):
         self.workflow_editor_search_for_workflow(name)
