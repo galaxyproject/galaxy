@@ -69,8 +69,8 @@ const workflowTags = computed(() => {
                     </span>
                     <UtcDate :date="timeElapsed" mode="elapsed" data-description="workflow annotation date" />
                 </i>
-                <span class="d-flex flex-gapx-1 align-items-center">
-                    <FontAwesomeIcon :icon="faHdd" />Input History:
+                <span v-if="invocationUpdateTime" class="d-flex flex-gapx-1 align-items-center">
+                    <FontAwesomeIcon :icon="faHdd" />History:
                     <SwitchToHistoryLink :history-id="props.historyId" />
                     <BBadge
                         v-if="props.newHistoryTarget && useHistoryStore().currentHistoryId !== props.historyId"
