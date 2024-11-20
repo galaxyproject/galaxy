@@ -2010,5 +2010,6 @@ def lowercase_alphanum_to_hex(lowercase_alphanum: str) -> str:
 
 
 def toContentDisposition(filename: str) -> str:
+    sanitized_filename = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in filename)[0:150]
     utf8_encoded_filename = quote(filename, safe="")
-    return f"attachment; filename=\"{utf8_encoded_filename}\"; filename*=UTF-8''{utf8_encoded_filename}"
+    return f"attachment; filename=\"{sanitized_filename}\"; filename*=UTF-8''{utf8_encoded_filename}"
