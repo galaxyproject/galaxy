@@ -891,7 +891,16 @@ class Registry:
         if datatype and datatype.matches_any(accepted_datatypes):
             return True, None, None
 
-        for convert_ext in self.get_converters_by_datatype(ext):
+        converter_extensions = self.get_converters_by_datatype(ext)
+        uncompressed_instance = getattr(datatype, "uncompressed_datatype_instance", None)
+        if uncompressed_instance and uncompressed_instance.file_ext in converter_extensions:
+            # sort uncompressed instance ahead of other possible conversions
+            converter_extensions = [
+                uncompressed_instance.file_ext,
+                *(ext for ext in converter_extensions if ext != uncompressed_instance.file_ext),
+            ]
+
+        for convert_ext in converter_extensions:
             convert_ext_datatype = self.get_datatype_by_extension(convert_ext)
             if convert_ext_datatype is None:
                 self.log.warning(

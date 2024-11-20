@@ -1139,7 +1139,7 @@ upload:
     setting_space_to_tab: '.upload-space-to-tab'
     source_button: '#upload-row-${n} .upload-source'
     start: '#activity-upload'
-    start_button: '#btn-start'
+    start_button: '#regular #btn-start'
     local_button: '#btn-local'
 
 new_user_welcome:
