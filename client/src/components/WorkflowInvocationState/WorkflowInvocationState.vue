@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { faDownload, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faExclamation, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BNavItem, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BBadge, BButton, BTab, BTabs } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import { type InvocationJobsSummary, type InvocationStep, type WorkflowInvocationElementView } from "@/api/invocations";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
-import { getRootFromIndexLink } from "@/onload";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -67,11 +66,15 @@ watch(
     }
 );
 
-// Report and PDF generation
-const generatePdfTooltip = "Generate PDF report for this workflow invocation";
-const invocationPdfLink = computed<string | null>(
-    () => getRootFromIndexLink() + `api/invocations/${props.invocationId}/report.pdf`
+const workflowStore = useWorkflowStore();
+const reportTabDisabled = computed(
+    () =>
+        !invocationStateSuccess.value ||
+        !invocation.value ||
+        !workflowStore.getStoredWorkflowByInstanceId(invocation.value.workflow_id)
 );
+
+/** Tooltip message for the report tab when it is disabled */
 const disabledReportTooltip = computed(() => {
     const state = invocationState.value;
     if (state != "scheduled") {
@@ -175,8 +178,6 @@ const jobStatesStr = computed(() => {
     return `${jobStr}.`;
 });
 
-const workflowStore = useWorkflowStore();
-
 watch(
     () => props.invocationId,
     async (id) => {
@@ -231,7 +232,8 @@ function cancelWorkflowSchedulingLocal() {
         <WorkflowNavigationTitle
             v-if="props.isFullPage && !props.success"
             :invocation="invocation"
-            :workflow-id="invocation.workflow_id" />
+            :workflow-id="invocation.workflow_id"
+            :invocation-running="!invocationAndJobTerminal" />
         <WorkflowAnnotation
             v-if="props.isFullPage"
             :workflow-id="invocation.workflow_id"
@@ -272,6 +274,17 @@ function cancelWorkflowSchedulingLocal() {
                         :loading="!invocationAndJobTerminal"
                         class="jobs-progress" />
                 </div>
+                <BButton
+                    v-if="!invocationAndJobTerminal"
+                    v-b-tooltip.noninteractive.hover
+                    title="Cancel scheduling of workflow invocation"
+                    data-description="cancel invocation button"
+                    size="sm"
+                    pill
+                    variant="outline-danger"
+                    @click="onCancel">
+                    <FontAwesomeIcon :icon="faTimes" fixed-width />
+                </BButton>
             </template>
         </WorkflowAnnotation>
         <BTabs
@@ -301,13 +314,20 @@ function cancelWorkflowSchedulingLocal() {
             </BTab> -->
             <BTab
                 v-if="!props.isSubworkflow"
-                title="Report"
                 title-item-class="invocation-report-tab"
-                :disabled="
-                    !invocationStateSuccess || !workflowStore.getStoredWorkflowByInstanceId(invocation.workflow_id)
-                "
+                :disabled="reportTabDisabled"
                 :lazy="reportLazy"
                 :active.sync="reportActive">
+                <template v-slot:title>
+                    <span>Report</span>
+                    <BBadge
+                        v-if="reportTabDisabled"
+                        v-b-tooltip.hover.noninteractive
+                        :title="disabledReportTooltip"
+                        variant="warning">
+                        <FontAwesomeIcon :icon="faExclamation" />
+                    </BBadge>
+                </template>
                 <InvocationReport v-if="invocationStateSuccess" :invocation-id="invocation.id" />
             </BTab>
             <BTab title="Export" lazy>
@@ -321,37 +341,6 @@ function cancelWorkflowSchedulingLocal() {
             <BTab title="Metrics" :lazy="true">
                 <WorkflowInvocationMetrics :invocation-id="invocation.id"></WorkflowInvocationMetrics>
             </BTab>
-            <template v-slot:tabs-end>
-                <BNavItem v-if="!invocationAndJobTerminal" class="ml-auto alert-info mr-1">
-                    <LoadingSpan message="Waiting to complete invocation" />
-                    <BButton
-                        v-b-tooltip.noninteractive.hover
-                        title="Cancel scheduling of workflow invocation"
-                        data-description="cancel invocation button"
-                        size="sm"
-                        variant="danger"
-                        @click="onCancel">
-                        <FontAwesomeIcon :icon="faTimes" fixed-width />
-                        Cancel Workflow
-                    </BButton>
-                </BNavItem>
-                <li
-                    role="presentation"
-                    class="nav-item align-self-center mr-2"
-                    :class="{ 'ml-auto': invocationAndJobTerminal }"
-                    data-description="generate pdf report button">
-                    <BButton
-                        v-b-tooltip.hover.bottom.noninteractive
-                        :title="invocationStateSuccess ? generatePdfTooltip : disabledReportTooltip"
-                        :disabled="!invocationStateSuccess"
-                        :href="invocationPdfLink"
-                        size="sm"
-                        target="_blank">
-                        <FontAwesomeIcon :icon="faDownload" fixed-width />
-                        Generate PDF
-                    </BButton>
-                </li>
-            </template>
         </BTabs>
     </div>
     <BAlert v-else-if="errorMessage" variant="danger" show>
@@ -364,6 +353,15 @@ function cancelWorkflowSchedulingLocal() {
         <span v-localize>Invocation not found.</span>
     </BAlert>
 </template>
+
+<style lang="scss">
+// To show the tooltip on the disabled report tab badge
+.invocation-report-tab {
+    .nav-link.disabled {
+        pointer-events: auto !important;
+    }
+}
+</style>
 
 <style scoped lang="scss">
 .progress-bars {
