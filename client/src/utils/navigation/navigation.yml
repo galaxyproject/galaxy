@@ -609,6 +609,7 @@ workflows:
     workflows_list_empty: '#workflow-list-empty'
     workflow_not_found_message: '#no-workflow-found'
     workflow_card: '.workflow-card'
+    workflow_card_button: '.workflow-card[data-workflow-name="${name}"] button[title="${title}"]'
     workflow_cards: '#workflow-cards'
     external_link: '.workflow-external-link'
     trs_icon: '.workflow-trs-icon'

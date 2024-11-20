@@ -76,7 +76,11 @@ const dropdownOpen = ref(false);
 </script>
 
 <template>
-    <div class="workflow-card" :class="{ 'dropdown-open': dropdownOpen }" :data-workflow-id="workflow.id">
+    <div
+        class="workflow-card"
+        :class="{ 'dropdown-open': dropdownOpen }"
+        :data-workflow-id="workflow.id"
+        :data-workflow-name="workflow.name">
         <div
             class="workflow-card-container"
             :class="{
