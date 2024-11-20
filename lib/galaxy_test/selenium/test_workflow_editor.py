@@ -548,10 +548,7 @@ steps:
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_edit_menu")
 
-        if self.element_absent(self.components.workflow_editor.tool_bar.option_save_as):
-            self.components.preferences.activity.wait_for_and_click()
-
-        self.components.workflow_editor.tool_bar.option_save_as.wait_for_and_click()
+        self.components.workflow_editor.save_as_activity.wait_for_and_click()
 
     @selenium_test
     def test_editor_tool_upgrade(self):
