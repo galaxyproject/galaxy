@@ -10,7 +10,7 @@
                 <column name="name" index="0"/>
                 <column name="value" index="0"/>
                 <!-- filter options that are already in the data table -->
-                <filter type="data_table"  column="1" table_name="test_fasta_indexes" data_table_column="1" keep="true"/>
+                <filter type="data_table"  column="value" table_name="test_fasta_indexes" data_table_column="dbkey" keep="true"/>
                 <validator type="no_options" message="No options available" />
             </options>
             <!-- <options from_file="test_file.tsv">

@@ -573,7 +573,7 @@ class DataTableFilter(Filter):
         entries = None
         try:
             entries = {f[int(self.data_table_column)] for f in trans.app.tool_data_tables[self.table_name].get_fields()}
-        except TypeError:
+        except ValueError:
             pass
         try:
             entries = {
