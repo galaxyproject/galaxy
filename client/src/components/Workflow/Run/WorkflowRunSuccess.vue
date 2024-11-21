@@ -39,9 +39,9 @@ const wasNewHistoryTarget =
 
 <template>
     <div>
-        <div class="donemessagelarge">
+        <div v-if="props.invocations.length > 1" class="donemessagelarge">
             Successfully invoked workflow <b>{{ props.workflowName }}</b>
-            <em v-if="props.invocations.length > 1"> - {{ props.invocations.length }} times</em>.
+            <em> - {{ props.invocations.length }} times</em>.
             <span v-if="targetHistories.length > 1">
                 This workflow will generate results in multiple histories. You can observe progress in the
                 <router-link to="/histories/view_multiple">history multi-view</router-link>.

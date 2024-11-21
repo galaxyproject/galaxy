@@ -230,10 +230,11 @@ function cancelWorkflowSchedulingLocal() {
 <template>
     <div v-if="invocation" class="d-flex flex-column w-100" data-description="workflow invocation state">
         <WorkflowNavigationTitle
-            v-if="props.isFullPage && !props.success"
+            v-if="props.isFullPage"
             :invocation="invocation"
             :workflow-id="invocation.workflow_id"
-            :invocation-running="!invocationAndJobTerminal">
+            :invocation-running="!invocationAndJobTerminal"
+            :success="props.success">
             <template v-slot:workflow-title-actions>
                 <BButton
                     v-if="!invocationAndJobTerminal"
