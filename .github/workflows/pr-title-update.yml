@@ -2,17 +2,17 @@ name: Update PR title
 
 on:
   pull_request_target:
-    types: [opened, edited]
+    types: [opened, edited, reopened]
     branches:
       - "release_**"
 
 jobs:
   update-title:
+    if: github.event.action != 'edited' || github.event.changes.base.ref.from != ''
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
       - name: Update PR title
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -23,5 +23,5 @@ jobs:
           VERSION=$(echo $TARGET_BRANCH | grep -oP '\d+\.\d+')
           if [[ -n "$VERSION" && ! "$PR_TITLE" =~ ^\[$VERSION\] ]]; then
             NEW_TITLE="[$VERSION] $PR_TITLE"
-            gh pr edit $PR_NUMBER --title "$NEW_TITLE"
+            gh pr edit $PR_NUMBER --repo "${{ github.repository }}" --title "$NEW_TITLE"
           fi
