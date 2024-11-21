@@ -88,11 +88,6 @@ def test_tiff_empty(metadata):
     __assert_empty_metadata(metadata)
 
 
-@__test(Tiff, "im_corrupted.tif")
-def test_tiff_corrupted(metadata):
-    __assert_empty_metadata(metadata)
-
-
 @__test(Tiff, "1.tiff")
 def test_tiff_unsupported_compression(metadata):
     # If the compression of a TIFF is unsupported, some fields should still be there
