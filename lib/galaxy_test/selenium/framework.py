@@ -455,6 +455,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         save_button.wait_for_visible()
         assert not save_button.has_class("disabled")
         save_button.wait_for_and_click()
+        save_button.wait_for_absent()
         self.sleep_for(self.wait_types.UX_RENDER)
 
     @retry_assertion_during_transitions
