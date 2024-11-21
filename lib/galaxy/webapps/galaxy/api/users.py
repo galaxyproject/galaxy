@@ -734,7 +734,7 @@ class FastAPIUsers:
     @router.get(
         "/api/users/{user_id}/roles",
         name="get user roles",
-        description="Return a collection of roles associated with this user. Only admins can see user roles.",
+        description="Return a list of roles associated with this user. Only admins can see user roles.",
         require_admin=True,
     )
     def get_user_roles(

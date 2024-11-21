@@ -6,6 +6,7 @@ from typing import (
     Dict,
     List,
 )
+from urllib.parse import quote
 
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
@@ -897,3 +898,10 @@ class TestDatasetsApi(ApiTestCase):
         response = self._put(f"histories/{history_id}/contents/{hda_id}", data={"datatype": "tabular"}, json=True)
         self._assert_status_code_is(response, 403)
         assert response.json()["err_msg"] == "History is immutable"
+
+    def test_download_non_english_characters(self, history_id):
+        name = "دیتاست"
+        hda = self.dataset_populator.new_dataset(history_id=history_id, name=name, content="data", wait=True)
+        response = self._get(f"histories/{history_id}/contents/{hda['id']}/display?to_ext=json")
+        self._assert_status_code_is(response, 200)
+        assert quote(name, safe="") in response.headers["Content-Disposition"]
