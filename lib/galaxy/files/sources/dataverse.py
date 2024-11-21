@@ -42,14 +42,29 @@ from galaxy.util import (
     stream_to_open_named_file,
 )
 
+
+class DataverseDataset(TypedDict):
+    name: str
+    type: str
+    url: str
+    global_id: str
+    description: str
+    published_at: str
+    storageIdentifier: str
+    fileCount: int
+    versionState: str
+    createdAt: str
+    updatedAt: str
+    publication_date: str
+
 AccessStatus = Literal["public", "restricted"]
 
 class DataverseRDMFilesSource(RDMFilesSource):
     """A files source for Dataverse turn-key research data management repository."""
 
-    plugin_type = "dataverserdm"
-    # TODO supports_pagination = True
-    # TODO supports_search = True
+    plugin_type = "dataverse"
+    supports_pagination = True
+    supports_search = True
 
     def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
         super().__init__(**kwd)
@@ -87,8 +102,17 @@ class DataverseRDMFilesSource(RDMFilesSource):
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> Tuple[List[AnyRemoteEntry], int]:
-        # TODO: Implement this for Dataverse
-        pass
+        '''In Dataverse a "dataset" is equivalent to a "record". This method lists the datasets in the repository.'''
+        writeable = opts and opts.writeable or False
+        is_root_path = path == "/"
+        if is_root_path:
+            records, total_hits = self.repository.get_records(
+                writeable, user_context, limit=limit, offset=offset, query=query
+            )
+            return cast(List[AnyRemoteEntry], records), total_hits
+        record_id = self.get_record_id_from_path(path)
+        files = self.repository.get_files_in_record(record_id, writeable, user_context)
+        return cast(List[AnyRemoteEntry], files), len(files)
 
     def _create_entry(
         self,
@@ -125,10 +149,9 @@ class DataverseRDMFilesSource(RDMFilesSource):
         self.repository.upload_file_to_draft_record(record_id, filename, native_path, user_context=user_context)
     
 class DataverseRepositoryInteractor(RDMRepositoryInteractor):
-    # TODO: Implement this property for Dataverse?
-    # @property
-    # def records_url(self) -> str:
-    #     return f"{self.repository_url}/api/records"
+    @property
+    def search_url(self) -> str:
+        return f"{self.repository_url}/api/search"
     
     # TODO: Implement this property for Dataverse?
     # @property
@@ -148,12 +171,23 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> Tuple[List[RemoteDirectory], int]:
-        # TODO: Implement this for Dataverse
-        pass
-
-    def _to_size_page(self, limit: Optional[int], offset: Optional[int]) -> Tuple[Optional[int], Optional[int]]:
-        # TODO: Implement this for Dataverse
-        pass
+        '''In Dataverse a "dataset" is equivalent to a "record". This method lists the datasets in the repository.'''
+        # https://demo.dataverse.org/api/search?q=*&type=dataset&per_page=25&page=1&start=0
+        request_url = self.search_url
+        params: Dict[str, Any] = {}
+        params["type"] = "dataset"
+        # if writeable:
+            # TODO: Do we need this for dataverse?
+            # Only draft records owned by the user can be written to.
+            # params["is_published"] = "false"
+            # request_url = self.user_records_url
+        params["per_page"] = limit or DEFAULT_PAGE_LIMIT
+        params["start"] = offset
+        params["q"] = query or "*"
+        params["sort"] = sort_by or "date" # can be     either "name" or "date"
+        response_data = self._get_response(user_context, request_url, params=params)
+        total_hits = response_data["data"]["total_count"]
+        return self._get_records_from_response(response_data["data"]), total_hits
 
     def get_files_in_record(
         self, record_id: str, writeable: bool, user_context: OptionalUserContext = None
@@ -223,12 +257,26 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         pass
 
     def _get_records_from_response(self, response: dict) -> List[RemoteDirectory]:
-        # TODO: Implement this for Dataverse
-        pass
+        '''In Dataverse a "dataset" is equivalent to a "record". This method gets the datasets in the repository.'''
+        datasets = response["items"]
+        rval: List[RemoteDirectory] = []
+        for dataset in datasets:
+            uri = self.to_plugin_uri(record_id=dataset["global_id"])
+            path = self.plugin.to_relative_path(uri)
+            name = self._get_record_title(dataset)
+            rval.append(
+                {
+                    "class": "Directory",
+                    "name": name,
+                    "uri": uri,
+                    "path": path,
+                }
+            )
+        return rval
 
-    # TODO: Implement this for Dataverse
-    # def _get_record_title(self, record: InvenioRecord) -> str:
-        # pass
+    def _get_record_title(self, record: DataverseDataset) -> str:
+        title = record.get("name")
+        return title or "No title"
 
     # TODO: Implement this for Dataverse
     # def _get_record_files_from_response(self, record_id: str, response: dict) -> List[RemoteFile]:    
