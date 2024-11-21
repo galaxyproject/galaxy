@@ -301,6 +301,11 @@ class Tiff(Image):
         idx = axes.find(axis)
         return shape[idx] if idx >= 0 else 0
 
+    def sniff(self, filename: str) -> bool:
+        with tifffile.TiffFile(filename):
+            return True
+        return False
+
 
 class OMETiff(Tiff):
     file_ext = "ome.tiff"
