@@ -32,7 +32,7 @@ const FAKE_MONITOR: TaskMonitor = {
     isCompleted: ref(false),
     hasFailed: ref(false),
     requestHasFailed: ref(false),
-    status: ref(),
+    taskStatus: ref(""),
     expirationTime: FAKE_EXPIRATION_TIME,
     isFinalState: jest.fn(),
     loadStatus: jest.fn(),
