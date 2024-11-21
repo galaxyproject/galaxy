@@ -304,7 +304,6 @@ class Tiff(Image):
     def sniff(self, filename: str) -> bool:
         with tifffile.TiffFile(filename):
             return True
-        return False
 
 
 class OMETiff(Tiff):
