@@ -1,7 +1,7 @@
 <tool id="filter_data_table" name="filter data table" version="0.1.0">
     <description>Filter on datatable entries</description>
     <command><![CDATA[
-       echo $dynamic_select > '$output'
+       echo '$dynamic_select' > '$output'
     ]]></command>
     <inputs>
         <param name="dynamic_select" type="select">
