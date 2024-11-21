@@ -2,9 +2,15 @@
 Location of protocols used in datatypes
 """
 
-from typing import Any
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
 
 from typing_extensions import Protocol
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Mapped
 
 
 class HasClearAssociatedFiles(Protocol):
@@ -39,7 +45,7 @@ class HasHid(Protocol):
 
 
 class HasId(Protocol):
-    id: int
+    id: "Mapped[int]"
 
 
 class HasInfo(Protocol):

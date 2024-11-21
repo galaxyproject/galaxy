@@ -4290,7 +4290,7 @@ class Dataset(Base, StorableObject, Serializable):
             if not file_name and self.state not in (self.states.NEW, self.states.QUEUED):
                 # Queued datasets can be assigned an object store and have a filename, but they aren't guaranteed to.
                 # Anything after queued should have a file name.
-                log.warning(f"Failed to determine file name for dataset {self.id}")
+                log.warning(f"Failed to determine file name for dataset {self.id} in state {self.state}")
             return file_name
         else:
             filename = self.external_filename
@@ -4801,8 +4801,6 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         self.set_total_size()
 
     def get_file_name(self, sync_cache: bool = True) -> str:
-        if self.dataset.purged:
-            return ""
         return self.dataset.get_file_name(sync_cache=sync_cache)
 
     def set_file_name(self, filename: str):
@@ -5108,9 +5106,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         self, accepted_formats: List[str], **kwd
     ) -> Tuple[bool, Optional[str], Optional["DatasetInstance"]]:
         """Returns ( target_ext, existing converted dataset )"""
-        return self.datatype.find_conversion_destination(
-            self, accepted_formats, _get_datatypes_registry(), **kwd  # type:ignore[arg-type]
-        )
+        return self.datatype.find_conversion_destination(self, accepted_formats, _get_datatypes_registry(), **kwd)
 
     def add_validation_error(self, validation_error):
         self.validation_errors.append(validation_error)

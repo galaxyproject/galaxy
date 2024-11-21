@@ -171,7 +171,6 @@ class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin,
             file_path = dataset.get_file_name()
         hash_function = request.hash_function
         calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=file_path)
-        extra_files_path = request.extra_files_path
         dataset_hash = model.DatasetHash(
             hash_function=hash_function,
             hash_value=calculated_hash_value,
@@ -433,7 +432,7 @@ class DatasetAssociationManager(
         """
         Return True if this hda/ldda is a composite type dataset.
 
-        .. note:: see also (whereever we keep information on composite datatypes?)
+        .. note:: see also (wherever we keep information on composite datatypes?)
         """
         return dataset_assoc.extension in self.app.datatypes_registry.get_composite_extensions()
 

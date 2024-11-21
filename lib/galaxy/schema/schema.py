@@ -50,6 +50,7 @@ from galaxy.schema.types import (
     OffsetNaiveDatetime,
     RelativeUrl,
 )
+from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
 
 USER_MODEL_CLASS = Literal["User"]
@@ -119,15 +120,6 @@ class DatasetCollectionPopulatedState(str, Enum):
     NEW = "new"  # New dataset collection, unpopulated elements
     OK = "ok"  # Collection elements populated (HDAs may or may not have errors)
     FAILED = "failed"  # some problem populating state, won't be populated
-
-
-class HashFunctionNames(str, Enum):
-    """Hash function names that can be used to generate checksums for datasets."""
-
-    md5 = "MD5"
-    sha1 = "SHA-1"
-    sha256 = "SHA-256"
-    sha512 = "SHA-512"
 
 
 # Generic and common Field annotations that can be reused across models
@@ -733,7 +725,7 @@ class DatasetHash(Model):
         title="ID",
         description="Encoded ID of the dataset hash.",
     )
-    hash_function: HashFunctionNames = Field(
+    hash_function: HashFunctionNameEnum = Field(
         ...,
         title="Hash Function",
         description="The hash function used to generate the hash.",

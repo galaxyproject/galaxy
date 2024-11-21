@@ -202,7 +202,7 @@ def set_metadata(
     try:
         if overwrite:
             hda_manager.overwrite_metadata(dataset_instance)
-        dataset_instance.datatype.set_meta(dataset_instance)  # type:ignore [arg-type]
+        dataset_instance.datatype.set_meta(dataset_instance)
         dataset_instance.set_peek()
         # Reset SETTING_METADATA state so the dataset instance getter picks the dataset state
         dataset_instance.set_metadata_success_state()

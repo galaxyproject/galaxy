@@ -4719,6 +4719,33 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``calculate_dataset_hash``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    In which cases Galaxy should calculate a hash for a new dataset.
+    Dataset hashes can be used by the Galaxy job cache/search to check
+    if job inputs match. Setting the 'enable_celery_tasks' option to
+    true is also required for dataset hash calculation. Possible
+    values are: 'always', 'upload' (the default), 'never'. If set to
+    'upload', the hash is calculated only for the outputs of upload
+    jobs.
+:Default: ``upload``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~
+``hash_function``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Hash function to use if 'calculate_dataset_hash' is enabled.
+    Possible values are: 'md5', 'sha1', 'sha256', 'sha512'
+:Default: ``sha256``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~
 ``metadata_strategy``
 ~~~~~~~~~~~~~~~~~~~~~

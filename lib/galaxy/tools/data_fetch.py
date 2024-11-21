@@ -366,7 +366,7 @@ def _fetch_target(upload_config: "UploadConfig", target: Dict[str, Any]):
             # TODO:
             # in galaxy json add 'extra_files' and point at target derived from extra_files:
 
-            needs_grooming = not link_data_only and datatype and datatype.dataset_content_needs_grooming(path)  # type: ignore[arg-type]
+            needs_grooming = not link_data_only and datatype and datatype.dataset_content_needs_grooming(path)
             if needs_grooming:
                 # Groom the dataset content if necessary
                 transform.append(
@@ -623,7 +623,7 @@ class UploadConfig:
         self.__upload_count += 1
         return path
 
-    def ensure_in_working_directory(self, path, purge_source, in_place):
+    def ensure_in_working_directory(self, path: str, purge_source, in_place) -> str:
         if in_directory(path, self.__workdir):
             return path
 

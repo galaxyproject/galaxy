@@ -1398,6 +1398,13 @@ class BaseDatasetPopulator(BasePopulator):
 
         return wait_on(validated, "dataset validation")
 
+    def wait_for_dataset_hashes(self, history_id: str, dataset_id: str):
+        def dataset_hashes_present():
+            hda = self.get_history_dataset_details(history_id=history_id, dataset_id=dataset_id)
+            return hda["hashes"] or None
+
+        return wait_on(dataset_hashes_present, "dataset hash presence")
+
     def setup_history_for_export_testing(self, history_name):
         using_requirement("new_history")
         history_id = self.new_history(name=history_name)

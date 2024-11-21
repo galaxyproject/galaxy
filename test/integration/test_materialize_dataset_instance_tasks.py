@@ -160,7 +160,7 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert len(uploaded_details["sources"]) == 1
         content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output, assert_ok=True)
         assert content == "This is a line of text."
-        new_history_id = self._reupload_and_then_materialize(history_id, output)
+        new_history_id = self._reupload_and_then_materialize(output)
         content = self.dataset_populator.get_history_dataset_content(new_history_id, hid=2, assert_ok=False)
         assert content == "This is a line of text."
 
@@ -186,7 +186,7 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert len(transform) == 1
         content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output, assert_ok=True)
         assert content == "This is a line of text.\n"
-        new_history_id = self._reupload_and_then_materialize(history_id, output)
+        new_history_id = self._reupload_and_then_materialize(output)
         content = self.dataset_populator.get_history_dataset_content(new_history_id, hid=2, assert_ok=False)
         assert content == "This is a line of text.\n"
 
@@ -212,7 +212,7 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert len(transform) == 1
         content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output, assert_ok=True)
         assert content == "This\tis\ta\tline\tof\ttext."
-        new_history_id = self._reupload_and_then_materialize(history_id, output)
+        new_history_id = self._reupload_and_then_materialize(output)
         content = self.dataset_populator.get_history_dataset_content(new_history_id, hid=2, assert_ok=False)
         assert content == "This\tis\ta\tline\tof\ttext."
 
@@ -239,7 +239,7 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert len(transform) == 2
         content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output, assert_ok=True)
         assert content == "This\tis\ta\tline\tof\ttext.\n"
-        new_history_id = self._reupload_and_then_materialize(history_id, output)
+        new_history_id = self._reupload_and_then_materialize(output)
         content = self.dataset_populator.get_history_dataset_content(new_history_id, hid=2, assert_ok=False)
         assert content == "This\tis\ta\tline\tof\ttext.\n"
 
@@ -262,20 +262,17 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         transform = source_0["transform"]
         assert isinstance(transform, list)
         assert len(transform) == 1
-        original_details = self.dataset_populator.get_history_dataset_details(
-            history_id, dataset=output, assert_ok=True
-        )
-        new_history_id = self._reupload_and_then_materialize(history_id, output)
+        new_history_id = self._reupload_and_then_materialize(output)
         new_details = self.dataset_populator.get_history_dataset_details(new_history_id, hid=2, assert_ok=False)
-        for key in original_details.keys():
+        for key in uploaded_details.keys():
             if key in ["metadata_bam_header", "metadata_bam_index"]:
                 # differs because command-line different, index path different, and such...
                 continue
             if key.startswith("metadata_"):
-                assert original_details[key] == new_details[key], f"Mismatched on key {key}"
-        assert original_details["file_ext"] == new_details["file_ext"]
+                assert uploaded_details[key] == new_details[key], f"Mismatched on key {key}"
+        assert uploaded_details["file_ext"] == new_details["file_ext"]
 
-    def _reupload_and_then_materialize(self, history_id, dataset):
+    def _reupload_and_then_materialize(self, dataset):
         new_history_id, uploaded_hdas = self.dataset_populator.reupload_contents(dataset)
         assert len(uploaded_hdas) == 1
         deferred_hda = uploaded_hdas[0]

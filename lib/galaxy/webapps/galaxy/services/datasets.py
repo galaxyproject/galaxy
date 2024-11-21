@@ -537,11 +537,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             checksums.append(Checksum(type=type, checksum=checksum))
 
         if len(checksums) == 0:
-            hash_funciton = HashFunctionNameEnum.md5
+            hash_function = HashFunctionNameEnum.md5
             request = ComputeDatasetHashTaskRequest(
                 dataset_id=dataset_instance.dataset.id,
                 extra_files_path=None,
-                hash_function=hash_funciton,
+                hash_function=hash_function,
                 user=None,
             )
             compute_dataset_hash.delay(request=request, task_user_id=getattr(trans.user, "id", None))

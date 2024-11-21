@@ -8002,7 +8002,7 @@ export interface components {
              * Hash Function
              * @description The hash function used to generate the hash.
              */
-            hash_function: components["schemas"]["HashFunctionNames"];
+            hash_function: components["schemas"]["HashFunctionNameEnum"];
             /**
              * Hash Value
              * @description The hash value.
@@ -10868,16 +10868,10 @@ export interface components {
         };
         /**
          * HashFunctionNameEnum
-         * @description Particular pieces of information that can be requested for a dataset.
+         * @description Hash function names that can be used to generate checksums for files.
          * @enum {string}
          */
         HashFunctionNameEnum: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
-        /**
-         * HashFunctionNames
-         * @description Hash function names that can be used to generate checksums for datasets.
-         * @enum {string}
-         */
-        HashFunctionNames: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
         /** HdaDestination */
         HdaDestination: {
             /**

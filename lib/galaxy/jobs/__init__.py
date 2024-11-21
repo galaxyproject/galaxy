@@ -63,6 +63,7 @@ from galaxy.jobs.runners import (
 )
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
+    Dataset,
     Job,
     store,
     Task,
@@ -74,6 +75,7 @@ from galaxy.objectstore import (
     ObjectStorePopulator,
     serialize_static_object_store_config,
 )
+from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
@@ -100,6 +102,7 @@ from galaxy.work.context import WorkRequestContext
 
 if TYPE_CHECKING:
     from galaxy.jobs.handler import JobHandlerQueue
+    from galaxy.model import DatasetInstance
     from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
@@ -986,7 +989,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
     def __init__(
         self,
-        job: model.Job,
+        job: Job,
         app: MinimalManagerApp,
         use_persisted_destination: bool = False,
         tool: Optional["Tool"] = None,
@@ -1190,7 +1193,7 @@ class MinimalJobWrapper(HasResourceParameters):
     def galaxy_url(self):
         return self.get_destination_configuration("galaxy_infrastructure_url")
 
-    def get_job(self) -> model.Job:
+    def get_job(self) -> Job:
         job = self.sa_session.get(Job, self.job_id)
         assert job
         return job
@@ -1540,7 +1543,7 @@ class MinimalJobWrapper(HasResourceParameters):
         self.sa_session.refresh(job)
         if info is not None:
             job.info = info
-        job.set_state(model.Job.states.RESUBMITTED)
+        job.set_state(Job.states.RESUBMITTED)
         self.sa_session.add(job)
         with transaction(self.sa_session):
             self.sa_session.commit()
@@ -1555,7 +1558,7 @@ class MinimalJobWrapper(HasResourceParameters):
             # on the current job state value to minimize race conditions.
             self.sa_session.expire(job, ["state"])
 
-        if job.state in model.Job.terminal_states:
+        if job.state in Job.terminal_states:
             log.warning(
                 "(%s) Ignoring state change from '%s' to '%s' for job that is already terminal",
                 job.id,
@@ -1610,7 +1613,7 @@ class MinimalJobWrapper(HasResourceParameters):
     def enqueue(self):
         job = self.get_job()
         # Change to queued state before handing to worker thread so the runner won't pick it up again
-        self.change_state(model.Job.states.QUEUED, flush=False, job=job)
+        self.change_state(Job.states.QUEUED, flush=False, job=job)
         # Persist the destination so that the job will be included in counts if using concurrency limits
         self.set_job_destination(self.job_destination, None, flush=False, job=job)
         # Set object store after job destination so can leverage parameters...
@@ -1732,7 +1735,9 @@ class MinimalJobWrapper(HasResourceParameters):
             job.object_store_id_overrides = object_store_id_overrides
             self._setup_working_directory(job=job)
 
-    def _finish_dataset(self, output_name, dataset, job, context, final_job_state, remote_metadata_directory):
+    def _finish_dataset(
+        self, output_name, dataset: "DatasetInstance", job: Job, context, final_job_state, remote_metadata_directory
+    ):
         implicit_collection_jobs = job.implicit_collection_jobs_association
         purged = dataset.dataset.purged
         if not purged and dataset.dataset.external_filename is None:
@@ -1779,6 +1784,7 @@ class MinimalJobWrapper(HasResourceParameters):
             # it would be quicker to just copy the metadata from the originating output dataset,
             # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
             retry_internally = util.asbool(self.get_destination_configuration("retry_metadata_internally", True))
+            assert self.tool
             if not retry_internally and self.tool.tool_type == "interactive":
                 retry_internally = util.asbool(
                     self.get_destination_configuration("retry_interactivetool_metadata_internally", retry_internally)
@@ -1992,16 +1998,16 @@ class MinimalJobWrapper(HasResourceParameters):
                 if (
                     not final_job_state == job.states.ERROR
                     and not dataset_assoc.dataset.dataset.state == job.states.ERROR
-                    and not dataset_assoc.dataset.dataset.state == model.Dataset.states.DEFERRED
+                    and not dataset_assoc.dataset.dataset.state == Dataset.states.DEFERRED
                 ):
                     # We don't set datsets in error state to OK because discover_outputs may have already set the state to error
-                    dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
+                    dataset_assoc.dataset.dataset.state = Dataset.states.OK
 
         if job.states.ERROR == final_job_state:
             for dataset_assoc in output_dataset_associations:
                 log.debug("(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id)
                 # TODO: This is where the state is being set to error. Change it!
-                dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
+                dataset_assoc.dataset.dataset.state = Dataset.states.ERROR
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset_assoc.dataset.dependent_jobs:
                     self.pause(
@@ -2032,6 +2038,25 @@ class MinimalJobWrapper(HasResourceParameters):
                 # Purge, in case job wrote directly to object store
                 dataset.full_delete()
                 collected_bytes = 0
+
+        # Calculate dataset hash
+        for dataset_assoc in output_dataset_associations:
+            dataset = dataset_assoc.dataset.dataset
+            if not dataset.purged and dataset.state != Dataset.states.DEFERRED and not dataset.hashes:
+                if self.app.config.calculate_dataset_hash == "always" or (
+                    self.app.config.calculate_dataset_hash == "upload" and job.tool_id in ("upload1", "__DATA_FETCH__")
+                ):
+                    # Calculate dataset hash via a celery task
+                    if self.app.config.enable_celery_tasks:
+                        from galaxy.celery.tasks import compute_dataset_hash
+
+                        extra_files_path = dataset.extra_files_path if dataset.extra_files_path_exists() else None
+                        request = ComputeDatasetHashTaskRequest(
+                            dataset_id=dataset.id,
+                            extra_files_path=extra_files_path,
+                            hash_function=self.app.config.hash_function,
+                        )
+                        compute_dataset_hash.delay(request=request)
 
         user = job.user
         if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:

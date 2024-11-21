@@ -34,7 +34,7 @@ md5 = hashlib.md5
 
 
 class HashFunctionNameEnum(str, Enum):
-    """Particular pieces of information that can be requested for a dataset."""
+    """Hash function names that can be used to generate checksums for files."""
 
     md5 = "MD5"
     sha1 = "SHA-1"
