@@ -49,7 +49,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         self.screenshot("workflow_editor_blank")
 
         self.hover_over(self.components._.left_panel_drag.wait_for_visible())
-        self.hover_over(self.components._.right_panel_drag.wait_for_visible())
 
         self.workflow_editor_maximize_center_pane()
 
