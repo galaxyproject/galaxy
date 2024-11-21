@@ -1,6 +1,5 @@
 import { createLocalVue, mount } from "@vue/test-utils";
 import { isDate } from "date-fns";
-import { computed } from "vue";
 
 import { useUserTagsStore } from "@/stores/userTagsStore";
 
@@ -19,7 +18,7 @@ const autocompleteTags = ["#named_uer_tag", "abc", "my_tag"];
 
 jest.mock("@/stores/userTagsStore");
 useUserTagsStore.mockReturnValue({
-    userTags: computed(() => autocompleteTags),
+    userTags: autocompleteTags,
     onNewTagSeen: jest.fn(),
     onTagUsed: jest.fn(),
     onMultipleNewTagsSeen: jest.fn(),
