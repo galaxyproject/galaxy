@@ -19,7 +19,7 @@ Vue.config.devtools = false;
 jest.mock("vue", () => {
     const Vue = jest.requireActual("vue"); // Import the actual Vue instance
     Vue.config.productionTip = false; // Disable production tip
-    Vue.config.devtools = false; // Disable production tip
+    Vue.config.devtools = false; // Disable vue devtools
     return Vue; // Return the modified Vue instance
 });
 
