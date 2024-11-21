@@ -31,28 +31,28 @@ describe("useShortTermStorageMonitor", () => {
     });
 
     it("should indicate the task is running when it is still not ready", async () => {
-        const { waitForTask, isRunning, status } = useShortTermStorageMonitor();
+        const { waitForTask, isRunning, taskStatus } = useShortTermStorageMonitor();
 
         expect(isRunning.value).toBe(false);
         waitForTask(PENDING_TASK_ID);
         await flushPromises();
         expect(isRunning.value).toBe(true);
-        expect(status.value).toBe("PENDING");
+        expect(taskStatus.value).toBe("PENDING");
     });
 
     it("should indicate the task is successfully completed when the state is ready", async () => {
-        const { waitForTask, isRunning, isCompleted, status } = useShortTermStorageMonitor();
+        const { waitForTask, isRunning, isCompleted, taskStatus } = useShortTermStorageMonitor();
 
         expect(isCompleted.value).toBe(false);
         waitForTask(COMPLETED_TASK_ID);
         await flushPromises();
         expect(isCompleted.value).toBe(true);
         expect(isRunning.value).toBe(false);
-        expect(status.value).toBe("READY");
+        expect(taskStatus.value).toBe("READY");
     });
 
     it("should indicate the task status request failed when the request failed", async () => {
-        const { waitForTask, requestHasFailed, isRunning, isCompleted, status } = useShortTermStorageMonitor();
+        const { waitForTask, requestHasFailed, isRunning, isCompleted, taskStatus } = useShortTermStorageMonitor();
 
         expect(requestHasFailed.value).toBe(false);
         waitForTask(REQUEST_FAILED_TASK_ID);
@@ -60,16 +60,16 @@ describe("useShortTermStorageMonitor", () => {
         expect(requestHasFailed.value).toBe(true);
         expect(isRunning.value).toBe(false);
         expect(isCompleted.value).toBe(false);
-        expect(status.value).toBe("Request failed");
+        expect(taskStatus.value).toBe("Request failed");
     });
 
     it("should load the status from the stored monitoring data", async () => {
-        const { loadStatus, isRunning, isCompleted, hasFailed, status } = useShortTermStorageMonitor();
+        const { loadStatus, isRunning, isCompleted, hasFailed, taskStatus } = useShortTermStorageMonitor();
         const storedStatus = "READY";
 
         loadStatus(storedStatus);
 
-        expect(status.value).toBe(storedStatus);
+        expect(taskStatus.value).toBe(storedStatus);
         expect(isRunning.value).toBe(false);
         expect(isCompleted.value).toBe(true);
         expect(hasFailed.value).toBe(false);
@@ -77,26 +77,26 @@ describe("useShortTermStorageMonitor", () => {
 
     describe("isFinalState", () => {
         it("should indicate is final state when the task is completed", async () => {
-            const { waitForTask, isFinalState, isRunning, isCompleted, hasFailed, status } =
+            const { waitForTask, isFinalState, isRunning, isCompleted, hasFailed, taskStatus } =
                 useShortTermStorageMonitor();
 
-            expect(isFinalState(status.value)).toBe(false);
+            expect(isFinalState(taskStatus.value)).toBe(false);
             waitForTask(COMPLETED_TASK_ID);
             await flushPromises();
-            expect(isFinalState(status.value)).toBe(true);
+            expect(isFinalState(taskStatus.value)).toBe(true);
             expect(isRunning.value).toBe(false);
             expect(isCompleted.value).toBe(true);
             expect(hasFailed.value).toBe(false);
         });
 
         it("should indicate is final state when the task has failed", async () => {
-            const { waitForTask, isFinalState, isRunning, isCompleted, hasFailed, status } =
+            const { waitForTask, isFinalState, isRunning, isCompleted, hasFailed, taskStatus } =
                 useShortTermStorageMonitor();
 
-            expect(isFinalState(status.value)).toBe(false);
+            expect(isFinalState(taskStatus.value)).toBe(false);
             waitForTask(REQUEST_FAILED_TASK_ID);
             await flushPromises();
-            expect(isFinalState(status.value)).toBe(true);
+            expect(isFinalState(taskStatus.value)).toBe(true);
             expect(isRunning.value).toBe(false);
             expect(isCompleted.value).toBe(false);
             expect(hasFailed.value).toBe(true);

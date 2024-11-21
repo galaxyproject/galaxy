@@ -20,7 +20,7 @@ jest.mock("@vueuse/core", () => ({
 
 function useMonitorMock(): TaskMonitor {
     const isRunning = ref(false);
-    const status = ref();
+    const taskStatus = ref();
 
     return {
         waitForTask: jest.fn().mockImplementation(() => {
@@ -30,11 +30,11 @@ function useMonitorMock(): TaskMonitor {
         isCompleted: ref(false),
         hasFailed: ref(false),
         requestHasFailed: ref(false),
-        status,
+        taskStatus,
         expirationTime: 1000,
         isFinalState: jest.fn(),
         loadStatus(storedStatus) {
-            status.value = storedStatus;
+            taskStatus.value = storedStatus;
         },
     };
 }
