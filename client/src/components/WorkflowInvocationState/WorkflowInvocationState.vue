@@ -233,7 +233,6 @@ function cancelWorkflowSchedulingLocal() {
             v-if="props.isFullPage"
             :invocation="invocation"
             :workflow-id="invocation.workflow_id"
-            :invocation-running="!invocationAndJobTerminal"
             :success="props.success">
             <template v-slot:workflow-title-actions>
                 <BButton

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faEdit, faSitemap, faSpinner, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -28,7 +28,6 @@ interface Props {
     workflowId: string;
     runDisabled?: boolean;
     runWaiting?: boolean;
-    invocationRunning?: boolean;
     success?: boolean;
 }
 
@@ -104,8 +103,7 @@ const workflowImportTitle = computed(() => {
                 <div class="d-flex portlet-header align-items-center">
                     <div class="flex-grow-1" data-description="workflow heading">
                         <div class="px-1">
-                            <FontAwesomeIcon v-if="props.invocationRunning" :icon="faSpinner" spin />
-                            <FontAwesomeIcon v-else :icon="faSitemap" />
+                            <FontAwesomeIcon :icon="faSitemap" />
                             <b class="mx-1">
                                 {{ props.invocation ? "Invoked " : "" }}Workflow: {{ getWorkflowName() }}
                             </b>
