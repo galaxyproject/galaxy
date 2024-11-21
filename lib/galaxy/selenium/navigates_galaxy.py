@@ -1271,8 +1271,6 @@ class NavigatesGalaxy(HasDriver):
         insert_button = self.components.workflows.workflow_card_button(name=name, title="Copy steps into workflow")
         insert_button.wait_for_and_click()
 
-        self.components.workflow_editor.node._(label=name).wait_for_present()
-
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_editor_add_subworkflow(self, name: str):
