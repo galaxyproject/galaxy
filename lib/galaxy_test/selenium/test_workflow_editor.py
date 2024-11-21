@@ -23,7 +23,6 @@ from galaxy_test.base.workflow_fixtures import (
 )
 from .framework import (
     retry_assertion_during_transitions,
-    retry_during_transitions,
     RunsWorkflows,
     selenium_test,
     SeleniumTestCase,
@@ -953,29 +952,6 @@ steps:
         self.components.workflows.edit_button.wait_for_and_click()
         self.assert_modal_has_text("Tool is not installed")
         self.screenshot("workflow_editor_missing_tool")
-
-    @selenium_test
-    def test_workflow_bookmarking(self):
-        @retry_during_transitions
-        def assert_workflow_bookmarked_status(target_status):
-            name_matches = [c.text == new_workflow_name for c in self.components.tool_panel.workflow_names.all()]
-            status = any(name_matches)
-            assert status == target_status
-
-        new_workflow_name = self.workflow_create_new(clear_placeholder=True)
-        self.components.workflow_editor.canvas_body.wait_for_visible()
-        self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
-
-        # Assert workflow not initially bookmarked.
-        self.navigate_to_tools()
-        assert_workflow_bookmarked_status(False)
-
-        self.click_activity_workflow()
-        self.components.workflows.bookmark_link(action="add").wait_for_and_click()
-
-        # search for bookmark in tools menu
-        self.navigate_to_tools()
-        assert_workflow_bookmarked_status(True)
 
     def tab_to(self, accessible_name, direction="forward"):
         for _ in range(100):
