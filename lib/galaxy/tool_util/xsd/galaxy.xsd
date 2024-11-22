@@ -5650,8 +5650,9 @@ Currently the following filters are defined:
 * ``data_meta`` populate or filter options based on the metadata of another input parameter specified by ``ref``. If a ``column`` is given options are filtered for which the entry in this column ``column`` is equal to metadata of the input parameter specified by ``ref``.
 If no ``column`` is given the metadata value of the referenced input is added to the options list (in this case the corresponding ``options`` tag must not have the ``from_data_table`` or ``from_dataset`` attributes).
 In both cases the desired metadata is selected by ``key``.
+* ``data_table`` remove values according to the entries of a data table. Remove options where the value in ``column`` appears in the data table ``table_name`` in column ``table_column``. Setting ``keep`` will to ``true`` will keep only entries also appearing in the data table.
 
-The ``static_value`` and ``regexp`` filters can be inverted by setting ``keep`` to true.
+The ``static_value``, ``regexp``, and ``data_table`` filters can be inverted by setting ``keep`` to true.
 
 * ``add_value``: add an option with a given ``name`` and ``value`` to the options. By default, the new option is appended, with ``index`` the insertion position can be specified.
 * ``remove_value``: remove a value from the options. Either specified explicitly with ``value``, the value of another input specified with ``ref``, or the metadata ``key`` of another input ``meta_ref``.
@@ -5825,7 +5826,7 @@ only used if ``multiple`` is set to ``true``.]]></xs:documentation>
       <xs:annotation>
         <xs:documentation xml:lang="en">If ``true``, keep columns matching the
 value, if ``false`` discard columns matching the value. Used when ``type`` is
-either ``static_value``, ``regexp`` or ``param_value``. Default: true</xs:documentation>
+either ``static_value``, ``regexp``, ``param_value`` or ``data_table``. Default: true.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
@@ -5872,6 +5873,18 @@ from the list.</xs:documentation>
     <xs:attribute name="name_val_separator" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Only used if ``type`` is ``attribute_value_splitter``. This is used to separate attributes and values from each other within an attribute-value pair, i.e. ``=`` if the target content is ``A=V; B=W; C=Y``. Defaults to whitespace.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="table_name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Only used when ``type`` is
+``data_table``. The name of the data table to use.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="data_table_column" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Only used when ``type`` is
+``data_table``. The column of the data table to use (0 based index or column name).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -7926,6 +7939,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="add_value"/>
       <xs:enumeration value="remove_value"/>
       <xs:enumeration value="sort_by"/>
+      <xs:enumeration value="data_table"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="ActionsConditionalFilterType">

@@ -538,6 +538,61 @@ class SortByColumnFilter(Filter):
         return sorted(options, key=lambda x: x[self.column], reverse=self.reverse)
 
 
+class DataTableFilter(Filter):
+    """
+    Filters a list of options by entries present in a data table, i.e.
+    option[column] needs to be in the specified data table column
+
+    Type: data_table
+
+    Required Attributes:
+
+        - column: column in options to compare with
+        - table_name: data table to use
+        - data_table_column: data table column to use
+
+    Optional Attributes:
+
+        - keep: Keep options where option[column] is in the data table column (True)
+                Discard columns matching value (False)
+
+    """
+
+    def __init__(self, d_option, elem):
+        Filter.__init__(self, d_option, elem)
+        self.table_name = elem.get("table_name", None)
+        assert self.table_name is not None, "Required 'table_name' attribute missing from filter"
+        column = elem.get("column", None)
+        assert column is not None, "Required 'column' attribute missing from filter"
+        self.column = d_option.column_spec_to_index(column)
+        self.data_table_column = elem.get("data_table_column", None)
+        assert self.data_table_column is not None, "Required 'data_table_column' attribute missing from filter"
+        self.keep = string_as_bool(elem.get("keep", "True"))
+
+    def filter_options(self, options, trans, other_values):
+        # get column from data table, by index or column name
+        entries = None
+        try:
+            entries = {f[int(self.data_table_column)] for f in trans.app.tool_data_tables[self.table_name].get_fields()}
+        except ValueError:
+            pass
+        try:
+            entries = {
+                f[self.data_table_column] for f in trans.app.tool_data_tables[self.table_name].get_named_fields_list()
+            }
+        except KeyError:
+            pass
+        if entries is None:
+            log.error(f"could not get data from column {self.data_table_column} from data_table {self.table_name}")
+            return options
+
+        rval = []
+        for o in options:
+            if self.keep == (o[self.column] in entries):
+                rval.append(o)
+        return rval
+
+
 filter_types = dict(
     data_meta=DataMetaFilter,
     param_value=ParamValueFilter,
@@ -549,6 +604,7 @@ filter_types = dict(
     add_value=AdditionalValueFilter,
     remove_value=RemoveValueFilter,
     sort_by=SortByColumnFilter,
+    data_table=DataTableFilter,
 )
 
 
