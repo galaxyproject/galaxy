@@ -16,6 +16,7 @@ from galaxy.tool_util.lint import (
 from galaxy.tool_util.linters import (
     citations,
     command,
+    datatypes,
     general,
     help,
     inputs,
@@ -2022,6 +2023,68 @@ def test_xml_order(lint_ctx):
     assert lint_ctx.error_messages == ["Invalid XML: Element 'wrong_tag': This element is not expected."]
 
 
+VALID_DATATYPES = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="adata" type="data" format="txt"/>
+        <param name="bdata" type="data" format="invalid,fasta,custom"/>
+        <param name="fdata" type="data" format="fasta.gz"/>
+    </inputs>
+    <outputs>
+        <data name="name" format="another_invalid">
+            <change_format>
+                <when input="input_text" value="foo" format="just_another_invalid"/>
+            </change_format>
+        </data>
+        <collection name="collection_name" format="collection_format">
+            <discover_datasets format="txt"/>
+            <discover_datasets ext="invalid"/>
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="adata" ftype="txt"/>
+            <param name="bdata" ftype="invalid"/>
+        </test>
+    </tests>
+</tool>
+"""
+DATATYPES_CONF = """
+<datatypes>
+    <registration>
+        <datatype extension="custom"/>
+    </registration>
+</datatypes>
+"""
+
+
+def test_valid_datatypes(lint_ctx):
+    """
+    test datatypes linters
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        tool_path = os.path.join(tmp, "tool.xml")
+        datatypes_path = os.path.join(tmp, "datatypes_conf.xml")
+        with open(tool_path, "w") as tmpf:
+            tmpf.write(VALID_DATATYPES)
+        with open(datatypes_path, "w") as tmpf:
+            tmpf.write(DATATYPES_CONF)
+        tool_xml, _ = load_with_references(tool_path)
+        tool_source = XmlToolSource(tool_xml, source_path=tool_path)
+        run_lint_module(lint_ctx, datatypes, tool_source)
+    assert not lint_ctx.info_messages
+    assert not lint_ctx.valid_messages
+    assert "Tool uses a custom datatypes_conf.xml which is discouraged" in lint_ctx.warn_messages
+    assert len(lint_ctx.warn_messages) == 1
+    assert "Unknown datatype [invalid] used in param" in lint_ctx.error_messages
+    assert "Unknown datatype [another_invalid] used in data" in lint_ctx.error_messages
+    assert "Unknown datatype [just_another_invalid] used in when" in lint_ctx.error_messages
+    assert "Unknown datatype [collection_format] used in collection" in lint_ctx.error_messages
+    assert "Unknown datatype [invalid] used in param" in lint_ctx.error_messages
+    assert "Unknown datatype [invalid] used in discover_datasets" in lint_ctx.error_messages
+    assert len(lint_ctx.error_messages) == 6
+
+
 DATA_MANAGER = """<tool id="test_dm" name="test dm" version="1" tool_type="manage_data">
     <inputs>
         <param name="select" type="select">
@@ -2237,7 +2300,7 @@ def test_skip_by_module(lint_ctx):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 135
+    assert len(linter_names) == 137
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [
