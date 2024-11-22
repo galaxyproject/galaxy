@@ -11,8 +11,6 @@ import MountTarget from "./GridList.vue";
 
 jest.useFakeTimers();
 
-jest.mock("composables/config");
-
 setupMockConfig({ disabled: false, enabled: true });
 
 jest.mock("vue-router/composables");

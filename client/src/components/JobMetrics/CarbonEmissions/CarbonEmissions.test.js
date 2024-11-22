@@ -1,10 +1,13 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+import VueRouter from "vue-router";
 
 import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./carbonEmissionConstants.js";
 import CarbonEmissions from "./CarbonEmissions";
 
 const localVue = getLocalVue();
+localVue.use(VueRouter);
+const router = new VueRouter();
 
 const oneGibibyteMemoryInMebibyte = 1024;
 const oneHourInSeconds = 3600;
@@ -27,8 +30,10 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 jobRuntimeInSeconds: oneHourInSeconds,
                 memoryAllocatedInMebibyte: oneGibibyteMemoryInMebibyte,
                 powerUsageEffectiveness: worldwidePowerUsageEffectiveness,
+                geographicalServerLocationName: "GLOBAL",
             },
             localVue,
+            router,
         });
 
         const cpuEmissions = wrapper.find("#cpu-carbon-emissions").text();
@@ -48,8 +53,12 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 coresAllocated: 1,
                 estimatedServerInstance: testServerInstance,
                 jobRuntimeInSeconds: 1,
+                geographicalServerLocationName: "GLOBAL",
+                powerUsageEffectiveness: worldwidePowerUsageEffectiveness,
+                carbonIntensity: worldwideCarbonIntensity,
             },
             localVue,
+            router,
         });
 
         expect(wrapper.find("#memory-carbon-emissions").exists()).toBe(false);
@@ -65,8 +74,10 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 jobRuntimeInSeconds: 1,
                 memoryAllocatedInMebibyte: 1,
                 powerUsageEffectiveness: 0,
+                geographicalServerLocationName: "GLOBAL",
             },
             localVue,
+            router,
         });
 
         const cpuEmissions = wrapper.find("#cpu-carbon-emissions").text();
@@ -89,8 +100,10 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 jobRuntimeInSeconds: 1,
                 memoryAllocatedInMebibyte: 1,
                 powerUsageEffectiveness: 1,
+                geographicalServerLocationName: "GLOBAL",
             },
             localVue,
+            router,
         });
 
         const cpuEmissions = wrapper.find("#cpu-carbon-emissions").text();
@@ -109,8 +122,10 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 estimatedServerInstance: testServerInstance,
                 jobRuntimeInSeconds: 2,
                 geographicalServerLocationName: "GLOBAL",
+                powerUsageEffectiveness: worldwidePowerUsageEffectiveness,
             },
             localVue,
+            router,
         });
         const locationText = wrapper.find("#location-explanation").element;
         expect(locationText).toHaveTextContent(
@@ -132,6 +147,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 geographicalServerLocationName: locationName,
             },
             localVue,
+            router,
         });
 
         const locationElement = wrapper.find("#location-explanation").element;
@@ -150,8 +166,10 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 jobRuntimeInSeconds: 1,
                 memoryAllocatedInMebibyte: 1,
                 powerUsageEffectiveness,
+                geographicalServerLocationName: "GLOBAL",
             },
             localVue,
+            router,
         });
 
         const locationElement = wrapper.find("#pue").element;
