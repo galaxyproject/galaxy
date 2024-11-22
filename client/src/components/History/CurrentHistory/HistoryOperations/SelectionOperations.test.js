@@ -1,7 +1,8 @@
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
+import { setupMockConfig } from "tests/jest/mockConfig";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -32,11 +33,7 @@ const getDeletedSelection = () => new Map([["FAKE_ID", { deleted: true }]]);
 const getActiveSelection = () => new Map([["FAKE_ID", { deleted: false }]]);
 
 async function mountSelectionOperationsWrapper(config) {
-    server.use(
-        http.get("/api/configuration", ({ response }) => {
-            return response(200).json(config);
-        })
-    );
+    setupMockConfig(config);
 
     const pinia = createPinia();
     const wrapper = shallowMount(SelectionOperations, {
@@ -269,6 +266,7 @@ describe("History Selection Operations", () => {
             });
 
             it("should update operation-running state to null when the operation fails", async () => {
+                suppressDebugConsole(); // expected error messages since we're testing errors.
                 server.use(
                     http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
                         return response("4XX").json({ err_msg: "Error", err_code: 400 }, { status: 400 });
@@ -290,6 +288,8 @@ describe("History Selection Operations", () => {
             });
 
             it("should emit operation error event when the operation fails", async () => {
+                suppressDebugConsole(); // expected error messages since we're testing errors.
+
                 server.use(
                     http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
                         return response("4XX").json({ err_msg: "Error", err_code: 400 }, { status: 400 });
