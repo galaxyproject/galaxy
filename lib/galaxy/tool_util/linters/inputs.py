@@ -3,6 +3,7 @@
 import ast
 import re
 import warnings
+from copy import deepcopy
 from typing import (
     Iterator,
     Optional,
@@ -575,7 +576,7 @@ class InputsOptionsRemoveValueFilterRequiredAttributes(Linter):
                     )
 
 
-FILTER_ALLOWED_ATTRIBUTES = dict(FILTER_REQUIRED_ATTRIBUTES)
+FILTER_ALLOWED_ATTRIBUTES = deepcopy(FILTER_REQUIRED_ATTRIBUTES)
 FILTER_ALLOWED_ATTRIBUTES["static_value"].append("keep")
 FILTER_ALLOWED_ATTRIBUTES["regexp"].append("keep")
 FILTER_ALLOWED_ATTRIBUTES["data_meta"].extend(["column", "multiple", "separator"])
