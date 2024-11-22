@@ -38,7 +38,6 @@ const props = defineProps<{
     hasChanges?: boolean;
     hasInvalidConnections?: boolean;
     requiredReindex?: boolean;
-    currentActivePanel: string;
 }>();
 
 const { confirm } = useConfirmDialog();

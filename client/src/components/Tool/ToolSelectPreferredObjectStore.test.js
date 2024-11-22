@@ -1,8 +1,10 @@
+import "tests/jest/mockHelpPopovers";
+
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
+import { setupMockConfig } from "tests/jest/mockConfig";
 
-import { useServerMock } from "@/api/client/__mocks__";
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 import { ROOT_COMPONENT } from "@/utils/navigation";
 
@@ -12,15 +14,9 @@ setupSelectableMock();
 
 const localVue = getLocalVue(true);
 
-const { server, http } = useServerMock();
+setupMockConfig({});
 
 function mountComponent() {
-    server.use(
-        http.get("/api/configuration", ({ response }) => {
-            return response(200).json({});
-        })
-    );
-
     const wrapper = mount(ToolSelectPreferredObjectStore, {
         propsData: { toolPreferredObjectStoreId: null },
         localVue,

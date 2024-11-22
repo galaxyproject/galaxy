@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { BButton } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import { useToast } from "@/composables/toast";
@@ -36,7 +35,6 @@ const emit = defineEmits<{
 }>();
 
 const userTagsStore = useUserTagsStore();
-const { userTags } = storeToRefs(userTagsStore);
 const { warning } = useToast();
 
 onMounted(() => {
@@ -110,7 +108,7 @@ function onTagClicked(tag: string) {
             </div>
 
             <HeadlessMultiselect
-                :options="userTags"
+                :options="userTagsStore.userTags"
                 :selected="props.value"
                 :placeholder="props.placeholder"
                 :validator="isValid"

@@ -1,4 +1,5 @@
 import flushPromises from "flush-promises";
+import { suppressDebugConsole } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useTaskMonitor } from "@/composables/taskMonitor";
@@ -68,6 +69,7 @@ describe("useTaskMonitor", () => {
 
     it("should indicate the task status request failed when the request failed", async () => {
         const { waitForTask, requestHasFailed, isRunning, isCompleted, taskStatus } = useTaskMonitor();
+        suppressDebugConsole();
 
         expect(requestHasFailed.value).toBe(false);
         waitForTask(REQUEST_FAILED_TASK_ID);

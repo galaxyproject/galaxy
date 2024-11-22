@@ -1,3 +1,5 @@
+import "tests/jest/mockHelpPopovers";
+
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";

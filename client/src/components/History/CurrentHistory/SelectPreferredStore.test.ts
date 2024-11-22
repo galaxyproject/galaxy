@@ -3,6 +3,7 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
+import { h } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { ROOT_COMPONENT } from "@/utils/navigation/schema";
@@ -41,6 +42,13 @@ async function mountComponent() {
 }
 
 const PREFERENCES = ROOT_COMPONENT.preferences;
+
+// bootstrap vue will try to match targets to actual HTML elements in DOM but there
+// may be no DOM for jest tests, just stub out an alternative minimal implementation.
+jest.mock("@/components/ObjectStore/ObjectStoreSelectButtonPopover.vue", () => ({
+    name: "ObjectStoreSelectButtonPopover",
+    render: () => h("div", "Mocked Popover"),
+}));
 
 describe("SelectPreferredStore.vue", () => {
     let axiosMock: MockAdapter;

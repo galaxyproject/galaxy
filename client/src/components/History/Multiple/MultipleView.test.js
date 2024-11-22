@@ -3,6 +3,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
+import { setupMockConfig } from "tests/jest/mockConfig";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -12,6 +13,8 @@ import MultipleView from "./MultipleView.vue";
 
 const USER_ID = "test-user-id";
 const FIRST_HISTORY_ID = "test-history-id-0";
+
+setupMockConfig({});
 
 const { server, http } = useServerMock();
 
@@ -29,10 +32,6 @@ describe("MultipleView", () => {
         const fakeSummaries = getFakeHistorySummaries(count);
 
         server.use(
-            http.get("/api/configuration", ({ response }) => {
-                return response(200).json({});
-            }),
-
             http.get("/api/histories/{history_id}", ({ response, params }) => {
                 const { history_id } = params;
                 const summary = fakeSummaries.find((s) => s.id === history_id);

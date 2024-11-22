@@ -37,6 +37,9 @@ function propsForStep(step: Step) {
         scroll: { x: ref(0), y: ref(0) },
         scale: 1,
         datatypesMapper: testDatatypesMapper,
+        parentNode: null,
+        readonly: true,
+        blank: false,
     };
 }
 
