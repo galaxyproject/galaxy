@@ -1,3 +1,5 @@
+import "tests/jest/mockHelpPopovers";
+
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
