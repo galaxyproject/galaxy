@@ -17,6 +17,8 @@ describe("InstanceForm", () => {
                 title: "MY FORM",
                 inputs: null,
                 submitTitle: SUBMIT_TITLE,
+                busy: false,
+                loadingMessage: "loading plugin instance",
             },
             localVue,
         });
@@ -31,6 +33,8 @@ describe("InstanceForm", () => {
                 title: "MY FORM",
                 inputs: inputs,
                 submitTitle: SUBMIT_TITLE,
+                busy: false,
+                loadingMessage: "loading plugin instance",
             },
             localVue,
         });
