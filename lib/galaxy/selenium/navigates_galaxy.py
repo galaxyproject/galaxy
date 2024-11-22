@@ -2002,13 +2002,13 @@ class NavigatesGalaxy(HasDriver):
         target_element.send_keys(text)
 
     def collection_builder_hide_originals(self):
-        self.wait_for_and_click_selector("input.hide-originals")
+        self.wait_for_and_click_selector('[data-description="hide original elements"]')
 
     def collection_builder_create(self):
         self.wait_for_and_click_selector("button.create-collection")
 
     def collection_builder_clear_filters(self):
-        self.wait_for_and_click_selector("a.clear-filters-link")
+        self.wait_for_and_click_selector("button.clear-filters-link")
 
     def collection_builder_click_paired_item(self, forward_or_reverse, item):
         assert forward_or_reverse in ["forward", "reverse"]

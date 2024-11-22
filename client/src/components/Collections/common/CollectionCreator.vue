@@ -194,11 +194,13 @@ watch(
                                 {{ localize("Remove file extensions?") }}
                             </BFormCheckbox>
 
-                            <BFormCheckbox v-model="localHideSourceItems" name="hide-originals" switch>
-                                <HelpText
-                                    uri="galaxy.collections.collectionBuilder.hideOriginalElements"
-                                    :text="localize('Hide original elements')" />
-                            </BFormCheckbox>
+                            <div data-description="hide original elements">
+                                <BFormCheckbox v-model="localHideSourceItems" name="hide-originals" switch>
+                                    <HelpText
+                                        uri="galaxy.collections.collectionBuilder.hideOriginalElements"
+                                        :text="localize('Hide original elements')" />
+                                </BFormCheckbox>
+                            </div>
                         </BFormGroup>
 
                         <BFormGroup
@@ -208,6 +210,7 @@ watch(
                             <BFormInput
                                 id="collection-name"
                                 v-model="collectionName"
+                                class="collection-name"
                                 :placeholder="localize('Enter a name for your new collection')"
                                 size="sm"
                                 required

@@ -438,7 +438,7 @@ history_copy_elements:
 
 collection_builders:
   selectors:
-    clear_filters: "a.clear-filters-link"
+    clear_filters: "button.clear-filters-link"
     forward_datasets: ".forward-column .column-datasets"
     reverse_datasets: ".reverse-column .column-datasets"
     name: "input.collection-name"
@@ -1053,7 +1053,7 @@ libraries:
       export_to_history_paired_option: 'option[value="${collection_option}"]'
       export_to_history_collection_name: '.collection-name'
       export_to_history_new_history: 'input[name=history_name]'
-      clear_filters: '.clear-filters-link'
+      clear_filters: "button.clear-filters-link"
       import_progress_bar: '.progress-bar-import'
       import_from_path_textarea: '#import_paths'
       select_all: '#select-all-checkboxes'
