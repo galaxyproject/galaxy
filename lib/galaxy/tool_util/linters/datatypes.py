@@ -5,17 +5,19 @@ from typing import (
 )
 
 # from galaxy import config
+from galaxy.tool_util import linters
 from galaxy.tool_util.lint import Linter
 from galaxy.util import (
     listify,
     parse_xml,
 )
+from galaxy.util.resources import resource_path
 
 if TYPE_CHECKING:
     from galaxy.tool_util.lint import LintContext
     from galaxy.tool_util.parser import ToolSource
 
-DATATYPES_CONF = os.path.join(os.path.dirname(__file__), "datatypes_conf.xml.sample")
+DATATYPES_CONF = resource_path(linters, "datatypes_conf.xml.sample")
 
 
 def _parse_datatypes(datatype_conf_path: str) -> Set[str]:
