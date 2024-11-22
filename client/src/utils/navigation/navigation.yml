@@ -77,7 +77,7 @@ preferences:
     delete_account_ok_btn: '.modal-footer .btn-primary'
     email_input: "input[id='email']"
     username_input: "input[id='username']"
-    preferred_storage: '.preferred-storage'
+    preferred_storage: '.preferred-storage button, .preferred-storage a'
     manage_object_stores: '#manage-object-stores'
     manage_file_sources: '#manage-file-sources'
 
@@ -92,10 +92,10 @@ object_store_instances:
       create_button: '#object-store-create'
       _: '#user-object-stores-index'
 
-  create: 
+  create:
     selectors:
       select: '.object-store-template-select-button[data-template-id="${template_id}"]'
-      _: '#create-object-store-landing'      
+      _: '#create-object-store-landing'
       submit: '#submit'
 
 file_source_instances:
@@ -104,10 +104,10 @@ file_source_instances:
       create_button: '#file-source-create'
       _: '#user-file-sources-index'
 
-  create: 
+  create:
     selectors:
       select: '.file-source-template-select-button[data-template-id="${template_id}"]'
-      _: '#create-file-source-landing'      
+      _: '#create-file-source-landing'
       submit: '#submit'
 
 toolbox_filters:

@@ -12,7 +12,7 @@ const TEST_EMAIL = `${TEST_USER_ID}@test.com`;
 const TEST_ROOT = "/";
 
 function mountComponent() {
-    const wrapper = mount(UserDeletion, {
+    const wrapper = mount(UserDeletion as any, {
         propsData: { userId: TEST_USER_ID, root: TEST_ROOT, email: TEST_EMAIL },
         localVue,
     });

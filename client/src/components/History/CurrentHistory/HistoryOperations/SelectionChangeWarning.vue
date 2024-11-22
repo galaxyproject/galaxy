@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { BAlert, BLink, BProgress } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
 
-import { useUserFlagsStore } from "@/stores/userFlagsStore";
+import { useLocalPreferences } from "@/stores/localPreferencesStore";
 
 interface Props {
     querySelectionBreak: boolean;
@@ -13,8 +12,7 @@ const props = withDefaults(defineProps<Props>(), {
     querySelectionBreak: true,
 });
 
-const userFlagsStore = useUserFlagsStore();
-const { showSelectionQueryBreakWarning } = storeToRefs(useUserFlagsStore());
+const { hideSelectionQueryBreakWarning } = useLocalPreferences();
 
 const dismissSecs = ref(10);
 const dismissCountDown = ref(0);
@@ -25,13 +23,13 @@ function onDismissed() {
 
 function onDoNotShowAgain() {
     onDismissed();
-    userFlagsStore.ignoreSelectionQueryBreakWarning();
+    hideSelectionQueryBreakWarning.value = true;
 }
 
 watch(
     () => props.querySelectionBreak,
     () => {
-        dismissCountDown.value = showSelectionQueryBreakWarning ? dismissSecs.value : 0;
+        dismissCountDown.value = hideSelectionQueryBreakWarning ? 0 : dismissSecs.value;
     }
 );
 </script>

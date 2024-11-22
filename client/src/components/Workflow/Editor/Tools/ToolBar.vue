@@ -130,8 +130,12 @@ useToolLogic();
 
 const { ctrl_1, ctrl_2, ctrl_3, ctrl_4, ctrl_5, ctrl_6, ctrl_7, ctrl_8 } = useMagicKeys();
 
+function toggleSnap() {
+    toolbarStore.setSnapActive(!toolbarStore.snapActive);
+}
+
 whenever(ctrl_1!, () => (toolbarStore.currentTool = "pointer"));
-whenever(ctrl_2!, () => (toolbarStore.snapActive = !toolbarStore.snapActive));
+whenever(ctrl_2!, toggleSnap);
 whenever(ctrl_3!, () => (toolbarStore.currentTool = "textComment"));
 whenever(ctrl_4!, () => (toolbarStore.currentTool = "markdownComment"));
 whenever(ctrl_5!, () => (toolbarStore.currentTool = "frameComment"));
@@ -170,8 +174,9 @@ const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateS
                         class="button"
                         data-tool="toggle_snap"
                         :title="snapButtonTitle"
-                        :pressed.sync="snapActive"
-                        variant="outline-primary">
+                        :pressed="snapActive"
+                        variant="outline-primary"
+                        @click="toggleSnap">
                         <FontAwesomeIcon icon="fa-magnet" size="lg" />
                     </BButton>
                 </BButtonGroup>
@@ -249,7 +254,7 @@ const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateS
                 class="toggle-visibility-button"
                 :title="toggleVisibilityButtonTitle"
                 variant="outline-primary"
-                @click="toolbarVisible = !toolbarVisible">
+                @click="toolbarStore.setToolbarVisible(!toolbarVisible)">
                 <FontAwesomeIcon v-if="toolbarVisible" icon="fa-chevron-up" />
                 <FontAwesomeIcon v-else icon="fa-chevron-down" />
             </BButton>

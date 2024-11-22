@@ -3,9 +3,9 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDown, faAngleUp, faBars, faGripVertical } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { ref } from "vue";
 
-import { useUserStore } from "@/stores/userStore";
+import { useLocalPreferences } from "@/stores/localPreferencesStore";
 
 library.add(faAngleDown, faAngleUp, faBars, faGripVertical);
 
@@ -20,11 +20,10 @@ withDefaults(defineProps<Props>(), {
     showViewToggle: false,
 });
 
-const userStore = useUserStore();
+const { preferredListViewMode } = useLocalPreferences();
 
 const sortDesc = ref(true);
 const sortBy = ref<SortBy>("update_time");
-const listViewMode = computed<ListView>(() => (userStore.preferredListViewMode as ListView) || "grid");
 
 function onSort(newSortBy: SortBy) {
     if (sortBy.value === newSortBy) {
@@ -35,13 +34,13 @@ function onSort(newSortBy: SortBy) {
 }
 
 function onToggleView(newView: ListView) {
-    userStore.setPreferredListViewMode(newView);
+    preferredListViewMode.value = newView;
 }
 
 defineExpose({
     sortBy,
     sortDesc,
-    listViewMode,
+    listViewMode: preferredListViewMode,
 });
 </script>
 
@@ -86,7 +85,7 @@ defineExpose({
                     v-b-tooltip
                     title="Grid view"
                     size="sm"
-                    :pressed="listViewMode === 'grid'"
+                    :pressed="preferredListViewMode === 'grid'"
                     variant="outline-primary"
                     @click="onToggleView('grid')">
                     <FontAwesomeIcon :icon="faGripVertical" />
@@ -97,7 +96,7 @@ defineExpose({
                     v-b-tooltip
                     title="List view"
                     size="sm"
-                    :pressed="listViewMode === 'list'"
+                    :pressed="preferredListViewMode === 'list'"
                     variant="outline-primary"
                     @click="onToggleView('list')">
                     <FontAwesomeIcon :icon="faBars" />

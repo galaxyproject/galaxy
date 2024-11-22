@@ -4,7 +4,8 @@ import { storeToRefs } from "pinia";
 import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
+import { useToolStore } from "@/stores/toolStore";
+import { type Tool, type ToolSection } from "@/stores/toolStoreTypes";
 import { useUserStore } from "@/stores/userStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";

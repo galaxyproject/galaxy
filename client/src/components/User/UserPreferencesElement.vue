@@ -1,14 +1,17 @@
-<script setup>
-import { BRow } from "bootstrap-vue";
+<script setup lang="ts">
+import { faCog } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge } from "bootstrap-vue";
+import type { PropType } from "vue";
 
-defineProps({
+const props = defineProps({
     id: {
         type: String,
         default: null,
     },
     icon: {
-        type: String,
-        default: "fa-gear",
+        type: String as PropType<any>,
+        default: faCog,
     },
     title: {
         type: String,
@@ -28,31 +31,53 @@ defineProps({
     },
 });
 </script>
+
 <template>
-    <BRow class="ml-3 mb-1">
-        <i :class="['pref-icon pt-1 fa fa-lg', icon]" />
-        <div class="pref-content pr-1">
-            <b-badge v-if="!!badge" variant="danger">
-                {{ badge }}
-            </b-badge>
-            <router-link v-if="to" :id="id" :to="to">
-                <b v-localize>{{ title }}</b>
-            </router-link>
-            <a v-else :id="id" href="#" @click="$emit('click')">
-                <b v-localize>{{ title }}</b>
-            </a>
-            <div class="form-text text-muted">
-                {{ description }}
+    <section>
+        <FontAwesomeIcon class="pref-icon" size="lg" :icon="props.icon" />
+        <div class="pref-content">
+            <h2>
+                <BBadge v-if="Boolean(props.badge)" variant="danger">
+                    {{ props.badge }}
+                </BBadge>
+
+                <router-link v-if="Boolean(props.to)" :id="props.id" :to="props.to">
+                    <b v-localize> {{ props.title }} </b>
+                </router-link>
+
+                <button v-else :id="props.id" class="ui-link" @click="$emit('click')">
+                    <b v-localize> {{ props.title }} </b>
+                </button>
+            </h2>
+
+            <div class="description">
+                {{ props.description }}
             </div>
             <slot />
         </div>
-    </BRow>
+    </section>
 </template>
-<style scoped>
-.pref-content {
-    width: calc(100% - 3rem);
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+section {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    margin-bottom: 1rem;
 }
+
 .pref-icon {
-    width: 3rem;
+    justify-self: center;
+}
+
+h2 {
+    font-size: $font-size-base;
+    margin-bottom: 0;
+}
+
+.description {
+    margin-top: 0.25rem;
+    color: $text-muted;
 }
 </style>

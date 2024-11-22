@@ -6,72 +6,13 @@ import axios from "axios";
 import { defineStore } from "pinia";
 import Vue, { computed, type Ref, ref, shallowRef } from "vue";
 
-import { createWhooshQuery, filterTools, type types_to_icons } from "@/components/Panels/utilities";
+import type { PanelView } from "@/components/Panels/utilities";
+import { createWhooshQuery, filterTools } from "@/components/Panels/utilities";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
-export interface Tool {
-    model_class: string;
-    id: string;
-    name: string;
-    version: string;
-    description: string;
-    labels: string[];
-    edam_operations: string[];
-    edam_topics: string[];
-    hidden: "" | boolean;
-    is_workflow_compatible: boolean;
-    xrefs: string[];
-    config_file: string;
-    link: string;
-    min_width: number;
-    target: string;
-    panel_section_id: string;
-    panel_section_name: string | null;
-    form_style: string;
-    disabled?: boolean;
-}
-
-export interface ToolSection {
-    model_class: string;
-    id: string;
-    name: string;
-    title?: string;
-    version?: string;
-    description?: string;
-    links?: Record<string, string>;
-    tools?: (string | ToolSectionLabel)[];
-    elems?: (Tool | ToolSection)[];
-}
-
-export interface ToolSectionLabel {
-    model_class: string;
-    id: string;
-    text: string;
-    version?: string;
-    description?: string | null;
-    links?: Record<string, string> | null;
-}
-
-export interface FilterSettings {
-    [key: string]: string | undefined;
-    name?: string;
-    section?: string;
-    ontology?: string;
-    id?: string;
-    owner?: string;
-    help?: string;
-}
-
-export interface PanelView {
-    id: string;
-    model_class: string;
-    name: string;
-    description: string;
-    view_type: keyof typeof types_to_icons;
-    searchable: boolean;
-}
+import type { FilterSettings, Tool, ToolSection } from "./toolStoreTypes";
 
 export const useToolStore = defineStore("toolStore", () => {
     const currentPanelView: Ref<string> = useUserLocalStorage("tool-store-view", "");

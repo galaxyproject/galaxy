@@ -10,6 +10,7 @@ import { useRouter } from "vue-router/composables";
 import { GalaxyApi } from "@/api";
 import { helpHtml, WorkflowFilters } from "@/components/Workflow/List/WorkflowFilters";
 import { Toast } from "@/composables/toast";
+import { useLocalPreferences } from "@/stores/localPreferencesStore";
 import { useUserStore } from "@/stores/userStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -23,7 +24,6 @@ import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.
 
 library.add(faStar, faTrash);
 
-type ListView = "grid" | "list";
 type WorkflowsList = Record<string, never>[];
 
 interface Props {
@@ -61,12 +61,13 @@ const searchPlaceHolder = computed(() => {
     return placeHolder;
 });
 
+const { preferredListViewMode } = useLocalPreferences();
+
 const published = computed(() => props.activeList === "published");
 const sharedWithMe = computed(() => props.activeList === "shared_with_me");
 const showDeleted = computed(() => filterText.value.includes("is:deleted"));
 const showBookmarked = computed(() => filterText.value.includes("is:bookmarked"));
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
-const view = computed(() => (userStore.preferredListViewMode as ListView) || "grid");
 const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) ?? true);
 const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "update_time");
 const noItems = computed(() => !loading.value && workflowsLoaded.value.length === 0 && !filterText.value);
@@ -311,14 +312,14 @@ onMounted(() => {
             :show="overlay"
             rounded="sm"
             class="cards-list mt-2"
-            :class="view === 'grid' ? 'd-flex flex-wrap' : ''">
+            :class="preferredListViewMode === 'grid' ? 'd-flex flex-wrap' : ''">
             <WorkflowCard
                 v-for="w in workflowsLoaded"
                 :key="w.id"
                 :workflow="w"
                 :published-view="published"
-                :grid-view="view === 'grid'"
-                :class="view === 'grid' ? 'grid-view' : 'list-view'"
+                :grid-view="preferredListViewMode === 'grid'"
+                :class="preferredListViewMode === 'grid' ? 'grid-view' : 'list-view'"
                 @refreshList="load"
                 @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
                 @update-filter="updateFilterValue" />

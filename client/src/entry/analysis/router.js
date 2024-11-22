@@ -82,6 +82,7 @@ import UpgradeObjectStoreInstance from "@/components/ObjectStore/Instances/Upgra
 import CreateUserObjectStore from "@/components/ObjectStore/Templates/CreateUserObjectStore.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
+import LocalPreferences from "@/components/User/LocalPreferences.vue";
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
@@ -562,6 +563,11 @@ export function getRouter(Galaxy) {
                         props: {
                             userId: Galaxy.user.id,
                         },
+                    },
+                    {
+                        path: "user/local_preferences",
+                        component: LocalPreferences,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "user/:formId",

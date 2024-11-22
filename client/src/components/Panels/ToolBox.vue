@@ -9,8 +9,8 @@ import { useRouter } from "vue-router/composables";
 import { getGalaxyInstance } from "@/app";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { getAppRoot } from "@/onload/loadConfig";
-import { type Tool, type ToolSection as ToolSectionType } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
+import { type Tool, type ToolSection as ToolSectionType } from "@/stores/toolStoreTypes";
 import { type Workflow, type Workflow as WorkflowType } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
 

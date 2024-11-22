@@ -4,12 +4,7 @@
  */
 import { orderBy } from "lodash";
 
-import {
-    type FilterSettings as ToolFilters,
-    type Tool,
-    type ToolSection,
-    type ToolSectionLabel,
-} from "@/stores/toolStore";
+import type { FilterSettings as ToolFilters, Tool, ToolSection, ToolSectionLabel } from "@/stores/toolStoreTypes";
 import levenshteinDistance from "@/utils/levenshtein";
 
 const FILTER_KEYS = {
@@ -27,6 +22,15 @@ const UNSECTIONED_SECTION = {
     name: "Unsectioned Tools",
     description: "Tools that don't appear under any section in the unsearched panel",
 };
+
+export interface PanelView {
+    id: string;
+    model_class: string;
+    name: string;
+    description: string;
+    view_type: keyof typeof types_to_icons;
+    searchable: boolean;
+}
 
 /** These are keys used to order/sort results in `ToolSearch`.
  * The value for each is the sort order, higher number = higher rank.

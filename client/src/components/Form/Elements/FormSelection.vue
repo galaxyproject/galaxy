@@ -3,10 +3,9 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItemButton } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { useUserFlagsStore } from "@/stores/userFlagsStore";
+import { useLocalPreferences } from "@/stores/localPreferencesStore";
 
 import FormCheck from "./FormCheck.vue";
 import FormRadio from "./FormRadio.vue";
@@ -72,7 +71,7 @@ const currentOptions = computed(() => {
 
 const useMany = ref(false);
 
-const { preferredFormSelectElement } = storeToRefs(useUserFlagsStore());
+const { preferredFormSelectElement } = useLocalPreferences();
 
 watch(
     () => preferredFormSelectElement.value,
