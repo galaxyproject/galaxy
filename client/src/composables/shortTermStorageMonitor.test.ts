@@ -1,4 +1,5 @@
 import flushPromises from "flush-promises";
+import { suppressDebugConsole } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonitor";
@@ -52,6 +53,8 @@ describe("useShortTermStorageMonitor", () => {
     });
 
     it("should indicate the task status request failed when the request failed", async () => {
+        suppressDebugConsole(); // expected API failure
+
         const { waitForTask, requestHasFailed, isRunning, isCompleted, taskStatus } = useShortTermStorageMonitor();
 
         expect(requestHasFailed.value).toBe(false);
@@ -90,6 +93,8 @@ describe("useShortTermStorageMonitor", () => {
         });
 
         it("should indicate is final state when the task has failed", async () => {
+            suppressDebugConsole(); // expected API failure
+
             const { waitForTask, isFinalState, isRunning, isCompleted, hasFailed, taskStatus } =
                 useShortTermStorageMonitor();
 
