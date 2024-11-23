@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 DATATYPES_CONF = resource_path(linters, "datatypes_conf.xml.sample")
 
 
-def _parse_datatypes(datatype_conf_path: str) -> Set[str]:
+def _parse_datatypes(datatype_conf_path) -> Set[str]:
     datatypes = set()
     tree = parse_xml(datatype_conf_path)
     root = tree.getroot()
