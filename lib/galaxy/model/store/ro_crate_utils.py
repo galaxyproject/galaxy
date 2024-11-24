@@ -45,7 +45,6 @@ ATTRS_FILENAME_INVOCATIONS = "invocation_attrs.txt"
 class WorkflowRunCrateProfileBuilder:
     def __init__(self, model_store: Any):
         self.model_store = model_store
-        self.toolbox = self.model_store.app.toolbox
         self.invocation: WorkflowInvocation = model_store.included_invocations[0]
         self.workflow: Workflow = self.invocation.workflow
         self.param_type_mapping = {
@@ -355,9 +354,6 @@ class WorkflowRunCrateProfileBuilder:
                         annotations_list = [annotation.annotation for annotation in step.annotations if annotation]
                         tool_description = " ".join(annotations_list) if annotations_list else None
 
-                    # Retrieve the tool metadata from the toolbox
-                    tool_metadata = self._get_tool_metadata(tool_id)
-
                     # Add tool entity to the RO-Crate
                     tool_entity = crate.add(
                         ContextEntity(
@@ -369,9 +365,6 @@ class WorkflowRunCrateProfileBuilder:
                                 "version": tool_version,
                                 "description": tool_description,
                                 "url": "https://toolshed.g2.bx.psu.edu",  # URL if relevant
-                                "citation": tool_metadata["citations"],
-                                "identifier": tool_metadata["xrefs"],
-                                "EDAM operation": tool_metadata["edam_operations"],
                             },
                         )
                     )
@@ -388,54 +381,6 @@ class WorkflowRunCrateProfileBuilder:
                 subworkflow = step.subworkflow
                 if subworkflow:
                     self._add_tools_recursive(subworkflow.steps, crate, tool_entities)
-
-    def _get_tool_metadata(self, tool_id: str):
-        """
-        Retrieve the tool metadata (citations, xrefs, EDAM operations) using the ToolBox.
-
-        Args:
-            toolbox (ToolBox): An instance of the Galaxy ToolBox.
-            tool_id (str): The ID of the tool to retrieve metadata for.
-
-        Returns:
-            dict: A dictionary containing citations, xrefs, and EDAM operations for the tool.
-        """
-        tool = self.toolbox.get_tool(tool_id)
-        if not tool:
-            return None
-
-        # Extracting relevant metadata from the tool object
-        citations = []
-        if tool.citations:
-            for citation in tool.citations:
-                citations.append(
-                    {
-                        "type": citation.type,  # e.g., "doi" or "bibtex"
-                        "value": citation.value,  # The actual DOI, BibTeX, etc.
-                    }
-                )
-
-        xrefs = []
-        if tool.xrefs:
-            for xref in tool.xrefs:
-                xrefs.append(
-                    {
-                        "type": xref.type,  # e.g., "registry", "repository", etc.
-                        "value": xref.value,  # The identifier or link
-                    }
-                )
-
-        # Handling EDAM operations, which are simple values in your XML
-        edam_operations = []
-        if tool.edam_operations:
-            for operation in tool.edam_operations:
-                edam_operations.append({"value": operation})  # Extract the operation code (e.g., "operation_3482")
-
-        return {
-            "citations": citations,  # List of structured citation entries
-            "xrefs": xrefs,  # List of structured xref entries
-            "edam_operations": edam_operations,  # List of structured EDAM operations
-        }
 
     def _add_create_action(self, crate: ROCrate):
         self.create_action = crate.add(
