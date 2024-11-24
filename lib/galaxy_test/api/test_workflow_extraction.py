@@ -5,6 +5,7 @@ from json import (
     dumps,
     loads,
 )
+from typing import Optional
 
 from galaxy_test.base.populators import (
     skip_without_tool,
@@ -611,11 +612,11 @@ test_data:
         downloaded_workflow = download_response.json()
         return downloaded_workflow
 
-    def _get_steps_of_type(self, downloaded_workflow, type, expected_len=None):
+    def _get_steps_of_type(self, downloaded_workflow, type: str, expected_len: Optional[int] = None):
         steps = [s for s in downloaded_workflow["steps"].values() if s["type"] == type]
         if expected_len is not None:
             n = len(steps)
-            assert n == expected_len, "Expected %d steps of type %s, found %d" % (expected_len, type, n)
+            assert n == expected_len, f"Expected {expected_len} steps of type {type}, found {n}"
         return sorted(steps, key=operator.itemgetter("id"))
 
     def __job_id(self, history_id, dataset_id):
@@ -645,10 +646,10 @@ test_data:
     def __check_workflow(
         self,
         workflow,
-        step_count=None,
-        verify_connected=False,
-        data_input_count=None,
-        data_collection_input_count=None,
+        step_count: Optional[int] = None,
+        verify_connected: bool = False,
+        data_input_count: Optional[int] = None,
+        data_collection_input_count: Optional[int] = None,
         tool_ids=None,
     ):
         steps = workflow["steps"]

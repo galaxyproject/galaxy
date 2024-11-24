@@ -37,9 +37,9 @@ if __name__ == "__main__":
 
     set = 0
     dataset_count = sa_session.query(model.Dataset).count()
-    print("Processing %i datasets..." % dataset_count)
+    print(f"Processing {dataset_count} datasets...")
     percent = 0
-    print("Completed %i%%" % percent, end=" ")
+    print(f"Completed {percent}%", end=" ")
     sys.stdout.flush()
     for i, dataset in enumerate(sa_session.query(model.Dataset).enable_eagerloads(False).yield_per(1000)):
         if dataset.total_size is None:
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         new_percent = int(float(i) / dataset_count * 100)
         if new_percent != percent:
             percent = new_percent
-            print("\rCompleted %i%%" % percent, end=" ")
+            print(f"\rCompleted {percent}%", end=" ")
             sys.stdout.flush()
     with transaction(session):
         session.commit()

@@ -205,14 +205,14 @@ def query(
     if debug:
         print("Executed:")
         print(cur.query)
-    print("Query returned %d rows" % cur.rowcount)
+    print(f"Query returned {cur.rowcount} rows")
 
     if source == "metrics":
         times = numpy.array([r[0] for r in cur if r[0]])
     elif source == "history":
         times = numpy.array([r[0].total_seconds() for r in cur if r[0]])
 
-    print("Collected %d times" % times.size)
+    print(f"Collected {times.size} times")
 
     if times.size == 0:
         return

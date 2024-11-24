@@ -1129,10 +1129,9 @@ steps:
             if search_count == expected_search_count:
                 break
             time.sleep(1)
-        assert search_count == expected_search_count, "expected to find %d jobs, got %d jobs" % (
-            expected_search_count,
-            search_count,
-        )
+        assert (
+            search_count == expected_search_count
+        ), f"expected to find {expected_search_count} jobs, got {search_count} jobs"
         return search_count
 
     def _search_count(self, search_payload):

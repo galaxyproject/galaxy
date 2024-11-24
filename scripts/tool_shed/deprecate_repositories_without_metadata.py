@@ -80,7 +80,7 @@ def main():
     cutoff_time = datetime.utcnow() - timedelta(days=options.days)
     now = strftime("%Y-%m-%d %H:%M:%S")
     print("\n####################################################################################")
-    print("# %s - Handling stuff older than %i days" % (now, options.days))
+    print(f"# {now} - Handling stuff older than {options.days} days")
 
     if options.info_only:
         print("# Displaying info only ( --info_only )")
@@ -183,7 +183,7 @@ def deprecate_repositories(app, cutoff_time, days=14, info_only=False, verbose=F
             app, owner.username, owner.email, repositories_by_owner[repository_owner]["repositories"], days
         )
     stop = time.time()
-    print("# Deprecated %d repositories." % len(repositories))
+    print(f"# Deprecated {len(repositories)} repositories.")
     print("# Elapsed time: ", stop - start)
     print("####################################################################################")
 
