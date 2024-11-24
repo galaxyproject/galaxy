@@ -13,7 +13,10 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="chart" src="script.js"/>
+    <requirements>
+        <requirement type="npm" version="0.0.2" package="@galaxyproject/phylocanvas"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>
         <input>
             <label>Tree types</label>
@@ -46,78 +49,6 @@
             </data>
         </input>
         <input>
-            <name>edge_color</name>
-            <label>Select a color for the tree</label>
-            <type>color</type>
-            <value>#222222</value>
-        </input>
-        <input>
-            <name>highlighted_color</name>
-            <label>Select a color for the highlighted branch of tree</label>
-            <type>color</type>
-            <value>#548DB8</value>
-        </input>
-        <input>
-            <name>node_color</name>
-            <label>Select a color for the nodes of the tree</label>
-            <type>color</type>
-            <value>#333333</value>
-        </input>
-        <input>
-            <label>Show/Hide labels</label>
-            <name>show_labels</name>
-            <help>Select false to hide labels.</help>
-            <type>select</type>
-            <display>radio</display>
-            <value>true</value>
-            <data>
-                <data>
-                    <label>True</label>
-                    <value>true</value>
-                </data>
-                <data>
-                    <label>False</label>
-                    <value>false</value>
-                </data>
-            </data>
-        </input>
-        <input>
-            <label>Align labels</label>
-            <name>align_labels</name>
-            <help>Select to align the labels of tree. Supported with rectangular, circular, and hierarchical tree types.</help>
-            <type>select</type>
-            <display>radio</display>
-            <value>true</value>
-            <data>
-                <data>
-                    <label>True</label>
-                    <value>true</value>
-                </data>
-                <data>
-                    <label>False</label>
-                    <value>false</value>
-                </data>
-            </data>
-        </input>
-        <input>
-            <label>Show bootstrap confidence values</label>
-            <name>show_bootstrap</name>
-            <help>Select true to show bootstrap confidence values.</help>
-            <type>select</type>
-            <display>radio</display>
-            <value>false</value>
-            <data>
-                <data>
-                    <label>True</label>
-                    <value>true</value>
-                </data>
-                <data>
-                    <label>False</label>
-                    <value>false</value>
-                </data>
-            </data>
-        </input>
-        <input>
             <label>Node shapes for leaves</label>
             <name>node_shape</name>
             <help>Select a node shape for leaves.</help>
@@ -142,6 +73,38 @@
                     <value>triangle</value>
                 </data>
             </data>
+        </input>
+        <input>
+            <name>edge_color</name>
+            <label>Select a color for the tree</label>
+            <type>color</type>
+            <value>#222222</value>
+        </input>
+        <input>
+            <name>highlighted_color</name>
+            <label>Select a color for the highlighted branch of tree</label>
+            <type>color</type>
+            <value>#548DB8</value>
+        </input>
+        <input>
+            <name>node_color</name>
+            <label>Select a color for the nodes of the tree</label>
+            <type>color</type>
+            <value>#333333</value>
+        </input>
+        <input>
+            <label>Show labels</label>
+            <name>show_labels</name>
+            <help>Select false to hide labels.</help>
+            <type>boolean</type>
+            <value>true</value>
+        </input>
+        <input>
+            <label>Align labels</label>
+            <name>align_labels</name>
+            <help>Select to align the labels of tree. Supported with rectangular, circular, and hierarchical tree types.</help>
+            <type>boolean</type>
+            <value>false</value>
         </input>
     </settings>
 </visualization>
