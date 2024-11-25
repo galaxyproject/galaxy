@@ -440,7 +440,7 @@ def test_import_export_library(tmp_path):
 def test_import_export_invocation():
     app = _mock_app()
     workflow_invocation = _setup_invocation(app)
-
+    print(workflow_invocation)
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
@@ -480,6 +480,56 @@ def validate_has_mit_license(ro_crate: ROCrate):
             assert e["license"] == "MIT"
             found_license = True
     assert found_license
+
+
+def validate_creators(ro_crate: ROCrate):
+    """
+    Validate that creators (Person and Organization) are correctly added.
+    """
+    creators = ro_crate.mainEntity.get("creator")
+    assert creators, "No creators found in the RO-Crate"
+
+    for creator in creators:
+        assert creator["@type"] in {"Person", "Organization"}
+        if creator["@type"] == "Person":
+            assert "name" in creator
+            assert "orcid" in creator or "identifier" in creator
+            assert "email" in creator
+        elif creator["@type"] == "Organization":
+            assert "name" in creator
+            assert "url" in creator
+
+
+def validate_steps(ro_crate: ROCrate):
+    """
+    Validate that workflow steps (HowToStep) are correctly added.
+    """
+    steps = ro_crate.mainEntity.get("step")
+    assert steps, "No steps found in the RO-Crate"
+
+    for i, step in enumerate(steps, start=1):
+        assert step["@type"] == "HowToStep"
+        assert step["position"] == i
+        assert "name" in step
+        assert "description" in step or step["description"] is None
+
+
+def validate_tools(ro_crate: ROCrate):
+    """
+    Validate that tools (SoftwareApplication) are correctly added.
+    """
+    tools = ro_crate.mainEntity.get("instrument")
+    assert tools, "No tools found in the RO-Crate"
+
+    tool_ids = set()
+    for tool in tools:
+        assert tool["@type"] == "SoftwareApplication"
+        assert "name" in tool
+        assert "version" in tool
+        assert "url" in tool
+        assert "description" in tool or tool["description"] is None
+        assert tool.id not in tool_ids, "Duplicate tool found"
+        tool_ids.add(tool.id)
 
 
 def validate_has_readme(ro_crate: ROCrate):
@@ -564,6 +614,9 @@ def validate_invocation_crate_directory(crate_directory):
     validate_has_pl_galaxy(crate)
     validate_organize_action(crate)
     validate_has_mit_license(crate)
+    validate_creators(crate)
+    validate_steps(crate)
+    validate_tools(crate)
     # validate_has_readme(crate)
 
 
@@ -971,31 +1024,64 @@ def _setup_simple_cat_job(app, state="ok"):
 def _setup_invocation(app):
     sa_session = app.model.context
 
+    # Set up a user, history, datasets, and job
     u, h, d1, d2, j = _setup_simple_cat_job(app)
     j.parameters = [model.JobParameter(name="index_path", value='"/old/path/human"')]
 
+    # Create a workflow
+    workflow = model.Workflow()
+    workflow.license = "MIT"
+    workflow.name = "Test Workflow"
+    workflow.creator_metadata = [
+        {"class": "Person", "name": "Alice", "identifier": "0000-0001-2345-6789", "email": "alice@example.com"},
+    ]
+
+    # Create and associate a data_input step
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_input"
-    sa_session.add(workflow_step_1)
-    workflow_1 = _workflow_from_steps(u, [workflow_step_1])
-    workflow_1.license = "MIT"
-    workflow_1.name = "Test Workflow"
-    sa_session.add(workflow_1)
-    workflow_invocation = _invocation_for_workflow(u, workflow_1)
-    invocation_step = model.WorkflowInvocationStep()
-    invocation_step.workflow_step = workflow_step_1
-    invocation_step.job = j
-    sa_session.add(invocation_step)
-    output_assoc = model.WorkflowInvocationStepOutputDatasetAssociation()
-    output_assoc.dataset = d2
-    invocation_step.output_datasets = [output_assoc]
-    workflow_invocation.steps = [invocation_step]
+    workflow_step_1.label = "Input Step"
+    workflow.steps.append(workflow_step_1)
+    sa_session.add(workflow_step_1)  # Persist step in the session
+
+    # Create and associate a tool step
+    workflow_step_2 = model.WorkflowStep()
+    workflow_step_2.order_index = 0
+    workflow_step_2.type = "tool"
+    workflow_step_2.tool_id = "example_tool"
+    workflow_step_2.tool_version = "1.0"
+    workflow_step_2.label = "Example Tool Step"
+    workflow.steps.append(workflow_step_2)
+    sa_session.add(workflow_step_2)  # Persist step in the session
+
+    sa_session.add(workflow)  # Persist the workflow itself
+
+    # Create a workflow invocation
+    workflow_invocation = _invocation_for_workflow(u, workflow)
+
+    # Associate invocation step for data_input
+    invocation_step_1 = model.WorkflowInvocationStep()
+    invocation_step_1.workflow_step = workflow_step_1
+    invocation_step_1.job = j
+    sa_session.add(invocation_step_1)
+
+    # Associate invocation step for tool
+    invocation_step_2 = model.WorkflowInvocationStep()
+    invocation_step_2.workflow_step = workflow_step_2
+    sa_session.add(invocation_step_2)
+
+    # Add steps to the invocation
+    workflow_invocation.steps = [invocation_step_1, invocation_step_2]
     workflow_invocation.user = u
     workflow_invocation.add_input(d1, step=workflow_step_1)
-    wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
-    workflow_invocation.add_output(wf_output, workflow_step_1, d2)
+
+    # Add workflow output associated with the tool step
+    wf_output = model.WorkflowOutput(workflow_step_2, label="output_label")
+    workflow_invocation.add_output(wf_output, workflow_step_2, d2)
+
+    # Commit the workflow and invocation
     app.add_and_commit(workflow_invocation)
+
     return workflow_invocation
 
 
@@ -1074,27 +1160,45 @@ def _setup_collection_invocation(app):
 def _setup_simple_invocation(app):
     sa_session = app.model.context
 
+    # Set up a simple user, history, datasets, and job
     u, h, d1, d2, j = _setup_simple_cat_job(app)
     j.parameters = [model.JobParameter(name="index_path", value='"/old/path/human"')]
 
-    workflow_step_1 = model.WorkflowStep()
-    workflow_step_1.order_index = 0
-    workflow_step_1.type = "data_input"
-    workflow_step_1.tool_inputs = {}
-    sa_session.add(workflow_step_1)
-    workflow = _workflow_from_steps(u, [workflow_step_1])
+    # Create a workflow
+    workflow = model.Workflow()
     workflow.license = "MIT"
     workflow.name = "Test Workflow"
-    workflow.create_time = now()
-    workflow.update_time = now()
-    sa_session.add(workflow)
-    invocation = _invocation_for_workflow(u, workflow)
-    invocation.create_time = now()
-    invocation.update_time = now()
+    workflow.creator_metadata = [
+        {"class": "Person", "name": "Bob", "identifier": "0000-0002-3456-7890", "email": "bob@example.com"},
+    ]
 
-    invocation.add_input(d1, step=workflow_step_1)
-    wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
-    invocation.add_output(wf_output, workflow_step_1, d2)
+    # Create and associate a data_input step
+    workflow_step_input = model.WorkflowStep()
+    workflow_step_input.order_index = 0
+    workflow_step_input.type = "data_input"
+    workflow_step_input.label = "Input Step"
+    workflow.steps.append(workflow_step_input)
+
+    # Create and associate a tool step
+    workflow_step_tool = model.WorkflowStep()
+    workflow_step_tool.order_index = 1
+    workflow_step_tool.type = "tool"
+    workflow_step_tool.tool_id = "example_tool"
+    workflow_step_tool.tool_version = "1.0"
+    workflow_step_tool.label = "Example Tool Step"
+    workflow.steps.append(workflow_step_tool)
+
+    sa_session.add(workflow)
+
+    # Create a workflow invocation
+    invocation = _invocation_for_workflow(u, workflow)
+    invocation.add_input(d1, step=workflow_step_input)  # Associate input dataset
+    wf_output = model.WorkflowOutput(workflow_step_tool, label="output_label")
+    invocation.add_output(wf_output, workflow_step_tool, d2)  # Associate output dataset
+
+    # Commit the workflow and invocation to the database
+    app.add_and_commit(invocation)
+
     return invocation
 
 
