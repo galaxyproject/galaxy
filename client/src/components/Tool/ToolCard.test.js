@@ -4,7 +4,7 @@ import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { useUserStore } from "stores/userStore";
-import { getLocalVue } from "tests/jest/helpers";
+import { expectConfigurationRequest, getLocalVue } from "tests/jest/helpers";
 import { setupMockConfig } from "tests/jest/mockConfig";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -29,11 +29,7 @@ describe("ToolCard", () => {
         // some child component must be bypassing useConfig - so we need to explicitly
         // stup the API endpoint also. If you can drop this without request problems in log,
         // this hack can be removed.
-        server.use(
-            http.get("/api/configuration", ({ response }) => {
-                return response(200).json(config);
-            })
-        );
+        server.use(expectConfigurationRequest(http, {}));
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(`/api/webhooks`).reply(200, []);
 

@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, suppressDebugConsole } from "@tests/jest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -164,6 +164,8 @@ describe("HistoryExport.vue", () => {
     });
 
     it("should not display a fatal error alert if the history is found and loaded", async () => {
+        suppressDebugConsole(); // we rightfully debug message the fact we don't have a history in this test
+
         const wrapper = await mountHistoryExport();
 
         expect(wrapper.find("#fatal-error-alert").exists()).toBe(false);

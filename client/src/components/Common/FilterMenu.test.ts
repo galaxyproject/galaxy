@@ -2,12 +2,15 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 
+import { useServerMock } from "@/api/client/__mocks__";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 import { WorkflowFilters } from "@/components/Workflow/List/WorkflowFilters";
 import Filtering, { compare, contains, equals, toBool, toDate } from "@/utils/filtering";
 
 import FilterMenu from "./FilterMenu.vue";
+
+const { server, http } = useServerMock();
 
 setupSelectableMock();
 
@@ -71,6 +74,22 @@ const TestFilters = new Filtering(validTestFilters, undefined);
 
 describe("FilterMenu", () => {
     let wrapper: Wrapper<Vue>;
+
+    beforeEach(() => {
+        server.use(
+            http.get("/api/users/{user_id}/usage", ({ response }) => {
+                return response(200).json([
+                    {
+                        quota: null,
+                        quota_bytes: null,
+                        quota_percent: null,
+                        quota_source_label: null,
+                        total_disk_usage: 4,
+                    },
+                ]);
+            })
+        );
+    });
 
     function setUpWrapper(name: string, placeholder: string, filterClass: Filtering<unknown>) {
         wrapper = mount(FilterMenu as object, {

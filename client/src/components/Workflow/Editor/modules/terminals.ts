@@ -21,6 +21,9 @@ import {
     NULL_COLLECTION_TYPE_DESCRIPTION,
 } from "./collectionTypeDescription";
 
+export const NO_COLLECTION_TYPE_INFORMATION_MESSAGE =
+    "No collection type or collection type source defined - this is fine but may lead to less intuitive connection logic.";
+
 export class ConnectionAcceptable {
     reason: string | null;
     canAccept: boolean;
@@ -757,7 +760,7 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
         } else {
             this.collectionTypeSource = attr.collection_type_source;
             if (!this.collectionTypeSource) {
-                console.log("Warning: No collection type or collection type source defined.");
+                console.debug(NO_COLLECTION_TYPE_INFORMATION_MESSAGE);
             }
             this.collectionType = this.getCollectionTypeFromInput() || ANY_COLLECTION_TYPE_DESCRIPTION;
         }
