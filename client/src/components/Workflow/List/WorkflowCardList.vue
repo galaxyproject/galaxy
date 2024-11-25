@@ -60,7 +60,7 @@ function onPreview(id: string) {
 
 // TODO: clean-up types, as soon as better Workflow type is available
 function onInsert(workflow: Workflow) {
-    emit("insertWorkflow", workflow.latest_id as any, workflow.name as any);
+    emit("insertWorkflow", workflow.latest_workflow_id as any, workflow.name as any);
 }
 
 function onInsertSteps(workflow: Workflow) {
