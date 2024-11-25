@@ -36,8 +36,7 @@ def main(argv=None):
     )
     parser.add_argument("--hash", dest="hash", choices=["v1", "v2"], default="v2")
     args = parser.parse_args()
-    targets = target_str_to_targets(args.targets)
-    print(_mulled_hash(args.hash, targets))
+    print(_mulled_hash(args.hash, args.targets))
 
 
 __all__ = ("main",)
