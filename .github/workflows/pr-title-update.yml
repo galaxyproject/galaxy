@@ -3,8 +3,6 @@ name: Update PR title
 on:
   pull_request_target:
     types: [opened, edited, reopened]
-    branches:
-      - "release_**"
 
 jobs:
   update-title:
@@ -19,9 +17,14 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           TARGET_BRANCH: "${{ github.base_ref }}"
           PR_TITLE: "${{ github.event.pull_request.title }}"
+          REPO: "${{ github.repository }}"
         run: |
-          VERSION=$(echo $TARGET_BRANCH | grep -oP '\d+\.\d+')
-          if [[ -n "$VERSION" && ! "$PR_TITLE" =~ ^\[$VERSION\] ]]; then
-            NEW_TITLE="[$VERSION] $PR_TITLE"
-            gh pr edit $PR_NUMBER --repo "${{ github.repository }}" --title "$NEW_TITLE"
+          VERSION=$(echo $TARGET_BRANCH | grep -oP 'release_\K.*' || true)
+          if [[ -n "$VERSION" ]]; then
+            NEW_TITLE="[$VERSION] ${PR_TITLE#*\] }"
+          else
+            NEW_TITLE="${PR_TITLE#*\] }"
+          fi
+          if [[ "$NEW_TITLE" != "$PR_TITLE" ]]; then
+            gh pr edit $PR_NUMBER --repo "$REPO" --title "$NEW_TITLE"
           fi
