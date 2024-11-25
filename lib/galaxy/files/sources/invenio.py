@@ -201,10 +201,9 @@ class InvenioRDMFilesSource(RDMFilesSource):
         native_path: str,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
-    ) -> str:
+    ):
         record_id, filename = self.parse_path(target_path)
         self.repository.upload_file_to_draft_record(record_id, filename, native_path, user_context=user_context)
-        return target_path
 
 
 class InvenioRepositoryInteractor(RDMRepositoryInteractor):

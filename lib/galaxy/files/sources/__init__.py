@@ -510,7 +510,7 @@ class BaseFilesSource(FilesSource):
     ) -> str:
         self._ensure_writeable()
         self._check_user_access(user_context)
-        return self._write_from(target_path, native_path, user_context=user_context, opts=opts)
+        return self._write_from(target_path, native_path, user_context=user_context, opts=opts) or target_path
 
     @abc.abstractmethod
     def _write_from(
@@ -519,7 +519,7 @@ class BaseFilesSource(FilesSource):
         native_path: str,
         user_context: "OptionalUserContext" = None,
         opts: Optional[FilesSourceOptions] = None,
-    ) -> str:
+    ) -> Optional[str]:
         pass
 
     def realize_to(

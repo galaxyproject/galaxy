@@ -47,7 +47,7 @@ class Base64FilesSource(BaseFilesSource):
         native_path: str,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
-    ) -> str:
+    ):
         raise NotImplementedError()
 
     def score_url_match(self, url: str):

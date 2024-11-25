@@ -83,7 +83,7 @@ class HTTPFilesSource(BaseFilesSource):
         native_path: str,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
-    ) -> str:
+    ):
         raise NotImplementedError()
 
     def _serialization_props(self, user_context: OptionalUserContext = None) -> HTTPFilesSourceProperties:
