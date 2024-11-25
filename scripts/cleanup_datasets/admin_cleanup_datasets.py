@@ -171,7 +171,7 @@ def main():
     now = strftime("%Y-%m-%d %H:%M:%S")
 
     print("##########################################")
-    print("\n# %s - Handling stuff older than %i days" % (now, args.days))
+    print(f"\n# {now} - Handling stuff older than {args.days} days")
 
     if args.info_only:
         print("# Displaying info only ( --info_only )\n")
@@ -260,7 +260,7 @@ def administrative_delete_datasets(
                     # Mark the HistoryDatasetAssociation as deleted
                     hda.deleted = True
                     app.sa_session.add(hda)
-                    print("Marked HistoryDatasetAssociation id %d as deleted" % hda.id)
+                    print(f"Marked HistoryDatasetAssociation id {hda.id} as deleted")
                 session = app.sa_session()
                 with transaction(session):
                     session.commit()
@@ -268,7 +268,7 @@ def administrative_delete_datasets(
     emailtemplate = Template(filename=template_file)
     for email, dataset_list in user_notifications.items():
         msgtext = emailtemplate.render(email=email, datasets=dataset_list, cutoff=cutoff_days)
-        subject = "Galaxy Server Cleanup - %d datasets DELETED" % len(dataset_list)
+        subject = f"Galaxy Server Cleanup - {len(dataset_list)} datasets DELETED"
         fromaddr = config.email_from
         print()
         print(f"From: {fromaddr}")
@@ -281,7 +281,7 @@ def administrative_delete_datasets(
 
     stop = time.time()
     print()
-    print("Marked %d dataset instances as deleted" % deleted_instance_count)
+    print(f"Marked {deleted_instance_count} dataset instances as deleted")
     print("Total elapsed time: ", stop - start)
     print("##########################################")
 

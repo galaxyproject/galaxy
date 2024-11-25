@@ -36,7 +36,7 @@ THREAD_LOCAL_LOG = threading.local()
 def test_history_dataset_copy(num_datasets=NUM_DATASETS, include_metadata_file=INCLUDE_METADATA_FILE):
     with _setup_mapping_and_user() as (test_config, object_store, model, old_history):
         for i in range(num_datasets):
-            hda_path = test_config.write("moo", "test_metadata_original_%d" % i)
+            hda_path = test_config.write("moo", f"test_metadata_original_{i}")
             _create_hda(model, object_store, old_history, hda_path, include_metadata_file=include_metadata_file)
 
         session = model.context
@@ -62,7 +62,7 @@ def test_history_dataset_copy(num_datasets=NUM_DATASETS, include_metadata_file=I
             if include_metadata_file:
                 _check_metadata_file(hda)
             annotation_str = hda.get_item_annotation_str(model.context, old_history.user, hda)
-            assert annotation_str == "annotation #%d" % hda.hid, annotation_str
+            assert annotation_str == f"annotation #{hda.hid}", annotation_str
 
 
 def test_history_collection_copy(list_size=NUM_DATASETS):
@@ -70,7 +70,7 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
         for i in range(NUM_COLLECTIONS):
             hdas = []
             for i in range(list_size * 2):
-                hda_path = test_config.write("moo", "test_metadata_original_%d" % i)
+                hda_path = test_config.write("moo", f"test_metadata_original_{i}")
                 hda = _create_hda(
                     model, object_store, old_history, hda_path, visible=False, include_metadata_file=False
                 )
@@ -100,7 +100,7 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
                 model.context,
                 old_history.user,
                 history_dataset_collection,
-                "annotation #%d" % history_dataset_collection.hid,
+                f"annotation #{history_dataset_collection.hid}",
             )
 
         session = model.context
@@ -118,7 +118,7 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
         #     if not instances:
         #         print("FULL FLUSH...")
         #     else:
-        #         print("Flushing just %s" % instances)
+        #         print(f"Flushing just {instances}")
 
         history_copy_timer = ExecutionTimer()
         new_history = old_history.copy(target_user=old_history.user)
@@ -127,12 +127,12 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
         for hda in new_history.active_datasets:
             assert hda.get_size() == 3
             annotation_str = hda.get_item_annotation_str(model.context, old_history.user, hda)
-            assert annotation_str == "annotation #%d" % hda.hid, annotation_str
+            assert annotation_str == f"annotation #{hda.hid}", annotation_str
 
         assert len(new_history.active_dataset_collections) == NUM_COLLECTIONS
         for hdca in new_history.active_dataset_collections:
             annotation_str = hdca.get_item_annotation_str(model.context, old_history.user, hdca)
-            assert annotation_str == "annotation #%d" % hdca.hid, annotation_str
+            assert annotation_str == f"annotation #{hdca.hid}", annotation_str
 
 
 @contextlib.contextmanager
@@ -180,7 +180,7 @@ def _create_hda(
         _check_metadata_file(hda)
     hda.set_size()
     history.add_dataset(hda)
-    hda.add_item_annotation(sa_session, history.user, hda, "annotation #%d" % hda.hid)
+    hda.add_item_annotation(sa_session, history.user, hda, f"annotation #{hda.hid}")
     return hda
 
 
@@ -190,4 +190,4 @@ def _check_metadata_file(hda):
     assert os.path.exists(copied_index)
     with open(copied_index) as f:
         assert f.read() == "moo"
-    assert copied_index.endswith("metadata_%d.dat" % hda.id)
+    assert copied_index.endswith(f"metadata_{hda.id}.dat")

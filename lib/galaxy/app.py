@@ -551,7 +551,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
                 database_exists(url)
                 break
             except Exception:
-                log.info("Waiting for database: attempt %d of %d" % (i, attempts))
+                log.info("Waiting for database: attempt %d of %d", i, attempts)
                 time.sleep(pause)
 
     @property

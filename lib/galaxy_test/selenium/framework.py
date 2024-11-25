@@ -233,7 +233,7 @@ retry_assertion_during_transitions = partial(
 class TestSnapshot:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
-    def __init__(self, driver, index, description):
+    def __init__(self, driver, index: int, description: str):
         self.screenshot_binary = driver.get_screenshot_as_png()
         self.description = description
         self.index = index
@@ -241,7 +241,7 @@ class TestSnapshot:
         self.stack = traceback.format_stack()
 
     def write_to_error_directory(self, write_file_func):
-        prefix = "%d-%s" % (self.index, self.description)
+        prefix = f"{self.index}-{self.description}"
         write_file_func(f"{prefix}-screenshot.png", self.screenshot_binary, raw=True)
         write_file_func(f"{prefix}-traceback.txt", self.exc)
         write_file_func(f"{prefix}-stack.txt", str(self.stack))
@@ -331,7 +331,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     def tear_down_selenium(self):
         self.tear_down_driver()
 
-    def snapshot(self, description):
+    def snapshot(self, description: str):
         """Create a debug snapshot (DOM, screenshot, etc...) that is written out on tool failure.
 
         This information will be automatically written to a per-test directory created for all
@@ -371,7 +371,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         copy = 1
         while os.path.exists(target):
             # Maybe previously a test re-run - keep the original.
-            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, "%s-%d%s" % (label, copy, extension))
+            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, f"{label}-{copy}{extension}")
             copy += 1
 
         return target
