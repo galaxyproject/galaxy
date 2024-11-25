@@ -811,10 +811,7 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@data-label='Change datatype']//div[contains(@class, 'multiselect')]
-    select_datatype_text_search:
-      type: xpath
-      selector: >
-        //input[@class="multiselect__input"]
+    select_datatype_text_search: "div[data-label='Change datatype'] .multiselect__input"
     select_datatype:
       type: xpath
       selector: >
