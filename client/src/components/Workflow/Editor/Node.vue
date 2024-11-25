@@ -165,6 +165,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";
 import type { Step } from "@/stores/workflowStepStore";
+import { composedPartialPath, isClickable } from "@/utils/dom";
 
 import { ToggleStepSelectedAction } from "./Actions/stepActions";
 import type { OutputTerminals } from "./modules/terminals";
@@ -324,7 +325,14 @@ function onPointerDown() {
     mouseDownTime = Date.now();
 }
 
-function onPointerUp() {
+function onPointerUp(e: PointerEvent) {
+    const path = composedPartialPath(e);
+    const unclickable = path.every((target) => !isClickable(target as Element));
+
+    if (!unclickable) {
+        return;
+    }
+
     const mouseUpTime = Date.now();
     const clickTime = mouseUpTime - mouseDownTime;
 
