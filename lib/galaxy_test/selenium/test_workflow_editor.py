@@ -1304,6 +1304,7 @@ steps:
         self.mouse_drag(from_element=tool_node, to_element=canvas, to_offset=(0, -100))
 
         # select the node
+        editor.node_inspector_close.wait_for_and_click()
         self.action_chains().move_to_element(tool_node).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
         self.sleep_for(self.wait_types.UX_RENDER)
 
