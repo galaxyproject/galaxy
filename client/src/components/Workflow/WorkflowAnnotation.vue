@@ -69,8 +69,8 @@ const workflowTags = computed(() => {
                     </span>
                     <UtcDate :date="timeElapsed" mode="elapsed" data-description="workflow annotation date" />
                 </i>
-                <span class="d-flex flex-gapx-1 align-items-center">
-                    <FontAwesomeIcon :icon="faHdd" />Input History:
+                <span v-if="invocationUpdateTime" class="d-flex flex-gapx-1 align-items-center">
+                    <FontAwesomeIcon :icon="faHdd" />History:
                     <SwitchToHistoryLink :history-id="props.historyId" />
                     <BBadge
                         v-if="props.newHistoryTarget && useHistoryStore().currentHistoryId !== props.historyId"
@@ -92,8 +92,9 @@ const workflowTags = computed(() => {
             </div>
         </div>
         <div v-if="props.showDetails">
-            <TextSummary v-if="description" class="my-1" :description="description" />
+            <TextSummary v-if="description" class="my-1" :description="description" one-line-summary component="span" />
             <StatelessTags v-if="workflowTags.length" :value="workflowTags" :disabled="true" />
+            <hr class="mb-0 mt-2" />
         </div>
     </div>
 </template>

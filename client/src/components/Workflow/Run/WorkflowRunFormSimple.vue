@@ -12,7 +12,7 @@
                 :run-disabled="hasValidationErrors || !canRunOnHistory"
                 :run-waiting="waitingForRequest"
                 @on-execute="onExecute">
-                <template v-slot:workflow-run-actions>
+                <template v-slot:workflow-title-actions>
                     <b-dropdown
                         v-if="showRuntimeSettings(currentUser)"
                         id="dropdown-form"
