@@ -1685,6 +1685,9 @@ class NavigatesGalaxy(HasDriver):
     def tool_open(self, tool_id, outer=False):
         self.open_toolbox()
 
+        self.components.tools.clear_search.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
         self.components.tools.search.wait_for_and_send_keys(f"id:{tool_id}")
 
         if outer:

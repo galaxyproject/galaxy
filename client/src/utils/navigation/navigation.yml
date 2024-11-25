@@ -902,6 +902,7 @@ tools:
     execute: '#execute'
     help: 'div.form-help'
     search: '#toolbox-panel .search-query'
+    clear_search: '#toolbox-panel .search-clear'
     title: '.toolSectionTitle'
 
 admin:
