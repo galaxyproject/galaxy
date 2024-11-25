@@ -333,6 +333,7 @@ steps:
         editor = self.components.workflow_editor
 
         tool_node = editor.node._(label="tool_exec")
+        tool_node.wait_for_and_click()
         tool_input = tool_node.input_terminal(name="inttest")
         self.hover_over(tool_input.wait_for_visible())
         tool_node.connector_destroy_callout(name="inttest").wait_for_and_click()
