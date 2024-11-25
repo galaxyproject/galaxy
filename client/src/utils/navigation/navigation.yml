@@ -705,6 +705,7 @@ workflow_editor:
   node:
     selectors:
       _: "[node-label='${label}']"
+      by_id: "#wf-node-step-${id}"
       title: '${_} .node-title'
       destroy: '${_} .node-destroy'
       clone: '${_} .node-clone'

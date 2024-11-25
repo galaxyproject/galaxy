@@ -770,6 +770,8 @@ steps:
         editor.remove_tags_input.wait_for_and_send_keys("#oldboringtag" + Keys.ENTER + Keys.ESCAPE)
         self.sleep_for(self.wait_types.UX_RENDER)
         cat_node.clone.wait_for_and_click()
+        cloned_node = editor.node.by_id(id=2)
+        cloned_node.wait_for_and_click()
         editor.label_input.wait_for_and_send_keys(Keys.BACKSPACE * 20)
         editor.label_input.wait_for_and_send_keys("cloned label")
         output_label = editor.label_output(output="out_file1")
