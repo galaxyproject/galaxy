@@ -191,7 +191,7 @@ import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
-import { ConfirmDialog } from "@/composables/confirmDialog";
+import { ConfirmDialog, useConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useMagicKeys } from "@/composables/useMagicKeys";
 import { useUid } from "@/composables/utils/uid";
@@ -465,6 +465,8 @@ export default {
             }))
         );
 
+        const { confirm } = useConfirmDialog();
+
         return {
             id,
             name,
@@ -507,6 +509,7 @@ export default {
             specialWorkflowActivities,
             isNewTempWorkflow,
             saveWorkflowTitle,
+            confirm,
         };
     },
     data() {
@@ -725,7 +728,7 @@ export default {
         },
         async saveOrCreate() {
             if (this.hasInvalidConnections) {
-                const confirmed = await confirm(
+                const confirmed = await this.confirm(
                     `Workflow has invalid connections. You can save the workflow, but it may not run correctly.`,
                     {
                         id: "save-workflow-confirmation",
