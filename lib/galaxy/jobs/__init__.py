@@ -2042,7 +2042,7 @@ class MinimalJobWrapper(HasResourceParameters):
         # Calculate dataset hash
         for dataset_assoc in output_dataset_associations:
             dataset = dataset_assoc.dataset.dataset
-            if not dataset.purged and dataset.state != Dataset.states.DEFERRED and not dataset.hashes:
+            if not dataset.purged and dataset.state == Dataset.states.OK and not dataset.hashes:
                 if self.app.config.calculate_dataset_hash == "always" or (
                     self.app.config.calculate_dataset_hash == "upload" and job.tool_id in ("upload1", "__DATA_FETCH__")
                 ):

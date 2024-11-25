@@ -161,8 +161,11 @@ class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin,
             sa_session.commit()
 
     def compute_hash(self, request: ComputeDatasetHashTaskRequest):
-        # For files in extra_files_path
         dataset = self.by_id(request.dataset_id)
+        if dataset.purged:
+            log.warning("Unable to calculate hash for purged dataset [%s].", dataset.id)
+            return
+        # For files in extra_files_path
         extra_files_path = request.extra_files_path
         if extra_files_path:
             extra_dir = dataset.extra_files_path_name
@@ -192,7 +195,7 @@ class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin,
                     f"Re-calculated dataset hash for dataset [{dataset.id}] and new hash value [{calculated_hash_value}] does not equal previous hash value [{old_hash_value}]."
                 )
             else:
-                log.debug("Duplicated dataset hash request, no update to the database.")
+                log.debug("Duplicated dataset hash request for dataset [%s], no update to the database.", dataset.id)
 
     # TODO: implement above for groups
     # TODO: datatypes?
