@@ -746,10 +746,10 @@ def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:
         output_collections=__parse_output_collection_elems(test_elem, profile=profile),
         inputs=__parse_input_elems(test_elem, i),
         expect_num_outputs=test_elem.get("expect_num_outputs"),
-        command=__parse_assert_list_from_elem(test_elem.find("assert_command")),
-        command_version=__parse_assert_list_from_elem(test_elem.find("assert_command_version")),
-        stdout=__parse_assert_list_from_elem(test_elem.find("assert_stdout")),
-        stderr=__parse_assert_list_from_elem(test_elem.find("assert_stderr")),
+        command=parse_assert_list_from_elem(test_elem.find("assert_command")),
+        command_version=parse_assert_list_from_elem(test_elem.find("assert_command_version")),
+        stdout=parse_assert_list_from_elem(test_elem.find("assert_stdout")),
+        stderr=parse_assert_list_from_elem(test_elem.find("assert_stderr")),
         expect_exit_code=test_elem.get("expect_exit_code"),
         expect_failure=string_as_bool(test_elem.get("expect_failure", False)),
         expect_test_failure=string_as_bool(test_elem.get("expect_test_failure", False)),
@@ -783,7 +783,7 @@ def __parse_output_elem(output_elem):
 
 def __parse_command_elem(test_elem):
     assert_elem = test_elem.find("command")
-    return __parse_assert_list_from_elem(assert_elem)
+    return parse_assert_list_from_elem(assert_elem)
 
 
 def __parse_output_collection_elems(test_elem, profile=None):
@@ -918,10 +918,10 @@ def __parse_test_attributes(
 
 def __parse_assert_list(output_elem) -> AssertionList:
     assert_elem = output_elem.find("assert_contents")
-    return __parse_assert_list_from_elem(assert_elem)
+    return parse_assert_list_from_elem(assert_elem)
 
 
-def __parse_assert_list_from_elem(assert_elem) -> AssertionList:
+def parse_assert_list_from_elem(assert_elem) -> AssertionList:
     assert_list = None
 
     def convert_elem(elem):

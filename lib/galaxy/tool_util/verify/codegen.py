@@ -101,6 +101,15 @@ def check_non_negative_if_set(v: typing.Any):
     return v
 
 
+def check_non_negative_if_set_permissive(v: typing.Any):
+    if v is not None:
+        try:
+            assert float(v) >= 0.0
+        except TypeError:
+            raise AssertionError(f"Invalid type found {v}")
+    return v
+
+
 def check_non_negative_if_int(v: typing.Any):
     if v is not None and isinstance(v, int):
         assert typing.cast(int, v) >= 0
@@ -168,6 +177,44 @@ class assertion_dict(AssertionModel):
 
 
 assertions = typing.Union[assertion_list, assertion_dict]
+
+
+{% for assertion in assertions %}
+# a version of these validators for parsing more directly from XML where more of the types
+# can be strings - so the typing should match the Python types of the assertion functions.
+class {{assertion.name}}_model_python_dict(AssertionModel):
+    r\"\"\"{{ assertion.docstring }}\"\"\"
+    that: Literal["{{assertion.name}}"] = "{{assertion.name}}"
+{% for parameter in assertion.parameters %}
+{% if not parameter.is_deprecated %}
+    {{ parameter.name }}: {{ parameter.python_type_str }} = Field(
+        {{ parameter.field_default_str }},
+        description={{ assertion.name }}_{{ parameter.name }}_description,
+    )
+{% endif %}
+{% endfor %}
+{% if assertion.children in ["required", "allowed"] %}
+    children: typing.Optional["assertion_list"] = None
+    asserts: typing.Optional["assertion_list"] = None
+
+{% if assertion.children == "required" %}
+    @model_validator(mode='before')
+    @classmethod
+    def validate_children(self, data: typing.Any):
+        if isinstance(data, dict) and 'children' not in data and 'asserts' not in data:
+            raise ValueError("At least one of 'children' or 'asserts' must be specified for this assertion type.")
+        return data
+{% endif %}
+{% endif %}
+{% endfor %}
+
+any_assertion_model_python_dict = typing.Union[
+{% for assertion in assertions %}
+    {{assertion.name}}_model_python_dict,
+{% endfor %}
+]
+
+assertion_list_python = RootModel[typing.List[any_assertion_model_python_dict]]
 """
 
 
@@ -322,6 +369,24 @@ class AssertionParameter:
         return raw_type_str
 
     @property
+    def python_type_str(self) -> str:
+        raw_type_str = as_type_str(self.type, ignore_json_type=True)
+        validators = self.validators[:]
+        if self.xml_type_str == "Bytes":
+            validators.append("check_bytes")
+            validators.append("check_non_negative_if_int")
+        if len(validators) > 0:
+            validator_strs = []
+            for v in validators:
+                if v == "check_non_negative_if_set":
+                    v = "check_non_negative_if_set_permissive"
+                validator_strs.append(f"BeforeValidator({v})")
+            validation_str = ",".join(validator_strs)
+            return f"Annotated[{raw_type_str}, {validation_str}]"
+
+        return raw_type_str
+
+    @property
     def xml_type_str(self) -> str:
         return as_xml_type(self.type)
 
@@ -395,11 +460,11 @@ def as_xml_type(target_type) -> str:
     return "xs:string"
 
 
-def as_type_str(target_type):
+def as_type_str(target_type, ignore_json_type: bool = False):
     if get_origin(target_type) is Annotated:
         args = get_args(target_type)
         if len(args) > 1:
-            if args[1].json_type:
+            if args[1].json_type and not ignore_json_type:
                 return args[1].json_type
 
         return as_type_str(args[0])

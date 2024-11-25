@@ -9,7 +9,7 @@ try:
 except ImportError:
     h5py = None
 
-from galaxy.tool_util.parser.xml import __parse_assert_list_from_elem
+from galaxy.tool_util.parser.xml import parse_assert_list_from_elem
 from galaxy.tool_util.verify import asserts
 from galaxy.util import parse_xml_string
 
@@ -1323,7 +1323,7 @@ if h5py is not None:
 
 def run_assertions(assertion_xml: str, data, decompress=False) -> Tuple:
     assertion = parse_xml_string(assertion_xml)
-    assertion_description = __parse_assert_list_from_elem(assertion)
+    assertion_description = parse_assert_list_from_elem(assertion)
     assert assertion_description
     try:
         asserts.verify_assertions(data, assertion_description, decompress=decompress)

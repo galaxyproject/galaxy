@@ -11,6 +11,7 @@ from typing import (
 from galaxy.tool_util.lint import Linter
 from galaxy.tool_util.parameters import validate_test_cases_for_tool_source
 from galaxy.tool_util.verify.assertion_models import assertion_list
+from galaxy.tool_util.verify.asserts import parse_xml_assertions
 from galaxy.util import asbool
 from ._util import is_datasource
 
@@ -150,11 +151,9 @@ class TestsAssertionValidation(Linter):
             # TODO: validate command, command_version, element tests. What about children?
             for output in test["outputs"]:
                 asserts_raw = output.get("attributes", {}).get("assert_list") or []
-                to_yaml_assertions = []
-                for raw_assert in asserts_raw:
-                    to_yaml_assertions.append({"that": raw_assert["tag"], **raw_assert.get("attributes", {})})
+                as_python_dicts = parse_xml_assertions(asserts_raw)
                 try:
-                    assertion_list.model_validate(to_yaml_assertions)
+                    assertion_list.model_validate(as_python_dicts)
                 except Exception as e:
                     error_str = _cleanup_pydantic_error(e)
                     lint_ctx.warn(
