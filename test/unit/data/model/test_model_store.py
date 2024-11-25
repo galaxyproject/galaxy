@@ -1165,19 +1165,18 @@ def _setup_simple_invocation(app):
     j.parameters = [model.JobParameter(name="index_path", value='"/old/path/human"')]
 
     # Create a workflow
-    workflow = model.Workflow()
+    workflow_step_1 = model.WorkflowStep()
+    workflow_step_1.order_index = 0
+    workflow_step_1.type = "data_input"
+    workflow_step_1.label = "Input Step"
+    workflow_step_1.tool_inputs = {}
+    sa_session.add(workflow_step_1)
+    workflow = _workflow_from_steps(u, [workflow_step_1])
     workflow.license = "MIT"
     workflow.name = "Test Workflow"
     workflow.creator_metadata = [
         {"class": "Person", "name": "Bob", "identifier": "0000-0002-3456-7890", "email": "bob@example.com"},
     ]
-
-    # Create and associate a data_input step
-    workflow_step_input = model.WorkflowStep()
-    workflow_step_input.order_index = 0
-    workflow_step_input.type = "data_input"
-    workflow_step_input.label = "Input Step"
-    workflow.steps.append(workflow_step_input)
 
     # Create and associate a tool step
     workflow_step_tool = model.WorkflowStep()
@@ -1192,7 +1191,7 @@ def _setup_simple_invocation(app):
 
     # Create a workflow invocation
     invocation = _invocation_for_workflow(u, workflow)
-    invocation.add_input(d1, step=workflow_step_input)  # Associate input dataset
+    invocation.add_input(d1, step=workflow_step_1)  # Associate input dataset
     wf_output = model.WorkflowOutput(workflow_step_tool, label="output_label")
     invocation.add_output(wf_output, workflow_step_tool, d2)  # Associate output dataset
 
