@@ -5,6 +5,7 @@
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
+            <test test_attr="ext" result_type="datatype">dcm</test>
             <test test_attr="ext" result_type="datatype">analyze75</test>
             <test test_attr="ext" result_type="datatype">nrrd</test>
             <test test_attr="ext" result_type="datatype">stl</test>
