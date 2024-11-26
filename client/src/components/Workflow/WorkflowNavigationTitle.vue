@@ -28,6 +28,7 @@ interface Props {
     workflowId: string;
     runDisabled?: boolean;
     runWaiting?: boolean;
+    success?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -84,20 +85,20 @@ const workflowImportTitle = computed(() => {
 
 <template>
     <div>
-        <div>
-            <BAlert v-if="importErrorMessage" variant="danger" dismissible show @dismissed="importErrorMessage = null">
-                {{ importErrorMessage }}
-            </BAlert>
-            <BAlert v-else-if="importedWorkflow" variant="info" dismissible show @dismissed="importedWorkflow = null">
-                <span>
-                    Workflow <b>{{ importedWorkflow.name }}</b> imported successfully.
-                </span>
-                <RouterLink to="/workflows/list">Click here</RouterLink> to view the imported workflow in the workflows
-                list.
-            </BAlert>
+        <BAlert v-if="importErrorMessage" variant="danger" dismissible show @dismissed="importErrorMessage = null">
+            {{ importErrorMessage }}
+        </BAlert>
+        <BAlert v-else-if="importedWorkflow" variant="info" dismissible show @dismissed="importedWorkflow = null">
+            <span>
+                Workflow <b>{{ importedWorkflow.name }}</b> imported successfully.
+            </span>
+            <RouterLink to="/workflows/list">Click here</RouterLink> to view the imported workflow in the workflows
+            list.
+        </BAlert>
 
-            <BAlert v-if="error" variant="danger" show>{{ error }}</BAlert>
+        <BAlert v-if="error" variant="danger" show>{{ error }}</BAlert>
 
+        <div class="position-relative">
             <div v-if="workflow" class="ui-portlet-section">
                 <div class="d-flex portlet-header align-items-center">
                     <div class="flex-grow-1" data-description="workflow heading">
@@ -136,7 +137,7 @@ const workflowImportTitle = computed(() => {
                             :action="onImport">
                         </AsyncButton>
 
-                        <slot name="workflow-run-actions" />
+                        <slot name="workflow-title-actions" />
 
                         <ButtonSpinner
                             v-if="!props.invocation"
@@ -163,6 +164,30 @@ const workflowImportTitle = computed(() => {
                     </BButtonGroup>
                 </div>
             </div>
+            <div v-if="props.success" class="donemessagelarge">
+                Successfully invoked workflow
+                <b>{{ getWorkflowName() }}</b>
+            </div>
         </div>
     </div>
 </template>
+
+<style scoped lang="scss">
+@keyframes fadeOut {
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        display: none;
+        pointer-events: none;
+    }
+}
+
+.donemessagelarge {
+    top: 0;
+    position: absolute;
+    width: 100%;
+    animation: fadeOut 3s forwards;
+}
+</style>

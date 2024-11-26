@@ -36,7 +36,8 @@ tag section of the `datatypes_conf.xml` file. Sample
 where
 
 - `extension` - the data type's Dataset file extension (e.g., `ab1`, `bed`,
-  `gff`, `qual`, etc.)
+  `gff`, `qual`, etc.). The extension must consist only of lowercase letters,
+  numbers, `_`, `-`, and `.`.
 - `type` - the path to the class for that data type.
 - `mimetype` - if present (it's optional), the data type's mime type
 - `display_in_upload` - if present (it's optional and defaults to False), the

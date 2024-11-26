@@ -675,6 +675,12 @@ resolver.
     </xs:simpleContent>
   </xs:complexType>
   <xs:complexType name="Resource">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Allows to describe a resource requirement of a tool. At the moment this tag is mostly descriptive,
+It can be used by dynamic job rules and serves to guide Galaxy admins.
+]]></xs:documentation>
+    </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ResourceType" use="required">
@@ -1566,7 +1572,7 @@ used to load typed parameters. This string will be loaded as JSON and its type w
 attempt to be preserved through API requests to Galaxy.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="ftype" type="xs:string">
+    <xs:attribute name="ftype" type="Format">
       <xs:annotation>
         <xs:documentation xml:lang="en">This attribute name should be included
 only with parameters of ``type`` ``data`` for the tool. If this
@@ -1711,7 +1717,7 @@ generated as JSON. This can be useful for testing tool outputs that are not file
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="ftype" type="xs:string">
+    <xs:attribute name="ftype" type="Format">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 
@@ -4202,7 +4208,7 @@ only when the ``type`` attribute value is ``data``, ``float``, or ``integer``.</
 only when the ``type`` attribute value is ``data``, ``float``, or ``integer``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="format" type="xs:string">
+        <xs:attribute name="format" type="FormatList">
           <xs:annotation>
             <xs:documentation xml:lang="en">The comma-separated list of accepted
 data formats for this input. The list of supported data formats is contained in the
@@ -5943,7 +5949,7 @@ The default is ``galaxy.json``.
     </xs:choice>
   </xs:group>
   <xs:attributeGroup name="OutputCommon">
-    <xs:attribute name="format" type="xs:string">
+    <xs:attribute name="format" type="Format">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 The short name for the output datatype. The valid values for format can be found in
@@ -6331,12 +6337,12 @@ Therefore a filter for such a variable looks like the following example.
         <xs:documentation xml:lang="en">Indicates that the entire path of the discovered dataset relative to the specified directory should be available for matching patterns.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="format" type="xs:string" use="optional">
+    <xs:attribute name="format" type="Format" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``ext``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="ext" type="xs:string" use="optional">
+    <xs:attribute name="ext" type="Format" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``format``).</xs:documentation>
       </xs:annotation>
@@ -7660,7 +7666,7 @@ parameter (e.g. ``value="interval"`` above), or of the deprecated ``input_datase
 attribute.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="format" type="xs:string" use="required">
+    <xs:attribute name="format" type="Format" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">This value must be a supported data type
 (e.g. ``format="interval"``). See
@@ -8083,6 +8089,18 @@ favour of a ``has_size`` assertion.</xs:documentation>
       </xs:simpleType>
     </xs:union>
   </xs:simpleType>
+  
+  <xs:simpleType name="Format">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9a-z.-_]+"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="FormatList">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="([a-z0-9._-]+)(,([a-z0-9._-]+))*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  
   <xs:complexType name="EdamTopics">
     <xs:annotation gxdocs:best_practices="tool-annotations-edam">
       <xs:documentation xml:lang="en"><![CDATA[

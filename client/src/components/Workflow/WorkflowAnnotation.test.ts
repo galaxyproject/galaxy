@@ -116,7 +116,7 @@ async function mountWorkflowAnnotation(version: "run_form" | "invocation", ownsW
 }
 
 describe("WorkflowAnnotation renders", () => {
-    it("(always) the run count and history, not indicators if owned not published", async () => {
+    it("the run count and history, not indicators if owned not published", async () => {
         async function checkHasRunCount(version: "run_form" | "invocation") {
             const { wrapper } = await mountWorkflowAnnotation(version);
 
@@ -124,7 +124,11 @@ describe("WorkflowAnnotation renders", () => {
             expect(runCount.text()).toContain("workflow runs:");
             expect(runCount.text()).toContain(SAMPLE_RUN_COUNT.toString());
 
-            expect(wrapper.find(SELECTORS.SWITCH_TO_HISTORY_LINK).text()).toBe(TEST_HISTORY.name);
+            if (version === "run_form") {
+                expect(wrapper.find(SELECTORS.SWITCH_TO_HISTORY_LINK).exists()).toBe(false);
+            } else {
+                expect(wrapper.find(SELECTORS.SWITCH_TO_HISTORY_LINK).text()).toBe(TEST_HISTORY.name);
+            }
 
             // Since this is the user's own workflow, the indicators link
             // (to view all published workflows by the owner) should not be present

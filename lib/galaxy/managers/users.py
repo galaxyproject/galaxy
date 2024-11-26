@@ -46,6 +46,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.db.user import (
+    _cleanup_nonprivate_user_roles,
     get_user_by_email,
     get_user_by_username,
 )
@@ -214,10 +215,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # Delete UserGroupAssociations
         for uga in user.groups:
             self.session().delete(uga)
-        # Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE
-        for ura in user.roles:
-            if ura.role_id != private_role.id:
-                self.session().delete(ura)
+        _cleanup_nonprivate_user_roles(self.session(), user, private_role.id)
         # Delete UserAddresses
         for address in user.addresses:
             self.session().delete(address)

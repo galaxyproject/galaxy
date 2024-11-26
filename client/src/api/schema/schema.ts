@@ -4804,7 +4804,7 @@ export interface paths {
         };
         /**
          * Get User Roles
-         * @description Return a collection of roles associated with this user. Only admins can see user roles.
+         * @description Return a list of roles associated with this user. Only admins can see user roles.
          */
         get: operations["get_user_roles_api_users__user_id__roles_get"];
         put?: never;
