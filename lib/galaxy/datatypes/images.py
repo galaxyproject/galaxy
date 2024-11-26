@@ -472,6 +472,7 @@ class Nifti1(Binary):
     """
 
     file_ext = "nii1"
+    edam_format = "format_4001"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         magic = file_prefix.contents_header_bytes[344:348]
@@ -496,6 +497,7 @@ class Nifti2(Binary):
     """
 
     file_ext = "nii2"
+    edam_format = "format_4001"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         magic = file_prefix.contents_header_bytes[4:8]
