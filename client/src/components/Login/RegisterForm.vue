@@ -14,7 +14,7 @@ import {
     BFormInput,
     BFormText,
 } from "bootstrap-vue";
-import { computed, type Ref, ref } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 
 import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";
@@ -43,7 +43,7 @@ const emit = defineEmits<{
 
 const email = ref(null);
 const confirm = ref(null);
-const password = ref(null);
+const password = ref<string | null>(null);
 const username = ref(null);
 const subscribe = ref(null);
 const messageText: Ref<string | null> = ref(null);
@@ -56,6 +56,67 @@ const labelSubscribe = ref(localize("Stay in the loop and join the galaxy-announ
 
 const custosPreferred = computed(() => {
     return props.enableOidc && props.preferCustosLogin;
+});
+
+// Reaktive Variable für Passwortstärke und Farbe
+const passwordStrength = ref<string>("empty");
+const strengthScore = ref<number>(0);
+const commonPasswords = ["password", "123456", "123456789", "qwerty", "abc123", "password1", "111111", "letmein", "123123", "admin"];
+
+// Funktion zur Bewertung der Passwortstärke
+function evaluatePasswordStrength(newPassword: string) {
+    if (newPassword.length === 0) {
+        passwordStrength.value = "empty";
+        return;
+    }
+
+    // Basis-Bewertungen basierend auf der Passwortlänge und Zeichenvielfalt
+    strengthScore.value = 0;
+
+    // Länge des Passworts
+    if (newPassword.length >= 8) {strengthScore.value++}
+    if (newPassword.length >= 12) {strengthScore.value++}
+
+    // Passwort-Charakterklassen
+    const hasLowerCase = /[a-z]/.test(newPassword);
+    const hasUpperCase = /[A-Z]/.test(newPassword);
+    const hasNumbers = /[0-9]/.test(newPassword);
+    const hasSpecialChars = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+
+    // Erhöhen des Stärke-Scores für jede erfüllte Charakterklasse
+    if (hasLowerCase) {strengthScore.value++}
+    if (hasUpperCase) {strengthScore.value++}
+    if (hasNumbers) {strengthScore.value++}
+    if (hasSpecialChars) {strengthScore.value++}
+
+    // Überprüfung auf häufig verwendete Passwörter
+    if (commonPasswords.includes(newPassword)) {
+        strengthScore.value = 0;  // Setze Score auf 0 bei Verwendung eines häufigen Passworts
+        passwordStrength.value = "weak";
+        return;
+    }
+
+    // Überprüfung auf wiederholte Zeichenmuster
+    const repeatedCharMatch = newPassword.match(/(.)\1{2,}/); // Prüft auf 3 oder mehr aufeinanderfolgende gleiche Zeichen
+    if (repeatedCharMatch) {
+        strengthScore.value--; // Verringert den Score, falls ein Muster gefunden wurde
+    }
+
+    // Bewertung der Passwortstärke basierend auf dem Stärke-Score
+    if (strengthScore.value <= 2) {
+        passwordStrength.value = "weak";
+    } else if (strengthScore.value <= 4) {
+        passwordStrength.value = "medium";
+    } else {
+        passwordStrength.value = "strong";
+    }
+}
+
+// Beobachten von Änderungen am Passwort und Stärke bewerten
+watch(password, (newPassword) => {
+    if (typeof newPassword === "string") {
+        evaluatePasswordStrength(newPassword);
+    }
 });
 
 function toggleLogin() {
@@ -85,6 +146,7 @@ async function submit() {
         messageText.value = errorMessageAsString(error, "Registration failed for an unknown reason.");
     }
 }
+
 </script>
 
 <template>
@@ -145,7 +207,24 @@ async function submit() {
                                         name="password"
                                         type="password"
                                         autocomplete="new-password"
-                                        required />
+                                        required 
+                                    />
+                                    <!-- Stärke-Balken -->
+                                    <div v-if="passwordStrength !== null" class="password-strength-bar-container mt-2">
+                                        <div
+                                            class="password-strength-bar"
+                                            :class="passwordStrength"
+                                            :style="{ width: `${(strengthScore / 5) * 100}%` }"
+                                        ></div>
+                                    </div>
+
+                                    <!-- Hinweis zur Passwortstärke -->
+                                    <div :class="['password-strength', passwordStrength]" class="mt-2">
+                                        <span v-if="passwordStrength === 'empty'"></span>
+                                        <span v-else-if="passwordStrength === 'weak'">Weak Password</span>
+                                        <span v-else-if="passwordStrength === 'medium'">Medium Password</span>
+                                        <span v-else>Strong Password</span>
+                                    </div>
                                 </BFormGroup>
 
                                 <BFormGroup :label="labelConfirmPassword" label-for="register-form-confirm">
@@ -239,4 +318,42 @@ async function submit() {
         border-radius: 4px;
     }
 }
+/* Container für die Stärke-Bar */
+.password-strength-bar-container {
+    background-color: #e0e0e0;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+/* Stärke-Bar selbst */
+.password-strength-bar {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.password-strength-bar.weak {
+    background-color: red;
+}
+
+.password-strength-bar.medium {
+    background-color: orange;
+}
+
+.password-strength-bar.strong {
+    background-color: green;
+}
+
+/* Textanzeige für die Stärke */
+.password-strength.weak {
+    color: red;
+}
+.password-strength.medium {
+    color: orange;
+}
+.password-strength.strong {
+    color: green;
+}
+
 </style>
