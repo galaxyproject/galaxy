@@ -83,7 +83,7 @@ class OutputsFilterExpression(Linter):
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
-        for filter in tool_xml.findall("./outputs//filter"):
+        for filter in tool_xml.findall("./outputs/*/filter"):
             try:
                 ast.parse(filter.text, mode="eval")
             except Exception as e:
