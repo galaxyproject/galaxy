@@ -70,7 +70,9 @@ class WorkflowsService(ServiceBase):
         query, total_matches = self._workflows_manager.index_query(trans, payload, include_total_count)
         rval = []
         for wf in query.all():
-            item = wf.to_dict(value_mapper={"id": trans.security.encode_id})
+            item = wf.to_dict(
+                value_mapper={"id": trans.security.encode_id, "latest_workflow_id": trans.security.encode_id}
+            )
             encoded_id = trans.security.encode_id(wf.id)
             item["annotations"] = [x.annotation for x in wf.annotations]
             item["url"] = web.url_for("workflow", id=encoded_id)

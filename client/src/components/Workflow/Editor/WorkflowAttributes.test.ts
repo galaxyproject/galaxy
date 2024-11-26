@@ -1,10 +1,14 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { getLocalVue } from "@tests/jest/helpers";
+import { mount } from "@vue/test-utils";
 import { isDate } from "date-fns";
+import flushPromises from "flush-promises";
+import { createPinia, setActivePinia } from "pinia";
 
 import { useUserTagsStore } from "@/stores/userTagsStore";
 
-import Attributes from "./Attributes";
 import { UntypedParameters } from "./modules/parameters";
+
+import WorkflowAttributes from "./WorkflowAttributes.vue";
 
 jest.mock("app");
 
@@ -16,21 +20,19 @@ const TEST_VERSIONS = [
 ];
 const autocompleteTags = ["#named_uer_tag", "abc", "my_tag"];
 
-jest.mock("@/stores/userTagsStore");
-useUserTagsStore.mockReturnValue({
-    userTags: autocompleteTags,
-    onNewTagSeen: jest.fn(),
-    onTagUsed: jest.fn(),
-    onMultipleNewTagsSeen: jest.fn(),
-});
-
-describe("Attributes", () => {
+describe("WorkflowAttributes", () => {
     it("test attributes", async () => {
-        const localVue = createLocalVue();
+        const pinia = createPinia();
+        const localVue = getLocalVue(true);
+
+        setActivePinia(pinia);
+
         const untypedParameters = new UntypedParameters();
+
         untypedParameters.getParameter("workflow_parameter_0");
         untypedParameters.getParameter("workflow_parameter_1");
-        const wrapper = mount(Attributes, {
+
+        const wrapper = mount(WorkflowAttributes as object, {
             propsData: {
                 id: "workflow_id",
                 name: TEST_NAME,
@@ -44,18 +46,30 @@ describe("Attributes", () => {
                 LicenseSelector: true,
             },
             localVue,
+            pinia,
         });
+
+        await flushPromises();
+
+        const userTagsStore = useUserTagsStore();
+        jest.spyOn(userTagsStore, "userTags", "get").mockReturnValue(autocompleteTags);
+        userTagsStore.onNewTagSeen = jest.fn();
+        userTagsStore.onTagUsed = jest.fn();
+        userTagsStore.onMultipleNewTagsSeen = jest.fn();
+
         expect(wrapper.find(`[itemprop='description']`).attributes("content")).toBe(TEST_ANNOTATION);
         expect(wrapper.find(`[itemprop='name']`).attributes("content")).toBe(TEST_NAME);
         expect(wrapper.find(`#workflow-version-area > select`).exists()).toBeTruthy();
 
         const name = wrapper.find("#workflow-name");
-        expect(name.element.value).toBe(TEST_NAME);
+        expect((name.element as HTMLInputElement).value).toBe(TEST_NAME);
         await wrapper.setProps({ name: "new_workflow_name" });
-        expect(name.element.value).toBe("new_workflow_name");
+        expect((name.element as HTMLInputElement).value).toBe("new_workflow_name");
 
-        const version = wrapper.findAllComponents(`#workflow-version-area > select > option`);
+        const version = wrapper.findAll(`#workflow-version-area > select > option`);
+
         expect(version).toHaveLength(TEST_VERSIONS.length);
+
         for (let i = 0; i < version.length; i++) {
             const versionLabel = version.at(i).text();
             const versionDate = versionLabel.substring(versionLabel.indexOf(":") + 1, versionLabel.indexOf(",")).trim();
@@ -66,6 +80,6 @@ describe("Attributes", () => {
         expect(parameters.length).toBe(2);
         expect(parameters.at(0).text()).toBe("1: workflow_parameter_0");
         expect(parameters.at(1).text()).toBe("2: workflow_parameter_1");
-        expect(wrapper.find("#workflow-annotation").element.value).toBe(TEST_ANNOTATION);
+        expect((wrapper.find("#workflow-annotation").element as HTMLInputElement).value).toBe(TEST_ANNOTATION);
     });
 });

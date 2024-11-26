@@ -1,51 +1,52 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit, faEye, faPen, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faPen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BLink } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import { copyWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
-import { Toast } from "@/composables/toast";
+import { updateWorkflow } from "@/components/Workflow/workflows.services";
 import { useUserStore } from "@/stores/userStore";
 
-import AsyncButton from "@/components/Common/AsyncButton.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import WorkflowActions from "@/components/Workflow/List/WorkflowActions.vue";
 import WorkflowActionsExtend from "@/components/Workflow/List/WorkflowActionsExtend.vue";
 import WorkflowIndicators from "@/components/Workflow/List/WorkflowIndicators.vue";
-import WorkflowRename from "@/components/Workflow/List/WorkflowRename.vue";
-import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 import WorkflowInvocationsCount from "@/components/Workflow/WorkflowInvocationsCount.vue";
-import WorkflowRunButton from "@/components/Workflow/WorkflowRunButton.vue";
-
-library.add(faEdit, faEye, faPen, faUpload);
 
 interface Props {
     workflow: any;
     gridView?: boolean;
+    hideRuns?: boolean;
+    filterable?: boolean;
     publishedView?: boolean;
+    editorView?: boolean;
+    current?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     gridView: false,
     publishedView: false,
+    hideRuns: false,
+    filterable: true,
+    editorView: false,
+    current: false,
 });
 
 const emit = defineEmits<{
     (e: "tagClick", tag: string): void;
-    (e: "refreshList", overlayLoading?: boolean, b?: boolean): void;
-    (e: "update-filter", key: string, value: any): void;
+    (e: "refreshList", overlayLoading?: boolean, silent?: boolean): void;
+    (e: "updateFilter", key: string, value: any): void;
+    (e: "rename", id: string, name: string): void;
+    (e: "preview", id: string): void;
+    (e: "insert"): void;
+    (e: "insertSteps"): void;
 }>();
 
 const userStore = useUserStore();
 
 const { isAnonymous } = storeToRefs(userStore);
-
-const showRename = ref(false);
-const showPreview = ref(false);
 
 const workflow = computed(() => props.workflow);
 
@@ -60,49 +61,6 @@ const description = computed(() => {
         return null;
     }
 });
-const editButtonTitle = computed(() => {
-    if (isAnonymous.value) {
-        return "Log in to edit Workflow";
-    } else {
-        if (workflow.value.deleted) {
-            return "You cannot edit a deleted workflow. Restore it first.";
-        } else {
-            return "Edit Workflow";
-        }
-    }
-});
-const importedButtonTitle = computed(() => {
-    if (isAnonymous.value) {
-        return "Log in to import workflow";
-    } else {
-        return "Import this workflow to edit";
-    }
-});
-const runButtonTitle = computed(() => {
-    if (isAnonymous.value) {
-        return "Log in to run workflow";
-    } else {
-        if (workflow.value.deleted) {
-            return "You cannot run a deleted workflow. Restore it first.";
-        } else {
-            return "Run workflow";
-        }
-    }
-});
-
-async function onImport() {
-    await copyWorkflow(workflow.value.id, workflow.value.owner);
-    Toast.success("Workflow imported successfully");
-}
-
-function onRenameClose(e: any) {
-    showRename.value = false;
-    emit("refreshList", true);
-}
-
-function toggleShowPreview(val: boolean = false) {
-    showPreview.value = val;
-}
 
 async function onTagsUpdate(tags: string[]) {
     workflow.value.tags = tags;
@@ -113,10 +71,16 @@ async function onTagsUpdate(tags: string[]) {
 async function onTagClick(tag: string) {
     emit("tagClick", tag);
 }
+
+const dropdownOpen = ref(false);
 </script>
 
 <template>
-    <div class="workflow-card" :data-workflow-id="workflow.id">
+    <div
+        class="workflow-card"
+        :class="{ 'dropdown-open': dropdownOpen }"
+        :data-workflow-id="workflow.id"
+        :data-workflow-name="workflow.name">
         <div
             class="workflow-card-container"
             :class="{
@@ -124,18 +88,25 @@ async function onTagClick(tag: string) {
             }">
             <div class="workflow-card-header">
                 <WorkflowIndicators
+                    class="workflow-card-indicators"
                     :workflow="workflow"
                     :published-view="publishedView"
-                    @update-filter="(k, v) => emit('update-filter', k, v)" />
+                    :filterable="props.filterable"
+                    @updateFilter="(k, v) => emit('updateFilter', k, v)" />
 
                 <div class="workflow-count-actions">
-                    <WorkflowInvocationsCount v-if="!isAnonymous && !shared" class="mx-1" :workflow="workflow" />
+                    <WorkflowInvocationsCount
+                        v-if="!props.hideRuns && !isAnonymous && !shared"
+                        class="invocations-count mx-1"
+                        :workflow="workflow" />
 
                     <WorkflowActions
-                        :workflow="workflow"
-                        :published="publishedView"
+                        :workflow="props.workflow"
+                        :published="props.publishedView"
+                        :editor="props.editorView"
+                        :current="props.current"
                         @refreshList="emit('refreshList', true)"
-                        @toggleShowPreview="toggleShowPreview" />
+                        @dropdown="(open) => (dropdownOpen = open)" />
                 </div>
 
                 <span class="workflow-name font-weight-bold">
@@ -143,25 +114,25 @@ async function onTagClick(tag: string) {
                         v-b-tooltip.hover.noninteractive
                         class="workflow-name-preview"
                         title="Preview Workflow"
-                        @click.stop.prevent="toggleShowPreview(true)"
-                        >{{ workflow.name }}</BLink
-                    >
+                        @click.stop.prevent="emit('preview', props.workflow.id)">
+                        {{ workflow.name }}
+                    </BLink>
                     <BButton
-                        v-if="!shared && !workflow.deleted"
+                        v-if="!props.current && !shared && !workflow.deleted"
                         v-b-tooltip.hover.noninteractive
                         :data-workflow-rename="workflow.id"
                         class="inline-icon-button workflow-rename"
                         variant="link"
                         size="sm"
                         title="Rename"
-                        @click="showRename = !showRename">
+                        @click="emit('rename', props.workflow.id, props.workflow.name)">
                         <FontAwesomeIcon :icon="faPen" fixed-width />
                     </BButton>
                 </span>
 
                 <TextSummary
                     v-if="description"
-                    class="my-1"
+                    class="workflow-summary my-1"
                     :description="description"
                     :max-length="gridView ? 100 : 250" />
             </div>
@@ -171,89 +142,36 @@ async function onTagClick(tag: string) {
                     <StatelessTags
                         clickable
                         :value="workflow.tags"
-                        :disabled="isAnonymous || workflow.deleted || shared"
+                        :disabled="props.current || isAnonymous || workflow.deleted || shared"
                         :max-visible-tags="gridView ? 2 : 8"
                         @input="onTagsUpdate($event)"
                         @tag-click="onTagClick($event)" />
                 </div>
 
-                <div class="workflow-card-actions">
-                    <WorkflowActionsExtend
-                        :workflow="workflow"
-                        :published="publishedView"
-                        @refreshList="emit('refreshList', true)" />
-
-                    <div class="workflow-edit-run-buttons">
-                        <BButton
-                            v-if="!isAnonymous && !shared"
-                            v-b-tooltip.hover.noninteractive
-                            :disabled="workflow.deleted"
-                            size="sm"
-                            class="workflow-edit-button"
-                            :title="editButtonTitle"
-                            variant="outline-primary"
-                            :to="`/workflows/edit?id=${workflow.id}`">
-                            <FontAwesomeIcon :icon="faEdit" fixed-width />
-                            Edit
-                        </BButton>
-
-                        <AsyncButton
-                            v-else
-                            v-b-tooltip.hover.noninteractive
-                            size="sm"
-                            :disabled="isAnonymous"
-                            :title="importedButtonTitle"
-                            :icon="faUpload"
-                            variant="outline-primary"
-                            :action="onImport">
-                            Import
-                        </AsyncButton>
-
-                        <WorkflowRunButton
-                            :id="workflow.id"
-                            :disabled="isAnonymous || workflow.deleted"
-                            :title="runButtonTitle" />
-                    </div>
-                </div>
+                <WorkflowActionsExtend
+                    :workflow="workflow"
+                    :published="publishedView"
+                    :editor="editorView"
+                    :current="props.current"
+                    @refreshList="emit('refreshList', true)"
+                    @insert="(...args) => emit('insert', ...args)"
+                    @insertSteps="(...args) => emit('insertSteps', ...args)" />
             </div>
-
-            <WorkflowRename
-                v-if="!isAnonymous && !shared && !workflow.deleted"
-                :id="workflow.id"
-                :show="showRename"
-                :name="workflow.name"
-                @close="onRenameClose" />
-
-            <BModal
-                v-model="showPreview"
-                ok-only
-                size="xl"
-                hide-header
-                dialog-class="workflow-card-preview-modal w-auto"
-                centered>
-                <WorkflowPublished v-if="showPreview" :id="workflow.id" quick-view />
-            </BModal>
         </div>
     </div>
 </template>
 
-<style lang="scss">
-.workflow-card-preview-modal {
-    max-width: min(1400px, calc(100% - 200px));
-
-    .modal-content {
-        height: min(800px, calc(100vh - 80px));
-    }
-}
-</style>
-
 <style scoped lang="scss">
 @import "theme/blue.scss";
-@import "breakpoints.scss";
+@import "_breakpoints.scss";
 
 .workflow-card {
     container: workflow-card / inline-size;
     padding: 0 0.25rem 0.5rem 0.25rem;
+
+    &.dropdown-open {
+        z-index: 10;
+    }
 
     .workflow-rename {
         opacity: 0;
@@ -283,19 +201,47 @@ async function onTagClick(tag: string) {
         .workflow-card-header {
             display: grid;
             position: relative;
+            align-items: start;
+            grid-template-areas:
+                "i b"
+                "n n"
+                "s s";
+
+            &:has(.invocations-count) {
+                @container workflow-card (max-width: #{$breakpoint-xs}) {
+                    grid-template-areas:
+                        "i b"
+                        "n b"
+                        "s s";
+                }
+            }
+
+            .workflow-card-indicators {
+                grid-area: i;
+            }
 
             .workflow-count-actions {
+                grid-area: b;
                 display: flex;
                 align-items: center;
                 flex-direction: row;
-                position: absolute;
-                right: 0.5rem;
+                justify-content: end;
+
+                @container workflow-card (max-width: #{$breakpoint-xs}) {
+                    align-items: end;
+                    flex-direction: column-reverse;
+                }
             }
 
             .workflow-name {
+                grid-area: n;
                 font-size: 1rem;
                 font-weight: bold;
                 word-break: break-all;
+            }
+
+            .workflow-summary {
+                grid-area: s;
             }
         }
 
@@ -307,14 +253,6 @@ async function onTagClick(tag: string) {
             .workflow-card-tags {
                 max-width: 60%;
             }
-
-            .workflow-card-actions {
-                display: flex;
-                gap: 0.25rem;
-                margin-top: 0.25rem;
-                align-items: center;
-                justify-content: end;
-            }
         }
 
         @container workflow-card (max-width: #{$breakpoint-sm}) {
@@ -325,32 +263,6 @@ async function onTagClick(tag: string) {
                     max-width: 100%;
                 }
             }
-        }
-
-        @container workflow-card (max-width: #{$breakpoint-sm}) {
-            .workflow-card-actions {
-                justify-content: space-between;
-            }
-        }
-
-        @container workflow-card (min-width: #{$breakpoint-sm}, max-width: #{$breakpoint-md}) {
-            .workflow-card-actions {
-                justify-content: end;
-            }
-        }
-    }
-
-    @container workflow-card (max-width: #{$breakpoint-md}) {
-        .workflow-count-actions {
-            align-items: baseline;
-            justify-content: end;
-        }
-    }
-
-    @container workflow-card (min-width: #{$breakpoint-md}) {
-        .workflow-count-actions {
-            align-items: end;
-            flex-direction: column-reverse;
         }
     }
 }

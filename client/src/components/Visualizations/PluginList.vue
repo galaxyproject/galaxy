@@ -4,7 +4,7 @@
         <template v-else>
             <DelayedInput
                 class="mb-3"
-                :query="search"
+                :value="search"
                 :placeholder="titleSearchVisualizations"
                 :delay="100"
                 @change="onSearch" />

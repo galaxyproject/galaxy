@@ -8,7 +8,7 @@
         <h2 class="h-sm">Tours</h2>
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <DelayedInput class="mb-3" :query="search" :placeholder="searchTours" :delay="0" @change="onSearch" />
+            <DelayedInput class="mb-3" :value="search" :placeholder="searchTours" :delay="0" @change="onSearch" />
             <div v-for="tour in tours" :key="tour.id">
                 <ul v-if="match(tour)" id="tourList" class="list-group">
                     <li class="list-group-item">

@@ -245,7 +245,7 @@ function onAdvancedSearch(filters: any) {
         <DelayedInput
             v-else
             class="mb-3"
-            :query="props.query"
+            :value="props.query"
             :delay="200"
             :loading="queryPending"
             :placeholder="placeholder"

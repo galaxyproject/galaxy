@@ -1,7 +1,7 @@
 <template>
     <div id="columns" class="d-flex">
         <FlexPanel side="left">
-            <MarkdownToolBox :steps="steps" @onInsert="onInsert" />
+            <MarkdownToolBox :steps="steps" @insert="insertMarkdown" />
         </FlexPanel>
         <div id="center" class="overflow-auto w-100">
             <div class="markdown-editor h-100">
@@ -57,10 +57,10 @@ const FENCE = "```";
 
 export default {
     components: {
-        MarkdownToolBox,
         FlexPanel,
         FontAwesomeIcon,
         MarkdownHelpModal,
+        MarkdownToolBox,
     },
     props: {
         markdownText: {
@@ -97,7 +97,7 @@ export default {
         },
     },
     methods: {
-        onInsert(markdown) {
+        insertMarkdown(markdown) {
             markdown = markdown.replace(")(", ", ");
             markdown = `${FENCE}galaxy\n${markdown}\n${FENCE}\n`;
             const textArea = this.$refs["text-area"];
@@ -106,10 +106,10 @@ export default {
             let newContent = this.content.substr(0, cursorPosition);
             newContent += `\r\n${markdown.trim()}\r\n`;
             newContent += this.content.substr(cursorPosition);
-            this.$emit("onUpdate", newContent);
+            this.$emit("update", newContent);
         },
         onUpdate: _.debounce(function (e) {
-            this.$emit("onUpdate", this.content);
+            this.$emit("update", this.content);
         }, 300),
         onHelp() {
             this.$refs.help.showMarkdownHelp();

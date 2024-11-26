@@ -76,6 +76,7 @@ export function useWorkflowStores(workflowId?: Ref<string> | string) {
     const undoRedoStore = useUndoRedoStore(id);
 
     return {
+        workflowId: id,
         connectionStore,
         stateStore,
         stepStore,
