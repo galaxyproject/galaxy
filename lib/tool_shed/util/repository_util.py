@@ -390,12 +390,7 @@ def handle_role_associations(app: "ToolShedApp", role, repository, **kwd):
             roles=[role], users=in_users, groups=in_groups, repositories=in_repositories
         )
         sa_session.refresh(role)
-        message += "Role <b>%s</b> has been associated with %d users, %d groups and %d repositories.  " % (
-            escape(str(role.name)),
-            len(in_users),
-            len(in_groups),
-            len(in_repositories),
-        )
+        message += f"Role <b>{escape(str(role.name))}</b> has been associated with {len(in_users)} users, {len(in_groups)} groups and {len(in_repositories)} repositories.  "
     in_users = []
     out_users = []
     in_groups = []

@@ -144,12 +144,10 @@ class TestDeletedDependencies(ShedTwillTestCase):
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, tip)
         # Make sure that the new tip is now downloadable, and that there are no other downloadable revisions.
         assert metadata_record.downloadable, "Tip is not downloadable."
+        n_downloadable_revisions = len(self._db_repository(repository).downloadable_revisions)
         assert (
-            len(self._db_repository(repository).downloadable_revisions) == 1
-        ), "Repository %s has %d downloadable revisions, expected 1." % (
-            repository.name,
-            len(self._db_repository(repository).downloadable_revisions),
-        )
+            n_downloadable_revisions == 1
+        ), f"Repository {repository.name} has {n_downloadable_revisions} downloadable revisions, expected 1."
 
     def test_0025_delete_repository_dependency(self):
         """Delete the repository_dependencies.xml from convert_chars_0440.
@@ -174,12 +172,10 @@ class TestDeletedDependencies(ShedTwillTestCase):
             metadata_record.downloadable
         ), f"The revision of {repository.name} that does not contain repository_dependencies.xml is not downloadable."
         # Verify that there are only two downloadable revisions.
+        n_downloadable_revisions = len(self._db_repository(repository).downloadable_revisions)
         assert (
-            len(self._db_repository(repository).downloadable_revisions) == 2
-        ), "Repository %s has %d downloadable revisions, expected 2." % (
-            repository.name,
-            len(self._db_repository(repository).downloadable_revisions),
-        )
+            n_downloadable_revisions == 2
+        ), f"Repository {repository.name} has {n_downloadable_revisions} downloadable revisions, expected 2."
 
     def test_0030_create_bwa_package_repository(self):
         """Create and populate the bwa_package_0440 repository.
@@ -257,12 +253,10 @@ class TestDeletedDependencies(ShedTwillTestCase):
         metadata_record = self._get_repository_metadata_by_changeset_revision(repository, tip)
         # Make sure that the new tip is now downloadable, and that there are no other downloadable revisions.
         assert metadata_record.downloadable, "Tip is not downloadable."
+        n_downloadable_revisions = len(self._db_repository(repository).downloadable_revisions)
         assert (
-            len(self._db_repository(repository).downloadable_revisions) == 1
-        ), "Repository %s has %d downloadable revisions, expected 1." % (
-            repository.name,
-            len(self._db_repository(repository).downloadable_revisions),
-        )
+            n_downloadable_revisions == 1
+        ), f"Repository {repository.name} has {n_downloadable_revisions} downloadable revisions, expected 1."
 
     def test_0050_delete_complex_repository_dependency(self):
         """Delete the tool_dependencies.xml from bwa_base_0440.
@@ -287,12 +281,10 @@ class TestDeletedDependencies(ShedTwillTestCase):
             metadata_record.downloadable
         ), f"The revision of {repository.name} that does not contain tool_dependencies.xml is not downloadable."
         # Verify that there are only two downloadable revisions.
+        n_downloadable_revisions = len(self._db_repository(repository).downloadable_revisions)
         assert (
-            len(self._db_repository(repository).downloadable_revisions) == 2
-        ), "Repository %s has %d downloadable revisions, expected 2." % (
-            repository.name,
-            len(self._db_repository(repository).downloadable_revisions),
-        )
+            n_downloadable_revisions == 2
+        ), f"Repository {repository.name} has {n_downloadable_revisions} downloadable revisions, expected 2."
 
     def test_0055_create_bwa_tool_dependency_repository(self):
         """Create and populate the bwa_tool_dependency_0440 repository.
@@ -340,12 +332,10 @@ class TestDeletedDependencies(ShedTwillTestCase):
             metadata_record is None
         ), f"The tip revision of {repository.name} should not have metadata, but metadata was found."
         # Verify that the new changeset revision is not downloadable.
+        n_downloadable_revisions = len(self._db_repository(repository).downloadable_revisions)
         assert (
-            len(self._db_repository(repository).downloadable_revisions) == 1
-        ), "Repository %s has %d downloadable revisions, expected 1." % (
-            repository.name,
-            len(self._db_repository(repository).downloadable_revisions),
-        )
+            n_downloadable_revisions == 1
+        ), f"Repository {repository.name} has {n_downloadable_revisions} downloadable revisions, expected 1."
 
     def test_0065_reupload_bwa_tool_dependency_definition(self):
         """Reupload the tool_dependencies.xml file to bwa_tool_dependency_0440.
@@ -372,12 +362,10 @@ class TestDeletedDependencies(ShedTwillTestCase):
             metadata_record.downloadable
         ), f"The revision of {repository.name} that contains tool_dependencies.xml is not downloadable."
         # Verify that there are only two downloadable revisions.
+        n_downloadable_revisions = len(self._db_repository(repository).downloadable_revisions)
         assert (
-            len(self._db_repository(repository).downloadable_revisions) == 1
-        ), "Repository %s has %d downloadable revisions, expected 1." % (
-            repository.name,
-            len(self._db_repository(repository).downloadable_revisions),
-        )
+            n_downloadable_revisions == 1
+        ), f"Repository {repository.name} has {n_downloadable_revisions} downloadable revisions, expected 1."
 
     def _get_repository_metadata_by_changeset_revision(self, repository: Repository, changeset: str):
         return self.get_repository_metadata_by_changeset_revision(self._db_repository(repository).id, changeset)
