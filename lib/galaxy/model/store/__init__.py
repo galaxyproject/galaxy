@@ -2383,12 +2383,12 @@ class DirectoryModelExportStore(ModelExportStore):
             #
 
             # Get all jobs associated with included HDAs.
-            jobs_dict: Dict[str, model.Job] = {}
+            jobs_dict: Dict[int, model.Job] = {}
             implicit_collection_jobs_dict = {}
 
             def record_job(job):
-                if not job:
-                    # No viable job.
+                if not job or job.id in jobs_dict:
+                    # No viable job or job already recorded.
                     return
 
                 jobs_dict[job.id] = job
@@ -2414,10 +2414,11 @@ class DirectoryModelExportStore(ModelExportStore):
                     )
                 job_hda = hda
                 while job_hda.copied_from_history_dataset_association:  # should this check library datasets as well?
+                    # record job (if one exists) even if dataset was copied
+                    # copy could have been created manually through UI/API or using database operation tool,
+                    # in which case we have a relevant job to export.
+                    record_associated_jobs(job_hda)
                     job_hda = job_hda.copied_from_history_dataset_association
-                if not job_hda.creating_job_associations:
-                    # No viable HDA found.
-                    continue
 
                 record_associated_jobs(job_hda)
 
