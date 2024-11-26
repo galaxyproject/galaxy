@@ -24,7 +24,6 @@ from galaxy import model
 from galaxy.model import store
 from galaxy.model.base import transaction
 from galaxy.model.metadata import MetadataTempFile
-from galaxy.model.orm.now import now
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
