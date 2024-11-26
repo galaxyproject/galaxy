@@ -1,62 +1,56 @@
 import { toValue } from "@vueuse/core";
-import { onScopeDispose, ref, watchEffect } from "vue";
+import { onScopeDispose, ref, watch } from "vue";
 
-let worker;
-let idCounter = 0;
-let workerReferenceCount = 0;
-
-export function useFilterObjectArray(array, filter, objectFields) {
-    if (!worker) {
-        worker = new Worker(new URL("./filter.worker.js", import.meta.url));
-    }
-
-    workerReferenceCount += 1;
-    const id = idCounter++;
-
-    const post = (message) => {
-        worker.postMessage({ id, ...message });
-    };
+export function useFilterObjectArray(array, filter, objectFields, asRegex = false) {
+    const worker = new Worker(new URL("./filter.worker.js", import.meta.url));
 
     const filtered = ref([]);
     filtered.value = toValue(array);
 
-    const onMessage = (e) => {
-        const message = e.data;
+    const post = (message) => {
+        worker.postMessage(message);
+    };
 
-        // exit if message is not meant for this composable instance
-        if (message.id !== id) {
-            return;
+    watch(
+        () => toValue(array),
+        (arr) => {
+            post({ type: "setArray", array: arr });
+        },
+        {
+            immediate: true,
         }
+    );
+
+    watch(
+        () => toValue(filter),
+        (f) => {
+            post({ type: "setFilter", filter: f });
+        },
+        {
+            immediate: true,
+        }
+    );
+
+    watch(
+        () => toValue(objectFields),
+        (fields) => {
+            post({ type: "setFields", fields });
+        },
+        {
+            immediate: true,
+        }
+    );
+
+    worker.onmessage = (e) => {
+        const message = e.data;
 
         if (message.type === "result") {
             filtered.value = message.filtered;
-        } else {
-            post({ type: "clear" });
-            worker.removeEventListener("message", onMessage);
         }
     };
 
-    worker.addEventListener("message", onMessage);
-
-    watchEffect(() => {
-        post({ type: "setArray", array: toValue(array) });
-    });
-
-    watchEffect(() => {
-        post({ type: "setFilter", filter: toValue(filter) });
-    });
-
-    watchEffect(() => {
-        post({ type: "setFields", fields: toValue(objectFields) });
-    });
-
     onScopeDispose(() => {
-        workerReferenceCount -= 1;
-
-        if (workerReferenceCount <= 0) {
-            worker.terminate();
-            worker = null;
-        }
+        worker.terminate();
     });
 
     return filtered;
