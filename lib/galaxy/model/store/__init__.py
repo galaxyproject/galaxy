@@ -996,14 +996,16 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             # sense.
             hdca_copied_from_sinks = object_import_tracker.hdca_copied_from_sinks
             if copied_from_object_key in object_import_tracker.hdcas_by_key:
-                hdca.copied_from_history_dataset_collection_association = object_import_tracker.hdcas_by_key[
-                    copied_from_object_key
-                ]
+                source_hdca = object_import_tracker.hdcas_by_key[copied_from_object_key]
+                if source_hdca is not hdca:
+                    # We may not have the copied source, in which case the first included HDCA in the chain
+                    # acts as the source, so here we make sure we don't create a cycle.
+                    hdca.copied_from_history_dataset_collection_association = source_hdca
             else:
                 if copied_from_object_key in hdca_copied_from_sinks:
-                    hdca.copied_from_history_dataset_collection_association = object_import_tracker.hdcas_by_key[
-                        hdca_copied_from_sinks[copied_from_object_key]
-                    ]
+                    source_hdca = object_import_tracker.hdcas_by_key[hdca_copied_from_sinks[copied_from_object_key]]
+                    if source_hdca is not hdca:
+                        hdca.copied_from_history_dataset_collection_association = source_hdca
                 else:
                     hdca_copied_from_sinks[copied_from_object_key] = dataset_collection_key
 
