@@ -6693,11 +6693,6 @@ class HistoryDatasetCollectionAssociation(
         primaryjoin=copied_from_history_dataset_collection_association_id == id,
         remote_side=[id],
         uselist=False,
-        back_populates="copied_to_history_dataset_collection_association",
-    )
-    copied_to_history_dataset_collection_association = relationship(
-        "HistoryDatasetCollectionAssociation",
-        back_populates="copied_from_history_dataset_collection_association",
     )
     implicit_input_collections = relationship(
         "ImplicitlyCreatedDatasetCollectionInput",
