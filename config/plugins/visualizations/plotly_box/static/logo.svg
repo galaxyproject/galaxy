@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+  <!-- Whiskers -->
+  <line x1="35" y1="65" x2="35" y2="30" stroke="#2b7bba" stroke-width="2" />
+  <line x1="65" y1="65" x2="65" y2="30" stroke="#2b7bba" stroke-width="2" />
+
+  <!-- Box -->
+  <rect x="35" y="40" width="30" height="20" fill="#66c2a5" stroke="#2b7bba" stroke-width="2" rx="2" />
+
+  <!-- Median Line -->
+  <line x1="35" y1="50" x2="65" y2="50" stroke="#d95f02" stroke-width="2" />
+</svg>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Plotly: Histogram">
+    <description>Histogram from Plotly JavaScript Graphing Library hosted at plotly.com.</description>
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.Tabular</test>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.CSV</test>
+            <to_param param_attr="id">dataset_id</to_param>
+        </data_source>
+    </data_sources>
+    <params>
+        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+    </params>
+    <entry_point entry_point_type="script" src="../../plotly/static/dist/index.js" css="../../plotly/static/dist/index.css" />
+    <specs>
+        <variant>histogram</variant>
+    </specs>
+    <settings>
+        <input>
+            <name>x_axis_label</name>
+            <label>X-Axis label</label>
+            <help>Provide a label for the axis.</help>
+            <type>text</type>
+            <value>X-axis</value>
+            <placeholder>Axis label</placeholder>
+        </input>
+        <input>
+            <name>y_axis_label</name>
+            <label>Y-Axis label</label>
+            <help>Provide a label for the axis.</help>
+            <type>text</type>
+            <value>Y-axis</value>
+            <placeholder>Axis label</placeholder>
+        </input>
+    </settings>
+    <tracks>
+        <input>
+            <label>Pick a series color</label>
+            <name>color</name>
+            <type>color</type>
+        </input>
+        <input>
+            <label>Provide a label</label>
+            <name>name</name>
+            <type>text</type>
+            <placeholder>Data label</placeholder>
+            <value>Data label</value>
+        </input>
+        <input>
+            <name>x</name>
+            <label>Column of x-axis values</label>
+            <type>data_column</type>
+            <is_number>true</is_number>
+        </input>
+    </tracks>
+</visualization>

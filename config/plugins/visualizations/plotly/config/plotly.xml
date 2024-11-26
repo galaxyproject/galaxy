@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Plotly: Bar, Line and Scatter">
+    <description>Basic Diagrams from Plotly JavaScript Graphing Library hosted at plotly.com.</description>
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.Tabular</test>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.CSV</test>
+            <to_param param_attr="id">dataset_id</to_param>
+        </data_source>
+    </data_sources>
+    <params>
+        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+    </params>
+    <requirements>
+        <requirement type="npm" version="0.0.0" package="@galaxyproject/plotly"/>
+    </requirements>
+    <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
+    <settings>
+        <input>
+            <name>stack_bar</name>
+            <label>Stack Bars</label>
+            <help>Would you like to stack bars?</help>
+            <type>boolean</type>
+            <value>false</value>
+        </input>
+        <input>
+            <name>stack_lines</name>
+            <label>Stack Lines</label>
+            <help>Would you like to stack lines and fill the area under the curve?</help>
+            <type>boolean</type>
+            <value>false</value>
+        </input>
+        <input>
+            <name>x_axis_label</name>
+            <label>X-Axis label</label>
+            <help>Provide a label for the axis.</help>
+            <type>text</type>
+            <value>X-axis</value>
+            <placeholder>Axis label</placeholder>
+        </input>
+        <input>
+            <name>y_axis_label</name>
+            <label>Y-Axis label</label>
+            <help>Provide a label for the axis.</help>
+            <type>text</type>
+            <value>Y-axis</value>
+            <placeholder>Axis label</placeholder>
+        </input>
+    </settings>
+    <tracks>
+        <input>
+            <label>Pick a series color</label>
+            <name>color</name>
+            <type>color</type>
+        </input>
+        <input>
+            <name>type</name>
+            <label>Select type</label>
+            <type>select</type>
+            <value>bar</value>
+            <help>Choose the chart type.</help>
+            <data>
+                <data>
+                    <label>Bar</label>
+                    <value>bar</value>
+                </data>
+                <data>
+                    <label>Lines</label>
+                    <value>lines</value>
+                </data>
+                <data>
+                    <label>Scatter</label>
+                    <value>scatter</value>
+                </data>
+            </data>
+        </input>
+        <input>
+            <label>Provide a label</label>
+            <name>name</name>
+            <type>text</type>
+            <placeholder>Data label</placeholder>
+            <value>Data label</value>
+        </input>
+        <input>
+            <name>x</name>
+            <label>Column of x-axis values</label>
+            <type>data_column</type>
+            <is_auto>true</is_auto>
+        </input>
+        <input>
+            <name>y</name>
+            <label>Column of y-axis values</label>
+            <type>data_column</type>
+            <is_number>true</is_number>
+        </input>
+    </tracks>
+</visualization>
