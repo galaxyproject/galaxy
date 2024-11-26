@@ -1,59 +1,22 @@
 import { runFilter } from "@/composables/filter/filterFunction";
 
-function createOptions() {
-    return {
-        array: [],
-        filter: "",
-        fields: [],
-    };
-}
-
-const optionsById = new Map();
-const timerById = new Map();
+let array = [];
+let filter = "";
+let fields = [];
 
 self.addEventListener("message", (e) => {
     const message = e.data;
 
-    if (!optionsById.has(message.id)) {
-        optionsById.set(message.id, createOptions());
+    if (message.type === "setArray") {
+        array = message.array;
+    } else if (message.type === "setFields") {
+        fields = message.fields;
+    } else if (message.type === "setFilter") {
+        filter = message.filter;
     }
 
-    const options = optionsById.get(message.id);
-
-    switch (message.type) {
-        case "setArray":
-            options.array = message.array;
-            break;
-
-        case "setFields":
-            options.fields = message.fields;
-            break;
-
-        case "setFilter":
-            options.filter = message.filter;
-            break;
-
-        case "clear":
-            optionsById.delete(message.id);
-            break;
-
-        default:
-            break;
+    if (array.length > 0 && fields.length > 0) {
+        const filtered = runFilter(filter, array, fields);
+        self.postMessage({ type: "result", filtered });
     }
-
-    if (timerById.has(message.id)) {
-        clearTimeout(timerById.get(message.id));
-    }
-
-    timerById.set(
-        message.id,
-        setTimeout(() => {
-            if (options.array.length > 0 && options.fields.length > 0) {
-                const filtered = runFilter(options.filter, options.array, options.fields);
-                self.postMessage({ type: "result", filtered });
-            }
-
-            timerById.delete(message.id);
-        }, 10)
-    );
 });
