@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
+import { nextTick } from "vue";
 import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { searchToolsByKeys } from "@/components/Panels/utilities";
 import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
@@ -55,6 +57,10 @@ const props = defineProps({
     currentPanel: {
         type: Object as PropType<Record<string, Tool | ToolSection>>,
         required: true,
+    },
+    useWorker: {
+        type: Boolean,
+        default: false,
     },
 });
 
@@ -119,21 +125,101 @@ const ontologyList = computed(() =>
     toolStore.sectionDatalist("ontology:edam_topics").concat(toolStore.sectionDatalist("ontology:edam_operations"))
 );
 
-onMounted(() => {
-    // initialize worker
-    if (!searchWorker.value) {
-        searchWorker.value = new Worker(new URL("components/Panels/toolSearch.worker.js", import.meta.url));
+interface RequestPaylod {
+    tools: Tool[];
+    keys: ToolSearchKeys;
+    query: string;
+    panelView: string;
+    currentPanel: Record<string, Tool | ToolSection>;
+}
+
+interface SearchEventQuery {
+    type: "searchToolsByKeys";
+    payload: RequestPaylod;
+}
+
+interface SearchEventClear {
+    type: "clearFilter";
+}
+
+interface SearchEventFavorite {
+    type: "favoriteTools";
+}
+
+type SearchEventData = SearchEventQuery | SearchEventClear | SearchEventFavorite;
+
+interface SearchEvent {
+    data: SearchEventData;
+}
+
+interface ResponsePayloadResults {
+    type: "searchToolsByKeysResult";
+    payload: string[];
+    query: string;
+    closestTerm: string | null;
+    sectioned: Record<string, Tool | ToolSection> | null;
+}
+
+interface ResponseClearFilter {
+    type: "clearFilterResult";
+}
+
+interface ResponseFavoriteTools {
+    type: "favoriteToolsResult";
+}
+
+type ResponsePayloadData = ResponsePayloadResults | ResponseClearFilter | ResponseFavoriteTools;
+
+interface ResponsePayload {
+    type: "message";
+    data: ResponsePayloadData;
+}
+
+function handlePost(event: SearchEvent) {
+    const { type } = event.data;
+    if (type === "searchToolsByKeys") {
+        const { tools, keys, query, panelView, currentPanel } = event.data.payload;
+        const { results, resultPanel, closestTerm } = searchToolsByKeys(tools, keys, query, panelView, currentPanel);
+        // send the result back to the main thread
+        onMessage({
+            data: {
+                type: "searchToolsByKeysResult",
+                payload: results.slice(),
+                sectioned: resultPanel,
+                query: query,
+                closestTerm: closestTerm,
+            },
+        } as unknown as MessageEvent);
+    } else if (type === "clearFilter") {
+        onMessage({ data: { type: "clearFilterResult" } } as unknown as MessageEvent);
+    } else if (type === "favoriteTools") {
+        onMessage({ data: { type: "favoriteToolsResult" } } as unknown as MessageEvent);
     }
-    searchWorker.value.onmessage = ({ data }) => {
-        const { type, payload, sectioned, query, closestTerm } = data;
-        if (type === "searchToolsByKeysResult" && query === props.query) {
+}
+
+function onMessage(event: MessageEvent) {
+    const type = (event as unknown as ResponsePayload).data.type;
+    if (type === "searchToolsByKeysResult") {
+        const data = event.data as ResponsePayloadResults;
+        const { payload, sectioned, query, closestTerm } = data;
+        if (query === props.query) {
             emit("onResults", payload, sectioned, closestTerm);
-        } else if (type === "clearFilterResult") {
-            emit("onResults", null, null, null);
-        } else if (type === "favoriteToolsResult") {
-            emit("onResults", currentFavorites.value.tools, null, null);
         }
-    };
+    } else if (type === "clearFilterResult") {
+        emit("onResults", null, null, null);
+    } else if (type === "favoriteToolsResult") {
+        emit("onResults", currentFavorites.value.tools, null, null);
+    }
+}
+
+onMounted(() => {
+    if (props.useWorker) {
+        // initialize worker
+        if (!searchWorker.value) {
+            searchWorker.value = new Worker(new URL("components/Panels/toolSearch.worker.js", import.meta.url));
+        }
+        searchWorker.value.onmessage = onMessage;
+    }
 });
 
 onUnmounted(() => {
@@ -175,7 +261,13 @@ function checkQuery(q: string) {
 }
 
 function post(message: object) {
-    searchWorker.value?.postMessage(message);
+    if (props.useWorker) {
+        searchWorker.value?.postMessage(message);
+    } else {
+        nextTick(() => {
+            handlePost({ data: message as SearchEventData });
+        });
+    }
 }
 
 function onAdvancedSearch(filters: any) {
@@ -184,7 +276,7 @@ function onAdvancedSearch(filters: any) {
 </script>
 
 <template>
-    <div v-if="searchWorker">
+    <div v-if="searchWorker || !props.userWorker">
         <FilterMenu
             v-if="props.enableAdvanced"
             :class="!propShowAdvanced && 'mb-3'"

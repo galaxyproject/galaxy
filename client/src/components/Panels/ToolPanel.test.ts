@@ -44,6 +44,7 @@ describe("ToolPanel", () => {
                 editorWorkflows: null,
                 dataManagers: null,
                 moduleSections: null,
+                useSearchWorker: false,
             },
             localVue,
             stubs: {
