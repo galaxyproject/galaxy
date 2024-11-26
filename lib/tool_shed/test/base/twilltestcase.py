@@ -669,15 +669,6 @@ class ShedTwillTestCase(ShedApiTestCase):
             for check_str in strings_not_displayed:
                 self.check_string_not_in_page(check_str)
 
-    def check_page(self, strings_displayed, strings_displayed_count, strings_not_displayed):
-        """Checks a page for strings displayed, not displayed and number of occurrences of a string"""
-        for check_str in strings_displayed:
-            self.check_page_for_string(check_str)
-        for check_str, count in strings_displayed_count:
-            self.check_string_count_in_page(check_str, count)
-        for check_str in strings_not_displayed:
-            self.check_string_not_in_page(check_str)
-
     def check_page_for_string(self, patt):
         """Looks for 'patt' in the current browser page"""
         self._browser.check_page_for_string(patt)
@@ -905,7 +896,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def check_count_of_metadata_revisions_associated_with_repository(self, repository: Repository, metadata_count):
+    def check_count_of_metadata_revisions_associated_with_repository(self, repository: Repository, metadata_count: int):
         self.check_repository_changelog(repository)
         self.check_string_count_in_page("Repository metadata is associated with this change set.", metadata_count)
 
@@ -1011,7 +1002,7 @@ class ShedTwillTestCase(ShedApiTestCase):
                 strings_not_displayed=strings_not_displayed,
             )
 
-    def check_string_count_in_page(self, pattern, min_count, max_count=None):
+    def check_string_count_in_page(self, pattern, min_count: int, max_count: Optional[int] = None):
         """Checks the number of 'pattern' occurrences in the current browser page"""
         page = self.last_page()
         pattern_count = page.count(pattern)
@@ -1022,14 +1013,9 @@ class ShedTwillTestCase(ShedApiTestCase):
         # than max_count.
         if pattern_count < min_count or pattern_count > max_count:
             fname = self.write_temp_file(page)
-            errmsg = "%i occurrences of '%s' found (min. %i, max. %i).\npage content written to '%s' " % (
-                pattern_count,
-                pattern,
-                min_count,
-                max_count,
-                fname,
+            raise AssertionError(
+                f"{pattern_count} occurrences of '{pattern}' found (min. {min_count}, max. {max_count}).\npage content written to '{fname}' "
             )
-            raise AssertionError(errmsg)
 
     def check_galaxy_repository_tool_panel_section(
         self, repository: galaxy_model.ToolShedRepository, expected_tool_panel_section: str
@@ -2098,8 +2084,7 @@ def _wait_for_installation(repository: galaxy_model.ToolShedRepository, refresh)
         # This timeout currently defaults to 10 minutes.
         if timeout_counter > repository_installation_timeout:
             raise AssertionError(
-                "Repository installation timed out, %d seconds elapsed, repository state is %s."
-                % (timeout_counter, repository.status)
+                f"Repository installation timed out, {timeout_counter} seconds elapsed, repository state is {repository.status}."
             )
         time.sleep(1)
 

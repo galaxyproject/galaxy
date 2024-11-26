@@ -943,12 +943,12 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                 except Exception:
                     log.exception("Error attempting to reset metadata on repository %s", str(repository.name))
                     unsuccessful_count += 1
-            message = "Successfully reset metadata on %d %s.  " % (
+            message = "Successfully reset metadata on {} {}.  ".format(
                 successful_count,
                 inflector.cond_plural(successful_count, "repository"),
             )
             if unsuccessful_count:
-                message += "Error setting metadata on %d %s - see the paster log for details.  " % (
+                message += "Error setting metadata on {} {} - see the paster log for details.  ".format(
                     unsuccessful_count,
                     inflector.cond_plural(unsuccessful_count, "repository"),
                 )

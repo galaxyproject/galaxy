@@ -2161,7 +2161,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             if flush_needed:
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()
-            message = "Total alerts added: %d, total alerts removed: %d" % (total_alerts_added, total_alerts_removed)
+            message = f"Total alerts added: {total_alerts_added}, total alerts removed: {total_alerts_removed}"
             kwd["message"] = message
             kwd["status"] = "done"
         del kwd["operation"]

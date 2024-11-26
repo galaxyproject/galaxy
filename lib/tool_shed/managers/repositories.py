@@ -223,7 +223,7 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
                 continue
             for tool_metadata in tools:
                 if tool_metadata["guid"] in tool_ids:
-                    repository_found.append("%d:%s" % (int(changeset), changehash))
+                    repository_found.append(f"{int(changeset)}:{changehash}")
             metadata = get_current_repository_metadata_for_changeset_revision(app, repository, changehash)
             if metadata is None:
                 continue

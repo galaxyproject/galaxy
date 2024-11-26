@@ -530,7 +530,7 @@ class Repository(Base, Dictifiable):
         if self.id is None:
             raise Exception("Attempting to call hg_repository_path before id has been set on repository object")
         dir = os.path.join(repositories_directory, *util.directory_hash_id(self.id))
-        final_repository_path = os.path.join(dir, "repo_%d" % self.id)
+        final_repository_path = os.path.join(dir, f"repo_{self.id}")
         return final_repository_path
 
     def ensure_hg_repository_path(self, repositories_directory: str) -> str:
@@ -667,7 +667,7 @@ class Tag(Base):
     parent = relationship("Tag", back_populates="children", remote_side=[id])
 
     def __str__(self):
-        return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type, self.parent_id, self.name)
+        return f"Tag(id={self.id}, type={self.type}, parent_id={self.parent_id}, name={self.name})"
 
 
 # The RepositoryMetadata model is mapped imperatively (for details see discussion in PR #12064).

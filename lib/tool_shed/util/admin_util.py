@@ -128,11 +128,7 @@ class Admin:
                     num_in_groups = len(in_groups)
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()
-                message = "Role '%s' has been created with %d associated users and %d associated groups.  " % (
-                    role.name,
-                    len(in_users),
-                    num_in_groups,
-                )
+                message = f"Role '{role.name}' has been created with {len(in_users)} associated users and {num_in_groups} associated groups.  "
                 if create_group_for_role_checked:
                     message += (
                         "One of the groups associated with this role is the newly created group with the same name."
@@ -232,11 +228,7 @@ class Admin:
             in_groups = [trans.sa_session.get(trans.app.model.Group, x) for x in util.listify(params.in_groups)]
             trans.app.security_agent.set_entity_role_associations(roles=[role], users=in_users, groups=in_groups)
             trans.sa_session.refresh(role)
-            message = "Role '%s' has been updated with %d associated users and %d associated groups" % (
-                role.name,
-                len(in_users),
-                len(in_groups),
-            )
+            message = f"Role '{role.name}' has been updated with {len(in_users)} associated users and {len(in_groups)} associated groups"
             trans.response.send_redirect(
                 web.url_for(controller="admin", action="roles", message=util.sanitize_text(message), status=status)
             )
@@ -303,7 +295,7 @@ class Admin:
                 web.url_for(controller="admin", action="roles", message=message, status="error")
             )
         ids = util.listify(id)
-        message = "Deleted %d roles: " % len(ids)
+        message = f"Deleted {len(ids)} roles: "
         for role_id in ids:
             role = get_role(trans, role_id)
             role.deleted = True
@@ -325,8 +317,7 @@ class Admin:
                 web.url_for(controller="admin", action="roles", message=message, status="error")
             )
         ids = util.listify(id)
-        count = 0
-        undeleted_roles = ""
+        undeleted_roles = []
         for role_id in ids:
             role = get_role(trans, role_id)
             if not role.deleted:
@@ -338,9 +329,8 @@ class Admin:
             trans.sa_session.add(role)
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
-            count += 1
-            undeleted_roles += f" {role.name}"
-        message = "Undeleted %d roles: %s" % (count, undeleted_roles)
+            undeleted_roles.append(role.name)
+        message = "Undeleted {} roles: {}".format(len(undeleted_roles), " ".join(undeleted_roles))
         trans.response.send_redirect(
             web.url_for(controller="admin", action="roles", message=util.sanitize_text(message), status="done")
         )
@@ -362,7 +352,7 @@ class Admin:
                 web.url_for(controller="admin", action="roles", message=util.sanitize_text(message), status="error")
             )
         ids = util.listify(id)
-        message = "Purged %d roles: " % len(ids)
+        message = f"Purged {len(ids)} roles: "
         for role_id in ids:
             role = get_role(trans, role_id)
             if not role.deleted:
@@ -472,11 +462,7 @@ class Admin:
             in_users = [trans.sa_session.get(trans.app.model.User, x) for x in util.listify(params.in_users)]
             trans.app.security_agent.set_entity_group_associations(groups=[group], roles=in_roles, users=in_users)
             trans.sa_session.refresh(group)
-            message += "Group '%s' has been updated with %d associated roles and %d associated users" % (
-                group.name,
-                len(in_roles),
-                len(in_users),
-            )
+            message += f"Group '{group.name}' has been updated with {len(in_roles)} associated roles and {len(in_users)} associated users"
             trans.response.send_redirect(
                 web.url_for(controller="admin", action="groups", message=util.sanitize_text(message), status=status)
             )
@@ -494,11 +480,7 @@ class Admin:
                 in_users.append((user.id, user.email))
             else:
                 out_users.append((user.id, user.email))
-        message += "Group %s is currently associated with %d roles and %d users" % (
-            group.name,
-            len(in_roles),
-            len(in_users),
-        )
+        message += f"Group {group.name} is currently associated with {len(in_roles)} roles and {len(in_users)} users"
         return trans.fill_template(
             "/webapps/tool_shed/admin/dataset_security/group/group.mako",
             group=group,
@@ -561,11 +543,7 @@ class Admin:
                     num_in_roles = len(in_roles)
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()
-                message = "Group '%s' has been created with %d associated users and %d associated roles.  " % (
-                    group.name,
-                    len(in_users),
-                    num_in_roles,
-                )
+                message = f"Group '{group.name}' has been created with {len(in_users)} associated users and {num_in_roles} associated roles.  "
                 if create_role_for_group_checked:
                     message += (
                         "One of the roles associated with this group is the newly created role with the same name."
@@ -601,7 +579,7 @@ class Admin:
                 web.url_for(controller="admin", action="groups", message=message, status="error")
             )
         ids = util.listify(id)
-        message = "Deleted %d groups: " % len(ids)
+        message = f"Deleted {len(ids)} groups: "
         for group_id in ids:
             group = get_group(trans, group_id)
             group.deleted = True
@@ -623,8 +601,7 @@ class Admin:
                 web.url_for(controller="admin", action="groups", message=message, status="error")
             )
         ids = util.listify(id)
-        count = 0
-        undeleted_groups = ""
+        undeleted_groups = []
         for group_id in ids:
             group = get_group(trans, group_id)
             if not group.deleted:
@@ -638,9 +615,8 @@ class Admin:
             trans.sa_session.add(group)
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
-            count += 1
-            undeleted_groups += f" {group.name}"
-        message = "Undeleted %d groups: %s" % (count, undeleted_groups)
+            undeleted_groups.append(group.name)
+        message = "Undeleted {} groups: {}".format(len(undeleted_groups), " ".join(undeleted_groups))
         trans.response.send_redirect(
             web.url_for(controller="admin", action="groups", message=util.sanitize_text(message), status="done")
         )
@@ -657,7 +633,7 @@ class Admin:
                 web.url_for(controller="admin", action="groups", message=util.sanitize_text(message), status="error")
             )
         ids = util.listify(id)
-        message = "Purged %d groups: " % len(ids)
+        message = f"Purged {len(ids)} groups: "
         for group_id in ids:
             group = get_group(trans, group_id)
             if not group.deleted:
@@ -713,7 +689,9 @@ class Admin:
                     with transaction(trans.sa_session):
                         trans.sa_session.commit()
             if not message and not status:
-                message = "Passwords reset for %d %s." % (len(user_ids), inflector.cond_plural(len(user_ids), "user"))
+                message = "Passwords reset for {} {}.".format(
+                    len(user_ids), inflector.cond_plural(len(user_ids), "user")
+                )
                 status = "done"
             trans.response.send_redirect(
                 web.url_for(controller="admin", action="users", message=util.sanitize_text(message), status=status)
@@ -735,7 +713,7 @@ class Admin:
                 web.url_for(controller="admin", action="users", message=message, status="error")
             )
         ids = util.listify(id)
-        message = "Deleted %d users: " % len(ids)
+        message = f"Deleted {len(ids)} users: "
         for user_id in ids:
             user = get_user(trans, user_id)
             user.deleted = True
@@ -780,8 +758,7 @@ class Admin:
                 web.url_for(controller="admin", action="users", message=message, status="error")
             )
         ids = util.listify(id)
-        count = 0
-        undeleted_users = ""
+        undeleted_users = []
         for user_id in ids:
             user = get_user(trans, user_id)
             if not user.deleted:
@@ -793,9 +770,8 @@ class Admin:
             trans.sa_session.add(user)
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
-            count += 1
-            undeleted_users += f" {user.email}"
-        message = "Undeleted %d users: %s" % (count, undeleted_users)
+            undeleted_users.append(user.email)
+        message = "Undeleted {} users: {}".format(len(undeleted_users), " ".join(undeleted_users))
         trans.response.send_redirect(
             web.url_for(controller="admin", action="users", message=util.sanitize_text(message), status="done")
         )
@@ -822,7 +798,7 @@ class Admin:
                 web.url_for(controller="admin", action="users", message=util.sanitize_text(message), status="error")
             )
         ids = util.listify(id)
-        message = "Purged %d users: " % len(ids)
+        message = f"Purged {len(ids)} users: "
         for user_id in ids:
             user = get_user(trans, user_id)
             if not user.deleted:
@@ -936,10 +912,7 @@ class Admin:
             if in_roles:
                 trans.app.security_agent.set_entity_user_associations(users=[user], roles=in_roles, groups=in_groups)
                 trans.sa_session.refresh(user)
-                message += (
-                    "User '%s' has been updated with %d associated roles and %d associated groups (private roles are not displayed)"
-                    % (user.email, len(in_roles), len(in_groups))
-                )
+                message += f"User '{user.email}' has been updated with {len(in_roles)} associated roles and {len(in_groups)} associated groups (private roles are not displayed)"
                 trans.response.send_redirect(
                     web.url_for(controller="admin", action="users", message=util.sanitize_text(message), status="done")
                 )
@@ -961,11 +934,7 @@ class Admin:
                 in_groups.append((group.id, group.name))
             else:
                 out_groups.append((group.id, group.name))
-        message += "User '%s' is currently associated with %d roles and is a member of %d groups" % (
-            user.email,
-            len(in_roles),
-            len(in_groups),
-        )
+        message += f"User '{user.email}' is currently associated with {len(in_roles)} roles and is a member of {len(in_groups)} groups"
         if not status:
             status = "done"
         return trans.fill_template(
