@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Box Plot (plotly)">
-    <description>Box Plot from Plotly JavaScript Graphing Library hosted at plotly.com.</description>
+<visualization name="Box Plot (plotly.js)">
+    <description>Box Plot from Plotly Graphing Library.</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Histogram (plotly)">
-    <description>Histogram from Plotly JavaScript Graphing Library hosted at plotly.com.</description>
+<visualization name="Histogram (plotly.js)">
+    <description>Histogram from Plotly Graphing Library.</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
