@@ -85,7 +85,7 @@ class OutputsFilterExpression(Linter):
             return
         for filter in tool_xml.findall("./outputs/*/filter"):
             try:
-                ast.parse(filter.text, mode="eval")
+                ast.parse(filter.text.strip(), mode="eval")
             except Exception as e:
                 lint_ctx.warn(
                     f"Filter '{filter.text}' is no valid expression: {str(e)}",
