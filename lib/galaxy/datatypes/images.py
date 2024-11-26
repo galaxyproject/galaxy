@@ -335,7 +335,36 @@ class OMEZarr(data.ZarrDirectory):
 
 
 class Hamamatsu(Image):
+    """
+    > The Hamamatsu format has three variants. VMS and VMU consist of an index
+    > file, 2 or more image files, and (in the case of VMS) an “optimisation”
+    > file. NDPI consists of a single TIFF-like file with some custom TIFF tags.
+    > VMS and NDPI contain JPEG images; VMU contains NGR images (a custom
+    > uncompressed format).
+    (via https://openslide.org/formats/hamamatsu/)
+
+    """
     file_ext = "vms"
+
+
+class NDPI(Image):
+    """
+    > NDPI uses a TIFF-like structure, but libtiff cannot read the headers of
+    > an NDPI file. This is because NDPI specifies the RowsPerStrip as the height
+    > of the file, and after doing out the multiplication, this typically
+    > overflows libtiff and it refuses to open the file. Also, the TIFF tags are
+    > not stored in sorted order.
+    (via https://openslide.org/formats/hamamatsu/)
+
+    Python's tifffile, however, claims to be able to read these.
+    """
+    file_ext = "ndpi"
+
+    def sniff(self, filename: str) -> bool:
+        with tifffile.TiffFile(filename) as tif:
+            if tif.is_ndpi:
+                return True
+        return False
 
 
 class Mirax(Image):
@@ -428,6 +457,34 @@ class Pdf(Image):
         """Determine if the file is in pdf format."""
         with open(filename, "rb") as fh:
             return fh.read(4) == b"%PDF"
+
+
+class Dicom(Image):
+    """
+    DICOM medical imaging format (.dcm)
+
+    https://formats.kaitai.io/dicom/index.html can be a good (MIT) reference if
+    we need to expand the metadata detection in the future, but for current use
+    cases it was sufficient to collect the file type alone.
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('Vida_Head.MR.Comp_DR-Gain_DR.1005.1.2021.04.27.14.20.13.818.14380335.dcm')
+    >>> Dicom().sniff( fname )
+    True
+    """
+
+    edam_format = "format_3548"
+    file_ext = "dcm"
+
+    def sniff(self, filename: str) -> bool:
+        """Determine if the file is in dicom format."""
+        with open(filename, "rb") as fh:
+            fh.seek(128)
+            return fh.read(4) == b"DICM"
+
+    def get_mime(self) -> str:
+        """Returns the mime type of the datatype"""
+        return "application/dicom"
 
 
 @build_sniff_from_prefix
@@ -622,6 +679,7 @@ class Nifti1(Binary):
     """
 
     file_ext = "nii1"
+    edam_format = "format_4001"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         magic = file_prefix.contents_header_bytes[344:348]
@@ -646,6 +704,7 @@ class Nifti2(Binary):
     """
 
     file_ext = "nii2"
+    edam_format = "format_4001"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         magic = file_prefix.contents_header_bytes[4:8]
