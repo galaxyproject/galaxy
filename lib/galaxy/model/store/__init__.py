@@ -1923,12 +1923,14 @@ class DirectoryModelExportStore(ModelExportStore):
         self.export_files = export_files
         self.included_datasets: Dict[model.DatasetInstance, Tuple[model.DatasetInstance, bool]] = {}
         self.dataset_implicit_conversions: Dict[model.DatasetInstance, model.ImplicitlyConvertedDatasetAssociation] = {}
-        self.included_collections: List[Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]] = []
+        self.included_collections: Dict[
+            Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation],
+            Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation],
+        ] = {}
         self.included_libraries: List[model.Library] = []
         self.included_library_folders: List[model.LibraryFolder] = []
         self.included_invocations: List[model.WorkflowInvocation] = []
         self.collection_datasets: Set[int] = set()
-        self.collections_attrs: List[Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]] = []
         self.dataset_id_to_path: Dict[int, Tuple[Optional[str], Optional[str]]] = {}
 
         self.job_output_dataset_associations: Dict[int, Dict[str, model.DatasetInstance]] = {}
@@ -2289,8 +2291,7 @@ class DirectoryModelExportStore(ModelExportStore):
     def add_dataset_collection(
         self, collection: Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]
     ) -> None:
-        self.collections_attrs.append(collection)
-        self.included_collections.append(collection)
+        self.included_collections[collection] = collection
 
     def add_implicit_conversion_dataset(
         self,
@@ -2345,7 +2346,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
         collections_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_COLLECTIONS)
         with open(collections_attrs_filename, "w") as collections_attrs_out:
-            collections_attrs_out.write(to_json(self.collections_attrs))
+            collections_attrs_out.write(to_json(self.included_collections.values()))
 
         conversions_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_CONVERSIONS)
         with open(conversions_attrs_filename, "w") as conversions_attrs_out:
