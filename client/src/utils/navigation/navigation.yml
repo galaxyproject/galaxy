@@ -568,6 +568,7 @@ tool_form:
     parameter_div: 'div.ui-form-element[id="form-element-${parameter}"]'
     parameter_error: 'div.ui-form-element[id="form-element-${parameter}"] .ui-form-error-text'
     parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch'
+    parameter_select: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect'
     parameter_input: 'div.ui-form-element[id="form-element-${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
     parameter_data_input_single: 'div.ui-form-element[id="form-element-${parameter}"] button[title="Single dataset"]'
@@ -674,6 +675,7 @@ trs_import:
 workflow_run:
   selectors:
     warning: '[data-description="workflow run warning"]'
+    run_error: '[data-description="workflow run error"]'
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .multiselect"
     # TODO: put step labels in the DOM ideally
