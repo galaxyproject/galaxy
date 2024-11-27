@@ -3,7 +3,7 @@
 <visualization name="Heatmap" embeddable="false">
     <description>Renders a heatmap from matrix data provided in 3-column format (x, y, observation).</description>
     <requirements>
-        <requirement type="npm" version="0.0.4" package="@galaxyproject/heatmap"/>
+        <requirement type="npm" version="0.0.8" package="@galaxyproject/heatmap"/>
     </requirements>
     <data_sources>
         <data_source>
