@@ -20,7 +20,6 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "example",
     "fits_graph_viewer",
     "fits_image_viewer",
-    "h5web",
     "hyphyvision",
     "jqplot/jqplot_bar",
     "media_player",
@@ -36,6 +35,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
 ];
 const INSTALL_PLUGIN_BUILD_IDS = [
     "cytoscape",
+    "h5web",
     "heatmap",
     "ngl",
     "msa",
