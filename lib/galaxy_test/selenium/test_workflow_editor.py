@@ -606,9 +606,7 @@ steps:
         self.workflow_index_open()
         self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
-        editor.node._(label="multiple_versions").wait_for_and_click()
-        editor.tool_version_button.wait_for_and_click()
-        assert self.select_dropdown_item("Switch to 0.2"), "Switch to tool version dropdown item not found"
+        self.workflow_editor_set_tool_vesrion("0.2", node="multiple_versions")
         self.screenshot("workflow_editor_version_update")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
@@ -622,6 +620,22 @@ steps:
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
         assert workflow["steps"]["0"]["tool_version"] == "0.1+galaxy6"
+
+    @selenium_test
+    def test_editor_tool_upgrade_all_tools(self):
+        editor = self.components.workflow_editor
+        annotation = "upgarde_all_test"
+        self.workflow_create_new(annotation=annotation)
+        self.workflow_editor_add_tool_step("multiple_versions")
+        self.workflow_editor_set_label(label="target label")
+        self.workflow_editor_set_tool_vesrion("0.1")
+        self.assert_workflow_has_changes_and_save()
+
+        editor.tool_bar.upgrade_all.wait_for_and_click()
+        self.workflow_editor_ensure_tool_form_open(node=0)
+        node = self.components.tool_form.tool_version.wait_for_present()
+        version = node.get_attribute("data-version")
+        assert version == "0.2"
 
     @selenium_test
     def test_editor_tool_upgrade_message(self):
@@ -795,9 +809,7 @@ steps:
         self.workflow_index_open()
         self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
-        cat_node = editor.node._(label="first_cat")
-        cat_node.wait_for_and_click()
-        self.set_text_element(editor.label_input, "source label")
+        self.workflow_editor_set_label(label="source label", node="first_cat")
         # Select node using new label, ensures labels are synced between side panel and node
         cat_node = editor.node._(label="source label")
         self.assert_workflow_has_changes_and_save()
@@ -1346,7 +1358,7 @@ steps:
         canvas = editor.canvas_body.wait_for_visible()
 
         # place tool in center of canvas
-        self.tool_open("cat")
+        self.workflow_editor_add_tool_step("cat")
         self.sleep_for(self.wait_types.UX_RENDER)
         editor.label_input.wait_for_and_send_keys("tool_node")
         tool_node = editor.node._(label="tool_node").wait_for_present()

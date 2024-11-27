@@ -64,6 +64,7 @@ GALAXY_MAIN_FRAME_ID = "galaxy_main"
 GALAXY_VISUALIZATION_FRAME_ID = "galaxy_visualization"
 
 WaitType = collections.namedtuple("WaitType", ["name", "default_length"])
+EditorNodeReference = Union[int, str]  # can reference nodes by order_index (starting at 0 as int or label)
 
 
 class HistoryEntry(NamedTuple):
@@ -1226,6 +1227,31 @@ class NavigatesGalaxy(HasDriver):
 
         license_selector_option = self.components.workflow_editor.license_selector_option
         license_selector_option.wait_for_and_click()
+
+    def workflow_editor_add_tool_step(self, tool_id: str):
+        self.tool_open(tool_id)
+
+    def workflow_editor_set_label(self, label: str, node: Optional[EditorNodeReference] = None):
+        editor = self.components.workflow_editor
+        self.workflow_editor_ensure_tool_form_open(node)
+        self.set_text_element(editor.label_input, label)
+
+    def workflow_editor_set_tool_vesrion(self, version: str, node: Optional[EditorNodeReference] = None) -> None:
+        editor = self.components.workflow_editor
+        self.workflow_editor_ensure_tool_form_open(node)
+        editor.tool_version_button.wait_for_and_click()
+        assert self.select_dropdown_item(f"Switch to {version}"), "Switch to tool version dropdown item not found"
+
+    def workflow_editor_ensure_tool_form_open(self, node: Optional[EditorNodeReference] = None):
+        # if node is_empty just assume current tool step is open
+        editor = self.components.workflow_editor
+        if node is not None:
+            if isinstance(node, int):
+                node = editor.node.by_id(id=node)
+            else:
+                node = editor.node._(label=node)
+            node.wait_for_and_click()
+        editor.node_inspector.wait_for_visible()
 
     def workflow_editor_click_option(self, option_label):
         self.workflow_editor_click_options()
