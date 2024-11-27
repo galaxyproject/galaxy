@@ -6,13 +6,14 @@ import { useDebounceFn, watchImmediate } from "@vueuse/core";
 import { computed, type Ref, ref, set } from "vue";
 
 import { useHashedUserId } from "@/composables/hashedUserId";
+import { useConfig } from "@/composables/config";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { ensureDefined } from "@/utils/assertions";
 
-import { defaultActivities } from "./activitySetup";
 import { defineScopedStore } from "./scopedStore";
 
 export type ActivityVariant = "primary" | "danger" | "disabled";
+import { getActivities } from "./activitySetup";
 
 export interface Activity {
     // determine wether an anonymous user can access this activity
@@ -52,11 +53,41 @@ function defaultActivityMeta(): ActivityMeta {
     };
 }
 
+export type ClientMode = "full" | "workflow_centric" | "workflow_runner";
+
+// config materializes a RawActivity into an Activity
+export interface RawActivity {
+    // determine wether an anonymous user can access this activity
+    anonymous: boolean;
+    // description of the activity
+    description: string;
+    // unique identifier
+    id: string;
+    // icon to be displayed in activity bar
+    icon: string;
+    // indicate if this activity can be modified and/or deleted
+    mutable: boolean;
+    // indicate wether this activity can be disabled by the user
+    optional: boolean | ((mode: ClientMode) => boolean);
+    // specifiy wether this activity utilizes the side panel
+    panel: boolean;
+    // title to be displayed in the activity bar
+    title: string;
+    // route to be executed upon selecting the activity
+    to: string | null;
+    // tooltip to be displayed when hovering above the icon
+    tooltip: string;
+    // indicate wether the activity should be visible by default
+    visible: boolean | ((mode: ClientMode) => boolean);
+}
+
 export const useActivityStore = defineScopedStore("activityStore", (scope) => {
     const activities: Ref<Array<Activity>> = useUserLocalStorage(`activity-store-activities-${scope}`, []);
     const activityMeta: Ref<Record<string, ActivityMeta>> = ref({});
 
     const { hashedUserId } = useHashedUserId();
+
+    const defaultActivities = ref([]);
 
     const customDefaultActivities = ref<Activity[] | null>(null);
     const currentDefaultActivities = computed(() => customDefaultActivities.value ?? defaultActivities);
@@ -65,6 +96,12 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
 
     function toggleSideBar(currentOpen = "") {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
+    }
+
+    function untoggleToolbarIfNeeded() {
+        if (toggledSideBar.value == "tools") {
+            toggledSideBar.value = "";
+        }
     }
 
     function overrideDefaultActivities(activities: Activity[]) {
@@ -82,6 +119,12 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
      */
     function restore() {
         activities.value = currentDefaultActivities.value.slice();
+        const { config, isConfigLoaded } = useConfig();
+        if (!isConfigLoaded.value) {
+            return;
+        }
+
+        activities.value = getActivities(config.value.client_mode);
     }
 
     /**
@@ -94,6 +137,18 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         const activitiesMap: Record<string, Activity> = {};
 
         currentDefaultActivities.value.forEach((a) => {
+            activitiesMap[a.id] = a;
+        });
+
+        const { config, isConfigLoaded } = useConfig();
+        if (!isConfigLoaded.value) {
+            return;
+        }
+
+        defaultActivities.value = getActivities(config.value.client_mode);
+
+        const activityDefs = getActivities(config.value.client_mode);
+        activityDefs.forEach((a) => {
             activitiesMap[a.id] = a;
         });
 
@@ -121,7 +176,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         });
 
         // add new built-in activities
-        currentDefaultActivities.value.forEach((a) => {
+        activityDefs.forEach((a) => {
             if (!foundActivity.has(a.id)) {
                 newActivities.push({ ...a });
             }
@@ -134,7 +189,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
 
         // if toggled side-bar does not exist, choose the first option
         if (toggledSideBar.value !== "") {
-            const allSideBars = activities.value.flatMap((activity) => {
+            const allSideBars = activities.value.flatMap((activity: Activity) => {
                 if (activity.panel) {
                     return [activity.id];
                 } else {
@@ -149,6 +204,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
                 toggledSideBar.value = firstSideBar;
             }
         }
+
     }, 10);
 
     function getAll() {
@@ -199,6 +255,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
     return {
         toggledSideBar,
         toggleSideBar,
+        untoggleToolbarIfNeeded,
         activities,
         activityMeta,
         metaForId,

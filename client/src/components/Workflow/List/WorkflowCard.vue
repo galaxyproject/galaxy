@@ -23,6 +23,7 @@ interface Props {
     publishedView?: boolean;
     editorView?: boolean;
     current?: boolean;
+    allowWorkflowManagement?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -32,6 +33,7 @@ const props = withDefaults(defineProps<Props>(), {
     filterable: true,
     editorView: false,
     current: false,
+    allowWorkflowManagement: true,
 });
 
 const emit = defineEmits<{
@@ -105,6 +107,7 @@ const dropdownOpen = ref(false);
                         :published="props.publishedView"
                         :editor="props.editorView"
                         :current="props.current"
+                        :allow-workflow-management="allowWorkflowManagement"
                         @refreshList="emit('refreshList', true)"
                         @dropdown="(open) => (dropdownOpen = open)" />
                 </div>
@@ -147,12 +150,12 @@ const dropdownOpen = ref(false);
                         @input="onTagsUpdate($event)"
                         @tag-click="onTagClick($event)" />
                 </div>
-
                 <WorkflowActionsExtend
                     :workflow="workflow"
                     :published="publishedView"
                     :editor="editorView"
                     :current="props.current"
+                    :allow-workflow-management="allowWorkflowManagement"
                     @refreshList="emit('refreshList', true)"
                     @insert="(...args) => emit('insert', ...args)"
                     @insertSteps="(...args) => emit('insertSteps', ...args)" />
