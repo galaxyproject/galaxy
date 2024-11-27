@@ -280,7 +280,7 @@ class WorkflowRunCrateProfileBuilder:
         """
         Add workflow steps (HowToStep) to the RO-Crate. These are unique for each tool occurrence.
         """
-        step_entities = []
+        step_entities: List[ContextEntity] = []
         # Initialize the position as a list with a single element to keep it mutable
         position = [1]
         self._add_steps_recursive(self.workflow.steps, crate, step_entities, position)
