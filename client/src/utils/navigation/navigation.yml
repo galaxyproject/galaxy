@@ -565,6 +565,7 @@ registration:
 
 tool_form:
   selectors:
+    tool_version: '[data-description="galaxy tool version"]'
     options: '.tool-dropdown'
     execute: 'button#execute'
     parameter_div: 'div.ui-form-element[id="form-element-${parameter}"]'
@@ -745,6 +746,7 @@ workflow_editor:
       delete_selection: "[title='delete selected']"
       auto_layout: "#auto-layout-button"
       changes: "#activity-workflow-undo-redo"
+      upgrade_all: "#activity-workflow-upgrade"
   comment:
     selectors:
       _: ".workflow-editor-comment"
