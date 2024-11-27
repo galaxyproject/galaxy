@@ -925,8 +925,9 @@ class WorkflowContentsManager(UsesAnnotations):
         return wf_dict
 
     def _sync_stored_workflow(self, trans, stored_workflow):
-        workflow_path = stored_workflow.from_path
-        self.store_workflow_to_path(workflow_path, stored_workflow, stored_workflow.latest_workflow, trans=trans)
+        if trans.user_is_admin:
+            workflow_path = stored_workflow.from_path
+            self.store_workflow_to_path(workflow_path, stored_workflow, stored_workflow.latest_workflow, trans=trans)
 
     def store_workflow_artifacts(self, directory, filename_base, workflow, **kwd):
         modern_workflow_path = os.path.join(directory, f"{filename_base}.gxwf.yml")
