@@ -328,7 +328,7 @@ class WorkflowRunCrateProfileBuilder:
                     self._add_steps_recursive(subworkflow.steps, crate, step_entities, position)
 
     def _add_tools(self, crate: ROCrate):
-        tool_entities = []
+        tool_entities: List[ContextEntity] = []
         self._add_tools_recursive(self.workflow.steps, crate, tool_entities)
 
     def _add_tools_recursive(self, steps, crate: ROCrate, tool_entities):
