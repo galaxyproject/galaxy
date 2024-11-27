@@ -140,8 +140,8 @@ class Forms(BaseUIController):
                     if len(row) >= 6:
                         for column in range(len(row)):
                             row[column] = str(row[column]).strip('"')
-                        prefix = "fields_%i|" % index
-                        payload[f"{prefix}name"] = "%i_imported_field" % (index + 1)
+                        prefix = f"fields_{index}|"
+                        payload[f"{prefix}name"] = f"{index + 1}_imported_field"
                         payload[f"{prefix}label"] = row[0]
                         payload[f"{prefix}helptext"] = row[1]
                         payload[f"{prefix}type"] = row[2]
@@ -152,7 +152,7 @@ class Forms(BaseUIController):
             new_form, message = self.save_form_definition(trans, None, payload)
             if new_form is None:
                 return self.message_exception(trans, message)
-            imported = (" with %i imported fields" % index) if index > 0 else ""
+            imported = (f" with {index} imported fields") if index > 0 else ""
             message = f"The form '{payload.get('name')}' has been created{imported}."
             return {"message": message}
 
@@ -235,7 +235,7 @@ class Forms(BaseUIController):
         fields = []
         index = 0
         while True:
-            prefix = "fields_%i|" % index
+            prefix = f"fields_{index}|"
             if f"{prefix}label" in payload:
                 field_attributes = ["name", "label", "helptext", "required", "type", "selectlist", "default"]
                 field_dict = {attr: payload.get(f"{prefix}{attr}") for attr in field_attributes}

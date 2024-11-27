@@ -95,7 +95,7 @@ class ASync(BaseUIController):
             STATUS = params.get("STATUS")
 
             if STATUS == "OK":
-                key = hmac_new(trans.app.config.tool_secret, "%d:%d" % (data.id, data.history_id))
+                key = hmac_new(trans.app.config.tool_secret, f"{data.id}:{data.history_id}")
                 if key != data_secret:
                     return f"You do not have permission to alter data {data_id}."
                 if not params.get("GALAXY_URL"):
@@ -203,10 +203,10 @@ class ASync(BaseUIController):
                 trans.sa_session.commit()
             # Need to explicitly create the file
             data.dataset.object_store.create(data.dataset)
-            trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id), tool_id=tool_id)
+            trans.log_event(f"Added dataset {data.id} to history {trans.history.id}", tool_id=tool_id)
 
             try:
-                key = hmac_new(trans.app.config.tool_secret, "%d:%d" % (data.id, data.history_id))
+                key = hmac_new(trans.app.config.tool_secret, f"{data.id}:{data.history_id}")
                 galaxy_url = f"{trans.request.url_path}/async/{tool_id}/{data.id}/{key}"
                 params.update({"GALAXY_URL": galaxy_url})
                 params.update({"data_id": data.id})

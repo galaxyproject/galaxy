@@ -96,7 +96,7 @@ class ProxyManager:
             host = host[0 : host.index(":")]
         scheme = trans.request.scheme
         if not self.dynamic_proxy_external_proxy:
-            proxy_url = "%s://%s:%d" % (scheme, host, self.dynamic_proxy_bind_port)
+            proxy_url = f"{scheme}://{host}:{self.dynamic_proxy_bind_port}"
         else:
             proxy_url = f"{scheme}://{host}{proxy_prefix}"
         return {
@@ -160,11 +160,7 @@ class GolangProxyLauncher:
         args = [
             "gxproxy",  # Must be on path. TODO: wheel?
             "--listenAddr",
-            "%s:%d"
-            % (
-                config.dynamic_proxy_bind_ip,
-                config.dynamic_proxy_bind_port,
-            ),
+            f"{config.dynamic_proxy_bind_ip}:{config.dynamic_proxy_bind_port}",
             "--listenPath",
             "/".join(((config.cookie_path or url_for("/")), config.dynamic_proxy_prefix)),
             "--cookieName",
@@ -197,7 +193,7 @@ class ProxyRequests:
             host = DEFAULT_PROXY_TO_HOST
         if port is None:
             port = sockets.unused_port()
-            log.info("Obtained unused port %d" % port)
+            log.info("Obtained unused port %d", port)
         self.host = host
         self.port = port
 

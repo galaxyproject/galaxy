@@ -187,7 +187,7 @@ class AddColumnRownumRuleDefinition(BaseRuleDefinition):
 
         new_rows = []
         for index, row in enumerate(data):
-            new_rows.append(row + ["%d" % (index + start)])
+            new_rows.append(row + [f"{index + start}"])
 
         return new_rows, sources
 

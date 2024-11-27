@@ -1297,7 +1297,7 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
                 yield from self._scan_json_block(meta[a], f"{prefix}/{a}")
         elif isinstance(meta, list):
             for i, a in enumerate(meta):
-                yield from self._scan_json_block(a, prefix + "[%d]" % (i))
+                yield from self._scan_json_block(a, prefix + f"[{i}]")
         else:
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True

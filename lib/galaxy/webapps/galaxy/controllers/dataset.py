@@ -724,11 +724,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 else:
                     target_histories = [history]
                 if len(target_histories) != len(target_history_ids):
-                    error_msg = (
-                        error_msg
-                        + "You do not have permission to add datasets to %i requested histories.  "
-                        % (len(target_history_ids) - len(target_histories))
-                    )
+                    error_msg += f"You do not have permission to add datasets to {len(target_history_ids) - len(target_histories)} requested histories.  "
                 source_contents = list(
                     map(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get, decoded_dataset_ids)
                 )
@@ -741,10 +737,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 source_contents.sort(key=lambda content: content.hid)
                 for content in source_contents:
                     if content is None:
-                        error_msg = f"{error_msg}You tried to copy a dataset that does not exist. "
+                        error_msg += "You tried to copy a dataset that does not exist. "
                         invalid_contents += 1
                     elif content.history != history:
-                        error_msg = f"{error_msg}You tried to copy a dataset which is not in your current history. "
+                        error_msg += "You tried to copy a dataset which is not in your current history. "
                         invalid_contents += 1
                     else:
                         for hist in target_histories:
@@ -772,7 +768,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 )
                 num_source = len(source_content_ids) - invalid_contents
                 num_target = len(target_histories)
-                done_msg = "%i %s copied to %i %s: %s." % (
+                done_msg = "{} {} copied to {} {}: {}.".format(
                     num_source,
                     inflector.cond_plural(num_source, "dataset"),
                     num_target,
