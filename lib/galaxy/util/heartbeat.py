@@ -3,6 +3,7 @@ import sys
 import threading
 import time
 import traceback
+from typing import Dict
 
 
 def get_current_thread_object_dict():
@@ -42,7 +43,7 @@ class Heartbeat(threading.Thread):
         self.fname_nonsleeping = None
         self.file_nonsleeping = None
         self.pid = None
-        self.nonsleeping_heartbeats = {}
+        self.nonsleeping_heartbeats: Dict[int, int] = {}
         # Event to wait on when sleeping, allows us to interrupt for shutdown
         self.wait_event = threading.Event()
 
@@ -63,16 +64,16 @@ class Heartbeat(threading.Thread):
         if self.file is None or self.file.closed:
             self.file = open(self.fname, "a")
             self.file_nonsleeping = open(self.fname_nonsleeping, "a")
-            self.file.write("Heartbeat for pid %d thread started at %s\n\n" % (self.pid, time.asctime()))
+            self.file.write(f"Heartbeat for pid {self.pid} thread started at {time.asctime()}\n\n")
             self.file_nonsleeping.write(
-                "Non-Sleeping-threads for pid %d thread started at %s\n\n" % (self.pid, time.asctime())
+                f"Non-Sleeping-threads for pid {self.pid} thread started at {time.asctime()}\n\n"
             )
 
     def close_logs(self):
         if self.file is not None and not self.file.closed:
-            self.file.write("Heartbeat for pid %d thread stopped at %s\n\n" % (self.pid, time.asctime()))
+            self.file.write(f"Heartbeat for pid {self.pid} thread stopped at {time.asctime()}\n\n")
             self.file_nonsleeping.write(
-                "Non-Sleeping-threads for pid %d thread stopped at %s\n\n" % (self.pid, time.asctime())
+                f"Non-Sleeping-threads for pid {self.pid} thread stopped at {time.asctime()}\n\n"
             )
             self.file.close()
             self.file_nonsleeping.close()
@@ -183,16 +184,7 @@ class Heartbeat(threading.Thread):
 
             good_frame = self.get_interesting_stack_frame(tb)
             self.file_nonsleeping.write(
-                'Thread %s\t%s\tnon-sleeping for %d heartbeat(s)\n  File %s:%d\n    Function "%s"\n      %s\n'
-                % (
-                    thread_id,
-                    object,
-                    self.nonsleeping_heartbeats[thread_id],
-                    good_frame[0],
-                    good_frame[1],
-                    good_frame[2],
-                    good_frame[3],
-                )
+                f'Thread {thread_id}\t{object}\tnon-sleeping for {self.nonsleeping_heartbeats[thread_id]} heartbeat(s)\n  File {good_frame[0]}:{good_frame[1]}\n    Function "{good_frame[2]}"\n      {good_frame[3]}\n'
             )
             all_threads_are_sleeping = False
 

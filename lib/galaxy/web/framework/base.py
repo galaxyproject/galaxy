@@ -530,7 +530,7 @@ class Response:
         """
         if isinstance(self.status, int):
             exception = webob.exc.status_map.get(self.status)
-            return "%d %s" % (exception.code, exception.title)
+            return f"{exception.code} {exception.title}"
         else:
             return self.status
 

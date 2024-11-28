@@ -122,7 +122,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             return data.as_display_type(display_app, **kwd)
         else:
             trans.response.status = "400"
-            return "No data with id=%d" % id
+            return f"No data with id={id}"
 
     @web.expose
     def welcome(self, trans: GalaxyWebTransaction, **kwargs):

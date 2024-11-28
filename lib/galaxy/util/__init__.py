@@ -525,9 +525,7 @@ def shrink_stream_by_size(
                 rval = value.read(size)
                 value.seek(start)
                 return rval
-            raise ValueError(
-                "With the provided join_by value (%s), the minimum size value is %i." % (join_by, min_size)
-            )
+            raise ValueError(f"With the provided join_by value ({join_by}), the minimum size value is {min_size}.")
         left_index = right_index = int((size - len_join_by) / 2)
         if left_index + right_index + len_join_by < size:
             if left_larger:
@@ -566,9 +564,7 @@ def shrink_string_by_size(
                 return value[:size]
             elif end_on_size_error:
                 return value[-size:]
-            raise ValueError(
-                "With the provided join_by value (%s), the minimum size value is %i." % (join_by, min_size)
-            )
+            raise ValueError(f"With the provided join_by value ({join_by}), the minimum size value is {min_size}.")
         left_index = right_index = int((size - len_join_by) / 2)
         if left_index + right_index + len_join_by < size:
             if left_larger:
@@ -1540,7 +1536,7 @@ def nice_size(size: Union[float, int, str, Decimal]) -> str:
         return "??? bytes"
     size, prefix = metric_prefix(size, 1024)
     if prefix == "":
-        return "%d bytes" % size
+        return f"{int(size)} bytes"
     else:
         return f"{size:.1f} {prefix}B"
 
@@ -1841,7 +1837,7 @@ def build_url(base_url, port=80, scheme="http", pathspec=None, params=None, dose
         parsed_url.scheme = scheme
     assert parsed_url.scheme in ("http", "https", "ftp"), f"Invalid URL scheme: {parsed_url.scheme}"
     if port != 80:
-        url = "%s://%s:%d/%s" % (parsed_url.scheme, parsed_url.netloc.rstrip("/"), int(port), parsed_url.path)
+        url = "{}://{}:{}/{}".format(parsed_url.scheme, parsed_url.netloc.rstrip("/"), int(port), parsed_url.path)
     else:
         url = f"{parsed_url.scheme}://{parsed_url.netloc.rstrip('/')}/{parsed_url.path.lstrip('/')}"
     if len(pathspec) > 0:

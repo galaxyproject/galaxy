@@ -442,7 +442,7 @@ def __cleanup_param_values(inputs, values):
                     group_values = values[key]
                     for i, rep_values in enumerate(group_values):
                         rep_index = rep_values["__index__"]
-                        cleanup("%s%s_%d|" % (prefix, key, rep_index), input.inputs, group_values[i])
+                        cleanup(f"{prefix}{key}_{rep_index}|", input.inputs, group_values[i])
             elif isinstance(input, Conditional):
                 # Scrub dynamic resource related parameters from workflows,
                 # they cause problems and the workflow probably should include

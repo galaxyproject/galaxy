@@ -116,7 +116,7 @@ class WorkflowRefactorExecutor:
         order_index = len(steps)
         step_dict = {
             "order_index": order_index,
-            "id": "new_%d" % order_index,
+            "id": f"new_{order_index}",
             "type": action.type,
         }
         if action.tool_state:
