@@ -441,7 +441,6 @@ def test_import_export_library():
 def test_import_export_invocation():
     app = _mock_app()
     workflow_invocation = _setup_invocation(app)
-    print(workflow_invocation)
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
