@@ -150,7 +150,7 @@ class YamlToolSource(ToolSource):
             containers=containers,
             resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
             javascript_requirements=[r for r in mixed_requirements if r.get("type") == "javascript"],
-            secrets=self.root_dict.get("secrets", []),
+            credentials=self.root_dict.get("credentials", []),
         )
 
     def parse_input_pages(self) -> PagesSource:

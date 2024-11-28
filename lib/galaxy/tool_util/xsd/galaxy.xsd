@@ -611,10 +611,10 @@ practice.
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-This is a container tag set for the ``requirement``, ``resource`` and ``container`` tags
-described in greater detail below. ``requirement``s describe software packages
-and other individual computing requirements required to execute a tool, while
-``container``s describe Docker or Singularity containers that should be able to
+This is a container tag set for the ``requirement``, ``resource``, ``container`` and
+``credentials`` tags described in greater detail below. ``requirement``s describe
+software packages and other individual computing requirements required to execute a tool,
+while ``container``s describe Docker or Singularity containers that should be able to
 serve as complete descriptions of the runtime of a tool.
 
 ]]></xs:documentation>
@@ -623,7 +623,7 @@ serve as complete descriptions of the runtime of a tool.
       <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="container" type="Container" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="resource" type="Resource" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="secret" type="Secret" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="credentials" type="Credentials" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="Requirement">
@@ -737,44 +737,111 @@ Read more about configuring Galaxy to run Docker jobs
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-  <xs:complexType name="Secret">
+  <xs:complexType name="Credentials">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-This is possible to add secrets into tools directly by adding a requirement of
-type ``secret``. This will inject the value of the requirement into the
-environment of the tool. The value of the requirement is the value of the
-environment variable to inject the secret into.
+This is possible to add credentials into tools directly by adding a requirement of
+type ``credentials``. This requirement type is used to define a set of credentials
+that are required by the tool. The credentials are defined by a name, a reference
+to the source of the credentials, and a set of variables and secrets that are
+required by the tool. The variables and secrets are injected into the environment
+of the tool process as environment variables.
+It can contain multiple ``variable`` and ``secret`` tags.
 
 ```xml
 <requirements>
-    <secret type="vault" user_preferences_key="some_tool/api_key" inject_as_env="some_tool_api_key" label="API Key" required="true"/>
+  <credentials name="Apollo" reference="gmod.org/apollo" required="true" label="Apollo credential set" description="Please provide credentials for Apollo">
+    <variable name="server" inject_as_env="apollo_url" label="Your Apollo server" />
+    <secret name="username" inject_as_env="apollo_user" label="Your Apollo username" />
+    <secret name="password" inject_as_env="apollo_pass" label="Your Apollo password" />
+  </credentials>
 </requirements>
 ```
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:attribute name="type" type="SecretType" use="required">
+    <xs:sequence>
+      <xs:element name="variable" type="CredentialsVariable" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="secret" type="CredentialsSecret" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">The type of secret to inject. Valid value is ``vault`` for now.</xs:documentation>
+        <xs:documentation xml:lang="en">The name of the credential set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="user_preferences_key" type="xs:string" use="required">
+    <xs:attribute name="reference" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">The name of the user preference key to store the secret in.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="inject_as_env" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">The name of the environment variable to inject the secret into.</xs:documentation>
+        <xs:documentation xml:lang="en">A reference to the source of the credentials.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="label" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">The label of the secret.</xs:documentation>
+        <xs:documentation xml:lang="en">The label of the credential set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The description of the credential set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="required" type="xs:boolean">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Whether the secret is required to run the tool.</xs:documentation>
+        <xs:documentation xml:lang="en">Whether the credentials are required for the tool to run.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="CredentialsVariable">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This element defines a variable for credentials. The variable is injected into the
+environment of the tool process as an environment variable.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the variable.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="inject_as_env" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The environment variable name to inject the value as.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The label for the variable.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The description for the variable.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="CredentialsSecret">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This element defines a secret for credentials. The secret is injected into the
+environment of the tool process as an environment variable.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the secret.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="inject_as_env" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The environment variable name to inject the value as.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The label for the secret.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The description for the secret.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -7994,14 +8061,6 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="docker"/>
       <xs:enumeration value="singularity"/>
-    </xs:restriction>
-  </xs:simpleType>
-  <xs:simpleType name="SecretType">
-    <xs:annotation>
-      <xs:documentation xml:lang="en">Type of secret for tool execution.</xs:documentation>
-    </xs:annotation>
-    <xs:restriction base="xs:string">
-      <xs:enumeration value="vault"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="ToolTypeType">

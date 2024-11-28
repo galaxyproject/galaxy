@@ -309,52 +309,99 @@ def resource_requirements_from_list(requirements: Iterable[Dict[str, Any]]) -> L
     return rr
 
 
-class SecretsRequirement:
+class SecretOrVariable:
     def __init__(
         self,
         type: str,
-        user_preferences_key: str,
+        name: str,
         inject_as_env: str,
-        label: Optional[str] = "",
-        required: Optional[bool] = False,
+        label: str = "",
+        description: str = "",
     ) -> None:
         self.type = type
-        self.user_preferences_key = user_preferences_key
+        self.name = name
         self.inject_as_env = inject_as_env
         self.label = label
-        self.required = required
-        if not self.user_preferences_key:
-            raise ValueError("Missing user_preferences_key")
-        seperated_key = user_preferences_key.split("/")
-        if len(seperated_key) != 2 or not seperated_key[0] or not seperated_key[1]:
-            raise ValueError("Invalid user_preferences_key")
-        if self.type not in {"vault"}:
-            raise ValueError(f"Invalid secret type '{self.type}'")
+        self.description = description
+        if self.type not in {"secret", "variable"}:
+            raise ValueError(f"Invalid credential type '{self.type}'")
         if not self.inject_as_env:
             raise ValueError("Missing inject_as_env")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": self.type,
-            "user_preferences_key": self.user_preferences_key,
+            "name": self.name,
             "inject_as_env": self.inject_as_env,
             "label": self.label,
-            "required": self.required,
+            "description": self.description,
         }
 
     @classmethod
-    def from_dict(cls, dict: Dict[str, Any]) -> "SecretsRequirement":
+    def from_element(cls, elem) -> "SecretOrVariable":
+        return cls(
+            type=elem.tag,
+            name=elem.get("name"),
+            inject_as_env=elem.get("inject_as_env"),
+            label=elem.get("label", ""),
+            description=elem.get("description", ""),
+        )
+
+    @classmethod
+    def from_dict(cls, dict: Dict[str, Any]) -> "SecretOrVariable":
         type = dict["type"]
-        user_preferences_key = dict["user_preferences_key"]
+        name = dict["name"]
         inject_as_env = dict["inject_as_env"]
         label = dict.get("label", "")
+        description = dict.get("description", "")
+        return cls(type=type, name=name, inject_as_env=inject_as_env, label=label, description=description)
+
+
+class CredentialsRequirement:
+    def __init__(
+        self,
+        name: str,
+        reference: str,
+        required: bool = False,
+        label: str = "",
+        description: str = "",
+        secrets_and_variables: Optional[List[SecretOrVariable]] = None,
+    ) -> None:
+        self.name = name
+        self.reference = reference
+        self.required = required
+        self.label = label
+        self.description = description
+        self.secrets_and_variables = secrets_and_variables if secrets_and_variables is not None else []
+
+        if not self.reference:
+            raise ValueError("Missing reference")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "reference": self.reference,
+            "required": self.required,
+            "label": self.label,
+            "description": self.description,
+            "secrets_and_variables": [s.to_dict() for s in self.secrets_and_variables],
+        }
+
+    @classmethod
+    def from_dict(cls, dict: Dict[str, Any]) -> "CredentialsRequirement":
+        name = dict["name"]
+        reference = dict["reference"]
         required = dict.get("required", False)
+        label = dict.get("label", "")
+        description = dict.get("description", "")
+        secrets_and_variables = [SecretOrVariable.from_dict(s) for s in dict.get("secrets_and_variables", [])]
         return cls(
-            type=type,
-            user_preferences_key=user_preferences_key,
-            inject_as_env=inject_as_env,
-            label=label,
+            name=name,
+            reference=reference,
             required=required,
+            label=label,
+            description=description,
+            secrets_and_variables=secrets_and_variables,
         )
 
 
@@ -363,32 +410,32 @@ def parse_requirements_from_lists(
     containers: Iterable[Dict[str, Any]],
     resource_requirements: Iterable[Dict[str, Any]],
     javascript_requirements: List[Dict[str, Any]],
-    secrets: Iterable[Dict[str, Any]],
+    credentials: Iterable[Dict[str, Any]],
 ) -> Tuple[
     ToolRequirements,
     List[ContainerDescription],
     List[ResourceRequirement],
     List[JavascriptRequirement],
-    List[SecretsRequirement],
+    List[CredentialsRequirement],
 ]:
     return (
         ToolRequirements.from_list(software_requirements),
         [ContainerDescription.from_dict(c) for c in containers],
         resource_requirements_from_list(resource_requirements),
         [JavascriptRequirement(**r) for r in javascript_requirements],
-        [SecretsRequirement.from_dict(s) for s in secrets],
+        [CredentialsRequirement.from_dict(s) for s in credentials],
     )
 
 
-def parse_requirements_from_xml(xml_root, parse_resources_and_secrets: bool = False):
+def parse_requirements_from_xml(xml_root, parse_resources_and_credentials: bool = False):
     """
     Parses requirements, containers and optionally resource requirements from Xml tree.
 
     >>> from galaxy.util import parse_xml_string
-    >>> def load_requirements(contents, parse_resources_and_secrets=False):
+    >>> def load_requirements(contents, parse_resources_and_credentials=False):
     ...     contents_document = '''<tool><requirements>%s</requirements></tool>'''
     ...     root = parse_xml_string(contents_document % contents)
-    ...     return parse_requirements_from_xml(root, parse_resources_and_secrets=parse_resources_and_secrets)
+    ...     return parse_requirements_from_xml(root, parse_resources_and_credentials=parse_resources_and_credentials)
     >>> reqs, containers = load_requirements('''<requirement>bwa</requirement>''')
     >>> reqs[0].name
     'bwa'
@@ -421,13 +468,13 @@ def parse_requirements_from_xml(xml_root, parse_resources_and_secrets: bool = Fa
         requirements.append(requirement)
 
     containers = [container_from_element(c) for c in container_elems]
-    if parse_resources_and_secrets:
+    if parse_resources_and_credentials:
         resource_elems = requirements_elem.findall("resource") if requirements_elem is not None else []
         resources = [resource_from_element(r) for r in resource_elems]
         javascript_requirements: List[Dict[str, Any]] = []
-        secret_elems = requirements_elem.findall("secret") if requirements_elem is not None else []
-        secrets = [secret_from_element(s) for s in secret_elems]
-        return requirements, containers, resources, javascript_requirements, secrets
+        credentials_elems = requirements_elem.findall("credentials") if requirements_elem is not None else []
+        credentials = [credentials_from_element(s) for s in credentials_elems]
+        return requirements, containers, resources, javascript_requirements, credentials
 
     return requirements, containers
 
@@ -452,16 +499,18 @@ def container_from_element(container_elem) -> ContainerDescription:
     return container
 
 
-def secret_from_element(secret_elem) -> SecretsRequirement:
-    type = secret_elem.get("type")
-    user_preferences_key = secret_elem.get("user_preferences_key")
-    inject_as_env = secret_elem.get("inject_as_env")
-    label = secret_elem.get("label", "")
-    required = string_as_bool(secret_elem.get("required", "false"))
-    return SecretsRequirement(
-        type=type,
-        user_preferences_key=user_preferences_key,
-        inject_as_env=inject_as_env,
-        label=label,
+def credentials_from_element(credentials_elem) -> CredentialsRequirement:
+    name = credentials_elem.get("name")
+    reference = credentials_elem.get("reference")
+    required = string_as_bool(credentials_elem.get("required", "false"))
+    label = credentials_elem.get("label", "")
+    description = credentials_elem.get("description", "")
+    secrets_and_variables = [SecretOrVariable.from_element(elem) for elem in credentials_elem.findall("*")]
+    return CredentialsRequirement(
+        name=name,
+        reference=reference,
         required=required,
+        label=label,
+        description=description,
+        secrets_and_variables=secrets_and_variables,
     )

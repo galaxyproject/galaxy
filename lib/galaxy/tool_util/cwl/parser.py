@@ -243,8 +243,8 @@ class ToolProxy(metaclass=ABCMeta):
     def resource_requirements(self) -> List:
         return self.hints_or_requirements_of_class("ResourceRequirement")
 
-    def secrets(self) -> List:
-        return self.hints_or_requirements_of_class("Secrets")
+    def credentials(self) -> List:
+        return self.hints_or_requirements_of_class("Credentials")
 
 
 class CommandLineToolProxy(ToolProxy):

@@ -51,8 +51,8 @@ from .util import _parse_name
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.requirements import (
         ContainerDescription,
+        CredentialsRequirement,
         ResourceRequirement as ToolResourceRequirement,
-        SecretsRequirement,
         ToolRequirements,
     )
     from galaxy.tool_util.parser.output_actions import ToolOutputActionApp
@@ -332,9 +332,9 @@ class ToolSource(metaclass=ABCMeta):
         List["ContainerDescription"],
         List["ToolResourceRequirement"],
         List["JavascriptRequirement"],
-        List["SecretsRequirement"],
+        List["CredentialsRequirement"],
     ]:
-        """Return triple of ToolRequirement, ContainerDescription, ResourceRequirement, JavascriptRequirement, and SecretsRequirement objects."""
+        """Return triple of ToolRequirement, ContainerDescription, ResourceRequirement, JavascriptRequirement, and CredentialsRequirement objects."""
 
     @abstractmethod
     def parse_input_pages(self) -> "PagesSource":

@@ -6,10 +6,9 @@ import shlex
 import string
 import tempfile
 from datetime import datetime
-from typing import (
+from typing import (  # cast,
     Any,
     Callable,
-    cast,
     Literal,
     Optional,
     TYPE_CHECKING,
@@ -29,12 +28,12 @@ from galaxy.model.deferred import (
 )
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
-from galaxy.security.vault import UserVaultWrapper
-from galaxy.structured_app import (
+
+# from galaxy.security.vault import UserVaultWrapper
+from galaxy.structured_app import (  # StructuredApp,
     BasicSharedApp,
     MinimalManagerApp,
     MinimalToolApp,
-    StructuredApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tool_util.parser.output_objects import ToolOutput
@@ -217,16 +216,24 @@ class ToolEvaluator:
                 output_collections=out_collections,
             )
 
-        if self.tool.secrets:
-            app = cast(StructuredApp, self.app)
-            user_vault = UserVaultWrapper(app.vault, self._user)
-            for secret in self.tool.secrets:
-                vault_key = secret.user_preferences_key
-                secret_value = user_vault.read_secret("preferences/" + vault_key)
-                if secret_value is not None:
-                    self.environment_variables.append({"name": secret.inject_as_env, "value": secret_value})
-                else:
-                    log.warning("Failed to read secret from vault")
+        if self.tool.credentials:
+            # app = cast(StructuredApp, self.app)
+            # user_vault = UserVaultWrapper(app.vault, self._user)
+            for credentials in self.tool.credentials:
+                reference = credentials.reference
+                for secret_or_variable in credentials.secrets_and_variables:
+                    if secret_or_variable.type == "variable":
+                        # variable_value = self.param_dict.get(f"{reference}/{secret_or_variable.name}")
+                        variable_value = f"A variable: {reference}/{secret_or_variable.name}"
+                        self.environment_variables.append(
+                            {"name": secret_or_variable.inject_as_env, "value": variable_value}
+                        )
+                    elif secret_or_variable.type == "secret":
+                        # secret_value = user_vault.read_secret(f"{reference}/{secret_or_variable.name}")
+                        secret_value = f"A secret: {reference}/{secret_or_variable.name}"
+                        self.environment_variables.append(
+                            {"name": secret_or_variable.inject_as_env, "value": secret_value}
+                        )
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution

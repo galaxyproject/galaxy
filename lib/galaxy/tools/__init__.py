@@ -1460,20 +1460,14 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                     raise Exception(message)
 
         # Requirements (dependencies)
-        requirements, containers, resource_requirements, javasscript_requirements, secrets = (
+        requirements, containers, resource_requirements, javasscript_requirements, credentials = (
             tool_source.parse_requirements_and_containers()
         )
         self.requirements = requirements
         self.containers = containers
         self.resource_requirements = resource_requirements
         self.javascript_requirements = javasscript_requirements
-        self.secrets = secrets
-        for secret in self.secrets:
-            preferences = self.app.config.user_preferences_extra["preferences"]
-            main_key, input_key = secret.user_preferences_key.split("/")
-            preferences_input = preferences.get(main_key, {}).get("inputs", [])
-            if not any(input_item.get("name") == input_key for input_item in preferences_input):
-                raise exceptions.ConfigurationError(f"User preferences key {secret.user_preferences_key} not found")
+        self.credentials = credentials
 
         required_files = tool_source.parse_required_files()
         if required_files is None:
