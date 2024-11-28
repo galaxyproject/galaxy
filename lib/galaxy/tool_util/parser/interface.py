@@ -34,8 +34,8 @@ from .util import _parse_name
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.requirements import (
         ContainerDescription,
+        CredentialsRequirement,
         ResourceRequirement,
-        SecretsRequirement,
         ToolRequirements,
     )
     from galaxy.tool_util.parser.output_objects import (
@@ -315,9 +315,9 @@ class ToolSource(metaclass=ABCMeta):
     def parse_requirements_and_containers(
         self,
     ) -> Tuple[
-        "ToolRequirements", List["ContainerDescription"], List["ResourceRequirement"], List["SecretsRequirement"]
+        "ToolRequirements", List["ContainerDescription"], List["ResourceRequirement"], List["CredentialsRequirement"]
     ]:
-        """Return triple of ToolRequirement, ContainerDescription, ResourceRequirement, and SecretsRequirement objects."""
+        """Return triple of ToolRequirement, ContainerDescription, ResourceRequirement, and CredentialsRequirement objects."""
 
     @abstractmethod
     def parse_input_pages(self) -> "PagesSource":
