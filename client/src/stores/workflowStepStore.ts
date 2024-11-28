@@ -50,6 +50,7 @@ export declare const ParameterTypes: "text" | "integer" | "float" | "boolean" | 
 export interface ParameterOutput extends Omit<DataOutput, "type" | "extensions"> {
     type: typeof ParameterTypes;
     parameter: true;
+    multiple: boolean;
 }
 
 interface BaseStepInput {
@@ -100,12 +101,14 @@ export interface NewStep {
     outputs: Array<OutputTerminalSource>;
     position?: StepPosition;
     post_job_actions?: PostJobActions;
+    tool_id?: string;
     tool_state: Record<string, unknown>;
     tool_version?: string;
     tooltip?: string | null;
     type: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause";
     uuid?: string;
     when?: string | null;
+    workflow_id?: string;
     workflow_outputs?: WorkflowOutput[];
 }
 

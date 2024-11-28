@@ -23,5 +23,15 @@ echo '$parameter' >> '$output'
                 </assert_contents>
             </output>
         </test>
+        <test>
+            <!-- Selects implicitly default to the first option as the default option.
+	             Additional verification in test_select_first_by_default API test in test_tools.py.
+            -->
+            <output name="output">
+                <assert_contents>
+                    <has_line line="--ex1" />
+                </assert_contents>
+            </output>
+        </test>
     </tests>
 </tool>

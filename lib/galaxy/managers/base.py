@@ -110,6 +110,8 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
             raise exceptions.ItemOwnershipException(
                 f"{item.__class__.__name__} is not owned by the current user", type="error"
             )
+        # no need to check accessibility if we're the owner
+        return item
 
     # Verify accessible:
     #   if it's part of a lib - can they access via security
@@ -501,18 +503,18 @@ class ModelManager(Generic[U]):
         """
         raise exceptions.NotImplemented("Abstract method")
 
-    def update(self, item, new_values, flush=True, **kwargs) -> U:
+    def update(self, item: U, new_values: Dict[str, Any], flush: bool = True, **kwargs) -> U:
         """
         Given a dictionary of new values, update `item` and return it.
 
         ..note: NO validation or deserialization occurs here.
         """
-        self.session().add(item)
         for key, value in new_values.items():
             if hasattr(item, key):
                 setattr(item, key, value)
+        session = self.session()
+        session.add(item)
         if flush:
-            session = self.session()
             with transaction(session):
                 session.commit()
         return item
@@ -1290,13 +1292,6 @@ def parse_bool(bool_string: Union[str, bool]) -> bool:
 
 def raise_filter_err(attr, op, val, msg):
     raise exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)
-
-
-def is_valid_slug(slug):
-    """Returns true iff slug is valid."""
-
-    VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
-    return VALID_SLUG_RE.match(slug)
 
 
 class SortableManager:

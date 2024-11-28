@@ -299,6 +299,13 @@ class NavigatesGalaxy(HasDriver):
         except SeleniumTimeoutException as e:
             raise ClientBuildException(e)
 
+    def go_to_workflow_landing(self, uuid: str, public: Literal["false", "true"], client_secret: Optional[str]):
+        path = f"workflow_landings/{uuid}?public={public}"
+        if client_secret:
+            path = f"{path}&client_secret={client_secret}"
+        self.driver.get(self.build_url(path))
+        self.components.workflow_run.run_workflow.wait_for_visible()
+
     def go_to_trs_search(self) -> None:
         self.driver.get(self.build_url("workflows/trs_search"))
         self.components.masthead._.wait_for_visible()
@@ -869,7 +876,7 @@ class NavigatesGalaxy(HasDriver):
 
         self.upload_start()
 
-        self.wait_for_and_click_selector("button#btn-close")
+        self.components.upload.close_button.wait_for_and_click()
 
     def perform_upload_of_composite_dataset_pasted_data(self, ext, paste_content):
         self.home()
@@ -1197,16 +1204,17 @@ class NavigatesGalaxy(HasDriver):
         text_area_elem.send_keys(json)
 
     def workflow_editor_set_license(self, license: str) -> None:
-        editor = self.components.workflow_editor
-        editor.edit_license_link.wait_for_and_click()
-        select = editor.license_select.wait_for_select()
-        select.select_by_value(license)
-        editor.license_save.wait_for_and_click()
+        license_selector = self.components.workflow_editor.license_selector
+        license_selector.wait_for_and_click()
+        license_selector.wait_for_and_send_keys(license)
+
+        license_selector_option = self.components.workflow_editor.license_selector_option
+        license_selector_option.wait_for_and_click()
 
     def workflow_editor_click_option(self, option_label):
         self.workflow_editor_click_options()
         menu_element = self.workflow_editor_options_menu_element()
-        option_elements = menu_element.find_elements(By.CSS_SELECTOR, "a")
+        option_elements = menu_element.find_elements(By.CSS_SELECTOR, "button")
         assert len(option_elements) > 0, "Failed to find workflow editor options"
         self.sleep_for(WAIT_TYPES.UX_RENDER)
         found_option = False
@@ -1223,10 +1231,10 @@ class NavigatesGalaxy(HasDriver):
             raise Exception(f"Failed to find workflow editor option with label [{option_label}]")
 
     def workflow_editor_click_options(self):
-        return self.wait_for_and_click_selector("#workflow-options-button")
+        return self.wait_for_and_click_selector("#activity-settings")
 
     def workflow_editor_options_menu_element(self):
-        return self.wait_for_selector_visible("#workflow-options-button")
+        return self.wait_for_selector_visible(".activity-settings")
 
     def workflow_editor_click_run(self):
         return self.wait_for_and_click_selector("#workflow-run-button")
@@ -1234,6 +1242,33 @@ class NavigatesGalaxy(HasDriver):
     def workflow_editor_click_save(self):
         self.wait_for_and_click_selector("#workflow-save-button")
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
+
+    def workflow_editor_search_for_workflow(self, name: str):
+        self.wait_for_and_click(self.components.workflow_editor.workflow_activity)
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        input = self.wait_for_selector(".activity-panel input")
+        input.send_keys(name)
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+    def workflow_editor_add_steps(self, name: str):
+        self.workflow_editor_search_for_workflow(name)
+
+        insert_button = self.components.workflows.workflow_card_button(name=name, title="Copy steps into workflow")
+        insert_button.wait_for_and_click()
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+    def workflow_editor_add_subworkflow(self, name: str):
+        self.workflow_editor_search_for_workflow(name)
+
+        insert_button = self.components.workflows.workflow_card_button(name=name, title="Insert as sub-workflow")
+        insert_button.wait_for_and_click()
+
+        self.components.workflow_editor.node._(label=name).wait_for_present()
+
+        self.sleep_for(self.wait_types.UX_RENDER)
 
     def navigate_to_histories_page(self):
         self.home()
@@ -1250,7 +1285,7 @@ class NavigatesGalaxy(HasDriver):
         self.components.masthead.user.wait_for_and_click()
         self.components.masthead.preferences.wait_for_and_click()
 
-    def navigate_to_invocations(self):
+    def navigate_to_invocations_grid(self):
         self.home()
         self.components.invocations.activity.wait_for_and_click()
         self.components.invocations.activity_expand.wait_for_and_click()
@@ -1395,25 +1430,36 @@ class NavigatesGalaxy(HasDriver):
         self.libraries_click_dataset_import()
         self.wait_for_and_click(btn)
 
+    def libraries_dataset_import_from_history_search_for(self, search_term=None):
+        return self._inline_search_for(
+            self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_history_search,
+            search_term,
+        )
+
     def libraries_dataset_import_from_history_select(self, to_select_items):
-        self.wait_for_visible(self.navigation.libraries.folder.selectors.import_history_content)
-        history_elements = self.find_elements(self.navigation.libraries.folder.selectors.import_history_contents_items)
+        self.wait_for_visible(
+            self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_list_is_ready
+        )
         for to_select_item in to_select_items:
             found = False
-            for history_element in history_elements:
-                if to_select_item in history_element.text:
-                    history_element.find_element(By.CSS_SELECTOR, "input").click()
-                    found = True
-                    break
-
-            if not found:
-                raise Exception(f"Failed to find history item [{to_select_item}] to select")
+            self._inline_search_for(
+                self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_dataset_search,
+                to_select_item,
+            )
+            self.components.libraries.folder.import_datasets_from_history_modal_select_list_item_by_index(
+                row_index=1
+            ).wait_for_and_click()
+            found = True
+        if not found:
+            raise Exception(f"Failed to find history item [{to_select_item}] to select")
 
     def libraries_dataset_import_from_history_click_ok(self, wait=True):
-        self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_ok_button)
+        self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_ok)
         if wait:
             # Let the progress bar disappear...
-            self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_progress_bar)
+            self.wait_for_absent_or_hidden(
+                self.navigation.libraries.folder.selectors.import_datasets_from_history_modal
+            )
 
     def libraries_table_elements(self):
         tbody_element = self.wait_for_selector_visible("#folder_list_body > tbody")
@@ -1624,7 +1670,26 @@ class NavigatesGalaxy(HasDriver):
         invocations.invocations_table.wait_for_visible()
         return invocations.invocations_table_rows.all()
 
+    def open_toolbox(self):
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        if self.element_absent(self.components.tools.tools_activity_workflow_editor):
+            if self.element_absent(self.components._.toolbox_panel):
+                self.components.tools.activity.wait_for_and_click()
+        else:
+            if self.element_absent(self.components._.toolbox_panel):
+                self.components.tools.tools_activity_workflow_editor.wait_for_and_click()
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
     def tool_open(self, tool_id, outer=False):
+        self.open_toolbox()
+
+        self.components.tools.clear_search.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        self.components.tools.search.wait_for_and_send_keys(f"id:{tool_id}")
+
         if outer:
             tool_link = self.components.tool_panel.outer_tool_link(tool_id=tool_id)
         else:
@@ -2045,10 +2110,26 @@ class NavigatesGalaxy(HasDriver):
         )
         return element
 
+    def _clear_tooltip(self, tooltip_component):
+        last_timeout: Optional[SeleniumTimeoutException] = None
+        for _ in range(2):
+            if not tooltip_component.is_absent:
+                move_away_chain = self.action_chains()
+                move_away_chain.move_by_offset(100, 100)
+                move_away_chain.perform()
+            try:
+                tooltip_component.wait_for_absent()
+                return
+            except SeleniumTimeoutException as e:
+                last_timeout = e
+
+        assert last_timeout
+        message = "Failed to force current tool tip off screen, cannot test next tooltip."
+        raise self.prepend_timeout_message(last_timeout, message)
+
     def get_tooltip_text(self, element, sleep=0, click_away=True):
         tooltip_balloon = self.components._.tooltip_balloon
-        tooltip_balloon.wait_for_absent()
-
+        self._clear_tooltip(tooltip_balloon)
         action_chains = self.action_chains()
         action_chains.move_to_element(element)
         action_chains.perform()

@@ -69,6 +69,8 @@ export type WorkflowComment =
     | MarkdownWorkflowComment
     | FreehandWorkflowComment;
 
+export type WorkflowCommentType = WorkflowComment["type"];
+
 interface CommentsMetadata {
     justCreated?: boolean;
     multiSelected?: boolean;

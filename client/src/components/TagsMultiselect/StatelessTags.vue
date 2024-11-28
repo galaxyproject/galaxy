@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { BButton } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import { useToast } from "@/composables/toast";
 import { useUid } from "@/composables/utils/uid";
 import { useUserTagsStore } from "@/stores/userTagsStore";
+
+import { VALID_TAG_RE } from "../Tags/model";
 
 import HeadlessMultiselect from "./HeadlessMultiselect.vue";
 import Tag from "./Tag.vue";
@@ -34,7 +35,6 @@ const emit = defineEmits<{
 }>();
 
 const userTagsStore = useUserTagsStore();
-const { userTags } = storeToRefs(userTagsStore);
 const { warning } = useToast();
 
 onMounted(() => {
@@ -84,10 +84,8 @@ const slicedTags = computed(() => {
     }
 });
 
-const invalidTagRegex = /([.:\s][.:\s])|(^[.:])|([.:]$)|(^[\s]*$)/;
-
 function isValid(tag: string) {
-    return !tag.match(invalidTagRegex);
+    return tag.match(VALID_TAG_RE);
 }
 
 function onTagClicked(tag: string) {
@@ -110,7 +108,7 @@ function onTagClicked(tag: string) {
             </div>
 
             <HeadlessMultiselect
-                :options="userTags"
+                :options="userTagsStore.userTags"
                 :selected="props.value"
                 :placeholder="props.placeholder"
                 :validator="isValid"

@@ -161,6 +161,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
             message, user = self.__autoregistration(trans, login, password)
             if message:
                 return self.message_exception(trans, message)
+        elif user.purged:
+            message = "This account has been permanently deleted."
+            return self.message_exception(trans, message, sanitize=False)
         elif user.deleted:
             message = (
                 "This account has been marked deleted, contact your local Galaxy administrator to restore the account."

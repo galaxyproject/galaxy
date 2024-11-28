@@ -263,9 +263,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         # anon users are only allowed to view their current history
         if self.user_manager.is_anonymous(user):
-            if current_history and item == current_history:
-                return True
-            return False
+            return current_history is not None and item == current_history
         return super().is_owner(item, user)
 
     # TODO: possibly to sharable or base
@@ -418,7 +416,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
         # Run job to do export.
         history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
-        job, *_ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        job, *_ = history_exp_tool.execute(trans, incoming=params, history=history)
         trans.app.job_manager.enqueue(job, tool=history_exp_tool)
         return job
 

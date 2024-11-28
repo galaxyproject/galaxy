@@ -359,7 +359,7 @@ mapping:
 
       conda_ensure_channels:
         type: str
-        default: conda-forge,bioconda,defaults
+        default: conda-forge,bioconda
         required: false
         desc: |
           conda channels to enable by default
@@ -382,11 +382,11 @@ mapping:
 
       conda_auto_init:
         type: bool
-        default: true
         required: false
         desc: |
           Set to true to instruct Galaxy to install Conda from the web automatically
-          if it cannot find a local copy and conda_exec is not configured.
+          if it cannot find a local copy and conda_exec is not configured. The default is
+          true if running Galaxy from source, and false if running from installed packages.
 
       conda_copy_dependencies:
         type: bool
@@ -1520,7 +1520,21 @@ mapping:
         default: interactivetools_map.sqlite
         path_resolves_to: data_dir
         desc: |
-          Map for interactivetool proxy.
+          Map for the interactivetool proxy. Mappings are stored in a SQLite database file
+          located on this path. As an alternative, you may also store them in any other RDBMS
+          supported by SQLAlchemy using the option ``interactivetoolsproxy_map``, which
+          overrides this one.
+
+      interactivetoolsproxy_map:
+        type: str
+        required: false
+        desc: |
+          Use a database supported by SQLAlchemy as map for the interactivetool proxy.
+          When this option is set, the value of ``interactivetools_map`` is ignored. The
+          value of this option must be a
+          `SQLAlchemy database URL <https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls>`_.
+          Mappings are written to the table "gxitproxy" within the database. This value cannot match
+          ``database_connection`` nor ``install_database_connection``.
 
       interactivetools_prefix:
         type: str
@@ -2774,6 +2788,7 @@ mapping:
 
           Avoiding making this a boolean because we may add options such as 'in-single-form-view'
           or 'in-simplified-workflow-views'. https://github.com/galaxyproject/galaxy/pull/9809/files#r461889109
+
       allow_user_dataset_purge:
         type: bool
         default: true
@@ -3440,6 +3455,26 @@ mapping:
           decreased if extremely high job throughput is necessary, but doing so can increase CPU
           usage of handler processes. Float values are allowed.
 
+      calculate_dataset_hash:
+        type: str
+        default: upload
+        required: false
+        enum: ['always', 'upload', 'never']
+        desc: |
+          In which cases Galaxy should calculate a hash for a new dataset.
+          Dataset hashes can be used by the Galaxy job cache/search to check if job inputs match.
+          Setting the 'enable_celery_tasks' option to true is also required for dataset hash calculation.
+          Possible values are: 'always', 'upload' (the default), 'never'. If set to 'upload', the
+          hash is calculated only for the outputs of upload jobs.
+
+      hash_function:
+        type: str
+        default: sha256
+        required: false
+        desc: |
+          Hash function to use if 'calculate_dataset_hash' is enabled. Possible values
+          are: 'md5', 'sha1', 'sha256', 'sha512'
+
       metadata_strategy:
         type: str
         required: false
@@ -3533,6 +3568,7 @@ mapping:
         default: always
         required: false
         reloadable: true
+        enum: ['always', 'onsuccess', 'never']
         desc: |
           Clean up various bits of jobs left on the filesystem after completion.  These
           bits include the job working directory, external metadata temporary files,
@@ -3724,6 +3760,21 @@ mapping:
           Optional configuration file similar to `job_config_file` to specify
           which Galaxy processes should schedule workflows.
 
+      workflow_scheduling_separate_materialization_iteration:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Workflows launched with URI/URL inputs that are not marked as 'deferred'
+          are "materialized" (or undeferred) by the workflow scheduler. This might be
+          a lengthy process. Setting this to 'True' will place the invocation back in
+          the queue after materialization before scheduling the workflow so it is less
+          likely to starve other workflow scheduling. Ideally, Galaxy would allow more
+          fine grain control of handlers but until then, this provides a way to tip the
+          balance between "doing more work" and "being more fair". The default here is
+          pretty arbitrary - it has been to False to optimize Galaxy for automated,
+          single user applications where "fairness" is mostly irrelevant.
+
       cache_user_job_count:
         type: bool
         default: false
@@ -3893,6 +3944,19 @@ mapping:
           use 0 in order to always use select2 fields,
           use -1 (default) in order to always use the regular select fields,
           use any other positive number as threshold (above threshold: regular select fields will be used)
+
+      openai_api_key:
+        type: str
+        required: false
+        desc: |
+          API key for OpenAI (https://openai.com/) to enable the wizard (or more?)
+
+      openai_model:
+        type: str
+        default: gpt-4o
+        required: false
+        desc: |
+          OpenAI model to enable the wizard.
 
       enable_tool_recommendations:
         type: bool
@@ -4075,3 +4139,23 @@ mapping:
         per_host: true
         desc: |
           Enable the integration of the Galaxy Help Forum in the tool panel. This requires the help_forum_api_url to be set.
+
+      file_source_temp_dir:
+        type: str
+        required: false
+        desc: |
+          Directory to store temporary files for file sources. This defaults to new_file_path if not set.
+
+      file_source_webdav_use_temp_files:
+        type: bool
+        default: true
+        desc: |
+          Default value for use_temp_files for webdav plugins that don't explicitly declare this.
+
+      file_source_listings_expiry_time:
+        type: int
+        default: 60
+        desc: |
+          Number of seconds before file source content listings are refreshed. Shorter times will result in more
+          queries while browsing a file sources. Longer times will result in fewer requests to file sources but
+          outdated contents might be displayed to the user. Currently only affects s3fs file sources.

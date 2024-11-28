@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
-import { useRoute } from "vue-router/composables";
 
 interface Props {
     title: string;
@@ -14,16 +13,11 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     goToAllTitle: undefined,
     href: undefined,
-    goToOnHref: true,
 });
-
-const route = useRoute();
 
 const emit = defineEmits(["goToAll"]);
 
-const hasGoToAll = computed(
-    () => props.goToAllTitle && props.href && (props.goToOnHref || (!props.goToOnHref && route.path !== props.href))
-);
+const hasGoToAll = computed(() => props.goToAllTitle && props.href);
 </script>
 
 <template>
@@ -83,7 +77,8 @@ const hasGoToAll = computed(
         display: flex;
         flex-direction: column;
         flex-grow: 1;
-        overflow-y: hidden;
+        overflow-y: auto;
+        position: relative;
         button:first-child {
             background: none;
             border: none;

@@ -1,4 +1,5 @@
 import {
+    type CreateInstancePayload,
     type Instance,
     type PluginStatus,
     type SecretData,
@@ -139,7 +140,7 @@ export function createTemplateForm(template: TemplateSummary, what: string): For
     return form;
 }
 
-export function createFormDataToPayload(template: TemplateSummary, formData: any) {
+export function createFormDataToPayload(template: TemplateSummary, formData: any): CreateInstancePayload {
     const variables = template.variables ?? [];
     const secrets = template.secrets ?? [];
     const variableData: VariableData = {};
@@ -155,7 +156,7 @@ export function createFormDataToPayload(template: TemplateSummary, formData: any
     }
     const name: string = formData._meta_name;
     const description: string = formData._meta_description;
-    const payload = {
+    const payload: CreateInstancePayload = {
         name: name,
         description: description,
         secrets: secretData,
@@ -217,9 +218,7 @@ export function upgradeForm(template: TemplateSummary, instance: Instance): Form
     }
     for (const secret of secrets) {
         const secretName = secret.name;
-        if (secretsSet.indexOf(secretName) >= 0) {
-            console.log("skipping...");
-        } else {
+        if (secretsSet.indexOf(secretName) < 0) {
             form.push(templateSecretFormEntry(secret));
         }
     }

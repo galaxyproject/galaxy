@@ -1,45 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Example" embeddable="false">
-    <description>This is a developer example which demonstrates how to implement and configure a basic d3-based plugin for charts.</description>
+<visualization name="Minimal Example" embeddable="false">
+    <description>Welcome to the Minimal JS-Based Example Plugin.</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
             <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.Tabular</test>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.CSV</test>
             <to_param param_attr="id">dataset_id</to_param>
         </data_source>
     </data_sources>
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="chart" src="script.js"/>
+    <entry_point entry_point_type="script" src="script.js" />
     <settings>
         <input>
-            <name>data_dialog</name>
-            <label>Some data selector</label>
-            <type>data_dialog</type>
-            <multiple>false</multiple>
+            <name>setting_input</name>
+            <help>setting help</help>
+            <type>setting_type</type>
         </input>
     </settings>
-    <groups>
+    <tracks>
         <input>
-            <name>x</name>
-            <label>Bubble x-position</label>
-            <type>data_column</type>
-            <is_numeric>true</is_numeric>
+            <name>track_input</name>
+            <help>track help</help>
+            <type>track_type</type>
         </input>
-        <input>
-            <name>y</name>
-            <label>Bubbles y-position</label>
-            <type>data_column</type>
-            <is_numeric>true</is_numeric>
-        </input>
-        <input>
-            <name>z</name>
-            <label>Bubble size</label>
-            <type>data_column</type>
-            <is_numeric>true</is_numeric>
-        </input>
-    </groups>
+    </tracks>
+    <specs>
+        <spec_name>spec_value</spec_name>
+    </specs>
 </visualization>

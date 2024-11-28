@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-#
+# 
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-#
+# 
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-#
+# 
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-#
+# 
 #   https://galaxyproject.org/admin/config
-#
+# 
 # Config hackers are encouraged to check there before asking for help.
-#
+# 
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -578,7 +578,7 @@ galaxy:
 
   # conda channels to enable by default
   # (https://conda.io/docs/user-guide/tasks/manage-channels.html)
-  #conda_ensure_channels: conda-forge,bioconda,defaults
+  #conda_ensure_channels: conda-forge,bioconda
 
   # Use locally-built conda packages.
   #conda_use_local: false
@@ -589,8 +589,9 @@ galaxy:
 
   # Set to true to instruct Galaxy to install Conda from the web
   # automatically if it cannot find a local copy and conda_exec is not
-  # configured.
-  #conda_auto_init: true
+  # configured. The default is true if running Galaxy from source, and
+  # false if running from installed packages.
+  #conda_auto_init: false
 
   # You must set this to true if conda_prefix and job_working_directory
   # are not on the same volume, or some conda dependencies will fail to
@@ -1348,10 +1349,23 @@ galaxy:
   # subdomain. Defaults to "/".
   #interactivetools_base_path: /
 
-  # Map for interactivetool proxy.
+  # Map for the interactivetool proxy. Mappings are stored in a SQLite
+  # database file located on this path. As an alternative, you may also
+  # store them in any other RDBMS supported by SQLAlchemy using the
+  # option ``interactivetoolsproxy_map``, which overrides this one.
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #interactivetools_map: interactivetools_map.sqlite
+
+  # Use a database supported by SQLAlchemy as map for the
+  # interactivetool proxy. When this option is set, the value of
+  # ``interactivetools_map`` is ignored. The value of this option must
+  # be a `SQLAlchemy database URL
+  # <https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls>`_.
+  # Mappings are written to the table "gxitproxy" within the database.
+  # This value cannot match ``database_connection`` nor
+  # ``install_database_connection``.
+  #interactivetoolsproxy_map: null
 
   # Prefix to use in the formation of the subdomain or path for
   # interactive tools
@@ -2531,6 +2545,18 @@ galaxy:
   # handler processes. Float values are allowed.
   #workflow_monitor_sleep: 1.0
 
+  # In which cases Galaxy should calculate a hash for a new dataset.
+  # Dataset hashes can be used by the Galaxy job cache/search to check
+  # if job inputs match. Setting the 'enable_celery_tasks' option to
+  # true is also required for dataset hash calculation. Possible values
+  # are: 'always', 'upload' (the default), 'never'. If set to 'upload',
+  # the hash is calculated only for the outputs of upload jobs.
+  #calculate_dataset_hash: upload
+
+  # Hash function to use if 'calculate_dataset_hash' is enabled.
+  # Possible values are: 'md5', 'sha1', 'sha256', 'sha512'
+  #hash_function: sha256
+
   # Determines how metadata will be set. Valid values are `directory`,
   # `extended`, `directory_celery` and `extended_celery`. In extended
   # mode jobs will decide if a tool run failed, the object stores
@@ -2735,6 +2761,19 @@ galaxy:
   # <config_dir>.
   #workflow_schedulers_config_file: workflow_schedulers_conf.xml
 
+  # Workflows launched with URI/URL inputs that are not marked as
+  # 'deferred' are "materialized" (or undeferred) by the workflow
+  # scheduler. This might be a lengthy process. Setting this to 'True'
+  # will place the invocation back in the queue after materialization
+  # before scheduling the workflow so it is less likely to starve other
+  # workflow scheduling. Ideally, Galaxy would allow more fine grain
+  # control of handlers but until then, this provides a way to tip the
+  # balance between "doing more work" and "being more fair". The default
+  # here is pretty arbitrary - it has been to False to optimize Galaxy
+  # for automated, single user applications where "fairness" is mostly
+  # irrelevant.
+  #workflow_scheduling_separate_materialization_iteration: false
+
   # If using job concurrency limits (configured in job_config_file),
   # several extra database queries must be performed to determine the
   # number of jobs a user has dispatched to a given destination.  By
@@ -2855,6 +2894,13 @@ galaxy:
   # as threshold (above threshold: regular select fields will be used)
   #select_type_workflow_threshold: -1
 
+  # API key for OpenAI (https://openai.com/) to enable the wizard (or
+  # more?)
+  #openai_api_key: null
+
+  # OpenAI model to enable the wizard.
+  #openai_model: gpt-4o
+
   # Allow the display of tool recommendations in workflow editor and
   # after tool execution. If it is enabled and set to true, please
   # enable 'tool_recommendation_model_path' as well
@@ -2965,3 +3011,19 @@ galaxy:
   # Enable the integration of the Galaxy Help Forum in the tool panel.
   # This requires the help_forum_api_url to be set.
   #enable_help_forum_tool_panel_integration: false
+
+  # Directory to store temporary files for file sources. This defaults
+  # to new_file_path if not set.
+  #file_source_temp_dir: null
+
+  # Default value for use_temp_files for webdav plugins that don't
+  # explicitly declare this.
+  #file_source_webdav_use_temp_files: true
+
+  # Number of seconds before file source content listings are refreshed.
+  # Shorter times will result in more queries while browsing a file
+  # sources. Longer times will result in fewer requests to file sources
+  # but outdated contents might be displayed to the user. Currently only
+  # affects s3fs file sources.
+  #file_source_listings_expiry_time: 60
+

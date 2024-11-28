@@ -17,7 +17,9 @@ from galaxy.objectstore.badges import (
 from galaxy.util.config_templates import (
     EnvironmentDict,
     expand_raw_config,
+    ImplicitConfigurationParameters,
     MarkdownContent,
+    merge_implicit_parameters,
     populate_default_variables,
     SecretsDict,
     StrictModel,
@@ -32,7 +34,7 @@ from galaxy.util.config_templates import (
 
 ObjectStoreTemplateVariableType = TemplateVariableType
 ObjectStoreTemplateVariableValueType = TemplateVariableValueType
-ObjectStoreTemplateType = Literal["aws_s3", "azure_blob", "boto3", "disk", "generic_s3"]
+ObjectStoreTemplateType = Literal["aws_s3", "azure_blob", "boto3", "disk", "generic_s3", "onedata"]
 
 
 class S3AuthTemplate(StrictModel):
@@ -266,12 +268,59 @@ class GenericS3ObjectStoreConfiguration(StrictModel):
     badges: BadgeList = None
 
 
+class OnedataAuthTemplate(StrictModel):
+    access_token: Union[str, TemplateExpansion]
+
+
+class OnedataAuth(StrictModel):
+    access_token: str
+
+
+class OnedataConnectionTemplate(StrictModel):
+    onezone_domain: Union[str, TemplateExpansion]
+    disable_tls_certificate_validation: Union[bool, TemplateExpansion] = False
+
+
+class OnedataConnection(StrictModel):
+    onezone_domain: str
+    disable_tls_certificate_validation: bool = False
+
+
+class OnedataSpaceTemplate(StrictModel):
+    name: Union[str, TemplateExpansion]
+    galaxy_root_dir: Optional[Union[str, TemplateExpansion]] = ""
+
+
+class OnedataSpace(StrictModel):
+    name: str
+    galaxy_root_dir: str
+
+
+class OnedataObjectStoreTemplateConfiguration(StrictModel):
+    type: Literal["onedata"]
+    auth: OnedataAuthTemplate
+    connection: OnedataConnectionTemplate
+    space: OnedataSpaceTemplate
+    badges: BadgeList = None
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class OnedataObjectStoreConfiguration(StrictModel):
+    type: Literal["onedata"]
+    auth: OnedataAuth
+    connection: OnedataConnection
+    space: OnedataSpace
+    badges: BadgeList = None
+
+
 ObjectStoreTemplateConfiguration = Union[
     AwsS3ObjectStoreTemplateConfiguration,
     Boto3ObjectStoreTemplateConfiguration,
     GenericS3ObjectStoreTemplateConfiguration,
     DiskObjectStoreTemplateConfiguration,
     AzureObjectStoreTemplateConfiguration,
+    OnedataObjectStoreTemplateConfiguration,
 ]
 ObjectStoreConfiguration = Union[
     AwsS3ObjectStoreConfiguration,
@@ -279,6 +328,7 @@ ObjectStoreConfiguration = Union[
     DiskObjectStoreConfiguration,
     AzureObjectStoreConfiguration,
     GenericS3ObjectStoreConfiguration,
+    OnedataObjectStoreConfiguration,
 ]
 
 
@@ -318,6 +368,10 @@ class ObjectStoreTemplate(ObjectStoreTemplateBase):
     configuration: ObjectStoreTemplateConfiguration
     environment: Optional[List[TemplateEnvironmentEntry]] = None
 
+    @property
+    def type(self):
+        return self.configuration.type
+
 
 ObjectStoreTemplateCatalog = RootModel[List[ObjectStoreTemplate]]
 
@@ -332,10 +386,12 @@ def template_to_configuration(
     secrets: SecretsDict,
     user_details: UserDetailsDict,
     environment: EnvironmentDict,
+    implicit: Optional[ImplicitConfigurationParameters] = None,
 ) -> ObjectStoreConfiguration:
     configuration_template = template.configuration
     populate_default_variables(template.variables, variables)
     raw_config = expand_raw_config(configuration_template, variables, secrets, user_details, environment)
+    merge_implicit_parameters(raw_config, implicit)
     return to_configuration_object(raw_config)
 
 
@@ -345,6 +401,7 @@ TypesToConfigurationClasses: Dict[ObjectStoreTemplateType, Type[ObjectStoreConfi
     "generic_s3": GenericS3ObjectStoreConfiguration,
     "azure_blob": AzureObjectStoreConfiguration,
     "disk": DiskObjectStoreConfiguration,
+    "onedata": OnedataObjectStoreConfiguration,
 }
 
 

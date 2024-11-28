@@ -12,7 +12,7 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     env:
-      MILESTONE_NUMBER: 28
+      MILESTONE_NUMBER: 29
     steps:
       - name: Get latest pull request labels
         id: get_pr_labels

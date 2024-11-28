@@ -25,6 +25,7 @@ from galaxy.model.base import (
 )
 from galaxy.schema.invocation import (
     CancelReason,
+    FAILURE_REASONS_EXPECTED,
     FailureReason,
     InvocationCancellationHistoryDeleted,
     InvocationFailureCollectionFailed,
@@ -143,7 +144,12 @@ def queue_invoke(
         )
     workflow_invocation = workflow_run_config_to_request(trans, workflow_run_config, workflow)
     workflow_invocation.workflow = workflow
-    return trans.app.workflow_scheduling_manager.queue(workflow_invocation, request_params, flush=flush)
+    initial_state = model.WorkflowInvocation.states.NEW
+    if workflow_run_config.requires_materialization:
+        initial_state = model.WorkflowInvocation.states.REQUIRES_MATERIALIZATION
+    return trans.app.workflow_scheduling_manager.queue(
+        workflow_invocation, request_params, flush=flush, initial_state=initial_state
+    )
 
 
 class WorkflowInvoker:
@@ -251,8 +257,12 @@ class WorkflowInvoker:
                 step_delayed = delayed_steps = True
                 self.progress.mark_step_outputs_delayed(step, why=de.why)
             except Exception as e:
-                log.exception(
-                    "Failed to schedule %s, problem occurred on %s.",
+                log_function = log.exception
+                if isinstance(e, modules.FailWorkflowEvaluation) and e.why.reason in FAILURE_REASONS_EXPECTED:
+                    log_function = log.info
+                log_function(
+                    "Failed to schedule %s for %s, problem occurred on %s.",
+                    self.workflow_invocation.log_str(),
                     self.workflow_invocation.workflow.log_str(),
                     step.log_str(),
                 )

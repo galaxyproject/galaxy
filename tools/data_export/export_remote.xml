@@ -10,11 +10,13 @@ python '$__tool_directory__/export_remote.py'
     --file-sources '$file_sources'
     --directory-uri '$d_uri'
     --files-to-export '$files_to_export'
-    --export-metadata-files $include_metadata_files
+    #if $include_metadata_files:
+        --export-metadata-files $include_metadata_files
+    #end if
     > '$out'
     ]]></command>
     <configfiles>
-        <file_sources name="file_sources" />
+        <file_sources name="file_sources"/>
         <configfile name="files_to_export">#import json
 #from galaxy.util import filesystem_safe_string
 #if $export_type.export_type_selector == "datasets_auto":
@@ -48,17 +50,17 @@ $fileconfig
             </when>
             <when value="datasets_named">
                 <repeat name="datasets" title="Dataset">
-                    <param type="data" format="data" name="infile" label="Input dataset" />
+                    <param type="data" format="data" name="infile" label="Input dataset"/>
                     <param type="text" name="name" label="Enter file name" help="To create a file named &quot;f1.txt&quot; in directory named &quot;dir1&quot; enter &quot;dir1/f1.txt&quot;">
                         <!-- 🔥 turn off sanitizer, so unicode strings can be used. Is sanitized in configfile -->
-                        <sanitizer sanitize="false"></sanitizer>
+                        <sanitizer sanitize="false"/>
                         <validator type="length" min="1" max="255"/>
                     </param>
                 </repeat>
             </when>
         </conditional>
-        <param type="directory_uri" name="d_uri" label="Directory URI" />
-        <param name="include_metadata_files" type="boolean" checked="true" label="Include metadata files in export?" help="Examples of metadata files are bam, cram and vcf indexes that can be regenerated from raw data" />
+        <param type="directory_uri" name="d_uri" label="Directory URI"/>
+        <param name="include_metadata_files" type="boolean" checked="true" label="Include metadata files in export?" help="Examples of metadata files are bam, cram and vcf indexes that can be regenerated from raw data"/>
         <param name="invalid_chars" type="select" label="Select which characters should be stripped from the exported paths">
             <option value="/">Sanitize /</option>
             <option value="">Don't sanitize values</option>

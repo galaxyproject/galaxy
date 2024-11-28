@@ -7,17 +7,18 @@ import { filter } from "underscore";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { helpHtml, WorkflowFilters } from "@/components/Workflow/List/WorkflowFilters";
-import { loadWorkflows } from "@/components/Workflow/workflows.services";
+import { GalaxyApi } from "@/api";
+import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
+import { rethrowSimple } from "@/utils/simple-error";
 
+import WorkflowCardList from "./WorkflowCardList.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
 import LoginRequired from "@/components/Common/LoginRequired.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import WorkflowCard from "@/components/Workflow/List/WorkflowCard.vue";
 import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.vue";
 
 library.add(faStar, faTrash);
@@ -43,7 +44,6 @@ const overlay = ref(false);
 const filterText = ref("");
 const totalWorkflows = ref(0);
 const showAdvanced = ref(false);
-const showBookmarked = ref(false);
 const listHeader = ref<any>(null);
 const workflowsLoaded = ref<WorkflowsList>([]);
 
@@ -64,6 +64,7 @@ const searchPlaceHolder = computed(() => {
 const published = computed(() => props.activeList === "published");
 const sharedWithMe = computed(() => props.activeList === "shared_with_me");
 const showDeleted = computed(() => filterText.value.includes("is:deleted"));
+const showBookmarked = computed(() => filterText.value.includes("is:bookmarked"));
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const view = computed(() => (userStore.preferredListViewMode as ListView) || "grid");
 const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) ?? true);
@@ -76,7 +77,7 @@ const bookmarkButtonTitle = computed(() =>
 );
 
 // Filtering computed refs
-const workflowFilters = computed(() => WorkflowFilters(props.activeList));
+const workflowFilters = computed(() => getWorkflowFilters(props.activeList));
 const rawFilters = computed(() =>
     Object.fromEntries(workflowFilters.value.getFiltersForText(filterText.value, true, false))
 );
@@ -90,17 +91,12 @@ function updateFilterValue(filterKey: string, newValue: any) {
     filterText.value = workflowFilters.value.setFilterValue(currentFilterText, filterKey, newValue);
 }
 
-function toggleBookmarked(bookmarked?: boolean) {
-    showBookmarked.value = bookmarked ?? !showBookmarked.value;
-}
-
 function onToggleBookmarked() {
-    toggleBookmarked();
+    updateFilterValue("bookmarked", true);
 }
 
 function onToggleDeleted() {
     updateFilterValue("deleted", true);
-    toggleBookmarked(false);
 }
 
 async function load(overlayLoading = false, silent = false) {
@@ -130,19 +126,25 @@ async function load(overlayLoading = false, silent = false) {
     }
 
     try {
-        const { data, headers } = await loadWorkflows({
-            sortBy: sortBy.value,
-            sortDesc: sortDesc.value,
-            limit: limit.value,
-            offset: offset.value,
-            filterText: search?.trim(),
-            showPublished: published.value,
-            skipStepCounts: true,
+        const { response, data, error } = await GalaxyApi().GET("/api/workflows", {
+            params: {
+                query: {
+                    sort_by: sortBy.value,
+                    sort_desc: sortDesc.value,
+                    limit: limit.value,
+                    offset: offset.value,
+                    search: search?.trim(),
+                    show_published: published.value,
+                    skip_step_counts: true,
+                },
+            },
         });
 
-        let filteredWorkflows = showBookmarked.value
-            ? filter(data, (workflow: any) => workflow.show_in_tool_panel)
-            : data;
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        let filteredWorkflows = data;
 
         if (props.activeList === "my") {
             filteredWorkflows = filter(filteredWorkflows, (w: any) => userStore.matchesCurrentUsername(w.owner));
@@ -150,11 +152,7 @@ async function load(overlayLoading = false, silent = false) {
 
         workflowsLoaded.value = filteredWorkflows;
 
-        if (showBookmarked.value) {
-            totalWorkflows.value = filteredWorkflows.length;
-        } else {
-            totalWorkflows.value = parseInt(headers.get("Total_matches") || "0", 10) || 0;
-        }
+        totalWorkflows.value = parseInt(response.headers.get("Total_matches") || "0", 10) || 0;
     } catch (e) {
         Toast.error(`Failed to load workflows: ${e}`);
     } finally {
@@ -180,7 +178,7 @@ function validatedFilterText() {
     return workflowFilters.value.getFilterText(validFilters.value, true);
 }
 
-watch([filterText, sortBy, sortDesc, showBookmarked], async () => {
+watch([filterText, sortBy, sortDesc], async () => {
     offset.value = 0;
     await load(true);
 });
@@ -260,7 +258,6 @@ onMounted(() => {
                             size="sm"
                             :title="bookmarkButtonTitle"
                             :pressed="showBookmarked"
-                            :disabled="showDeleted"
                             variant="outline-primary"
                             @click="onToggleBookmarked">
                             <FontAwesomeIcon :icon="faStar" fixed-width />
@@ -308,23 +305,14 @@ onMounted(() => {
             </BAlert>
         </span>
 
-        <BOverlay
-            v-else
-            id="workflow-cards"
-            :show="overlay"
-            rounded="sm"
-            class="cards-list mt-2"
-            :class="view === 'grid' ? 'd-flex flex-wrap' : ''">
-            <WorkflowCard
-                v-for="w in workflowsLoaded"
-                :key="w.id"
-                :workflow="w"
+        <BOverlay v-else id="workflow-cards" :show="overlay" rounded="sm" class="cards-list mt-2">
+            <WorkflowCardList
+                :workflows="workflowsLoaded"
                 :published-view="published"
                 :grid-view="view === 'grid'"
-                :class="view === 'grid' ? 'grid-view' : 'list-view'"
                 @refreshList="load"
                 @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
-                @update-filter="updateFilterValue" />
+                @updateFilter="updateFilterValue" />
 
             <BPagination
                 v-if="!loading && totalWorkflows > limit"
@@ -341,9 +329,6 @@ onMounted(() => {
 </template>
 
 <style lang="scss">
-@import "scss/mixins.scss";
-@import "breakpoints.scss";
-
 .workflows-list {
     overflow: auto;
     display: flex;
@@ -361,32 +346,13 @@ onMounted(() => {
     }
 
     .cards-list {
-        container: card-list / inline-size;
         scroll-behavior: smooth;
         min-height: 150px;
+        display: flex;
+        flex-direction: column;
 
         overflow-y: auto;
         overflow-x: hidden;
-
-        .list-view {
-            width: 100%;
-        }
-
-        .grid-view {
-            width: calc(100% / 3);
-        }
-
-        @container card-list (max-width: #{$breakpoint-xl}) {
-            .grid-view {
-                width: calc(100% / 2);
-            }
-        }
-
-        @container card-list (max-width: #{$breakpoint-sm}) {
-            .grid-view {
-                width: 100%;
-            }
-        }
     }
 }
 </style>

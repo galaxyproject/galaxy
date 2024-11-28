@@ -30,8 +30,7 @@ from datetime import (
     timezone,
 )
 from decimal import Decimal
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from email.message import EmailMessage
 from hashlib import md5
 from os.path import relpath
 from pathlib import Path
@@ -50,6 +49,7 @@ from typing import (
     Union,
 )
 from urllib.parse import (
+    quote,
     urlencode,
     urlparse,
     urlsplit,
@@ -1134,7 +1134,7 @@ def commaify(amount):
 
 
 @overload
-def unicodify(  # type: ignore[overload-overlap]  # ignore can be removed in mypy >=1.11.0
+def unicodify(
     value: Literal[None],
     encoding: str = DEFAULT_ENCODING,
     error: str = "replace",
@@ -1634,10 +1634,8 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
         return
 
     to = listify(to)
-    if html:
-        msg = MIMEMultipart("alternative")
-    else:
-        msg = MIMEText(body, "plain", "utf-8")
+    msg = EmailMessage()
+    msg.set_content(body)
 
     msg["To"] = ", ".join(to)
     msg["From"] = frm
@@ -1652,45 +1650,40 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
         return
 
     if html:
-        mp_text = MIMEText(body, "plain", "utf-8")
-        mp_html = MIMEText(html, "html", "utf-8")
-        msg.attach(mp_text)
-        msg.attach(mp_html)
+        msg.add_alternative(html, subtype="html")
 
     smtp_ssl = asbool(getattr(config, "smtp_ssl", False))
     if smtp_ssl:
         s = smtplib.SMTP_SSL(config.smtp_server)
     else:
         s = smtplib.SMTP(config.smtp_server)
-    if not smtp_ssl:
-        try:
-            s.starttls()
-            log.debug("Initiated SSL/TLS connection to SMTP server: %s", config.smtp_server)
-        except RuntimeError as e:
-            log.warning("SSL/TLS support is not available to your Python interpreter: %s", unicodify(e))
-        except smtplib.SMTPHeloError as e:
-            log.error("The server didn't reply properly to the HELO greeting: %s", unicodify(e))
-            s.close()
-            raise
-        except smtplib.SMTPException as e:
-            log.warning("The server does not support the STARTTLS extension: %s", unicodify(e))
-    if config.smtp_username and config.smtp_password:
-        try:
-            s.login(config.smtp_username, config.smtp_password)
-        except smtplib.SMTPHeloError as e:
-            log.error("The server didn't reply properly to the HELO greeting: %s", unicodify(e))
-            s.close()
-            raise
-        except smtplib.SMTPAuthenticationError as e:
-            log.error("The server didn't accept the username/password combination: %s", unicodify(e))
-            s.close()
-            raise
-        except smtplib.SMTPException as e:
-            log.error("No suitable authentication method was found: %s", unicodify(e))
-            s.close()
-            raise
-    s.sendmail(frm, to, msg.as_string())
-    s.quit()
+    try:
+        if not smtp_ssl:
+            try:
+                s.starttls()
+                log.debug("Initiated SSL/TLS connection to SMTP server: %s", config.smtp_server)
+            except RuntimeError as e:
+                log.warning("SSL/TLS support is not available to your Python interpreter: %s", e)
+            except smtplib.SMTPHeloError as e:
+                log.error("The server didn't reply properly to the HELO greeting: %s", e)
+                raise
+            except smtplib.SMTPException as e:
+                log.warning("The server does not support the STARTTLS extension: %s", e)
+        if config.smtp_username and config.smtp_password:
+            try:
+                s.login(config.smtp_username, config.smtp_password)
+            except smtplib.SMTPHeloError as e:
+                log.error("The server didn't reply properly to the HELO greeting: %s", e)
+                raise
+            except smtplib.SMTPAuthenticationError as e:
+                log.error("The server didn't accept the username/password combination: %s", e)
+                raise
+            except smtplib.SMTPException as e:
+                log.error("No suitable authentication method was found: %s", e)
+                raise
+        s.send_message(msg)
+    finally:
+        s.quit()
 
 
 def force_symlink(source, link_name):
@@ -2014,3 +2007,11 @@ def lowercase_alphanum_to_hex(lowercase_alphanum: str) -> str:
     import numpy as np
 
     return np.base_repr(int(lowercase_alphanum, 36), 16).lower()
+
+
+def to_content_disposition(target: str) -> str:
+    filename, ext = os.path.splitext(target)
+    character_limit = 255 - len(ext)
+    sanitized_filename = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in filename)[0:character_limit] + ext
+    utf8_encoded_filename = quote(re.sub(r'[\/\\\?%*:|"<>]', "_", filename), safe="")[0:character_limit] + ext
+    return f"attachment; filename=\"{sanitized_filename}\"; filename*=UTF-8''{utf8_encoded_filename}"

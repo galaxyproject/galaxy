@@ -97,7 +97,7 @@ class ToolValidator:
             tool = None
             valid = False
             error_message = (
-                f'This file requires an entry for "{str(e)}" in the tool_data_table_conf.xml file.  Upload a file '
+                f'This file requires an entry for "{str(e)}" in the tool_data_table_conf.xml file. Upload a file '
             )
             error_message += (
                 "named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct "

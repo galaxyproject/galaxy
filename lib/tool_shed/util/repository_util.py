@@ -390,12 +390,7 @@ def handle_role_associations(app: "ToolShedApp", role, repository, **kwd):
             roles=[role], users=in_users, groups=in_groups, repositories=in_repositories
         )
         sa_session.refresh(role)
-        message += "Role <b>%s</b> has been associated with %d users, %d groups and %d repositories.  " % (
-            escape(str(role.name)),
-            len(in_users),
-            len(in_groups),
-            len(in_repositories),
-        )
+        message += f"Role <b>{escape(str(role.name))}</b> has been associated with {len(in_users)} users, {len(in_groups)} groups and {len(in_repositories)} repositories.  "
     in_users = []
     out_users = []
     in_groups = []
@@ -432,16 +427,26 @@ def change_repository_name_in_hgrc_file(hgrc_file: str, new_name: str) -> None:
 def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> Tuple[Optional["Repository"], Optional[str]]:
     """Update an existing ToolShed repository"""
     app = trans.app
-    message = None
-    flush_needed = False
     sa_session = app.model.session
     repository = sa_session.get(app.model.Repository, app.security.decode_id(id))
     if repository is None:
         return None, "Unknown repository ID"
 
-    if not (trans.user_is_admin or trans.app.security_agent.user_can_administer_repository(trans.user, repository)):
+    if not (trans.user_is_admin or app.security_agent.user_can_administer_repository(trans.user, repository)):
         message = "You are not the owner of this repository, so you cannot administer it."
         return None, message
+
+    return update_validated_repository(trans, repository, **kwds)
+
+
+def update_validated_repository(
+    trans: "ProvidesUserContext", repository: "Repository", **kwds
+) -> Tuple[Optional["Repository"], Optional[str]]:
+    """Update an existing ToolShed repository metadata once permissions have been checked."""
+    app = trans.app
+    sa_session = app.model.session
+    message = None
+    flush_needed = False
 
     # Allowlist properties that can be changed via this method
     for key in ("type", "description", "long_description", "remote_repository_url", "homepage_url"):
@@ -451,10 +456,9 @@ def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> Tuple[Op
             flush_needed = True
 
     if "category_ids" in kwds and isinstance(kwds["category_ids"], list):
+
         # Remove existing category associations
-        delete_repository_category_associations(
-            sa_session, app.model.RepositoryCategoryAssociation, app.security.decode_id(id)
-        )
+        delete_repository_category_associations(sa_session, app.model.RepositoryCategoryAssociation, repository.id)
 
         # Then (re)create category associations
         for category_id in kwds["category_ids"]:

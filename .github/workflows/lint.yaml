@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.12']
+        python-version: ['3.8', '3.13']
     env:
       LINT_PATH: 'lib/galaxy/dependencies/pinned-lint-requirements.txt'
       TYPE_PATH: 'lib/galaxy/dependencies/pinned-typecheck-requirements.txt'
@@ -32,15 +32,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: |
+            ${{ env.LINT_PATH }}
+            ${{ env.TYPE_PATH }}
+            ${{ env.CORE_PATH }}
       - name: Get full Python version
         id: full-python-version
         shell: bash
         run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
-      - name: Cache pip dir
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles(env.LINT_PATH, env.TYPE_PATH, env.CORE_PATH) }}
       - name: Cache tox env
         uses: actions/cache@v4
         with:
@@ -55,4 +55,6 @@ jobs:
       - name: Run mypy checks
         run: tox -e mypy
       - uses: psf/black@stable
+        with:
+          version: "24.8.0"  # last version supporting Python 3.8
       - uses: isort/isort-action@v1

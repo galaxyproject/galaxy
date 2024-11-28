@@ -1,37 +1,57 @@
-import { fetcher } from "@/api/schema";
-import { type components } from "@/api/schema/schema";
+import { type components, GalaxyApi } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export type UserConcreteObjectStore = components["schemas"]["UserConcreteObjectStoreModel"];
 
-export type ObjectStoreTemplateType = "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3";
-
-const getObjectStores = fetcher.path("/api/object_stores").method("get").create();
+export type ObjectStoreTemplateType = components["schemas"]["UserConcreteObjectStoreModel"]["type"];
 
 export async function getSelectableObjectStores() {
-    const { data } = await getObjectStores({ selectable: true });
+    const { data, error } = await GalaxyApi().GET("/api/object_stores", {
+        params: {
+            query: { selectable: true },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
     return data;
 }
-
-const getObjectStore = fetcher.path("/api/object_stores/{object_store_id}").method("get").create();
-const getUserObjectStoreInstance = fetcher
-    .path("/api/object_store_instances/{user_object_store_id}")
-    .method("get")
-    .create();
 
 export async function getObjectStoreDetails(id: string) {
     if (id.startsWith("user_objects://")) {
         const userObjectStoreId = id.substring("user_objects://".length);
-        const { data } = await getUserObjectStoreInstance({ user_object_store_id: userObjectStoreId });
+
+        const { data, error } = await GalaxyApi().GET("/api/object_store_instances/{uuid}", {
+            params: { path: { uuid: userObjectStoreId } },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
         return data;
     } else {
-        const { data } = await getObjectStore({ object_store_id: id });
+        const { data, error } = await GalaxyApi().GET("/api/object_stores/{object_store_id}", {
+            params: { path: { object_store_id: id } },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
         return data;
     }
 }
 
-const updateObjectStoreFetcher = fetcher.path("/api/datasets/{dataset_id}/object_store_id").method("put").create();
-
 export async function updateObjectStore(datasetId: string, objectStoreId: string) {
-    const { data } = await updateObjectStoreFetcher({ dataset_id: datasetId, object_store_id: objectStoreId });
-    return data;
+    const { error } = await GalaxyApi().PUT("/api/datasets/{dataset_id}/object_store_id", {
+        params: { path: { dataset_id: datasetId } },
+        body: { object_store_id: objectStoreId },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
 }

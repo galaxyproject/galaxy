@@ -223,7 +223,7 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
                 continue
             for tool_metadata in tools:
                 if tool_metadata["guid"] in tool_ids:
-                    repository_found.append("%d:%s" % (int(changeset), changehash))
+                    repository_found.append(f"{int(changeset)}:{changehash}")
             metadata = get_current_repository_metadata_for_changeset_revision(app, repository, changehash)
             if metadata is None:
                 continue
@@ -273,8 +273,7 @@ def get_repository_metadata_for_management(
     trans: ProvidesUserContext, encoded_repository_id: str, changeset_revision: str
 ) -> RepositoryMetadata:
     repository = get_repository_in_tool_shed(trans.app, encoded_repository_id)
-    if not can_manage_repo(trans, repository):
-        raise InsufficientPermissionsException("Cannot manage target repository")
+    ensure_can_manage(trans, repository, "Cannot manage target repository")
     revisions = [r for r in repository.metadata_revisions if r.changeset_revision == changeset_revision]
     if len(revisions) != 1:
         raise ObjectNotFound()
@@ -580,6 +579,12 @@ def upload_tar_and_set_metadata(
     else:
         raise InternalServerError(message)
     return message
+
+
+def ensure_can_manage(trans: ProvidesUserContext, repository: Repository, error_message: Optional[str] = None) -> None:
+    if not can_manage_repo(trans, repository):
+        error_message = error_message or "You do not have permission to update this repository."
+        raise InsufficientPermissionsException(error_message)
 
 
 def _get_repository_by_name_and_owner(session: scoped_session, name: str, owner: str, user_model):

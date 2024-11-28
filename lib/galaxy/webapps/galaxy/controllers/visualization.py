@@ -41,6 +41,16 @@ class VisualizationController(
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 
+    def get_visualization(self, trans, visualization_id, check_ownership=True, check_accessible=False):
+        """
+        Get a Visualization from the database by id, verifying ownership.
+        """
+        visualization = trans.sa_session.get(model.Visualization, trans.security.decode_id(visualization_id))
+        if not visualization:
+            raise MessageException("Visualization not found")
+        else:
+            return self.security_check(trans, visualization, check_ownership, check_accessible)
+
     #
     # -- Functions for operating on visualizations. --
     #
@@ -111,8 +121,7 @@ class VisualizationController(
                 use_panels=True,
             )
 
-    @web.expose
-    def display_by_username_and_slug(self, trans, username, slug, **kwargs):
+    def _display_by_username_and_slug(self, trans, username, slug, **kwargs):
         """Display visualization based on a username and slug."""
 
         # Get visualization.

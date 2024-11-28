@@ -56,6 +56,8 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, hgweb_repo_prefix
     execution_timer = ExecutionTimer()
     with repo_index.searcher() as searcher:
         for repo in get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwargs):
+            if repo is None:
+                continue
             tools_list = repo.pop("tools_list")
             repo_id = repo["id"]
             indexed_document = searcher.document(id=repo_id)
@@ -119,9 +121,11 @@ def get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwar
         full_last_updated = repo.update_time.strftime("%Y-%m-%d %I:%M %p")
 
         # Load all changesets of the repo for lineage.
-        repo_path = os.path.join(
-            hgweb_config_dir, hgwcm.get_entry(os.path.join(hgweb_repo_prefix, repo.user.username, repo.name))
-        )
+        try:
+            entry = hgwcm.get_entry(os.path.join(hgweb_repo_prefix, repo.user.username, repo.name))
+        except Exception:
+            return None
+        repo_path = os.path.join(hgweb_config_dir, entry)
         hg_repo = hg.repository(ui.ui(), repo_path.encode("utf-8"))
         lineage = []
         for changeset in hg_repo.changelog:
@@ -131,7 +135,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwar
         #  Parse all the tools within repo for a separate index.
         tools_list = []
         path = os.path.join(file_path, *directory_hash_id(repo.id))
-        path = os.path.join(path, "repo_%d" % repo.id)
+        path = os.path.join(path, f"repo_{repo.id}")
         if os.path.exists(path):
             tools_list.extend(load_one_dir(path))
             for root, dirs, _files in os.walk(path):

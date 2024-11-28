@@ -3,8 +3,9 @@ import { useToast } from "@/composables/toast";
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
 import { LazyUndoRedoAction, UndoRedoAction, type UndoRedoStore } from "@/stores/undoRedoStore";
 import { type Connection, type WorkflowConnectionStore } from "@/stores/workflowConnectionStore";
+import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { type WorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { type NewStep, type Step, type WorkflowStepStore } from "@/stores/workflowStepStore";
+import { type NewStep, type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { cloneStepWithUniqueLabel, getLabelSet } from "./cloneStep";
@@ -15,10 +16,11 @@ export class LazyMutateStepAction<K extends keyof Step> extends LazyUndoRedoActi
     toValue: Step[K];
     stepId;
     stepStore;
+    stepLabel;
     onUndoRedo?: () => void;
 
     get name() {
-        return this.internalName ?? "modify step";
+        return this.internalName ?? `modify step ${this.stepLabel}`;
     }
 
     set name(name: string | undefined) {
@@ -32,6 +34,13 @@ export class LazyMutateStepAction<K extends keyof Step> extends LazyUndoRedoActi
         this.key = key;
         this.fromValue = fromValue;
         this.toValue = toValue;
+
+        this.stepLabel = `${stepId + 1}`;
+        const step = this.stepStore.getStep(stepId);
+
+        if (step) {
+            this.stepLabel = `"${stepId + 1}: ${step.label ?? step.name}"`;
+        }
     }
 
     queued() {
@@ -160,10 +169,11 @@ export class UpdateStepAction extends UndoRedoAction {
     stepId;
     fromPartial;
     toPartial;
+    stepLabel;
     onUndoRedo?: () => void;
 
     get name() {
-        return this.internalName ?? "modify step";
+        return this.internalName ?? `modify step ${this.stepLabel}`;
     }
 
     set name(name: string | undefined) {
@@ -183,6 +193,13 @@ export class UpdateStepAction extends UndoRedoAction {
         this.stepId = stepId;
         this.fromPartial = fromPartial;
         this.toPartial = toPartial;
+
+        this.stepLabel = `${stepId + 1}`;
+        const step = this.stepStore.getStep(stepId);
+
+        if (step) {
+            this.stepLabel = `"${stepId + 1}: ${step.label ?? step.name}"`;
+        }
     }
 
     isEmpty() {
@@ -192,14 +209,12 @@ export class UpdateStepAction extends UndoRedoAction {
     run() {
         const step = this.stepStore.getStep(this.stepId);
         assertDefined(step);
-        this.stateStore.activeNodeId = this.stepId;
         this.stepStore.updateStep({ ...step, ...this.toPartial });
     }
 
     undo() {
         const step = this.stepStore.getStep(this.stepId);
         assertDefined(step);
-        this.stateStore.activeNodeId = this.stepId;
         this.stepStore.updateStep({ ...step, ...this.fromPartial });
         this.onUndoRedo?.();
     }
@@ -281,7 +296,6 @@ export class InsertStepAction extends UndoRedoAction {
     redo() {
         this.run();
         assertDefined(this.stepId);
-        this.stateStore.activeNodeId = this.stepId;
     }
 }
 
@@ -289,7 +303,6 @@ export class RemoveStepAction extends UndoRedoAction {
     stepStore;
     stateStore;
     connectionStore;
-    showAttributesCallback;
     step: Step;
     connections: Connection[];
 
@@ -297,32 +310,29 @@ export class RemoveStepAction extends UndoRedoAction {
         stepStore: WorkflowStepStore,
         stateStore: WorkflowStateStore,
         connectionStore: WorkflowConnectionStore,
-        showAttributesCallback: () => void,
         step: Step
     ) {
         super();
         this.stepStore = stepStore;
         this.stateStore = stateStore;
         this.connectionStore = connectionStore;
-        this.showAttributesCallback = showAttributesCallback;
         this.step = structuredClone(step);
         this.connections = structuredClone(this.connectionStore.getConnectionsForStep(this.step.id));
     }
 
     get name() {
-        return `remove ${this.step.label ?? this.step.name}`;
+        return `remove step "${this.step.id} ${this.step.label ?? this.step.name}"`;
     }
 
     run() {
         this.stepStore.removeStep(this.step.id);
-        this.showAttributesCallback();
+        this.stateStore.activeNodeId = null;
         this.stateStore.hasChanges = true;
     }
 
     undo() {
         this.stepStore.addStep(structuredClone(this.step), false, false);
         this.connections.forEach((connection) => this.connectionStore.addConnection(connection));
-        this.stateStore.activeNodeId = this.step.id;
         this.stateStore.hasChanges = true;
     }
 }
@@ -331,6 +341,7 @@ export class CopyStepAction extends UndoRedoAction {
     stepStore;
     stateStore;
     step: NewStep;
+    stepLabel;
     stepId?: number;
     onUndoRedo?: () => void;
 
@@ -340,18 +351,18 @@ export class CopyStepAction extends UndoRedoAction {
         this.stateStore = stateStore;
 
         const labelSet = getLabelSet(stepStore);
+        this.stepLabel = `${step.id + 1}: ${step.label ?? step.name}`;
         this.step = cloneStepWithUniqueLabel(step, labelSet);
         delete this.step.id;
     }
 
     get name() {
-        return `duplicate step ${this.step.label ?? this.step.name}`;
+        return `duplicate step "${this.stepLabel}"`;
     }
 
     run() {
         const newStep = this.stepStore.addStep(structuredClone(this.step));
         this.stepId = newStep.id;
-        this.stateStore.activeNodeId = this.stepId;
         this.stateStore.hasChanges = true;
     }
 
@@ -366,6 +377,7 @@ export class ToggleStepSelectedAction extends UndoRedoAction {
     stepStore;
     stepId;
     toggleTo: boolean;
+    stepLabel;
 
     constructor(stateStore: WorkflowStateStore, stepStore: WorkflowStepStore, stepId: number) {
         super();
@@ -374,11 +386,9 @@ export class ToggleStepSelectedAction extends UndoRedoAction {
         this.stepStore = stepStore;
         this.stepId = stepId;
         this.toggleTo = !this.stateStore.getStepMultiSelected(stepId);
-    }
 
-    get stepLabel() {
         const label = this.stepStore.getStep(this.stepId)?.label;
-        return label ?? `${this.stepId + 1}`;
+        this.stepLabel = label ?? `${this.stepId + 1}`;
     }
 
     get name() {
@@ -395,6 +405,112 @@ export class ToggleStepSelectedAction extends UndoRedoAction {
 
     undo() {
         this.stateStore.setStepMultiSelected(this.stepId, !this.toggleTo);
+    }
+}
+
+interface Positions {
+    steps: { id: string; x: number; y: number }[];
+    comments: { id: string; x: number; y: number; w: number; h: number }[];
+}
+
+export class AutoLayoutAction extends UndoRedoAction {
+    stepStore;
+    commentStore;
+    positions: Positions;
+    oldPositions: Positions;
+    workflowId;
+    ran;
+
+    constructor(workflowId: string) {
+        super();
+
+        this.workflowId = workflowId;
+        this.stepStore = useWorkflowStepStore(workflowId);
+        this.commentStore = useWorkflowCommentStore(workflowId);
+
+        this.positions = {
+            steps: [],
+            comments: [],
+        };
+
+        this.oldPositions = {
+            steps: [],
+            comments: [],
+        };
+
+        this.ran = false;
+    }
+
+    get name() {
+        return "auto layout";
+    }
+
+    private mapPositionsToStore(positions: Positions) {
+        positions.steps.map((p) => {
+            const step = this.stepStore.steps[p.id];
+            if (step) {
+                this.stepStore.updateStep({
+                    ...step,
+                    position: {
+                        top: p.y,
+                        left: p.x,
+                    },
+                });
+            }
+        });
+
+        positions.comments.map((c) => {
+            const id = parseInt(c.id, 10);
+            const comment = this.commentStore.commentsRecord[id];
+            if (comment) {
+                this.commentStore.changePosition(id, [c.x, c.y]);
+                this.commentStore.changeSize(id, [c.w, c.h]);
+            }
+        });
+    }
+
+    async run() {
+        this.ran = true;
+
+        this.oldPositions.steps = Object.values(this.stepStore.steps).map((step) => ({
+            id: `${step.id}`,
+            x: step.position?.left ?? 0,
+            y: step.position?.top ?? 0,
+        }));
+
+        this.oldPositions.comments = this.commentStore.comments.map((comment) => ({
+            id: `${comment.id}`,
+            x: comment.position[0],
+            y: comment.position[1],
+            w: comment.size[0],
+            h: comment.size[1],
+        }));
+
+        const { autoLayout } = await import(
+            /* webpackChunkName: "workflowLayout" */ "@/components/Workflow/Editor/modules/layout"
+        );
+
+        this.commentStore.resolveCommentsInFrames();
+        this.commentStore.resolveStepsInFrames();
+
+        const newPositions = await autoLayout(this.workflowId, this.stepStore.steps, this.commentStore.comments);
+
+        assertDefined(newPositions);
+
+        this.positions = newPositions as Positions;
+
+        if (this.ran) {
+            this.mapPositionsToStore(this.positions);
+        }
+    }
+
+    undo() {
+        this.ran = false;
+        this.mapPositionsToStore(this.oldPositions);
+    }
+
+    redo() {
+        this.mapPositionsToStore(this.positions);
     }
 }
 
@@ -445,6 +561,10 @@ export function useStepActions(
                 undoRedoStore.setLazyActionTimeout(timeout);
             }
 
+            if (name) {
+                actionForKey.name = name;
+            }
+
             return actionForKey;
         } else {
             const actionConstructor =
@@ -460,7 +580,6 @@ export function useStepActions(
             undoRedoStore.applyLazyAction(action, timeout);
 
             action.onUndoRedo = () => {
-                stateStore.activeNodeId = step.id;
                 stateStore.hasChanges = true;
             };
 
@@ -469,11 +588,21 @@ export function useStepActions(
     }
 
     function setPosition(step: Step, position: NonNullable<Step["position"]>) {
-        changeValueOrCreateAction({ step, key: "position", value: position, name: "change step position" });
+        changeValueOrCreateAction({
+            step,
+            key: "position",
+            value: position,
+            name: `move step "${step.id + 1}: ${step.label ?? step.name}"`,
+        });
     }
 
     function setAnnotation(step: Step, annotation: Step["annotation"]) {
-        changeValueOrCreateAction({ step, key: "annotation", value: annotation, name: "modify step annotation" });
+        changeValueOrCreateAction({
+            step,
+            key: "annotation",
+            value: annotation,
+            name: `edit annotation of step "${step.id + 1}: ${step.label ?? step.name}"`,
+        });
     }
 
     function setOutputLabel(
@@ -489,7 +618,7 @@ export function useStepActions(
             step,
             key: "workflow_outputs",
             value: workflowOutputs,
-            name: "modify step output label",
+            name: `edit output label of step "${step.id + 1}: ${step.label ?? step.name}"`,
             actionConstructor,
             keepActionAlive: true,
             timeout: 2000,
@@ -502,7 +631,7 @@ export function useStepActions(
             step,
             key: "label",
             value: label,
-            name: "modify step label",
+            name: `change label of step ${step.id + 1} to "${label}"`,
             actionConstructor,
             keepActionAlive: true,
             timeout: 2000,
@@ -516,7 +645,6 @@ export function useStepActions(
 
         if (!action.isEmpty()) {
             action.onUndoRedo = () => {
-                stateStore.activeNodeId = from.id;
                 stateStore.hasChanges = true;
                 refresh();
             };
@@ -524,8 +652,8 @@ export function useStepActions(
         }
     }
 
-    function removeStep(step: Step, showAttributesCallback: () => void) {
-        const action = new RemoveStepAction(stepStore, stateStore, connectionStore, showAttributesCallback, step);
+    function removeStep(step: Step) {
+        const action = new RemoveStepAction(stepStore, stateStore, connectionStore, step);
         undoRedoStore.applyAction(action);
     }
 
@@ -542,7 +670,6 @@ export function useStepActions(
 
         if (!action.isEmpty()) {
             action.onUndoRedo = () => {
-                stateStore.activeNodeId = id;
                 stateStore.hasChanges = true;
                 refresh();
             };

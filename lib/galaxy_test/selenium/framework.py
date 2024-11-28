@@ -233,7 +233,7 @@ retry_assertion_during_transitions = partial(
 class TestSnapshot:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
-    def __init__(self, driver, index, description):
+    def __init__(self, driver, index: int, description: str):
         self.screenshot_binary = driver.get_screenshot_as_png()
         self.description = description
         self.index = index
@@ -241,7 +241,7 @@ class TestSnapshot:
         self.stack = traceback.format_stack()
 
     def write_to_error_directory(self, write_file_func):
-        prefix = "%d-%s" % (self.index, self.description)
+        prefix = f"{self.index}-{self.description}"
         write_file_func(f"{prefix}-screenshot.png", self.screenshot_binary, raw=True)
         write_file_func(f"{prefix}-traceback.txt", self.exc)
         write_file_func(f"{prefix}-stack.txt", str(self.stack))
@@ -331,7 +331,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     def tear_down_selenium(self):
         self.tear_down_driver()
 
-    def snapshot(self, description):
+    def snapshot(self, description: str):
         """Create a debug snapshot (DOM, screenshot, etc...) that is written out on tool failure.
 
         This information will be automatically written to a per-test directory created for all
@@ -371,7 +371,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         copy = 1
         while os.path.exists(target):
             # Maybe previously a test re-run - keep the original.
-            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, "%s-%d%s" % (label, copy, extension))
+            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, f"{label}-{copy}{extension}")
             copy += 1
 
         return target
@@ -455,6 +455,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         save_button.wait_for_visible()
         assert not save_button.has_class("disabled")
         save_button.wait_for_and_click()
+        save_button.wait_for_absent()
         self.sleep_for(self.wait_types.UX_RENDER)
 
     @retry_assertion_during_transitions
@@ -744,12 +745,14 @@ class SeleniumSessionGetPostMixin:
         response = requests.get(full_url, params=data, cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         return response
 
-    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
+    def _post(
+        self, route, data=None, files=None, headers=None, admin=False, json: bool = False, anon: bool = False
+    ) -> Response:
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
-        else:
+        elif not anon:
             cookies = self.selenium_context.selenium_to_requests_cookies()
         request_kwd = prepare_request_params(data=data, files=files, as_json=json, headers=headers, cookies=cookies)
         response = requests.post(full_url, timeout=DEFAULT_SOCKET_TIMEOUT, **request_kwd)

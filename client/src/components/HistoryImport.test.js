@@ -1,36 +1,53 @@
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
-import { waitOnJob } from "components/JobStates/wait";
 import flushPromises from "flush-promises";
 import { getLocalVue, wait } from "tests/jest/helpers";
+import VueRouter from "vue-router";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
+import { waitOnJob } from "@/components/JobStates/wait";
 
 import HistoryImport from "./HistoryImport.vue";
 
 const localVue = getLocalVue();
-const TEST_JOB_ID = "job123789";
-const TEST_HISTORY_URI = "/api/histories";
-const TEST_SOURCE_URL = "http://galaxy.example/import";
-const TEST_PLUGINS_URL = "/api/remote_files/plugins";
+localVue.use(VueRouter);
+const router = new VueRouter();
 
-jest.mock("@/api/schema");
+const TEST_JOB_ID = "job123789";
+const TEST_SOURCE_URL = "http://galaxy.example/import";
+
 jest.mock("components/JobStates/wait");
 
+const { server, http } = useServerMock();
+
 describe("HistoryImport.vue", () => {
-    let axiosMock;
     let wrapper;
 
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-        mockFetcher
-            .path(TEST_PLUGINS_URL)
-            .method("get")
-            .mock({ data: [{ id: "foo", writable: false }] });
+        server.use(
+            http.get("/api/remote_files/plugins", ({ response }) => {
+                return response(200).json([
+                    {
+                        id: "_ftp",
+                        type: "gxftp",
+                        uri_root: "gxftp://",
+                        label: "FTP Directory",
+                        doc: "Galaxy User's FTP Directory",
+                        writable: false,
+                        browsable: true,
+                        supports: {
+                            pagination: false,
+                            search: false,
+                            sorting: false,
+                        },
+                    },
+                ]);
+            })
+        );
+
         wrapper = mount(HistoryImport, {
             propsData: {},
             localVue,
+            router,
         });
         await flushPromises();
     });
@@ -61,10 +78,14 @@ describe("HistoryImport.vue", () => {
             sourceURL: TEST_SOURCE_URL,
         });
         let formData;
-        axiosMock.onPost(TEST_HISTORY_URI).reply((request) => {
-            formData = request.data;
-            return [200, { job_id: TEST_JOB_ID }];
-        });
+
+        server.use(
+            http.post("/api/histories", async ({ response, request }) => {
+                formData = await request.formData();
+                return response(200).json({ job_id: TEST_JOB_ID });
+            })
+        );
+
         let then;
         waitOnJob.mockReturnValue(
             new Promise((then_) => {
@@ -98,9 +119,5 @@ describe("HistoryImport.vue", () => {
         // Link to the GTN
         const link = alert.find("a");
         expect(link.text()).toContain("GTN");
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
     });
 });

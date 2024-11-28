@@ -2,7 +2,7 @@
 VENV?=.venv
 # Source virtualenv to execute command (darker, sphinx, twine, etc...)
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
-RELEASE_CURR:=24.2
+RELEASE_CURR:=25.0
 RELEASE_UPSTREAM:=upstream
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
@@ -186,6 +186,9 @@ else
 	$(IN_VENV) cd client && yarn install $(YARN_INSTALL_OPTS)
 endif
 
+format-xsd:
+	xmllint --format --output galaxy-tmp.xsd lib/galaxy/tool_util/xsd/galaxy.xsd
+	mv galaxy-tmp.xsd lib/galaxy/tool_util/xsd/galaxy.xsd
 
 build-api-schema:
 	$(IN_VENV) python scripts/dump_openapi_schema.py _schema.yaml
@@ -196,8 +199,8 @@ remove-api-schema:
 	rm _shed_schema.yaml
 
 update-client-api-schema: client-node-deps build-api-schema
-	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.yaml > src/api/schema/schema.ts && npx prettier --write src/api/schema/schema.ts
-	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_shed_schema.yaml > ../lib/tool_shed/webapp/frontend/src/schema/schema.ts && npx prettier --write ../lib/tool_shed/webapp/frontend/src/schema/schema.ts
+	$(IN_VENV) cd client && npx openapi-typescript ../_schema.yaml > src/api/schema/schema.ts && npx prettier --write src/api/schema/schema.ts
+	$(IN_VENV) cd client && npx openapi-typescript ../_shed_schema.yaml > ../lib/tool_shed/webapp/frontend/src/schema/schema.ts && npx prettier --write ../lib/tool_shed/webapp/frontend/src/schema/schema.ts
 	$(MAKE) remove-api-schema
 
 lint-api-schema: build-api-schema

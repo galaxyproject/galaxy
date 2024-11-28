@@ -1,5 +1,5 @@
 <template>
-    <div v-if="isCanvas" id="columns" class="d-flex">
+    <div id="columns" class="d-flex">
         <StateUpgradeModal :state-messages="stateMessages" />
         <StateUpgradeModal
             :state-messages="insertedStateMessages"
@@ -27,168 +27,173 @@
                 <b-form-textarea v-model="saveAsAnnotation" />
             </b-form-group>
         </b-modal>
-        <FlexPanel side="left">
-            <ToolPanel
-                workflow
-                :module-sections="moduleSections"
-                :data-managers="dataManagers"
-                :editor-workflows="workflows"
-                @onInsertTool="onInsertTool"
-                @onInsertModule="onInsertModule"
-                @onInsertWorkflow="onInsertWorkflow"
-                @onInsertWorkflowSteps="onInsertWorkflowSteps" />
-        </FlexPanel>
-        <div id="center" class="workflow-center">
-            <div class="editor-top-bar" unselectable="on">
-                <span>
-                    <span class="sr-only">Workflow Editor</span>
-                    <span v-if="!isNewTempWorkflow || name" class="editor-title" :title="name">{{ name }}</span>
-                    <i v-else class="editor-title">Create New Workflow</i>
-                </span>
-
-                <b-button-group>
-                    <b-button
-                        :title="undoRedoStore.undoText + ' (Ctrl + Z)'"
-                        :variant="undoRedoStore.hasUndo ? 'secondary' : 'muted'"
-                        @click="undoRedoStore.undo()">
-                        <FontAwesomeIcon icon="fa-arrow-left" />
-                    </b-button>
-                    <b-button
-                        :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
-                        :variant="undoRedoStore.hasRedo ? 'secondary' : 'muted'"
-                        @click="undoRedoStore.redo()">
-                        <FontAwesomeIcon icon="fa-arrow-right" />
-                    </b-button>
-                </b-button-group>
-            </div>
-            <WorkflowGraph
-                v-if="!datatypesMapperLoading"
+        <ActivityBar
+            ref="activityBar"
+            :default-activities="workflowEditorActivities"
+            :special-activities="specialWorkflowActivities"
+            activity-bar-id="workflow-editor"
+            :show-admin="false"
+            options-title="Options"
+            options-heading="Workflow Options"
+            options-tooltip="View additional workflow options"
+            options-search-placeholder="Search options"
+            initial-activity="workflow-editor-attributes"
+            :options-icon="faCog"
+            :hide-panel="reportActive"
+            @activityClicked="onActivityClicked">
+            <template v-slot:side-panel="{ isActiveSideBar }">
+                <ToolPanel
+                    v-if="isActiveSideBar('workflow-editor-tools')"
+                    workflow
+                    :module-sections="moduleSections"
+                    :data-managers="dataManagers"
+                    :editor-workflows="workflows"
+                    @onInsertTool="onInsertTool"
+                    @onInsertModule="onInsertModule"
+                    @onInsertWorkflow="onInsertWorkflow"
+                    @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+                <WorkflowLint
+                    v-else-if="isActiveSideBar('workflow-best-practices')"
+                    :untyped-parameters="parameters"
+                    :annotation="annotation"
+                    :creator="creator"
+                    :license="license"
+                    :steps="steps"
+                    :datatypes-mapper="datatypesMapper"
+                    @onAttributes="showAttributes"
+                    @onHighlight="onHighlight"
+                    @onUnhighlight="onUnhighlight"
+                    @onRefactor="onAttemptRefactor"
+                    @onScrollTo="onScrollTo" />
+                <UndoRedoStack v-else-if="isActiveSideBar('workflow-undo-redo')" :store-id="id" />
+                <WorkflowPanel
+                    v-else-if="isActiveSideBar('workflow-editor-workflows')"
+                    :current-workflow-id="id"
+                    @insertWorkflow="onInsertWorkflow"
+                    @insertWorkflowSteps="onInsertWorkflowSteps" />
+                <WorkflowAttributes
+                    v-else-if="isActiveSideBar('workflow-editor-attributes')"
+                    :id="id"
+                    :tags="tags"
+                    :parameters="parameters"
+                    :annotation="annotation"
+                    :name="name"
+                    :version="version"
+                    :versions="versions"
+                    :license="license"
+                    :creator="creator"
+                    @version="onVersion"
+                    @tags="setTags"
+                    @license="onLicense"
+                    @creator="onCreator"
+                    @update:nameCurrent="setName"
+                    @update:annotationCurrent="setAnnotation" />
+            </template>
+        </ActivityBar>
+        <template v-if="reportActive">
+            <MarkdownEditor
+                ref="markdownEditor"
+                :markdown-text="report.markdown"
+                mode="report"
+                :title="'Workflow Report: ' + name"
                 :steps="steps"
-                :datatypes-mapper="datatypesMapper"
-                :highlight-id="highlightId"
-                :scroll-to-id="scrollToId"
-                @scrollTo="scrollToId = null"
-                @transform="(value) => (transform = value)"
-                @graph-offset="(value) => (graphOffset = value)"
-                @onClone="onClone"
-                @onCreate="onInsertTool"
-                @onChange="onChange"
-                @onRemove="onRemove"
-                @onUpdateStepPosition="onUpdateStepPosition">
-            </WorkflowGraph>
-        </div>
-        <FlexPanel side="right">
-            <div class="unified-panel bg-white">
-                <div class="unified-panel-header" unselectable="on">
-                    <div class="unified-panel-header-inner">
-                        <WorkflowOptions
-                            :is-new-temp-workflow="isNewTempWorkflow"
-                            :has-changes="hasChanges"
-                            :has-invalid-connections="hasInvalidConnections"
-                            @onSave="onSave"
-                            @onCreate="onCreate"
-                            @onSaveAs="onSaveAs"
-                            @onRun="onRun"
-                            @onDownload="onDownload"
-                            @onReport="onReport"
-                            @onLayout="onLayout"
-                            @onEdit="onEdit"
-                            @onAttributes="showAttributes"
-                            @onLint="onLint"
-                            @onUpgrade="onUpgrade" />
-                    </div>
-                </div>
-                <div ref="rightPanelElement" class="unified-panel-body workflow-right p-2">
-                    <div v-if="!initialLoading">
-                        <FormTool
-                            v-if="hasActiveNodeTool"
-                            :key="activeStep.id"
-                            :step="activeStep"
-                            :datatypes="datatypes"
-                            @onChangePostJobActions="onChangePostJobActions"
-                            @onAnnotation="onAnnotation"
-                            @onLabel="onLabel"
-                            @onSetData="onSetData"
-                            @onUpdateStep="updateStep" />
-                        <FormDefault
-                            v-else-if="hasActiveNodeDefault"
-                            :step="activeStep"
-                            :datatypes="datatypes"
-                            @onAnnotation="onAnnotation"
-                            @onLabel="onLabel"
-                            @onEditSubworkflow="onEditSubworkflow"
-                            @onAttemptRefactor="onAttemptRefactor"
-                            @onSetData="onSetData"
-                            @onUpdateStep="updateStep" />
-                        <WorkflowAttributes
-                            v-else-if="attributesVisible"
-                            :id="id"
-                            :tags="tags"
-                            :parameters="parameters"
-                            :annotation="annotation"
-                            :name="name"
-                            :version="version"
-                            :versions="versions"
-                            :license="license"
-                            :creator="creator"
-                            @onVersion="onVersion"
-                            @onTags="setTags"
-                            @onLicense="onLicense"
-                            @onCreator="onCreator"
-                            @update:nameCurrent="setName"
-                            @update:annotationCurrent="setAnnotation" />
-                        <WorkflowLint
-                            v-else-if="showLint"
-                            :untyped-parameters="parameters"
-                            :annotation="annotation"
-                            :creator="creator"
-                            :license="license"
-                            :steps="steps"
-                            :datatypes-mapper="datatypesMapper"
-                            @onAttributes="showAttributes"
-                            @onHighlight="onHighlight"
-                            @onUnhighlight="onUnhighlight"
-                            @onRefactor="onAttemptRefactor"
-                            @onScrollTo="onScrollTo" />
-                    </div>
-                </div>
-            </div>
-        </FlexPanel>
-    </div>
-    <MarkdownEditor
-        v-else
-        :markdown-text="report.markdown"
-        mode="report"
-        :title="'Workflow Report: ' + name"
-        :steps="steps"
-        @onUpdate="onReportUpdate">
-        <template v-slot:buttons>
-            <b-button
-                id="workflow-canvas-button"
-                v-b-tooltip.hover.bottom
-                title="Return to Workflow"
-                variant="link"
-                role="button"
-                @click="onEdit">
-                <span class="fa fa-times" />
-            </b-button>
+                @insert="insertMarkdown"
+                @update="onReportUpdate">
+                <template v-slot:buttons>
+                    <b-button
+                        id="workflow-canvas-button"
+                        v-b-tooltip.hover.bottom
+                        title="Return to Workflow"
+                        variant="link"
+                        role="button"
+                        @click="showAttributes">
+                        <FontAwesomeIcon :icon="faTimes" />
+                    </b-button>
+                </template>
+            </MarkdownEditor>
         </template>
-    </MarkdownEditor>
+        <template v-else>
+            <div id="center" class="workflow-center">
+                <div class="editor-top-bar" unselectable="on">
+                    <span>
+                        <span class="sr-only">Workflow Editor</span>
+                        <span class="editor-title" :title="name"
+                            >{{ name }}
+                            <i v-if="hasChanges" class="text-muted"> (unsaved changes) </i>
+                            <b-button
+                                v-if="hasChanges"
+                                id="workflow-save-button"
+                                class="py-1 px-2"
+                                variant="link"
+                                :title="saveWorkflowTitle"
+                                @click="saveOrCreate">
+                                <FontAwesomeIcon :icon="faSave" />
+                            </b-button>
+                        </span>
+                    </span>
+
+                    <b-button-group>
+                        <b-button
+                            :title="undoRedoStore.undoText + ' (Ctrl + Z)'"
+                            :variant="undoRedoStore.hasUndo ? 'secondary' : 'muted'"
+                            @click="undoRedoStore.undo()">
+                            <FontAwesomeIcon icon="fa-arrow-left" />
+                        </b-button>
+                        <b-button
+                            :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
+                            :variant="undoRedoStore.hasRedo ? 'secondary' : 'muted'"
+                            @click="undoRedoStore.redo()">
+                            <FontAwesomeIcon icon="fa-arrow-right" />
+                        </b-button>
+                    </b-button-group>
+                </div>
+                <WorkflowGraph
+                    v-if="!datatypesMapperLoading"
+                    :steps="steps"
+                    :datatypes-mapper="datatypesMapper"
+                    :highlight-id="highlightId"
+                    :scroll-to-id="scrollToId"
+                    :initial-position="{ x: 50, y: 50 }"
+                    @scrollTo="scrollToId = null"
+                    @transform="(value) => (transform = value)"
+                    @graph-offset="(value) => (graphOffset = value)"
+                    @onClone="onClone"
+                    @onCreate="onInsertTool"
+                    @onChange="onChange"
+                    @onRemove="onRemove"
+                    @onUpdateStepPosition="onUpdateStepPosition">
+                    <NodeInspector
+                        v-if="activeStep"
+                        :step="activeStep"
+                        :datatypes="datatypes"
+                        @postJobActionsChanged="onChangePostJobActions"
+                        @annotationChanged="onAnnotation"
+                        @labelChanged="onLabel"
+                        @dataChanged="onSetData"
+                        @stepUpdated="updateStep"
+                        @editSubworkflow="onEditSubworkflow"
+                        @attemptRefactor="onAttemptRefactor"
+                        @close="activeNodeId = null"></NodeInspector>
+                </WorkflowGraph>
+            </div>
+        </template>
+    </div>
 </template>
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faArrowRight, faCog, faHistory, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useMagicKeys, whenever } from "@vueuse/core";
+import { whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
 import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
-import { ConfirmDialog } from "@/composables/confirmDialog";
+import { ConfirmDialog, useConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
+import { useMagicKeys } from "@/composables/useMagicKeys";
 import { useUid } from "@/composables/utils/uid";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { hide_modal } from "@/layout/modal";
@@ -201,43 +206,44 @@ import { Services } from "../services";
 import { InsertStepAction, useStepActions } from "./Actions/stepActions";
 import { CopyIntoWorkflowAction, SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
+import { useActivityLogic, useSpecialWorkflowActivities, workflowEditorActivities } from "./modules/activities";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
 
-import WorkflowAttributes from "./Attributes.vue";
 import WorkflowLint from "./Lint.vue";
 import MessagesModal from "./MessagesModal.vue";
-import WorkflowOptions from "./Options.vue";
+import NodeInspector from "./NodeInspector.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 import SaveChangesModal from "./SaveChangesModal.vue";
 import StateUpgradeModal from "./StateUpgradeModal.vue";
+import WorkflowAttributes from "./WorkflowAttributes.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
+import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
-import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
-import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
-import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
+import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
+import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
 
-library.add(faArrowLeft, faArrowRight);
+library.add(faArrowLeft, faArrowRight, faHistory);
 
 export default {
     components: {
+        ActivityBar,
         MarkdownEditor,
-        FlexPanel,
         SaveChangesModal,
         StateUpgradeModal,
         ToolPanel,
-        FormDefault,
-        FormTool,
-        WorkflowOptions,
         WorkflowAttributes,
         WorkflowLint,
         RefactorConfirmationModal,
         MessagesModal,
         WorkflowGraph,
         FontAwesomeIcon,
+        UndoRedoStack,
+        WorkflowPanel,
+        NodeInspector,
     },
     props: {
         workflowId: {
@@ -282,7 +288,8 @@ export default {
         whenever(logicAnd(undoKeys, logicNot(redoKeys)), undo);
         whenever(redoKeys, redo);
 
-        const isCanvas = ref(true);
+        const activityBar = ref(null);
+        const reportActive = computed(() => activityBar.value?.isActiveSideBar("workflow-editor-report"));
 
         const parameters = ref(null);
 
@@ -290,12 +297,10 @@ export default {
             parameters.value = getUntypedWorkflowParameters(steps.value);
         }
 
-        const showInPanel = ref("attributes");
-
         function showAttributes() {
             ensureParametersSet();
             stateStore.activeNodeId = null;
-            showInPanel.value = "attributes";
+            activityBar.value?.setActiveSideBar("workflow-editor-attributes");
         }
 
         const name = ref("Unnamed Workflow");
@@ -434,13 +439,39 @@ export default {
 
         const stepActions = useStepActions(stepStore, undoRedoStore, stateStore, connectionStore);
 
+        const markdownEditor = ref(null);
+        function insertMarkdown(markdown) {
+            markdownEditor.value?.insertMarkdown(markdown);
+        }
+
+        const isNewTempWorkflow = computed(() => !props.workflowId);
+
+        const { specialWorkflowActivities } = useSpecialWorkflowActivities(
+            computed(() => ({
+                hasInvalidConnections: hasInvalidConnections.value,
+            }))
+        );
+
+        const saveWorkflowTitle = computed(() =>
+            hasInvalidConnections.value
+                ? "Workflow has invalid connections, review and remove invalid connections"
+                : "Save Workflow"
+        );
+
+        useActivityLogic(
+            computed(() => ({
+                activityBarId: "workflow-editor",
+                isNewTempWorkflow: isNewTempWorkflow.value,
+            }))
+        );
+
+        const { confirm } = useConfirmDialog();
+
         return {
             id,
             name,
-            isCanvas,
             parameters,
             ensureParametersSet,
-            showInPanel,
             showAttributes,
             setName,
             report,
@@ -471,6 +502,14 @@ export default {
             initialLoading,
             stepActions,
             undoRedoStore,
+            activityBar,
+            reportActive,
+            markdownEditor,
+            insertMarkdown,
+            specialWorkflowActivities,
+            isNewTempWorkflow,
+            saveWorkflowTitle,
+            confirm,
         };
     },
     data() {
@@ -495,26 +534,18 @@ export default {
             debounceTimer: null,
             showSaveChangesModal: false,
             navUrl: "",
+            workflowEditorActivities,
+            faTimes,
+            faCog,
+            faSave,
         };
     },
     computed: {
-        attributesVisible() {
-            return this.showInPanel == "attributes";
-        },
-        showLint() {
-            return this.showInPanel == "lint";
-        },
         activeNodeType() {
             return this.activeStep?.type;
         },
         hasActiveNodeDefault() {
             return this.activeStep && this.activeStep?.type != "tool";
-        },
-        hasActiveNodeTool() {
-            return this.activeStep?.type == "tool";
-        },
-        isNewTempWorkflow() {
-            return !this.workflowId;
         },
     },
     watch: {
@@ -524,12 +555,12 @@ export default {
             }
         },
         annotation(newAnnotation, oldAnnotation) {
-            if (newAnnotation != oldAnnotation && !this.isNewTempWorkflow) {
+            if (newAnnotation != oldAnnotation) {
                 this.hasChanges = true;
             }
         },
         name(newName, oldName) {
-            if (newName != oldName && !this.isNewTempWorkflow) {
+            if (newName != oldName) {
                 this.hasChanges = true;
             }
         },
@@ -614,7 +645,7 @@ export default {
             this.stepActions.updateStep(nodeId, partialStep);
         },
         onRemove(nodeId) {
-            this.stepActions.removeStep(this.steps[nodeId], this.showAttributes);
+            this.stepActions.removeStep(this.steps[nodeId]);
         },
         onEditSubworkflow(contentId) {
             const editUrl = `/workflows/edit?workflow_id=${contentId}`;
@@ -655,10 +686,6 @@ export default {
             });
         },
         async onInsertWorkflowSteps(workflowId, stepCount) {
-            if (!this.isCanvas) {
-                this.isCanvas = true;
-                return;
-            }
             if (stepCount < 10) {
                 this.copyIntoWorkflow(workflowId);
             } else {
@@ -699,16 +726,56 @@ export default {
         onSaveAs() {
             this.showSaveAsModal = true;
         },
-        onLayout() {
-            return import(/* webpackChunkName: "workflowLayout" */ "./modules/layout.ts").then((layout) => {
-                layout.autoLayout(this.id, this.steps).then((newSteps) => {
-                    newSteps.map((step) => this.stepStore.updateStep(step));
-                });
-            });
+        async saveOrCreate() {
+            if (this.hasInvalidConnections) {
+                const confirmed = await this.confirm(
+                    `Workflow has invalid connections. You can save the workflow, but it may not run correctly.`,
+                    {
+                        id: "save-workflow-confirmation",
+                        okTitle: "Save Workflow",
+                    }
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+            }
+
+            if (this.isNewTempWorkflow) {
+                await this.onCreate();
+            } else {
+                await this.onSave();
+            }
         },
-        onWorkflowTextEditor() {
-            this.stateStore.activeNodeId = null;
-            this.showInPanel = "attributes";
+        async onActivityClicked(activityId) {
+            if (activityId === "save-and-exit") {
+                await this.saveOrCreate();
+                this.$router.push("/workflows/list");
+            }
+
+            if (activityId === "exit") {
+                this.$router.push("/workflows/list");
+            }
+
+            if (activityId === "workflow-download") {
+                this.onDownload();
+            }
+
+            if (activityId === "workflow-upgrade") {
+                this.onUpgrade();
+            }
+
+            if (activityId === "workflow-run") {
+                this.onRun();
+            }
+
+            if (activityId === "save-workflow") {
+                await this.saveOrCreate();
+            }
+
+            if (activityId === "save-workflow-as") {
+                this.onSaveAs();
+            }
         },
         onAnnotation(nodeId, newAnnotation) {
             this.stepActions.setAnnotation(this.steps[nodeId], newAnnotation);
@@ -782,19 +849,8 @@ export default {
         onUnhighlight(stepId) {
             this.highlightId = null;
         },
-        onLint() {
-            this.ensureParametersSet();
-            this.stateStore.activeNodeId = null;
-            this.showInPanel = "lint";
-        },
         onUpgrade() {
             this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
-        },
-        onEdit() {
-            this.isCanvas = true;
-        },
-        onReport() {
-            this.isCanvas = false;
         },
         onReportUpdate(markdown) {
             this.hasChanges = true;
@@ -858,11 +914,6 @@ export default {
             }
         },
         _insertStep(contentId, name, type) {
-            if (!this.isCanvas) {
-                this.isCanvas = true;
-                return;
-            }
-
             const action = new InsertStepAction(this.stepStore, this.stateStore, {
                 contentId,
                 name,

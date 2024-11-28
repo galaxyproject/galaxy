@@ -1,4 +1,6 @@
+import datetime
 import json
+import shutil
 from concurrent.futures import TimeoutError
 from functools import lru_cache
 from pathlib import Path
@@ -21,6 +23,7 @@ from galaxy.celery import (
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
+from galaxy.exceptions import ObjectNotFound
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import (
@@ -75,10 +78,8 @@ def setup_data_table_manager(app):
 
 
 @lru_cache
-def cached_create_tool_from_representation(app, raw_tool_source):
-    return create_tool_from_representation(
-        app=app, raw_tool_source=raw_tool_source, tool_dir="", tool_source_class="XmlToolSource"
-    )
+def cached_create_tool_from_representation(app: MinimalManagerApp, raw_tool_source: str):
+    return create_tool_from_representation(app=app, raw_tool_source=raw_tool_source, tool_source_class="XmlToolSource")
 
 
 @galaxy_task(action="recalculate a user's disk usage")
@@ -185,18 +186,23 @@ def set_metadata(
     dataset_id: int,
     model_class: str = "HistoryDatasetAssociation",
     overwrite: bool = True,
+    ensure_can_set_metadata: bool = True,
     task_user_id: Optional[int] = None,
 ):
+    """
+    ensure_can_set_metadata can be bypassed for new outputs.
+    """
     manager = _get_dataset_manager(hda_manager, ldda_manager, model_class)
     dataset_instance = manager.by_id(dataset_id)
-    can_set_metadata = manager.ensure_can_set_metadata(dataset_instance, raiseException=False)
-    if not can_set_metadata:
-        log.info(f"Setting metadata is not allowed for {model_class} {dataset_instance.id}")
-        return
+    if ensure_can_set_metadata:
+        can_set_metadata = manager.ensure_can_set_metadata(dataset_instance, raiseException=False)
+        if not can_set_metadata:
+            log.info(f"Setting metadata is not allowed for {model_class} {dataset_instance.id}")
+            return
     try:
         if overwrite:
             hda_manager.overwrite_metadata(dataset_instance)
-        dataset_instance.datatype.set_meta(dataset_instance)  # type:ignore [arg-type]
+        dataset_instance.datatype.set_meta(dataset_instance)
         dataset_instance.set_peek()
         # Reset SETTING_METADATA state so the dataset instance getter picks the dataset state
         dataset_instance.set_metadata_success_state()
@@ -300,7 +306,7 @@ def _fetch_data(setup_return):
     working_directory = Path(tool_job_working_directory) / "working"
     datatypes_registry = DatatypesRegistry()
     datatypes_registry.load_datatypes(
-        galaxy_directory,
+        galaxy_directory(),
         config=Path(tool_job_working_directory) / "metadata" / "registry.xml",
         use_build_sites=False,
         use_converters=False,
@@ -503,3 +509,35 @@ def dispatch_pending_notifications(notification_manager: NotificationManager):
     count = notification_manager.dispatch_pending_notifications_via_channels()
     if count:
         log.info(f"Successfully dispatched {count} notifications.")
+
+
+@galaxy_task(action="clean up job working directories")
+def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStore, days: int = 5):
+    """Cleanup job working directories for failed jobs that are older than X days"""
+
+    def get_failed_jobs():
+        return sa_session.query(model.Job.id).filter(
+            model.Job.state == "error",
+            model.Job.update_time < datetime.datetime.now() - datetime.timedelta(days=days),
+            model.Job.object_store_id.isnot(None),
+        )
+
+    def delete_jwd(job):
+        try:
+            # Get job working directory from object store
+            path = object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
+            shutil.rmtree(path)
+        except ObjectNotFound:
+            # job working directory already deleted
+            pass
+        except OSError as e:
+            log.error(f"Error deleting job working directory: {path} : {e.strerror}")
+
+    failed_jobs = get_failed_jobs()
+
+    if not failed_jobs:
+        log.info("No failed jobs found within the last %s days", days)
+
+    for job in failed_jobs:
+        delete_jwd(job)
+        log.info("Deleted job working directory for job %s", job.id)

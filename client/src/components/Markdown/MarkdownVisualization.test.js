@@ -9,7 +9,7 @@ describe("Markdown/MarkdownVisualization", () => {
                 argumentName: "name",
                 argumentPayload: {
                     settings: [{}, {}],
-                    groups: [{}],
+                    tracks: [{}],
                 },
                 history: "history_id",
                 labels: [],

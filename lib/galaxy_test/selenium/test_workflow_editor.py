@@ -23,7 +23,6 @@ from galaxy_test.base.workflow_fixtures import (
 )
 from .framework import (
     retry_assertion_during_transitions,
-    retry_during_transitions,
     RunsWorkflows,
     selenium_test,
     SeleniumTestCase,
@@ -42,28 +41,18 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         self.assert_wf_annotation_is(annotation)
 
         editor.canvas_body.wait_for_visible()
-        editor.tool_menu.wait_for_visible()
 
         # shouldn't have changes on fresh load
         save_button = self.components.workflow_editor.save_button
-        save_button.wait_for_visible()
-        assert save_button.has_class("disabled")
+        assert save_button.is_absent
 
         self.screenshot("workflow_editor_blank")
 
         self.hover_over(self.components._.left_panel_drag.wait_for_visible())
-        self.components._.left_panel_collapse.wait_for_and_click()
 
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_editor_maximize_center_pane()
 
-        self.screenshot("workflow_editor_left_collapsed")
-
-        self.hover_over(self.components._.right_panel_drag.wait_for_visible())
-        self.components._.right_panel_collapse.wait_for_and_click()
-
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-        self.screenshot("workflow_editor_left_and_right_collapsed")
+        self.screenshot("workflow_editor_center_pane_maximized")
 
     @selenium_test
     def test_edit_annotation(self):
@@ -100,15 +89,14 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         name = self.workflow_create_new()
         editor.canvas_body.wait_for_visible()
         editor.license_selector.wait_for_visible()
-        editor.license_selector.assert_no_axe_violations_with_impact_of_at_least("serious")
-        editor.license_selector.assert_data_value("license", "null")
+        assert "Do not specify" in editor.license_current_value.wait_for_text()
 
         self.workflow_editor_set_license("MIT")
         self.workflow_editor_click_save()
 
         self.workflow_index_open_with_name(name)
         editor.license_selector.wait_for_visible()
-        editor.license_selector.assert_data_value("license", "MIT")
+        assert "MIT" in editor.license_current_value.wait_for_text()
 
     @selenium_test
     def test_optional_select_data_field(self):
@@ -269,6 +257,7 @@ steps:
         editor = self.components.workflow_editor
 
         tool_node = editor.node._(label="tool_exec")
+        tool_node.wait_for_and_click()
         tool_input = tool_node.input_terminal(name="inttest")
         self.hover_over(tool_input.wait_for_visible())
         tool_node.connector_destroy_callout(name="inttest").wait_for_and_click()
@@ -474,7 +463,8 @@ steps:
         self.workflow_index_open_with_name(name)
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_edit_menu")
-        self.workflow_editor_click_option("Save As")
+
+        self.components.workflow_editor.save_as_activity.wait_for_and_click()
 
     @selenium_test
     def test_editor_tool_upgrade(self):
@@ -546,7 +536,7 @@ steps:
         self.components.workflows.edit_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
-        self.assert_modal_has_text("parameter 'inttest': an integer or workflow parameter is required")
+        self.assert_modal_has_text("Parameter 'inttest': an integer or workflow parameter is required")
         self.screenshot("workflow_editor_subworkflow_tool_upgrade")
         self.components.workflow_editor.modal_button_continue.wait_for_and_click()
         self.assert_workflow_has_changes_and_save()
@@ -704,6 +694,8 @@ steps:
         editor.remove_tags_input.wait_for_and_send_keys("#oldboringtag" + Keys.ENTER + Keys.ESCAPE)
         self.sleep_for(self.wait_types.UX_RENDER)
         cat_node.clone.wait_for_and_click()
+        cloned_node = editor.node.by_id(id=2)
+        cloned_node.wait_for_and_click()
         editor.label_input.wait_for_and_send_keys(Keys.BACKSPACE * 20)
         editor.label_input.wait_for_and_send_keys("cloned label")
         output_label = editor.label_output(output="out_file1")
@@ -745,9 +737,7 @@ steps:
         self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
         editor.canvas_body.wait_for_visible()
-        editor.tool_menu.wait_for_visible()
-        editor.tool_menu_section_link(section_name="workflows").wait_for_and_click()
-        editor.workflow_link(workflow_title=child_workflow_name).wait_for_and_click()
+        self.workflow_editor_add_subworkflow(child_workflow_name)
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(parent_workflow_id)
@@ -771,9 +761,7 @@ steps:
         self.workflow_editor_add_input(item_name="data_input")
         editor = self.components.workflow_editor
         editor.canvas_body.wait_for_visible()
-        editor.tool_menu.wait_for_visible()
-        editor.tool_menu_section_link(section_name="workflows").wait_for_and_click()
-        editor.insert_steps(workflow_title=steps_to_insert).wait_for_and_click()
+        self.workflow_editor_add_steps(steps_to_insert)
         self.assert_connected("input1#output", "first_cat#input1")
         self.assert_workflow_has_changes_and_save()
         workflow_id = self.driver.current_url.split("id=")[1]
@@ -789,14 +777,15 @@ steps:
         param_type_element = editor.param_type_form.wait_for_present()
         self.switch_param_type(param_type_element, "Boolean")
         editor.label_input.wait_for_and_send_keys("param_input")
-        editor.tool_menu.wait_for_visible()
         # Insert cat tool
         self.tool_open("cat")
         self.sleep_for(self.wait_types.UX_RENDER)
         editor.label_input.wait_for_and_send_keys("downstream_step")
         # Insert head tool
         self.tool_open("head")
-        self.workflow_editor_click_option("Auto Layout")
+
+        self.components.workflow_editor.tool_bar.auto_layout.wait_for_and_click()
+
         self.sleep_for(self.wait_types.UX_RENDER)
         editor.label_input.wait_for_and_send_keys("conditional_step")
         # Connect head to cat
@@ -846,7 +835,7 @@ steps:
         param_type_element = editor.param_type_form.wait_for_present()
         self.switch_param_type(param_type_element, "Boolean")
         editor.label_input.wait_for_and_send_keys("param_input")
-        self.workflow_editor_click_option("Auto Layout")
+        self.components.workflow_editor.tool_bar.auto_layout.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         conditional_node = editor.node._(label=child_workflow_name)
         conditional_node.wait_for_and_click()
@@ -889,29 +878,6 @@ steps:
         self.components.workflows.edit_button.wait_for_and_click()
         self.assert_modal_has_text("Tool is not installed")
         self.screenshot("workflow_editor_missing_tool")
-
-    @selenium_test
-    def test_workflow_bookmarking(self):
-        @retry_during_transitions
-        def assert_workflow_bookmarked_status(target_status):
-            name_matches = [c.text == new_workflow_name for c in self.components.tool_panel.workflow_names.all()]
-            status = any(name_matches)
-            assert status == target_status
-
-        new_workflow_name = self.workflow_create_new(clear_placeholder=True)
-        self.components.workflow_editor.canvas_body.wait_for_visible()
-        self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
-
-        # Assert workflow not initially bookmarked.
-        self.navigate_to_tools()
-        assert_workflow_bookmarked_status(False)
-
-        self.click_activity_workflow()
-        self.components.workflows.bookmark_link(action="add").wait_for_and_click()
-
-        # search for bookmark in tools menu
-        self.navigate_to_tools()
-        assert_workflow_bookmarked_status(True)
 
     def tab_to(self, accessible_name, direction="forward"):
         for _ in range(100):
@@ -1220,8 +1186,6 @@ steps:
         self.workflow_create_new(annotation="simple workflow")
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        editor.tool_menu.wait_for_visible()
-
         self.tool_open("cat")
         self.sleep_for(self.wait_types.UX_RENDER)
         editor.label_input.wait_for_and_send_keys("tool_node")
@@ -1267,6 +1231,7 @@ steps:
         self.mouse_drag(from_element=tool_node, to_element=canvas, to_offset=(0, -100))
 
         # select the node
+        editor.node_inspector_close.wait_for_and_click()
         self.action_chains().move_to_element(tool_node).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
         self.sleep_for(self.wait_types.UX_RENDER)
 
@@ -1378,12 +1343,14 @@ steps:
         self.click_center()
 
     def workflow_editor_maximize_center_pane(self, collapse_left=True, collapse_right=True):
-        if collapse_left:
-            self.hover_over(self.components._.left_panel_drag.wait_for_visible())
-            self.components._.left_panel_collapse.wait_for_and_click()
-        if collapse_right:
-            self.hover_over(self.components._.right_panel_drag.wait_for_visible())
-            self.components._.right_panel_collapse.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor = self.components.workflow_editor
+
+        if collapse_right and not editor.node_inspector.is_absent:
+            editor.node_inspector_close.wait_for_and_click()
+        if collapse_left and not self.components._.active_nav_item.is_absent:
+            self.components._.active_nav_item.wait_for_and_click()
+
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_editor_connect(self, source, sink, screenshot_partial=None):
@@ -1416,7 +1383,7 @@ steps:
         self.workflow_index_open()
         self.workflow_index_open_with_name(name)
         if auto_layout:
-            self.workflow_editor_click_option("Auto Layout")
+            self.components.workflow_editor.tool_bar.auto_layout.wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
         return name
 
@@ -1449,7 +1416,7 @@ steps:
         # Make sure we're on the workflow editor and not clicking the main tool panel.
         editor.canvas_body.wait_for_visible()
 
-        editor.tool_menu.wait_for_visible()
+        self.open_toolbox()
         editor.tool_menu_section_link(section_name="inputs").wait_for_and_click()
         editor.tool_menu_item_link(item_name=item_name).wait_for_and_click()
 

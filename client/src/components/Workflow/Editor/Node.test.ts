@@ -14,6 +14,12 @@ jest.mock("app");
 
 const localVue = getLocalVue();
 
+const MOCK_SCROLL = {
+    x: { value: 100 },
+    y: { value: 200 },
+    isScrolling: { value: true },
+};
+
 describe("Node", () => {
     it("test attributes", async () => {
         const testingPinia = createTestingPinia();
@@ -27,6 +33,7 @@ describe("Node", () => {
                 step: { type: "tool", inputs: [], outputs: [], position: { top: 0, left: 0 } },
                 datatypesMapper: testDatatypesMapper,
                 rootOffset: mockOffset,
+                scroll: MOCK_SCROLL,
             },
             localVue,
             pinia: testingPinia,

@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+from typing import Optional
 
 from galaxy.files import (
     ConfiguredFileSources,
@@ -156,8 +157,9 @@ def write_from(
         return file_source_path.file_source.write_from(file_source_path.path, f.name, user_context=user_context)
 
 
-def configured_file_sources(conf_file):
-    file_sources_config = FileSourcePluginsConfig()
+def configured_file_sources(conf_file, file_sources_config: Optional[FileSourcePluginsConfig] = None):
+    file_sources_config = file_sources_config or FileSourcePluginsConfig()
+    assert file_sources_config
     if isinstance(conf_file, str):
         conf = ConfiguredFileSourcesConf(conf_file=conf_file)
     else:

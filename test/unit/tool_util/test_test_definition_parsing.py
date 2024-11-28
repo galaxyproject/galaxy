@@ -1,6 +1,5 @@
 """Tool test parsing to dicts logic."""
 
-import json
 import os
 from typing import (
     Any,
@@ -17,6 +16,7 @@ from galaxy.util import (
     in_packages,
 )
 from galaxy.util.unittest import TestCase
+from .util import dict_verify_each
 
 # Not the whole response, just some keys and such to test...
 SIMPLE_CONSTRUCTS_EXPECTATIONS_0 = [
@@ -97,6 +97,12 @@ class TestTestParsing(TestCase):
         test_dicts = self._parse_tests()
         self._verify_each(test_dicts[0].to_dict(), COLLECTION_TYPE_SOURCE_EXPECTATIONS)
 
+    def test_unqualified_access_disabled_in_24_2(self):
+        self._init_tool_for_path(functional_test_tool_path("deprecated/simple_constructs_24_2.xml"))
+        test_dicts = self._parse_tests()
+        test_0 = test_dicts[0].to_dict()
+        assert test_0["error"] is True
+
     def test_bigwigtowig_converter(self):
         # defines
         if in_packages():
@@ -111,18 +117,6 @@ class TestTestParsing(TestCase):
         self._verify_each(test_dicts[1].to_dict(), BIGWIG_TO_WIG_EXPECTATIONS)
 
     def _verify_each(self, target_dict: dict, expectations: List[Any]):
-        assert_json_encodable(target_dict)
-        for path, expectation in expectations:
-            exception = target_dict.get("exception")
-            assert not exception, f"Test failed to generate with exception {exception}"
-            self._verify(target_dict, path, expectation)
-
-    def _verify(self, target_dict: dict, expectation_path: List[str], expectation: Any):
-        rest = target_dict
-        for path_part in expectation_path:
-            rest = rest[path_part]
-        assert rest == expectation, f"{rest} != {expectation} for {expectation_path}"
-
-
-def assert_json_encodable(as_dict: dict):
-    json.dumps(as_dict)
+        exception = target_dict.get("exception")
+        assert not exception, f"Test failed to generate with exception {exception}"
+        dict_verify_each(target_dict, expectations)

@@ -604,7 +604,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         assert hda is not None
         self.history_manager.error_unless_mutable(hda.history)
         self.hda_manager.update_permissions(trans, hda, **payload_dict)
-        roles = self.hda_manager.serialize_dataset_association_roles(trans, hda)
+        roles = self.hda_manager.serialize_dataset_association_roles(hda)
         return DatasetAssociationRoles(**roles)
 
     def update(
@@ -1171,21 +1171,27 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                         rval.append(ld)
                 return rval
 
-            for ld in traverse(folder):
-                hda = ld.library_dataset_dataset_association.to_history_dataset_association(
-                    history, add_to_history=True
+            hdas = [
+                ld.library_dataset_dataset_association.to_history_dataset_association(
+                    history, add_to_history=True, commit=False
                 )
+                for ld in traverse(folder)
+            ]
+            history.add_pending_items()
+
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
+
+            for hda in hdas:
                 hda_dict = self.hda_serializer.serialize_to_view(
                     hda, user=trans.user, trans=trans, encode_id=False, **serialization_params.model_dump()
                 )
                 rval.append(hda_dict)
+            return rval
+
         else:
             message = f"Invalid 'source' parameter in request: {source}"
             raise exceptions.RequestParameterInvalidException(message)
-
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return rval
 
     def __create_dataset(
         self,

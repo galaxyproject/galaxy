@@ -23,5 +23,13 @@ echo '$parameter' >> '$output'
                 </assert_contents>
             </output>
         </test>
+        <test>
+            <!-- these parameters are not implicitly optional and don't select top option -->
+            <output name="output">
+                <assert_contents>
+                    <has_line line="None" />
+                </assert_contents>
+            </output>
+        </test>
     </tests>
 </tool>

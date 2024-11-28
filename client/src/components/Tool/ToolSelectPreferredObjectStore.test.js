@@ -1,6 +1,9 @@
+import "tests/jest/mockHelpPopovers";
+
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
+import { setupMockConfig } from "tests/jest/mockConfig";
 
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 import { ROOT_COMPONENT } from "@/utils/navigation";
@@ -10,6 +13,8 @@ import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore.vue
 setupSelectableMock();
 
 const localVue = getLocalVue(true);
+
+setupMockConfig({});
 
 function mountComponent() {
     const wrapper = mount(ToolSelectPreferredObjectStore, {
@@ -24,6 +29,7 @@ const PREFERENCES = ROOT_COMPONENT.preferences;
 describe("ToolSelectPreferredObjectStore.vue", () => {
     it("updates object store to default on selection null", async () => {
         const wrapper = mountComponent();
+
         await flushPromises();
         const els = wrapper.findAll(PREFERENCES.object_store_selection.option_buttons.selector);
         expect(els.length).toBe(3);

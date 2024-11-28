@@ -108,6 +108,15 @@ export class AxisAlignedBoundingBox implements Rectangle {
             this.endY >= other.y + other.height
         );
     }
+
+    intersects(other: Rectangle) {
+        return (
+            this.x < other.x + other.width &&
+            this.endX > other.x &&
+            this.y < other.y + other.height &&
+            this.endY > other.y
+        );
+    }
 }
 
 /* Format
@@ -239,4 +248,17 @@ export function vecReduceFigures(a: Vector, significantFigures = 1): Vector {
     const factor = Math.pow(10, significantFigures);
 
     return [Math.round(a[0] * factor) / factor, Math.round(a[1] * factor) / factor];
+}
+
+export function rectCenterPoint(rect: Rectangle): Vector {
+    return [rect.x + rect.width / 2, rect.y + rect.height / 2];
+}
+
+export function rectDistance(a: Rectangle, b: Rectangle): number {
+    const vecA = rectCenterPoint(a);
+    const vecB = rectCenterPoint(b);
+    const dx = vecA[0] - vecB[0];
+    const dy = vecA[1] - vecB[1];
+
+    return Math.hypot(dx, dy);
 }

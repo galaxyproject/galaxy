@@ -46,6 +46,7 @@ from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.util.custom_logging import LOGLV_TRACE
 from galaxy.util.dynamic import HasDynamicProperties
 from galaxy.util.facts import get_facts
+from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.properties import (
     read_properties_from_file,
     running_from_source,
@@ -114,6 +115,14 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
         "watchdog.observers.inotify_buffer": {
             "level": "INFO",
             "qualname": "watchdog.observers.inotify_buffer",
+        },
+        "py.warnings": {
+            "level": "ERROR",
+            "qualname": "py.warnings",
+        },
+        "celery.utils.functional": {
+            "level": "INFO",
+            "qualname": "celery.utils.functional",
         },
     },
     "filters": {
@@ -597,7 +606,7 @@ class CommonConfigurationMixin:
     @admin_users.setter
     def admin_users(self, value):
         self._admin_users = value
-        self.admin_users_list = listify(value)
+        self.admin_users_list = listify(value, do_strip=True)
 
     def is_admin_user(self, user: Optional["User"]) -> bool:
         """Determine if the provided user is listed in `admin_users`."""
@@ -704,9 +713,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     drmaa_external_runjob_script: str
     email_from: Optional[str]
     enable_tool_shed_check: bool
+    file_source_temp_dir: str
     galaxy_data_manager_data_path: str
     galaxy_infrastructure_url: str
     hours_between_check: int
+    hash_function: HashFunctionNameEnum
     integrated_tool_panel_config: str
     involucro_path: str
     len_file_path: str
@@ -888,6 +899,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.update_integrated_tool_panel = kwargs.get("update_integrated_tool_panel", True)
         self.galaxy_data_manager_data_path = self.galaxy_data_manager_data_path or self.tool_data_path
         self.tool_secret = kwargs.get("tool_secret", "")
+        if self.calculate_dataset_hash not in ("always", "upload", "never"):
+            raise ConfigurationError(
+                f"Unrecognized value for calculate_dataset_hash option: {self.calculate_dataset_hash}"
+            )
+        if self.hash_function not in HashFunctionNameEnum.__members__:
+            raise ConfigurationError(f"Unrecognized value for hash_function option: {self.hash_function}")
+        self.hash_function = HashFunctionNameEnum[self.hash_function]
         self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
         self.use_remote_user = self.use_remote_user or self.single_user
         self.fetch_url_allowlist_ips = parse_allowlist_ips(listify(kwargs.get("fetch_url_allowlist")))
@@ -980,6 +998,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             # dependency resolution options are consumed via config_dict - so don't populate
             # self, populate config_dict
             self.config_dict["conda_mapping_files"] = [self.local_conda_mapping_file, _default_mapping]
+
+        if kwargs.get("conda_auto_init") is None:
+            self.config_dict["conda_auto_init"] = running_from_source
 
         if self.container_resolvers_config_file:
             self.container_resolvers_config_file = self._in_config_dir(self.container_resolvers_config_file)
@@ -1079,6 +1100,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         self._process_celery_config()
 
+        # load in the chat_prompts if openai is enabled
+        self._load_chat_prompts()
+
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         try:
             with open(self.user_preferences_extra_conf_path) as stream:
@@ -1103,10 +1127,46 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.proxy_session_map = self.dynamic_proxy_session_map
         self.manage_dynamic_proxy = self.dynamic_proxy_manage  # Set to false if being launched externally
 
-        # InteractiveTools propagator mapping file
-        self.interactivetools_map = self._in_root_dir(
-            kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
-        )
+        # Interactive tools proxy mapping
+        if self.interactivetoolsproxy_map is None:
+            self.interactivetools_map = "sqlite:///" + self._in_root_dir(
+                kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
+            )
+        else:
+            self.interactivetools_map = None  # overridden by `self.interactivetoolsproxy_map`
+
+            # ensure the database URL for the SQLAlchemy map does not match that of a Galaxy DB
+            urls = {
+                setting: urlparse(value)
+                for setting, value in (
+                    ("interactivetoolsproxy_map", self.interactivetoolsproxy_map),
+                    ("database_connection", self.database_connection),
+                    ("install_database_connection", self.install_database_connection),
+                )
+                if value is not None
+            }
+
+            def is_in_conflict(url1, url2):
+                return all(
+                    (
+                        url1.scheme == url2.scheme,
+                        url1.hostname == url2.hostname,
+                        url1.port == url2.port,
+                        url1.path == url2.path,
+                    )
+                )
+
+            conflicting_settings = {
+                setting
+                for setting, url in tuple(urls.items())[1:]  # exclude "interactivetoolsproxy_map"
+                if is_in_conflict(url, list(urls.values())[0])  # compare with "interactivetoolsproxy_map"
+            }
+
+            if conflicting_settings:
+                raise ConfigurationError(
+                    f"Option `{tuple(urls)[0]}` cannot take the same value as: %s"
+                    % ", ".join(f"`{setting}`" for setting in conflicting_settings)
+                )
 
         # Compliance/Policy variables
         self.redact_username_during_deletion = False
@@ -1200,6 +1260,26 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         else:
             _load_theme(self.themes_config_file, self.themes)
 
+        if self.file_source_temp_dir:
+            self.file_source_temp_dir = os.path.abspath(self.file_source_temp_dir)
+
+    def _load_chat_prompts(self):
+        if self.openai_api_key:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            chat_prompts_path = os.path.join(current_dir, "chat_prompts.json")
+
+            if os.path.exists(chat_prompts_path):
+                try:
+                    with open(chat_prompts_path, encoding="utf-8") as file:
+                        data = json.load(file)
+                        self.chat_prompts = data.get("prompts", {})
+                except json.JSONDecodeError as e:
+                    log.error(f"JSON decoding error in chat prompts file: {e}")
+                except Exception as e:
+                    log.error(f"An error occurred while reading chat prompts file: {e}")
+            else:
+                log.warning(f"Chat prompts file not found at {chat_prompts_path}")
+
     def _process_celery_config(self):
         if self.celery_conf and self.celery_conf.get("result_backend") is None:
             # If the result_backend is not set, use a SQLite database in the data directory
@@ -1227,6 +1307,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         try_parsing(self.database_connection, "database_connection")
         try_parsing(self.install_database_connection, "install_database_connection")
+        if self.interactivetoolsproxy_map is not None:
+            try_parsing(self.interactivetoolsproxy_map, "interactivetoolsproxy_map")
         try_parsing(self.amqp_internal_connection, "amqp_internal_connection")
 
     def _configure_dataset_storage(self):
@@ -1310,6 +1392,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.template_cache_path,
             self.tool_data_path,
             self.user_library_import_dir,
+            self.file_source_temp_dir,
         ]
         for path in paths_to_check:
             self._ensure_directory(path)

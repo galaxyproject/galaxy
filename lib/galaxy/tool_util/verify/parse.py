@@ -1,15 +1,24 @@
 import logging
 import os
+import traceback
 from typing import (
     Any,
     Iterable,
     List,
     Optional,
+    Tuple,
     Union,
 )
 
+from packaging.version import Version
+
+from galaxy.tool_util.parameters import (
+    input_models_for_tool_source,
+    test_case_state as case_state,
+)
 from galaxy.tool_util.parser.interface import (
     InputSource,
+    TestCollectionDef,
     ToolSource,
     ToolSourceTest,
     ToolSourceTestInputs,
@@ -49,10 +58,38 @@ def parse_tool_test_descriptions(
     """
     Build ToolTestDescription objects for each test description.
     """
+    validate_on_load = Version(tool_source.parse_profile()) >= Version("24.2")
     raw_tests_dict: ToolSourceTests = tool_source.parse_tests_to_dict()
     tests: List[ToolTestDescription] = []
+
+    profile = tool_source.parse_profile()
     for i, raw_test_dict in enumerate(raw_tests_dict.get("tests", [])):
-        test = _description_from_tool_source(tool_source, raw_test_dict, i, tool_guid)
+        validation_exception: Optional[Exception] = None
+        if validate_on_load:
+            tool_parameter_bundle = input_models_for_tool_source(tool_source)
+            try:
+                case_state(raw_test_dict, tool_parameter_bundle.parameters, profile, validate=True)
+            except Exception as e:
+                # TOOD: restrict types of validation exceptions a bit probably?
+                validation_exception = e
+
+        if validation_exception:
+            tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
+            test = ToolTestDescription.from_tool_source_dict(
+                InvalidToolTestDict(
+                    {
+                        "tool_id": tool_id,
+                        "tool_version": tool_version,
+                        "test_index": i,
+                        "inputs": {},
+                        "error": True,
+                        "exception": unicodify(validation_exception),
+                        "maxseconds": None,
+                    }
+                )
+            )
+        else:
+            test = _description_from_tool_source(tool_source, raw_test_dict, i, tool_guid)
         tests.append(test)
     return tests
 
@@ -71,10 +108,7 @@ def _description_from_tool_source(
     if maxseconds is not None:
         maxseconds = int(maxseconds)
 
-    tool_id = tool_guid or tool_source.parse_id()
-    assert tool_id
-    tool_version = parse_tool_version_with_defaults(tool_id, tool_source)
-
+    tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
     processed_test_dict: Union[ValidToolTestDict, InvalidToolTestDict]
     try:
         processed_inputs = _process_raw_inputs(
@@ -108,7 +142,7 @@ def _description_from_tool_source(
                 "error": False,
             }
         )
-    except Exception as e:
+    except Exception:
         processed_test_dict = InvalidToolTestDict(
             {
                 "tool_id": tool_id,
@@ -116,12 +150,19 @@ def _description_from_tool_source(
                 "test_index": test_index,
                 "inputs": {},
                 "error": True,
-                "exception": unicodify(e),
+                "exception": unicodify(traceback.format_exc()),
                 "maxseconds": maxseconds,
             }
         )
 
     return ToolTestDescription.from_tool_source_dict(processed_test_dict)
+
+
+def _tool_id_and_version(tool_source: ToolSource, tool_guid: Optional[str]) -> Tuple[str, str]:
+    tool_id = tool_guid or tool_source.parse_id()
+    assert tool_id
+    tool_version = parse_tool_version_with_defaults(tool_id, tool_source)
+    return tool_id, tool_version
 
 
 def _process_raw_inputs(
@@ -138,7 +179,9 @@ def _process_raw_inputs(
     (| using to nest to new levels) structure and expand dataset
     information as proceeding to populate self.required_files.
     """
-    parent_context = parent_context or RootParamContext()
+    profile = tool_source.parse_profile()
+    allow_legacy_test_case_parameters = Version(profile) <= Version("24.1")
+    parent_context = parent_context or RootParamContext(allow_unqualified_access=allow_legacy_test_case_parameters)
     expanded_inputs: ExpandedToolInputs = {}
     for input_source in input_sources:
         input_type = input_source.parse_input_type()
@@ -151,7 +194,7 @@ def _process_raw_inputs(
             raw_input_dict = case_context.extract_value(raw_inputs)
             case_value = raw_input_dict["value"] if raw_input_dict else None
             case_when, case_input_sources = _matching_case_for_value(
-                tool_source, input_source, test_param_input_source, case_value
+                tool_source, input_source, test_param_input_source, case_value, allow_legacy_test_case_parameters
             )
             if case_input_sources:
                 for case_input_source in case_input_sources.parse_input_sources():
@@ -175,7 +218,11 @@ def _process_raw_inputs(
                     # an infinite loop - hence the "case_value is not None"
                     # check.
                     processed_value = _process_simple_value(
-                        test_param_input_source, expanded_case_value, required_data_tables, required_loc_files
+                        test_param_input_source,
+                        expanded_case_value,
+                        required_data_tables,
+                        required_loc_files,
+                        allow_legacy_test_case_parameters,
                     )
                     expanded_inputs[case_context.for_state()] = processed_value
         elif input_type == "section":
@@ -246,7 +293,8 @@ def _process_raw_inputs(
                     processed_value = param_value
                 elif param_type == "data_collection":
                     assert "collection" in param_extra
-                    collection_def = param_extra["collection"]
+                    collection_dict = param_extra["collection"]
+                    collection_def = TestCollectionDef.from_dict(collection_dict)
                     for input_dict in collection_def.collect_inputs():
                         name = input_dict["name"]
                         value = input_dict["value"]
@@ -255,7 +303,11 @@ def _process_raw_inputs(
                     processed_value = collection_def
                 else:
                     processed_value = _process_simple_value(
-                        input_source, param_value, required_data_tables, required_loc_files
+                        input_source,
+                        param_value,
+                        required_data_tables,
+                        required_loc_files,
+                        allow_legacy_test_case_parameters,
                     )
                 expanded_inputs[context.for_state()] = processed_value
     return expanded_inputs
@@ -272,10 +324,22 @@ def input_sources(tool_source: ToolSource) -> List[InputSource]:
 
 
 class ParamContext:
+    """Capture the context of a parameter's position within the inputs tree of a tool."""
+
+    parent_context: AnyParamContext
+    name: str
+    # if in a repeat - what position in the repeat
+    index: Optional[int]
+    # we've encouraged the use of repeat/conditional tags to capture fully qualified paths
+    # to parameters in tools. This brings the parameters closer to the API and prevents a
+    # variety of possible ambiguities. Disable this for newer tools.
+    allow_unqualified_access: bool
+
     def __init__(self, name: str, parent_context: AnyParamContext, index: Optional[int] = None):
         self.parent_context = parent_context
         self.name = name
         self.index = None if index is None else int(index)
+        self.allow_unqualified_access = parent_context.allow_unqualified_access
 
     def for_state(self) -> str:
         name = self.name if self.index is None else "%s_%d" % (self.name, self.index)
@@ -289,15 +353,18 @@ class ParamContext:
         return f"Context[for_state={self.for_state()}]"
 
     def param_names(self):
-        for parent_context_param in self.parent_context.param_names():
-            if self.index is not None:
-                yield "%s|%s_%d" % (parent_context_param, self.name, self.index)
-            else:
-                yield f"{parent_context_param}|{self.name}"
-        if self.index is not None:
-            yield "%s_%d" % (self.name, self.index)
+        if not self.allow_unqualified_access:
+            yield self.for_state()
         else:
-            yield self.name
+            for parent_context_param in self.parent_context.param_names():
+                if self.index is not None:
+                    yield "%s|%s_%d" % (parent_context_param, self.name, self.index)
+                else:
+                    yield f"{parent_context_param}|{self.name}"
+            if self.index is not None:
+                yield "%s_%d" % (self.name, self.index)
+            else:
+                yield self.name
 
     def extract_value(self, raw_inputs: ToolSourceTestInputs):
         for param_name in self.param_names():
@@ -320,8 +387,10 @@ class ParamContext:
 
 
 class RootParamContext:
-    def __init__(self):
-        pass
+    allow_unqualified_access: bool
+
+    def __init__(self, allow_unqualified_access: bool):
+        self.allow_unqualified_access = allow_unqualified_access
 
     def for_state(self):
         return ""
@@ -338,6 +407,7 @@ def _process_simple_value(
     param_value: Any,
     required_data_tables: RequiredDataTablesT,
     required_loc_files: RequiredLocFileT,
+    allow_legacy_test_case_parameters: bool,
 ):
     input_type = param.get("type")
     if input_type == "select":
@@ -348,14 +418,17 @@ def _process_simple_value(
         def process_param_value(param_value):
             found_value = False
             value_for_text = None
-            static_options = param.parse_static_options()
-            for text, opt_value, _ in static_options:
-                if param_value == opt_value:
-                    found_value = True
-                if value_for_text is None and param_value == text:
-                    value_for_text = opt_value
+            if allow_legacy_test_case_parameters:
+                # we used to allow selections based on text - this
+                # should really be only based on key
+                static_options = param.parse_static_options()
+                for text, opt_value, _ in static_options:
+                    if param_value == opt_value:
+                        found_value = True
+                    if value_for_text is None and param_value == text:
+                        value_for_text = opt_value
             dynamic_options = param.parse_dynamic_options()
-            if dynamic_options and not input_type == "drill_down":
+            if dynamic_options:
                 data_table_name = dynamic_options.get_data_table_name()
                 index_file_name = dynamic_options.get_index_file_name()
                 if data_table_name:
@@ -377,13 +450,19 @@ def _process_simple_value(
     elif input_type == "boolean":
         # Like above, tests may use the tool define values of simply
         # true/false.
-        processed_value = _process_bool_param_value(param, param_value)
+        processed_value = _process_bool_param_value(param, param_value, allow_legacy_test_case_parameters)
     else:
         processed_value = param_value
     return processed_value
 
 
-def _matching_case_for_value(tool_source: ToolSource, cond: InputSource, test_param: InputSource, declared_value: Any):
+def _matching_case_for_value(
+    tool_source: ToolSource,
+    cond: InputSource,
+    test_param: InputSource,
+    declared_value: Any,
+    allow_legacy_test_case_parameters: bool,
+):
     tool_id = tool_source.parse_id()
     cond_name = cond.parse_name()
 
@@ -395,10 +474,10 @@ def _matching_case_for_value(tool_source: ToolSource, cond: InputSource, test_pa
             # No explicit value for param in test case, determine from default
             query_value = boolean_is_checked(test_param)
         else:
-            query_value = _process_bool_param_value(test_param, declared_value)
+            query_value = _process_bool_param_value(test_param, declared_value, allow_legacy_test_case_parameters)
 
         def matches_declared_value(case_value):
-            return _process_bool_param_value(test_param, case_value) == query_value
+            return _process_bool_param_value(test_param, case_value, allow_legacy_test_case_parameters) == query_value
 
     elif test_param_type == "select":
         static_options = test_param.parse_static_options()
@@ -475,21 +554,25 @@ def require_file(name: str, value: str, extra: ExtraFileInfoDictT, required_file
     return value
 
 
-def _process_bool_param_value(input_source: InputSource, param_value: Any) -> Any:
+def _process_bool_param_value(
+    input_source: InputSource, param_value: Any, allow_legacy_test_case_parameters: bool
+) -> Any:
     truevalue, falsevalue = boolean_true_and_false_values(input_source)
     optional = input_source.parse_optional()
-    return process_bool_param_value(truevalue, falsevalue, optional, param_value)
+    return process_bool_param_value(truevalue, falsevalue, optional, param_value, allow_legacy_test_case_parameters)
 
 
-def process_bool_param_value(truevalue: str, falsevalue: str, optional: bool, param_value: Any) -> Any:
+def process_bool_param_value(
+    truevalue: str, falsevalue: str, optional: bool, param_value: Any, allow_legacy_test_case_parameters: bool
+) -> Any:
     was_list = False
     if isinstance(param_value, list):
         was_list = True
         param_value = param_value[0]
 
-    if truevalue == param_value:
+    if allow_legacy_test_case_parameters and truevalue == param_value:
         processed_value = True
-    elif falsevalue == param_value:
+    elif allow_legacy_test_case_parameters and falsevalue == param_value:
         processed_value = False
     else:
         if optional:

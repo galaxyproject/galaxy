@@ -11,6 +11,7 @@ from galaxy.tool_util.cwl.parser import (
 )
 from galaxy.tool_util.deps import requirements
 from .interface import (
+    HelpContent,
     PageSource,
     PagesSource,
     ToolSource,
@@ -80,7 +81,11 @@ class CwlToolSource(ToolSource):
         return []
 
     def parse_help(self):
-        return self.tool_proxy.doc()
+        doc = self.tool_proxy.doc()
+        if doc:
+            return HelpContent(format="plain_text", content=doc)
+        else:
+            return None
 
     def parse_sanitize(self):
         return False

@@ -1,0 +1,39 @@
+<tool id="CONVERTER_archive_to_directory" name="Unpack archive to directory" version="1.0.0" profile="21.09">
+    <!-- Use compression_utils instead of shell commands (tar/unzip) so we can verify safety of results -->
+    <requirements>
+        <requirement type="package" version="23.2.1">galaxy-util</requirement>
+    </requirements>
+    <command><![CDATA[
+        mkdir '$output1.files_path' &&
+        cd '$output1.files_path' &&
+        python -c "from galaxy.util.compression_utils import CompressedFile; CompressedFile('$input1').extract('.')"
+    ]]></command>
+    <configfiles>
+        <configfile filename="metadata_json"><![CDATA[{
+    "output1": {
+        "name": "$input1.name unpacked to $__target_datatype__",
+        "ext": "$__target_datatype__"
+    }
+}]]></configfile>
+    </configfiles>
+    <inputs>
+        <param format="tar,zip" name="input1" type="data"/>
+        <param name="__target_datatype__" type="select" label="Target data type">
+            <option value="directory">directory</option>
+            <option value="zarr">zarr</option>
+            <option value="ome_zarr">ome_zarr</option>
+        </param>
+    </inputs>
+    <outputs provided_metadata_file="metadata_json">
+        <data format="auto" name="output1"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" ftype="tar" value="testdir1.tar"/>
+            <param name="__target_datatype__" value="directory"/>
+            <output name="output1" ftype="directory" value="testdir1.tar.directory"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

@@ -69,9 +69,75 @@ function addRuleHeadingIncreaseLevel(engine: MarkdownIt, increaseBy: number) {
     };
 }
 
+/**
+ * Add a rule that removes newlines after list items.
+ */
+function addRuleRemoveNewlinesAfterList(engine: MarkdownIt) {
+    const defaultRenderListItemOpen =
+        engine.renderer.rules.list_item_open ||
+        function (tokens, idx, options, _env, self) {
+            return self.renderToken(tokens, idx, options);
+        };
+
+    const defaultRenderListItemClose =
+        engine.renderer.rules.list_item_close ||
+        function (tokens, idx, options, _env, self) {
+            return self.renderToken(tokens, idx, options);
+        };
+
+    const defaultRenderOrderedListOpen =
+        engine.renderer.rules.ordered_list_open ||
+        function (tokens, idx, options, _env, self) {
+            return self.renderToken(tokens, idx, options);
+        };
+
+    const defaultRenderOrderedListClose =
+        engine.renderer.rules.ordered_list_close ||
+        function (tokens, idx, options, _env, self) {
+            return self.renderToken(tokens, idx, options);
+        };
+
+    const defaultRenderBulletListOpen =
+        engine.renderer.rules.bullet_list_open ||
+        function (tokens, idx, options, _env, self) {
+            return self.renderToken(tokens, idx, options);
+        };
+
+    const defaultRenderBulletListClose =
+        engine.renderer.rules.bullet_list_close ||
+        function (tokens, idx, options, _env, self) {
+            return self.renderToken(tokens, idx, options);
+        };
+
+    engine.renderer.rules.list_item_open = function (tokens, idx, options, env, self) {
+        return defaultRenderListItemOpen(tokens, idx, options, env, self).replace(/\n+$/, "");
+    };
+
+    engine.renderer.rules.list_item_close = function (tokens, idx, options, env, self) {
+        return defaultRenderListItemClose(tokens, idx, options, env, self).replace(/\n+$/, "");
+    };
+
+    engine.renderer.rules.ordered_list_open = function (tokens, idx, options, env, self) {
+        return defaultRenderOrderedListOpen(tokens, idx, options, env, self).replace(/\n+$/, "");
+    };
+
+    engine.renderer.rules.ordered_list_close = function (tokens, idx, options, env, self) {
+        return defaultRenderOrderedListClose(tokens, idx, options, env, self).replace(/\n+$/, "");
+    };
+
+    engine.renderer.rules.bullet_list_open = function (tokens, idx, options, env, self) {
+        return defaultRenderBulletListOpen(tokens, idx, options, env, self).replace(/\n+$/, "");
+    };
+
+    engine.renderer.rules.bullet_list_close = function (tokens, idx, options, env, self) {
+        return defaultRenderBulletListClose(tokens, idx, options, env, self).replace(/\n+$/, "");
+    };
+}
+
 interface UseMarkdownOptions {
     openLinksInNewPage?: boolean;
     increaseHeadingLevelBy?: number;
+    removeNewlinesAfterList?: boolean;
 }
 
 type RawMarkdown = string;
@@ -87,6 +153,10 @@ export function useMarkdown(options: UseMarkdownOptions = {}) {
 
     if (options.increaseHeadingLevelBy) {
         addRuleHeadingIncreaseLevel(mdEngine, options.increaseHeadingLevelBy);
+    }
+
+    if (options.removeNewlinesAfterList) {
+        addRuleRemoveNewlinesAfterList(mdEngine);
     }
 
     function renderMarkdown(markdown: RawMarkdown): HTMLString {

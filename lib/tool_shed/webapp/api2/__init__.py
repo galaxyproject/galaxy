@@ -81,7 +81,7 @@ api_key_cookie = APIKeyCookie(name=AUTH_COOKIE_NAME, auto_error=False)
 
 
 def depends(dep_type: Type[T]) -> T:
-    return framework_depends(dep_type, get_app=get_app)
+    return framework_depends(dep_type, app=get_app_with_request_session)
 
 
 def get_api_user(

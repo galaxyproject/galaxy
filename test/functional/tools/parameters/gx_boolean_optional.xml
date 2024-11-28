@@ -34,7 +34,6 @@ cat '$inputs' >> $inputs_json;
                     <has_line line="false" />
                 </assert_contents>
             </output>
-            <!-- I wish this were null? It is somehow in expression_null_handling_boolean -->
             <output name="inputs_json">
                 <assert_contents>
                     <has_text text="&quot;parameter&quot;: null" />

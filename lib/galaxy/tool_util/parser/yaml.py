@@ -19,6 +19,7 @@ from galaxy.tool_util.parser.util import (
 from .interface import (
     AssertionDict,
     AssertionList,
+    HelpContent,
     InputSource,
     PageSource,
     PagesSource,
@@ -32,6 +33,10 @@ from .output_objects import (
     ToolOutput,
     ToolOutputCollection,
     ToolOutputCollectionStructure,
+)
+from .parameter_validators import (
+    AnyValidatorModel,
+    parse_dict_validators,
 )
 from .stdio import error_on_exit_code
 from .util import is_dict
@@ -124,8 +129,12 @@ class YamlToolSource(ToolSource):
     def parse_stdio(self):
         return error_on_exit_code()
 
-    def parse_help(self):
-        return self.root_dict.get("help", None)
+    def parse_help(self) -> Optional[HelpContent]:
+        content = self.root_dict.get("help", None)
+        if content:
+            return HelpContent(format="markdown", content=content)
+        else:
+            return None
 
     def parse_outputs(self, tool):
         outputs = self.root_dict.get("outputs", {})
@@ -324,13 +333,17 @@ class YamlPageSource(PageSource):
 
 
 class YamlInputSource(InputSource):
-    def __init__(self, input_dict):
+    def __init__(self, input_dict, trusted: bool = True):
         self.input_dict = input_dict
+        self.trusted = trusted
 
     def get(self, key, default=None):
         return self.input_dict.get(key, default)
 
     def get_bool(self, key, default):
+        return self.input_dict.get(key, default)
+
+    def get_bool_or_none(self, key, default):
         return self.input_dict.get(key, default)
 
     def parse_input_type(self):
@@ -369,6 +382,9 @@ class YamlInputSource(InputSource):
             case_page_source = YamlPageSource(block)
             sources.append((value, case_page_source))
         return sources
+
+    def parse_validators(self) -> List[AnyValidatorModel]:
+        return parse_dict_validators(self.input_dict.get("validators", []), trusted=self.trusted)
 
     def parse_static_options(self) -> List[Tuple[str, str, bool]]:
         static_options = []

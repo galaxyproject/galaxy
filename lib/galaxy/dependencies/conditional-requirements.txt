@@ -1,5 +1,5 @@
 # These dependencies are only required when certain config options are set
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.10
 mysqlclient
 fluent-logger
 sentry-sdk[fastapi]
@@ -14,6 +14,7 @@ python-pam
 galaxycloudrunner
 pkce
 total-perspective-vortex>=2.3.2,<3
+openai
 
 # For file sources plugins
 fs.webdavfs>=0.4.2  # type: webdav
@@ -24,7 +25,7 @@ fs.googledrivefs # type: googledrive
 fs-gcsfs # type: googlecloudstorage
 # fs-gcsfs doesn't pin google-cloud-storage, and old versions log noisy exceptions and break test discovery
 google-cloud-storage>=2.8.0  # type: googlecloudstorage
-fs.onedatarestfs==21.2.5.1 # type: onedata, depends on onedatafilerestclient
+fs.onedatarestfs==21.2.5.2 # type: onedata, depends on onedatafilerestclient
 fs-basespace # type: basespace
 fs-azureblob # type: azure
 
@@ -36,7 +37,7 @@ custos-sdk
 chronos-python==1.2.1
 
 # Kubernetes job runner
-pykube-ng==21.3.0
+pykube-ng==23.6.0
 
 # Synnefo / Pithos+ object store client
 kamaki

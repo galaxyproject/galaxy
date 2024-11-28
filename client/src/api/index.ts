@@ -1,11 +1,21 @@
 /** Contains type alias and definitions related to Galaxy API models. */
 
-import { type components } from "@/api/schema";
+import { GalaxyApi } from "@/api/client";
+import { type components, type GalaxyApiPaths } from "@/api/schema";
+
+export { type components, GalaxyApi, type GalaxyApiPaths };
 
 /**
  * Contains minimal information about a History.
  */
 export type HistorySummary = components["schemas"]["HistorySummary"];
+
+/**
+ * Represents the possible values for the `sort_by` parameter when querying histories.
+ * We can not extract this from the schema for an unknown reason.
+ * The desired solution would be: `GalaxyApiPaths["/api/histories"]["get"]["parameters"]["query"]["sort_by"]`.
+ */
+export type HistorySortByLiteral = "create_time" | "name" | "update_time" | "username" | undefined;
 
 /**
  * Contains minimal information about a History with additional content stats.
@@ -129,6 +139,14 @@ export interface DCECollection extends DCESummary {
 }
 
 /**
+ * DatasetCollectionElement specific type for datasets.
+ */
+export interface DCEDataset extends DCESummary {
+    element_type: "hda";
+    object: HDAObject;
+}
+
+/**
  * Contains summary information about a HDCA (HistoryDatasetCollectionAssociation).
  *
  * HDCAs are (top level only) history items that contains information about the association
@@ -147,6 +165,8 @@ export type HDCADetailed = components["schemas"]["HDCADetailed"];
  * DatasetCollections are immutable and contain one or more DCEs.
  */
 export type DCObject = components["schemas"]["DCObject"];
+
+export type HDAObject = components["schemas"]["HDAObject"];
 
 export type DatasetCollectionAttributes = components["schemas"]["DatasetCollectionAttributesResult"];
 
@@ -180,11 +200,22 @@ export function isHDCA(entry?: CollectionEntry): entry is HDCASummary {
     );
 }
 
+export function isDCE(item: object): item is DCESummary {
+    return item && "element_type" in item;
+}
+
 /**
  * Returns true if the given element of a collection is a DatasetCollection.
  */
 export function isCollectionElement(element: DCESummary): element is DCECollection {
     return element.element_type === "dataset_collection";
+}
+
+/**
+ * Returns true if the given element of a collection is a Dataset.
+ */
+export function isDatasetElement(element: DCESummary): element is DCEDataset {
+    return element.element_type === "hda";
 }
 
 /**
@@ -269,3 +300,16 @@ export type DatasetTransform = {
     action: "to_posix_lines" | "spaces_to_tabs" | "datatype_groom";
     datatype_ext: "bam" | "qname_sorted.bam" | "qname_input_sorted.bam" | "isa-tab" | "isa-json";
 };
+
+/**
+ * Base type for all exceptions returned by the API.
+ */
+export type MessageException = components["schemas"]["MessageExceptionModel"];
+
+export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
+export type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
+export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
+export type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
+export type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
+
+export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];

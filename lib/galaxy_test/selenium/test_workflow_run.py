@@ -77,6 +77,29 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
 
     @selenium_test
     @managed_history
+    def test_runtime_parameters_simple_optional(self):
+        self.workflow_run_open_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  int_step:
+    tool_id: expression_null_handling_integer
+    runtime_inputs:
+      - int_input
+"""
+        )
+        self.tool_parameter_div("int_input")
+        self._set_num_lines_to_3("int_input")
+        self.screenshot("workflow_run_optional_runtime_parameters_modified")
+        self.workflow_run_submit()
+        self.workflow_run_wait_for_ok(hid=1)
+        history_id = self.current_history_id()
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=1)
+        assert json.loads(content) == 3
+
+    @selenium_test
+    @managed_history
     def test_subworkflows_expanded(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()

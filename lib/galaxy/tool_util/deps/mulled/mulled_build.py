@@ -69,7 +69,7 @@ DEFAULT_WORKING_DIR = "/source/"
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
 DEST_BASE_IMAGE = os.environ.get("DEST_BASE_IMAGE", None)
-CONDA_IMAGE = os.environ.get("CONDA_IMAGE", None)
+CONDA_IMAGE = os.environ.get("CONDA_IMAGE", "quay.io/condaforge/miniforge3:latest")
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
 From: %(base_image)s
@@ -374,13 +374,12 @@ class CondaInDockerContext(CondaContext):
         condarc_override=None,
     ):
         if not conda_exec:
-            conda_image = CONDA_IMAGE or "continuumio/miniconda3:latest"
             binds = []
             for channel in ensure_channels:
                 if channel.startswith("file://"):
                     bind_path = channel[7:]
                     binds.extend(["-v", f"{bind_path}:{bind_path}"])
-            conda_exec = docker_command_list("run", binds + [conda_image, "conda"])
+            conda_exec = docker_command_list("run", binds + [CONDA_IMAGE, "conda"])
         super().__init__(
             conda_prefix=conda_prefix,
             conda_exec=conda_exec,
@@ -527,8 +526,8 @@ def add_single_image_arguments(parser):
     )
 
 
-def target_str_to_targets(targets_raw):
-    def parse_target(target_str):
+def target_str_to_targets(targets_raw: str) -> List[CondaTarget]:
+    def parse_target(target_str: str) -> CondaTarget:
         if "=" in target_str:
             package_name, version = target_str.split("=", 1)
             build = None
@@ -541,8 +540,10 @@ def target_str_to_targets(targets_raw):
             target = build_target(target_str)
         return target
 
-    targets = [parse_target(_) for _ in targets_raw.split(",")]
-    return targets
+    if targets_raw.strip() == "":
+        return []
+    else:
+        return [parse_target(_) for _ in targets_raw.split(",")]
 
 
 def args_to_mull_targets_kwds(args):

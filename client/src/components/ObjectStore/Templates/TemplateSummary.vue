@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import type { components } from "@/api/schema/schema";
+import { type components } from "@/api/schema";
 
-import type { ObjectStoreTemplateSummary } from "./types";
+import { type ObjectStoreTemplateSummary } from "./types";
 
 import ConfigurationMarkdown from "@/components/ObjectStore/ConfigurationMarkdown.vue";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";

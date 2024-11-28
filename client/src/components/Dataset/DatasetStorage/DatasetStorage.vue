@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
-import { type DatasetStorageDetails } from "@/api";
-import { fetchDatasetStorage } from "@/api/datasets";
-import { errorMessageAsString } from "@/utils/simple-error";
+import { type DatasetStorageDetails, GalaxyApi } from "@/api";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 import RelocateLink from "./RelocateLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -47,8 +46,16 @@ async function fetch() {
     const datasetId = props.datasetId;
     const datasetType = props.datasetType;
     try {
-        const response = await fetchDatasetStorage({ dataset_id: datasetId, hda_ldda: datasetType });
-        storageInfo.value = response.data;
+        const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}/storage", {
+            params: {
+                path: { dataset_id: datasetId },
+                query: { hda_ldda: datasetType },
+            },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+        storageInfo.value = data;
     } catch (error) {
         errorMessage.value = errorMessageAsString(error);
     }

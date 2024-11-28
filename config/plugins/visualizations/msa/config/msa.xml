@@ -11,6 +11,9 @@
             <to_param param_attr="id">dataset_id</to_param>
         </data_source>
     </data_sources>
+    <requirements>
+        <requirement type="npm" version="0.2.1" package="@galaxyproject/msa"/>
+    </requirements>
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>

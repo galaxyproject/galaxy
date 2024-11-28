@@ -1,11 +1,13 @@
 import { faPlay, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { invocationsFetcher, type WorkflowInvocation } from "@/api/invocations";
+import { GalaxyApi } from "@/api";
+import { type WorkflowInvocation } from "@/api/invocations";
 import { type StoredWorkflowDetailed } from "@/api/workflows";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import _l from "@/utils/localization";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import { type ActionArray, type FieldArray, type GridConfig } from "./types";
 
@@ -42,8 +44,12 @@ export async function getData(
         params["user_id"] = extraProps["user_id"];
     }
 
-    const { data, headers } = await invocationsFetcher(params);
+    const { response, data, error } = await GalaxyApi().GET("/api/invocations", { params: { query: params } });
+    if (error) {
+        rethrowSimple(error);
+    }
     fetchHistoriesAndWorkflows(data);
+    const headers = response.headers;
     const totalMatches = parseInt(headers.get("total_matches") ?? "0");
     return [data, totalMatches];
 }

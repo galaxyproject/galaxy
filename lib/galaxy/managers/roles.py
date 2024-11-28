@@ -84,7 +84,11 @@ class RoleManager(base.ModelManager[model.Role]):
         user_ids = role_definition_model.user_ids or []
         group_ids = role_definition_model.group_ids or []
 
-        stmt = select(Role).where(Role.name == name).limit(1)
+        stmt = (
+            select(Role)
+            .where(Role.name == name)  # type:ignore[arg-type,comparison-overlap]  # Role.name is a SA hybrid property
+            .limit(1)
+        )
         if trans.sa_session.scalars(stmt).first():
             raise Conflict(f"A role with that name already exists [{name}]")
 

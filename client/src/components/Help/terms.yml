@@ -27,8 +27,38 @@ unix:
     debug what is wrong with the execution of an application.
 
     More information on stack traces can be found on [Wikipedia](https://en.wikipedia.org/wiki/Stack_trace).
+programming:
+  python:
+    regex: |
+      Regular expressions are patterns used to match character combinations in strings. This input accepts Python-style regular expressions, find more information about these in [this Python for Biologists tutorial](https://pythonforbiologists.com/tutorial/regex.html).
 
+      The website [regex101](https://regex101.com/) is a useful playground to explore regular expressions (be sure to enable "Python" as your flavor) and language models such as ChatGPT can help interactively build up and explain regular expressions from natural language prompts or examples.
 galaxy:
+  collections:
+    flatList: |
+      A flat list is just a simple dataset collection of type ``list`` that contains only datasets and not
+      other collections.
+    mapOver: |
+      When a tool consumes a dataset but is run with a collection, the collection *maps over* the collection.
+      This means instead of just running the tool once - the tool will be run once for each element of the
+      provided collection. Additionally, the outputs of the tool will be collected into a collection that
+      matches the structure of the provided collection. This matching structure means the output collections
+      will have the same element identifiers as the provided collection and they will appear in the same order.
+
+      It is easiest to visualize "mapping over" a collection is in the context of a tool that consumes a dataset
+      and produces a dataset, but the semantics apply rather naturally to tools that consume collections or
+      produce collections as well.
+      
+      For instance, consider a tool that consumes a ``paired`` collection and produces an output dataset.
+      If a list of paired collections (collection type ``list:paired``) is passed to the tool - it will
+      will produce a flat list (collection type ``list``) of output datasets with the same number of elements
+      in the same order as the provided list of ``paired`` collections.
+
+      In the case of outputs, consider a tool that takes in a dataset and produces a flat list. If this tool
+      is run over a flat list of datasets - that list will be "mapped over" and each element will produce a list.
+      These lists will be gathered together in a nested list structured (collection type ``list:list``) where
+      the outer element count and structure matches that of the input and the inner list for each of those
+      is just the outputs of the tool for the corresponding element of the input.
   jobs:
     states:
       # upload, waiting, failed, paused, deleting, deleted, stop, stopped, skipped.
@@ -57,7 +87,7 @@ galaxy:
   invocations:
     states:
       scheduled: |
-        This state indicates the workflow invocation has had all of its job scheduled. This means all the
+        This state indicates the workflow invocation has had all of its jobs scheduled. This means all the
         datasets are likely created and Galaxy has created the stubs for the jobs in the workflow. *The jobs
         themselves might not have been queued or running.*
 
@@ -81,3 +111,8 @@ galaxy:
       failed: |
         This state indicates there was a problem scheduling the workflow invocation. No additional datasets
         or jobs will be created for this workflow invocation.
+  upload:
+    galaxyUploadUtil: |
+      A utility for uploading files to a Galaxy server from the command line. Use ``galaxy-upload`` to upload
+      file(s) to a Galaxy server, and ``galaxy-history-search``, a helper utility to find Galaxy histories
+      to pass to the ``galaxy-upload`` command.

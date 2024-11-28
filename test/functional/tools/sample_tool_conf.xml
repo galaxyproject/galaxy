@@ -24,6 +24,8 @@
   <tool file="multi_repeats.xml" />
   <tool file="remove_value.xml" />
   <tool file="bibtex.xml" />
+  <tool file="help_features_rst.xml" />
+  <tool file="help_features_markdown.xml" />
   <tool file="select_from_url.xml" />
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
@@ -64,6 +66,7 @@
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="dbkey_filter_collection.xml" />
+  <tool file="filter_data_table.xml" />
   <tool file="dbkey_output_action.xml" />
   <tool file="composite_output.xml" />
   <tool file="composite_output_tests.xml" />
@@ -137,6 +140,7 @@
   <tool file="column_param_configfile.xml" />
   <tool file="column_param_list.xml" />
   <tool file="column_multi_param.xml" />
+  <tool file="select_optional_legacy.xml" />
   <tool file="select_optional.xml" />
   <tool file="select_dynamic.xml" />
   <tool file="hidden_param.xml" />
@@ -176,6 +180,7 @@
   <tool file="identifier_in_actions.xml" />
   <tool file="fail_identifier.xml" />
   <tool file="fail_writing_work_dir_file.xml" />
+  <tool file="legacy_interpreter.xml" />
   <tool file="tool_directory.xml" />
   <tool file="tool_directory_docker.xml" />
   <tool file="output_action_change_format.xml" />
@@ -299,6 +304,7 @@
   <tool file="${model_tools_path}/filter_failed_collection.xml" />
   <tool file="${model_tools_path}/keep_success_collection.xml" />
   <tool file="${model_tools_path}/filter_empty_collection.xml" />
+  <tool file="${model_tools_path}/filter_null.xml" />
   <tool file="${model_tools_path}/flatten_collection.xml" />
   <tool file="${model_tools_path}/sort_collection_list.xml" />
   <tool file="${model_tools_path}/harmonize_two_collections_list.xml" />

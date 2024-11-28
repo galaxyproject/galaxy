@@ -116,7 +116,7 @@ def extract_steps(
         if name not in step_labels:
             step.label = name
             step_labels.add(name)
-        step.tool_inputs = dict(name=name)  # type:ignore[assignment]
+        step.tool_inputs = dict(name=name)
         hid_to_output_pair[hid] = (step, "output")
         steps.append(step)
     for i, hid in enumerate(dataset_collection_ids):
@@ -132,7 +132,7 @@ def extract_steps(
         if name not in step_labels:
             step.label = name
             step_labels.add(name)
-        step.tool_inputs = dict(name=name, collection_type=collection_type)  # type:ignore[assignment]
+        step.tool_inputs = dict(name=name, collection_type=collection_type)
         hid_to_output_pair[hid] = (step, "output")
         steps.append(step)
     # Tool steps
@@ -321,7 +321,15 @@ class WorkflowSummary:
         # tracking with creating_job_associations. Will delete at some point.
         elif dataset_collection.implicit_output_name:
             # TODO: Optimize db call
-            dataset_instance = dataset_collection.collection.dataset_instances[0]
+            element = dataset_collection.collection.first_dataset_element
+            if not element:
+                # Got no dataset instance to walk back up to creating job.
+                # TODO track this via tool request model
+                job = DatasetCollectionCreationJob(dataset_collection)
+                self.jobs[job] = [(None, dataset_collection)]
+                return
+            else:
+                dataset_instance = element.hda
             if not self.__check_state(dataset_instance):
                 # Just checking the state of one instance, don't need more but
                 # makes me wonder if even need this check at all?

@@ -156,6 +156,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.interactivetool_manager = Bunch(create_interactivetool=lambda *args, **kwargs: None)
         self.is_job_handler = False
         self.biotools_metadata_source = None
+        self.trs_proxy = Bunch()
         set_thread_app(self)
 
         def url_for(*args, **kwds):
@@ -329,7 +330,7 @@ class MockTrans:
         self.security = self.app.security
         self.history = history
 
-        self.request: Any = Bunch(headers={}, is_body_readable=False, host="request.host")
+        self.request: Any = Bunch(headers={}, is_body_readable=False, host="request.host", url_path="mock/url/path")
         self.response: Any = Bunch(headers={}, set_content_type=lambda i: None)
 
     @property
@@ -430,8 +431,17 @@ class MockDir:
 
 
 class MockTemplateHelpers:
+    def css(*css_files):
+        pass
+
+    def dumps(*kwargs):
+        return {}
+
     def js(*js_files):
         pass
 
-    def css(*css_files):
-        pass
+    def is_url(*kwargs):
+        return True
+
+    def url_for(*kwargs):
+        return "/"

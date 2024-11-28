@@ -1,6 +1,6 @@
 import "jsdom-worker";
 
-import JSDOMEnvironment from "jest-environment-jsdom";
+import JSDOMEnvironment from "jest-fixed-jsdom";
 
 class MockObserver {
     constructor(...args) {}

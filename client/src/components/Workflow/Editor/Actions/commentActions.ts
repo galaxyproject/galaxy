@@ -1,10 +1,19 @@
 import { LazyUndoRedoAction, UndoRedoAction } from "@/stores/undoRedoStore";
-import {
-    type BaseWorkflowComment,
-    type WorkflowComment,
-    type WorkflowCommentColor,
-    type WorkflowCommentStore,
+import type {
+    BaseWorkflowComment,
+    WorkflowComment,
+    WorkflowCommentColor,
+    WorkflowCommentStore,
+    WorkflowCommentType,
 } from "@/stores/workflowEditorCommentStore";
+
+function getCommentName(comment: { color: WorkflowCommentColor; type: WorkflowCommentType }) {
+    if (comment.color !== "none") {
+        return `${comment.color} ${comment.type} comment`;
+    } else {
+        return `${comment.type} comment`;
+    }
+}
 
 class CommentAction extends UndoRedoAction {
     protected store: WorkflowCommentStore;
@@ -15,11 +24,15 @@ class CommentAction extends UndoRedoAction {
         this.store = store;
         this.comment = structuredClone(comment) as WorkflowComment;
     }
+
+    protected get commentName() {
+        return getCommentName(this.comment);
+    }
 }
 
 export class AddCommentAction extends CommentAction {
     get name() {
-        return `add ${this.comment.type} comment`;
+        return `add ${this.commentName}`;
     }
 
     undo() {
@@ -33,7 +46,7 @@ export class AddCommentAction extends CommentAction {
 
 export class DeleteCommentAction extends CommentAction {
     get name() {
-        return `delete ${this.comment.type} comment`;
+        return `delete ${this.commentName}`;
     }
 
     run() {
@@ -75,10 +88,11 @@ export class ChangeColorAction extends UndoRedoAction {
 }
 
 class LazyMutateCommentAction<K extends keyof WorkflowComment> extends LazyUndoRedoAction {
-    private commentId: number;
-    private startData: WorkflowComment[K];
-    private endData: WorkflowComment[K];
+    protected commentId: number;
+    protected startData: WorkflowComment[K];
+    protected endData: WorkflowComment[K];
     protected type;
+    protected color: WorkflowCommentColor;
     protected applyDataCallback: (commentId: number, data: WorkflowComment[K]) => void;
 
     constructor(
@@ -93,14 +107,19 @@ class LazyMutateCommentAction<K extends keyof WorkflowComment> extends LazyUndoR
         this.endData = structuredClone(data);
         this.applyDataCallback = applyDataCallback;
         this.type = comment.type;
+        this.color = comment.color;
     }
 
     queued() {
         this.applyDataCallback(this.commentId, this.endData);
     }
 
+    protected get commentName() {
+        return getCommentName({ type: this.type, color: this.color });
+    }
+
     get name() {
-        return `change ${this.type} comment`;
+        return `change ${this.commentName}`;
     }
 
     updateData(data: WorkflowComment[K]) {
@@ -122,6 +141,35 @@ export class LazyChangeDataAction extends LazyMutateCommentAction<"data"> {
         const callback = store.changeData;
         super(comment, "data", data, callback);
     }
+
+    get name() {
+        type TitleData = { title: string };
+        type TextData = { text: string };
+        type SizeData = { size: number };
+        type FormatData = { bold?: true; italic?: true };
+
+        if ((this.startData as TitleData).title !== (this.endData as TitleData).title) {
+            return `edit title of ${this.commentName}`;
+        }
+
+        if ((this.startData as TextData).text !== (this.endData as TextData).text) {
+            return `edit text of ${this.commentName}`;
+        }
+
+        if ((this.startData as SizeData).size !== (this.endData as SizeData).size) {
+            return `change text size of ${this.commentName}`;
+        }
+
+        if ((this.startData as FormatData).bold !== (this.endData as FormatData).bold) {
+            return `toggle bold of ${this.commentName}`;
+        }
+
+        if ((this.startData as FormatData).italic !== (this.endData as FormatData).italic) {
+            return `toggle italic of ${this.commentName}`;
+        }
+
+        return super.name;
+    }
 }
 
 export class LazyChangePositionAction extends LazyMutateCommentAction<"position"> {
@@ -131,7 +179,7 @@ export class LazyChangePositionAction extends LazyMutateCommentAction<"position"
     }
 
     get name() {
-        return `change ${this.type} comment position`;
+        return `move ${this.commentName}`;
     }
 }
 
@@ -142,7 +190,7 @@ export class LazyChangeSizeAction extends LazyMutateCommentAction<"size"> {
     }
 
     get name() {
-        return `resize ${this.type} comment`;
+        return `resize ${this.commentName}`;
     }
 }
 

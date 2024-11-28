@@ -5,3 +5,4 @@ include galaxy/tool_util/toolbox/filters/*.sample
 include galaxy/tool_util/verify/test_config.sample.yml
 include galaxy/tool_util/xsd/*
 include galaxy/tool_util/ontologies/*tsv
+include galaxy/tool_util/linters/datatypes_conf.xml.sample

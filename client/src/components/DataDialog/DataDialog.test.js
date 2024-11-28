@@ -134,6 +134,9 @@ describe("DataDialog.vue", () => {
         wrapper = shallowMount(DataDialog, {
             propsData: mockOptions,
             localVue,
+            stubs: {
+                Icon: true,
+            },
         });
         expect(wrapper.findComponent(SelectionDialog).exists()).toBe(true);
         // Cannot get nested slot templates to render into the wrapper

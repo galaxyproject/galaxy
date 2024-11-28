@@ -11,12 +11,14 @@ interface Props {
     wait?: boolean;
     tooltip?: string;
     disabled?: boolean;
+    size?: string;
 }
 
 withDefaults(defineProps<Props>(), {
     wait: false,
     tooltip: undefined,
     disabled: false,
+    size: "md",
 });
 </script>
 
@@ -25,6 +27,7 @@ withDefaults(defineProps<Props>(), {
         v-if="wait"
         v-b-tooltip.hover.bottom
         disabled
+        :size="size"
         variant="info"
         title="Please Wait..."
         class="d-flex flex-nowrap align-items-center text-nowrap">
@@ -38,6 +41,7 @@ withDefaults(defineProps<Props>(), {
         class="d-flex flex-nowrap align-items-center text-nowrap"
         :title="tooltip"
         :disabled="disabled"
+        :size="size"
         @click="$emit('onClick')">
         <FontAwesomeIcon :icon="faPlay" class="mr-2" />
         {{ title }}

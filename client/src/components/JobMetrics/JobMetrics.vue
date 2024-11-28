@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { computed, ref, unref, watch } from "vue";
 
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
@@ -217,4 +218,5 @@ const estimatedServerInstance = computed(() => {
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
     </div>
+    <BAlert v-else variant="info" show> No metrics available for this job. </BAlert>
 </template>

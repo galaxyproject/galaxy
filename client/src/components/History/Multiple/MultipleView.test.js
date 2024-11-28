@@ -1,19 +1,24 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { useHistoryStore } from "stores/historyStore";
-import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
+import { setupMockConfig } from "tests/jest/mockConfig";
 
-import MultipleView from "./MultipleView";
+import { useServerMock } from "@/api/client/__mocks__";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+
+import MultipleView from "./MultipleView.vue";
 
 const USER_ID = "test-user-id";
 const FIRST_HISTORY_ID = "test-history-id-0";
 
-const getFakeHistorySummaries = (num, selectedIndex) => {
+setupMockConfig({});
+
+const { server, http } = useServerMock();
+
+const getFakeHistorySummaries = (num) => {
     return Array.from({ length: num }, (_, index) => ({
         id: `test-history-id-${index}`,
         name: `History-${index}`,
@@ -22,24 +27,28 @@ const getFakeHistorySummaries = (num, selectedIndex) => {
     }));
 };
 
-const currentUser = getFakeRegisteredUser({ id: USER_ID });
-
 describe("MultipleView", () => {
-    let axiosMock;
-
-    beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
-    });
-
-    afterEach(() => {
-        axiosMock.reset();
-    });
-
     async function setUpWrapper(count, currentHistoryId) {
-        const fakeSummaries = getFakeHistorySummaries(count, 0);
-        for (const summary of fakeSummaries) {
-            axiosMock.onGet(`api/histories/${summary.id}`).reply(200, summary);
-        }
+        const fakeSummaries = getFakeHistorySummaries(count);
+
+        server.use(
+            http.get("/api/histories/{history_id}", ({ response, params }) => {
+                const { history_id } = params;
+                const summary = fakeSummaries.find((s) => s.id === history_id);
+                if (!summary) {
+                    return response("4XX").json({ err_msg: "History not found", err_code: 404 }, { status: 404 });
+                }
+                return response(200).json(summary);
+            }),
+
+            http.get("/api/histories/{history_id}/contents", ({ response }) => {
+                return response(200).json({
+                    stats: { total_matches: 0 },
+                    contents: [],
+                });
+            })
+        );
+
         const wrapper = mount(MultipleView, {
             pinia: createPinia(),
             stubs: {
@@ -50,7 +59,7 @@ describe("MultipleView", () => {
         });
 
         const userStore = useUserStore();
-        userStore.currentUser = currentUser;
+        userStore.currentUser = getFakeRegisteredUser({ id: USER_ID });
 
         const historyStore = useHistoryStore();
         historyStore.setHistories(fakeSummaries);
@@ -67,8 +76,6 @@ describe("MultipleView", () => {
 
         // Set up UserHistories and wrapper
         const wrapper = await setUpWrapper(count, currentHistoryId);
-
-        console.log(wrapper.html());
 
         // Test: current (first) history should not be shown because only 4 latest are shown by default
         expect(wrapper.find("button[title='Current History']").exists()).toBeFalsy();

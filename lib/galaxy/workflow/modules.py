@@ -4,15 +4,19 @@ Modules used in building workflows
 
 import json
 import logging
+import math
 import re
 from collections import defaultdict
 from typing import (
     Any,
     cast,
     Dict,
+    get_args,
     Iterable,
     List,
+    Literal,
     Optional,
+    Tuple,
     Type,
     TYPE_CHECKING,
     Union,
@@ -30,8 +34,10 @@ from galaxy.exceptions import (
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
+    Job,
     PostJobAction,
     Workflow,
+    WorkflowInvocationStep,
     WorkflowStep,
     WorkflowStepConnection,
 )
@@ -43,21 +49,24 @@ from galaxy.schema.invocation import (
     InvocationCancellationReviewFailed,
     InvocationFailureDatasetFailed,
     InvocationFailureExpressionEvaluationFailed,
+    InvocationFailureOutputNotFound,
     InvocationFailureWhenNotBoolean,
+    InvocationFailureWorkflowParameterInvalid,
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
+from galaxy.tool_util.parser import get_input_source
 from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
 from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
     get_safe_version,
 )
-from galaxy.tools.actions import filter_output
 from galaxy.tools.execute import (
     execute,
     MappingParameters,
     PartialJobExecution,
 )
+from galaxy.tools.execution_helpers import filter_output
 from galaxy.tools.expressions import do_eval
 from galaxy.tools.parameters import (
     check_param,
@@ -67,7 +76,6 @@ from galaxy.tools.parameters import (
 from galaxy.tools.parameters.basic import (
     BaseDataToolParameter,
     BooleanToolParameter,
-    ColorToolParameter,
     DataCollectionToolParameter,
     DataToolParameter,
     FloatToolParameter,
@@ -81,8 +89,10 @@ from galaxy.tools.parameters.basic import (
 from galaxy.tools.parameters.grouping import (
     Conditional,
     ConditionalWhen,
+    Repeat,
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
+from galaxy.tools.parameters.populate_model import populate_model
 from galaxy.tools.parameters.workflow_utils import (
     ConnectedValue,
     is_runtime_value,
@@ -99,6 +109,7 @@ from galaxy.util.json import safe_loads
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
+from galaxy.workflow.workflow_parameter_input_definitions import get_default_parameter
 
 if TYPE_CHECKING:
     from galaxy.schema.invocation import InvocationMessageUnion
@@ -113,6 +124,9 @@ RUNTIME_STEP_META_STATE_KEY = "__STEP_META_STATE__"
 # actions (i.e. PJA specified at runtime on top of the workflow-wide defined
 # ones.
 RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
+
+INPUT_PARAMETER_TYPES = Literal["text", "integer", "float", "boolean", "color", "directory_uri"]
+POSSIBLE_PARAMETER_TYPES: Tuple[INPUT_PARAMETER_TYPES] = get_args(INPUT_PARAMETER_TYPES)
 
 
 class NoReplacement:
@@ -283,7 +297,7 @@ class WorkflowModule:
 
     # ---- Saving in various forms ------------------------------------------
 
-    def save_to_step(self, step, detached=False):
+    def save_to_step(self, step, detached: bool = False) -> None:
         step.type = self.type
         step.tool_inputs = self.get_state()
 
@@ -644,7 +658,7 @@ class SubWorkflowModule(WorkflowModule):
         module.subworkflow = step.subworkflow
         return module
 
-    def save_to_step(self, step, **kwd):
+    def save_to_step(self, step, detached=False):
         step.type = self.type
         step.subworkflow = self.subworkflow
         ensure_object_added_to_session(step, object_in_session=self.subworkflow)
@@ -712,7 +726,7 @@ class SubWorkflowModule(WorkflowModule):
         if hasattr(self.subworkflow, "workflow_outputs"):
             from galaxy.managers.workflows import WorkflowContentsManager
 
-            workflow_contents_manager = WorkflowContentsManager(self.trans.app)
+            workflow_contents_manager = WorkflowContentsManager(self.trans.app, self.trans.app.trs_proxy)
             subworkflow_dict = workflow_contents_manager._workflow_to_dict_editor(
                 trans=self.trans,
                 stored=self.subworkflow.stored_workflow,
@@ -762,7 +776,7 @@ class SubWorkflowModule(WorkflowModule):
         return self.trans.security.encode_id(self.subworkflow.id)
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self, trans, progress: "WorkflowProgress", invocation_step: WorkflowInvocationStep, use_cached_job: bool = False
     ) -> Optional[bool]:
         """Execute the given workflow step in the given workflow invocation.
         Use the supplied workflow progress object to track outputs, find
@@ -822,7 +836,17 @@ class SubWorkflowModule(WorkflowModule):
             workflow_output_label = (
                 workflow_output.label or f"{workflow_output.workflow_step.order_index}:{workflow_output.output_name}"
             )
-            replacement = subworkflow_progress.get_replacement_workflow_output(workflow_output)
+            try:
+                replacement = subworkflow_progress.get_replacement_workflow_output(workflow_output)
+            except KeyError:
+                raise FailWorkflowEvaluation(
+                    why=InvocationFailureOutputNotFound(
+                        reason=FailureReason.output_not_found,
+                        workflow_step_id=workflow_output.workflow_step_id,
+                        output_name=workflow_output.output_name,
+                        dependent_workflow_step_id=step.id,
+                    )
+                )
             outputs[workflow_output_label] = replacement
         progress.set_step_outputs(invocation_step, outputs)
         return None
@@ -897,7 +921,7 @@ class InputProxy:
         return as_dict
 
 
-def optional_param(optional):
+def optional_param(optional=None):
     bool_source = dict(name="optional", label="Optional", type="boolean", checked=optional)
     optional_value = BooleanToolParameter(None, bool_source)
     return optional_value
@@ -974,8 +998,11 @@ class InputModule(WorkflowModule):
         progress.set_outputs_for_input(invocation_step, step_outputs)
         return None
 
-    def recover_mapping(self, invocation_step, progress):
-        progress.set_outputs_for_input(invocation_step, already_persisted=True)
+    def recover_mapping(self, invocation_step: WorkflowInvocationStep, progress: "WorkflowProgress"):
+        super().recover_mapping(invocation_step, progress)
+        progress.set_outputs_for_input(
+            invocation_step, progress.outputs.get(invocation_step.workflow_step_id), already_persisted=True
+        )
 
     def get_export_state(self):
         return self._parse_state_into_dict()
@@ -1011,7 +1038,7 @@ class InputModule(WorkflowModule):
         state = json.dumps(state)
         return state
 
-    def save_to_step(self, step, **kwd):
+    def save_to_step(self, step, detached=False):
         step.type = self.type
         step.tool_inputs = self._parse_state_into_dict()
 
@@ -1163,7 +1190,7 @@ class InputDataCollectionModule(InputModule):
 
 
 class InputParameterModule(WorkflowModule):
-    POSSIBLE_PARAMETER_TYPES = ["text", "integer", "float", "boolean", "color"]
+    POSSIBLE_PARAMETER_TYPES = POSSIBLE_PARAMETER_TYPES
     type = "parameter_input"
     name = "Input parameter"
     default_parameter_type = "text"
@@ -1176,7 +1203,6 @@ class InputParameterModule(WorkflowModule):
     def get_inputs(self):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
-        optional = parameter_def["optional"]
         select_source = dict(name="parameter_type", label="Parameter type", type="select", value=parameter_type)
         select_source["options"] = [
             {"value": "text", "label": "Text"},
@@ -1184,6 +1210,7 @@ class InputParameterModule(WorkflowModule):
             {"value": "float", "label": "Float"},
             {"value": "boolean", "label": "Boolean (True or False)"},
             {"value": "color", "label": "Color"},
+            {"value": "directory_uri", "label": "Directory URI"},
         ]
         input_parameter_type = SelectToolParameter(None, select_source)
         # encode following loop in description above instead
@@ -1194,61 +1221,15 @@ class InputParameterModule(WorkflowModule):
                 option[2] = True
                 input_parameter_type.static_options[i] = tuple(option)
 
-        parameter_type_cond = Conditional()
-        parameter_type_cond.name = "parameter_definition"
+        parameter_type_cond = Conditional("parameter_definition")
         parameter_type_cond.test_param = input_parameter_type
         cases = []
 
-        for param_type in ["text", "integer", "float", "boolean", "color"]:
-            default_source: Dict[str, Union[int, float, bool, str]] = dict(
-                name="default", label="Default Value", type=param_type
-            )
-            if param_type == "text":
-                if parameter_type == "text":
-                    text_default = parameter_def.get("default") or ""
-                else:
-                    text_default = ""
-                default_source["value"] = text_default
-                input_default_value: Union[
-                    TextToolParameter,
-                    IntegerToolParameter,
-                    FloatToolParameter,
-                    BooleanToolParameter,
-                    ColorToolParameter,
-                ] = TextToolParameter(None, default_source)
-            elif param_type == "integer":
-                if parameter_type == "integer":
-                    integer_default = parameter_def.get("default") or 0
-                else:
-                    integer_default = 0
-                default_source["value"] = integer_default
-                input_default_value = IntegerToolParameter(None, default_source)
-            elif param_type == "float":
-                if parameter_type == "float":
-                    float_default = parameter_def.get("default") or 0.0
-                else:
-                    float_default = 0.0
-                default_source["value"] = float_default
-                input_default_value = FloatToolParameter(None, default_source)
-            elif param_type == "boolean":
-                if parameter_type == "boolean":
-                    boolean_default = parameter_def.get("default") or False
-                else:
-                    boolean_default = False
-                default_source["value"] = boolean_default
-                default_source["checked"] = boolean_default
-                input_default_value = BooleanToolParameter(None, default_source)
-            elif param_type == "color":
-                if parameter_type == "color":
-                    color_default = parameter_def.get("default") or "#000000"
-                else:
-                    color_default = "#000000"
-                default_source["value"] = color_default
-                input_default_value = ColorToolParameter(None, default_source)
+        for param_type in POSSIBLE_PARAMETER_TYPES:
+            default_parameter = get_default_parameter(param_type)
 
-            optional_value = optional_param(optional)
-            optional_cond = Conditional()
-            optional_cond.name = "optional"
+            optional_value = optional_param()
+            optional_cond = Conditional("optional")
             optional_cond.test_param = optional_value
 
             when_this_type = ConditionalWhen()
@@ -1256,19 +1237,19 @@ class InputParameterModule(WorkflowModule):
             when_this_type.inputs = {}
             when_this_type.inputs["optional"] = optional_cond
 
-            specify_default_checked = "default" in parameter_def
             specify_default_source = dict(
-                name="specify_default", label="Specify a default value", type="boolean", checked=specify_default_checked
+                name="specify_default",
+                label="Specify a default value",
+                type="boolean",
             )
             specify_default = BooleanToolParameter(None, specify_default_source)
-            specify_default_cond = Conditional()
-            specify_default_cond.name = "specify_default"
+            specify_default_cond = Conditional("specify_default")
             specify_default_cond.test_param = specify_default
 
             when_specify_default_true = ConditionalWhen()
             when_specify_default_true.value = "true"
             when_specify_default_true.inputs = {}
-            when_specify_default_true.inputs["default"] = input_default_value
+            when_specify_default_true.inputs["default"] = default_parameter
 
             when_specify_default_false = ConditionalWhen()
             when_specify_default_false.value = "false"
@@ -1289,43 +1270,76 @@ class InputParameterModule(WorkflowModule):
             optional_cases = [when_true, when_false]
             optional_cond.cases = optional_cases
 
+            def regex_validator_definition():
+                add_validators_repeat = Repeat("validators")
+                add_validators_repeat.title = "Add validator to restrict valid input"
+                add_validators_repeat.min = 0
+                add_validators_repeat.max = math.inf
+                add_validators_repeat.inputs = {
+                    "regex_match": TextToolParameter(
+                        None,
+                        {
+                            "optional": False,
+                            "name": "regex_match",
+                            "label": "Specify regular expression",
+                            "help": "Provided [regular expression](gxhelp://programming.python.reg.ex) must match input value for input to be valid",
+                            "help_format": "markdown",
+                        },
+                    ),
+                    "regex_doc": TextToolParameter(
+                        None,
+                        {
+                            "optional": False,
+                            "name": "regex_doc",
+                            "label": "Specify a message",
+                            "help": "This message will be shown if the regular does not match the input",
+                        },
+                    ),
+                }
+
+                return add_validators_repeat
+
             if param_type == "text":
+
+                specify_multiple_source = dict(
+                    name="multiple",
+                    label="Allow multiple selection",
+                    help="Only applies when connected to multi-select parameter(s)",
+                    type="boolean",
+                )
+
+                specify_multiple = BooleanToolParameter(None, specify_multiple_source)
+
+                # Insert multiple option as first option, which is determined by dictionary insert order
+                when_this_type.inputs = {
+                    "multiple": specify_multiple,
+                    "validators": regex_validator_definition(),
+                    **when_this_type.inputs,
+                }
+
                 restrict_how_source: Dict[str, Union[str, List[Dict[str, Union[str, bool]]]]] = dict(
                     name="how", label="Restrict Text Values?", type="select"
                 )
-                if parameter_def.get("restrictions") is not None:
-                    restrict_how_value = "staticRestrictions"
-                elif parameter_def.get("restrictOnConnections") is True:
-                    restrict_how_value = "onConnections"
-                elif parameter_def.get("suggestions") is not None:
-                    restrict_how_value = "staticSuggestions"
-                else:
-                    restrict_how_value = "none"
                 restrict_how_source["options"] = [
                     {
                         "value": "none",
                         "label": "Do not specify restrictions (default).",
-                        "selected": restrict_how_value == "none",
                     },
                     {
                         "value": "onConnections",
                         "label": "Attempt restriction based on connections.",
-                        "selected": restrict_how_value == "onConnections",
                     },
                     {
                         "value": "staticRestrictions",
                         "label": "Provide list of all possible values.",
-                        "selected": restrict_how_value == "staticRestrictions",
                     },
                     {
                         "value": "staticSuggestions",
                         "label": "Provide list of suggested values.",
-                        "selected": restrict_how_value == "staticSuggestions",
                     },
                 ]
-                restrictions_cond = Conditional()
+                restrictions_cond = Conditional("restrictions")
                 restrictions_how = SelectToolParameter(None, restrict_how_source)
-                restrictions_cond.name = "restrictions"
                 restrictions_cond.test_param = restrictions_how
 
                 when_restrict_none = ConditionalWhen()
@@ -1379,10 +1393,57 @@ class InputParameterModule(WorkflowModule):
                 restrictions_cond.cases = restrictions_cond_cases
                 when_this_type.inputs["restrictions"] = restrictions_cond
 
+            if param_type == "integer":
+                when_this_type.inputs["min"] = IntegerToolParameter(
+                    None,
+                    {
+                        "name": "min",
+                        "optional": True,
+                        "value": parameter_def.get("min", ""),
+                        "label": "Set a minimum value for this input",
+                    },
+                )
+                when_this_type.inputs["max"] = IntegerToolParameter(
+                    None,
+                    {
+                        "name": "max",
+                        "optional": True,
+                        "value": parameter_def.get("max", ""),
+                        "label": "Set a maximum value for this input",
+                    },
+                )
+            if param_type == "float":
+                when_this_type.inputs["min"] = FloatToolParameter(
+                    None,
+                    {
+                        "name": "min",
+                        "optional": True,
+                        "value": parameter_def.get("min", ""),
+                        "label": "Set a minimum value for this input",
+                    },
+                )
+                when_this_type.inputs["max"] = FloatToolParameter(
+                    None,
+                    {
+                        "name": "max",
+                        "optional": True,
+                        "value": parameter_def.get("max", ""),
+                        "label": "Set a maximum value for this input",
+                    },
+                )
+            if param_type == "directory_uri":
+                when_this_type.inputs["validators"] = regex_validator_definition()
+
             cases.append(when_this_type)
 
         parameter_type_cond.cases = cases
         return {"parameter_definition": parameter_type_cond}
+
+    def get_config_form(self, step=None):
+        """Serializes input parameters of a module into input dictionaries."""
+        group_inputs: List[Dict[str, Any]] = []
+        populate_model(self.trans, self.get_inputs(), self.state.inputs, group_inputs)
+        return {"title": self.name, "inputs": group_inputs}
 
     def restrict_options(self, step, connections: Iterable[WorkflowStepConnection], default_value):
         try:
@@ -1399,7 +1460,7 @@ class InputParameterModule(WorkflowModule):
 
                     def callback(input, prefixed_name, context, **kwargs):
                         if prefixed_name == connection.input_name and hasattr(input, "get_options"):  # noqa: B023
-                            static_options.append(input.get_options(self.trans, {}))
+                            static_options.append(input.get_options(self.trans, context))
 
                     visit_input_values(tool_inputs, module.state.inputs, callback)
                 elif isinstance(module, SubWorkflowModule):
@@ -1444,11 +1505,13 @@ class InputParameterModule(WorkflowModule):
         parameter_type = parameter_def["parameter_type"]
         optional = parameter_def["optional"]
         default_value = parameter_def.get("default", self.default_default_value)
-        if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
+        if parameter_type not in ["text", "boolean", "integer", "float", "color", "directory_uri"]:
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
         # Optional parameters for tool input source definition.
         parameter_kwds: Dict[str, Union[str, List[Dict[str, Any]]]] = {}
+        if "multiple" in parameter_def:
+            parameter_kwds["multiple"] = parameter_def["multiple"]
 
         is_text = parameter_type == "text"
         restricted_inputs = False
@@ -1485,6 +1548,9 @@ class InputParameterModule(WorkflowModule):
             parameter_kwds["options"] = _parameter_def_list_to_options(restriction_values)
             restricted_inputs = True
 
+        if parameter_def.get("validators"):
+            parameter_kwds["validators"] = parameter_def["validators"]
+
         client_parameter_type = parameter_type
         if restricted_inputs:
             client_parameter_type = "select"
@@ -1499,16 +1565,14 @@ class InputParameterModule(WorkflowModule):
             if parameter_type == "boolean":
                 parameter_kwds["checked"] = default_value
 
-        if "value" not in parameter_kwds and parameter_type in ["integer", "float"]:
-            parameter_kwds["value"] = str(0)
-
         if is_text and parameter_def.get("suggestions") is not None:
             suggestion_values = parameter_def.get("suggestions")
             parameter_kwds["options"] = _parameter_def_list_to_options(suggestion_values)
 
-        input_source = dict(
+        input_source_dict = dict(
             name="input", label=self.label, type=client_parameter_type, optional=optional, **parameter_kwds
         )
+        input_source = get_input_source(input_source_dict, trusted=False)
         input = parameter_class(None, input_source)
         return dict(input=input)
 
@@ -1528,6 +1592,7 @@ class InputParameterModule(WorkflowModule):
                 label=self.label,
                 type=parameter_def.get("parameter_type"),
                 optional=parameter_def["optional"],
+                multiple=parameter_def.get("multiple", False),
                 parameter=True,
             )
         ]
@@ -1536,7 +1601,10 @@ class InputParameterModule(WorkflowModule):
         self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
     ) -> Optional[bool]:
         step = invocation_step.workflow_step
-        input_value = step.state.inputs["input"]
+        if step.id in progress.inputs_by_step_id:
+            input_value = progress.inputs_by_step_id[step.id]
+        else:
+            input_value = step.state.inputs["input"]
         if input_value is None:
             default_value = step.get_input_default_value(NO_REPLACEMENT)
             # TODO: look at parameter type and infer if value should be a dictionary
@@ -1545,6 +1613,16 @@ class InputParameterModule(WorkflowModule):
             if not isinstance(default_value, dict):
                 default_value = {"value": default_value}
             input_value = default_value.get("value", NO_REPLACEMENT)
+        input_param = self.get_runtime_inputs(self)["input"]
+        # TODO: raise DelayedWorkflowEvaluation if replacement not ready ? Need test
+        try:
+            input_param.validate(input_value, trans)
+        except ValueError as e:
+            raise FailWorkflowEvaluation(
+                why=InvocationFailureWorkflowParameterInvalid(
+                    reason=FailureReason.workflow_parameter_invalid, workflow_step_id=step.id, details=str(e)
+                )
+            )
         step_outputs = dict(output=input_value)
         progress.set_outputs_for_input(invocation_step, step_outputs)
         return None
@@ -1556,6 +1634,8 @@ class InputParameterModule(WorkflowModule):
             default_set = True
             default_value = state["default"]
             state["optional"] = True
+        multiple = state.get("multiple")
+        source_validators = state.get("validators")
         restrictions = state.get("restrictions")
         restrictOnConnections = state.get("restrictOnConnections")
         suggestions = state.get("suggestions")
@@ -1573,6 +1653,25 @@ class InputParameterModule(WorkflowModule):
                 "optional": {"optional": str(state.get("optional", False))},
             }
         }
+        if multiple is not None:
+            state["parameter_definition"]["multiple"] = multiple
+        if source_validators is not None:
+            form_validators = []
+            # the form definition can change from Galaxy to Galaxy fairly freely, but the source validators are persisted
+            # and need to be consistent - here we convert the persisted/YAML tool definition version to the "tool form" version.
+            for source_validator in source_validators:
+                source_type = source_validator["type"]
+                if source_type == "regex":
+                    form_validators.append(
+                        {
+                            "regex_doc": source_validator.get("message"),
+                            "regex_match": source_validator.get("expression"),
+                        }
+                    )
+                elif source_type == "in_range":
+                    state["parameter_definition"]["min"] = source_validator.get("min")
+                    state["parameter_definition"]["max"] = source_validator.get("max")
+            state["parameter_definition"]["validators"] = form_validators
         state["parameter_definition"]["restrictions"] = {}
         state["parameter_definition"]["restrictions"]["how"] = restrictions_how
 
@@ -1614,6 +1713,34 @@ class InputParameterModule(WorkflowModule):
                     rval["default"] = optional_state["specify_default"]["default"]
             else:
                 optional = False
+            if "multiple" in parameters_def:
+                rval["multiple"] = parameters_def["multiple"]
+            source_validators = []
+            if "min" in parameters_def or "max" in parameters_def:
+                min = parameters_def.get("min")
+                max = parameters_def.get("max")
+                source_validators.append(
+                    {
+                        "min": min,
+                        "max": max,
+                        "negate": False,
+                        "type": "in_range",
+                    }
+                )
+
+            if "validators" in parameters_def:
+                form_validators = parameters_def["validators"]
+                # convert the current tool form structure to the persisted YAML-definition style
+                for form_validator in form_validators:
+                    source_validators.append(
+                        {
+                            "message": form_validator["regex_doc"],
+                            "expression": form_validator["regex_match"],
+                            "negate": False,
+                            "type": "regex",
+                        }
+                    )
+            rval["validators"] = source_validators
             restrictions_cond_values = parameters_def.get("restrictions")
             if restrictions_cond_values:
 
@@ -1648,7 +1775,7 @@ class InputParameterModule(WorkflowModule):
             rval.update({"parameter_type": self.default_parameter_type, "optional": self.default_optional})
         return rval
 
-    def save_to_step(self, step, **kwd):
+    def save_to_step(self, step, detached=False):
         step.type = self.type
         step.tool_inputs = self._parse_state_into_dict()
 
@@ -1854,7 +1981,7 @@ class ToolModule(WorkflowModule):
         return self.tool.version if self.tool else self.tool_version
 
     def get_tooltip(self, static_path=None):
-        if self.tool and self.tool.help:
+        if self.tool and self.tool.raw_help and self.tool.raw_help.format == "restructuredtext":
             host_url = self.trans.url_builder("/")
             static_path = self.trans.url_builder(static_path) if static_path else ""
             return self.tool.help.render(host_url=host_url, static_path=static_path)
@@ -2258,19 +2385,7 @@ class ToolModule(WorkflowModule):
             param_combinations.append(execution_state.inputs)
 
         complete = False
-        completed_jobs = {}
-        for i, param in enumerate(param_combinations):
-            if use_cached_job:
-                completed_jobs[i] = tool.job_search.by_tool_input(
-                    trans=trans,
-                    tool_id=tool.id,
-                    tool_version=tool.version,
-                    param=param,
-                    param_dump=tool.params_to_strings(param, trans.app, nested=True),
-                    job_state=None,
-                )
-            else:
-                completed_jobs[i] = None
+        completed_jobs: Dict[int, Optional[Job]] = tool.completed_jobs(trans, use_cached_job, param_combinations)
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)
             max_num_jobs = progress.maximum_jobs_to_schedule_or_none
@@ -2305,10 +2420,11 @@ class ToolModule(WorkflowModule):
             raise DelayedWorkflowEvaluation(why=delayed_why)
 
         progress.record_executed_job_count(len(execution_tracker.successful_jobs))
+        step_outputs: Dict[str, Union[model.HistoryDatasetCollectionAssociation, model.HistoryDatasetAssociation]] = {}
         if collection_info:
-            step_outputs = dict(execution_tracker.implicit_collections)
+            step_outputs.update(execution_tracker.implicit_collections)
         else:
-            step_outputs = dict(execution_tracker.output_datasets)
+            step_outputs.update(execution_tracker.output_datasets)
             step_outputs.update(execution_tracker.output_collections)
         progress.set_step_outputs(invocation_step, step_outputs, already_persisted=not invocation_step.is_new)
 

@@ -1,3 +1,5 @@
+import "tests/jest/mockHelpPopovers";
+
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";

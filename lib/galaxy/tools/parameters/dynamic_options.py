@@ -24,6 +24,7 @@ from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    LibraryDatasetDatasetAssociation,
     MetadataFile,
     User,
 )
@@ -286,14 +287,12 @@ class ParamValueFilter(Filter):
         return self.ref_name
 
     def filter_options(self, options, trans, other_values):
-        if trans is not None and trans.workflow_building_mode:
-            return []
         ref = other_values.get(self.ref_name, None)
-        if ref is None:
+        if ref is None or is_runtime_value(ref):
             ref = []
 
         # - for HDCAs the list of contained HDAs is extracted
-        # - single values are transformed in a single eleent list
+        # - single values are transformed in a single element list
         # - remaining cases are already lists (select and data parameters with multiple=true)
         if isinstance(ref, HistoryDatasetCollectionAssociation):
             ref = ref.to_hda_representative(multiple=True)
@@ -539,6 +538,61 @@ class SortByColumnFilter(Filter):
         return sorted(options, key=lambda x: x[self.column], reverse=self.reverse)
 
 
+class DataTableFilter(Filter):
+    """
+    Filters a list of options by entries present in a data table, i.e.
+    option[column] needs to be in the specified data table column
+
+    Type: data_table
+
+    Required Attributes:
+
+        - column: column in options to compare with
+        - table_name: data table to use
+        - data_table_column: data table column to use
+
+    Optional Attributes:
+
+        - keep: Keep options where option[column] is in the data table column (True)
+                Discard columns matching value (False)
+
+    """
+
+    def __init__(self, d_option, elem):
+        Filter.__init__(self, d_option, elem)
+        self.table_name = elem.get("table_name", None)
+        assert self.table_name is not None, "Required 'table_name' attribute missing from filter"
+        column = elem.get("column", None)
+        assert column is not None, "Required 'column' attribute missing from filter"
+        self.column = d_option.column_spec_to_index(column)
+        self.data_table_column = elem.get("data_table_column", None)
+        assert self.data_table_column is not None, "Required 'data_table_column' attribute missing from filter"
+        self.keep = string_as_bool(elem.get("keep", "True"))
+
+    def filter_options(self, options, trans, other_values):
+        # get column from data table, by index or column name
+        entries = None
+        try:
+            entries = {f[int(self.data_table_column)] for f in trans.app.tool_data_tables[self.table_name].get_fields()}
+        except ValueError:
+            pass
+        try:
+            entries = {
+                f[self.data_table_column] for f in trans.app.tool_data_tables[self.table_name].get_named_fields_list()
+            }
+        except KeyError:
+            pass
+        if entries is None:
+            log.error(f"could not get data from column {self.data_table_column} from data_table {self.table_name}")
+            return options
+
+        rval = []
+        for o in options:
+            if self.keep == (o[self.column] in entries):
+                rval.append(o)
+        return rval
+
+
 filter_types = dict(
     data_meta=DataMetaFilter,
     param_value=ParamValueFilter,
@@ -550,6 +604,7 @@ filter_types = dict(
     add_value=AdditionalValueFilter,
     remove_value=RemoveValueFilter,
     sort_by=SortByColumnFilter,
+    data_table=DataTableFilter,
 )
 
 
@@ -623,8 +678,9 @@ class DynamicOptions:
             self.filters.append(Filter.from_element(self, filter_elem))
 
         # Load Validators
-        for validator in elem.findall("validator"):
-            self.validators.append(validation.Validator.from_element(self.tool_param, validator))
+        validators = validation.parse_xml_validators(self.tool_param.tool.app, elem)
+        if validators:
+            self.validators = validators
 
         if self.dataset_ref_name:
             tool_param.data_ref = self.dataset_ref_name
@@ -835,6 +891,9 @@ class DynamicOptions:
         return rval
 
     def get_options(self, trans, other_values):
+
+        rval = []
+
         def to_triple(values):
             if len(values) == 2:
                 return [str(values[0]), str(values[1]), False]
@@ -877,8 +936,7 @@ class DynamicOptions:
                     data = []
 
             # We only support the very specific ["name", "value", "selected"] format for now.
-            return [to_triple(d) for d in data]
-        rval = []
+            rval = [to_triple(d) for d in data]
         if (
             self.file_fields is not None
             or self.tool_data_table is not None
@@ -965,6 +1023,7 @@ def _get_ref_data(other_values, ref_name):
         (
             DatasetFilenameWrapper,
             HistoryDatasetAssociation,
+            LibraryDatasetDatasetAssociation,
             DatasetCollectionElement,
             DatasetListWrapper,
             HistoryDatasetCollectionAssociation,
@@ -976,7 +1035,7 @@ def _get_ref_data(other_values, ref_name):
         raise ValueError
     if isinstance(ref, DatasetCollectionElement) and ref.hda:
         ref = ref.hda
-    if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation)):
+    if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation, LibraryDatasetDatasetAssociation)):
         ref = [ref]
     elif isinstance(ref, HistoryDatasetCollectionAssociation):
         ref = ref.to_hda_representative(multiple=True)

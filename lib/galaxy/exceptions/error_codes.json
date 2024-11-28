@@ -145,6 +145,16 @@
         "message": "Action requires account activation."
     },
     {
+        "name": "ITEM_IS_CLAIMED",
+        "code": 403008,
+        "message": "This item has already been claimed and cannot be re-claimed."
+    },
+    {
+        "name": "USER_REQUIRED",
+        "code": 403008,
+        "message": "Action requires user authentication."
+    },
+    {
         "name": "USER_OBJECT_NOT_FOUND",
         "code": 404001,
         "message": "No such object found."
@@ -153,6 +163,11 @@
         "name": "CONFLICT",
         "code": 409001,
         "message": "Database conflict prevented fulfilling the request."
+    },
+    {
+        "name": "MUST_CLAIM",
+        "code": 409010,
+        "message": "Private request must be claimed before use"
     },
     {
         "name": "DEPRECATED_API_CALL",

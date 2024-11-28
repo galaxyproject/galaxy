@@ -62,6 +62,7 @@ class CustosAuthnzConfiguration:
     pkce_support: bool
     accepted_audiences: List[str]
     extra_params: Optional[dict]
+    extra_scopes: List[str]
     authorization_endpoint: Optional[str]
     token_endpoint: Optional[str]
     end_session_endpoint: Optional[str]
@@ -98,6 +99,7 @@ class OIDCAuthnzBase(IdentityProvider):
                 )
             ),
             extra_params={},
+            extra_scopes=oidc_backend_config.get("extra_scopes", []),
             authorization_endpoint=None,
             token_endpoint=None,
             end_session_endpoint=None,
@@ -156,6 +158,7 @@ class OIDCAuthnzBase(IdentityProvider):
     def authenticate(self, trans, idphint=None):
         base_authorize_url = self.config.authorization_endpoint
         scopes = ["openid", "email", "profile"]
+        scopes.extend(self.config.extra_scopes)
         scopes.extend(self._get_provider_specific_scopes())
         oauth2_session = self._create_oauth2_session(scope=scopes)
         nonce = generate_nonce()
@@ -484,7 +487,7 @@ class OIDCAuthnzBase(IdentityProvider):
         username = userinfo.get("preferred_username", userinfo["email"])
         if "@" in username:
             username = username.split("@")[0]  # username created from username portion of email
-        username = util.ready_name_for_url(username)
+        username = util.ready_name_for_url(username).lower()
         if trans.sa_session.query(trans.app.model.User).filter_by(username=username).first():
             # if username already exists in database, append integer and iterate until unique username found
             count = 0

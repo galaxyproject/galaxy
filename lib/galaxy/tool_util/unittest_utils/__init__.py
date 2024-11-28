@@ -31,5 +31,9 @@ def t_data_downloader_for(content: Union[Dict[Optional[str], bytes], bytes]) -> 
     return get_content
 
 
+def functional_test_tool_directory() -> str:
+    return os.path.join(galaxy_directory(), "test/functional/tools")
+
+
 def functional_test_tool_path(test_path: str) -> str:
-    return os.path.join(galaxy_directory(), "test/functional/tools", test_path)
+    return os.path.join(functional_test_tool_directory(), test_path)

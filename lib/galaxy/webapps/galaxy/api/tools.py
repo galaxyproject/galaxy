@@ -31,7 +31,7 @@ from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
 )
-from galaxy.tool_util.verify.interactor import ToolTestDescriptionDict
+from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
@@ -74,12 +74,23 @@ router = Router(tags=["tools"])
 FetchDataForm = as_form(FetchDataFormPayload)
 
 
+async def get_files(request: Request, files: Optional[List[UploadFile]] = None):
+    # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
+    files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
+    if not files2:
+        data = await request.form()
+        for value in data.values():
+            if isinstance(value, StarletteUploadFile):
+                files2.append(value)
+    return files2
+
+
 @router.cbv
 class FetchTools:
     service: ToolsService = depends(ToolsService)
 
     @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
-    async def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
+    def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
         return self.service.create_fetch(trans, payload)
 
     @router.post(
@@ -87,22 +98,13 @@ class FetchTools:
         summary="Upload files to Galaxy",
         route_class_override=FormDataApiRoute,
     )
-    async def fetch_form(
+    def fetch_form(
         self,
-        request: Request,
         payload: FetchDataFormPayload = Depends(FetchDataForm.as_form),
-        files: Optional[List[UploadFile]] = None,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        files: List[StarletteUploadFile] = Depends(get_files),
     ):
-        files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
-
-        # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
-        if not files2:
-            data = await request.form()
-            for value in data.values():
-                if isinstance(value, StarletteUploadFile):
-                    files2.append(value)
-        return self.service.create_fetch(trans, payload, files2)
+        return self.service.create_fetch(trans, payload, files)
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):

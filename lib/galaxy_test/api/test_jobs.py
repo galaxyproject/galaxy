@@ -464,6 +464,32 @@ steps:
             assert hdca["visible"]
             assert isoparse(hdca["update_time"]) > (isoparse(first_update_time))
 
+    def test_rerun_exception_handling(self):
+        with self.dataset_populator.test_history() as history_id:
+            other_run_response = self.dataset_populator.run_tool(
+                tool_id="job_properties",
+                inputs={},
+                history_id=history_id,
+            )
+            unrelated_job_id = other_run_response["jobs"][0]["id"]
+            run_response = self._run_map_over_error(history_id)
+            job_id = run_response["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id)
+            failed_hdca = self.dataset_populator.get_history_collection_details(
+                history_id=history_id,
+                content_id=run_response["implicit_collections"][0]["id"],
+                assert_ok=False,
+            )
+            assert failed_hdca["visible"]
+            rerun_params = self._get(f"jobs/{job_id}/build_for_rerun").json()
+            inputs = rerun_params["state_inputs"]
+            inputs["rerun_remap_job_id"] = unrelated_job_id
+            before_rerun_items = self.dataset_populator.get_history_contents(history_id)
+            rerun_response = self._run_detect_errors(history_id=history_id, inputs=inputs)
+            assert "does not match rerun tool id" in rerun_response["err_msg"]
+            after_rerun_items = self.dataset_populator.get_history_contents(history_id)
+            assert len(before_rerun_items) == len(after_rerun_items)
+
     @skip_without_tool("empty_output")
     def test_common_problems(self):
         with self.dataset_populator.test_history() as history_id:
@@ -608,7 +634,7 @@ steps:
         assert response.status_code == 400
         assert (
             response.json()["err_msg"]
-            == "parameter 'collection': the previously selected dataset collection has elements that are deleted."
+            == "Parameter 'collection': the previously selected dataset collection has elements that are deleted."
         )
 
     @pytest.mark.require_new_history
@@ -1103,10 +1129,9 @@ steps:
             if search_count == expected_search_count:
                 break
             time.sleep(1)
-        assert search_count == expected_search_count, "expected to find %d jobs, got %d jobs" % (
-            expected_search_count,
-            search_count,
-        )
+        assert (
+            search_count == expected_search_count
+        ), f"expected to find {expected_search_count} jobs, got {search_count} jobs"
         return search_count
 
     def _search_count(self, search_payload):

@@ -20,6 +20,7 @@ from pydantic import (
 from typing_extensions import (
     Annotated,
     Literal,
+    TypeAliasType,
 )
 
 from galaxy.schema import schema
@@ -45,6 +46,19 @@ from galaxy.schema.schema import (
     StoreContentSource,
     UpdateTimeField,
     WithModelClass,
+)
+from .workflows import (
+    INPUTS_BY_DESCRIPTION,
+    PreferredIntermediateObjectStoreIdField,
+    PreferredObjectStoreIdField,
+    PreferredOutputsObjectStoreIdField,
+    ReplacementParametersField,
+    ResourceParametersField,
+    STEP_PARAMETERS_DESCRIPTION,
+    STEP_PARAMETERS_NORMALIZED_DESCRIPTION,
+    STEP_PARAMETERS_NORMALIZED_TITLE,
+    STEP_PARAMETERS_TITLE,
+    UseCachedJobField,
 )
 
 INVOCATION_STEP_OUTPUT_SRC = Literal["hda"]
@@ -76,6 +90,22 @@ class FailureReason(str, Enum):
     expression_evaluation_failed = "expression_evaluation_failed"
     when_not_boolean = "when_not_boolean"
     unexpected_failure = "unexpected_failure"
+    workflow_parameter_invalid = "workflow_parameter_invalid"
+
+
+# The reasons below are attached to the invocation and user-actionable.
+# Not included are `unexpected_failure` and `expression_evaluation_failed`.
+# If expression evaluation fails we're not attaching the templated
+# expression to the invocation, as it could contain secrets.
+# If the failure reason is not in `FAILURE_REASONS_EXPECTED` we should
+# log an exception so admins can debug and/or submit bug reports.
+FAILURE_REASONS_EXPECTED = (
+    FailureReason.dataset_failed,
+    FailureReason.collection_failed,
+    FailureReason.job_failed,
+    FailureReason.output_not_found,
+    FailureReason.when_not_boolean,
+)
 
 
 class CancelReason(str, Enum):
@@ -196,6 +226,14 @@ class GenericInvocationEvaluationWarningWorkflowOutputNotFound(
     )
 
 
+class GenericInvocationFailureWorkflowParameterInvalid(InvocationFailureMessageBase[DatabaseIdT], Generic[DatabaseIdT]):
+    reason: Literal[FailureReason.workflow_parameter_invalid]
+    workflow_step_id: int = Field(
+        ..., title="Workflow parameter step that failed validation", validation_alias="workflow_step_index"
+    )
+    details: str = Field(..., description="Message raised by validator")
+
+
 InvocationCancellationReviewFailed = GenericInvocationCancellationReviewFailed[int]
 InvocationCancellationHistoryDeleted = GenericInvocationCancellationHistoryDeleted[int]
 InvocationCancellationUserRequest = GenericInvocationCancellationUserRequest[int]
@@ -207,6 +245,7 @@ InvocationFailureExpressionEvaluationFailed = GenericInvocationFailureExpression
 InvocationFailureWhenNotBoolean = GenericInvocationFailureWhenNotBoolean[int]
 InvocationUnexpectedFailure = GenericInvocationUnexpectedFailure[int]
 InvocationWarningWorkflowOutputNotFound = GenericInvocationEvaluationWarningWorkflowOutputNotFound[int]
+InvocationFailureWorkflowParameterInvalid = GenericInvocationFailureWorkflowParameterInvalid[int]
 
 InvocationMessageUnion = Union[
     InvocationCancellationReviewFailed,
@@ -220,6 +259,7 @@ InvocationMessageUnion = Union[
     InvocationFailureWhenNotBoolean,
     InvocationUnexpectedFailure,
     InvocationWarningWorkflowOutputNotFound,
+    InvocationFailureWorkflowParameterInvalid,
 ]
 
 InvocationCancellationReviewFailedResponseModel = GenericInvocationCancellationReviewFailed[EncodedDatabaseIdField]
@@ -237,8 +277,11 @@ InvocationUnexpectedFailureResponseModel = GenericInvocationUnexpectedFailure[En
 InvocationWarningWorkflowOutputNotFoundResponseModel = GenericInvocationEvaluationWarningWorkflowOutputNotFound[
     EncodedDatabaseIdField
 ]
+InvocationFailureWorkflowParameterInvalidResponseModel = GenericInvocationFailureWorkflowParameterInvalid[
+    EncodedDatabaseIdField
+]
 
-InvocationMessageResponseUnion = Annotated[
+_InvocationMessageResponseUnion = Annotated[
     Union[
         InvocationCancellationReviewFailedResponseModel,
         InvocationCancellationHistoryDeletedResponseModel,
@@ -251,9 +294,12 @@ InvocationMessageResponseUnion = Annotated[
         InvocationFailureWhenNotBooleanResponseModel,
         InvocationUnexpectedFailureResponseModel,
         InvocationWarningWorkflowOutputNotFoundResponseModel,
+        InvocationFailureWorkflowParameterInvalidResponseModel,
     ],
     Field(discriminator="reason"),
 ]
+
+InvocationMessageResponseUnion = TypeAliasType("InvocationMessageResponseUnion", _InvocationMessageResponseUnion)
 
 
 class InvocationMessageResponseModel(RootModel):
@@ -263,6 +309,7 @@ class InvocationMessageResponseModel(RootModel):
 
 class InvocationState(str, Enum):
     NEW = "new"  # Brand new workflow invocation... maybe this should be same as READY
+    REQUIRES_MATERIALIZATION = "requires_materialization"  # an otherwise NEW or READY workflow that requires inputs to be materialized (undeferred)
     READY = "ready"  # Workflow ready for another iteration of scheduling.
     SCHEDULED = "scheduled"  # Workflow has been scheduled.
     CANCELLED = "cancelled"
@@ -512,13 +559,16 @@ class InvocationOutputCollection(InvocationIOBase):
     )
 
 
+InvocationWorkflowIdField = Field(
+    title="Workflow ID", description="The encoded Workflow ID associated with the invocation."
+)
+
+
 class WorkflowInvocationCollectionView(Model, WithModelClass):
     id: EncodedDatabaseIdField = InvocationIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
-    workflow_id: EncodedDatabaseIdField = Field(
-        title="Workflow ID", description="The encoded Workflow ID associated with the invocation."
-    )
+    workflow_id: EncodedDatabaseIdField = InvocationWorkflowIdField
     history_id: EncodedDatabaseIdField = Field(
         default=...,
         title="History ID",
@@ -562,6 +612,48 @@ class WorkflowInvocationResponse(RootModel):
     root: Annotated[
         Union[WorkflowInvocationElementView, WorkflowInvocationCollectionView], Field(union_mode="left_to_right")
     ]
+
+
+class WorkflowInvocationRequestModel(Model):
+    """Model a workflow invocation request (InvokeWorkflowPayload) for an existing invocation."""
+
+    history_id: str = Field(
+        ...,
+        title="History ID",
+        description="The encoded history id the workflow was run in.",
+    )
+    workflow_id: str = Field(title="Workflow ID", description="The encoded Workflow ID associated with the invocation.")
+    inputs: Dict[str, Any] = Field(
+        ...,
+        title="Inputs",
+        description="Values for inputs",
+    )
+    inputs_by: str = Field(
+        ...,
+        title="Inputs by",
+        description=INPUTS_BY_DESCRIPTION,
+    )
+    replacement_params: Optional[Dict[str, Any]] = ReplacementParametersField
+    resource_params: Optional[Dict[str, Any]] = ResourceParametersField
+    use_cached_job: bool = UseCachedJobField
+    preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
+    preferred_intermediate_object_store_id: Optional[str] = PreferredIntermediateObjectStoreIdField
+    preferred_outputs_object_store_id: Optional[str] = PreferredOutputsObjectStoreIdField
+    parameters_normalized: Literal[True] = Field(
+        True,
+        title=STEP_PARAMETERS_NORMALIZED_TITLE,
+        description=STEP_PARAMETERS_NORMALIZED_DESCRIPTION,
+    )
+    parameters: Optional[Dict[str, Any]] = Field(
+        None,
+        title=STEP_PARAMETERS_TITLE,
+        description=f"{STEP_PARAMETERS_DESCRIPTION} If these are set, the workflow was not executed in a best-practice fashion and we the resulting invocation request may not fully reflect the executed workflow state.",
+    )
+    instance: Literal[True] = Field(
+        True,
+        title="Is instance",
+        description="This API yields a particular workflow instance, newer workflows belonging to the same storedworkflow may have different state.",
+    )
 
 
 class InvocationJobsSummaryBaseModel(Model):

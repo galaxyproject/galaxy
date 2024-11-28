@@ -1,7 +1,5 @@
 import contextlib
 import os
-import random
-import string
 import tempfile
 import uuid
 
@@ -10,6 +8,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from galaxy import model as m
+from galaxy.model.unittest_utils.utils import (
+    random_email,
+    random_str,
+)
 
 
 @pytest.fixture
@@ -118,6 +120,19 @@ def make_default_history_permissions(session, make_history, make_role):
 
 
 @pytest.fixture
+def make_default_user_permissions(session, make_user, make_role):
+    def f(**kwd):
+        kwd["user"] = kwd.get("user") or make_user()
+        kwd["action"] = kwd.get("action") or random_str()
+        kwd["role"] = kwd.get("role") or make_role()
+        model = m.DefaultUserPermissions(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
 def make_event(session):
     def f(**kwd):
         model = m.Event(**kwd)
@@ -143,6 +158,26 @@ def make_galaxy_session_to_history_association(session, make_history, make_galax
         kwd["galaxy_session"] = kwd.get("galaxy_session") or make_galaxy_session()
         kwd["history"] = kwd.get("history") or make_history()
         model = m.GalaxySessionToHistoryAssociation(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_group(session):
+    def f(**kwd):
+        model = m.Group(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_group_role_association(session):
+    def f(group, role):
+        model = m.GroupRoleAssociation(group, role)
         write_to_db(session, model)
         return model
 
@@ -340,6 +375,14 @@ def make_page(session, make_user):
 @pytest.fixture
 def make_role(session):
     def f(**kwd):
+        # We must specify `name` because after removing the unique constraint
+        # from role.name (migration 9a5207190a4d) and setting up a default name
+        # generation for roles that do not receive a name argument that does
+        # not generate unique names, any migration unit tests that use
+        # this fixture AFTER DOWNGRADING (like # test_migrations.py::test_349dd9d9aac9)
+        # would break due to violating that constraint (restored via
+        # downgrading) without setting name.
+        kwd["name"] = kwd.get("name") or random_str()
         model = m.Role(**kwd)
         write_to_db(session, model)
         return model
@@ -386,9 +429,37 @@ def make_user(session):
 
 
 @pytest.fixture
+def make_user_and_role(session, make_user, make_role, make_user_role_association):
+    """
+    Each user created in Galaxy is assumed to have a private role, such that role.type == Role.types.PRIVATE.
+    Since we are testing user/group/role associations here, to ensure the correct state of the test database,
+    we need to ensure that a user is never created without a corresponding private role.
+    Therefore, we use this fixture instead of make_user (which only creates a user).
+    """
+
+    def f(**kwd):
+        user = make_user(**kwd)
+        private_role = make_role(type=m.Role.types.PRIVATE)
+        make_user_role_association(user, private_role)
+        return user, private_role
+
+    return f
+
+
+@pytest.fixture
 def make_user_item_rating_association(session):
     def f(assoc_class, user, item, rating):
         model = assoc_class(user, item, rating)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_user_group_association(session):
+    def f(user, group):
+        model = m.UserGroupAssociation(user, group)
         write_to_db(session, model)
         return model
 
@@ -447,17 +518,6 @@ def transaction(session):
             yield
     else:
         yield
-
-
-def random_str() -> str:
-    alphabet = string.ascii_lowercase + string.digits
-    size = random.randint(5, 10)
-    return "".join(random.choices(alphabet, k=size))
-
-
-def random_email() -> str:
-    text = random_str()
-    return f"{text}@galaxy.testing"
 
 
 def write_to_db(session, model) -> None:

@@ -49,7 +49,8 @@ import { mapState } from "pinia";
 import { useConfigStore } from "@/stores/configurationStore";
 
 import WorkflowSelectPreferredObjectStore from "./WorkflowSelectPreferredObjectStore";
-import WorkflowTargetPreferredObjectStorePopover from "./WorkflowTargetPreferredObjectStorePopover";
+
+import WorkflowTargetPreferredObjectStorePopover from "@/components/Workflow/Run/WorkflowTargetPreferredObjectStorePopover.vue";
 
 export default {
     components: {
@@ -91,7 +92,7 @@ export default {
             return `Invocation ${this.preferredOrEmptyString} Storage Location`;
         },
         intermediateModalTitle() {
-            return `Invocation {{ preferredOrEmptyString }} Storage Location (Intermediate Datasets)`;
+            return `Invocation ${this.preferredOrEmptyString} Storage Location (Intermediate Datasets)`;
         },
         suffixPrimary() {
             if (this.splitObjectStore) {

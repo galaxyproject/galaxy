@@ -30,18 +30,25 @@ from galaxy.util import (
     Element,
     ElementTree,
     string_as_bool,
+    string_as_bool_or_none,
+    XML,
     xml_text,
     xml_to_string,
 )
 from .interface import (
     AssertionList,
     Citation,
+    DrillDownDynamicOptions,
+    DrillDownOptionsDict,
     DynamicOptions,
+    HelpContent,
     InputSource,
+    OutputCompareType,
     PageSource,
     PagesSource,
     RequiredFiles,
-    TestCollectionDef,
+    TestCollectionDefElementDict,
+    TestCollectionDefElementObject,
     TestCollectionOutputDef,
     ToolSource,
     ToolSourceTest,
@@ -52,6 +59,7 @@ from .interface import (
     ToolSourceTestOutputAttributes,
     ToolSourceTestOutputs,
     ToolSourceTests,
+    XmlTestCollectionDefDict,
     XrefDict,
 )
 from .output_actions import ToolOutputActionGroup
@@ -62,6 +70,10 @@ from .output_objects import (
     ToolOutput,
     ToolOutputCollection,
     ToolOutputCollectionStructure,
+)
+from .parameter_validators import (
+    AnyValidatorModel,
+    parse_xml_validators,
 )
 from .stdio import (
     aggressive_error_checks,
@@ -182,8 +194,7 @@ class XmlToolSource(ToolSource):
 
     def parse_tool_type(self):
         root = self.root
-        if root.get("tool_type", None) is not None:
-            return root.get("tool_type")
+        return root.get("tool_type")
 
     def parse_name(self):
         return self.root.get("name") or self.parse_id()
@@ -370,6 +381,10 @@ class XmlToolSource(ToolSource):
     def _command_el(self):
         return self.root.find("command")
 
+    @property
+    def _outputs_el(self):
+        return self.root.find("outputs")
+
     def _get_attribute_as_bool(self, attribute, default, elem=None):
         if elem is None:
             elem = self.root
@@ -405,7 +420,7 @@ class XmlToolSource(ToolSource):
 
     def parse_provided_metadata_style(self):
         style = None
-        out_elem = self.root.find("outputs")
+        out_elem = self._outputs_el
         if out_elem is not None and "provided_metadata_style" in out_elem.attrib:
             style = out_elem.attrib["provided_metadata_style"]
 
@@ -643,9 +658,14 @@ class XmlToolSource(ToolSource):
         else:
             return string_as_bool(default)
 
-    def parse_help(self):
+    def parse_help(self) -> Optional[HelpContent]:
         help_elem = self.root.find("help")
-        return help_elem.text if help_elem is not None else None
+        if help_elem is None:
+            return None
+
+        help_format = help_elem.get("format", "restructuredtext")
+        content = help_elem.text or ""
+        return HelpContent(format=help_format, content=content)
 
     @property
     def macro_paths(self):
@@ -753,7 +773,7 @@ def __parse_output_elems(test_elem) -> ToolSourceTestOutputs:
 
 
 def __parse_output_elem(output_elem):
-    attrib = dict(output_elem.attrib)
+    attrib = _element_to_dict(output_elem)
     name = attrib.pop("name", None)
     if name is None:
         raise Exception("Test output does not have a 'name'")
@@ -775,7 +795,7 @@ def __parse_output_collection_elems(test_elem, profile=None):
 
 
 def __parse_output_collection_elem(output_collection_elem, profile=None):
-    attrib = dict(output_collection_elem.attrib)
+    attrib = _element_to_dict(output_collection_elem)
     name = attrib.pop("name", None)
     if name is None:
         raise Exception("Test output collection does not have a 'name'")
@@ -786,7 +806,7 @@ def __parse_output_collection_elem(output_collection_elem, profile=None):
 def __parse_element_tests(parent_element, profile=None):
     element_tests = {}
     for idx, element in enumerate(parent_element.findall("element")):
-        element_attrib = dict(element.attrib)
+        element_attrib: dict = _element_to_dict(element)
         identifier = element_attrib.pop("name", None)
         if identifier is None:
             raise Exception("Test primary dataset does not have a 'identifier'")
@@ -818,7 +838,7 @@ def __parse_test_attributes(
         value_object = json.loads(attrib.pop("value_json"))
 
     # Method of comparison
-    compare: str = attrib.pop("compare", "diff").lower()
+    compare: OutputCompareType = cast(OutputCompareType, attrib.pop("compare", "diff").lower())
     # Number of lines to allow to vary in logs (for dates, etc)
     lines_diff: int = int(attrib.pop("lines_diff", "0"))
     # Allow a file size to vary if sim_size compare
@@ -857,7 +877,7 @@ def __parse_test_attributes(
     primary_datasets: Dict[str, Any] = {}
     if parse_discovered_datasets:
         for primary_elem in output_elem.findall("discovered_dataset") or []:
-            primary_attrib = dict(primary_elem.attrib)
+            primary_attrib = _element_to_dict(primary_elem)
             designation = primary_attrib.pop("designation", None)
             if designation is None:
                 raise Exception("Test primary dataset does not have a 'designation'")
@@ -907,7 +927,7 @@ def __parse_assert_list_from_elem(assert_elem) -> AssertionList:
     def convert_elem(elem):
         """Converts and XML element to a dictionary format, used by assertion checking code."""
         tag = elem.tag
-        attributes = dict(elem.attrib)
+        attributes = _element_to_dict(elem)
         converted_children = []
         for child_elem in elem:
             converted_children.append(convert_elem(child_elem))
@@ -924,7 +944,7 @@ def __parse_assert_list_from_elem(assert_elem) -> AssertionList:
 def __parse_extra_files_elem(extra):
     # File or directory, when directory, compare basename
     # by basename
-    attrib = dict(extra.attrib)
+    attrib = _element_to_dict(extra)
     extra_type = attrib.pop("type", "file")
     extra_name = attrib.pop("name", None)
     assert (
@@ -995,6 +1015,31 @@ def __parse_inputs_elems(test_elem, i) -> ToolSourceTestInputs:
     return raw_inputs
 
 
+def _test_collection_def_dict(elem: Element) -> XmlTestCollectionDefDict:
+    elements: List[TestCollectionDefElementDict] = []
+    attrib: Dict[str, Any] = _element_to_dict(elem)
+    collection_type = attrib["type"]
+    name = attrib.get("name", "Unnamed Collection")
+    for element in elem.findall("element"):
+        element_attrib: Dict[str, Any] = _element_to_dict(element)
+        element_identifier = element_attrib["name"]
+        nested_collection_elem = element.find("collection")
+        element_definition: TestCollectionDefElementObject
+        if nested_collection_elem is not None:
+            element_definition = _test_collection_def_dict(nested_collection_elem)
+        else:
+            element_definition = __parse_param_elem(element)
+        elements.append({"element_identifier": element_identifier, "element_definition": element_definition})
+
+    return XmlTestCollectionDefDict(
+        model_class="TestCollectionDef",
+        attributes=attrib,
+        collection_type=collection_type,
+        elements=elements,
+        name=name,
+    )
+
+
 def __parse_param_elem(param_elem, i=0) -> ToolSourceTestInput:
     attrib: ToolSourceTestInputAttributes = dict(param_elem.attrib)
     if "values" in attrib:
@@ -1033,7 +1078,7 @@ def __parse_param_elem(param_elem, i=0) -> ToolSourceTestInput:
             elif child.tag == "edit_attributes":
                 attrib["edit_attributes"].append(child)
             elif child.tag == "collection":
-                attrib["collection"] = TestCollectionDef.from_xml(child, __parse_param_elem)
+                attrib["collection"] = _test_collection_def_dict(child)
         if composite_data_name:
             # Composite datasets need implicit renaming;
             # inserted at front of list so explicit declarations
@@ -1255,18 +1300,23 @@ class XmlPageSource(PageSource):
 
 class XmlDynamicOptions(DynamicOptions):
 
-    def __init__(self, options_elem: Element):
+    def __init__(self, options_elem: Element, dynamic_option_code: Optional[str]):
         self._options_elem = options_elem
+        self._dynamic_options_code = dynamic_option_code
 
     def elem(self) -> Element:
         return self._options_elem
 
+    def get_dynamic_options_code(self) -> Optional[str]:
+        """If dynamic options are a piece of code to eval, return it."""
+        return self._dynamic_options_code
+
     def get_data_table_name(self) -> Optional[str]:
         """If dynamic options are loaded from a data table, return the name."""
-        return self._options_elem.get("from_data_table")
+        return self._options_elem.get("from_data_table") if self._options_elem is not None else None
 
     def get_index_file_name(self) -> Optional[str]:
-        return self._options_elem.get("from_file")
+        return self._options_elem.get("from_file") if self._options_elem is not None else None
 
 
 class XmlInputSource(InputSource):
@@ -1286,6 +1336,9 @@ class XmlInputSource(InputSource):
     def get_bool(self, key, default):
         return string_as_bool(self.get(key, default))
 
+    def get_bool_or_none(self, key, default):
+        return string_as_bool_or_none(self.get(key, default))
+
     def parse_label(self):
         return xml_text(self.input_elem, "label")
 
@@ -1295,13 +1348,18 @@ class XmlInputSource(InputSource):
     def parse_sanitizer_elem(self):
         return self.input_elem.find("sanitizer")
 
-    def parse_validator_elems(self):
-        return self.input_elem.findall("validator")
+    def parse_validators(self) -> List[AnyValidatorModel]:
+        return parse_xml_validators(self.input_elem)
 
     def parse_dynamic_options(self) -> Optional[XmlDynamicOptions]:
         """Return a XmlDynamicOptions to describe dynamic options if options elem is available."""
         options_elem = self.input_elem.find("options")
-        return XmlDynamicOptions(options_elem) if options_elem is not None else None
+        dynamic_option_code = self.input_elem.get("dynamic_options")
+        is_dynamic = options_elem is not None or dynamic_option_code is not None
+        if is_dynamic:
+            return XmlDynamicOptions(options_elem, dynamic_option_code)
+        else:
+            return None
 
     def parse_static_options(self) -> List[Tuple[str, str, bool]]:
         """
@@ -1325,6 +1383,40 @@ class XmlInputSource(InputSource):
             selected = string_as_bool(option.get("selected", False))
             deduplicated_static_options[value] = (text, value, selected)
         return list(deduplicated_static_options.values())
+
+    def parse_drill_down_dynamic_options(
+        self, tool_data_path: Optional[str] = None
+    ) -> Optional[DrillDownDynamicOptions]:
+        elem = self.input_elem
+        dynamic_options_raw = elem.get("dynamic_options", None)
+        dynamic_options: Optional[str] = str(dynamic_options_raw) if dynamic_options_raw else None
+        if dynamic_options is None:
+            return None
+        else:
+            return XmlDrillDownDynamicOptions(code_block=dynamic_options)
+
+    def parse_drill_down_static_options(
+        self, tool_data_path: Optional[str] = None
+    ) -> Optional[List[DrillDownOptionsDict]]:
+        from_file = self.input_elem.get("from_file", None)
+        if from_file:
+            if not os.path.isabs(from_file):
+                assert tool_data_path, "This tool cannot be parsed outside of a Galaxy context"
+                from_file = os.path.join(tool_data_path, from_file)
+            elem = XML(f"<root>{open(from_file).read()}</root>")
+        else:
+            elem = self.input_elem
+
+        dynamic_options_elem = elem.get("dynamic_options", None)
+        filter_elem = elem.get("filter", None)
+        if dynamic_options_elem is not None and filter_elem is not None:
+            return None
+
+        root_options: List[DrillDownOptionsDict] = []
+        options_elem = elem.find("options")
+        assert options_elem, "Non-dynamic drilldown parameters must supply an options element"
+        _recurse_drill_down_elems(root_options, options_elem.findall("option"))
+        return root_options
 
     def parse_optional(self, default=None):
         """Return boolean indicating whether parameter is optional."""
@@ -1455,3 +1547,37 @@ def parse_citation_elem(citation_elem: Element) -> Optional[Citation]:
         type=citation_type,
         content=content,
     )
+
+
+class XmlDrillDownDynamicOptions(DrillDownDynamicOptions):
+
+    def __init__(self, code_block: Optional[str]):
+        self._code_block = code_block
+
+    def from_code_block(self) -> Optional[str]:
+        """Get a code block to do an eval on."""
+        return self._code_block
+
+
+def _element_to_dict(elem: Element) -> Dict[str, Any]:
+    # every call to this function needs to be replaced with something more type safe and with
+    # an actual typed dictionary - but centralizing this hack for now.
+    return dict(elem.attrib)  # type: ignore [arg-type]
+
+
+def _recurse_drill_down_elems(options: List[DrillDownOptionsDict], option_elems: List[Element]):
+    for option_elem in option_elems:
+        selected = string_as_bool(option_elem.get("selected", False))
+        nested_options: List[DrillDownOptionsDict] = []
+        value = option_elem.get("value")
+        assert value
+        current_option: DrillDownOptionsDict = DrillDownOptionsDict(
+            {
+                "name": option_elem.get("name"),
+                "value": value,
+                "options": nested_options,
+                "selected": selected,
+            }
+        )
+        _recurse_drill_down_elems(nested_options, option_elem.findall("option"))
+        options.append(current_option)

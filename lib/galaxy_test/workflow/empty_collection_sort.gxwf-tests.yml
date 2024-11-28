@@ -9,6 +9,8 @@
     filter_file: i1
   outputs:
     output:
+      class: Collection
+      collection_type: list
       elements:
         i1:
           asserts:

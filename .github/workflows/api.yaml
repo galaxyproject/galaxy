@@ -18,6 +18,7 @@ env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
+  GALAXY_TEST_REQUIRE_ALL_NEEDED_TOOLS: '1'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -55,15 +56,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'galaxy root/requirements.txt'
       - name: Get full Python version
         id: full-python-version
         shell: bash
         run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
-      - name: Cache pip dir
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
       - name: Cache galaxy venv
         uses: actions/cache@v4
         with:

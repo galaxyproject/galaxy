@@ -21,6 +21,9 @@ import {
     NULL_COLLECTION_TYPE_DESCRIPTION,
 } from "./collectionTypeDescription";
 
+export const NO_COLLECTION_TYPE_INFORMATION_MESSAGE =
+    "No collection type or collection type source defined - this is fine but may lead to less intuitive connection logic.";
+
 export class ConnectionAcceptable {
     reason: string | null;
     canAccept: boolean;
@@ -534,13 +537,33 @@ export class InputParameterTerminal extends BaseInputTerminal {
     }
 
     effectiveType(parameterType: string) {
-        return parameterType == "select" ? "text" : parameterType;
+        let newType: string;
+        switch (parameterType) {
+            case "select":
+                newType = "text";
+                break;
+            case "data_column":
+                newType = "integer";
+                break;
+            default:
+                newType = parameterType;
+        }
+        return newType;
     }
     attachable(other: BaseOutputTerminal) {
         const effectiveThisType = this.effectiveType(this.type);
         const otherType = ("type" in other && other.type) || "data";
         const effectiveOtherType = this.effectiveType(otherType);
+        if (!this.optional && other.optional) {
+            return new ConnectionAcceptable(false, `Cannot attach an optional output to a required parameter`);
+        }
         const canAccept = effectiveThisType === effectiveOtherType;
+        if (!this.multiple && other.multiple) {
+            return new ConnectionAcceptable(
+                false,
+                `This output parameter represents multiple values but input only accepts a single value`
+            );
+        }
         return new ConnectionAcceptable(
             canAccept,
             canAccept ? null : `Cannot attach a ${effectiveOtherType} parameter to a ${effectiveThisType} input`
@@ -737,7 +760,7 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
         } else {
             this.collectionTypeSource = attr.collection_type_source;
             if (!this.collectionTypeSource) {
-                console.log("Warning: No collection type or collection type source defined.");
+                console.debug(NO_COLLECTION_TYPE_INFORMATION_MESSAGE);
             }
             this.collectionType = this.getCollectionTypeFromInput() || ANY_COLLECTION_TYPE_DESCRIPTION;
         }
@@ -801,12 +824,14 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
 
 interface OutputParameterTerminalArgs extends Omit<BaseOutputTerminalArgs, "datatypes"> {
     type: ParameterOutput["type"];
+    multiple: ParameterOutput["multiple"];
 }
 
 export class OutputParameterTerminal extends BaseOutputTerminal {
     constructor(attr: OutputParameterTerminalArgs) {
         super({ ...attr, datatypes: [] });
         this.type = attr.type;
+        this.multiple = attr.multiple;
     }
 }
 
@@ -977,6 +1002,7 @@ export function terminalFactory<T extends TerminalSourceAndInvalid>(
         if (isOutputParameterArg(terminalSource)) {
             return new OutputParameterTerminal({
                 ...outputArgs,
+                multiple: terminalSource.multiple,
                 type: terminalSource.type,
             }) as TerminalOf<T>;
         } else if (isOutputCollectionArg(terminalSource)) {

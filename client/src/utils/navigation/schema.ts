@@ -418,7 +418,8 @@ interface Rootworkflow_run extends Component {
     validation_error: SelectorTemplate;
     expand_form_link: SelectorTemplate;
     expanded_form: SelectorTemplate;
-    new_history_target_link: SelectorTemplate;
+    new_history_badge: SelectorTemplate;
+    history_target_link: SelectorTemplate;
     runtime_setting_button: SelectorTemplate;
     runtime_setting_target: SelectorTemplate;
     input_select_field: SelectorTemplate;
@@ -479,6 +480,8 @@ interface Rootworkflow_show extends Component {
 interface Rootinvocations extends Component {
     invocations_table: SelectorTemplate;
     invocations_table_rows: SelectorTemplate;
+    invocations_panel_list: SelectorTemplate;
+    invocations_panel_list_items: SelectorTemplate;
     pager: SelectorTemplate;
     pager_page: SelectorTemplate;
     pager_page_next: SelectorTemplate;
@@ -487,10 +490,8 @@ interface Rootinvocations extends Component {
     pager_page_previous: SelectorTemplate;
     pager_page_active: SelectorTemplate;
     state_details: SelectorTemplate;
-    toggle_invocation_details: SelectorTemplate;
     progress_steps_note: SelectorTemplate;
     progress_jobs_note: SelectorTemplate;
-    hide_invocation_graph: SelectorTemplate;
     invocation_tab: SelectorTemplate;
     invocation_details_tab: SelectorTemplate;
     input_details_title: SelectorTemplate;
@@ -502,8 +503,6 @@ interface Rootinvocations extends Component {
     step_output_collection_element_identifier: SelectorTemplate;
     step_output_collection_element_datatype: SelectorTemplate;
     step_job_details: SelectorTemplate;
-    step_job_table: SelectorTemplate;
-    step_job_table_rows: SelectorTemplate;
     step_job_information: SelectorTemplate;
     step_job_information_tool_id: SelectorTemplate;
 }

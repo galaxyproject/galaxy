@@ -23,10 +23,10 @@ from typing import (
 
 import yaml
 
+from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tool_util.verify.interactor import (
     DictClientTestConfig,
     GalaxyInteractorApi,
-    ToolTestDescriptionDict,
     verify_tool,
 )
 

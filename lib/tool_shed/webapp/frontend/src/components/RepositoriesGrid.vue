@@ -14,6 +14,7 @@ interface RepositoriesGridProps {
     rows: Array<RepositoryGridItem>
     noDataLabel?: string
     debug?: boolean
+    allowSearch?: boolean
 }
 
 interface ScrollDetails {
@@ -29,6 +30,7 @@ const compProps = withDefaults(defineProps<RepositoriesGridProps>(), {
     debug: false,
     onScroll: null as OnScroll | null,
     noDataLabel: "No repositories found",
+    allowSearch: false,
 })
 
 const pagination = { rowsPerPage: 0 }
@@ -44,7 +46,7 @@ const NAME_COLUMN: QTableColumn = {
     name: "name",
     label: "Name",
     align: "left",
-    field: "name",
+    field: "effectiveName",
 }
 
 const columns = computed(() => {
@@ -58,7 +60,6 @@ const columns = computed(() => {
 const tableLoading = ref(false)
 
 async function onVirtualScroll(details: ScrollDetails) {
-    console.log(details)
     const { to, direction } = details
     if (direction == "decrease") {
         return
@@ -72,10 +73,14 @@ async function onVirtualScroll(details: ScrollDetails) {
     }
 }
 
+const search = ref("")
+
 // Adapt the rows with doubleIndex so
 const adaptedRows = computed(() =>
     compProps.rows.map((r) => {
-        return { doubleIndex: r.index * 2, ...r }
+        // create this effective name so we are filtering on this when searching...
+        const effectiveName = r.owner + " " + r.name
+        return { doubleIndex: r.index * 2, effectiveName: effectiveName, ...r }
     })
 )
 </script>
@@ -84,10 +89,10 @@ const adaptedRows = computed(() =>
         <q-table
             v-if="loading || rows.length > 0"
             style="height: 85vh"
-            :title="title"
             :rows="adaptedRows"
             :columns="columns"
             :loading="tableLoading"
+            :filter="search"
             row-key="newIndex"
             virtual-scroll
             :virtual-scroll-item-size="48"
@@ -99,6 +104,16 @@ const adaptedRows = computed(() =>
             hide-header
             hide-bottom
         >
+            <template #top>
+                <div class="row col-12">
+                    <div class="q-table__control col-8">
+                        <div class="q-table__title">{{ title }}</div>
+                    </div>
+                    <div class="col-4 justify-end q-pa-md" v-if="allowSearch">
+                        <q-input v-model="search" autogrow label="Filter"></q-input>
+                    </div>
+                </div>
+            </template>
             <template #body="props">
                 <q-tr :props="props" :key="`m_${props.row.index}`">
                     <q-td v-for="col in props.cols" :key="col.name" :props="props">

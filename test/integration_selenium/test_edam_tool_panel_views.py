@@ -28,7 +28,7 @@ class TestEdamToolPanelViewsSeleniumIntegration(SeleniumIntegrationTestCase):
 
         editor = self.components.workflow_editor
         editor.canvas_body.wait_for_visible()
-        editor.tool_menu.wait_for_visible()
+        self.open_toolbox()
         self._assert_displaying_edam_operations()
         self.screenshot("tool_panel_view_edam_workflow_editor")
 

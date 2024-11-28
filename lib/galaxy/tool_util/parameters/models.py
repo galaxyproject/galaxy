@@ -11,17 +11,22 @@ from typing import (
     Mapping,
     NamedTuple,
     Optional,
+    Sequence,
     Type,
+    TypeVar,
     Union,
 )
 
 from pydantic import (
+    AfterValidator,
+    AnyUrl,
     BaseModel,
     ConfigDict,
     create_model,
     Discriminator,
     Field,
     field_validator,
+    HttpUrl,
     RootModel,
     StrictBool,
     StrictFloat,
@@ -37,25 +42,50 @@ from typing_extensions import (
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.tool_util.parser.interface import (
+    DrillDownOptionsDict,
+    JsonTestCollectionDefDict,
+    JsonTestDatasetDefDict,
+)
+from galaxy.tool_util.parser.parameter_validators import (
+    EmptyFieldParameterValidatorModel,
+    ExpressionParameterValidatorModel,
+    InRangeParameterValidatorModel,
+    LengthParameterValidatorModel,
+    NoOptionsParameterValidatorModel,
+    RegexParameterValidatorModel,
+    StaticValidatorModel,
+)
 from ._types import (
     cast_as_type,
+    expand_annotation,
     is_optional,
     list_type,
+    optional,
     optional_if_needed,
     union_type,
 )
 
 # TODO:
-# - implement job vs request...
-# - drill down
 # - implement data_ref on rules and implement some cross model validation
-# - Optional conditionals... work through that?
-# - Sections - fight that battle again...
 
 # + request: Return info needed to build request pydantic model at runtime.
 # + request_internal: This is a pydantic model to validate what Galaxy expects to find in the database,
 # in particular dataset and collection references should be decoded integers.
-StateRepresentationT = Literal["request", "request_internal", "job_internal", "test_case"]
+StateRepresentationT = Literal[
+    "request",
+    "request_internal",
+    "request_internal_dereferenced",
+    "landing_request",
+    "landing_request_internal",
+    "job_internal",
+    "test_case_xml",
+    "workflow_step",
+    "workflow_step_linked",
+]
+
+DEFAULT_MODEL_NAME = "DynamicModelForTool"
+RawStateDict = Dict[str, Any]
 
 
 # could be made more specific - validators need to be classmethod
@@ -70,6 +100,14 @@ class DynamicModelInformation(NamedTuple):
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+class ConnectedValue(BaseModel):
+    discriminator: Literal["ConnectedValue"] = Field(alias="__class__")
+
+
+def allow_connected_value(type: Type):
+    return union_type([type, ConnectedValue])
 
 
 def allow_batching(job_template: DynamicModelInformation, batch_type: Optional[Type] = None) -> DynamicModelInformation:
@@ -107,14 +145,17 @@ class ParamModel(Protocol):
         ...
 
 
-def dynamic_model_information_from_py_type(param_model: ParamModel, py_type: Type):
+def dynamic_model_information_from_py_type(
+    param_model: ParamModel, py_type: Type, requires_value: Optional[bool] = None, validators=None
+):
     name = param_model.name
-    initialize = ... if param_model.request_requires_value else None
+    if requires_value is None:
+        requires_value = param_model.request_requires_value
+    initialize = ... if requires_value else None
     py_type_is_optional = is_optional(py_type)
-    if not py_type_is_optional and not param_model.request_requires_value:
-        validators = {"not_null": field_validator(name)(Validators.validate_not_none)}
-    else:
-        validators = {}
+    validators = validators or {}
+    if not py_type_is_optional and not requires_value:
+        validators["not_null"] = field_validator(name)(Validators.validate_not_none)
 
     return DynamicModelInformation(
         name,
@@ -150,22 +191,77 @@ class LabelValue(BaseModel):
     selected: bool
 
 
+TextCompatiableValidators = Union[
+    LengthParameterValidatorModel,
+    RegexParameterValidatorModel,
+    ExpressionParameterValidatorModel,
+    EmptyFieldParameterValidatorModel,
+]
+
+
+def pydantic_to_galaxy_type(value: Any) -> Any:
+    """We use advanced Pydantic types like URL but the Galaxy validators only expect strings for these."""
+    if isinstance(value, AnyUrl):
+        return str(value)
+
+    return value
+
+
+VT = TypeVar("VT", bound=StaticValidatorModel)
+
+
+def decorate_type_with_validators_if_needed(py_type: Type, static_validator_models: Sequence[VT]) -> Type:
+    pydantic_validator = pydantic_validator_for(static_validator_models)
+    if pydantic_validator:
+        return expand_annotation(py_type, [pydantic_validator])
+    else:
+        return py_type
+
+
+# Looks like Annotated only work with one PlainValidator so condensing all static validators
+# into a single PlainValidator for pydantic.
+def pydantic_validator_for(static_validator_models: Sequence[VT]) -> Optional[AfterValidator]:
+
+    if static_validator_models:
+
+        def validator(v: Any) -> Any:
+            gx_val = pydantic_to_galaxy_type(v)
+
+            for static_validator_model in static_validator_models:
+                static_validator_model.statically_validate(gx_val)
+            return v
+
+        return AfterValidator(validator)
+    else:
+        return None
+
+
 class TextParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_text"] = "gx_text"
     area: bool = False
     default_value: Optional[str] = Field(default=None, alias="value")
     default_options: List[LabelValue] = []
+    validators: List[TextCompatiableValidators] = []
 
     @property
     def py_type(self) -> Type:
         return optional_if_needed(StrictStr, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        return dynamic_model_information_from_py_type(self, self.py_type)
+        py_type = decorate_type_with_validators_if_needed(self.py_type, self.validators)
+        if state_representation == "workflow_step_linked":
+            py_type = allow_connected_value(py_type)
+        requires_value = self.request_requires_value
+        if state_representation == "job_internal":
+            requires_value = True
+        return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
 
     @property
     def request_requires_value(self) -> bool:
         return False
+
+
+NumberCompatiableValidators = Union[InRangeParameterValidatorModel,]
 
 
 class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
@@ -174,17 +270,30 @@ class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
     value: Optional[int] = None
     min: Optional[int] = None
     max: Optional[int] = None
+    validators: List[NumberCompatiableValidators] = []
 
     @property
     def py_type(self) -> Type:
         return optional_if_needed(StrictInt, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        return dynamic_model_information_from_py_type(self, self.py_type)
+        py_type = self.py_type
+        validators = self.validators[:]
+        if self.min is not None or self.max is not None:
+            validators.append(InRangeParameterValidatorModel(min=self.min, max=self.max, implicit=True))
+        py_type = decorate_type_with_validators_if_needed(py_type, validators)
+        if state_representation == "workflow_step_linked":
+            py_type = allow_connected_value(py_type)
+        requires_value = self.request_requires_value
+        if state_representation == "job_internal":
+            requires_value = True
+        elif _is_landing_request(state_representation):
+            requires_value = False
+        return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
 
     @property
     def request_requires_value(self) -> bool:
-        return False
+        return not self.optional and self.value is None
 
 
 class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):
@@ -192,13 +301,26 @@ class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):
     value: Optional[float] = None
     min: Optional[float] = None
     max: Optional[float] = None
+    validators: List[NumberCompatiableValidators] = []
 
     @property
     def py_type(self) -> Type:
         return optional_if_needed(union_type([StrictInt, StrictFloat]), self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        return dynamic_model_information_from_py_type(self, self.py_type)
+        py_type = self.py_type
+        if state_representation == "workflow_step_linked":
+            py_type = allow_connected_value(py_type)
+        requires_value = self.request_requires_value
+        if state_representation == "job_internal":
+            requires_value = True
+        elif _is_landing_request(state_representation):
+            requires_value = False
+        validators = self.validators[:]
+        if self.min is not None or self.max is not None:
+            validators.append(InRangeParameterValidatorModel(min=self.min, max=self.max, implicit=True))
+        py_type = decorate_type_with_validators_if_needed(py_type, validators)
+        return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
 
     @property
     def request_requires_value(self) -> bool:
@@ -212,9 +334,46 @@ CollectionStrT = Literal["hdca"]
 TestCaseDataSrcT = Literal["File"]
 
 
-class DataRequest(StrictModel):
-    src: DataSrcT
+class DataRequestHda(StrictModel):
+    src: Literal["hda"] = "hda"
     id: StrictStr
+
+
+class DataRequestLdda(StrictModel):
+    src: Literal["ldda"] = "ldda"
+    id: StrictStr
+
+
+class DataRequestHdca(StrictModel):
+    src: Literal["hdca"] = "hdca"
+    id: StrictStr
+
+
+class DatasetHash(StrictModel):
+    hash_function: Literal["MD5", "SHA-1", "SHA-256", "SHA-512"]
+    hash_value: StrictStr
+
+
+class DataRequestUri(StrictModel):
+    # calling it url instead of uri to match data fetch schema...
+    src: Literal["url"] = "url"
+    url: StrictStr
+    name: Optional[StrictStr] = None
+    ext: StrictStr
+    dbkey: StrictStr = "?"
+    deferred: StrictBool = False
+    created_from_basename: Optional[StrictStr] = None
+    info: Optional[StrictStr] = None
+    hashes: Optional[List[DatasetHash]] = None
+    space_to_tab: bool = False
+    to_posix_lines: bool = False
+    # to implement:
+    # tags
+
+
+DataRequest: Type = cast(
+    Type, Annotated[union_type([DataRequestHda, DataRequestLdda, DataRequestUri]), Field(discriminator="src")]
+)
 
 
 class BatchDataInstance(StrictModel):
@@ -222,17 +381,37 @@ class BatchDataInstance(StrictModel):
     id: StrictStr
 
 
-class MultiDataInstance(StrictModel):
-    src: MultiDataSrcT
-    id: StrictStr
+MultiDataInstance: Type = cast(
+    Type,
+    Annotated[
+        union_type([DataRequestHda, DataRequestLdda, DataRequestHdca, DataRequestUri]), Field(discriminator="src")
+    ],
+)
+MultiDataRequest: Type = cast(Type, union_type([MultiDataInstance, list_type(MultiDataInstance)]))
 
 
-MultiDataRequest: Type = union_type([MultiDataInstance, List[MultiDataInstance]])
-
-
-class DataRequestInternal(StrictModel):
-    src: DataSrcT
+class DataRequestInternalHda(StrictModel):
+    src: Literal["hda"] = "hda"
     id: StrictInt
+
+
+class DataRequestInternalLdda(StrictModel):
+    src: Literal["ldda"] = "ldda"
+    id: StrictInt
+
+
+class DataRequestInternalHdca(StrictModel):
+    src: Literal["hdca"] = "hdca"
+    id: StrictInt
+
+
+DataRequestInternal: Type = cast(
+    Type, Annotated[Union[DataRequestInternalHda, DataRequestInternalLdda, DataRequestUri], Field(discriminator="src")]
+)
+DataRequestInternalDereferenced: Type = cast(
+    Type, Annotated[Union[DataRequestInternalHda, DataRequestInternalLdda], Field(discriminator="src")]
+)
+DataJobInternal = DataRequestInternalDereferenced
 
 
 class BatchDataInstanceInternal(StrictModel):
@@ -240,21 +419,24 @@ class BatchDataInstanceInternal(StrictModel):
     id: StrictInt
 
 
-class MultiDataInstanceInternal(StrictModel):
-    src: MultiDataSrcT
-    id: StrictInt
+MultiDataInstanceInternal: Type = cast(
+    Type,
+    Annotated[
+        Union[DataRequestInternalHda, DataRequestInternalLdda, DataRequestInternalHdca, DataRequestUri],
+        Field(discriminator="src"),
+    ],
+)
+MultiDataInstanceInternalDereferenced: Type = cast(
+    Type,
+    Annotated[
+        Union[DataRequestInternalHda, DataRequestInternalLdda, DataRequestInternalHdca], Field(discriminator="src")
+    ],
+)
 
-
-class DataTestCaseValue(StrictModel):
-    src: TestCaseDataSrcT
-    path: str
-
-
-class MultipleDataTestCaseValue(RootModel):
-    root: List[DataTestCaseValue]
-
-
-MultiDataRequestInternal: Type = union_type([MultiDataInstanceInternal, List[MultiDataInstanceInternal]])
+MultiDataRequestInternal: Type = union_type([MultiDataInstanceInternal, list_type(MultiDataInstanceInternal)])
+MultiDataRequestInternalDereferenced: Type = union_type(
+    [MultiDataInstanceInternalDereferenced, list_type(MultiDataInstanceInternalDereferenced)]
+)
 
 
 class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
@@ -283,25 +465,52 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
         return optional_if_needed(base_model, self.optional)
 
     @property
+    def py_type_internal_dereferenced(self) -> Type:
+        base_model: Type
+        if self.multiple:
+            base_model = MultiDataRequestInternalDereferenced
+        else:
+            base_model = DataRequestInternalDereferenced
+        return optional_if_needed(base_model, self.optional)
+
+    @property
     def py_type_test_case(self) -> Type:
         base_model: Type
         if self.multiple:
-            base_model = MultiDataRequestInternal
+            base_model = list_type(JsonTestDatasetDefDict)
         else:
-            base_model = DataTestCaseValue
+            base_model = JsonTestDatasetDefDict
         return optional_if_needed(base_model, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         if state_representation == "request":
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type), BatchDataInstance)
+        if state_representation == "landing_request":
+            return allow_batching(
+                dynamic_model_information_from_py_type(self, self.py_type, requires_value=False), BatchDataInstance
+            )
         elif state_representation == "request_internal":
             return allow_batching(
                 dynamic_model_information_from_py_type(self, self.py_type_internal), BatchDataInstanceInternal
             )
+        elif state_representation == "landing_request_internal":
+            return allow_batching(
+                dynamic_model_information_from_py_type(self, self.py_type_internal, requires_value=False),
+                BatchDataInstanceInternal,
+            )
+        elif state_representation == "request_internal_dereferenced":
+            return allow_batching(
+                dynamic_model_information_from_py_type(self, self.py_type_internal_dereferenced),
+                BatchDataInstanceInternal,
+            )
         elif state_representation == "job_internal":
-            return dynamic_model_information_from_py_type(self, self.py_type_internal)
-        elif state_representation == "test_case":
+            return dynamic_model_information_from_py_type(self, self.py_type_internal_dereferenced, requires_value=True)
+        elif state_representation == "test_case_xml":
             return dynamic_model_information_from_py_type(self, self.py_type_test_case)
+        elif state_representation == "workflow_step":
+            return dynamic_model_information_from_py_type(self, type(None), requires_value=False)
+        elif state_representation == "workflow_step_linked":
+            return dynamic_model_information_from_py_type(self, ConnectedValue)
 
     @property
     def request_requires_value(self) -> bool:
@@ -322,6 +531,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_data_collection"] = "gx_data_collection"
     collection_type: Optional[str] = None
     extensions: List[str] = ["data"]
+    value: Optional[Dict[str, Any]]
 
     @property
     def py_type(self) -> Type:
@@ -334,29 +544,58 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         if state_representation == "request":
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type))
-        elif state_representation == "request_internal":
+        elif state_representation == "landing_request":
+            return allow_batching(dynamic_model_information_from_py_type(self, self.py_type, requires_value=False))
+        elif state_representation == "landing_request_internal":
+            return allow_batching(
+                dynamic_model_information_from_py_type(self, self.py_type_internal, requires_value=False)
+            )
+        elif state_representation in ["request_internal", "request_internal_dereferenced"]:
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type_internal))
+        elif state_representation == "job_internal":
+            return dynamic_model_information_from_py_type(self, self.py_type_internal, requires_value=True)
+        elif state_representation == "workflow_step":
+            return dynamic_model_information_from_py_type(self, type(None), requires_value=False)
+        elif state_representation == "workflow_step_linked":
+            return dynamic_model_information_from_py_type(self, ConnectedValue)
+        elif state_representation == "test_case_xml":
+            return dynamic_model_information_from_py_type(self, JsonTestCollectionDefDict)
         else:
-            raise NotImplementedError("...")
+            raise NotImplementedError(
+                f"Have not implemented data collection parameter models for state representation {state_representation}"
+            )
 
     @property
     def request_requires_value(self) -> bool:
-        return not self.optional
+        return not self.optional and self.value is None
 
 
 class HiddenParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_hidden"] = "gx_hidden"
+    value: Optional[str]
+    validators: List[TextCompatiableValidators] = []
 
     @property
     def py_type(self) -> Type:
         return optional_if_needed(StrictStr, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        return dynamic_model_information_from_py_type(self, self.py_type)
+        py_type = self.py_type
+        requires_value = not self.optional and self.value is None
+        py_type = decorate_type_with_validators_if_needed(py_type, self.validators)
+        if state_representation == "workflow_step_linked":
+            py_type = allow_connected_value(py_type)
+        elif state_representation == "workflow_step" and not self.optional:
+            # allow it to be linked in so force allow optional...
+            py_type = optional(py_type)
+            requires_value = False
+        elif state_representation == "job_internal":
+            requires_value = True
+        return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
 
     @property
     def request_requires_value(self) -> bool:
-        return not self.optional
+        return not self.optional and self.value is None
 
 
 def ensure_color_valid(value: Optional[Any]):
@@ -388,11 +627,34 @@ class ColorParameterModel(BaseGalaxyToolParameterModelDefinition):
         ensure_color_valid(value)
         return value
 
+    @staticmethod
+    def validate_color_str_if_value(value) -> str:
+        if value:
+            ensure_color_valid(value)
+        return value
+
+    @staticmethod
+    def validate_color_str_or_connected_value(value) -> str:
+        if not isinstance(value, ConnectedValue):
+            ensure_color_valid(value)
+        return value
+
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        validators = {"color_format": field_validator(self.name)(ColorParameterModel.validate_color_str)}
+        py_type = self.py_type
+        initialize: Any = ...
+        if state_representation == "workflow_step_linked":
+            py_type = allow_connected_value(py_type)
+            validators = {
+                "color_format": field_validator(self.name)(ColorParameterModel.validate_color_str_or_connected_value)
+            }
+        elif state_representation == "workflow_step":
+            initialize = None
+            validators = {"color_format": field_validator(self.name)(ColorParameterModel.validate_color_str_if_value)}
+        else:
+            validators = {"color_format": field_validator(self.name)(ColorParameterModel.validate_color_str)}
         return DynamicModelInformation(
             self.name,
-            (self.py_type, ...),
+            (py_type, initialize),
             validators,
         )
 
@@ -412,7 +674,13 @@ class BooleanParameterModel(BaseGalaxyToolParameterModelDefinition):
         return optional_if_needed(StrictBool, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        return dynamic_model_information_from_py_type(self, self.py_type)
+        py_type = self.py_type
+        if state_representation == "workflow_step_linked":
+            py_type = allow_connected_value(py_type)
+        requires_value = self.request_requires_value
+        if state_representation == "job_internal":
+            requires_value = True
+        return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
 
     @property
     def request_requires_value(self) -> bool:
@@ -422,8 +690,22 @@ class BooleanParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 
 class DirectoryUriParameterModel(BaseGalaxyToolParameterModelDefinition):
-    parameter_type: Literal["gx_directory_uri"]
-    value: Optional[str]
+    parameter_type: Literal["gx_directory_uri"] = "gx_directory_uri"
+    validators: List[TextCompatiableValidators] = []
+
+    @property
+    def py_type(self) -> Type:
+        return AnyUrl
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        py_type = self.py_type
+        py_type = decorate_type_with_validators_if_needed(py_type, self.validators)
+        if state_representation == "workflow_step_linked":
+            py_type = allow_connected_value(py_type)
+        requires_value = self.request_requires_value
+        if _is_landing_request(state_representation):
+            requires_value = False
+        return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
 
     @property
     def request_requires_value(self) -> bool:
@@ -455,35 +737,336 @@ class RulesParameterModel(BaseGalaxyToolParameterModelDefinition):
         return True
 
 
+SelectCompatiableValidators = Union[NoOptionsParameterValidatorModel,]
+
+
 class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_select"] = "gx_select"
     options: Optional[List[LabelValue]] = None
     multiple: bool
+    validators: List[SelectCompatiableValidators]
 
-    @property
-    def py_type(self) -> Type:
+    @staticmethod
+    def split_str(cls, data: Any) -> Any:
+        if isinstance(data, str):
+            return [x.strip() for x in data.split(",")]
+
+        return data
+
+    def py_type_if_required(self, allow_connections: bool = False) -> Type:
         if self.options is not None:
-            literal_options: List[Type] = [cast_as_type(Literal[o.value]) for o in self.options]
-            py_type = union_type(literal_options)
+            if len(self.options) > 0:
+                literal_options: List[Type] = [cast_as_type(Literal[o.value]) for o in self.options]
+                py_type = union_type(literal_options)
+            else:
+                py_type = type(None)
         else:
             py_type = StrictStr
         if self.multiple:
-            py_type = list_type(py_type)
-        return optional_if_needed(py_type, self.optional)
+            if allow_connections:
+                py_type = list_type(allow_connected_value(py_type))
+            else:
+                py_type = list_type(py_type)
+        elif allow_connections:
+            py_type = allow_connected_value(py_type)
+        return py_type
+
+    @property
+    def py_type(self) -> Type:
+        return optional_if_needed(self.py_type_if_required(), self.optional or self.multiple)
+
+    @property
+    def py_type_workflow_step(self) -> Type:
+        # this is always optional in this context
+        return optional(self.py_type_if_required())
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        return dynamic_model_information_from_py_type(self, self.py_type)
+        validators = {}
+        requires_value = self.request_requires_value
+        py_type = None
+        if state_representation == "workflow_step":
+            py_type = self.py_type_workflow_step
+        elif state_representation == "workflow_step_linked":
+            py_type = self.py_type_if_required(allow_connections=True)
+            py_type = optional_if_needed(py_type, self.optional or self.multiple)
+        elif state_representation == "test_case_xml":
+            # in a YAML test case representation this can be string, in XML we are still expecting a comma separated string
+            py_type = self.py_type_if_required(allow_connections=False)
+            if self.multiple:
+                validators = {"from_string": field_validator(self.name, mode="before")(SelectParameterModel.split_str)}
+            py_type = optional_if_needed(py_type, self.optional)
+        elif state_representation == "job_internal":
+            requires_value = True
+            py_type = self.py_type
+        else:
+            py_type = self.py_type
+
+        py_type = decorate_type_with_validators_if_needed(py_type, self.validators)
+        return dynamic_model_information_from_py_type(
+            self, py_type, validators=validators, requires_value=requires_value
+        )
 
     @property
     def has_selected_static_option(self):
         return self.options is not None and any(o.selected for o in self.options)
 
     @property
+    def default_value(self) -> Optional[str]:
+        if self.options:
+            for option in self.options:
+                if option.selected:
+                    return option.value
+            # single value pick up first value
+            if not self.optional:
+                return self.options[0].value
+
+        return None
+
+    @property
     def request_requires_value(self) -> bool:
-        return not self.optional and not self.has_selected_static_option
+        # API will allow an empty value and just grab the first static option
+        # see API Tests -> test_tools.py -> test_select_first_by_default
+        # If it is multiple - it will also always just allow null regardless of
+        # optional - see test_select_multiple_null_handling
+        return False
+
+    @property
+    def dynamic_options(self) -> bool:
+        return self.options is None
+
+
+class GenomeBuildParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_genomebuild"] = "gx_genomebuild"
+    multiple: bool
+
+    @property
+    def py_type(self) -> Type:
+        py_type: Type = StrictStr
+        if self.multiple:
+            py_type = list_type(py_type)
+        return optional_if_needed(py_type, self.optional)
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        requires_value = self.request_requires_value
+        if state_representation == "job_internal":
+            requires_value = True
+        return dynamic_model_information_from_py_type(self, self.py_type, requires_value=requires_value)
+
+    @property
+    def request_requires_value(self) -> bool:
+        # assumes it uses behavior of select parameters - an API test to reference for this would be nice
+        return self.multiple and not self.optional
+
+
+DrillDownHierarchyT = Literal["recurse", "exact"]
+
+
+def drill_down_possible_values(
+    options: List[DrillDownOptionsDict], multiple: bool, hierarchy: DrillDownHierarchyT
+) -> List[str]:
+    possible_values = []
+
+    def add_value(option: str, is_leaf: bool):
+        if not multiple and not is_leaf and hierarchy == "recurse":
+            return
+        possible_values.append(option)
+
+    def walk_selection(option: DrillDownOptionsDict):
+        child_options = option["options"]
+        is_leaf = not child_options
+        add_value(option["value"], is_leaf)
+        if not is_leaf:
+            for child_option in child_options:
+                walk_selection(child_option)
+
+    for option in options:
+        walk_selection(option)
+
+    return possible_values
+
+
+class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_drill_down"] = "gx_drill_down"
+    options: Optional[List[DrillDownOptionsDict]] = None
+    multiple: bool
+    hierarchy: DrillDownHierarchyT
+
+    @property
+    def py_type(self) -> Type:
+        if self.options is not None:
+            literal_options: List[Type] = [
+                cast_as_type(Literal[o])
+                for o in drill_down_possible_values(self.options, self.multiple, self.hierarchy)
+            ]
+            py_type = union_type(literal_options)
+        else:
+            py_type = StrictStr
+
+        if self.multiple:
+            py_type = list_type(py_type)
+
+        return py_type
+
+    @property
+    def py_type_test_case_xml(self) -> Type:
+        base_model = str
+        return optional_if_needed(base_model, not self.request_requires_value)
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        py_type = self.py_type_test_case_xml if state_representation == "test_case_xml" else self.py_type
+        requires_value = self.request_requires_value
+        if state_representation == "job_internal":
+            requires_value = True
+
+        return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
+
+    @property
+    def request_requires_value(self) -> bool:
+        options = self.options
+        if options:
+            # if any of these are selected, they seem to serve as defaults - check out test_tools -> test_drill_down_first_by_default
+            return not any_drill_down_options_selected(options)
+        else:
+            # I'm not sure how to handle dynamic options... they might or might not be required?
+            # do we need to default to assuming they're not required?
+            return False
+
+    @property
+    def default_option(self) -> Optional[str]:
+        options = self.options
+        if options:
+            selected_options = selected_drill_down_options(options)
+            if len(selected_options) > 0:
+                return selected_options[0]
+        return None
+
+    @property
+    def default_options(self) -> Optional[List[str]]:
+        options = self.options
+        if options:
+            selected_options = selected_drill_down_options(options)
+            return selected_options
+
+        return None
+
+
+def any_drill_down_options_selected(options: List[DrillDownOptionsDict]) -> bool:
+    for option in options:
+        selected = option.get("selected")
+        if selected:
+            return True
+        child_options = option.get("options", [])
+        if any_drill_down_options_selected(child_options):
+            return True
+
+    return False
+
+
+def selected_drill_down_options(options: List[DrillDownOptionsDict]) -> List[str]:
+    selected_options: List[str] = []
+    for option in options:
+        selected = option.get("selected")
+        value = option.get("value")
+        if selected and value:
+            selected_options.append(value)
+        child_options = option.get("options", [])
+        selected_options.extend(selected_drill_down_options(child_options))
+
+    return selected_options
+
+
+class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_data_column"] = "gx_data_column"
+    multiple: bool
+
+    @staticmethod
+    def split_str(cls, data: Any) -> Any:
+        if isinstance(data, str):
+            return [int(x.strip()) for x in data.split(",")]
+        elif isinstance(data, int):
+            return [data]
+
+        return data
+
+    @property
+    def py_type(self) -> Type:
+        py_type: Type = StrictInt
+        if self.multiple:
+            py_type = list_type(py_type)
+        return optional_if_needed(py_type, self.optional)
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        if state_representation == "test_case_xml":
+            if self.multiple:
+                validators = {
+                    "from_string": field_validator(self.name, mode="before")(DataColumnParameterModel.split_str)
+                }
+            else:
+                validators = {}
+            return dynamic_model_information_from_py_type(self, self.py_type, validators=validators)
+        else:
+            requires_value = self.request_requires_value
+            if state_representation == "job_internal":
+                requires_value = True
+            return dynamic_model_information_from_py_type(self, self.py_type, requires_value=requires_value)
+
+    @property
+    def request_requires_value(self) -> bool:
+        return self.multiple and not self.optional
+
+
+class GroupTagParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_group_tag"] = "gx_group_tag"
+    multiple: bool
+
+    @property
+    def py_type(self) -> Type:
+        py_type: Type = StrictStr
+        if self.multiple:
+            py_type = list_type(py_type)
+        return optional_if_needed(py_type, self.optional)
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        requires_value = self.request_requires_value
+        if state_representation == "job_internal":
+            requires_value = True
+        return dynamic_model_information_from_py_type(self, self.py_type, requires_value=requires_value)
+
+    @property
+    def request_requires_value(self) -> bool:
+        return not self.optional
+
+
+class BaseUrlParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_baseurl"] = "gx_baseurl"
+
+    @property
+    def py_type(self) -> Type:
+        return HttpUrl
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        return dynamic_model_information_from_py_type(self, self.py_type)
+
+    @property
+    def request_requires_value(self) -> bool:
+        return True
 
 
 DiscriminatorType = Union[bool, str]
+
+
+def cond_test_parameter_default_value(
+    test_parameter: Union["BooleanParameterModel", "SelectParameterModel"]
+) -> Optional[DiscriminatorType]:
+    default_value: Optional[DiscriminatorType] = None
+    if isinstance(test_parameter, BooleanParameterModel):
+        default_value = test_parameter.value
+    elif isinstance(test_parameter, SelectParameterModel):
+        select_parameter = cast(SelectParameterModel, test_parameter)
+        select_default_value = select_parameter.default_value
+        if select_default_value is not None:
+            default_value = select_default_value
+    return default_value
 
 
 class ConditionalWhen(StrictModel):
@@ -498,10 +1081,14 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
     whens: List[ConditionalWhen]
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        is_boolean = isinstance(self.test_parameter, BooleanParameterModel)
         test_param_name = self.test_parameter.name
         test_info = self.test_parameter.pydantic_template(state_representation)
         extra_validators = test_info.validators
-        test_parameter_requires_value = self.test_parameter.request_requires_value
+        if state_representation == "job_internal":
+            test_parameter_requires_value = True
+        else:
+            test_parameter_requires_value = self.test_parameter.request_requires_value
         when_types: List[Type[BaseModel]] = []
         default_type = None
         for when in self.whens:
@@ -511,7 +1098,7 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
                 initialize_test = ...
             else:
                 initialize_test = None
-
+            tag = str(discriminator) if not is_boolean else str(discriminator).lower()
             extra_kwd = {test_param_name: (Union[str, bool], initialize_test)}
             when_types.append(
                 cast(
@@ -524,22 +1111,29 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
                             extra_kwd=extra_kwd,
                             extra_validators=extra_validators,
                         ),
-                        Tag(str(discriminator)),
+                        Tag(tag),
                     ],
                 )
             )
-            if when.is_default_when:
-                extra_kwd = {}
-                default_type = create_field_model(
-                    parameters,
-                    f"When_{test_param_name}___absent",
-                    state_representation,
-                    extra_kwd=extra_kwd,
-                    extra_validators={},
-                )
-                when_types.append(cast(Type[BaseModel], Annotated[default_type, Tag("__absent__")]))
+            # job_internal requires parameters are filled in - so don't allow the absent branch
+            # here that most other state representations allow
+            if state_representation != "job_internal":
+                if when.is_default_when:
+                    extra_kwd = {}
+                    default_type = create_field_model(
+                        parameters,
+                        f"When_{test_param_name}___absent",
+                        state_representation,
+                        extra_kwd=extra_kwd,
+                        extra_validators={},
+                    )
+                    when_types.append(cast(Type[BaseModel], Annotated[default_type, Tag("__absent__")]))
 
-        def model_x_discriminator(v: Any) -> str:
+        def model_x_discriminator(v: Any) -> Optional[str]:
+            # returning None causes a validation error, this is what we would want if
+            # if the conditional state is not a dictionary.
+            if not isinstance(v, dict):
+                return None
             if test_param_name not in v:
                 return "__absent__"
             else:
@@ -551,17 +1145,29 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
                 else:
                     return str(test_param_val)
 
-        cond_type = union_type(when_types)
+        py_type: Type
 
-        class ConditionalType(RootModel):
-            root: cond_type = Field(..., discriminator=Discriminator(model_x_discriminator))  # type: ignore[valid-type]
+        if len(when_types) > 1:
+            cond_type = union_type(when_types)
 
-        if default_type is not None:
-            initialize_cond = None
+            class ConditionalType(RootModel):
+                root: cond_type = Field(..., discriminator=Discriminator(model_x_discriminator))  # type: ignore[valid-type]
+
+            if default_type is not None:
+                initialize_cond = None
+            else:
+                initialize_cond = ...
+
+            py_type = ConditionalType
+
         else:
-            initialize_cond = ...
-
-        py_type = ConditionalType
+            py_type = when_types[0]
+            # a better check here would be if any of the parameters below this have a required value,
+            # in the case of job_internal though this is correct
+            if state_representation == "job_internal":
+                initialize_cond = ...
+            else:
+                initialize_cond = None
 
         return DynamicModelInformation(
             self.name,
@@ -585,19 +1191,40 @@ class RepeatParameterModel(BaseGalaxyToolParameterModelDefinition):
         instance_class: Type[BaseModel] = create_field_model(
             self.parameters, f"Repeat_{self.name}", state_representation
         )
+        min_length = self.min
+        max_length = self.max
+        requires_value = self.request_requires_value
+        if state_representation == "job_internal":
+            requires_value = True
+        elif _is_landing_request(state_representation):
+            requires_value = False
+            min_length = 0  # in a landing request - parameters can be partially filled
+
+        initialize_repeat: Any
+        if requires_value:
+            initialize_repeat = ...
+        else:
+            initialize_repeat = None
 
         class RepeatType(RootModel):
-            root: List[instance_class] = Field(..., min_length=self.min, max_length=self.max)  # type: ignore[valid-type]
+            root: List[instance_class] = Field(initialize_repeat, min_length=min_length, max_length=max_length)  # type: ignore[valid-type]
 
         return DynamicModelInformation(
             self.name,
-            (RepeatType, ...),
+            (RepeatType, initialize_repeat),
             {},
         )
 
     @property
     def request_requires_value(self) -> bool:
-        return True  # TODO:
+        if self.min is None or self.min == 0:
+            return False
+        # so we know we need at least one value, but maybe none of the parameters in the list
+        # are required
+        for parameter in self.parameters:
+            if parameter.request_requires_value:
+                return True
+        return False
 
 
 class SectionParameterModel(BaseGalaxyToolParameterModelDefinition):
@@ -608,7 +1235,10 @@ class SectionParameterModel(BaseGalaxyToolParameterModelDefinition):
         instance_class: Type[BaseModel] = create_field_model(
             self.parameters, f"Section_{self.name}", state_representation
         )
-        if self.request_requires_value:
+        requires_value = self.request_requires_value
+        if state_representation == "job_internal":
+            requires_value = True
+        if requires_value:
             initialize_section = ...
         else:
             initialize_section = None
@@ -799,8 +1429,13 @@ GalaxyParameterT = Union[
     SelectParameterModel,
     DataParameterModel,
     DataCollectionParameterModel,
+    DataColumnParameterModel,
     DirectoryUriParameterModel,
     RulesParameterModel,
+    DrillDownParameterModel,
+    GroupTagParameterModel,
+    BaseUrlParameterModel,
+    GenomeBuildParameterModel,
     ColorParameterModel,
     ConditionalParameterModel,
     RepeatParameterModel,
@@ -826,19 +1461,11 @@ CwlUnionParameterModel.model_rebuild()
 class ToolParameterBundle(Protocol):
     """An object having a dictionary of input models (i.e. a 'Tool')"""
 
-    # TODO: rename to parameters to align with ConditionalWhen and Repeat.
-    input_models: List[ToolParameterT]
+    parameters: List[ToolParameterT]
 
 
 class ToolParameterBundleModel(BaseModel):
-    input_models: List[ToolParameterT]
-
-
-def parameters_by_name(tool_parameter_bundle: ToolParameterBundle) -> Dict[str, ToolParameterT]:
-    as_dict = {}
-    for input_model in simple_input_models(tool_parameter_bundle.input_models):
-        as_dict[input_model.name] = input_model
-    return as_dict
+    parameters: List[ToolParameterT]
 
 
 def to_simple_model(input_parameter: Union[ToolParameterModel, ToolParameterT]) -> ToolParameterT:
@@ -849,32 +1476,34 @@ def to_simple_model(input_parameter: Union[ToolParameterModel, ToolParameterT]) 
         return cast(ToolParameterT, input_parameter)
 
 
-def simple_input_models(
-    input_models: Union[List[ToolParameterModel], List[ToolParameterT]]
-) -> Iterable[ToolParameterT]:
-    return [to_simple_model(m) for m in input_models]
+def simple_input_models(parameters: Union[List[ToolParameterModel], List[ToolParameterT]]) -> Iterable[ToolParameterT]:
+    return [to_simple_model(m) for m in parameters]
 
 
 def create_model_strict(*args, **kwd) -> Type[BaseModel]:
-    model_config = ConfigDict(extra="forbid")
+    # proteted_namespaces here prevents tool with model_ parameter names from issueing warnings
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
 
     return create_model(*args, __config__=model_config, **kwd)
 
 
-def create_request_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.input_models, name, "request")
+def create_model_factory(state_representation: StateRepresentationT):
+
+    def create_method(tool: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+        return create_field_model(tool.parameters, name or DEFAULT_MODEL_NAME, state_representation)
+
+    return create_method
 
 
-def create_request_internal_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.input_models, name, "request_internal")
-
-
-def create_job_internal_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.input_models, name, "job_internal")
-
-
-def create_test_case_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.input_models, name, "test_case")
+create_request_model = create_model_factory("request")
+create_request_internal_model = create_model_factory("request_internal")
+create_request_internal_dereferenced_model = create_model_factory("request_internal_dereferenced")
+create_landing_request_model = create_model_factory("landing_request")
+create_landing_request_internal_model = create_model_factory("landing_request_internal")
+create_job_internal_model = create_model_factory("job_internal")
+create_test_case_model = create_model_factory("test_case_xml")
+create_workflow_step_model = create_model_factory("workflow_step")
+create_workflow_step_linked_model = create_model_factory("workflow_step_linked")
 
 
 def create_field_model(
@@ -902,6 +1531,10 @@ def create_field_model(
     return pydantic_model
 
 
+def _is_landing_request(state_representation: StateRepresentationT):
+    return state_representation in ["landing_request", "landing_request_internal"]
+
+
 def validate_against_model(pydantic_model: Type[BaseModel], parameter_state: Dict[str, Any]) -> None:
     try:
         pydantic_model(**parameter_state)
@@ -911,21 +1544,27 @@ def validate_against_model(pydantic_model: Type[BaseModel], parameter_state: Dic
         raise RequestParameterInvalidException(str(e))
 
 
-def validate_request(tool: ToolParameterBundle, request: Dict[str, Any]) -> None:
-    pydantic_model = create_request_model(tool)
-    validate_against_model(pydantic_model, request)
+class ValidationFunctionT(Protocol):
+
+    def __call__(self, tool: ToolParameterBundle, request: RawStateDict, name: Optional[str] = None) -> None: ...
 
 
-def validate_internal_request(tool: ToolParameterBundle, request: Dict[str, Any]) -> None:
-    pydantic_model = create_request_internal_model(tool)
-    validate_against_model(pydantic_model, request)
+def validate_model_type_factory(state_representation: StateRepresentationT) -> ValidationFunctionT:
+
+    def validate_request(tool: ToolParameterBundle, request: Dict[str, Any], name: Optional[str] = None) -> None:
+        name = name or DEFAULT_MODEL_NAME
+        pydantic_model = create_field_model(tool.parameters, name=name, state_representation=state_representation)
+        validate_against_model(pydantic_model, request)
+
+    return validate_request
 
 
-def validate_internal_job(tool: ToolParameterBundle, request: Dict[str, Any]) -> None:
-    pydantic_model = create_job_internal_model(tool)
-    validate_against_model(pydantic_model, request)
-
-
-def validate_test_case(tool: ToolParameterBundle, request: Dict[str, Any]) -> None:
-    pydantic_model = create_test_case_model(tool)
-    validate_against_model(pydantic_model, request)
+validate_request = validate_model_type_factory("request")
+validate_internal_request = validate_model_type_factory("request_internal")
+validate_internal_request_dereferenced = validate_model_type_factory("request_internal_dereferenced")
+validate_landing_request = validate_model_type_factory("landing_request")
+validate_internal_landing_request = validate_model_type_factory("landing_request_internal")
+validate_internal_job = validate_model_type_factory("job_internal")
+validate_test_case = validate_model_type_factory("test_case_xml")
+validate_workflow_step = validate_model_type_factory("workflow_step")
+validate_workflow_step_linked = validate_model_type_factory("workflow_step_linked")

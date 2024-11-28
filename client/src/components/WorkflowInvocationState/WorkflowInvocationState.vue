@@ -1,43 +1,45 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowLeft, faClock, faEdit, faEye, faHdd, faPlay, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faExclamation, faSquare, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BTab, BTabs } from "bootstrap-vue";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { BAlert, BBadge, BButton, BTab, BTabs } from "bootstrap-vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 
-import { type InvocationJobsSummary, type WorkflowInvocationElementView } from "@/api/invocations";
-import type { StoredWorkflowDetailed } from "@/api/workflows";
+import { type InvocationJobsSummary, type InvocationStep, type WorkflowInvocationElementView } from "@/api/invocations";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
-import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { cancelWorkflowScheduling } from "./services";
-import { isTerminal, jobCount, runningCount } from "./util";
+import {
+    errorCount as jobStatesSummaryErrorCount,
+    isTerminal,
+    jobCount as jobStatesSummaryJobCount,
+    numTerminal,
+    okCount as jobStatesSummaryOkCount,
+    runningCount as jobStatesSummaryRunningCount,
+} from "./util";
 
-import Heading from "../Common/Heading.vue";
-import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
-import UtcDate from "../UtcDate.vue";
+import ProgressBar from "../ProgressBar.vue";
+import WorkflowInvocationSteps from "../Workflow/Invocation/Graph/WorkflowInvocationSteps.vue";
+import InvocationReport from "../Workflow/InvocationReport.vue";
+import WorkflowAnnotation from "../Workflow/WorkflowAnnotation.vue";
+import WorkflowNavigationTitle from "../Workflow/WorkflowNavigationTitle.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
+import WorkflowInvocationMetrics from "./WorkflowInvocationMetrics.vue";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import InvocationReport from "@/components/Workflow/InvocationReport.vue";
-import WorkflowInvocationsCount from "@/components/Workflow/WorkflowInvocationsCount.vue";
-import WorkflowRunButton from "@/components/Workflow/WorkflowRunButton.vue";
-
-library.add(faArrowLeft, faClock, faEdit, faEye, faHdd, faPlay, faSitemap);
 
 interface Props {
     invocationId: string;
-    index?: number;
     isSubworkflow?: boolean;
     isFullPage?: boolean;
-    fromPanel?: boolean;
+    success?: boolean;
+    newHistoryTarget?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    index: undefined,
     isSubworkflow: false,
 });
 
@@ -49,6 +51,8 @@ const invocationStore = useInvocationStore();
 
 const stepStatesInterval = ref<any>(undefined);
 const jobStatesInterval = ref<any>(undefined);
+const invocationLoaded = ref(false);
+const errorMessage = ref<string | null>(null);
 
 // after the report tab is first activated, no longer lazy-render it from then on
 const reportActive = ref(false);
@@ -62,6 +66,26 @@ watch(
     }
 );
 
+const workflowStore = useWorkflowStore();
+const reportTabDisabled = computed(
+    () =>
+        !invocationStateSuccess.value ||
+        !invocation.value ||
+        !workflowStore.getStoredWorkflowByInstanceId(invocation.value.workflow_id)
+);
+
+/** Tooltip message for the report tab when it is disabled */
+const disabledReportTooltip = computed(() => {
+    const state = invocationState.value;
+    if (state != "scheduled") {
+        return `This workflow is not currently scheduled. The current state is ${state}. Once the workflow is fully scheduled and jobs have complete this option will become available.`;
+    } else if (runningCount.value != 0) {
+        return `The workflow invocation still contains ${runningCount.value} running job(s). Once these jobs have completed this option will become available.`;
+    } else {
+        return "Steps for this workflow are still running. A report will be available once complete.";
+    }
+});
+
 const invocationTabs = ref<BTabs>();
 const scrollableDiv = computed(() => invocationTabs.value?.$el.querySelector(".tab-content") as HTMLElement);
 const isScrollable = ref(false);
@@ -69,8 +93,10 @@ useAnimationFrameResizeObserver(scrollableDiv, ({ clientSize, scrollSize }) => {
     isScrollable.value = scrollSize.height >= clientSize.height + 1;
 });
 
-const invocation = computed(
-    () => invocationStore.getInvocationById(props.invocationId) as WorkflowInvocationElementView
+const invocation = computed(() =>
+    invocationLoaded.value
+        ? (invocationStore.getInvocationById(props.invocationId) as WorkflowInvocationElementView)
+        : null
 );
 const invocationState = computed(() => invocation.value?.state || "new");
 const invocationAndJobTerminal = computed(() => invocationSchedulingTerminal.value && jobStatesTerminal.value);
@@ -82,7 +108,7 @@ const invocationSchedulingTerminal = computed(() => {
     );
 });
 const jobStatesTerminal = computed(() => {
-    if (invocationSchedulingTerminal.value && jobCount(jobStatesSummary.value as InvocationJobsSummary) === 0) {
+    if (invocationSchedulingTerminal.value && jobCount.value === 0) {
         // no jobs for this invocation (think subworkflow or just inputs)
         return true;
     }
@@ -93,22 +119,85 @@ const jobStatesSummary = computed(() => {
     return (!jobsSummary ? null : jobsSummary) as InvocationJobsSummary;
 });
 const invocationStateSuccess = computed(() => {
-    return (
-        invocationState.value == "scheduled" &&
-        runningCount(jobStatesSummary.value) === 0 &&
-        invocationAndJobTerminal.value
-    );
+    return invocationState.value == "scheduled" && runningCount.value === 0 && invocationAndJobTerminal.value;
 });
 
-const workflowStore = useWorkflowStore();
+type StepStateType = { [state: string]: number };
 
-const isDeletedWorkflow = computed(() => getWorkflow()?.deleted === true);
-const workflowVersion = computed(() => getWorkflow()?.version);
-
-onMounted(() => {
-    pollStepStatesUntilTerminal();
-    pollJobStatesUntilTerminal();
+const stepStates = computed<StepStateType>(() => {
+    const stepStates: StepStateType = {};
+    const steps: InvocationStep[] = invocation.value?.steps || [];
+    for (const step of steps) {
+        if (!step) {
+            continue;
+        }
+        // the API defined state here allowing null and undefined is odd...
+        const stepState: string = step.state || "unknown";
+        if (!stepStates[stepState]) {
+            stepStates[stepState] = 1;
+        } else {
+            stepStates[stepState] += 1;
+        }
+    }
+    return stepStates;
 });
+
+const stepCount = computed<number>(() => {
+    return invocation.value?.steps.length || 0;
+});
+
+const stepStatesStr = computed<string>(() => {
+    return `${stepStates.value?.scheduled || 0} of ${stepCount.value} steps successfully scheduled.`;
+});
+
+const okCount = computed<number>(() => {
+    return jobStatesSummaryOkCount(jobStatesSummary.value);
+});
+
+const errorCount = computed<number>(() => {
+    return jobStatesSummaryErrorCount(jobStatesSummary.value);
+});
+
+const runningCount = computed<number>(() => {
+    return jobStatesSummaryRunningCount(jobStatesSummary.value);
+});
+
+const jobCount = computed<number>(() => {
+    return jobStatesSummaryJobCount(jobStatesSummary.value);
+});
+
+const newCount = computed<number>(() => {
+    return jobCount.value - okCount.value - runningCount.value - errorCount.value;
+});
+
+const jobStatesStr = computed(() => {
+    let jobStr = `${numTerminal(jobStatesSummary.value) || 0} of ${jobCount.value} jobs complete`;
+    if (!invocationSchedulingTerminal.value) {
+        jobStr += " (total number of jobs will change until all steps fully scheduled)";
+    }
+    return `${jobStr}.`;
+});
+
+watch(
+    () => props.invocationId,
+    async (id) => {
+        invocationLoaded.value = false;
+        try {
+            await invocationStore.fetchInvocationForId({ id });
+            invocationLoaded.value = true;
+            // Only start polling if there is a valid invocation
+            if (invocation.value) {
+                await pollStepStatesUntilTerminal();
+                await pollJobStatesUntilTerminal();
+            }
+        } catch (e) {
+            errorMessage.value = errorMessageAsString(e);
+        }
+    },
+    { immediate: true }
+);
+
+const storeId = computed(() => (invocation.value ? `invocation-${invocation.value.id}` : undefined));
 
 onUnmounted(() => {
     clearTimeout(stepStatesInterval.value);
@@ -116,7 +205,7 @@ onUnmounted(() => {
 });
 
 async function pollStepStatesUntilTerminal() {
-    if (!invocation.value || !invocationSchedulingTerminal.value) {
+    if (!invocationSchedulingTerminal.value) {
         await invocationStore.fetchInvocationForId({ id: props.invocationId });
         stepStatesInterval.value = setTimeout(pollStepStatesUntilTerminal, 3000);
     }
@@ -136,93 +225,72 @@ function onCancel() {
 function cancelWorkflowSchedulingLocal() {
     cancelWorkflowScheduling(props.invocationId).then(onCancel).catch(onError);
 }
-
-function getWorkflow() {
-    return invocation.value?.workflow_id
-        ? (workflowStore.getStoredWorkflowByInstanceId(
-              invocation.value?.workflow_id
-          ) as unknown as StoredWorkflowDetailed)
-        : undefined;
-}
-
-function getWorkflowId() {
-    return invocation.value?.workflow_id
-        ? workflowStore.getStoredWorkflowIdByInstanceId(invocation.value?.workflow_id)
-        : undefined;
-}
-
-function getWorkflowName() {
-    return workflowStore.getStoredWorkflowNameByInstanceId(invocation.value?.workflow_id);
-}
 </script>
 
 <template>
-    <div v-if="invocation" class="d-flex flex-column w-100">
-        <div v-if="props.isFullPage" class="d-flex flex-gapx-1">
-            <Heading h1 separator inline truncate size="xl" class="flex-grow-1">
-                Invoked Workflow: "{{ getWorkflowName() }}"
-            </Heading>
-
-            <div v-if="!props.fromPanel">
+    <div v-if="invocation" class="d-flex flex-column w-100" data-description="workflow invocation state">
+        <WorkflowNavigationTitle
+            v-if="props.isFullPage"
+            :invocation="invocation"
+            :workflow-id="invocation.workflow_id"
+            :success="props.success">
+            <template v-slot:workflow-title-actions>
                 <BButton
-                    v-b-tooltip.hover.noninteractive
-                    :title="localize('Return to Invocations List')"
-                    class="text-nowrap"
+                    v-if="!invocationAndJobTerminal"
+                    v-b-tooltip.noninteractive.hover
+                    title="Cancel scheduling of workflow invocation"
+                    data-description="header cancel invocation button"
                     size="sm"
-                    variant="outline-primary"
-                    to="/workflows/invocations">
-                    <FontAwesomeIcon :icon="faArrowLeft" class="mr-1" />
-                    <span v-localize>Invocations List</span>
+                    class="text-decoration-none"
+                    variant="link"
+                    @click="onCancel">
+                    <FontAwesomeIcon :icon="faSquare" fixed-width />
+                    Cancel
                 </BButton>
-            </div>
-        </div>
-        <div v-if="props.isFullPage" class="py-2 pl-3 d-flex justify-content-between align-items-center">
-            <div>
-                <i>
-                    <FontAwesomeIcon :icon="faClock" class="mr-1" />invoked
-                    <UtcDate :date="invocation.update_time" mode="elapsed" />
-                </i>
-                <span class="d-flex flex-gapx-1 align-items-center">
-                    <FontAwesomeIcon :icon="faHdd" />History:
-                    <SwitchToHistoryLink :history-id="invocation.history_id" />
-                </span>
-            </div>
-            <div v-if="getWorkflow()" class="d-flex flex-gapx-1 align-items-center">
-                <div class="d-flex flex-column align-items-end mr-2">
-                    <span v-if="workflowVersion !== undefined" class="mb-1">
-                        <FontAwesomeIcon :icon="faSitemap" />
-                        Workflow Version: {{ workflowVersion + 1 }}
-                    </span>
-                    <WorkflowInvocationsCount class="float-right" :workflow="getWorkflow()" />
+            </template>
+        </WorkflowNavigationTitle>
+        <WorkflowAnnotation
+            v-if="props.isFullPage"
+            :workflow-id="invocation.workflow_id"
+            :invocation-update-time="invocation.update_time"
+            :history-id="invocation.history_id"
+            :new-history-target="props.newHistoryTarget">
+            <template v-slot:middle-content>
+                <div class="progress-bars mx-1">
+                    <ProgressBar
+                        v-if="!stepCount"
+                        note="Loading step state summary..."
+                        :loading="true"
+                        class="steps-progress" />
+                    <ProgressBar
+                        v-else-if="invocationState == 'cancelled'"
+                        note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
+                        :error-count="1"
+                        class="steps-progress" />
+                    <ProgressBar
+                        v-else-if="invocationState == 'failed'"
+                        note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
+                        :error-count="1"
+                        class="steps-progress" />
+                    <ProgressBar
+                        v-else
+                        :note="stepStatesStr"
+                        :total="stepCount"
+                        :ok-count="stepStates.scheduled"
+                        :loading="!invocationSchedulingTerminal"
+                        class="steps-progress" />
+                    <ProgressBar
+                        :note="jobStatesStr"
+                        :total="jobCount"
+                        :ok-count="okCount"
+                        :running-count="runningCount"
+                        :new-count="newCount"
+                        :error-count="errorCount"
+                        :loading="!invocationAndJobTerminal"
+                        class="jobs-progress" />
                 </div>
-                <BButtonGroup vertical>
-                    <BButton
-                        v-b-tooltip.hover.noninteractive.html
-                        :title="
-                            !isDeletedWorkflow
-                                ? `<b>Edit</b><br>${getWorkflowName()}`
-                                : 'This workflow has been deleted.'
-                        "
-                        size="sm"
-                        variant="secondary"
-                        :disabled="isDeletedWorkflow"
-                        :to="`/workflows/edit?id=${getWorkflowId()}&version=${workflowVersion}`">
-                        <FontAwesomeIcon :icon="faEdit" />
-                        <span v-localize>Edit</span>
-                    </BButton>
-                    <WorkflowRunButton
-                        :id="getWorkflowId() || ''"
-                        :title="
-                            !isDeletedWorkflow
-                                ? `<b>Rerun</b><br>${getWorkflowName()}`
-                                : 'This workflow has been deleted.'
-                        "
-                        :disabled="isDeletedWorkflow"
-                        full
-                        :version="workflowVersion" />
-                </BButtonGroup>
-            </div>
-        </div>
+            </template>
+        </WorkflowAnnotation>
         <BTabs
             ref="invocationTabs"
             class="mt-1 d-flex flex-column overflow-auto"
@@ -231,24 +299,39 @@ function getWorkflowName() {
                 <WorkflowInvocationOverview
                     class="invocation-overview"
                     :invocation="invocation"
-                    :index="index"
                     :is-full-page="props.isFullPage"
                     :invocation-and-job-terminal="invocationAndJobTerminal"
                     :invocation-scheduling-terminal="invocationSchedulingTerminal"
-                    :job-states-summary="jobStatesSummary"
                     :is-subworkflow="isSubworkflow"
                     @invocation-cancelled="cancelWorkflowSchedulingLocal" />
+            </BTab>
+            <BTab v-if="!isSubworkflow" title="Steps" lazy>
+                <WorkflowInvocationSteps
+                    v-if="invocation && storeId"
+                    :invocation="invocation"
+                    :store-id="storeId"
+                    :is-full-page="props.isFullPage" />
             </BTab>
             <WorkflowInvocationInputOutputTabs :invocation="invocation" />
             <!-- <BTab title="Workflow Overview">
                 <p>TODO: Insert readonly version of workflow editor here</p>
             </BTab> -->
             <BTab
-                title="Report"
+                v-if="!props.isSubworkflow"
                 title-item-class="invocation-report-tab"
-                :disabled="!invocationStateSuccess"
+                :disabled="reportTabDisabled"
                 :lazy="reportLazy"
                 :active.sync="reportActive">
+                <template v-slot:title>
+                    <span>Report</span>
+                    <BBadge
+                        v-if="reportTabDisabled"
+                        v-b-tooltip.hover.noninteractive
+                        :title="disabledReportTooltip"
+                        variant="warning">
+                        <FontAwesomeIcon :icon="faExclamation" />
+                    </BBadge>
+                </template>
                 <InvocationReport v-if="invocationStateSuccess" :invocation-id="invocation.id" />
             </BTab>
             <BTab title="Export" lazy>
@@ -259,9 +342,56 @@ function getWorkflowName() {
                     <LoadingSpan message="Waiting to complete invocation" />
                 </BAlert>
             </BTab>
+            <BTab title="Metrics" :lazy="true">
+                <WorkflowInvocationMetrics :invocation-id="invocation.id"></WorkflowInvocationMetrics>
+            </BTab>
+            <template v-slot:tabs-end>
+                <BButton
+                    v-if="!props.isFullPage && !invocationAndJobTerminal"
+                    v-b-tooltip.noninteractive.hover
+                    class="ml-auto my-1"
+                    title="Cancel scheduling of workflow invocation"
+                    data-description="cancel invocation button"
+                    size="sm"
+                    @click="onCancel">
+                    <FontAwesomeIcon :icon="faTimes" fixed-width />
+                    Cancel Workflow
+                </BButton>
+            </template>
         </BTabs>
     </div>
-    <BAlert v-else variant="info" show>
+    <BAlert v-else-if="errorMessage" variant="danger" show>
+        {{ errorMessage }}
+    </BAlert>
+    <BAlert v-else-if="!invocationLoaded" variant="info" show>
         <LoadingSpan message="Loading invocation" />
     </BAlert>
+    <BAlert v-else variant="info" show>
+        <span v-localize>Invocation not found.</span>
+    </BAlert>
 </template>
+
+<style lang="scss">
+// To show the tooltip on the disabled report tab badge
+.invocation-report-tab {
+    .nav-link.disabled {
+        pointer-events: auto !important;
+    }
+}
+</style>
+
+<style scoped lang="scss">
+.progress-bars {
+    // progress bar shrinks to fit divs on either side
+    flex-grow: 1;
+    flex-shrink: 1;
+    max-width: 50%;
+
+    .steps-progress,
+    .jobs-progress {
+        // truncate text in progress bars
+        white-space: nowrap;
+        overflow: hidden;
+    }
+}
+</style>

@@ -7,6 +7,8 @@ import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
+import GalaxyWizard from "components/GalaxyWizard";
+import HelpTerm from "components/Help/HelpTerm";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
 import HistoryPublished from "components/History/HistoryPublished";
 import HistoryView from "components/History/HistoryView";
@@ -16,6 +18,8 @@ import HistoryImport from "components/HistoryImport";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import JobDetails from "components/JobInformation/JobDetails";
 import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
+import ToolLanding from "components/Landing/ToolLanding";
+import WorkflowLanding from "components/Landing/WorkflowLanding";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
 import ToolSuccess from "components/Tool/ToolSuccess";
@@ -26,7 +30,7 @@ import TourRunner from "components/Tour/TourRunner";
 import { APIKey } from "components/User/APIKey";
 import CustomBuilds from "components/User/CustomBuilds";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
-import { NotificationsPreferences } from "components/User/Notifications";
+import NotificationsPreferences from "components/User/Notifications/NotificationsPreferences";
 import UserPreferences from "components/User/UserPreferences";
 import UserPreferencesForm from "components/User/UserPreferencesForm";
 import VisualizationsList from "components/Visualizations/Index";
@@ -194,6 +198,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "about",
                         component: AboutGalaxy,
+                    },
+                    {
+                        path: "help/terms/:term",
+                        component: HelpTerm,
+                        props: true,
                     },
                     {
                         path: "carbon_emissions_calculations",
@@ -387,6 +396,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "file_source_instances/create",
                         component: CreateUserFileSource,
+                        props: (route) => {
+                            return {
+                                error: route.params.error,
+                            };
+                        },
                     },
                     {
                         path: "file_source_instances/index",
@@ -408,7 +422,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "file_source_templates/:templateId/new",
                         component: CreateFileSourceInstance,
-                        props: true,
+                        props: (route) => ({
+                            templateId: route.params.templateId,
+                            uuid: route.query.uuid,
+                        }),
                     },
                     {
                         path: "pages/create",
@@ -471,6 +488,10 @@ export function getRouter(Galaxy) {
                         component: TourList,
                     },
                     {
+                        path: "wizard",
+                        component: GalaxyWizard,
+                    },
+                    {
                         path: "tours/:tourId",
                         component: TourRunner,
                         props: true,
@@ -487,6 +508,20 @@ export function getRouter(Galaxy) {
                     {
                         path: "tools/json",
                         component: ToolsJson,
+                    },
+                    {
+                        path: "tool_landings/:uuid",
+                        component: ToolLanding,
+                        props: true,
+                    },
+                    {
+                        path: "workflow_landings/:uuid",
+                        component: WorkflowLanding,
+                        props: (route) => ({
+                            uuid: route.params.uuid,
+                            public: route.query.public.toLowerCase() === "true",
+                            secret: route.query.client_secret,
+                        }),
                     },
                     {
                         path: "user",
@@ -626,7 +661,6 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             invocationId: route.params.invocationId,
                             isFullPage: true,
-                            fromPanel: Boolean(route.query.from_panel),
                         }),
                     },
                     {

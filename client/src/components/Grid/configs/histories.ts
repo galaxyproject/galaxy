@@ -11,7 +11,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { historiesFetcher } from "@/api/histories";
+import { GalaxyApi } from "@/api";
+import { type HistorySortByLiteral } from "@/api";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
@@ -26,25 +27,33 @@ const { emit } = useEventBus<string>("grid-router-push");
  * Local types
  */
 type HistoryEntry = Record<string, unknown>;
-type SortKeyLiteral = "create_time" | "name" | "update_time" | undefined;
 
 /**
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { data, headers } = await historiesFetcher({
-        view: "summary",
-        keys: "create_time",
-        limit,
-        offset,
-        search,
-        sort_by: sort_by as SortKeyLiteral,
-        sort_desc,
-        show_own: true,
-        show_published: false,
-        show_shared: false,
+    const { response, data, error } = await GalaxyApi().GET("/api/histories", {
+        params: {
+            query: {
+                view: "summary",
+                keys: "create_time",
+                limit,
+                offset,
+                search,
+                sort_by: sort_by as HistorySortByLiteral,
+                sort_desc,
+                show_own: true,
+                show_published: false,
+                show_shared: false,
+            },
+        },
     });
-    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0");
     return [data, totalMatches];
 }
 
@@ -121,12 +130,12 @@ const batch: BatchOperationArray = [
                     await historyStore.deleteHistories(historyIds, true);
                     return {
                         status: "success",
-                        message: `Purged ${data.length} histories.`,
+                        message: `Permanently deleted ${data.length} histories.`,
                     };
                 } catch (e) {
                     return {
                         status: "danger",
-                        message: `Failed to delete histories: ${errorMessageAsString(e)}`,
+                        message: `Failed to permanently delete histories: ${errorMessageAsString(e)}`,
                     };
                 }
             }

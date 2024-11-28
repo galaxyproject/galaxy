@@ -32,6 +32,8 @@ const props = withDefaults(defineProps<Props>(), {
     limit: 20,
 });
 
+const emit = defineEmits(["invocation-clicked"]);
+
 library.add(faEye, faArrowDown, faInfoCircle);
 
 const stateClasses: Record<string, string> = {
@@ -94,11 +96,10 @@ const route = useRoute();
 const router = useRouter();
 
 function cardClicked(invocation: WorkflowInvocation) {
-    let path = `/workflows/invocations/${invocation.id}`;
     if (props.inPanel) {
-        path += "?from_panel=true";
+        emit("invocation-clicked");
     }
-    router.push(path);
+    router.push(`/workflows/invocations/${invocation.id}`);
 }
 
 function scrollToTop() {
@@ -201,10 +202,14 @@ function workflowName(workflowId: string) {
                         @click="() => cardClicked(invocation)">
                         <div class="overflow-auto w-100">
                             <Heading bold size="text" icon="fa-sitemap">
-                                <span class="truncate-3-lines">{{ workflowName(invocation.workflow_id) }}</span>
+                                <span class="truncate-n-lines three-lines">
+                                    {{ workflowName(invocation.workflow_id) }}
+                                </span>
                             </Heading>
                             <Heading size="text" icon="fa-hdd">
-                                <small class="text-muted">{{ historyName(invocation.history_id) }}</small>
+                                <small class="text-muted truncate-n-lines two-lines">
+                                    {{ historyName(invocation.history_id) }}
+                                </small>
                             </Heading>
                             <div class="d-flex justify-content-between">
                                 <BBadge v-b-tooltip.noninteractive.hover pill>
@@ -254,12 +259,19 @@ function workflowName(workflowId: string) {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
-
-.truncate-3-lines {
+.truncate-n-lines {
     display: -webkit-box;
-    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    &.three-lines {
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+    }
+    &.two-lines {
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+    }
 }
 </style>

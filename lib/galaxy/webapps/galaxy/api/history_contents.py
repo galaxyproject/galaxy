@@ -5,7 +5,9 @@ API operations on the contents of a history.
 import logging
 from typing import (
     List,
+    Literal,
     Optional,
+    Set,
     Union,
 )
 
@@ -22,6 +24,7 @@ from starlette.responses import (
     Response,
     StreamingResponse,
 )
+from typing_extensions import Annotated
 
 from galaxy import util
 from galaxy.managers.context import ProvidesHistoryContext
@@ -30,7 +33,10 @@ from galaxy.schema import (
     SerializationParams,
     ValueFilterQueryParams,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    AcceptHeaderValidator,
+    DecodedDatabaseIdField,
+)
 from galaxy.schema.schema import (
     AnyHistoryContentItem,
     AnyJobStateSummary,
@@ -330,11 +336,10 @@ def parse_content_types(types: Union[List[str], str]) -> List[HistoryContentType
 def parse_dataset_details(details: Optional[str]):
     """Parses the different values that the `dataset_details` parameter
     can have from a string."""
-    dataset_details = None
     if details is not None and details != "all":
-        dataset_details = set(util.listify(details))
+        dataset_details: Union[None, Set[str], str] = set(util.listify(details))
     else:  # either None or 'all'
-        dataset_details = details  # type: ignore
+        dataset_details = details
     return dataset_details
 
 
@@ -374,6 +379,32 @@ def parse_index_jobs_summary_params(
     return HistoryContentsIndexJobsSummaryParams(ids=util.listify(ids), types=util.listify(types))
 
 
+HistoryIndexAcceptContentTypes = Annotated[
+    Literal[
+        "application/json",
+        "application/vnd.galaxy.history.contents.stats+json",
+    ],
+    AcceptHeaderValidator,
+    Header(description="Accept header to determine the response format. Default is 'application/json'."),
+]
+
+HistoryIndexResponsesSchema = {
+    200: {
+        "description": ("The contents of the history that match the query."),
+        "content": {
+            "application/json": {
+                "schema": {"$ref": "#/components/schemas/HistoryContentsResult"},  # HistoryContentsResult.schema(),
+            },
+            HistoryContentsWithStatsResult.__accept_type__: {
+                "schema": {  # HistoryContentsWithStatsResult.schema(),
+                    "$ref": "#/components/schemas/HistoryContentsWithStatsResult"
+                },
+            },
+        },
+    },
+}
+
+
 @router.cbv
 class FastAPIHistoryContents:
     service: HistoriesContentsService = depends(HistoriesContentsService)
@@ -381,6 +412,7 @@ class FastAPIHistoryContents:
     @router.get(
         "/api/histories/{history_id}/contents/{type}s",
         summary="Returns the contents of the given history filtered by type.",
+        responses=HistoryIndexResponsesSchema,
         operation_id="history_contents__index_typed",
         response_model_exclude_unset=True,
     )
@@ -393,7 +425,7 @@ class FastAPIHistoryContents:
         legacy_params: LegacyHistoryContentsIndexParams = Depends(get_legacy_index_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
-        accept: str = Header(default="application/json", include_in_schema=False),
+        accept: HistoryIndexAcceptContentTypes = "application/json",
     ) -> Union[HistoryContentsResult, HistoryContentsWithStatsResult]:
         """
         Return a list of either `HDA`/`HDCA` data for the history with the given ``ID``.
@@ -419,23 +451,7 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents",
         name="history_contents",
         summary="Returns the contents of the given history.",
-        responses={
-            200: {
-                "description": ("The contents of the history that match the query."),
-                "content": {
-                    "application/json": {
-                        "schema": {  # HistoryContentsResult.schema(),
-                            "$ref": "#/components/schemas/HistoryContentsResult"
-                        },
-                    },
-                    HistoryContentsWithStatsResult.__accept_type__: {
-                        "schema": {  # HistoryContentsWithStatsResult.schema(),
-                            "$ref": "#/components/schemas/HistoryContentsWithStatsResult"
-                        },
-                    },
-                },
-            },
-        },
+        responses=HistoryIndexResponsesSchema,
         operation_id="history_contents__index",
         response_model_exclude_unset=True,
     )
@@ -448,7 +464,7 @@ class FastAPIHistoryContents:
         legacy_params: LegacyHistoryContentsIndexParams = Depends(get_legacy_index_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
-        accept: str = Header(default="application/json", include_in_schema=False),
+        accept: HistoryIndexAcceptContentTypes = "application/json",
     ) -> Union[HistoryContentsResult, HistoryContentsWithStatsResult]:
         """
         Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.

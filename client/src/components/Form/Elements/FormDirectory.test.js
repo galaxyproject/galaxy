@@ -1,17 +1,20 @@
 import { mount } from "@vue/test-utils";
-import FilesDialog from "components/FilesDialog/FilesDialog";
-import { rootResponse } from "components/FilesDialog/testingData";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
+import { setupMockConfig } from "tests/jest/mockConfig";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
+import { rootResponse } from "@/components/FilesDialog/testingData";
 
-import FormDirectory from "./FormDirectory";
+import FormDirectory from "./FormDirectory.vue";
+import FilesDialog from "@/components/FilesDialog/FilesDialog.vue";
 
 const localVue = getLocalVue();
 jest.mock("app");
-jest.mock("@/api/schema");
+
+const { server, http } = useServerMock();
+setupMockConfig({});
 
 describe("DirectoryPathEditableBreadcrumb", () => {
     let wrapper;
@@ -52,8 +55,11 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         spyOnAddPath = jest.spyOn(FormDirectory.methods, "addPath");
         spyOnUpdateURL = jest.spyOn(FormDirectory.methods, "updateURL");
 
-        mockFetcher.path("/api/remote_files/plugins").method("get").mock({ data: rootResponse });
-        mockFetcher.path("/api/configuration").method("get").mock({ data: {} });
+        server.use(
+            http.get("/api/remote_files/plugins", ({ response }) => {
+                return response(200).json(rootResponse);
+            })
+        );
 
         const pinia = createPinia();
 

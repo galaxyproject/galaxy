@@ -46,6 +46,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.db.user import (
+    _cleanup_nonprivate_user_roles,
     get_user_by_email,
     get_user_by_username,
 )
@@ -214,10 +215,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # Delete UserGroupAssociations
         for uga in user.groups:
             self.session().delete(uga)
-        # Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE
-        for ura in user.roles:
-            if ura.role_id != private_role.id:
-                self.session().delete(ura)
+        _cleanup_nonprivate_user_roles(self.session(), user, private_role.id)
         # Delete UserAddresses
         for address in user.addresses:
             self.session().delete(address)
@@ -658,11 +656,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             remote_user_email = remote_user_email.lower()
         user = get_user_by_email(self.session(), remote_user_email, self.app.model.User)
         if user:
-            # GVK: June 29, 2009 - This is to correct the behavior of a previous bug where a private
-            # role and default user / history permissions were not set for remote users.  When a
-            # remote user authenticates, we'll look for this information, and if missing, create it.
-            if not self.app.security_agent.get_private_user_role(user):
-                self.app.security_agent.create_private_user_role(user)
+            # Ensure a private role and default permissions are set for remote users (remote user creation bug existed prior to 2009)
+            self.app.security_agent.get_private_user_role(user, auto_create=True)
             if self.app_type == "galaxy":
                 if not user.default_permissions:
                     self.app.security_agent.user_set_default_permissions(user)

@@ -1,5 +1,5 @@
 import { StorageSerializers, useLocalStorage } from "@vueuse/core";
-import { computed, watch } from "vue";
+import { computed, readonly, watch } from "vue";
 
 import { type TaskMonitor } from "./genericTaskMonitor";
 
@@ -62,6 +62,13 @@ export interface MonitoringRequest {
      * when displaying the progress.
      */
     description?: string;
+
+    /**
+     * The remote URI associated with the task.
+     *
+     * This is optional and indicates the task is associated with a remote resource.
+     */
+    remoteUri?: string;
 }
 
 export interface MonitoringData {
@@ -91,7 +98,7 @@ export interface MonitoringData {
      * The meaning of the status string is up to the monitor implementation.
      * In case of an error, this will be the error message.
      */
-    status?: string;
+    taskStatus?: string;
 }
 
 /**
@@ -113,7 +120,7 @@ export function usePersistentProgressTaskMonitor(
         isCompleted,
         hasFailed,
         requestHasFailed,
-        status,
+        taskStatus,
         expirationTime,
     } = useMonitor;
 
@@ -132,14 +139,7 @@ export function usePersistentProgressTaskMonitor(
     });
 
     const hasExpired = computed(() => {
-        if (!currentMonitoringData.value || !expirationTime) {
-            return false;
-        }
-
-        const now = new Date();
-        const startedAt = new Date(currentMonitoringData.value.startedAt);
-        const elapsedTimeInMs = now.getTime() - startedAt.getTime();
-        return elapsedTimeInMs > expirationTime!;
+        return isDataExpired(currentMonitoringData.value, expirationTime);
     });
 
     const expirationDate = computed(() => {
@@ -152,12 +152,12 @@ export function usePersistentProgressTaskMonitor(
     });
 
     watch(
-        status,
+        () => taskStatus.value,
         (newStatus) => {
             if (newStatus && currentMonitoringData.value) {
                 currentMonitoringData.value = {
                     ...currentMonitoringData.value,
-                    status: newStatus,
+                    taskStatus: newStatus,
                 };
             }
         },
@@ -173,10 +173,10 @@ export function usePersistentProgressTaskMonitor(
             throw new Error("No monitoring data provided or stored. Cannot start monitoring progress.");
         }
 
-        if (isFinalState(currentMonitoringData.value.status)) {
+        if (isFinalState(currentMonitoringData.value.taskStatus)) {
             // The task has already finished no need to start monitoring again.
             // Instead, reload the stored status to update the UI.
-            return loadStatus(currentMonitoringData.value.status!);
+            return loadStatus(currentMonitoringData.value.taskStatus!);
         }
 
         if (hasExpired.value) {
@@ -190,10 +190,6 @@ export function usePersistentProgressTaskMonitor(
 
     function reset() {
         currentMonitoringData.value = null;
-    }
-
-    function getPersistentKey(request: MonitoringRequest) {
-        return `persistent-progress-${request.taskType}-${request.source}-${request.action}-${request.object.type}-${request.object.id}`;
     }
 
     return {
@@ -244,7 +240,7 @@ export function usePersistentProgressTaskMonitor(
          * The meaning of the status string is up to the monitor implementation.
          * In case of an error, this will be the error message.
          */
-        status,
+        status: taskStatus,
 
         /**
          * True if the monitoring data can expire.
@@ -262,5 +258,46 @@ export function usePersistentProgressTaskMonitor(
          * After this date, the monitoring data is considered expired and should not be used.
          */
         expirationDate,
+
+        /**
+         * The monitoring data stored in the local storage.
+         */
+        monitoringData: readonly(currentMonitoringData),
     };
+}
+
+/**
+ * Retrieves task progress data from the local storage associated with the
+ * monitoring request information provided if it exists.
+ * @param request The monitoring request information.
+ * @returns The associated task progress data or null if there is no stored data.
+ */
+export function getStoredProgressData(request: MonitoringRequest): MonitoringData | null {
+    const localStorageKey = getPersistentKey(request);
+    const currentMonitoringData = useLocalStorage<MonitoringData | null>(localStorageKey, null, {
+        serializer: StorageSerializers.object,
+    });
+
+    return currentMonitoringData.value;
+}
+
+function getPersistentKey(request: MonitoringRequest) {
+    return `persistent-progress-${request.taskType}-${request.source}-${request.action}-${request.object.type}-${request.object.id}`;
+}
+
+/**
+ * Checks if the monitoring data has expired.
+ * @param monitoringData The monitoring data to check for expiration.
+ * @param expirationTime The expiration time in milliseconds.
+ * @returns True if the monitoring data has expired, false otherwise.
+ */
+export function isDataExpired(monitoringData: MonitoringData | null, expirationTime?: number): boolean {
+    if (!monitoringData || !expirationTime) {
+        return false;
+    }
+
+    const now = new Date();
+    const startedAt = new Date(monitoringData.startedAt);
+    const elapsedTimeInMs = now.getTime() - startedAt.getTime();
+    return elapsedTimeInMs > expirationTime;
 }

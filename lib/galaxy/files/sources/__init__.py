@@ -280,6 +280,10 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         context doesn't need to be present after the plugin is re-hydrated.
         """
 
+    @abc.abstractmethod
+    def prefer_links(self) -> bool:
+        """Prefer linking to files."""
+
 
 class SupportsBrowsing(metaclass=abc.ABCMeta):
     """An interface indicating that this filesource is browsable.
@@ -353,6 +357,9 @@ class BaseFilesSource(FilesSource):
             or user_context.is_admin
             or (self._user_has_required_roles(user_context) and self._user_has_required_groups(user_context))
         )
+
+    def prefer_links(self) -> bool:
+        return False
 
     @property
     def user_context_required(self) -> bool:

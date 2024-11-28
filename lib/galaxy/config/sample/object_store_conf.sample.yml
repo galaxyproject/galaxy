@@ -220,21 +220,24 @@ extra_dirs:
 
 type: onedata
 auth:
-  # an access token suitable for data access (allowing calls to the Oneprovider REST API).
+  # An access token suitable for data access (allowing calls to the Oneprovider REST API).
   access_token: ...
 connection:
-  # the domain of the Onezone service (e.g. datahub.egi.eu), or its IP address for
-  # devel instances (see above).
+  # The domain of the Onezone service (e.g. datahub.egi.eu), or its IP address for
+  # devel instances (see above). The minimal supported Onezone version is 21.02.4.
   onezone_domain: datahub.egi.eu
   # Allows connection to Onedata servers that do not present trusted SSL certificates. 
   # SHOULD NOT be used unless you really know what you are doing.
   disable_tls_certificate_validation: false
 space:
-  # the name of the Onedata space where the Galaxy data will be stored.
+  # The name of the Onedata space where the Galaxy data will be stored.
+  # If there is more than one space with the same name, you can explicitly
+  # specify which one to select by using the format <space_name>@<space_id>
+  # (e.g. demo@7285220ecc636075ae5759aec7ad65d3cha8f9).
   name: demo-space
-  # the relative directory path in the space under which the Galaxy data will be stored.
+  # The relative directory path in the space at which the Galaxy data will be stored.
   # Optional, if not provided, the data will be stored in the root of space.
-  path: galaxy-data
+  galaxy_root_dir: galaxy-data
 cache:
   path: database/object_store_cache_s3
   size: 1000
@@ -261,6 +264,20 @@ connection:
   timeout: 30
   refresh_time: 300
   connection_pool_monitor_interval: 3600
+# ssl section is optional
+ssl:
+  client_server_negotiation: request_server_negotiation
+  client_server_policy: CS_NEG_REQUIRE
+  encryption_algorithm: AES-256-CBC
+  encryption_key_size: 32
+  encryption_num_hash_rounds: 16
+  encryption_salt_size: 8
+  ssl_verify_server: cert
+  ssl_ca_certificate_file: /etc/irods/ssl/irods.crt
+# The logical section is optional and is meant for defining the remote path
+# if not defined the default path is: /zone_name/home/username
+logical:
+  path: /tempZone/home/rods
 cache:
   path: database/object_store_cache_irods
   size: 1000

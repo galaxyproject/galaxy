@@ -87,7 +87,7 @@ class RepositoryRevisionsController(BaseShedAPIController):
                 tool_shed, name, owner, changeset_revision = rd_tup[0:4]
                 repository_dependency = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
                 if repository_dependency is None:
-                    log.dbug(f"Cannot locate repository dependency {name} owned by {owner}.")
+                    log.debug(f"Cannot locate repository dependency {name} owned by {owner}.")
                     continue
                 repository_dependency_id = trans.security.encode_id(repository_dependency.id)
                 repository_dependency_repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
@@ -109,10 +109,9 @@ class RepositoryRevisionsController(BaseShedAPIController):
                     else:
                         decoded_repository_dependency_id = trans.security.decode_id(repository_dependency_id)
                         debug_msg = (
-                            "Cannot locate repository_metadata with id %d for repository dependency %s owned by %s "
-                            % (decoded_repository_dependency_id, str(name), str(owner))
+                            f"Cannot locate repository_metadata with id {decoded_repository_dependency_id} for repository dependency {name} owned by {owner} "
+                            f"using either of these changeset_revisions: {changeset_revision}, {new_changeset_revision}."
                         )
-                        debug_msg += f"using either of these changeset_revisions: {changeset_revision}, {new_changeset_revision}."
                         log.debug(debug_msg)
                         continue
                 repository_dependency_metadata_dict = repository_dependency_repository_metadata.to_dict(

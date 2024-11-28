@@ -6,6 +6,12 @@ from galaxy.work.context import WorkRequestContext
 
 
 def get_from_url_option():
+    tool_param = Bunch(
+        tool=Bunch(
+            app=Bunch(),
+        ),
+    )
+
     return DynamicOptions(
         XML(
             """
@@ -26,7 +32,7 @@ def get_from_url_option():
 </options>
 """
         ),
-        Bunch(),
+        tool_param,
     )
 
 
