@@ -2486,7 +2486,7 @@ class PostJobAction(Base, RepresentById):
     workflow_step_id = Column(Integer, ForeignKey("workflow_step.id"), index=True, nullable=True)
     action_type = Column(String(255), nullable=False)
     output_name = Column(String(255), nullable=True)
-    action_arguments = Column(MutableJSONType, nullable=True)
+    _action_arguments = Column("action_arguments", MutableJSONType, nullable=True)
     workflow_step = relationship(
         "WorkflowStep",
         back_populates="post_job_actions",
@@ -2499,6 +2499,18 @@ class PostJobAction(Base, RepresentById):
         self.action_arguments = action_arguments
         self.workflow_step = workflow_step
         ensure_object_added_to_session(self, object_in_session=workflow_step)
+
+    @property
+    def action_arguments(self):
+        if self.action_type in ("HideDatasetAction", "DeleteIntermediatesAction") and self._action_arguments is True:
+            # Fix up broken workflows resulting from imports with gxformat2 <= 0.20.0
+            return {}
+        else:
+            return self._action_arguments
+
+    @action_arguments.setter
+    def action_arguments(self, value: Dict[str, Any]):
+        self._action_arguments = value
 
 
 class PostJobActionAssociation(Base, RepresentById):
