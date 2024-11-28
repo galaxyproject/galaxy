@@ -140,11 +140,13 @@ class ModelStoreManager:
             ) as export_store:
                 if request.content_type == HistoryContentType.dataset:
                     hda = self._sa_session.get(model.HistoryDatasetAssociation, request.content_id)
-                    export_store.add_dataset(hda)
+                    export_store.add_dataset(hda)  # type: ignore[arg-type]
                 else:
                     hdca = self._sa_session.get(model.HistoryDatasetCollectionAssociation, request.content_id)
                     export_store.export_collection(
-                        hdca, include_hidden=request.include_hidden, include_deleted=request.include_deleted
+                        hdca,  # type: ignore[arg-type]
+                        include_hidden=request.include_hidden,
+                        include_deleted=request.include_deleted,
                     )
 
     def prepare_invocation_download(self, request: GenerateInvocationDownload):
@@ -161,7 +163,9 @@ class ModelStoreManager:
             )(short_term_storage_target.path) as export_store:
                 invocation = self._sa_session.get(model.WorkflowInvocation, request.invocation_id)
                 export_store.export_workflow_invocation(
-                    invocation, include_hidden=request.include_hidden, include_deleted=request.include_deleted
+                    invocation,  # type: ignore[arg-type]
+                    include_hidden=request.include_hidden,
+                    include_deleted=request.include_deleted,
                 )
 
     def write_invocation_to(self, request: WriteInvocationTo):
@@ -178,7 +182,9 @@ class ModelStoreManager:
         )(target_uri) as export_store:
             invocation = self._sa_session.get(model.WorkflowInvocation, request.invocation_id)
             export_store.export_workflow_invocation(
-                invocation, include_hidden=request.include_hidden, include_deleted=request.include_deleted
+                invocation,  # type: ignore[arg-type]
+                include_hidden=request.include_hidden,
+                include_deleted=request.include_deleted,
             )
 
     def _bco_export_options(self, request: BcoGenerationTaskParametersMixin):
@@ -202,11 +208,13 @@ class ModelStoreManager:
         )(target_uri) as export_store:
             if request.content_type == HistoryContentType.dataset:
                 hda = self._sa_session.get(model.HistoryDatasetAssociation, request.content_id)
-                export_store.add_dataset(hda)
+                export_store.add_dataset(hda)  # type: ignore[arg-type]
             else:
                 hdca = self._sa_session.get(model.HistoryDatasetCollectionAssociation, request.content_id)
                 export_store.export_collection(
-                    hdca, include_hidden=request.include_hidden, include_deleted=request.include_deleted
+                    hdca,  # type: ignore[arg-type]
+                    include_hidden=request.include_hidden,
+                    include_deleted=request.include_deleted,
                 )
 
     def write_history_to(self, request: WriteHistoryTo):
