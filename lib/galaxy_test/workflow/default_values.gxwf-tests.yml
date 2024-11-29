@@ -1,0 +1,10 @@
+- doc: |
+    Test that default value doesn't need to be supplied
+  job:
+    input: {}
+  outputs:
+    out:
+      class: File
+      asserts:
+      - that: has_text
+        text: "1"
