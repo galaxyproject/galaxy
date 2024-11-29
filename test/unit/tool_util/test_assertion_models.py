@@ -4,8 +4,14 @@ from string import Template
 import pytest
 from pydantic import ValidationError
 
-from galaxy.tool_util.verify.assertion_models import assertion_list
+from galaxy.tool_util.parser.xml import parse_assert_list_from_elem
+from galaxy.tool_util.verify.assertion_models import (
+    assertion_list,
+    assertion_list_python,
+)
+from galaxy.tool_util.verify.asserts import parse_xml_assertions
 from galaxy.tool_util.verify.codegen import galaxy_xsd_path
+from galaxy.util import etree
 from galaxy.util.commands import shell
 from galaxy.util.unittest_utils import skip_unless_executable
 
@@ -92,6 +98,8 @@ valid_xml_assertions = [
     """<has_n_columns n="30" />""",
     """<has_n_columns n="30" delta="4" />""",
     """<has_n_columns n="30" delta="4" sep=" " comment="###" />""",
+    """<has_image_width width="3253" delta="2"/>""",
+    """<has_image_height height="1446" delta="2"/>""",
 ]
 
 invalid_assertions = [
@@ -225,6 +233,15 @@ def test_valid_xsd(tmp_path):
         tool_path.write_text(tool_xml)
         ret = shell(["xmllint", "--nowarning", "--noout", "--schema", galaxy_xsd_path, str(tool_path)])
         assert ret == 0, f"{assertion_xml} failed to validate"
+
+
+def test_valid_xsd_to_ptyhon():
+    for assertion_xml in valid_xml_assertions:
+        el = etree.fromstring(f"<assert_contents>{assertion_xml}</assert_contents>")
+        assertions_raw = parse_assert_list_from_elem(el)
+        assert assertions_raw
+        as_dicts = parse_xml_assertions(assertions_raw)
+        assertion_list_python.model_validate(as_dicts)
 
 
 @skip_unless_executable("xmllint")
