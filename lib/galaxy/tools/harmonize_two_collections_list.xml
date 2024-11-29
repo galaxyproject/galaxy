@@ -171,6 +171,37 @@
             <output_collection name="output1" type="list" count="0"/>
             <output_collection name="output2" type="list" count="0"/>
         </test>
+        <!-- test that collection types get propagated to outputs correctly -->
+        <test>
+            <param name="input1">
+                <collection type="list">
+                    <element name="element_1" value="simple_line.txt" />
+                </collection>
+            </param>
+            <param name="input2">
+                <collection type="list:paired">
+                    <element name="element_1">
+                        <collection type="paired">
+                            <element name="forward" value="1.fastq" ftype="fastqsanger" />
+                            <element name="reverse" value="1.fastqsanger" ftype="fastqsanger" />
+                         </collection>
+                    </element>
+                </collection>
+            </param>
+            <output_collection name="output1" type="list" count="1">
+                <element name="element_1">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="output2" type="list:paired" count="1">
+                <element name="element_1">
+                    <element name="forward" file="1.fastq" ftype="fastqsanger" />
+                    <element name="reverse" file="1.fastqsanger" ftype="fastqsanger" />
+                </element>
+            </output_collection>
+        </test>
     </tests>
     <help><![CDATA[
 
