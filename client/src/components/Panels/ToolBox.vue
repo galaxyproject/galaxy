@@ -36,6 +36,7 @@ const props = defineProps({
     editorWorkflows: { type: Array, default: null },
     dataManagers: { type: Array, default: null },
     moduleSections: { type: Array as PropType<Record<string, any>>, default: null },
+    useSearchWorker: { type: Boolean, default: true },
 });
 
 library.add(faEye, faEyeSlash);
@@ -200,6 +201,7 @@ function onToggle() {
                 :current-panel="localSectionsById"
                 :query="query"
                 :query-pending="queryPending"
+                :use-worker="useSearchWorker"
                 @onQuery="(q) => (query = q)"
                 @onResults="onResults" />
             <section v-if="!propShowAdvanced">

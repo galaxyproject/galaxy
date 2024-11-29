@@ -20,6 +20,7 @@ const props = defineProps({
     editorWorkflows: { type: Array, default: null },
     dataManagers: { type: Array, default: null },
     moduleSections: { type: Array, default: null },
+    useSearchWorker: { type: Boolean, default: true },
 });
 
 const emit = defineEmits<{
@@ -201,6 +202,7 @@ watch(
             :editor-workflows="editorWorkflows"
             :data-managers="dataManagers"
             :module-sections="moduleSections"
+            :use-search-worker="useSearchWorker"
             @updatePanelView="updatePanelView"
             @onInsertTool="onInsertTool"
             @onInsertModule="onInsertModule"
