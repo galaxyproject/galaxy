@@ -588,7 +588,8 @@ class WorkflowProgress:
                         )
                     )
             elif step_id in self.inputs_by_step_id:
-                outputs["output"] = self.inputs_by_step_id[step_id]
+                if self.inputs_by_step_id[step_id] is not None or "output" not in outputs:
+                    outputs["output"] = self.inputs_by_step_id[step_id]
 
         if step.label and step.type == "parameter_input" and "output" in outputs:
             self.runtime_replacements[step.label] = str(outputs["output"])

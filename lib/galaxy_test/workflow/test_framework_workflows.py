@@ -64,14 +64,23 @@ class TestWorkflow(ApiTestCase):
         with workflow_path.open() as f:
             yaml_content = ordered_load(f)
         with self.dataset_populator.test_history() as history_id:
-            run_summary = self.workflow_populator.run_workflow(
-                yaml_content,
-                test_data=test_job["job"],
-                history_id=history_id,
-            )
-            if TEST_WORKFLOW_AFTER_RERUN:
-                run_summary = self.workflow_populator.rerun(run_summary)
-            self._verify(run_summary, test_job["outputs"])
+            exc = None
+            try:
+                run_summary = self.workflow_populator.run_workflow(
+                    yaml_content,
+                    test_data=test_job["job"],
+                    history_id=history_id,
+                )
+                if TEST_WORKFLOW_AFTER_RERUN:
+                    run_summary = self.workflow_populator.rerun(run_summary)
+                self._verify(run_summary, test_job["outputs"])
+            except Exception as e:
+                exc = e
+            if test_job.get("expect_failure"):
+                if not exc:
+                    raise Exception("Expected workflow test to fail but it passed")
+            elif exc:
+                raise exc
 
     def _verify(self, run_summary: RunJobsSummary, output_definitions: OutputsDict):
         for output_name, output_definition in output_definitions.items():

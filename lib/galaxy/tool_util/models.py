@@ -172,6 +172,7 @@ class TestJob(StrictModel):
     doc: Optional[str]
     job: JobDict
     outputs: Dict[str, TestOutputAssertions]
+    expect_failure: Optional[bool] = False
 
 
 Tests = RootModel[List[TestJob]]
@@ -185,6 +186,7 @@ OutputsDict = Dict[str, OutputChecks]
 class TestJobDict(TypedDict):
     doc: NotRequired[str]
     job: NotRequired[JobDict]
+    expect_failure: NotRequired[bool]
     outputs: OutputsDict
 
 
