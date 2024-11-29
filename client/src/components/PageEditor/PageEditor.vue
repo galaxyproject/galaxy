@@ -5,7 +5,7 @@
         :title="title"
         :page-id="pageId"
         :public-url="publicUrl"
-        :content="content"
+        :content="contentEditor"
         :content-data="contentData" />
 </template>
 
@@ -35,6 +35,7 @@ export default {
             contentFormat: null,
             contentData: null,
             content: null,
+            contentEditor: null,
             publicUrl: null,
             loading: true,
         };
@@ -44,6 +45,7 @@ export default {
             .then((data) => {
                 this.publicUrl = `${getAppRoot()}u/${data.username}/p/${data.slug}`;
                 this.content = data.content;
+                this.contentEditor = data.content_editor;
                 this.contentFormat = data.content_format;
                 this.contentData = data;
                 this.title = data.title;
