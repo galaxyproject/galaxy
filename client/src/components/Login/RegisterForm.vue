@@ -58,51 +58,49 @@ const custosPreferred = computed(() => {
     return props.enableOidc && props.preferCustosLogin;
 });
 
-// Reaktive Variable für Passwortstärke und Farbe
+// reactive variable for password strength and color
 const passwordStrength = ref<string>("empty");
 const strengthScore = ref<number>(0);
 const commonPasswords = ["password", "123456", "123456789", "qwerty", "abc123", "password1", "111111", "letmein", "123123", "admin"];
 
-// Funktion zur Bewertung der Passwortstärke
+// evaluation of password strength
 function evaluatePasswordStrength(newPassword: string) {
     if (newPassword.length === 0) {
         passwordStrength.value = "empty";
         return;
     }
 
-    // Basis-Bewertungen basierend auf der Passwortlänge und Zeichenvielfalt
     strengthScore.value = 0;
 
-    // Länge des Passworts
+    // score for length
     if (newPassword.length >= 8) {strengthScore.value++}
     if (newPassword.length >= 12) {strengthScore.value++}
 
-    // Passwort-Charakterklassen
+    // testing if password contains different characters
     const hasLowerCase = /[a-z]/.test(newPassword);
     const hasUpperCase = /[A-Z]/.test(newPassword);
     const hasNumbers = /[0-9]/.test(newPassword);
     const hasSpecialChars = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
 
-    // Erhöhen des Stärke-Scores für jede erfüllte Charakterklasse
     if (hasLowerCase) {strengthScore.value++}
     if (hasUpperCase) {strengthScore.value++}
     if (hasNumbers) {strengthScore.value++}
     if (hasSpecialChars) {strengthScore.value++}
 
-    // Überprüfung auf häufig verwendete Passwörter
+    // check for common password
     if (commonPasswords.includes(newPassword)) {
-        strengthScore.value = 0;  // Setze Score auf 0 bei Verwendung eines häufigen Passworts
+        strengthScore.value = 0;  // score gets zero if common
         passwordStrength.value = "weak";
         return;
     }
 
-    // Überprüfung auf wiederholte Zeichenmuster
-    const repeatedCharMatch = newPassword.match(/(.)\1{2,}/); // Prüft auf 3 oder mehr aufeinanderfolgende gleiche Zeichen
+    // check for repeating characters
+    const repeatedCharMatch = newPassword.match(/(.)\1{2,}/);
     if (repeatedCharMatch) {
-        strengthScore.value--; // Verringert den Score, falls ein Muster gefunden wurde
+        strengthScore.value--;
     }
 
-    // Bewertung der Passwortstärke basierend auf dem Stärke-Score
+    // evaluation of the strength
     if (strengthScore.value <= 2) {
         passwordStrength.value = "weak";
     } else if (strengthScore.value <= 4) {
@@ -112,7 +110,7 @@ function evaluatePasswordStrength(newPassword: string) {
     }
 }
 
-// Beobachten von Änderungen am Passwort und Stärke bewerten
+// function to watch the evaluation
 watch(password, (newPassword) => {
     if (typeof newPassword === "string") {
         evaluatePasswordStrength(newPassword);
@@ -209,7 +207,7 @@ async function submit() {
                                         autocomplete="new-password"
                                         required 
                                     />
-                                    <!-- Stärke-Balken -->
+                                    <!-- strength bar -->
                                     <div v-if="passwordStrength !== null" class="password-strength-bar-container mt-2">
                                         <div
                                             class="password-strength-bar"
@@ -218,7 +216,7 @@ async function submit() {
                                         ></div>
                                     </div>
 
-                                    <!-- Hinweis zur Passwortstärke -->
+                                    <!--password strength -->
                                     <div :class="['password-strength', passwordStrength]" class="mt-2">
                                         <span v-if="passwordStrength === 'empty'"></span>
                                         <span v-else-if="passwordStrength === 'weak'">Weak Password</span>
@@ -318,7 +316,7 @@ async function submit() {
         border-radius: 4px;
     }
 }
-/* Container für die Stärke-Bar */
+// container for strength bar
 .password-strength-bar-container {
     background-color: #e0e0e0;
     height: 8px;
@@ -327,7 +325,7 @@ async function submit() {
     margin-top: 5px;
 }
 
-/* Stärke-Bar selbst */
+// components for strength bar
 .password-strength-bar {
     height: 100%;
     transition: width 0.3s ease;
@@ -345,7 +343,7 @@ async function submit() {
     background-color: green;
 }
 
-/* Textanzeige für die Stärke */
+// Color for the text
 .password-strength.weak {
     color: red;
 }
