@@ -216,7 +216,7 @@ async function submit() {
                                         ></div>
                                     </div>
 
-                                    <!--password strength -->
+                                    <!--password strength component -->
                                     <div :class="['password-strength', passwordStrength]" class="mt-2">
                                         <span v-if="passwordStrength === 'empty'"></span>
                                         <span v-else-if="passwordStrength === 'weak'">Weak Password</span>
