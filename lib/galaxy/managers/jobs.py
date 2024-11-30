@@ -11,6 +11,8 @@ from typing import (
     Dict,
     List,
     Optional,
+    Type,
+    TypeVar,
     Union,
 )
 
@@ -30,6 +32,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select
+from sqlalchemy.sql.selectable import Select
 from typing_extensions import TypedDict
 
 from galaxy import model
@@ -124,6 +127,32 @@ def get_path_key(path_tuple):
         else:
             path_key = p
     return path_key
+
+
+S = TypeVar("S", bound=Select)
+
+
+def has_same_hash(stmt: S, a: Type[model.HistoryDatasetAssociation], b: Type[model.HistoryDatasetAssociation]) -> S:
+    a_hash = aliased(model.DatasetHash)
+    b_hash = aliased(model.DatasetHash)
+    stmt = (
+        stmt.outerjoin(a_hash, a.dataset_id == a_hash.dataset_id)
+        .outerjoin(
+            b_hash,
+            and_(
+                a_hash.hash_function == b_hash.hash_function,
+                a_hash.hash_value == b_hash.hash_value,
+            ),
+        )
+        .join(
+            b,
+            or_(
+                b.dataset_id == a.dataset_id,
+                b_hash.dataset_id == b.dataset_id,
+            ),
+        )
+    )
+    return stmt
 
 
 class JobManager:
@@ -448,7 +477,6 @@ class JobSearch:
         stmt_sq = self._build_job_subquery(tool_id, user.id, tool_version, job_state, wildcard_param_dump)
 
         stmt = select(Job.id).select_from(Job.table.join(stmt_sq, stmt_sq.c.id == Job.id))
-
         data_conditions: List = []
 
         # We now build the stmt filters that relate to the input datasets
@@ -611,20 +639,21 @@ class JobSearch:
 
         return stmt.subquery()
 
-    def _build_stmt_for_hda(self, stmt, data_conditions, used_ids, k, v, identifier):
+    def _build_stmt_for_hda(self, stmt: S, data_conditions, used_ids, k, v, identifier) -> S:
         a = aliased(model.JobToInputDatasetAssociation)
         b = aliased(model.HistoryDatasetAssociation)
         c = aliased(model.HistoryDatasetAssociation)
         d = aliased(model.JobParameter)
         e = aliased(model.HistoryDatasetAssociationHistory)
-        stmt = stmt.add_columns(a.dataset_id)
+        stmt = cast(S, stmt.add_columns(a.dataset_id))
         used_ids.append(a.dataset_id)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         hda_stmt = select(model.HistoryDatasetAssociation.id).where(
             model.HistoryDatasetAssociation.id == e.history_dataset_association_id
         )
         # b is the HDA used for the job
-        stmt = stmt.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)  # type:ignore[attr-defined]
+        stmt = stmt.join(b, a.dataset_id == b.id)
+        stmt = has_same_hash(stmt, b, c)
         name_condition = []
         if identifier:
             stmt = stmt.join(d)
@@ -722,7 +751,7 @@ class JobSearch:
                 ),
             )
             .outerjoin(d, d.id == c.hda_id)
-            .outerjoin(e, e.dataset_id == d.dataset_id)  # type:ignore[attr-defined]
+            .outerjoin(e, e.dataset_id == d.dataset_id)
         )
         data_conditions.append(
             and_(
@@ -732,7 +761,7 @@ class JobSearch:
                     and_(
                         c.hda_id == b.hda_id,
                         d.id == c.hda_id,
-                        e.dataset_id == d.dataset_id,  # type:ignore[attr-defined]
+                        e.dataset_id == d.dataset_id,
                     ),
                 ),
                 c.id == v,
