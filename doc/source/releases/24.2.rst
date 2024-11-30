@@ -1,0 +1,775 @@
+
+.. to_doc
+
+24.2
+===============================
+
+.. announce_start
+
+Enhancements
+-------------------------------
+
+.. major_feature
+
+
+.. feature
+
+* Add onedata templates
+  (thanks to `@bwalkowi <https://github.com/bwalkowi>`__).
+  `Pull Request 18457`_
+* Add linter to check validity of output filters
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 19114`_
+* FITS file table graph visualization plugin
+  (thanks to `@francoismg <https://github.com/francoismg>`__).
+  `Pull Request 19003`_
+* Experimental galactic wizard
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15860`_
+* Allow OAuth 2.0 user defined file sources (w/Dropbox integration)
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18272`_
+* Add job metrics per invocation
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19048`_
+* Feature - stdout live reporting
+  (thanks to `@gecage952 <https://github.com/gecage952>`__).
+  `Pull Request 16975`_
+.. enhancement_tag_viz
+
+* Fix MSA viz, new dependency specification options
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 18760`_
+* Parse stored config details to script-based visualizations
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18651`_
+* Migrate NGL viewer to npm package
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18946`_
+* Support deferred datasets in visualizations
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19097`_
+* Openlayer update to npm package
+  (thanks to `@hujambo-dunia <https://github.com/hujambo-dunia>`__).
+  `Pull Request 19134`_
+* Replace static Cytoscape plugin with npm package
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 19127`_
+* Update tiff viewer to use script entry_point
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19151`_
+* Migrate Venn Diagram to Script-Tag
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19153`_
+* Remove OpenLayers legacy files and add SVG logo
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19135`_
+.. enhancement_tag_datatypes
+
+* Add pod5 datatype
+  (thanks to `@TomHarrop <https://github.com/TomHarrop>`__).
+  `Pull Request 18419`_
+* Handle compressed content in dataset preview for all sequence classes
+  (thanks to `@PlushZ <https://github.com/PlushZ>`__).
+  `Pull Request 18776`_
+* Improve usability of Directory datatype
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 17614`_
+* Add some Zarr-based datatypes
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19040`_
+* Add XML based `vtk` datatype
+  (thanks to `@tStehling <https://github.com/tStehling>`__).
+  `Pull Request 19104`_
+.. enhancement_tag_tools
+
+* Update GPU JupyterLab tool
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 18220`_
+* Add Tool-Centric APIs to the Tool Shed 2.0
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18524`_
+* Add BlobToolkit to the list of interactive tools
+  (thanks to `@Delphine-L <https://github.com/Delphine-L>`__).
+  `Pull Request 18630`_
+* Remove some unused dynamic drill down options
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18892`_
+* Add filter null collection operation tool
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18928`_
+* Jupyter Interactive Tool 1.0.1/24.07
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 18861`_
+* Add Interactive Tool Ilastik
+  (thanks to `@lldelisle <https://github.com/lldelisle>`__).
+  `Pull Request 16837`_
+.. enhancement_tag_workflows
+
+* Allow connecting text param into data column parameter
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18674`_
+* Allow specifying multi-select workflow parameters
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18715`_
+* Allow access to invocation via shared or published history
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18707`_
+* Modelling for Test Assertions
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18787`_
+* Implement Pydantic model for workflow test format.
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18884`_
+* Improvements to Planemo test format based on feedback/discussions
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18889`_
+* Allow CORS requests to /api/workflow_landings
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18963`_
+* Workflow landing improvements
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18979`_
+* Always validate hashes when provided
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19110`_
+* Workflow Landing Requests
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18807`_
+* Implement Declarative Testing for Workflow Behaviors
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18542`_
+* Allow recovering a normalized version of workflow request state from API
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18985`_
+.. enhancement_tag_ui
+
+* Enable verbatimModuleSyntax, fix jest usage
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 18595`_
+* Make vite tool shed client proxy configurable
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18988`_
+* Upgrade `openapi-typescript` to 7.0.2 + swap to `openapi-fetch`
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18532`_
+.. enhancement_tag_jobs
+
+* Record container id and type in core job metrics
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18579`_
+* Add type annotations to ``JobRunnerMapper`` and related code
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19115`_
+* Allow to overwrite `real_system_username` per destination
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 18945`_
+.. enhancement_tag_admin
+
+* Remove `defaults` channel for conda usage
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 18757`_
+* Allow setting a few global defaults for file source plugin types
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18909`_
+* Bring your own file sources: Add the WebDAV template and configuration
+  (thanks to `@sanjaysrikakulam <https://github.com/sanjaysrikakulam>`__).
+  `Pull Request 18598`_
+* Decouple user email from role name
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18966`_
+* Support high-availability setups for the interactive tools proxy
+  (thanks to `@kysrpex <https://github.com/kysrpex>`__).
+  `Pull Request 18481`_
+* Minor config documentation enhancements
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 18499`_
+* Better cleanup of sharing roles on user purge
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 19096`_
+.. enhancement
+
+* Updates the About Page
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18461`_
+* Moves Libraries from Masthead to Activity Bar
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18468`_
+* Adds an option to restore activity bar defaults
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18469`_
+* Add errors fast api
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 18093`_
+* Add task expiration to persistent task monitor
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18551`_
+* Improve datasets permissions API schema typing
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18563`_
+* Group tool templating exceptions in sentry
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18570`_
+* Add a new version of the production s3fs file source template with the writable configuration variable added
+  (thanks to `@sanjaysrikakulam <https://github.com/sanjaysrikakulam>`__).
+  `Pull Request 18575`_
+* Move history multiview item actions to top
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18265`_
+* Improve update user API payload schema
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18602`_
+* Improve update history payload schema
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18618`_
+* Rev pinned gxformat2
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18624`_
+* Improve typing for archived histories API schema
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18586`_
+* Reduce unnecessary requests when browsing tool repositories in Admin Panel
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18632`_
+* Improve types around User in schema and client
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18645`_
+* Rip repository_registry out of tool shed 2.0
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18647`_
+* Improve accept header API schema
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18668`_
+* Another round of parameter model improvements
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18673`_
+* Another round of parameter model enhancements and tool tests
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18678`_
+* Dynamic Models for Tool Test Validation
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18679`_
+* Implement tool upgrade assistant
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18728`_
+* Cache pip directory as part of `setup-python` action
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18789`_
+* Refactor FolderTopBar to TypeScript
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 18488`_
+* Update Visualization FastAPI
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 18792`_
+* Add Alireza to committers group
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18613`_
+* Improvements to help terms & tool help
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18722`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 18578`_
+* Add wizard-like export view for workflow invocations
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18796`_
+* Improvements to parameter models for test case inputs
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18743`_
+* Add docs on indexing for filter column
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 18844`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 18864`_
+* Add unique constraints to the email and username fields in the galaxy_user table
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18493`_
+* Replace History Dataset Picker in Library Folder
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 18518`_
+* Allow using tracks and groups in visualization xml
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18779`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 18904`_
+* Add support for arbitrarily ordered image axes in image content assertions
+  (thanks to `@kostrykin <https://github.com/kostrykin>`__).
+  `Pull Request 18891`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 18943`_
+* Add BioBlend tests
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 18975`_
+* Optimize to_history_dataset_association in create_datasets_from_library_folder
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 18970`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 18982`_
+* Add workflow to update PR title based on target branch version
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 18835`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 19031`_
+* Enable extra user preferences for remotely authorized users
+  (thanks to `@maartenschermer <https://github.com/maartenschermer>`__).
+  `Pull Request 18887`_
+* UI Improvements for Tool Shed 2.0
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19041`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 19062`_
+* Annotate ``DatasetAssociationManager`` as generic type
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19063`_
+* Better logging around tool loading
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19029`_
+* Add `galaxy-upload` link to `UploadModal`
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 19055`_
+* Do not skip CI tests on missing tools
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19002`_
+* Add a filter for `labels` (tags) in Tool Search
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 19076`_
+* Replace poetry with uv
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19075`_
+* Add Python 3.13 support
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18449`_
+* Allow deferred datasets to behave as URIs
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19077`_
+* uv: Do not recalculate dependencies when exporting
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19099`_
+* Test hash validation also for upload by path
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19109`_
+* Integrate Tool Parameter Modeling into Linting (for Planemo)
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19073`_
+* Better search stuff in Tool Shed 2.0
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19047`_
+* Enable specifying dataset hash in test jobs
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19113`_
+* Access public history in job cache / job search
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19108`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 19123`_
+* Also use miniforge docker for container building
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 19128`_
+* Silence the quota manager for updates
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 19046`_
+* Enhance relabel_from_file to work with any column pair in mapping file
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 19022`_
+* Irods ssl connection
+  (thanks to `@pauldg <https://github.com/pauldg>`__).
+  `Pull Request 19014`_
+* Update Japanese locale.js
+  (thanks to `@manabuishii <https://github.com/manabuishii>`__).
+  `Pull Request 19101`_
+* Update vizarr version to 0.1.5
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19142`_
+* Fix word wrapping in invocation panel list items
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 19141`_
+* Add Workflow Title and Annotation sections
+  (thanks to `@hujambo-dunia <https://github.com/hujambo-dunia>`__).
+  `Pull Request 18762`_
+* Assert that `data_column` parameters have a valid `data_ref`
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 18949`_
+* Switch update annotate image to new script entry_point
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19150`_
+* Workflow license and creator edit keyboard access
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 18936`_
+* More data access tests, some refactoring and cleanup
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18312`_
+* Add hint to the tool schema about runtime conditional changes
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 18996`_
+* Undo stack UI
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 18548`_
+* Run installed Galaxy with no config and a simplified entry point
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 19050`_
+* A variety of improvements around tool parameter modeling (second try)
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19027`_
+* Parameter Model Improvements
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18641`_
+* Masthead Revision
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 17927`_
+* Workflow Invocation view improvements
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18615`_
+* Add linters for datatypes
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17600`_
+.. small_enhancement
+
+* Update versions of GitHub actions
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18197`_
+* Update openapi-typescript dependency to version 6.7.6
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18519`_
+* Mixed enhancements from CWL branch
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18539`_
+* Fix some Toolshed 2.0 development paper-cuts
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18538`_
+* Improvements to Tool Test Parsing
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18560`_
+* Drop unused datasets controller methods
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18568`_
+* Consistent type imports, fixes and linting
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 18589`_
+* Tighten user notification API response types
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18599`_
+* More tool test typing
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18590`_
+* Remove unused functions in dataset managers
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18631`_
+* Better Typing for Tool Execution Plumbing
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18626`_
+* De-couple XML from tool interface for test collections
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18676`_
+* Update ExportToRemoteModal.vue to use TypeScript
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18706`_
+* More typing, docs, and decomposition around tool execution
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18758`_
+* Migrate Visualizations API to FastAPI
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 18721`_
+* Refactor ``LibraryDatasetsManager`` and fix type annotation issue
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18773`_
+* Update Mypy to 1.11.2 and fix new signature override errors
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18811`_
+* Remove Build Dataset Pair option from history actions
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18740`_
+* Backend handling of setting user-role, user-group, and group-role associations
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18777`_
+* Refactor migration testing setup code
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18886`_
+* Enable ``ignore-without-code`` mypy error code
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18898`_
+* Raise exception if CompressedFile used on incompatible file
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18888`_
+* Type annotations and fixes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18911`_
+* Remove outdated fimo wrapper and galaxy-sequence-utils dependency
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18937`_
+* Migrate Library Contents API to FastAPI
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 18838`_
+* Fix extra files path type hint
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18958`_
+* Move TRS import into WorkflowContentManager
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19070`_
+* More concise, readable tool execution testing
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18977`_
+* Libraries Modernisation: Directory Dataset Picker
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 18638`_
+
+
+Fixes
+-------------------------------
+
+.. major_bug
+
+
+.. bug_tag_viz
+
+* Install npm-package viz to the package prefix explicitly
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 18950`_
+* Restore access to saved visualizations
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19136`_
+.. bug_tag_datatypes
+
+* Add gtf to auto_compressed_types
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19175`_
+.. bug_tag_tools
+
+* Drop "Send to cloud" tool and associated cloudauthz code
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18196`_
+* Fix commas that shouldn't be in biotools_mappings.tsv
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18919`_
+.. bug_tag_workflows
+
+* Fix collection type drag and drop validation
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18623`_
+* Fix very slow workflow editor loading
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19068`_
+.. bug_tag_ui
+
+* Bump requirejs from 2.3.6 to 2.3.7 in /client
+  (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
+  `Pull Request 18610`_
+* Bump axios from 1.6.2 to 1.7.4 in /client
+  (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
+  `Pull Request 18717`_
+* Bump webpack from 5.89.0 to 5.94.0 in /client
+  (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
+  `Pull Request 18768`_
+* Bump express from 4.19.2 to 4.21.0 in /client
+  (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
+  `Pull Request 18808`_
+* Bump dompurify from 3.0.6 to 3.1.3 in /client
+  (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
+  `Pull Request 18821`_
+* Bump http-proxy-middleware from 2.0.6 to 2.0.7 in /client
+  (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
+  `Pull Request 19060`_
+* Bump dompurify from 2.3.10 to 3.1.6 in /client
+  (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
+  `Pull Request 18880`_
+.. bug_tag_jobs
+
+* Fixes random job failures in kubernetes
+  (thanks to `@mapk-amazon <https://github.com/mapk-amazon>`__).
+  `Pull Request 19001`_
+.. bug_tag_admin
+
+.. bug
+
+* Return generic message for password reset email
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18479`_
+* Raise Message Exception when displaying binary data
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18503`_
+* Handle all requests error in ``ApiBiotoolsMetadataSource._raw_get_metadata``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18510`_
+* Follow-up on `#18212 <https://github.com/galaxyproject/galaxy/issues/18212>`__
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18516`_
+* Fix "worklfow" typo here and there
+  (thanks to `@abretaud <https://github.com/abretaud>`__).
+  `Pull Request 18523`_
+* Fix MessageException handling in get_edit
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18529`_
+* Fix bugs in tool shed tool API
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18558`_
+* Fix Archive header encoding
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 18583`_
+* Fix for not-null in 'column_list' object
+  (thanks to `@hujambo-dunia <https://github.com/hujambo-dunia>`__).
+  `Pull Request 18553`_
+* Fix API key reveals on mouse hover
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 18593`_
+* Fix for Numeric form field to allow Null min/max values in validation methods
+  (thanks to `@hujambo-dunia <https://github.com/hujambo-dunia>`__).
+  `Pull Request 18585`_
+* xsd: allow `change_format` and `actions` also in statically defined collection elements, and break recursion
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 18605`_
+* Fixes for errors reported by mypy 1.11.0
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18608`_
+* Bug fix for invalid duplicate id in function test tools
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18644`_
+* Handle output parsing when tool is not available for tool-centric API
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18643`_
+* Restore interactive tools watcher
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18581`_
+* Strip whitespace when listifying admin users
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18656`_
+* Update mercurial
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18686`_
+* Restore repository update in the tool shed 2.0
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18655`_
+* Fix "Latest Updates" order in tool shed 2.0
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 16894`_
+* Replace types-pkg-resources with types-setuptools
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18708`_
+* Update ruff to 0.6.1
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18716`_
+* Fix new flake8-bugbear B039 and mypy type-var errors
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18755`_
+* Fixing RegisterForm.vue not appending prefix when set
+  (thanks to `@mcuaya1 <https://github.com/mcuaya1>`__).
+  `Pull Request 18786`_
+* Fix response if dataset requested by display application is deleted
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18803`_
+* Fix alert handling in workflow label handler
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18836`_
+* Fix transiently failing selenium tooltip issues
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18847`_
+* Fix flaky `test/integration_selenium/test_toolbox_filters.py::TestToolboxFiltersSeleniumIntegration::test_toolbox_filters`
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18854`_
+* Fix migration data fixes tests
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18885`_
+* data_column params: offer same columns with and without use_header_names
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 18879`_
+* Allow users with 'can_modify_folder' permission to delete items in libraries
+  (thanks to `@npinter <https://github.com/npinter>`__).
+  `Pull Request 18924`_
+* Fix `WorkflowInvocationHeader` import type and current user errors
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 18956`_
+* Explicitly display dataset preview in pages and workflow reports
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18968`_
+* Ignore preflight options in API schema
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18983`_
+* Define environment variables in ``env:`` section
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18987`_
+* Fix the bioblend test failures
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 18991`_
+* Fix job directory not being cleaned up
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18997`_
+* Fix job search statement building
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19010`_
+* Fix test_stock.py unit test
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19037`_
+* add data source doc to the list in index
+  (thanks to `@PlushZ <https://github.com/PlushZ>`__).
+  `Pull Request 18742`_
+* Fix auto-detect metadata from Edit Dataset Attributes panel
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19025`_
+* Fix numerous issues with tool input format "21.01"
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19030`_
+* Prevent purged users from logging in
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 19094`_
+* Fixes and tests for data fetch models
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18834`_
+* Run ``uv lock`` under Python 3.9
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 19111`_
+* Allow modes `z` and `Z` for docker volumes
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 18998`_
+* Fix handling of v2 hashes
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 18522`_
+* Dynamics options add library dataset
+  (thanks to `@gagayuan <https://github.com/gagayuan>`__).
+  `Pull Request 18198`_
+* Add merge migration to merge 2 heads
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 19163`_
+* Disallow /tool_runner? in robots.txt
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 19020`_
+* Avoid possible negative offset in LibraryFolder
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 19090`_
+* Fix backend role sharing bug
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18942`_
+* Update a localized word with a more appropriate one
+  (thanks to `@mpalmada <https://github.com/mpalmada>`__).
+  `Pull Request 18910`_
+* Fix tag processing in library upload
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18714`_
+* Update plausible script name in mako templates
+  (thanks to `@sanjaysrikakulam <https://github.com/sanjaysrikakulam>`__).
+  `Pull Request 18458`_
+* Fix issue with generating slug for sharing
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 18986`_
+* Consolidate tag validation
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 19166`_
+* Move invocation view running actions and improve styling of annotation section
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 19168`_
+* Fix mulled_hash
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 19199`_
+* Add requirement/resource to schema docs
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 19172`_
+* Normalize usernames to lowercase in OIDC authentication
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 19131`_
+
+.. include:: 24.2_prs.rst
+
