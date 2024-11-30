@@ -29,6 +29,7 @@ from galaxy.datatypes.data import (
 )
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
 from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.util.generic_util import call_pysam_index
 from galaxy.util import nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
@@ -517,13 +518,8 @@ class Bam(BamNative):
             # If pysam fails to index a file it will write to stderr,
             # and this causes the set_meta script to fail. So instead
             # we start another process and discard stderr.
-            if index_flag == '-b':
-                # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
-                cmd = ['python', '-c', f"import pysam; pysam.set_verbosity(0); pysam.index('{file_name}', '{index_name}')"]
-            else:
-                cmd = ['python', '-c', f"import pysam; pysam.set_verbosity(0); pysam.index('{index_flag}', '{file_name}', '{index_name}')"]
-            with open(os.devnull, 'w') as devnull:
-                subprocess.check_call(cmd, stderr=devnull, shell=False)
+            call_pysam_index(file_name, index_name, index_flag=index_flag,
+                             stderr=os.devnull)
             needs_sorting = False
         except subprocess.CalledProcessError:
             needs_sorting = True
@@ -545,11 +541,7 @@ class Bam(BamNative):
             index_file = dataset.metadata.bam_csi_index
         if not index_file:
             index_file = dataset.metadata.spec[spec_key].param.new_file(dataset=dataset)
-        if index_flag == '-b':
-            # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
-            pysam.index(dataset.file_name, index_file.file_name)
-        else:
-            pysam.index(index_flag, dataset.file_name, index_file.file_name)
+        call_pysam_index(dataset.file_name, index_file.file_name, index_flag=index_flag)
         dataset.metadata.bam_index = index_file
 
     def sniff(self, file_name):
@@ -720,7 +712,7 @@ class CRAM(Binary):
 
     def set_index_file(self, dataset, index_file):
         try:
-            pysam.index(dataset.file_name, index_file.file_name)
+            call_pysam_index(dataset.file_name, index_file.file_name)
             return True
         except Exception as exc:
             log.warning('%s, set_index_file Exception: %s', self, exc)
