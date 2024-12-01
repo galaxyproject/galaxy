@@ -94,13 +94,47 @@
                     @onClick="onExecute(config, currentHistoryId)" />
             </template>
             <template v-slot:footer>
-                <ButtonSpinner
-                    title="Run Tool"
-                    class="mt-3 mb-3"
-                    :disabled="!canMutateHistory"
-                    :wait="showExecuting"
-                    :tooltip="tooltip"
-                    @onClick="onExecute(config, currentHistoryId)" />
+                <div class="tagging-section">
+                    <div class="run-tool-container">
+                        <ButtonSpinner
+                            title="Run Tool"
+                            class="mt-3 mb-3 run-tool-btn"
+                            :disabled="!canMutateHistory"
+                            :wait="showExecuting"
+                            :tooltip="tooltip"
+                            @onClick="onExecute(config, currentHistoryId)" />
+                        <button
+                            type="button"
+                            class="mt-3 mb-3 run-tool-btn" 
+                            @click="toggleDropdown"
+                            :title="'Add tags for output datasets'">
+                            {{ isDropdownVisible ? "▲" : "▼" }}
+                        </button> 
+                    </div>
+                    <div
+                        v-if="isDropdownVisible"
+                        class="tags-container">
+                        <div class="existing-tags">
+                            <div class="tag-list">
+                                <tag
+                                    v-for="(tag, index) in tags"
+                                    :key="index"
+                                    :option="tag"
+                                    editable
+                                    @deleted="removeTag(index)"
+                                />
+                            </div>
+                        </div>
+                        <div class="add-tag-section">
+                            <input
+                                v-model="newTag"
+                                @keyup.enter="addTag"
+                                placeholder="Add tag and press Enter"
+                                class="tag-input"
+                            />
+                        </div>
+                    </div>
+                </div>
             </template>
         </ToolCard>
     </div>
@@ -129,6 +163,7 @@ import { getToolFormData, submitJob, updateToolFormData } from "./services";
 import ToolCard from "./ToolCard";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
+import Tag from "@/components/TagsMultiselect/Tag.vue";
 
 export default {
     components: {
@@ -141,6 +176,7 @@ export default {
         ToolEntryPoints,
         ToolRecommendation,
         Heading,
+        Tag,
     },
     props: {
         id: {
@@ -205,6 +241,9 @@ export default {
             ],
             immutableHistoryMessage:
                 "This history is immutable and you cannot run tools in it. Please switch to a different history.",
+            tags: [],
+            newTag: "",
+            isDropdownVisible: false,
         };
     },
     computed: {
@@ -269,6 +308,9 @@ export default {
     },
     methods: {
         ...mapActions(useJobStore, ["saveLatestResponse"]),
+        toggleDropdown() {
+            this.isDropdownVisible = !this.isDropdownVisible;
+        },
         emailAllowed(config, user) {
             return config.server_mail_configured && !user.isAnonymous;
         },
@@ -346,6 +388,7 @@ export default {
                 tool_uuid: this.toolUuid,
                 inputs: {
                     ...this.formData,
+                    tags: this.tags, 
                 },
             };
             if (this.useEmail) {
@@ -434,6 +477,103 @@ export default {
                 }
             );
         },
+        addTag() {
+            if (this.newTag.trim() && !this.tags.includes(this.newTag.trim())) {
+                this.tags.push(this.newTag.trim());
+                this.newTag = "";
+            }
+        },
+        removeTag(index) {
+            this.tags.splice(index, 1);
+        },
     },
 };
 </script>
+
+<style scoped>
+.tagging-section {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    position: relative; 
+}
+
+.run-tool-container {
+    display: inline-flex;
+    align-items: center;
+    position: relative; 
+}
+/*
+.arrow-toggle-btn {
+    background: inherit; 
+    color: inherit; 
+    border: none; 
+    cursor: pointer; 
+    font-size: 1rem; 
+    height: 100%; 
+    padding: 0 0.5rem; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box; 
+    border-radius: 4px; 
+}
+
+.arrow-toggle-btn:hover {
+    background: #ddd; 
+}
+
+.arrow-toggle-btn[title]:hover::after {
+    content: attr(title); 
+    position: absolute;
+    bottom: 100%; 
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333; 
+    color: #fff; 
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    z-index: 20;
+}
+*/
+.tags-container {
+    position: absolute;
+    top: 100%; 
+    left: 0;
+    margin-top: 0; 
+    padding: 0.5rem;
+    background: #fff; 
+    border: 1px solid #ddd; 
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-width: max-content;
+    max-width: 200px;
+    word-wrap: break-word; 
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+    z-index: 10; 
+}
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap; 
+    gap: 0.5rem;
+}
+
+.tag-input {
+    padding: 0;
+    background: none;
+    border: none;
+    outline: none;
+    border-bottom: 1px solid #ccc; 
+    width: 100%;
+}
+
+.tag-input::placeholder {
+    font-size: 0.9rem;
+    color: #888; 
+}
+</style>
