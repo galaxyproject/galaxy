@@ -13,6 +13,30 @@ type WorkflowLabelKind = "input" | "output" | "step";
 const SINGLE_QUOTE = "'";
 const DOUBLE_QUOTE = '"';
 
+export function parseSections(input: string): { name: string; content: string }[] {
+    const result: { name: string; content: string }[] = [];
+    const lines = input.split("\n");
+    let currentName: string = "default";
+    let currentContent: string[] = [];
+    lines.forEach((line) => {
+        const sectionMatch = line.match(/^```(.*)$/);
+        if (sectionMatch) {
+            console.log(sectionMatch);
+            if (currentContent.length > 0) {
+                result.push({ name: currentName, content: currentContent.join("\n").trim() });
+            }
+            currentName = sectionMatch[1] || "default";
+            currentContent = [];
+        } else {
+            currentContent.push(line);
+        }
+    });
+    if (currentContent.length > 0) {
+        result.push({ name: currentName, content: currentContent.join("\n").trim() });
+    }
+    return result;
+}
+
 export function splitMarkdown(markdown: string, preserveWhitespace = false) {
     const sections: Section[] = [];
     const markdownErrors = [];
