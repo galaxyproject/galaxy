@@ -6,7 +6,7 @@ import { type ComputedRef } from "vue";
 import { type components, GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-const VegaWrapper = () => import("./VegaWrapper.vue");
+const VegaWrapper = () => import("@/components/Common/VegaWrapper.vue");
 
 const props = defineProps({
     invocationId: {
