@@ -66,8 +66,6 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import MarkdownIt from "markdown-it";
-import markdownItRegexp from "markdown-it-regexp";
 import { mapActions } from "pinia";
 import Vue from "vue";
 
@@ -79,13 +77,6 @@ import MarkdownDefault from "./MarkdownDefault.vue";
 import MarkdownContainer from "./MarkdownContainer.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
-
-const mdNewline = markdownItRegexp(/<br>/, () => {
-    return "<div style='clear:both;'/><br>";
-});
-
-const md = MarkdownIt();
-md.use(mdNewline);
 
 Vue.use(BootstrapVue);
 
