@@ -1,4 +1,4 @@
-import { getArgs, replaceLabel, splitMarkdown } from "./parse";
+import { getArgs, parseSections, replaceLabel, splitMarkdown } from "./parse";
 
 describe("parse.ts", () => {
     describe("getArgs", () => {
@@ -17,6 +17,24 @@ describe("parse.ts", () => {
             const args = getArgs('job_metrics(step=" fakestepname ")');
             expect(args.name).toBe("job_metrics");
             expect(args.args.step).toBe(" fakestepname ");
+        });
+    });
+
+    describe("parseSections", () => {
+        it("strip leading whitespace by default", () => {
+            const sections = parseSections(
+                "```galaxy\njob_metrics(job_id=THISFAKEID)\n```\n DEFAULT_CONTENT \n```special\n SPECIAL_CONTENT \n```\n MORE_DEFAULT_CONTENT"
+            );
+            console.log(sections);
+            expect(sections.length).toBe(4);
+            expect(sections[0].name).toBe("galaxy");
+            expect(sections[0].content).toBe("job_metrics(job_id=THISFAKEID)");
+            expect(sections[1].name).toBe("default");
+            expect(sections[1].content).toBe("DEFAULT_CONTENT");
+            expect(sections[2].name).toBe("special");
+            expect(sections[2].content).toBe("SPECIAL_CONTENT");
+            expect(sections[3].name).toBe("default");
+            expect(sections[3].content).toBe("MORE_DEFAULT_CONTENT");
         });
     });
 
