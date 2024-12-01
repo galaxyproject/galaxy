@@ -74,7 +74,7 @@ import Vue from "vue";
 
 import { useWorkflowStore } from "@/stores/workflowStore";
 
-import { splitMarkdown as splitMarkdownUnrendered } from "./parse";
+import { parseMarkdown } from "./parse";
 
 import MarkdownContainer from "./MarkdownContainer.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
@@ -183,7 +183,7 @@ export default {
                 const config = this.markdownConfig;
                 const markdown = config.content || config.markdown || "";
                 this.markdownErrors = config.errors || [];
-                this.markdownObjects = this.splitMarkdown(markdown);
+                this.markdownObjects = parseMarkdown(markdown);
                 this.datasets = config.history_datasets || {};
                 this.histories = config.histories || {};
                 this.collections = config.history_dataset_collections || {};

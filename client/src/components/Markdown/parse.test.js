@@ -1,4 +1,4 @@
-import { getArgs, parseSections, replaceLabel, splitMarkdown } from "./parse";
+import { getArgs, parseMarkdown, replaceLabel, splitMarkdown } from "./parse";
 
 describe("parse.ts", () => {
     describe("getArgs", () => {
@@ -22,10 +22,9 @@ describe("parse.ts", () => {
 
     describe("parseSections", () => {
         it("strip leading whitespace by default", () => {
-            const sections = parseSections(
+            const sections = parseMarkdown(
                 "```galaxy\njob_metrics(job_id=THISFAKEID)\n```\n DEFAULT_CONTENT \n```special\n SPECIAL_CONTENT \n```\n MORE_DEFAULT_CONTENT"
             );
-            console.log(sections);
             expect(sections.length).toBe(4);
             expect(sections[0].name).toBe("galaxy");
             expect(sections[0].content).toBe("job_metrics(job_id=THISFAKEID)");
