@@ -46,6 +46,7 @@
             </div>
             <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
                 <MarkdownDefault v-if="obj.name === 'default'" :content="obj.content" />
+                <MarkdownVega v-else-if="obj.name === 'vega'" :content="obj.content" />
                 <MarkdownContainer
                     v-else-if="obj.name === 'galaxy'"
                     :content="obj.content"
@@ -73,8 +74,10 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 
 import { parseMarkdown } from "./parse";
 
-import MarkdownDefault from "./MarkdownDefault.vue";
 import MarkdownContainer from "./MarkdownContainer.vue";
+import MarkdownDefault from "./Sections/MarkdownDefault.vue";
+import MarkdownVega from "./Sections/MarkdownVega.vue";
+
 import LoadingSpan from "components/LoadingSpan.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
 
@@ -86,6 +89,7 @@ export default {
     components: {
         MarkdownDefault,
         MarkdownContainer,
+        MarkdownVega,
         FontAwesomeIcon,
         LoadingSpan,
         StsDownloadButton,
