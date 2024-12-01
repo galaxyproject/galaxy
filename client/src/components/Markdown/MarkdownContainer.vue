@@ -20,17 +20,14 @@ import Visualization from "./Elements/Visualization.vue";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
+import { getArgs } from "./parse";
 
 const { config, isConfigLoaded } = useConfig();
 
 const toggle = ref(false);
 const props = defineProps({
-    name: {
+    content: {
         type: String,
-        required: true,
-    },
-    args: {
-        type: Object,
         required: true,
     },
     datasets: {
@@ -63,7 +60,11 @@ const props = defineProps({
     },
 });
 
-const isCollapsible = computed(() => props.args.collapse !== undefined);
+const parsedArgs = computed(() => getArgs(props.content));
+const args = computed(() => parsedArgs.value.args);
+const name = computed(() => parsedArgs.value.name);
+
+const isCollapsible = computed(() => args.value.collapse !== undefined);
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
 
 function argToBoolean(args, name, booleanDefault) {
