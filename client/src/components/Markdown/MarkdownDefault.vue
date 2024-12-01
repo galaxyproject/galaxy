@@ -1,9 +1,23 @@
 <script setup lang="ts">
-defineProps<{
+import { computed } from "vue";
+import MarkdownIt from "markdown-it";
+//@ts-ignore
+import markdownItRegexp from "markdown-it-regexp";
+
+const mdNewline = markdownItRegexp(/<br>/, () => {
+    return "<div style='clear:both;'/><br>";
+});
+
+const md = MarkdownIt();
+md.use(mdNewline);
+
+const props = defineProps<{
     content: string;
 }>();
+
+const renderedContent = computed(() => md.render(props.content));
 </script>
 
 <template>
-    <p class="text-justify m-2" v-html="content" />
+    <p class="text-justify m-2" v-html="renderedContent" />
 </template>
