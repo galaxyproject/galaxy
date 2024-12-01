@@ -45,11 +45,10 @@
                 </b-alert>
             </div>
             <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
-                <p v-if="obj.name == 'default'" class="text-justify m-2" v-html="obj.content" />
+                <MarkdownDefault v-if="obj.name === 'default'" :content="obj.content" />
                 <MarkdownContainer
-                    v-else
-                    :name="obj.name"
-                    :args="obj.args"
+                    v-else-if="obj.name === 'galaxy'"
+                    :content="obj.content"
                     :datasets="datasets"
                     :collections="collections"
                     :histories="histories"
@@ -76,6 +75,7 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 
 import { parseMarkdown } from "./parse";
 
+import MarkdownDefault from "./MarkdownDefault.vue";
 import MarkdownContainer from "./MarkdownContainer.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
@@ -93,6 +93,7 @@ library.add(faDownload, faEdit);
 
 export default {
     components: {
+        MarkdownDefault,
         MarkdownContainer,
         FontAwesomeIcon,
         LoadingSpan,
@@ -192,16 +193,6 @@ export default {
                 this.loading = false;
                 this.workflowID = Object.keys(this.markdownConfig?.workflows ?? {})[0];
             }
-        },
-        splitMarkdown(markdown) {
-            const { sections, markdownErrors } = splitMarkdownUnrendered(markdown);
-            markdownErrors.forEach((error) => markdownErrors.push(error));
-            sections.forEach((section) => {
-                if (section.name == "default") {
-                    section.content = md.render(section.content);
-                }
-            });
-            return sections;
         },
     },
 };
