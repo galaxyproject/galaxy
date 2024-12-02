@@ -5,7 +5,7 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 import { withPrefix } from "utils/redirect";
 
-import MountTarget from "./MarkdownContainer.vue";
+import MountTarget from "./MarkdownGalaxy.vue";
 
 // mock routes
 jest.mock("utils/redirect");

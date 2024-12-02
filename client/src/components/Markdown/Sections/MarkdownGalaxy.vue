@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 
 import { useConfig } from "@/composables/config";
+import { getArgs } from "@/components/Markdown/parse";
 
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
@@ -20,7 +21,6 @@ import Visualization from "./Elements/Visualization.vue";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
-import { getArgs } from "./parse";
 
 const { config, isConfigLoaded } = useConfig();
 
