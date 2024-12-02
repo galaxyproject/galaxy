@@ -1,0 +1,65 @@
+<script setup lang="ts">
+import { onMounted, ref } from "vue";
+import { getAppRoot } from "@/onload/loadConfig";
+
+interface Props {
+    name: string;
+    dataIncoming: object;
+    height?: string;
+}
+
+const props = defineProps<Props>();
+
+const iframeRef = ref<HTMLIFrameElement | null>(null);
+
+onMounted(() => {
+    if (!props.name) {
+        console.error("Plugin name is required!");
+        return;
+    }
+
+    const pluginPath = `${getAppRoot()}static/plugins/visualizations/${props.name}/static/dist/index`;
+    const pluginSrc = `${pluginPath}.js`;
+    const pluginCss = `${pluginPath}.css`;
+
+    if (iframeRef.value) {
+        const iframe = iframeRef.value;
+        iframe.onload = () => {
+            const iframeDocument = iframe.contentDocument;
+            if (!iframeDocument) {
+                console.error("Failed to access iframe document.");
+                return;
+            }
+
+            // Create the container for the plugin
+            const container = iframeDocument.createElement("div");
+            container.id = "app";
+            container.setAttribute("data-incoming", JSON.stringify(props.dataIncoming));
+            iframeDocument.body.appendChild(container);
+
+            // Inject the script tag for the plugin
+            const script = iframeDocument.createElement("script");
+            script.type = "module";
+            script.src = pluginSrc;
+            iframeDocument.body.appendChild(script);
+
+            // Add a CSS link to the iframe document
+            const link = iframeDocument.createElement("link");
+            link.rel = "stylesheet";
+            link.href = pluginCss;
+            iframeDocument.head.appendChild(link);
+        };
+    }
+});
+</script>
+
+<template>
+    <iframe ref="iframeRef" class="visualization-wrapper" :style="{ height: props.height || '100%' }"> </iframe>
+</template>
+
+<style>
+.visualization-wrapper {
+    border: none;
+    width: 100%;
+}
+</style>
