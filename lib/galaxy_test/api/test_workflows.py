@@ -6268,7 +6268,7 @@ input1:
                 history_id, hid=3, wait=True, assert_ok=True
             )
             assert details1["elements"][0]["object"]["visible"] is False
-            assert details1["name"] == "data 1 (as list)", details1
+            assert details1["name"] == "dataset 1 (as list)", details1
             assert details1["visible"] is False
 
     @skip_without_tool("__BUILD_LIST__")
@@ -6303,7 +6303,7 @@ input1:
                 history_id, hid=3, wait=True, assert_ok=True
             )
             assert details1["elements"][0]["object"]["visible"] is False
-            assert details1["name"] == "data 1 (as list)", details1
+            assert details1["name"] == "dataset 1 (as list)", details1
             # FIXME: this doesn't work because the workflow is still being scheduled
             # TODO: Implement a way to run PJAs that couldn't be run during/after the job
             # after the workflow has run to completion
@@ -6348,7 +6348,7 @@ input1:
             details1 = self.dataset_populator.get_history_collection_details(
                 history_id, hid=3, wait=True, assert_ok=True
             )
-            assert details1["name"] == "data 1 (as list)", details1
+            assert details1["name"] == "dataset 1 (as list)", details1
             assert details1["elements"][0]["object"]["visible"] is False
             assert details1["elements"][0]["object"]["file_ext"] == "txt"
             details2 = self.dataset_populator.get_history_collection_details(

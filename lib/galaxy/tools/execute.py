@@ -33,7 +33,7 @@ from galaxy.model.dataset_collections.structure import (
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.execution_helpers import (
     filter_output,
-    on_text_for_names,
+    on_text_for_dataset_and_collections,
     ToolExecutionCache,
 )
 from galaxy.tools.parameters.workflow_utils import is_runtime_value
@@ -325,9 +325,8 @@ class ExecutionTracker:
     def on_text(self) -> Optional[str]:
         collection_info = self.collection_info
         if self._on_text is None and collection_info is not None:
-            collection_names = [f"collection {c.hid}" for c in collection_info.collections.values()]
-            self._on_text = on_text_for_names(collection_names)
-
+            collection_names = [f"{c.hid}" for c in collection_info.collections.values()]
+            self._on_text = on_text_for_dataset_and_collections(collection_names=collection_names)
         return self._on_text
 
     def output_name(self, trans, history, params, output):
