@@ -4,6 +4,7 @@
             <button class="refactor-button ui-link" @click="onRefactor">Try to automatically fix issues.</button>
         </template>
         <LintSection
+            data-description="linting has annotation"
             :okay="checkAnnotation"
             success-message="This workflow is annotated. Ideally, this helps the executors of the workflow
                     understand the purpose and usage of the workflow."
@@ -12,6 +13,7 @@
             attribute-link="Annotate your Workflow."
             @onClick="onAttributes" />
         <LintSection
+            data-description="linting has creator"
             :okay="checkCreator"
             success-message="This workflow defines creator information."
             warning-message="This workflow does not specify creator(s). This is important metadata for workflows
@@ -20,6 +22,7 @@
             attribute-link="Provide Creator Details."
             @onClick="onAttributes" />
         <LintSection
+            data-description="linting has license"
             :okay="checkLicense"
             success-message="This workflow defines a license."
             warning-message="This workflow does not specify a license. This is important metadata for workflows
@@ -28,6 +31,7 @@
             attribute-link="Specify a License."
             @onClick="onAttributes" />
         <LintSection
+            data-description="linting formal inputs"
             success-message="Workflow parameters are using formal input parameters."
             warning-message="This workflow uses legacy workflow parameters. They should be replaced with
                 formal workflow inputs. Formal input parameters make tracking workflow provenance, usage within subworkflows,
@@ -37,6 +41,7 @@
             @onMouseLeave="onUnhighlight"
             @onClick="onFixUntypedParameter" />
         <LintSection
+            data-description="linting connected"
             success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
             warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
                 make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
@@ -45,6 +50,7 @@
             @onMouseLeave="onUnhighlight"
             @onClick="onFixDisconnectedInput" />
         <LintSection
+            data-description="linting input metadata"
             success-message="All workflow inputs have labels and annotations."
             warning-message="Some workflow inputs are missing labels and/or annotations:"
             :warning-items="warningMissingMetadata"
@@ -52,6 +58,7 @@
             @onMouseLeave="onUnhighlight"
             @onClick="openAndFocus" />
         <LintSection
+            data-description="linting output labels"
             success-message="This workflow has outputs and they all have valid labels."
             warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
                     unchecked in the workflow editor to mark them as no longer being a workflow output:"
