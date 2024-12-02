@@ -453,7 +453,7 @@ class DefaultToolAction(ToolAction):
         ) = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
         assert history  # tell type system we've set history and it is no longer optional
         # Build name for output datasets based on tool name and input names
-        on_text = self._get_on_text(inp_data)
+        on_text = self._get_on_text(inp_data, inp_dataset_collections)
 
         # format='input" previously would give you a random extension from
         # the input extensions, now it should just give "input" as the output
@@ -883,12 +883,29 @@ class DefaultToolAction(ToolAction):
         wrapped_params = WrappedParameters(trans, tool, incoming, input_datasets=input_datasets)
         return wrapped_params
 
-    def _get_on_text(self, inp_data):
+    def _get_on_text(self, inp_data, inp_dataset_collections):
         input_names = []
+        collection_hda_ids = set()
+        # output collection id and store included hda ids (to avoid extra inclusion in the list of datasets)
+        # two for loops because:
+        # - inp_dataset_collections stores the collections per input parameter in a dict
+        # - the values contain a list of pairs of DatasetCollectionsAssociations and a bool
+        for collections in inp_dataset_collections.values():
+            for dataset_collection, _ in collections:
+                if getattr(dataset_collection, "hid", None):
+                    collection_names.append(f"{dataset_collection.hid}")
+                if (
+                    getattr(dataset_collection, "collection", None) is None
+                    or getattr(dataset_collection.collection, "elements", None) is None
+                ):
+                    continue
+                for element in dataset_collection.collection.elements:
+                    collection_hda_ids.add(element.hda_id)
         for data in reversed(list(inp_data.values())):
+            if getattr(data, "id", None) is None or data.id in collection_hda_ids:
+                continue
             if getattr(data, "hid", None):
                 input_names.append(f"data {data.hid}")
-
         return on_text_for_names(input_names)
 
     def _new_job_for_session(self, trans, tool, history) -> Tuple[model.Job, Optional[model.GalaxySession]]:
