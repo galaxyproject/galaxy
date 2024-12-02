@@ -6,7 +6,7 @@ const props = defineProps<{
     content: string;
 }>();
 
-const pluginData = computed(() => ({
+const dataIncoming = computed(() => ({
     visualization_config: {
         dataset_content: { ...JSON.parse(props.content) },
     },
@@ -15,6 +15,6 @@ const pluginData = computed(() => ({
 
 <template>
     <div>
-        <visualization-wrapper name="vitessce" :data-incoming="pluginData" height="500px" />
+        <visualization-wrapper name="vitessce" :data-incoming="dataIncoming" height="500px" />
     </div>
 </template>
