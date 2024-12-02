@@ -750,6 +750,13 @@ workflow_editor:
       attributes: "#activity-workflow-editor-attributes"
       changes: "#activity-workflow-undo-redo"
       upgrade_all: "#activity-workflow-upgrade"
+      best_practices: "#activity-workflow-best-practices"
+
+  best_practices:
+    selectors:
+      section_input_metadata: '[data-description="linting input metadata"]'
+      item_input_metadata: '[data-description="linting input metadata"] [data-item-index="${index}"]'
+
   comment:
     selectors:
       _: ".workflow-editor-comment"
