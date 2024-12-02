@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import PluginContainer from "./Elements/PluginContainer.vue";
+import "./Elements/PluginWrapper";
 
 const props = defineProps<{
     content: string;
 }>();
 
-const spec = computed(() => ({
-    ...JSON.parse(props.content),
+const pluginData = computed(() => ({
+    visualization_config: { 
+        dataset_content: { ...JSON.parse(props.content) },
+    }
 }));
 </script>
 
 <template>
     <div>
-        <PluginContainer plugin-src="/static/plugins/visualizations/vitessce/static/dist/index.js" />
-        {{ spec }}
+        <plugin-wrapper plugin-name="vitessce" :plugin-data="JSON.stringify(pluginData)" height="500px"/>
     </div>
 </template>
