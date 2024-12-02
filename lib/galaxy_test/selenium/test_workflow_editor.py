@@ -208,8 +208,8 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         name = self.workflow_create_new()
         self.workflow_editor_add_input(item_name="data_input")
         self.screenshot("workflow_editor_data_input_new")
-        editor.label_input.wait_for_and_send_keys("input1")
-        editor.annotation_input.wait_for_and_send_keys("my cool annotation")
+        self.workflow_editor_set_node_label("input1")
+        self.workflow_editor_set_node_annotation("my cool annotation")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_input_filled_in")
         self.workflow_editor_click_save()
@@ -539,6 +539,38 @@ steps:
         self.open_in_workflow_editor(WORKFLOW_NESTED_SIMPLE)
         self.workflow_editor_maximize_center_pane()
         self.screenshot("workflow_editor_simple_nested")
+
+    @selenium_test
+    def test_best_practices_input_label(self):
+        editor = self.components.workflow_editor
+        annotation = "best_practices_input_label"
+        self.workflow_create_new(annotation=annotation)
+        self.workflow_editor_add_input(item_name="data_input")
+        editor.tool_bar.best_practices.wait_for_and_click()
+        best_practices = editor.best_practices
+        section_element = best_practices.section_input_metadata.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
+        item = best_practices.item_input_metadata(index=0)
+        element = item.wait_for_present()
+        assert element.get_attribute("data-missing-label") == "true"
+        assert element.get_attribute("data-missing-annotation") == "true"
+
+        item.wait_for_and_click()
+        self.workflow_editor_set_node_label("best practice input")
+
+        # editor.tool_bar.best_practices.wait_for_and_click()
+        element = item.wait_for_present()
+        assert element.get_attribute("data-missing-label") == "false"
+        assert element.get_attribute("data-missing-annotation") == "true"
+
+        self.workflow_editor_set_node_annotation("informative annotation")
+
+        @retry_assertion_during_transitions
+        def assert_linting_input_metadata_okay():
+            section_element = best_practices.section_input_metadata.wait_for_present()
+            assert section_element.get_attribute("data-lint-status") == "ok"
+
+        assert_linting_input_metadata_okay()
 
     @selenium_test
     def test_rendering_rules_workflow_1(self):

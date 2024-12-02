@@ -1237,6 +1237,16 @@ class NavigatesGalaxy(HasDriver):
         editor.tool_version_button.wait_for_and_click()
         assert self.select_dropdown_item(f"Switch to {version}"), "Switch to tool version dropdown item not found"
 
+    def workflow_editor_set_node_label(self, label: str, node: Optional[EditorNodeReference] = None):
+        self.workflow_editor_ensure_tool_form_open(node)
+        editor = self.components.workflow_editor
+        editor.label_input.wait_for_and_clear_and_send_keys(label)
+
+    def workflow_editor_set_node_annotation(self, annotation: str, node: Optional[EditorNodeReference] = None):
+        self.workflow_editor_ensure_tool_form_open(node)
+        editor = self.components.workflow_editor
+        editor.annotation_input.wait_for_and_clear_and_send_keys(annotation)
+
     def workflow_editor_ensure_tool_form_open(self, node: Optional[EditorNodeReference] = None):
         # if node is_empty just assume current tool step is open
         editor = self.components.workflow_editor
