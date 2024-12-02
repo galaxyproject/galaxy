@@ -53,6 +53,11 @@ TOOL_XML_1 = """
         <resource type="cuda_device_count_min">1</resource>
         <resource type="cuda_device_count_max">2</resource>
         <resource type="shm_size">67108864</resource>
+        <credentials name="Apollo" reference="gmod.org/apollo" required="true" label="Apollo credential set" description="Please provide credentials for Apollo">
+            <variable name="server" inject_as_env="apollo_url" label="Your Apollo server" />
+            <secret name="username" inject_as_env="apollo_user" label="Your Apollo username" />
+            <secret name="password" inject_as_env="apollo_pass" label="Your Apollo password" />
+        </credentials>
     </requirements>
     <outputs>
         <data name="out1" format="bam" from_work_dir="out1.bam" />
@@ -361,6 +366,16 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert resource_requirements[5].resource_type == "cuda_device_count_max"
         assert resource_requirements[6].resource_type == "shm_size"
         assert not resource_requirements[0].runtime_required
+
+    def test_credentials(self):
+        *_, credentials = self._tool_source.parse_requirements_and_containers()
+        assert credentials[0].name == "Apollo"
+        assert credentials[0].reference == "gmod.org/apollo"
+        assert credentials[0].required
+        assert len(credentials[0].secrets_and_variables) == 3
+        assert credentials[0].secrets_and_variables[0].type == "variable"
+        assert credentials[0].secrets_and_variables[1].type == "secret"
+        assert credentials[0].secrets_and_variables[2].type == "secret"
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())
