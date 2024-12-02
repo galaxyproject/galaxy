@@ -1,3 +1,115 @@
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
+import { useWorkflowStore } from "@/stores/workflowStore";
+import { parseMarkdown } from "./parse";
+
+import MarkdownGalaxy from "./Sections/MarkdownGalaxy.vue";
+import MarkdownDefault from "./Sections/MarkdownDefault.vue";
+import MarkdownVega from "./Sections/MarkdownVega.vue";
+import MarkdownVitessce from "./Sections/MarkdownVitessce.vue";
+
+import LoadingSpan from "components/LoadingSpan.vue";
+import StsDownloadButton from "components/StsDownloadButton.vue";
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faDownload, faEdit);
+
+// Props
+interface MarkdownConfig {
+    generate_time?: string;
+    generate_version?: string;
+    content?: string;
+    markdown?: string;
+    errors?: Array<{ error?: string; line?: string }>;
+    history_datasets?: Record<string, unknown>;
+    histories?: Record<string, unknown>;
+    history_dataset_collections?: Record<string, unknown>;
+    workflows?: Record<string, unknown>;
+    invocations?: Record<string, unknown>;
+    id?: string;
+    title?: string;
+    model_class?: string;
+}
+
+const props = defineProps<{
+    markdownConfig: MarkdownConfig;
+    enable_beta_markdown_export?: boolean;
+    downloadEndpoint?: string;
+    readOnly?: boolean;
+    exportLink?: string;
+}>();
+
+// Refs and data
+const markdownObjects = ref<any[]>([]);
+const markdownErrors = ref<any[]>([]);
+const datasets = ref<Record<string, unknown>>({});
+const histories = ref<Record<string, unknown>>({});
+const collections = ref<Record<string, unknown>>({});
+const workflows = ref<Record<string, unknown>>({});
+const invocations = ref<Record<string, unknown>>({});
+const loading = ref(true);
+const workflowID = ref("");
+
+// Workflow Store
+const workflowStore = useWorkflowStore();
+const fetchWorkflowForInstanceId = workflowStore.fetchWorkflowForInstanceId;
+const getStoredWorkflowByInstanceId = workflowStore.getStoredWorkflowByInstanceId;
+
+// Computed properties
+const effectiveExportLink = computed(() => (props.enable_beta_markdown_export ? props.exportLink : null));
+
+const time = computed(() => {
+    const generateTime = props.markdownConfig.generate_time;
+    if (generateTime) {
+        let formattedTime = generateTime.endsWith("Z") ? generateTime : `${generateTime}Z`;
+        const date = new Date(formattedTime);
+        return date.toLocaleString("default", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            hour: "numeric",
+            minute: "numeric",
+            timeZone: "UTC",
+            timeZoneName: "short",
+        });
+    }
+    return "unavailable";
+});
+
+const version = computed(() => props.markdownConfig.generate_version || "Unknown Galaxy Version");
+
+const workflowVersions = computed(() => getStoredWorkflowByInstanceId(workflowID.value));
+
+// Methods
+function initConfig() {
+    const config = props.markdownConfig;
+    if (Object.keys(config).length) {
+        const markdown = config.content || config.markdown || "";
+        markdownErrors.value = config.errors || [];
+        markdownObjects.value = parseMarkdown(markdown);
+        datasets.value = config.history_datasets || {};
+        histories.value = config.histories || {};
+        collections.value = config.history_dataset_collections || {};
+        workflows.value = config.workflows || {};
+        invocations.value = config.invocations || {};
+        loading.value = false;
+        workflowID.value = Object.keys(config.workflows || {})[0] || "";
+    }
+}
+
+// Watchers
+watch(() => props.markdownConfig, initConfig);
+
+// Lifecycle hooks
+onMounted(() => {
+    initConfig();
+    fetchWorkflowForInstanceId(workflowID.value);
+});
+</script>
+
 <template>
     <div class="markdown-wrapper">
         <LoadingSpan v-if="loading" />
@@ -9,8 +121,7 @@
                     :fallback-url="exportLink"
                     :download-endpoint="downloadEndpoint"
                     size="sm"
-                    title="Generate PDF">
-                </StsDownloadButton>
+                    title="Generate PDF" />
                 <b-button
                     v-if="!readOnly"
                     v-b-tooltip.hover
@@ -62,136 +173,3 @@
         </div>
     </div>
 </template>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
-import { mapActions } from "pinia";
-import Vue from "vue";
-
-import { useWorkflowStore } from "@/stores/workflowStore";
-
-import { parseMarkdown } from "./parse";
-
-import MarkdownGalaxy from "./Sections/MarkdownGalaxy.vue";
-import MarkdownDefault from "./Sections/MarkdownDefault.vue";
-import MarkdownVega from "./Sections/MarkdownVega.vue";
-import MarkdownVitessce from "./Sections/MarkdownVitessce.vue";
-
-import LoadingSpan from "components/LoadingSpan.vue";
-import StsDownloadButton from "components/StsDownloadButton.vue";
-
-Vue.use(BootstrapVue);
-
-library.add(faDownload, faEdit);
-
-export default {
-    components: {
-        MarkdownDefault,
-        MarkdownGalaxy,
-        MarkdownVega,
-        MarkdownVitessce,
-        FontAwesomeIcon,
-        LoadingSpan,
-        StsDownloadButton,
-    },
-    props: {
-        markdownConfig: {
-            type: Object,
-            default: null,
-        },
-        enable_beta_markdown_export: {
-            type: Boolean,
-            default: false,
-        },
-        downloadEndpoint: {
-            type: String,
-            default: null,
-        },
-        readOnly: {
-            type: Boolean,
-            default: false,
-        },
-        exportLink: {
-            type: String,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            markdownObjects: [],
-            markdownErrors: [],
-            datasets: {},
-            histories: {},
-            collections: {},
-            workflows: {},
-            invocations: {},
-            loading: true,
-            workflowID: undefined,
-        };
-    },
-    computed: {
-        effectiveExportLink() {
-            return this.enable_beta_markdown_export ? this.exportLink : null;
-        },
-        time() {
-            let generateTime = this.markdownConfig.generate_time;
-            if (generateTime) {
-                if (!generateTime.endsWith("Z")) {
-                    // We don't have tzinfo, but this will always be UTC coming
-                    // from Galaxy so append Z to assert that prior to parsing
-                    generateTime += "Z";
-                }
-                const date = new Date(generateTime);
-                return date.toLocaleString("default", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                    minute: "numeric",
-                    hour: "numeric",
-                    timeZone: "UTC",
-                    timeZoneName: "short",
-                });
-            }
-            return "unavailable";
-        },
-        workflowVersions() {
-            return this.workflowID ? this.getStoredWorkflowByInstanceId(this.workflowID) : undefined;
-        },
-        version() {
-            return this.markdownConfig.generate_version || "Unknown Galaxy Version";
-        },
-    },
-    watch: {
-        markdownConfig() {
-            this.initConfig();
-        },
-    },
-    created() {
-        this.initConfig();
-        if (this.workflowID) {
-            this.fetchWorkflowForInstanceId(this.workflowID);
-        }
-    },
-    methods: {
-        ...mapActions(useWorkflowStore, ["getStoredWorkflowByInstanceId", "fetchWorkflowForInstanceId"]),
-        initConfig() {
-            if (Object.keys(this.markdownConfig).length) {
-                const config = this.markdownConfig;
-                const markdown = config.content || config.markdown || "";
-                this.markdownErrors = config.errors || [];
-                this.markdownObjects = parseMarkdown(markdown);
-                this.datasets = config.history_datasets || {};
-                this.histories = config.histories || {};
-                this.collections = config.history_dataset_collections || {};
-                this.workflows = config.workflows || {};
-                this.invocations = config.invocations || {};
-                this.loading = false;
-                this.workflowID = Object.keys(this.markdownConfig?.workflows ?? {})[0];
-            }
-        },
-    },
-};
-</script>
