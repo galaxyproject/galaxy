@@ -277,7 +277,7 @@ function resetModal() {
             <BAlert variant="success" show>
                 <FontAwesomeIcon :icon="faCheckCircle" class="text-success" fixed-width />
                 {{ localize("Collection created successfully.") }}
-                <BLink class="text-decoration-none" @click.stop.prevent="resetModal">
+                <BLink v-if="!fromSelection" class="text-decoration-none" @click.stop.prevent="resetModal">
                     <FontAwesomeIcon :icon="faUndo" fixed-width />
                     {{ localize("Create another collection") }}
                 </BLink>
