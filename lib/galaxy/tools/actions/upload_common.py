@@ -415,7 +415,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
         job.add_parameter(name, value)
     job.add_parameter("paramfile", dumps(json_file_path))
     for i, output_object in enumerate(outputs):
-        output_name = "output%i" % i
+        output_name = f"output{i}"
         if hasattr(output_object, "collection"):
             job.add_output_dataset_collection(output_name, output_object)
             output_object.job = job
@@ -434,7 +434,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     output = {}
     for i, v in enumerate(outputs):
         if not hasattr(output_object, "collection_type"):
-            output["output%i" % i] = v
+            output[f"output{i}"] = v
     return job, output
 
 

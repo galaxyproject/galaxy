@@ -50,13 +50,13 @@ def validate_email_str(email):
     if not (VALID_EMAIL_RE.match(email)):
         return "The format of the email address is not correct."
     elif len(email) > EMAIL_MAX_LEN:
-        return "Email address cannot be more than %d characters in length." % EMAIL_MAX_LEN
+        return f"Email address cannot be more than {EMAIL_MAX_LEN} characters in length."
     return ""
 
 
 def validate_password_str(password):
     if not password or len(password) < PASSWORD_MIN_LEN:
-        return "Use a password of at least %d characters." % PASSWORD_MIN_LEN
+        return f"Use a password of at least {PASSWORD_MIN_LEN} characters."
     return ""
 
 
@@ -65,7 +65,7 @@ def validate_publicname_str(publicname):
     if not publicname:
         return "Public name cannot be empty"
     if len(publicname) > PUBLICNAME_MAX_LEN:
-        return "Public name cannot be more than %d characters in length." % (PUBLICNAME_MAX_LEN)
+        return f"Public name cannot be more than {PUBLICNAME_MAX_LEN} characters in length."
     if not (VALID_PUBLICNAME_RE.match(publicname)):
         return "Public name must contain only lower-case letters, numbers, '.', '_' and '-'."
     return ""

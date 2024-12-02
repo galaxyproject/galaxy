@@ -995,8 +995,8 @@ def __pull_up_params(parent_elem, child_elem):
         parent_elem.append(param_elem)
 
 
-def __prefix_join(prefix, name, index=None):
-    name = name if index is None else "%s_%d" % (name, index)
+def __prefix_join(prefix, name, index: Optional[int] = None):
+    name = name if index is None else f"{name}_{index}"
     return name if not prefix else f"{prefix}|{name}"
 
 
@@ -1072,7 +1072,7 @@ def __parse_param_elem(param_elem, i=0) -> ToolSourceTestInput:
                 if composite_data_name is None:
                     # Generate a unique name; each test uses a
                     # fresh history.
-                    composite_data_name = "_COMPOSITE_RENAMED_t%d_%s" % (i, uuid.uuid1().hex)
+                    composite_data_name = f"_COMPOSITE_RENAMED_t{i}_{uuid.uuid1().hex}"
             elif child.tag == "metadata":
                 attrib["metadata"][child.get("name")] = child.get("value")
             elif child.tag == "edit_attributes":

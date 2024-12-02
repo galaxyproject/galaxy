@@ -578,10 +578,7 @@ class TabularToolDataTable(ToolDataTable):
                     if self.largest_index < len(fields):
                         rval.append(fields)
                     else:
-                        line_error = (
-                            "Line %i in tool data table '%s' is invalid (HINT: '%s' characters must be used to separate fields):\n%s"
-                            % ((i + 1), self.name, separator_char, line)
-                        )
+                        line_error = f"Line {i + 1} in tool data table '{self.name}' is invalid (HINT: '{separator_char}' characters must be used to separate fields):\n{line}"
                         if errors is not None:
                             errors.append(line_error)
                         log.warning(line_error)

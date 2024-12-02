@@ -61,8 +61,8 @@ def check_for_updates(
                 repository_names_not_updated.append(f"<b>{escape(str(repository.name))}</b>")
             if updated:
                 updated_count += 1
-        message = "Checked the status in the tool shed for %d repositories.  " % success_count
-        message += "Updated the tool shed status for %d repositories.  " % updated_count
+        message = f"Checked the status in the tool shed for {success_count} repositories.  "
+        message += f"Updated the tool shed status for {updated_count} repositories.  "
         if repository_names_not_updated:
             message += "Unable to retrieve status from the tool shed for the following repositories:\n"
             message += ", ".join(repository_names_not_updated)

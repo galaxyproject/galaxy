@@ -2004,10 +2004,10 @@ class BaseDataToolParameter(ToolParameter):
 
         if self.min is not None:
             if self.min > dataset_count:
-                raise ValueError("At least %d datasets are required for %s" % (self.min, self.name))
+                raise ValueError(f"At least {self.min} datasets are required for {self.name}")
         if self.max is not None:
             if self.max < dataset_count:
-                raise ValueError("At most %d datasets are required for %s" % (self.max, self.name))
+                raise ValueError(f"At most {self.max} datasets are required for {self.name}")
 
 
 def src_id_to_item(
@@ -2520,7 +2520,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if isinstance(value, HistoryDatasetCollectionAssociation):
                 display_text = f"{value.hid}: {value.name}"
             else:
-                display_text = "Element %d:%s" % (value.identifier_index, value.identifier_name)
+                display_text = f"Element {value.identifier_index}:{value.identifier_name}"
         except AttributeError:
             display_text = "No dataset collection."
         return display_text

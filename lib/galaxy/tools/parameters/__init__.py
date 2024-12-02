@@ -206,8 +206,8 @@ def visit_input_values(
             values = input_values[input.name] = input_values.get(input.name, [])
             for i, d in enumerate(values):
                 d["__index__"] = i
-                new_name_prefix = name_prefix + "%s_%d|" % (input.name, i)
-                new_label_prefix = label_prefix + "%s %d > " % (input.title, i + 1)
+                new_name_prefix = name_prefix + f"{input.name}_{i}|"
+                new_label_prefix = label_prefix + f"{input.title} {i + 1} > "
                 visit_input_values(
                     input.inputs,
                     d,
@@ -356,7 +356,7 @@ def params_to_incoming(incoming, inputs, input_values, app, name_prefix=""):
         if isinstance(input, Repeat) or isinstance(input, UploadDataset):
             for d in input_values[input.name]:
                 index = d["__index__"]
-                new_name_prefix = name_prefix + "%s_%d|" % (input.name, index)
+                new_name_prefix = name_prefix + f"{input.name}_{index}|"
                 params_to_incoming(incoming, input.inputs, d, app, new_name_prefix)
         elif isinstance(input, Conditional):
             values = input_values[input.name]
@@ -545,7 +545,7 @@ def _populate_state_legacy(
             rep_index = 0
             del group_state[:]
             while True:
-                rep_prefix = "%s_%d" % (key, rep_index)
+                rep_prefix = f"{key}_{rep_index}"
                 rep_min_default = repeat_input.default if repeat_input.default > repeat_input.min else repeat_input.min
                 if (
                     not any(incoming_key.startswith(rep_prefix) for incoming_key in incoming.keys())
@@ -632,7 +632,7 @@ def _populate_state_legacy(
                 group_state.append(new_state_upload)
             for rep_index, rep_state in enumerate(group_state):
                 rep_index = rep_state.get("__index__", rep_index)
-                rep_prefix = "%s_%d|" % (key, rep_index)
+                rep_prefix = f"{key}_{rep_index}|"
                 _populate_state_legacy(
                     request_context,
                     dataset_input.inputs,

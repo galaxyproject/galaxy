@@ -745,8 +745,12 @@ class DynamicOptions:
                             name = "a configuration file"
                         # Perhaps this should be an error, but even a warning is useful.
                         log.warning(
-                            "Inconsistent number of fields (%i vs %i) in %s using separator %r, check line: %r"
-                            % (field_count, len(fields), name, self.separator, line)
+                            "Inconsistent number of fields (%i vs %i) in %s using separator %r, check line: %r",
+                            field_count,
+                            len(fields),
+                            name,
+                            self.separator,
+                            line,
                         )
                     rval.append(fields)
         return rval

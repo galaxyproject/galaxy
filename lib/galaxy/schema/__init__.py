@@ -1,4 +1,3 @@
-import typing
 from copy import deepcopy
 from datetime import datetime
 from enum import Enum
@@ -6,6 +5,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
     List,
     Optional,
     Tuple,
@@ -136,19 +136,17 @@ def partial_model(
     if exclude is None:
         exclude = []
 
-    @typing.no_type_check  # Mypy doesn't understand pydantic's create_model
     def decorator(model: Type[T]) -> Type[T]:
         def make_optional(field: FieldInfo, default: Any = None) -> Tuple[Any, FieldInfo]:
             new = deepcopy(field)
             new.default = default
-            new.annotation = Optional[field.annotation or Any]
+            new.annotation = Optional[field.annotation or Any]  # type:ignore[assignment]
             return new.annotation, new
 
-        fields = model.model_fields
         if include is None:
-            fields = fields.items()
+            fields: Iterable[Tuple[str, FieldInfo]] = model.model_fields.items()
         else:
-            fields = ((k, v) for k, v in fields.items() if k in include)
+            fields = ((k, v) for k, v in model.model_fields.items() if k in include)
 
         return create_model(
             model.__name__,
@@ -159,6 +157,6 @@ def partial_model(
                 for field_name, field_info in fields
                 if exclude is None or field_name not in exclude
             },
-        )
+        )  # type:ignore[call-overload]
 
     return decorator
