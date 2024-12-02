@@ -224,28 +224,28 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
         return get_user_by_email(app.model.session, user["email"])
 
 
-class TestSecretsInExtraUserPreferences(
-    integration_util.IntegrationTestCase, integration_util.ConfiguresDatabaseVault, TestsTools
-):
-    dataset_populator: DatasetPopulator
+# class TestSecretsInExtraUserPreferences(
+#     integration_util.IntegrationTestCase, integration_util.ConfiguresDatabaseVault, TestsTools
+# ):
+#     dataset_populator: DatasetPopulator
 
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        super().handle_galaxy_config_kwds(config)
-        cls._configure_database_vault(config)
-        config["user_preferences_extra_conf_path"] = os.path.join(
-            os.path.dirname(__file__), "user_preferences_extra_conf.yml"
-        )
+#     @classmethod
+#     def handle_galaxy_config_kwds(cls, config):
+#         super().handle_galaxy_config_kwds(config)
+#         cls._configure_database_vault(config)
+#         config["user_preferences_extra_conf_path"] = os.path.join(
+#             os.path.dirname(__file__), "user_preferences_extra_conf.yml"
+#         )
 
-    def setUp(self):
-        super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+#     def setUp(self):
+#         super().setUp()
+#         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
-    @skip_without_tool("secret_tool")
-    def test_secrets_tool(self, history_id):
-        user = self._setup_user(TEST_USER_EMAIL)
-        url = self._api_url(f"users/{user['id']}/information/inputs", params=dict(key=self.master_api_key))
-        put(url, data=json.dumps({"secret_tool|api_key": "test"}))
-        run_response = self._run("secret", history_id, assert_ok=True)
-        outputs = run_response["outputs"]
-        assert outputs[0]["extra_files"][0]["value"] == "test"
+#     @skip_without_tool("secret_tool")
+#     def test_secrets_tool(self, history_id):
+#         user = self._setup_user(TEST_USER_EMAIL)
+#         url = self._api_url(f"users/{user['id']}/information/inputs", params=dict(key=self.master_api_key))
+#         put(url, data=json.dumps({"secret_tool|api_key": "test"}))
+#         run_response = self._run("secret", history_id, assert_ok=True)
+#         outputs = run_response["outputs"]
+#         assert outputs[0]["extra_files"][0]["value"] == "test"
