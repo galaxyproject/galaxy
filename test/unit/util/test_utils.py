@@ -122,7 +122,8 @@ def test_listify() -> None:
     assert util.listify("foo") == ["foo"]
     assert util.listify("foo, bar") == ["foo", " bar"]
     assert util.listify("foo, bar", do_strip=True) == ["foo", "bar"]
-    assert util.listify([1, 2, 3]) == [1, 2, 3]
+    list_ = [1, 2, 3]
+    assert util.listify(list_) is list_
     assert util.listify((1, 2, 3)) == [1, 2, 3]
     s = {1, 2, 3}
     assert util.listify(s) == [s]

@@ -1109,7 +1109,9 @@ def listify(item: Any, do_strip: bool = False) -> List:
     """
     if not item:
         return []
-    elif isinstance(item, (list, tuple)):
+    elif isinstance(item, list):
+        return item
+    elif isinstance(item, tuple):
         return list(item)
     elif isinstance(item, str) and item.count(","):
         if do_strip:
