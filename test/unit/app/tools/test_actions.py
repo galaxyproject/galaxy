@@ -52,15 +52,15 @@ TWO_OUTPUTS = """<tool id="test_tool" name="Test Tool">
 
 def test_on_text_for_names():
     def assert_on_text_is(expected, *names):
-        on_text = on_text_for_names(names)
+        on_text = on_text_for_names(names, "dataset")
         assert on_text == expected, f"Wrong on text value {on_text}, expected {expected}"
 
-    assert_on_text_is("data 1", "data 1")
-    assert_on_text_is("data 1 and data 2", "data 1", "data 2")
-    assert_on_text_is("data 1, data 2, and data 3", "data 1", "data 2", "data 3")
-    assert_on_text_is("data 1, data 2, and others", "data 1", "data 2", "data 3", "data 4")
+    assert_on_text_is("dataset 1", "1")
+    assert_on_text_is("datasets 1 and 2", "1", "2")
+    assert_on_text_is("datasets 1, 2, and 3", "1", "2", "3")
+    assert_on_text_is("datasets 1, 2, and others", "1", "2", "3", "4")
 
-    assert_on_text_is("data 1 and data 2", "data 1", "data 1", "data 2")
+    assert_on_text_is("datasets 1 and 2", "1", "1", "2")
 
 
 class TestDefaultToolAction(TestCase, tools_support.UsesTools):
@@ -99,7 +99,7 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
             tools_support.SIMPLE_CAT_TOOL_CONTENTS,
             incoming,
         )
-        assert output["out1"].name == "Test Tool on data 2 and data 1"
+        assert output["out1"].name == "Test Tool on datasets 2 and 1"
 
     def test_object_store_ids(self):
         _, output = self._simple_execute(contents=TWO_OUTPUTS)

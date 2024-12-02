@@ -50,7 +50,7 @@ from galaxy.tools.execute import (
 )
 from galaxy.tools.execution_helpers import (
     filter_output,
-    on_text_for_names,
+    on_text_for_dataset_and_collections,
     ToolExecutionCache,
 )
 from galaxy.tools.parameters import update_dataset_ids
@@ -885,6 +885,7 @@ class DefaultToolAction(ToolAction):
 
     def _get_on_text(self, inp_data, inp_dataset_collections):
         input_names = []
+        collection_names = []
         collection_hda_ids = set()
         # output collection id and store included hda ids (to avoid extra inclusion in the list of datasets)
         # two for loops because:
@@ -905,8 +906,8 @@ class DefaultToolAction(ToolAction):
             if getattr(data, "id", None) is None or data.id in collection_hda_ids:
                 continue
             if getattr(data, "hid", None):
-                input_names.append(f"data {data.hid}")
-        return on_text_for_names(input_names)
+                input_names.append(f"{data.hid}")
+        return on_text_for_dataset_and_collections(dataset_names=input_names, collection_names=collection_names)
 
     def _new_job_for_session(self, trans, tool, history) -> Tuple[model.Job, Optional[model.GalaxySession]]:
         job = trans.app.model.Job()
