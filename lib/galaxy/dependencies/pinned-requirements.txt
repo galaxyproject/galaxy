@@ -152,7 +152,7 @@ pyreadline3==3.5.4 ; sys_platform == 'win32'
 pysam==0.22.1
 python-dateutil==2.9.0.post0
 python-magic==0.4.27
-python-multipart==0.0.17
+python-multipart==0.0.18
 python-slugify==8.0.4
 python3-openid==3.2.0
 pytz==2024.2
