@@ -53,6 +53,8 @@ const labelPublicName = ref(localize("Public name"));
 const labelEmailAddress = ref(localize("Email address"));
 const labelConfirmPassword = ref(localize("Confirm password"));
 const labelSubscribe = ref(localize("Stay in the loop and join the galaxy-announce mailing list."));
+const showPasswordGuidelines: Ref<boolean> = ref(false);
+
 
 const custosPreferred = computed(() => {
     return props.enableOidc && props.preferCustosLogin;
@@ -207,6 +209,10 @@ async function submit() {
                                         autocomplete="new-password"
                                         required 
                                     />
+                                    <!-- password guidelines -->
+                                    <BButton variant="info" class="mt-3" @click="showPasswordGuidelines = true">
+                                        Password Guidelines
+                                    </BButton>
                                     <!-- strength bar -->
                                     <div v-if="passwordStrength !== null" class="password-strength-bar-container mt-2">
                                         <div
@@ -285,6 +291,22 @@ async function submit() {
                         </BCardFooter>
                     </BCard>
                 </BForm>
+            </div>
+
+            <div>
+                <BModal v-model="showPasswordGuidelines" title="Tips for a secure Password">
+                    <p>A good password should meet the following criteria:</p>
+                    <ul>
+                        <li>At east 12 characters long.</li>
+                        <li>Use uppercase and lowercase letters.</li>
+                        <li>At least one number and one special character.</li>
+                        <li>Avoid common passwords like <code>123456</code> or <code>password</code>.</li>
+                        <li>No repeated patterns like <code>aaaa</code> or <code>123123</code>.</li>
+                    </ul>
+                    <template v-slot:modal-footer>
+                        <BButton variant="secondary" @click="showPasswordGuidelines = false">Schließen</BButton>
+                    </template>
+                </BModal>
             </div>
 
             <div v-if="termsUrl" class="col position-relative embed-container">
