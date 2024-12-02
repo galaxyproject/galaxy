@@ -60,7 +60,11 @@
                     :license="license"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
-                    @onAttributes="showAttributes"
+                    @onAttributes="
+                        (e) => {
+                            showAttributes(e);
+                        }
+                    "
                     @onHighlight="onHighlight"
                     @onUnhighlight="onUnhighlight"
                     @onRefactor="onAttemptRefactor"
@@ -75,6 +79,7 @@
                     v-else-if="isActiveSideBar('workflow-editor-attributes')"
                     :id="id"
                     :tags="tags"
+                    :highlight="highlightAttribute"
                     :parameters="parameters"
                     :annotation="annotation"
                     :name="name"
@@ -296,10 +301,13 @@ export default {
             parameters.value = getUntypedWorkflowParameters(steps.value);
         }
 
-        function showAttributes() {
+        function showAttributes(args) {
             ensureParametersSet();
             stateStore.activeNodeId = null;
             activityBar.value?.setActiveSideBar("workflow-editor-attributes");
+            if (args.highlight) {
+                this.highlightAttribute = args.highlight;
+            }
         }
 
         const name = ref("Unnamed Workflow");
@@ -521,6 +529,7 @@ export default {
             refactorActions: [],
             scrollToId: null,
             highlightId: null,
+            highlightAttribute: null,
             messageTitle: null,
             messageBody: null,
             messageIsError: false,
