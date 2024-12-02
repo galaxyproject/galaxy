@@ -48,7 +48,7 @@
                 <MarkdownDefault v-if="obj.name === 'default'" :content="obj.content" />
                 <MarkdownVega v-else-if="obj.name === 'vega'" :content="obj.content" />
                 <MarkdownVitessce v-else-if="obj.name === 'vitessce'" :content="obj.content" />
-                <MarkdownContainer
+                <MarkdownGalaxy
                     v-else-if="obj.name === 'galaxy'"
                     :content="obj.content"
                     :datasets="datasets"
@@ -75,7 +75,7 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 
 import { parseMarkdown } from "./parse";
 
-import MarkdownContainer from "./MarkdownContainer.vue";
+import MarkdownGalaxy from "./Sections/MarkdownGalaxy.vue";
 import MarkdownDefault from "./Sections/MarkdownDefault.vue";
 import MarkdownVega from "./Sections/MarkdownVega.vue";
 import MarkdownVitessce from "./Sections/MarkdownVitessce.vue";
@@ -90,7 +90,7 @@ library.add(faDownload, faEdit);
 export default {
     components: {
         MarkdownDefault,
-        MarkdownContainer,
+        MarkdownGalaxy,
         MarkdownVega,
         MarkdownVitessce,
         FontAwesomeIcon,
