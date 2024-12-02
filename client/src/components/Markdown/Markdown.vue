@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
+
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { parseMarkdown } from "./parse";
 
@@ -8,8 +9,8 @@ import MarkdownDefault from "./Sections/MarkdownDefault.vue";
 import MarkdownVega from "./Sections/MarkdownVega.vue";
 import MarkdownVitessce from "./Sections/MarkdownVitessce.vue";
 
-import LoadingSpan from "components/LoadingSpan.vue";
-import StsDownloadButton from "components/StsDownloadButton.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import StsDownloadButton from "@/components/StsDownloadButton.vue";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -37,7 +38,7 @@ interface MarkdownConfig {
 const props = defineProps<{
     markdownConfig: MarkdownConfig;
     enable_beta_markdown_export?: boolean;
-    downloadEndpoint?: string;
+    downloadEndpoint: string;
     readOnly?: boolean;
     exportLink?: string;
 }>();
@@ -95,8 +96,8 @@ function initConfig() {
         collections.value = config.history_dataset_collections || {};
         workflows.value = config.workflows || {};
         invocations.value = config.invocations || {};
-        loading.value = false;
         workflowID.value = Object.keys(config.workflows || {})[0] || "";
+        loading.value = false;
     }
 }
 
