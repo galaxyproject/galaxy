@@ -97,7 +97,7 @@
                     @onClick="onExecute(config, currentHistoryId)" />
             </template>
             <template v-slot:buttons>
-                <div class="tagging-section">
+                <div class="tagging-section" ref="tagContainer">
                     <div class="run-tool-container">
                         <ButtonSpinner
                             title="Run Tool"
@@ -106,20 +106,21 @@
                             :wait="showExecuting"
                             :tooltip="tooltip"
                             @onClick="onExecute(config, currentHistoryId)" />
-                        <button
-                            type="button"
-                            class="mt-3 mb-3 run-tool-btn" 
-                            @click="toggleDropdown"
-                            :title="'Add tags for output datasets'">
-                            {{ isDropdownVisible ? "▲" : "▼" }}
-                        </button> 
+                            <BButton
+                                type="button"
+                                class="btn btn-secondary"
+                                v-b-tooltip.hover.bottom
+                                title="Add tags for output datasets"
+                                @click="toggleTagsContainer">
+                                <FontAwesomeIcon icon="fa-tags" />
+                            </BButton>
                     </div>
                     <div
                         v-if="isDropdownVisible"
                         class="tags-container">
                         <div class="existing-tags">
                             <div class="tag-list">
-                                <tag
+                                <Tag
                                     v-for="(tag, index) in tags"
                                     :key="index"
                                     :option="tag"
@@ -130,10 +131,10 @@
                         </div>
                         <div class="add-tag-section">
                             <input
-                                v-model="newTag"
-                                @keyup.enter="addTag"
-                                placeholder="Add tag and press Enter"
                                 class="tag-input"
+                                v-model="newTag"
+                                placeholder="Add tag and press Enter"
+                                @keyup.enter="addTag"
                             />
                         </div>
                     </div>
@@ -168,6 +169,13 @@ import { allowCachedJobs } from "./utilities";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import Tag from "@/components/TagsMultiselect/Tag.vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTags } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import { BButton } from "bootstrap-vue";
+
+library.add(faTags);
 
 export default {
     components: {
@@ -181,6 +189,8 @@ export default {
         ToolRecommendation,
         Heading,
         Tag,
+        FontAwesomeIcon,
+        BButton,
     },
     props: {
         id: {
@@ -304,9 +314,6 @@ export default {
     },
     methods: {
         ...mapActions(useJobStore, ["saveLatestResponse"]),
-        toggleDropdown() {
-            this.isDropdownVisible = !this.isDropdownVisible;
-        },
         emailAllowed(config, user) {
             return config.server_mail_configured && !user.isAnonymous;
         },
@@ -459,6 +466,9 @@ export default {
                 }
             );
         },
+        toggleTagsContainer() {
+            this.isDropdownVisible = !this.isDropdownVisible;
+        },
         addTag() {
             if (this.newTag.trim() && !this.tags.includes(this.newTag.trim())) {
                 this.tags.push(this.newTag.trim());
@@ -468,6 +478,18 @@ export default {
         removeTag(index) {
             this.tags.splice(index, 1);
         },
+        handleClickOutside(event) {
+            const tagContainer = this.$refs.tagContainer;
+            if (tagContainer && !tagContainer.contains(event.target)) {
+                this.isDropdownVisible = false;
+            }
+        },
+    },
+    mounted() {
+        document.addEventListener("click", this.handleClickOutside);
+    },
+    beforeUnmount() {
+        document.removeEventListener("click", this.handleClickOutside);
     },
 };
 </script>
@@ -484,57 +506,20 @@ export default {
     align-items: center;
     position: relative; 
 }
-/*
-.arrow-toggle-btn {
-    background: inherit; 
-    color: inherit; 
-    border: none; 
-    cursor: pointer; 
-    font-size: 1rem; 
-    height: 100%; 
-    padding: 0 0.5rem; 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box; 
-    border-radius: 4px; 
-}
 
-.arrow-toggle-btn:hover {
-    background: #ddd; 
-}
-
-.arrow-toggle-btn[title]:hover::after {
-    content: attr(title); 
-    position: absolute;
-    bottom: 100%; 
-    left: 50%;
-    transform: translateX(-50%);
-    background: #333; 
-    color: #fff; 
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    white-space: nowrap;
-    z-index: 20;
-}
-*/
 .tags-container {
     position: absolute;
     top: 100%; 
     left: 0;
-    margin-top: 0; 
+    margin-top: -15px;
     padding: 0.5rem;
     background: #fff; 
     border: 1px solid #ddd; 
     border-radius: 4px;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
     gap: 0.5rem;
-    min-width: max-content;
-    max-width: 200px;
-    word-wrap: break-word; 
+    max-width: max-content;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
     z-index: 10; 
 }
@@ -542,7 +527,6 @@ export default {
 .tag-list {
     display: flex;
     flex-wrap: wrap; 
-    gap: 0.5rem;
 }
 
 .tag-input {
