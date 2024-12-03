@@ -16,6 +16,7 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA_FRAC,
     DEFAULT_SORT,
 )
+from galaxy.util import listify
 from .interface import (
     AssertionDict,
     AssertionList,
@@ -97,6 +98,16 @@ class YamlToolSource(ToolSource):
 
     def parse_expression(self):
         return self.root_dict.get("expression")
+
+    def parse_shell_command(self) -> Optional[str]:
+        return self.root_dict.get("shell_command")
+
+    def parse_base_command(self) -> Optional[List[str]]:
+        """Return string containing script entrypoint."""
+        return listify(self.root_dict.get("base_command"))
+
+    def parse_arguments(self) -> Optional[List[str]]:
+        return self.root_dict.get("arguments")
 
     def parse_environment_variables(self):
         return []
