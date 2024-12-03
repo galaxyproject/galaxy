@@ -83,7 +83,7 @@ class ModelOperationToolAction(DefaultToolAction):
         ) = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
 
         # Build name for output datasets based on tool name and input names
-        on_text = self._get_on_text(inp_data)
+        on_text = self._get_on_text(inp_data, inp_dataset_collections)
 
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming)
