@@ -6,7 +6,6 @@ import { computed, ref, watch } from "vue";
 
 import type { HDASummary, HistoryItemSummary, HistorySummary } from "@/api";
 import { createDatasetCollection } from "@/components/History/model/queries";
-import { useGlobalUploadModal } from "@/composables/globalUploadModal.js";
 import { useCollectionBuilderItemsStore } from "@/stores/collectionBuilderItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
@@ -20,8 +19,6 @@ import PairedListCollectionCreator from "./PairedListCollectionCreator.vue";
 import Heading from "@/components/Common/Heading.vue";
 import GenericItem from "@/components/History/Content/GenericItem.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-const { openGlobalUploadModal } = useGlobalUploadModal();
 
 interface Props {
     historyId: string;
@@ -263,12 +260,6 @@ function resetModal() {
         <BAlert v-else-if="!fromSelection && historyItemsError" variant="danger" show>
             {{ historyItemsError }}
         </BAlert>
-        <BAlert v-else-if="!creatorItems?.length" variant="info" show>
-            {{ localize("No items available to create a collection.") }}
-            <BLink class="text-decoration-none" @click.stop.prevent="openGlobalUploadModal">
-                Upload some datasets and try again.
-            </BLink>
-        </BAlert>
         <BAlert v-else-if="creatingCollection" variant="info" show>
             <LoadingSpan :message="localize('Creating collection')" />
         </BAlert>
@@ -295,7 +286,7 @@ function resetModal() {
         <ListCollectionCreator
             v-else-if="props.collectionType === 'list'"
             :history-id="props.historyId"
-            :initial-elements="creatorItems"
+            :initial-elements="creatorItems || []"
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
@@ -304,7 +295,7 @@ function resetModal() {
         <PairedListCollectionCreator
             v-else-if="props.collectionType === 'list:paired'"
             :history-id="props.historyId"
-            :initial-elements="creatorItems"
+            :initial-elements="creatorItems || []"
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
@@ -313,7 +304,7 @@ function resetModal() {
         <PairCollectionCreator
             v-else-if="props.collectionType === 'paired'"
             :history-id="props.historyId"
-            :initial-elements="creatorItems"
+            :initial-elements="creatorItems || []"
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"

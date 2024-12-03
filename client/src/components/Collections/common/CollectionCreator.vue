@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faChevronDown, faChevronUp, faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormCheckbox, BFormGroup, BFormInput, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BButton, BFormCheckbox, BFormGroup, BFormInput, BLink, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -38,6 +38,7 @@ interface Props {
     renderExtensionsToggle?: boolean;
     extensions?: string[];
     extensionsToggle?: boolean;
+    noItems?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -134,103 +135,114 @@ watch(
 <template>
     <BTabs v-model="currentTab" fill justified>
         <BTab class="collection-creator" :title="localize('Create Collection')">
-            <div class="header flex-row no-flex">
-                <div class="main-help well clear" :class="{ expanded: isExpanded }">
-                    <a
-                        class="more-help"
-                        href="javascript:void(0);"
-                        role="button"
-                        :title="localize('Expand or Close Help')"
-                        @click="clickForHelp">
-                        <div v-if="!isExpanded">
-                            <FontAwesomeIcon :icon="faChevronDown" />
-                            <span class="sr-only">{{ localize("Expand Help") }}</span>
-                        </div>
-                        <div v-else>
-                            <FontAwesomeIcon :icon="faChevronUp" />
-                            <span class="sr-only">{{ localize("Close Help") }}</span>
-                        </div>
-                    </a>
-
-                    <div class="help-content">
-                        <!-- each collection that extends this will add their own help content -->
-                        <slot name="help-content"></slot>
-
+            <div v-if="props.noItems">
+                <BAlert variant="info" show>
+                    {{ localize("No items available to create a collection.") }}
+                    {{ localize("Exit and change your current history, or") }}
+                    <BLink class="text-decoration-none" @click.stop.prevent="currentTab = Tabs.upload">
+                        {{ localize("Upload some datasets.") }}
+                    </BLink>
+                </BAlert>
+            </div>
+            <div v-else>
+                <div class="header flex-row no-flex">
+                    <div class="main-help well clear" :class="{ expanded: isExpanded }">
                         <a
                             class="more-help"
                             href="javascript:void(0);"
                             role="button"
                             :title="localize('Expand or Close Help')"
                             @click="clickForHelp">
-                            <span class="sr-only">{{ localize("Expand Help") }}</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="middle flex-row flex-row-container">
-                <slot name="middle-content"></slot>
-            </div>
-
-            <div class="footer flex-row">
-                <div class="vertically-spaced">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <BAlert v-if="extensions?.length" class="w-100 py-0" variant="secondary" show>
-                            <HelpText
-                                uri="galaxy.collections.collectionBuilder.filteredExtensions"
-                                :text="localize('Filtered extensions: ')" />
-                            <strong>{{ orList(extensions) }}</strong>
-                        </BAlert>
-                    </div>
-
-                    <div class="d-flex align-items-center justify-content-between">
-                        <BFormGroup class="inputs-form-group">
-                            <BFormCheckbox
-                                v-if="renderExtensionsToggle"
-                                name="remove-extensions"
-                                switch
-                                :checked="extensionsToggle"
-                                @input="emit('remove-extensions-toggle')">
-                                {{ localize("Remove file extensions?") }}
-                            </BFormCheckbox>
-
-                            <div data-description="hide original elements">
-                                <BFormCheckbox v-model="localHideSourceItems" name="hide-originals" switch>
-                                    <HelpText
-                                        uri="galaxy.collections.collectionBuilder.hideOriginalElements"
-                                        :text="localize('Hide original elements')" />
-                                </BFormCheckbox>
+                            <div v-if="!isExpanded">
+                                <FontAwesomeIcon :icon="faChevronDown" />
+                                <span class="sr-only">{{ localize("Expand Help") }}</span>
                             </div>
-                        </BFormGroup>
+                            <div v-else>
+                                <FontAwesomeIcon :icon="faChevronUp" />
+                                <span class="sr-only">{{ localize("Close Help") }}</span>
+                            </div>
+                        </a>
 
-                        <BFormGroup
-                            class="flex-gapx-1 d-flex align-items-center w-50 inputs-form-group"
-                            :label="localize('Name:')"
-                            label-for="collection-name">
-                            <BFormInput
-                                id="collection-name"
-                                v-model="collectionName"
-                                class="collection-name"
-                                :placeholder="localize('Enter a name for your new collection')"
-                                size="sm"
-                                required
-                                :state="!collectionName ? false : null" />
-                        </BFormGroup>
+                        <div class="help-content">
+                            <!-- each collection that extends this will add their own help content -->
+                            <slot name="help-content"></slot>
+
+                            <a
+                                class="more-help"
+                                href="javascript:void(0);"
+                                role="button"
+                                :title="localize('Expand or Close Help')"
+                                @click="clickForHelp">
+                                <span class="sr-only">{{ localize("Expand Help") }}</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
 
-                <div class="actions vertically-spaced d-flex justify-content-between">
-                    <BButton tabindex="-1" @click="cancelCreate">
-                        {{ localize("Cancel") }}
-                    </BButton>
+                <div class="middle flex-row flex-row-container">
+                    <slot name="middle-content"></slot>
+                </div>
 
-                    <BButton
-                        class="create-collection"
-                        variant="primary"
-                        :disabled="!validInput"
-                        @click="emit('clicked-create', collectionName)">
-                        {{ localize("Create collection") }}
-                    </BButton>
+                <div class="footer flex-row">
+                    <div class="vertically-spaced">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <BAlert v-if="extensions?.length" class="w-100 py-0" variant="secondary" show>
+                                <HelpText
+                                    uri="galaxy.collections.collectionBuilder.filteredExtensions"
+                                    :text="localize('Filtered extensions: ')" />
+                                <strong>{{ orList(extensions) }}</strong>
+                            </BAlert>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between">
+                            <BFormGroup class="inputs-form-group">
+                                <BFormCheckbox
+                                    v-if="renderExtensionsToggle"
+                                    name="remove-extensions"
+                                    switch
+                                    :checked="extensionsToggle"
+                                    @input="emit('remove-extensions-toggle')">
+                                    {{ localize("Remove file extensions?") }}
+                                </BFormCheckbox>
+
+                                <div data-description="hide original elements">
+                                    <BFormCheckbox v-model="localHideSourceItems" name="hide-originals" switch>
+                                        <HelpText
+                                            uri="galaxy.collections.collectionBuilder.hideOriginalElements"
+                                            :text="localize('Hide original elements')" />
+                                    </BFormCheckbox>
+                                </div>
+                            </BFormGroup>
+
+                            <BFormGroup
+                                class="flex-gapx-1 d-flex align-items-center w-50 inputs-form-group"
+                                :label="localize('Name:')"
+                                label-for="collection-name">
+                                <BFormInput
+                                    id="collection-name"
+                                    v-model="collectionName"
+                                    class="collection-name"
+                                    :placeholder="localize('Enter a name for your new collection')"
+                                    size="sm"
+                                    required
+                                    :state="!collectionName ? false : null" />
+                            </BFormGroup>
+                        </div>
+                    </div>
+
+                    <div class="actions vertically-spaced d-flex justify-content-between">
+                        <BButton tabindex="-1" @click="cancelCreate">
+                            {{ localize("Cancel") }}
+                        </BButton>
+
+                        <BButton
+                            class="create-collection"
+                            variant="primary"
+                            :disabled="!validInput"
+                            @click="emit('clicked-create', collectionName)">
+                            {{ localize("Create collection") }}
+                        </BButton>
+                    </div>
                 </div>
             </div>
         </BTab>

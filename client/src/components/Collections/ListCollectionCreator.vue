@@ -359,287 +359,284 @@ function renameElement(element: any, name: string) {
             </BAlert>
         </div>
         <div v-else>
-            <div v-if="noInitialElements">
+            <div v-if="fromSelection && returnInvalidElementsLength">
                 <BAlert show variant="warning" dismissible>
-                    {{ localize("No datasets were selected") }}
-                    {{ localize("At least one element is needed for the collection. You may need to") }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                        {{ localize("cancel") }}
-                    </a>
-                    {{ localize("and reselect new elements.") }}
-                </BAlert>
-
-                <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
-                        {{ localize("Cancel") }}
-                    </button>
-                </div>
-            </div>
-            <div v-else-if="allElementsAreInvalid">
-                <BAlert v-if="!fromSelection" show variant="warning">
-                    {{
-                        localize(
-                            "No elements in your history are valid for this list. You may need to switch to a different history."
-                        )
-                    }}
-                    <span v-if="extensions?.length">
-                        {{ localize("The following extensions are required for this list: ") }}
-                        <ul>
-                            <li v-for="extension in extensions" :key="extension">
-                                {{ extension }}
-                            </li>
-                        </ul>
-                    </span>
-                </BAlert>
-                <BAlert v-else show variant="warning" dismissible>
                     {{ localize("The following selections could not be included due to problems:") }}
                     <ul>
                         <li v-for="problem in returnInvalidElements" :key="problem">
                             {{ problem }}
                         </li>
                     </ul>
-                    {{ localize("At least one element is needed for the collection. You may need to") }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                        {{ localize("cancel") }}
-                    </a>
-                    {{ localize("and reselect new elements.") }}
                 </BAlert>
-
-                <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
-                        {{ localize("Cancel") }}
-                    </button>
-                </div>
             </div>
-            <div v-else>
-                <div v-if="fromSelection && returnInvalidElementsLength">
-                    <BAlert show variant="warning" dismissible>
-                        {{ localize("The following selections could not be included due to problems:") }}
-                        <ul>
-                            <li v-for="problem in returnInvalidElements" :key="problem">
-                                {{ problem }}
-                            </li>
-                        </ul>
-                    </BAlert>
-                </div>
 
-                <div v-if="showDuplicateError">
-                    <BAlert show variant="danger">
+            <div v-if="showDuplicateError">
+                <BAlert show variant="danger">
+                    {{
+                        localize("Collections cannot have duplicated names. The following list names are duplicated: ")
+                    }}
+                    <ol>
+                        <li v-for="name in duplicateNames" :key="name">{{ name }}</li>
+                    </ol>
+                    {{ localize("Please fix these duplicates and try again.") }}
+                </BAlert>
+            </div>
+
+            <CollectionCreator
+                :oncancel="() => emit('on-cancel')"
+                :history-id="props.historyId"
+                :hide-source-items="hideSourceItems"
+                :extensions="extensions"
+                :no-items="props.initialElements.length == 0 && !props.fromSelection"
+                @add-uploaded-files="addUploadedFiles"
+                @on-update-datatype-toggle="changeDatatypeFilter"
+                @onUpdateHideSourceItems="onUpdateHideSourceItems"
+                @clicked-create="clickedCreate">
+                <template v-slot:help-content>
+                    <!-- TODO: Update help content for case where `fromSelection` is false -->
+                    <p>
                         {{
                             localize(
-                                "Collections cannot have duplicated names. The following list names are duplicated: "
+                                [
+                                    "Collections of datasets are permanent, ordered lists of datasets that can be passed to tools ",
+                                    "and workflows in order to have analyses done on each member of the entire group. This interface allows ",
+                                    "you to create a collection and re-order the final collection.",
+                                ].join("")
                             )
                         }}
-                        <ol>
-                            <li v-for="name in duplicateNames" :key="name">{{ name }}</li>
-                        </ol>
-                        {{ localize("Please fix these duplicates and try again.") }}
-                    </BAlert>
-                </div>
+                    </p>
 
-                <CollectionCreator
-                    :oncancel="() => emit('on-cancel')"
-                    :history-id="props.historyId"
-                    :hide-source-items="hideSourceItems"
-                    :extensions="extensions"
-                    @add-uploaded-files="addUploadedFiles"
-                    @on-update-datatype-toggle="changeDatatypeFilter"
-                    @onUpdateHideSourceItems="onUpdateHideSourceItems"
-                    @clicked-create="clickedCreate">
-                    <template v-slot:help-content>
-                        <!-- TODO: Update help content for case where `fromSelection` is false -->
-                        <p>
-                            {{
-                                localize(
-                                    [
-                                        "Collections of datasets are permanent, ordered lists of datasets that can be passed to tools ",
-                                        "and workflows in order to have analyses done on each member of the entire group. This interface allows ",
-                                        "you to create a collection and re-order the final collection.",
-                                    ].join("")
-                                )
-                            }}
-                        </p>
-
-                        <ul>
-                            <li>
-                                {{ localize("Rename elements in the list by clicking on") }}
-                                <i data-target=".collection-element .name">
-                                    {{ localize("the existing name") }}
-                                </i>
-                                {{ localize(".") }}
-                            </li>
-
-                            <li>
-                                {{ localize("Discard elements from the final created list by clicking on the ") }}
-                                <i data-target=".collection-element .discard">
-                                    {{ localize("Discard") }}
-                                </i>
-                                {{ localize("button.") }}
-                            </li>
-
-                            <li>
-                                {{
-                                    localize(
-                                        "Reorder the list by clicking and dragging elements. Select multiple elements by clicking on"
-                                    )
-                                }}
-                                <i data-target=".collection-element">
-                                    {{ localize("them") }}
-                                </i>
-                                {{
-                                    localize(
-                                        "and you can then move those selected by dragging the entire group. Deselect them by clicking them again or by clicking the"
-                                    )
-                                }}
-                                <i data-target=".clear-selected">
-                                    {{ localize("Clear selected") }}
-                                </i>
-                                {{ localize("link.") }}
-                            </li>
-
-                            <li>
-                                {{ localize("Click ") }}
-                                <i data-target=".reset">
-                                    <FontAwesomeIcon :icon="faUndo" />
-                                </i>
-                                {{ localize("to begin again as if you had just opened the interface.") }}
-                            </li>
-
-                            <li>
-                                {{ localize("Click ") }}
-                                <i data-target=".sort-items">
-                                    <FontAwesomeIcon :icon="faSortAlphaDown" />
-                                </i>
-                                {{ localize("to sort datasets alphabetically.") }}
-                            </li>
-
-                            <li>
-                                {{ localize("Click the") }}
-                                <i data-target=".cancel-create">
-                                    {{ localize("Cancel") }}
-                                </i>
-                                {{ localize("button to exit the interface.") }}
-                            </li>
-                        </ul>
-
-                        <br />
-
-                        <p>
-                            {{ localize("Once your collection is complete, enter a ") }}
-                            <i data-target=".collection-name">
-                                {{ localize("name") }}
-                            </i>
-                            {{ localize("and click") }}
-                            <i data-target=".create-collection">
-                                {{ localize("Create list") }}
+                    <ul>
+                        <li>
+                            {{ localize("Rename elements in the list by clicking on") }}
+                            <i data-target=".collection-element .name">
+                                {{ localize("the existing name") }}
                             </i>
                             {{ localize(".") }}
-                        </p>
-                    </template>
+                        </li>
 
-                    <template v-slot:middle-content>
-                        <div v-if="fromSelection">
-                            <div class="collection-elements-controls">
-                                <div>
-                                    <BButton
-                                        class="reset"
-                                        :title="localize('Reset to original state')"
-                                        size="sm"
-                                        @click="reset">
-                                        <FontAwesomeIcon :icon="faUndo" fixed-width />
-                                        {{ localize("Reset") }}
-                                    </BButton>
-                                    <BButton
-                                        class="sort-items"
-                                        :title="localize('Sort datasets by name')"
-                                        size="sm"
-                                        @click="sortByName">
-                                        <FontAwesomeIcon :icon="faSortAlphaDown" />
-                                    </BButton>
-                                </div>
+                        <li>
+                            {{ localize("Discard elements from the final created list by clicking on the ") }}
+                            <i data-target=".collection-element .discard">
+                                {{ localize("Discard") }}
+                            </i>
+                            {{ localize("button.") }}
+                        </li>
 
-                                <div class="center-text">
-                                    <u>{{ workingElements.length }}</u> {{ localize("elements in list") }}
-                                </div>
+                        <li>
+                            {{
+                                localize(
+                                    "Reorder the list by clicking and dragging elements. Select multiple elements by clicking on"
+                                )
+                            }}
+                            <i data-target=".collection-element">
+                                {{ localize("them") }}
+                            </i>
+                            {{
+                                localize(
+                                    "and you can then move those selected by dragging the entire group. Deselect them by clicking them again or by clicking the"
+                                )
+                            }}
+                            <i data-target=".clear-selected">
+                                {{ localize("Clear selected") }}
+                            </i>
+                            {{ localize("link.") }}
+                        </li>
 
-                                <div>
-                                    <span v-if="atLeastOneDatasetIsSelected"
-                                        >{{ localize("For selection") }} ({{ selectedDatasetElements.length }}):</span
-                                    >
-                                    <BButtonGroup class="" size="sm">
-                                        <BButton
-                                            v-if="atLeastOneDatasetIsSelected"
-                                            :title="localize('Remove selected datasets from the list')"
-                                            @click="clickRemoveSelected">
-                                            <FontAwesomeIcon :icon="faMinus" fixed-width />
-                                            {{ localize("Remove") }}
-                                        </BButton>
-                                        <BButton
-                                            v-if="
-                                                !atLeastOneDatasetIsSelected ||
-                                                selectedDatasetElements.length < workingElements.length
-                                            "
-                                            :title="localize('Select all datasets')"
-                                            size="sm"
-                                            @click="clickSelectAll">
-                                            <FontAwesomeIcon :icon="faSquare" fixed-width />
-                                            {{ localize("Select all") }}
-                                        </BButton>
-                                        <BButton
-                                            v-if="atLeastOneDatasetIsSelected"
-                                            class="clear-selected"
-                                            :title="localize('De-select all selected datasets')"
-                                            @click="clickClearAll">
-                                            <FontAwesomeIcon :icon="faTimes" fixed-width />
-                                            {{ localize("Clear") }}
-                                        </BButton>
-                                    </BButtonGroup>
-                                </div>
+                        <li>
+                            {{ localize("Click ") }}
+                            <i data-target=".reset">
+                                <FontAwesomeIcon :icon="faUndo" />
+                            </i>
+                            {{ localize("to begin again as if you had just opened the interface.") }}
+                        </li>
+
+                        <li>
+                            {{ localize("Click ") }}
+                            <i data-target=".sort-items">
+                                <FontAwesomeIcon :icon="faSortAlphaDown" />
+                            </i>
+                            {{ localize("to sort datasets alphabetically.") }}
+                        </li>
+
+                        <li>
+                            {{ localize("Click the") }}
+                            <i data-target=".cancel-create">
+                                {{ localize("Cancel") }}
+                            </i>
+                            {{ localize("button to exit the interface.") }}
+                        </li>
+                    </ul>
+
+                    <br />
+
+                    <p>
+                        {{ localize("Once your collection is complete, enter a ") }}
+                        <i data-target=".collection-name">
+                            {{ localize("name") }}
+                        </i>
+                        {{ localize("and click") }}
+                        <i data-target=".create-collection">
+                            {{ localize("Create list") }}
+                        </i>
+                        {{ localize(".") }}
+                    </p>
+                </template>
+
+                <template v-slot:middle-content>
+                    <div v-if="noInitialElements">
+                        <BAlert show variant="warning" dismissible>
+                            {{ localize("No datasets were selected") }}
+                            {{ localize("At least one element is needed for the collection. You may need to") }}
+                            <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
+                                {{ localize("cancel") }}
+                            </a>
+                            {{ localize("and reselect new elements.") }}
+                        </BAlert>
+
+                        <div class="float-left">
+                            <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
+                                {{ localize("Cancel") }}
+                            </button>
+                        </div>
+                    </div>
+                    <div v-else-if="allElementsAreInvalid">
+                        <BAlert v-if="!fromSelection" show variant="warning">
+                            {{
+                                localize(
+                                    "No elements in your history are valid for this list. You may need to switch to a different history."
+                                )
+                            }}
+                            <span v-if="extensions?.length">
+                                {{ localize("The following extensions are required for this list: ") }}
+                                <ul>
+                                    <li v-for="extension in extensions" :key="extension">
+                                        {{ extension }}
+                                    </li>
+                                </ul>
+                            </span>
+                        </BAlert>
+                        <BAlert v-else show variant="warning" dismissible>
+                            {{ localize("The following selections could not be included due to problems:") }}
+                            <ul>
+                                <li v-for="problem in returnInvalidElements" :key="problem">
+                                    {{ problem }}
+                                </li>
+                            </ul>
+                            {{ localize("At least one element is needed for the collection. You may need to") }}
+                            <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
+                                {{ localize("cancel") }}
+                            </a>
+                            {{ localize("and reselect new elements.") }}
+                        </BAlert>
+
+                        <div class="float-left">
+                            <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
+                                {{ localize("Cancel") }}
+                            </button>
+                        </div>
+                    </div>
+                    <div v-else-if="fromSelection">
+                        <div class="collection-elements-controls">
+                            <div>
+                                <BButton
+                                    class="reset"
+                                    :title="localize('Reset to original state')"
+                                    size="sm"
+                                    @click="reset">
+                                    <FontAwesomeIcon :icon="faUndo" fixed-width />
+                                    {{ localize("Reset") }}
+                                </BButton>
+                                <BButton
+                                    class="sort-items"
+                                    :title="localize('Sort datasets by name')"
+                                    size="sm"
+                                    @click="sortByName">
+                                    <FontAwesomeIcon :icon="faSortAlphaDown" />
+                                </BButton>
                             </div>
 
-                            <div v-if="noMoreValidDatasets">
-                                <BAlert show variant="warning">
-                                    {{ localize("No elements left. Would you like to") }}
-                                    <a class="reset-text" href="javascript:void(0)" role="button" @click="reset">
-                                        {{ localize("start over") }}
-                                    </a>
-                                    ?
-                                </BAlert>
+                            <div class="center-text">
+                                <u>{{ workingElements.length }}</u> {{ localize("elements in list") }}
                             </div>
 
-                            <draggable
-                                v-model="workingElements"
-                                class="collection-elements scroll-container flex-row drop-zone"
-                                chosen-class="bg-secondary">
-                                <DatasetCollectionElementView
-                                    v-for="element in workingElements"
-                                    :key="element.id"
-                                    :class="{ selected: getSelectedDatasetElements.includes(element.id) }"
-                                    :element="element"
-                                    has-actions
-                                    :selected="getSelectedDatasetElements.includes(element.id)"
-                                    @element-is-selected="elementSelected"
-                                    @element-is-discarded="elementDiscarded"
-                                    @onRename="(name) => (element.name = name)" />
-                            </draggable>
+                            <div>
+                                <span v-if="atLeastOneDatasetIsSelected"
+                                    >{{ localize("For selection") }} ({{ selectedDatasetElements.length }}):</span
+                                >
+                                <BButtonGroup class="" size="sm">
+                                    <BButton
+                                        v-if="atLeastOneDatasetIsSelected"
+                                        :title="localize('Remove selected datasets from the list')"
+                                        @click="clickRemoveSelected">
+                                        <FontAwesomeIcon :icon="faMinus" fixed-width />
+                                        {{ localize("Remove") }}
+                                    </BButton>
+                                    <BButton
+                                        v-if="
+                                            !atLeastOneDatasetIsSelected ||
+                                            selectedDatasetElements.length < workingElements.length
+                                        "
+                                        :title="localize('Select all datasets')"
+                                        size="sm"
+                                        @click="clickSelectAll">
+                                        <FontAwesomeIcon :icon="faSquare" fixed-width />
+                                        {{ localize("Select all") }}
+                                    </BButton>
+                                    <BButton
+                                        v-if="atLeastOneDatasetIsSelected"
+                                        class="clear-selected"
+                                        :title="localize('De-select all selected datasets')"
+                                        @click="clickClearAll">
+                                        <FontAwesomeIcon :icon="faTimes" fixed-width />
+                                        {{ localize("Clear") }}
+                                    </BButton>
+                                </BButtonGroup>
+                            </div>
                         </div>
 
-                        <FormSelectMany
-                            v-else
-                            v-model="inListElements"
-                            maintain-selection-order
-                            :placeholder="localize('Filter datasets by name')"
-                            :options="workingElements.map((e) => ({ label: e.name || '', value: e }))">
-                            <template v-slot:label-area="{ value }">
-                                <DatasetCollectionElementView
-                                    class="w-100"
-                                    :element="value"
-                                    @onRename="(name) => renameElement(value, name)" />
-                            </template>
-                        </FormSelectMany>
-                    </template>
-                </CollectionCreator>
-            </div>
+                        <div v-if="noMoreValidDatasets">
+                            <BAlert show variant="warning">
+                                {{ localize("No elements left. Would you like to") }}
+                                <a class="reset-text" href="javascript:void(0)" role="button" @click="reset">
+                                    {{ localize("start over") }}
+                                </a>
+                                ?
+                            </BAlert>
+                        </div>
+
+                        <draggable
+                            v-model="workingElements"
+                            class="collection-elements scroll-container flex-row drop-zone"
+                            chosen-class="bg-secondary">
+                            <DatasetCollectionElementView
+                                v-for="element in workingElements"
+                                :key="element.id"
+                                :class="{ selected: getSelectedDatasetElements.includes(element.id) }"
+                                :element="element"
+                                has-actions
+                                :selected="getSelectedDatasetElements.includes(element.id)"
+                                @element-is-selected="elementSelected"
+                                @element-is-discarded="elementDiscarded"
+                                @onRename="(name) => (element.name = name)" />
+                        </draggable>
+                    </div>
+
+                    <FormSelectMany
+                        v-else
+                        v-model="inListElements"
+                        maintain-selection-order
+                        :placeholder="localize('Filter datasets by name')"
+                        :options="workingElements.map((e) => ({ label: e.name || '', value: e }))">
+                        <template v-slot:label-area="{ value }">
+                            <DatasetCollectionElementView
+                                class="w-100"
+                                :element="value"
+                                @onRename="(name) => renameElement(value, name)" />
+                        </template>
+                    </FormSelectMany>
+                </template>
+            </CollectionCreator>
         </div>
     </div>
 </template>
