@@ -442,6 +442,52 @@ steps:
         self.assert_connected("input1#output", "first_cat#input1")
 
     @selenium_test
+    def test_editor_change_stack(self):
+        editor = self.components.workflow_editor
+        annotation = "change_stack_test"
+        name = self.workflow_create_new(annotation=annotation)
+
+        self.workflow_editor_set_license("MIT")
+        self.workflow_editor_click_save()
+
+        self.workflow_editor_add_input(item_name="data_input")
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        self.workflow_editor_add_input(item_name="parameter_input")
+
+        editor.node.by_id(id=0).wait_for_present()
+        editor.node.by_id(id=1).wait_for_present()
+        editor.node.by_id(id=2).wait_for_present()
+
+        editor.tool_bar.changes.wait_for_and_click()
+        changes = editor.changes
+
+        changes.action_insert_data_input.wait_for_present()
+        changes.action_insert_data_collection_input.wait_for_present()
+        changes.action_insert_parameter.wait_for_present()
+
+        # Undo all of it by clicking the first node.
+        changes.action_insert_data_input.wait_for_and_click()
+        editor.node.by_id(id=0).assert_absent_or_hidden_after_transitions()
+        editor.node.by_id(id=1).assert_absent_or_hidden_after_transitions()
+        editor.node.by_id(id=2).assert_absent_or_hidden_after_transitions()
+
+        # now that same action has become a redo, so we should have a node back afterward.
+        changes.action_insert_data_input.wait_for_and_click()
+        editor.node.by_id(id=0).wait_for_present()
+        editor.node.by_id(id=1).assert_absent_or_hidden_after_transitions()
+        editor.node.by_id(id=2).assert_absent_or_hidden_after_transitions()
+
+        changes.action_insert_data_collection_input.wait_for_and_click()
+        editor.node.by_id(id=0).wait_for_present()
+        editor.node.by_id(id=1).wait_for_present()
+        editor.node.by_id(id=2).assert_absent_or_hidden_after_transitions()
+
+        changes.action_insert_parameter.wait_for_and_click()
+        editor.node.by_id(id=0).wait_for_present()
+        editor.node.by_id(id=1).wait_for_present()
+        editor.node.by_id(id=2).wait_for_present()
+
+    @selenium_test
     def test_rendering_output_collection_connections(self):
         self.open_in_workflow_editor(WORKFLOW_WITH_OUTPUT_COLLECTION)
         self.workflow_editor_maximize_center_pane()
