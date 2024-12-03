@@ -491,30 +491,25 @@ function renameElement(element: any, name: string) {
                             <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                                 {{ localize("cancel") }}
                             </a>
-                            {{ localize("and reselect new elements.") }}
+                            {{ localize("and reselect new elements, or upload datasets.") }}
                         </BAlert>
-
-                        <div class="float-left">
-                            <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
-                                {{ localize("Cancel") }}
-                            </button>
-                        </div>
                     </div>
                     <div v-else-if="allElementsAreInvalid">
                         <BAlert v-if="!fromSelection" show variant="warning">
                             {{
                                 localize(
-                                    "No elements in your history are valid for this list. You may need to switch to a different history."
+                                    "No elements in your history are valid for this list. \
+                                    You may need to switch to a different history or upload valid datasets."
                                 )
                             }}
-                            <span v-if="extensions?.length">
+                            <div v-if="extensions?.length">
                                 {{ localize("The following extensions are required for this list: ") }}
                                 <ul>
                                     <li v-for="extension in extensions" :key="extension">
                                         {{ extension }}
                                     </li>
                                 </ul>
-                            </span>
+                            </div>
                         </BAlert>
                         <BAlert v-else show variant="warning" dismissible>
                             {{ localize("The following selections could not be included due to problems:") }}
@@ -527,14 +522,8 @@ function renameElement(element: any, name: string) {
                             <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                                 {{ localize("cancel") }}
                             </a>
-                            {{ localize("and reselect new elements.") }}
+                            {{ localize("and reselect new elements, or upload valid datasets.") }}
                         </BAlert>
-
-                        <div class="float-left">
-                            <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
-                                {{ localize("Cancel") }}
-                            </button>
-                        </div>
                     </div>
                     <div v-else-if="fromSelection">
                         <div class="collection-elements-controls">

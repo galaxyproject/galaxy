@@ -64,7 +64,7 @@ const emit = defineEmits<{
 const noElementsHeader = props.fromSelection ? localize("No elements selected") : localize("No elements available");
 const allInvalidElementsPartTwo = props.fromSelection
     ? localize("and reselect new elements.")
-    : localize("and change your current history or add valid datasets for this collection.");
+    : localize("and change your current history or upload valid datasets for this collection.");
 
 // Flags
 const state = ref<"build" | "error" | "duplicates">("build");
@@ -1005,11 +1005,6 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                             </a>
                             {{ allInvalidElementsPartTwo }}
                         </BAlert>
-                        <div class="float-left">
-                            <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
-                                {{ CANCEL_TEXT }}
-                            </button>
-                        </div>
                     </div>
                     <div v-else-if="allElementsAreInvalid">
                         <BAlert v-if="!fromSelection" show variant="warning">
@@ -1040,11 +1035,6 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                             </a>
                             {{ allInvalidElementsPartTwo }}
                         </BAlert>
-                        <div class="float-left">
-                            <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
-                                {{ CANCEL_TEXT }}
-                            </button>
-                        </div>
                     </div>
                     <div v-else-if="tooFewElementsSelected">
                         <div v-if="returnInvalidElementsLength">
@@ -1064,11 +1054,6 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                             </a>
                             {{ allInvalidElementsPartTwo }}
                         </BAlert>
-                        <div class="float-left">
-                            <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
-                                {{ CANCEL_TEXT }}
-                            </button>
-                        </div>
                     </div>
                     <div v-else>
                         <BCard no-body class="mb-2">
