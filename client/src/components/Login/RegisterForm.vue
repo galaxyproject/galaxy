@@ -209,11 +209,11 @@ async function submit() {
                                         autocomplete="new-password"
                                         required 
                                     />
-                                    <!-- password guidelines -->
+                                    <!-- Password Guidelines -->
                                     <BButton variant="info" class="mt-3" @click="showPasswordGuidelines = true">
                                         Password Guidelines
                                     </BButton>
-                                    <!-- strength bar -->
+                                    <!-- Strength Bar -->
                                     <div v-if="passwordStrength !== null" class="password-strength-bar-container mt-2">
                                         <div
                                             class="password-strength-bar"
@@ -222,7 +222,7 @@ async function submit() {
                                         ></div>
                                     </div>
 
-                                    <!--password strength component -->
+                                    <!--Password Strength Component -->
                                     <div :class="['password-strength', passwordStrength]" class="mt-2">
                                         <span v-if="passwordStrength === 'empty'"></span>
                                         <span v-else-if="passwordStrength === 'weak'">Weak Password</span>
@@ -297,7 +297,7 @@ async function submit() {
                 <BModal v-model="showPasswordGuidelines" title="Tips for a secure Password">
                     <p>A good password should meet the following criteria:</p>
                     <ul>
-                        <li>At east 12 characters long.</li>
+                        <li>At least 12 characters long.</li>
                         <li>Use uppercase and lowercase letters.</li>
                         <li>At least one number and one special character.</li>
                         <li>Avoid common passwords like <code>123456</code> or <code>password</code>.</li>
