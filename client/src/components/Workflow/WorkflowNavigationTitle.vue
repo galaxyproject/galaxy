@@ -159,6 +159,7 @@ const workflowImportTitle = computed(() => {
                                     : 'This workflow has been deleted.'
                             "
                             :disabled="workflow.deleted"
+                            force
                             full
                             :version="workflow.version" />
                     </BButtonGroup>
