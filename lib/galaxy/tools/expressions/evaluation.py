@@ -20,7 +20,13 @@ FILE_DIRECTORY = os.path.normpath(os.path.dirname(os.path.join(__file__)))
 NODE_ENGINE = os.path.join(FILE_DIRECTORY, "cwlNodeEngine.js")
 
 
-def do_eval(expression: str, jobinput: "CWLObjectType", context: Optional["CWLOutputType"] = None):
+def do_eval(
+    expression: str,
+    jobinput: "CWLObjectType",
+    outdir: Optional[str] = None,
+    tmpdir: Optional[str] = None,
+    context: Optional["CWLOutputType"] = None,
+):
     return _do_eval(
         expression,
         jobinput,
