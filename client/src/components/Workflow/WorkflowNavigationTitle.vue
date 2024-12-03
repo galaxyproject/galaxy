@@ -95,16 +95,14 @@ const workflowImportTitle = computed(() => {
 
         <BAlert v-if="error" variant="danger" show>{{ error }}</BAlert>
 
-        <div class="position-relative">
-            <div v-if="workflow" class="ui-portlet-section">
-                <div class="d-flex portlet-header align-items-center">
+        <div class="position-relative mb-2">
+            <div v-if="workflow" class="bg-secondary px-2 py-1 rounded">
+                <div class="d-flex align-items-center flex-gapx-1">
                     <div class="flex-grow-1" data-description="workflow heading">
-                        <div class="px-1">
-                            <FontAwesomeIcon :icon="faSitemap" />
-                            <b class="mx-1">
-                                {{ props.invocation ? "Invoked " : "" }}Workflow: {{ getWorkflowName() }}
-                            </b>
-                            <i>(version: {{ workflow.version + 1 }})</i>
+                        <div>
+                            <FontAwesomeIcon :icon="faSitemap" fixed-width />
+                            <b> {{ props.invocation ? "Invoked " : "" }}Workflow: {{ getWorkflowName() }} </b>
+                            <span>(Version: {{ workflow.version + 1 }})</span>
                         </div>
                     </div>
                     <BButtonGroup>
@@ -119,8 +117,7 @@ const workflowImportTitle = computed(() => {
                             "
                             variant="link"
                             :disabled="workflow.deleted"
-                            :to="`/workflows/edit?id=${workflow.id}&version=${workflow.version}`"
-                            @click="() => {}">
+                            :to="`/workflows/edit?id=${workflow.id}&version=${workflow.version}`">
                             <FontAwesomeIcon :icon="faEdit" fixed-width />
                         </BButton>
                         <AsyncButton
@@ -136,31 +133,30 @@ const workflowImportTitle = computed(() => {
                         </AsyncButton>
 
                         <slot name="workflow-title-actions" />
-
-                        <ButtonSpinner
-                            v-if="!props.invocation"
-                            id="run-workflow"
-                            data-description="execute workflow button"
-                            :wait="runWaiting"
-                            :disabled="runDisabled"
-                            size="sm"
-                            title="Run"
-                            @onClick="emit('on-execute')" />
-                        <WorkflowRunButton
-                            v-else
-                            :id="workflow.id"
-                            data-description="route to workflow run button"
-                            variant="link"
-                            :title="
-                                !workflow.deleted
-                                    ? `<b>Rerun</b><br>${getWorkflowName()}`
-                                    : 'This workflow has been deleted.'
-                            "
-                            :disabled="workflow.deleted"
-                            force
-                            full
-                            :version="workflow.version" />
                     </BButtonGroup>
+                    <ButtonSpinner
+                        v-if="!props.invocation"
+                        id="run-workflow"
+                        data-description="execute workflow button"
+                        :wait="runWaiting"
+                        :disabled="runDisabled"
+                        size="sm"
+                        title="Run Workflow"
+                        @onClick="emit('on-execute')" />
+                    <WorkflowRunButton
+                        v-else
+                        :id="workflow.id"
+                        data-description="route to workflow run button"
+                        variant="link"
+                        :title="
+                            !workflow.deleted
+                                ? `<b>Rerun</b><br>${getWorkflowName()}`
+                                : 'This workflow has been deleted.'
+                        "
+                        :disabled="workflow.deleted"
+                        force
+                        full
+                        :version="workflow.version" />
                 </div>
             </div>
             <div v-if="props.success" class="donemessagelarge">
