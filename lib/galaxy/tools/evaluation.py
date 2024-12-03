@@ -221,19 +221,12 @@ class ToolEvaluator:
             # user_vault = UserVaultWrapper(app.vault, self._user)
             for credentials in self.tool.credentials:
                 reference = credentials.reference
-                for secret_or_variable in credentials.secrets_and_variables:
-                    if secret_or_variable.type == "variable":
-                        # variable_value = self.param_dict.get(f"{reference}/{secret_or_variable.name}")
-                        variable_value = f"A variable: {reference}/{secret_or_variable.name}"
-                        self.environment_variables.append(
-                            {"name": secret_or_variable.inject_as_env, "value": variable_value}
-                        )
-                    elif secret_or_variable.type == "secret":
-                        # secret_value = user_vault.read_secret(f"{reference}/{secret_or_variable.name}")
-                        secret_value = f"A secret: {reference}/{secret_or_variable.name}"
-                        self.environment_variables.append(
-                            {"name": secret_or_variable.inject_as_env, "value": secret_value}
-                        )
+                for secret in credentials.secret:
+                    secret_value = f"{reference}/{secret.name}"
+                    self.environment_variables.append({"name": secret.inject_as_env, "value": secret_value})
+                for variable in credentials.variable:
+                    variable_value = f"{reference}/{variable.name}"
+                    self.environment_variables.append({"name": variable.inject_as_env, "value": variable_value})
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution

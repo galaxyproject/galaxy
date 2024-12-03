@@ -53,10 +53,10 @@ TOOL_XML_1 = """
         <resource type="cuda_device_count_min">1</resource>
         <resource type="cuda_device_count_max">2</resource>
         <resource type="shm_size">67108864</resource>
-        <credentials name="Apollo" reference="gmod.org/apollo" required="true" label="Apollo credential set" description="Please provide credentials for Apollo">
-            <variable name="server" inject_as_env="apollo_url" label="Your Apollo server" />
-            <secret name="username" inject_as_env="apollo_user" label="Your Apollo username" />
-            <secret name="password" inject_as_env="apollo_pass" label="Your Apollo password" />
+        <credentials name="Apollo" reference="gmod.org/apollo" optional="true" multiple="false" label="Apollo credential set" description="Please provide credentials for Apollo">
+            <variable name="server" inject_as_env="apollo_url" label="Your Apollo server" description="URL of your Apollo server" />
+            <secret name="username" inject_as_env="apollo_user" label="Your Apollo username" description="Username for Apollo" />
+            <secret name="password" inject_as_env="apollo_pass" label="Your Apollo password" description="Password for Apollo" />
         </credentials>
     </requirements>
     <outputs>
@@ -371,11 +371,9 @@ class TestXmlLoader(BaseLoaderTestCase):
         *_, credentials = self._tool_source.parse_requirements_and_containers()
         assert credentials[0].name == "Apollo"
         assert credentials[0].reference == "gmod.org/apollo"
-        assert credentials[0].required
-        assert len(credentials[0].secrets_and_variables) == 3
-        assert credentials[0].secrets_and_variables[0].type == "variable"
-        assert credentials[0].secrets_and_variables[1].type == "secret"
-        assert credentials[0].secrets_and_variables[2].type == "secret"
+        assert credentials[0].optional
+        assert len(credentials[0].secrets) == 2
+        assert len(credentials[0].variables) == 1
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())
