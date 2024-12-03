@@ -1,41 +1,44 @@
 <script setup lang="ts">
 import "ui/hoverhighlight";
 
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSortAlphaDown, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { faSquare } from "@fortawesome/free-regular-svg-icons";
+import { faMinus, faSortAlphaDown, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
-import { computed, onMounted, ref } from "vue";
+import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
-import type { HDCADetailed, HistoryItemSummary } from "@/api";
+import type { HDASummary, HistoryItemSummary } from "@/api";
+import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import localize from "@/utils/localization";
 
+import FormSelectMany from "../Form/Elements/FormSelectMany/FormSelectMany.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 import DatasetCollectionElementView from "@/components/Collections/ListDatasetCollectionElementView.vue";
 
-library.add(faSortAlphaDown, faUndo);
+const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
 
 interface Props {
-    initialElements: Array<any>;
-    oncancel: () => void;
-    oncreate: () => void;
-    creationFn: (workingElements: any, collectionName: string, hideSourceItems: boolean) => any;
+    historyId: string;
+    initialElements: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
+    fromSelection?: boolean;
+    extensions?: string[];
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "clicked-create", workingElements: any, collectionName: string, hideSourceItems: boolean): void;
+    (e: "clicked-create", workingElements: HDASummary[], collectionName: string, hideSourceItems: boolean): void;
+    (e: "on-cancel"): void;
 }>();
 
 const state = ref("build");
-const originalNamedElements = ref([]);
 const duplicateNames = ref<string[]>([]);
 const invalidElements = ref<string[]>([]);
-const workingElements = ref<HDCADetailed[]>([]);
+const workingElements = ref<HDASummary[]>([]);
 const selectedDatasetElements = ref<string[]>([]);
 const hideSourceItems = ref(props.defaultHideSourceItems || false);
 
@@ -54,7 +57,7 @@ const returnInvalidElementsLength = computed(() => {
 const returnInvalidElements = computed(() => {
     return invalidElements.value;
 });
-const noElementsSelected = computed(() => {
+const noInitialElements = computed(() => {
     return props.initialElements.length == 0;
 });
 const showDuplicateError = computed(() => {
@@ -64,17 +67,20 @@ const allElementsAreInvalid = computed(() => {
     return props.initialElements.length == invalidElements.value.length;
 });
 
-/** set up instance vars function */
-function _instanceSetUp() {
-    /** Ids of elements that have been selected by the user - to preserve over renders */
-    selectedDatasetElements.value = [];
-}
+/** If not `fromSelection`, the list of elements that will become the collection */
+const inListElements = ref<HDASummary[]>([]);
+
+// variables for datatype mapping and then filtering
+const datatypesMapperStore = useDatatypesMapperStore();
+const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
+
+/** Are we filtering by datatype? */
+const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
 
 // ----------------------------------------------------------------------- process raw list
 /** set up main data */
 function _elementsSetUp() {
     /** a list of invalid elements and the reasons they aren't valid */
-
     invalidElements.value = [];
 
     //TODO: handle fundamental problem of syncing DOM, views, and list here
@@ -84,21 +90,44 @@ function _elementsSetUp() {
     // copy initial list, sort, add ids if needed
     workingElements.value = JSON.parse(JSON.stringify(props.initialElements.slice(0)));
 
-    _ensureElementIds();
+    // reverse the order of the elements to emulate what we have in the history panel
+    workingElements.value.reverse();
+
+    // for inListElements, reset their values (in order) to datasets from workingElements
+    const inListElementsPrev = inListElements.value;
+    inListElements.value = [];
+    inListElementsPrev.forEach((prevElem) => {
+        const element = workingElements.value.find((e) => e.id === prevElem.id);
+        const problem = _isElementInvalid(prevElem);
+
+        if (element) {
+            inListElements.value.push(element);
+        } else if (problem) {
+            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+            invalidElements.value.push(invalidMsg);
+            Toast.error(invalidMsg, localize("Invalid element"));
+        } else {
+            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("has been removed from the collection")}`;
+            invalidElements.value.push(invalidMsg);
+            Toast.error(invalidMsg, localize("Invalid element"));
+        }
+    });
+
+    // _ensureElementIds();
     _validateElements();
     _mangleDuplicateNames();
 }
 
-/** add ids to dataset objs in initial list if none */
-function _ensureElementIds() {
-    workingElements.value.forEach((element) => {
-        if (!Object.prototype.hasOwnProperty.call(element, "id")) {
-            console.warn("Element missing id", element);
-        }
-    });
+// TODO: not sure if this is needed
+// function _ensureElementIds() {
+//     workingElements.value.forEach((element) => {
+//         if (!Object.prototype.hasOwnProperty.call(element, "id")) {
+//             console.warn("Element missing id", element);
+//         }
+//     });
 
-    return workingElements.value;
-}
+//     return workingElements.value;
+// }
 
 // /** separate working list into valid and invalid elements for this collection */
 function _validateElements() {
@@ -116,7 +145,7 @@ function _validateElements() {
 }
 
 /** describe what is wrong with a particular element if anything */
-function _isElementInvalid(element: HistoryItemSummary) {
+function _isElementInvalid(element: HistoryItemSummary): string | null {
     if (element.history_content_type === "dataset_collection") {
         return localize("is a collection, this is not allowed");
     }
@@ -131,6 +160,14 @@ function _isElementInvalid(element: HistoryItemSummary) {
         return localize("has been deleted or purged");
     }
 
+    // is the element's extension not a subtype of any of the required extensions?
+    if (
+        filterExtensions.value &&
+        element.extension &&
+        !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
+    ) {
+        return localize(`has an invalid extension: ${element.extension}`);
+    }
     return null;
 }
 
@@ -152,17 +189,11 @@ function _mangleDuplicateNames() {
     });
 }
 
-function saveOriginalNames() {
-    // Deep copy elements
-    originalNamedElements.value = JSON.parse(JSON.stringify(workingElements.value));
+function changeDatatypeFilter(newFilter: "all" | "datatype" | "ext") {
+    _elementsSetUp();
 }
 
-function getOriginalNames() {
-    // Deep copy elements
-    workingElements.value = JSON.parse(JSON.stringify(originalNamedElements.value));
-}
-
-function elementSelected(e: HDCADetailed) {
+function elementSelected(e: HDASummary) {
     if (!selectedDatasetElements.value.includes(e.id)) {
         selectedDatasetElements.value.push(e.id);
     } else {
@@ -170,8 +201,11 @@ function elementSelected(e: HDCADetailed) {
     }
 }
 
-function elementDiscarded(e: HDCADetailed) {
+function elementDiscarded(e: HDASummary) {
     workingElements.value.splice(workingElements.value.indexOf(e), 1);
+    selectedDatasetElements.value = selectedDatasetElements.value.filter((element) => {
+        return element !== e.id;
+    });
 
     return workingElements.value;
 }
@@ -180,18 +214,27 @@ function clickClearAll() {
     selectedDatasetElements.value = [];
 }
 
+function clickRemoveSelected() {
+    workingElements.value = workingElements.value.filter((element) => {
+        return !selectedDatasetElements.value.includes(element.id);
+    });
+
+    selectedDatasetElements.value = [];
+}
+
+function clickSelectAll() {
+    selectedDatasetElements.value = workingElements.value.map((element) => {
+        return element.id;
+    });
+}
+
 function clickedCreate(collectionName: string) {
     checkForDuplicates();
 
-    if (state.value !== "error") {
-        emit("clicked-create", workingElements.value, collectionName, hideSourceItems.value);
+    const returnedElements = props.fromSelection ? workingElements.value : inListElements.value;
 
-        return props
-            .creationFn(workingElements.value, collectionName, hideSourceItems.value)
-            .done(props.oncreate)
-            .fail(() => {
-                state.value = "error";
-            });
+    if (state.value !== "error") {
+        emit("clicked-create", returnedElements, collectionName, hideSourceItems.value);
     }
 }
 
@@ -215,15 +258,16 @@ function checkForDuplicates() {
 
 /** reset all data to the initial state */
 function reset() {
-    _instanceSetUp();
-    getOriginalNames();
+    /** Ids of elements that have been selected by the user - to preserve over renders */
+    selectedDatasetElements.value = [];
+    _elementsSetUp();
 }
 
 function sortByName() {
     workingElements.value.sort(compareNames);
 }
 
-function compareNames(a: HDCADetailed, b: HDCADetailed) {
+function compareNames(a: HDASummary, b: HDASummary) {
     if (a.name && b.name && a.name < b.name) {
         return -1;
     }
@@ -238,11 +282,55 @@ function onUpdateHideSourceItems(newHideSourceItems: boolean) {
     hideSourceItems.value = newHideSourceItems;
 }
 
-onMounted(() => {
-    _instanceSetUp();
-    _elementsSetUp();
-    saveOriginalNames();
-});
+watch(
+    () => props.initialElements,
+    () => {
+        // for any new/removed elements, add them to working elements
+        _elementsSetUp();
+    },
+    { immediate: true }
+);
+
+watch(
+    () => datatypesMapper.value,
+    async (mapper) => {
+        if (props.extensions?.length && !mapper) {
+            await datatypesMapperStore.createMapper();
+        }
+    },
+    { immediate: true }
+);
+
+function addUploadedFiles(files: HDASummary[]) {
+    const returnedElements = props.fromSelection ? workingElements : inListElements;
+    files.forEach((f) => {
+        const file = props.fromSelection ? f : workingElements.value.find((e) => e.id === f.id);
+        const problem = _isElementInvalid(f);
+        if (file && !returnedElements.value.find((e) => e.id === file.id)) {
+            returnedElements.value.push(file);
+        } else if (problem) {
+            invalidElements.value.push("Uploaded item: " + f.name + "  " + problem);
+            Toast.error(
+                localize(`Dataset ${f.hid}: ${f.name} ${problem} and is an invalid element for this collection`),
+                localize("Uploaded item is invalid")
+            );
+        } else {
+            invalidElements.value.push("Uploaded item: " + f.name + " could not be added to the collection");
+            Toast.error(
+                localize(`Dataset ${f.hid}: ${f.name} could not be added to the collection`),
+                localize("Uploaded item is invalid")
+            );
+        }
+    });
+}
+
+/** find the element in the workingElements array and update its name */
+function renameElement(element: any, name: string) {
+    element = workingElements.value.find((e) => e.id === element.id);
+    if (element) {
+        element.name = name;
+    }
+}
 
 //TODO: issue #9497
 // const removeExtensions = ref(true);
@@ -265,30 +353,45 @@ onMounted(() => {
 
 <template>
     <div class="list-collection-creator">
-        <div v-if="state == 'error'">
+        <div v-if="!showDuplicateError && state == 'error'">
             <BAlert show variant="danger">
-                {{ localize("Galaxy could not be reached and may be updating.  Try again in a few minutes.") }}
+                {{ localize("There was a problem creating the collection.") }}
             </BAlert>
         </div>
         <div v-else>
-            <div v-if="noElementsSelected">
+            <div v-if="noInitialElements">
                 <BAlert show variant="warning" dismissible>
                     {{ localize("No datasets were selected") }}
                     {{ localize("At least one element is needed for the collection. You may need to") }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                         {{ localize("cancel") }}
                     </a>
                     {{ localize("and reselect new elements.") }}
                 </BAlert>
 
                 <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
+                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
                         {{ localize("Cancel") }}
                     </button>
                 </div>
             </div>
             <div v-else-if="allElementsAreInvalid">
-                <BAlert show variant="warning" dismissible>
+                <BAlert v-if="!fromSelection" show variant="warning">
+                    {{
+                        localize(
+                            "No elements in your history are valid for this list. You may need to switch to a different history."
+                        )
+                    }}
+                    <span v-if="extensions?.length">
+                        {{ localize("The following extensions are required for this list: ") }}
+                        <ul>
+                            <li v-for="extension in extensions" :key="extension">
+                                {{ extension }}
+                            </li>
+                        </ul>
+                    </span>
+                </BAlert>
+                <BAlert v-else show variant="warning" dismissible>
                     {{ localize("The following selections could not be included due to problems:") }}
                     <ul>
                         <li v-for="problem in returnInvalidElements" :key="problem">
@@ -296,20 +399,20 @@ onMounted(() => {
                         </li>
                     </ul>
                     {{ localize("At least one element is needed for the collection. You may need to") }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                         {{ localize("cancel") }}
                     </a>
                     {{ localize("and reselect new elements.") }}
                 </BAlert>
 
                 <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
+                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
                         {{ localize("Cancel") }}
                     </button>
                 </div>
             </div>
             <div v-else>
-                <div v-if="returnInvalidElementsLength">
+                <div v-if="fromSelection && returnInvalidElementsLength">
                     <BAlert show variant="warning" dismissible>
                         {{ localize("The following selections could not be included due to problems:") }}
                         <ul>
@@ -335,11 +438,16 @@ onMounted(() => {
                 </div>
 
                 <CollectionCreator
-                    :oncancel="oncancel"
+                    :oncancel="() => emit('on-cancel')"
+                    :history-id="props.historyId"
                     :hide-source-items="hideSourceItems"
+                    :extensions="extensions"
+                    @add-uploaded-files="addUploadedFiles"
+                    @on-update-datatype-toggle="changeDatatypeFilter"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate">
                     <template v-slot:help-content>
+                        <!-- TODO: Update help content for case where `fromSelection` is false -->
                         <p>
                             {{
                                 localize(
@@ -430,33 +538,67 @@ onMounted(() => {
                     </template>
 
                     <template v-slot:middle-content>
-                        <div class="collection-elements-controls">
-                            <BButton class="reset" :title="localize('Undo all reordering and discards')" @click="reset">
-                                <FontAwesomeIcon :icon="faUndo" />
-                            </BButton>
+                        <div v-if="fromSelection">
+                            <div class="collection-elements-controls">
+                                <div>
+                                    <BButton
+                                        class="reset"
+                                        :title="localize('Reset to original state')"
+                                        size="sm"
+                                        @click="reset">
+                                        <FontAwesomeIcon :icon="faUndo" fixed-width />
+                                        {{ localize("Reset") }}
+                                    </BButton>
+                                    <BButton
+                                        class="sort-items"
+                                        :title="localize('Sort datasets by name')"
+                                        size="sm"
+                                        @click="sortByName">
+                                        <FontAwesomeIcon :icon="faSortAlphaDown" />
+                                    </BButton>
+                                </div>
 
-                            <BButton class="sort-items" :title="localize('Sort datasets by name')" @click="sortByName">
-                                <FontAwesomeIcon :icon="faSortAlphaDown" />
-                            </BButton>
+                                <div class="center-text">
+                                    <u>{{ workingElements.length }}</u> {{ localize("elements in list") }}
+                                </div>
 
-                            <a
-                                v-if="atLeastOneDatasetIsSelected"
-                                class="clear-selected"
-                                href="javascript:void(0);"
-                                role="button"
-                                :title="localize('De-select all selected datasets')"
-                                @click="clickClearAll">
-                                {{ localize("Clear selected") }}
-                            </a>
-                        </div>
+                                <div>
+                                    <span v-if="atLeastOneDatasetIsSelected"
+                                        >{{ localize("For selection") }} ({{ selectedDatasetElements.length }}):</span
+                                    >
+                                    <BButtonGroup class="" size="sm">
+                                        <BButton
+                                            v-if="atLeastOneDatasetIsSelected"
+                                            :title="localize('Remove selected datasets from the list')"
+                                            @click="clickRemoveSelected">
+                                            <FontAwesomeIcon :icon="faMinus" fixed-width />
+                                            {{ localize("Remove") }}
+                                        </BButton>
+                                        <BButton
+                                            v-if="
+                                                !atLeastOneDatasetIsSelected ||
+                                                selectedDatasetElements.length < workingElements.length
+                                            "
+                                            :title="localize('Select all datasets')"
+                                            size="sm"
+                                            @click="clickSelectAll">
+                                            <FontAwesomeIcon :icon="faSquare" fixed-width />
+                                            {{ localize("Select all") }}
+                                        </BButton>
+                                        <BButton
+                                            v-if="atLeastOneDatasetIsSelected"
+                                            class="clear-selected"
+                                            :title="localize('De-select all selected datasets')"
+                                            @click="clickClearAll">
+                                            <FontAwesomeIcon :icon="faTimes" fixed-width />
+                                            {{ localize("Clear") }}
+                                        </BButton>
+                                    </BButtonGroup>
+                                </div>
+                            </div>
 
-                        <draggable
-                            v-model="workingElements"
-                            class="collection-elements scroll-container flex-row drop-zone"
-                            @start="drag = true"
-                            @end="drag = false">
                             <div v-if="noMoreValidDatasets">
-                                <BAlert show variant="warning" dismissible>
+                                <BAlert show variant="warning">
                                     {{ localize("No elements left. Would you like to") }}
                                     <a class="reset-text" href="javascript:void(0)" role="button" @click="reset">
                                         {{ localize("start over") }}
@@ -465,16 +607,36 @@ onMounted(() => {
                                 </BAlert>
                             </div>
 
-                            <DatasetCollectionElementView
-                                v-for="element in workingElements"
-                                v-else
-                                :key="element.id"
-                                :class="{ selected: getSelectedDatasetElements.includes(element.id) }"
-                                :element="element"
-                                @element-is-selected="elementSelected"
-                                @element-is-discarded="elementDiscarded"
-                                @onRename="(name) => (element.name = name)" />
-                        </draggable>
+                            <draggable
+                                v-model="workingElements"
+                                class="collection-elements scroll-container flex-row drop-zone"
+                                chosen-class="bg-secondary">
+                                <DatasetCollectionElementView
+                                    v-for="element in workingElements"
+                                    :key="element.id"
+                                    :class="{ selected: getSelectedDatasetElements.includes(element.id) }"
+                                    :element="element"
+                                    has-actions
+                                    :selected="getSelectedDatasetElements.includes(element.id)"
+                                    @element-is-selected="elementSelected"
+                                    @element-is-discarded="elementDiscarded"
+                                    @onRename="(name) => (element.name = name)" />
+                            </draggable>
+                        </div>
+
+                        <FormSelectMany
+                            v-else
+                            v-model="inListElements"
+                            maintain-selection-order
+                            :placeholder="localize('Filter datasets by name')"
+                            :options="workingElements.map((e) => ({ label: e.name || '', value: e }))">
+                            <template v-slot:label-area="{ value }">
+                                <DatasetCollectionElementView
+                                    class="w-100"
+                                    :element="value"
+                                    @onRename="(name) => renameElement(value, name)" />
+                            </template>
+                        </FormSelectMany>
                     </template>
                 </CollectionCreator>
             </div>
@@ -483,6 +645,9 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+@import "base.scss";
+@import "theme/blue.scss";
+
 .list-collection-creator {
     .footer {
         margin-top: 8px;
@@ -494,9 +659,15 @@ onMounted(() => {
 
     .collection-elements-controls {
         margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
 
-        .clear-selected {
-            float: right !important;
+        .center-text {
+            position: absolute;
+            transform: translateX(-50%);
+            left: 50%;
         }
     }
 
@@ -510,21 +681,28 @@ onMounted(() => {
     // TODO: taken from .dataset above - swap these out
     .collection-element {
         height: 32px;
-        margin: 2px 4px 0px 4px;
         opacity: 1;
-        border: 1px solid lightgrey;
-        border-radius: 3px;
         padding: 0 8px 0 8px;
         line-height: 28px;
         cursor: pointer;
         overflow: hidden;
+        border: 1px solid lightgrey;
+        border-radius: 3px;
+
+        &.with-actions {
+            margin: 2px 4px 0px 4px;
+            &:hover {
+                border-color: black;
+            }
+        }
+        &:not(.with-actions) {
+            &:hover {
+                border: none;
+            }
+        }
 
         &:last-of-type {
             margin-bottom: 2px;
-        }
-
-        &:hover {
-            border-color: black;
         }
 
         &.selected {
@@ -534,20 +712,6 @@ onMounted(() => {
             a {
                 color: white;
             }
-        }
-
-        .name {
-            &:hover {
-                text-decoration: underline;
-            }
-        }
-
-        button {
-            margin-top: 3px;
-        }
-
-        .discard {
-            @extend .float-right !optional;
         }
     }
 

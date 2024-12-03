@@ -1260,12 +1260,15 @@ class InputParameterModule(WorkflowModule):
 
             when_true = ConditionalWhen()
             when_true.value = "true"
-            when_true.inputs = {}
-            when_true.inputs["default"] = specify_default_cond
+            when_true.inputs = {"default": specify_default_cond}
 
             when_false = ConditionalWhen()
             when_false.value = "false"
-            when_false.inputs = {}
+            # This is only present for backwards compatibility,
+            # We don't need this conditional since you can set
+            # a default value for optional and required parameters.
+            # TODO: version the state and upgrade it to a simpler version
+            when_false.inputs = {"default": specify_default_cond}
 
             optional_cases = [when_true, when_false]
             optional_cond.cases = optional_cases
@@ -1504,6 +1507,7 @@ class InputParameterModule(WorkflowModule):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
         optional = parameter_def["optional"]
+        default_value_set = "default" in parameter_def
         default_value = parameter_def.get("default", self.default_default_value)
         if parameter_type not in ["text", "boolean", "integer", "float", "color", "directory_uri"]:
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
@@ -1557,7 +1561,7 @@ class InputParameterModule(WorkflowModule):
 
         parameter_class = parameter_types[client_parameter_type]
 
-        if optional:
+        if default_value_set:
             if client_parameter_type == "select":
                 parameter_kwds["selected"] = default_value
             else:
@@ -1633,7 +1637,6 @@ class InputParameterModule(WorkflowModule):
         if "default" in state:
             default_set = True
             default_value = state["default"]
-            state["optional"] = True
         multiple = state.get("multiple")
         source_validators = state.get("validators")
         restrictions = state.get("restrictions")

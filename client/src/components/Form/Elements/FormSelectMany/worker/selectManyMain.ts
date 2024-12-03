@@ -43,6 +43,19 @@ export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNes
         }
     }
 
+    // In case maintainSelectionOrder is enabled, we need to maintain the order from selectedValues
+    if (options.maintainSelectionOrder) {
+        const selectedValuesArray = Array.from(selectedValues);
+        selectedOptionsFiltered.sort((a, b) => {
+            const aAsString = stringifyObject(a.value);
+            const bAsString = stringifyObject(b.value);
+
+            const aIndex = selectedValuesArray.findIndex((v) => v === aAsString);
+            const bIndex = selectedValuesArray.findIndex((v) => v === bAsString);
+            return aIndex - bIndex;
+        });
+    }
+
     return {
         unselectedOptionsFiltered,
         selectedOptionsFiltered,

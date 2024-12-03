@@ -1203,6 +1203,19 @@ class NavigatesGalaxy(HasDriver):
         text_area_elem.clear()
         text_area_elem.send_keys(json)
 
+    def workflow_editor_add_input(self, item_name="data_input"):
+        editor = self.components.workflow_editor
+
+        # Make sure we're on the workflow editor and not clicking the main tool panel.
+        editor.canvas_body.wait_for_visible()
+
+        editor.tool_menu.wait_for_visible()
+        editor.tool_menu_section_link(section_name="inputs").wait_for_and_click()
+        editor.tool_menu_item_link(item_name=item_name).wait_for_and_click()
+
+    def workflow_editor_add_parameter_input(self):
+        self.workflow_editor_add_input(item_name="parameter_input")
+
     def workflow_editor_set_license(self, license: str) -> None:
         license_selector = self.components.workflow_editor.license_selector
         license_selector.wait_for_and_click()
@@ -1645,7 +1658,9 @@ class NavigatesGalaxy(HasDriver):
             workflow_run.expand_form_link.wait_for_and_click()
             workflow_run.expanded_form.wait_for_visible()
 
-    def workflow_create_new(self, annotation=None, clear_placeholder=False, save_workflow=True):
+    def workflow_create_new(
+        self, annotation: Optional[str] = None, clear_placeholder: bool = False, save_workflow: bool = True
+    ):
         self.workflow_index_open()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.click_button_new_workflow()
@@ -2033,13 +2048,13 @@ class NavigatesGalaxy(HasDriver):
         target_element.send_keys(text)
 
     def collection_builder_hide_originals(self):
-        self.wait_for_and_click_selector("input.hide-originals")
+        self.wait_for_and_click_selector('[data-description="hide original elements"]')
 
     def collection_builder_create(self):
         self.wait_for_and_click_selector("button.create-collection")
 
     def collection_builder_clear_filters(self):
-        self.wait_for_and_click_selector("a.clear-filters-link")
+        self.wait_for_and_click_selector("button.clear-filters-link")
 
     def collection_builder_click_paired_item(self, forward_or_reverse, item):
         assert forward_or_reverse in ["forward", "reverse"]

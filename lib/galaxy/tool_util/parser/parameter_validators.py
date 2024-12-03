@@ -313,7 +313,7 @@ class EmptyFieldParameterValidatorModel(StaticValidatorModel):
 
     @staticmethod
     def empty_validate(value: Any, validator: "ValidatorDescription"):
-        raise_error_if_valiation_fails((value != ""), validator)
+        raise_error_if_valiation_fails((value not in ("", None)), validator)
 
     def statically_validate(self, value: Any) -> None:
         EmptyFieldParameterValidatorModel.empty_validate(value, self)
