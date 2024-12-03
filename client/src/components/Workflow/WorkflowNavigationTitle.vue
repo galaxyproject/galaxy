@@ -5,7 +5,6 @@ import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
-import { useRouter } from "vue-router/composables";
 
 import { isRegisteredUser } from "@/api";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
@@ -20,8 +19,6 @@ import { copyWorkflow } from "./workflows.services";
 import AsyncButton from "../Common/AsyncButton.vue";
 import ButtonSpinner from "../Common/ButtonSpinner.vue";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
-
-const router = useRouter();
 
 interface Props {
     invocation?: WorkflowInvocationElementView;
@@ -122,7 +119,8 @@ const workflowImportTitle = computed(() => {
                             "
                             variant="link"
                             :disabled="workflow.deleted"
-                            @click="router.push(`/workflows/edit?id=${workflow.id}&version=${workflow.version}`)">
+                            :to="`/workflows/edit?id=${workflow.id}&version=${workflow.version}`"
+                            @click="() => {}">
                             <FontAwesomeIcon :icon="faEdit" fixed-width />
                         </BButton>
                         <AsyncButton
