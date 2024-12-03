@@ -309,7 +309,7 @@ def resource_requirements_from_list(requirements: Iterable[Dict[str, Any]]) -> L
     return rr
 
 
-class Secret:
+class BaseCredential:
     def __init__(
         self,
         name: str,
@@ -332,6 +332,8 @@ class Secret:
             "description": self.description,
         }
 
+
+class Secret(BaseCredential):
     @classmethod
     def from_element(cls, elem) -> "Secret":
         return cls(
@@ -341,38 +343,8 @@ class Secret:
             description=elem.get("description", ""),
         )
 
-    @classmethod
-    def from_dict(cls, dict: Dict[str, Any]) -> "Secret":
-        name = dict["name"]
-        inject_as_env = dict["inject_as_env"]
-        label = dict.get("label", "")
-        description = dict.get("description", "")
-        return cls(name=name, inject_as_env=inject_as_env, label=label, description=description)
 
-
-class Variable:
-    def __init__(
-        self,
-        name: str,
-        inject_as_env: str,
-        label: str = "",
-        description: str = "",
-    ) -> None:
-        self.name = name
-        self.inject_as_env = inject_as_env
-        self.label = label
-        self.description = description
-        if not self.inject_as_env:
-            raise ValueError("Missing inject_as_env")
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "name": self.name,
-            "inject_as_env": self.inject_as_env,
-            "label": self.label,
-            "description": self.description,
-        }
-
+class Variable(BaseCredential):
     @classmethod
     def from_element(cls, elem) -> "Variable":
         return cls(
@@ -381,14 +353,6 @@ class Variable:
             label=elem.get("label", ""),
             description=elem.get("description", ""),
         )
-
-    @classmethod
-    def from_dict(cls, dict: Dict[str, Any]) -> "Variable":
-        name = dict["name"]
-        inject_as_env = dict["inject_as_env"]
-        label = dict.get("label", "")
-        description = dict.get("description", "")
-        return cls(name=name, inject_as_env=inject_as_env, label=label, description=description)
 
 
 class CredentialsRequirement:
@@ -435,8 +399,8 @@ class CredentialsRequirement:
         multiple = dict.get("multiple", False)
         label = dict.get("label", "")
         description = dict.get("description", "")
-        secrets = [Secret.from_dict(s) for s in dict.get("secrets", [])]
-        variables = [Variable.from_dict(v) for v in dict.get("variables", [])]
+        secrets = [Secret.from_element(s) for s in dict.get("secrets", [])]
+        variables = [Variable.from_element(v) for v in dict.get("variables", [])]
         return cls(
             name=name,
             reference=reference,
