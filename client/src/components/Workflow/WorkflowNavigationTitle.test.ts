@@ -109,10 +109,9 @@ describe("WorkflowNavigationTitle renders", () => {
 
         const heading = wrapper.find(SELECTORS.WORKFLOW_HEADING);
         expect(heading.text()).toContain(`Invoked Workflow: ${SAMPLE_WORKFLOW.name}`);
-        expect(heading.text()).toContain(`(version: ${SAMPLE_WORKFLOW.version + 1})`);
+        expect(heading.text()).toContain(`(Version: ${SAMPLE_WORKFLOW.version + 1})`);
 
-        const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
-        const runButton = actionsGroup.find(SELECTORS.ROUTE_TO_RUN_BUTTON);
+        const runButton = wrapper.find(SELECTORS.ROUTE_TO_RUN_BUTTON);
         expect(runButton.attributes("title")).toContain("Rerun");
         expect(runButton.attributes("title")).toContain(SAMPLE_WORKFLOW.name);
     });
@@ -122,10 +121,9 @@ describe("WorkflowNavigationTitle renders", () => {
 
         const heading = wrapper.find(SELECTORS.WORKFLOW_HEADING);
         expect(heading.text()).toContain(`Workflow: ${SAMPLE_WORKFLOW.name}`);
-        expect(heading.text()).toContain(`(version: ${SAMPLE_WORKFLOW.version + 1})`);
+        expect(heading.text()).toContain(`(Version: ${SAMPLE_WORKFLOW.version + 1})`);
 
-        const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
-        const runButton = actionsGroup.find(SELECTORS.EXECUTE_WORKFLOW_BUTTON);
+        const runButton = wrapper.find(SELECTORS.EXECUTE_WORKFLOW_BUTTON);
         expect(runButton.attributes("title")).toContain("Run");
     });
 
