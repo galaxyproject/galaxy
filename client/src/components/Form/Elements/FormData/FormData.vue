@@ -90,6 +90,14 @@ const dragTarget: Ref<EventTarget | null> = ref(null);
 const collectionModalShow = ref(false);
 const collectionModalType = ref<"list" | "list:paired" | "paired">("list");
 const { currentHistoryId } = storeToRefs(useHistoryStore());
+const restrictsExtensions = computed(() => {
+    const extensions = props.extensions;
+    if (!extensions || extensions.length == 0 || extensions.indexOf("data") >= 0) {
+        return false;
+    } else {
+        return true;
+    }
+});
 
 /** Store options which need to be preserved **/
 const keepOptions: Record<string, SelectOption> = {};
@@ -649,7 +657,7 @@ const noOptionsWarningMessage = computed(() => {
                     </BButton>
                 </BButtonGroup>
             </BButtonGroup>
-            <div v-if="extensions && extensions.length > 0">
+            <div v-if="restrictsExtensions">
                 <BButton :id="formatsButtonId" class="ui-link" @click="formatsVisible = !formatsVisible">
                     accepted formats
                     <FontAwesomeIcon v-if="formatsVisible" :icon="faCaretUp" />
