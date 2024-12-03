@@ -366,7 +366,8 @@ export default {
             undoRedoStore,
             (value) => (license.value = value),
             showAttributes,
-            "set license"
+            "set license",
+            "license"
         );
         /** user set license. queues an undo/redo action */
         function setLicense(newLicense) {
@@ -380,7 +381,8 @@ export default {
             undoRedoStore,
             (value) => (creator.value = value),
             showAttributes,
-            "set creator"
+            "set creator",
+            "creator"
         );
         /** user set creator. queues an undo/redo action */
         function setCreator(newCreator) {
@@ -403,7 +405,8 @@ export default {
             undoRedoStore,
             (value) => (annotation.value = value),
             showAttributes,
-            "modify short description"
+            "modify short description",
+            "annotation",
         );
         /** user set annotation. queues an undo/redo action */
         function setAnnotation(newAnnotation) {
