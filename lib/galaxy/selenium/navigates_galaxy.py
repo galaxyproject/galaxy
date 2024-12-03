@@ -1228,13 +1228,13 @@ class NavigatesGalaxy(HasDriver):
         license_selector_option = self.components.workflow_editor.license_selector_option
         license_selector_option.wait_for_and_click()
 
+    def workflow_editor_license_text(self) -> str:
+        editor = self.components.workflow_editor
+        editor.license_selector.wait_for_visible()
+        return editor.license_current_value.wait_for_text()
+
     def workflow_editor_add_tool_step(self, tool_id: str):
         self.tool_open(tool_id)
-
-    def workflow_editor_set_label(self, label: str, node: Optional[EditorNodeReference] = None):
-        editor = self.components.workflow_editor
-        self.workflow_editor_ensure_tool_form_open(node)
-        self.set_text_element(editor.label_input, label)
 
     def workflow_editor_set_tool_vesrion(self, version: str, node: Optional[EditorNodeReference] = None) -> None:
         editor = self.components.workflow_editor
@@ -1247,10 +1247,10 @@ class NavigatesGalaxy(HasDriver):
         editor = self.components.workflow_editor
         if node is not None:
             if isinstance(node, int):
-                node = editor.node.by_id(id=node)
+                node_component = editor.node.by_id(id=node)
             else:
-                node = editor.node._(label=node)
-            node.wait_for_and_click()
+                node_component = editor.node._(label=node)
+            node_component.wait_for_and_click()
         editor.node_inspector.wait_for_visible()
 
     def workflow_editor_click_option(self, option_label):
@@ -1700,7 +1700,7 @@ class NavigatesGalaxy(HasDriver):
             name_component.wait_for_visible().clear()
         name_component.wait_for_and_send_keys(name)
         annotation = annotation or self._get_random_name()
-        self.components.workflow_editor.edit_annotation.wait_for_and_send_keys(annotation)
+        self.workflow_editor_set_annotation(annotation)
         if save_workflow:
             save_button = self.components.workflow_editor.save_button
             save_button.wait_for_visible()
@@ -1708,6 +1708,9 @@ class NavigatesGalaxy(HasDriver):
             save_button.wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
         return name
+
+    def workflow_editor_set_annotation(self, annotation: str):
+        self.components.workflow_editor.edit_annotation.wait_for_and_clear_and_send_keys(annotation)
 
     def invocation_index_table_elements(self):
         invocations = self.components.invocations

@@ -724,6 +724,8 @@ workflow_editor:
       action_insert_data_input: ".action[data-type='step-insert'][data-step-type='data_input']"
       action_insert_data_collection_input: ".action[data-type='step-insert'][data-step-type='data_collection_input']"
       action_insert_parameter: ".action[data-type='step-insert'][data-step-type='parameter_input']"
+      action_set_license: ".action[data-type='set-license']"
+      action_set_annotation: ".action[data-type='set-annotation']"
 
   tool_bar:
     selectors:
@@ -745,6 +747,7 @@ workflow_editor:
       duplicate_selection: "[title='duplicate selected']"
       delete_selection: "[title='delete selected']"
       auto_layout: "#auto-layout-button"
+      attributes: "#activity-workflow-editor-attributes"
       changes: "#activity-workflow-undo-redo"
       upgrade_all: "#activity-workflow-upgrade"
   comment:
