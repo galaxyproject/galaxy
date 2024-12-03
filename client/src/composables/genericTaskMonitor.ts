@@ -42,7 +42,7 @@ export interface TaskMonitor {
      * The meaning of the status string is up to the monitor implementation.
      * In case of an error, this will be the error message.
      */
-    status: Readonly<Ref<string | undefined>>;
+    taskStatus: Readonly<Ref<string | undefined>>;
 
     /**
      * Loads the status of the task from a stored value.
@@ -96,19 +96,19 @@ export function useGenericMonitor(options: {
     let pollDelay = options.defaultPollDelay ?? DEFAULT_POLL_DELAY;
 
     const isRunning = ref(false);
-    const status = ref<string>();
+    const taskStatus = ref<string>();
     const requestId = ref<string>();
     const requestHasFailed = ref(false);
 
-    const isCompleted = computed(() => options.completedCondition(status.value));
-    const hasFailed = computed(() => options.failedCondition(status.value));
+    const isCompleted = computed(() => options.completedCondition(taskStatus.value));
+    const hasFailed = computed(() => options.failedCondition(taskStatus.value));
 
     function isFinalState(status?: string) {
         return options.completedCondition(status) || options.failedCondition(status);
     }
 
     function loadStatus(storedStatus: string) {
-        status.value = storedStatus;
+        taskStatus.value = storedStatus;
     }
 
     async function waitForTask(taskId: string, pollDelayInMs?: number) {
@@ -122,7 +122,7 @@ export function useGenericMonitor(options: {
     async function fetchTaskStatus(taskId: string) {
         try {
             const result = await options.fetchStatus(taskId);
-            status.value = result;
+            taskStatus.value = result;
             if (isCompleted.value || hasFailed.value) {
                 isRunning.value = false;
             } else {
@@ -141,7 +141,7 @@ export function useGenericMonitor(options: {
     }
 
     function handleError(err: string) {
-        status.value = err.toString();
+        taskStatus.value = err.toString();
         requestHasFailed.value = true;
         isRunning.value = false;
         resetTimeout();
@@ -156,7 +156,7 @@ export function useGenericMonitor(options: {
 
     function resetState() {
         resetTimeout();
-        status.value = undefined;
+        taskStatus.value = undefined;
         requestHasFailed.value = false;
         isRunning.value = false;
     }
@@ -169,7 +169,7 @@ export function useGenericMonitor(options: {
         isCompleted: readonly(isCompleted),
         hasFailed: readonly(hasFailed),
         requestHasFailed: readonly(requestHasFailed),
-        status: readonly(status),
+        taskStatus: readonly(taskStatus),
         expirationTime: options.expirationTime,
     };
 }

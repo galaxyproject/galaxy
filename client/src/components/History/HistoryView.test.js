@@ -17,6 +17,11 @@ jest.mock("stores/services/history.services");
 
 const { server, http } = useServerMock();
 
+jest.mock("vue-router/composables", () => ({
+    useRoute: jest.fn(() => ({})),
+    useRouter: jest.fn(() => ({})),
+}));
+
 function create_history(historyId, userId, purged = false, archived = false) {
     const historyName = `${userId}'s History ${historyId}`;
     return {

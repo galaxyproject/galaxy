@@ -98,7 +98,7 @@ export interface MonitoringData {
      * The meaning of the status string is up to the monitor implementation.
      * In case of an error, this will be the error message.
      */
-    status?: string;
+    taskStatus?: string;
 }
 
 /**
@@ -120,7 +120,7 @@ export function usePersistentProgressTaskMonitor(
         isCompleted,
         hasFailed,
         requestHasFailed,
-        status,
+        taskStatus,
         expirationTime,
     } = useMonitor;
 
@@ -152,12 +152,12 @@ export function usePersistentProgressTaskMonitor(
     });
 
     watch(
-        status,
+        () => taskStatus.value,
         (newStatus) => {
             if (newStatus && currentMonitoringData.value) {
                 currentMonitoringData.value = {
                     ...currentMonitoringData.value,
-                    status: newStatus,
+                    taskStatus: newStatus,
                 };
             }
         },
@@ -173,10 +173,10 @@ export function usePersistentProgressTaskMonitor(
             throw new Error("No monitoring data provided or stored. Cannot start monitoring progress.");
         }
 
-        if (isFinalState(currentMonitoringData.value.status)) {
+        if (isFinalState(currentMonitoringData.value.taskStatus)) {
             // The task has already finished no need to start monitoring again.
             // Instead, reload the stored status to update the UI.
-            return loadStatus(currentMonitoringData.value.status!);
+            return loadStatus(currentMonitoringData.value.taskStatus!);
         }
 
         if (hasExpired.value) {
@@ -240,7 +240,7 @@ export function usePersistentProgressTaskMonitor(
          * The meaning of the status string is up to the monitor implementation.
          * In case of an error, this will be the error message.
          */
-        status,
+        status: taskStatus,
 
         /**
          * True if the monitoring data can expire.

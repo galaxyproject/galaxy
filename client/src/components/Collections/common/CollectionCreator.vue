@@ -1,37 +1,111 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp, faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton, BFormCheckbox, BFormGroup, BFormInput, BTab, BTabs } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import type { HDASummary } from "@/api";
+import type { CompositeFileInfo } from "@/api/datatypes";
+import { AUTO_EXTENSION, getUploadDatatypes } from "@/components/Upload/utils";
+import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
+import { orList } from "@/utils/strings";
 
-library.add(faChevronDown, faChevronUp);
+import HelpText from "@/components/Help/HelpText.vue";
+import DefaultBox from "@/components/Upload/DefaultBox.vue";
+
+const Tabs = {
+    create: 0,
+    upload: 1,
+};
+
+type ExtensionDetails = {
+    id: string;
+    text: string;
+    description: string | null;
+    description_url: string | null;
+    composite_files?: CompositeFileInfo[] | null;
+    upload_warning?: string | null;
+};
 
 interface Props {
     oncancel: () => void;
+    historyId: string;
     hideSourceItems: boolean;
     suggestedName?: string;
     renderExtensionsToggle?: boolean;
+    extensions?: string[];
+    extensionsToggle?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     suggestedName: "",
+    extensions: undefined,
+    extensionsToggle: false,
 });
 
 const emit = defineEmits<{
     (e: "remove-extensions-toggle"): void;
     (e: "clicked-create", value: string): void;
     (e: "onUpdateHideSourceItems", value: boolean): void;
+    (e: "on-update-datatype-toggle", value: "all" | "datatype" | "ext"): void;
+    (e: "add-uploaded-files", value: HDASummary[]): void;
 }>();
 
 const isExpanded = ref(false);
+const currentTab = ref(Tabs.create);
 const collectionName = ref(props.suggestedName);
 const localHideSourceItems = ref(props.hideSourceItems);
+const listExtensions = ref<ExtensionDetails[]>([]);
+const extensionsSet = ref(false);
 
 const validInput = computed(() => {
     return collectionName.value.length > 0;
 });
+
+// If there are props.extensions, filter the list of extensions to only include those
+const validExtensions = computed(() => {
+    return listExtensions.value.filter((ext) => props.extensions?.includes(ext.id));
+});
+
+// Upload properties
+const { config, isConfigLoaded } = useConfig();
+
+const { currentUser } = storeToRefs(useUserStore());
+
+const configOptions = computed(() =>
+    isConfigLoaded.value
+        ? {
+              chunkUploadSize: config.value.chunk_upload_size,
+              fileSourcesConfigured: config.value.file_sources_configured,
+              ftpUploadSite: config.value.ftp_upload_site,
+              defaultDbKey: config.value.default_genome || "",
+              defaultExtension: config.value.default_extension || "",
+          }
+        : {}
+);
+
+const ftpUploadSite = computed(() =>
+    currentUser.value && "id" in currentUser.value ? configOptions.value.ftpUploadSite : null
+);
+
+const defaultExtension = computed(() => {
+    if (!configOptions.value || !extensionsSet.value) {
+        return "auto";
+    } else if (!props.extensions?.length) {
+        return configOptions.value.defaultExtension || "auto";
+    } else {
+        return props.extensions[0];
+    }
+});
+
+function addUploadedFiles(value: HDASummary[]) {
+    // TODO: We really need to wait for each of these items to get `state = 'ok'`
+    //       before we can add them to the collection.
+    emit("add-uploaded-files", value);
+}
 
 function clickForHelp() {
     isExpanded.value = !isExpanded.value;
@@ -42,6 +116,13 @@ function cancelCreate() {
     props.oncancel();
 }
 
+async function loadExtensions() {
+    listExtensions.value = await getUploadDatatypes(false, AUTO_EXTENSION);
+    extensionsSet.value = true;
+}
+
+loadExtensions();
+
 watch(
     () => localHideSourceItems.value,
     () => {
@@ -51,90 +132,146 @@ watch(
 </script>
 
 <template>
-    <div class="collection-creator">
-        <div class="header flex-row no-flex">
-            <div class="main-help well clear" :class="{ expanded: isExpanded }">
-                <a
-                    class="more-help"
-                    href="javascript:void(0);"
-                    role="button"
-                    :title="localize('Expand or Close Help')"
-                    @click="clickForHelp">
-                    <div v-if="!isExpanded">
-                        <FontAwesomeIcon :icon="faChevronDown" />
-                    </div>
-                    <div v-else>
-                        <FontAwesomeIcon :icon="faChevronUp" />
-                    </div>
-                </a>
-
-                <div class="help-content">
-                    <!-- each collection that extends this will add their own help content -->
-                    <slot name="help-content"></slot>
-
+    <BTabs v-model="currentTab" fill justified>
+        <BTab class="collection-creator" :title="localize('Create Collection')">
+            <div class="header flex-row no-flex">
+                <div class="main-help well clear" :class="{ expanded: isExpanded }">
                     <a
                         class="more-help"
                         href="javascript:void(0);"
                         role="button"
                         :title="localize('Expand or Close Help')"
                         @click="clickForHelp">
+                        <div v-if="!isExpanded">
+                            <FontAwesomeIcon :icon="faChevronDown" />
+                            <span class="sr-only">{{ localize("Expand Help") }}</span>
+                        </div>
+                        <div v-else>
+                            <FontAwesomeIcon :icon="faChevronUp" />
+                            <span class="sr-only">{{ localize("Close Help") }}</span>
+                        </div>
                     </a>
-                </div>
-            </div>
-        </div>
 
-        <div class="middle flex-row flex-row-container">
-            <slot name="middle-content"></slot>
-        </div>
+                    <div class="help-content">
+                        <!-- each collection that extends this will add their own help content -->
+                        <slot name="help-content"></slot>
 
-        <div class="footer flex-row no-flex">
-            <div class="attributes clear">
-                <div class="clear">
-                    <label v-if="renderExtensionsToggle" class="setting-prompt float-right">
-                        {{ localize("Remove file extensions?") }}
-                        <input
-                            class="remove-extensions float-right"
-                            type="checkbox"
-                            checked
-                            @click="emit('remove-extensions-toggle')" />
-                    </label>
-
-                    <label class="setting-prompt float-right">
-                        {{ localize("Hide original elements?") }}
-                        <input v-model="localHideSourceItems" class="hide-originals float-right" type="checkbox" />
-                    </label>
-                </div>
-
-                <div class="clear">
-                    <input
-                        v-model="collectionName"
-                        class="collection-name form-control float-right"
-                        :placeholder="localize('Enter a name for your new collection')" />
-
-                    <div class="collection-name-prompt float-right">
-                        {{ localize("Name:") }}
+                        <a
+                            class="more-help"
+                            href="javascript:void(0);"
+                            role="button"
+                            :title="localize('Expand or Close Help')"
+                            @click="clickForHelp">
+                            <span class="sr-only">{{ localize("Expand Help") }}</span>
+                        </a>
                     </div>
                 </div>
             </div>
 
-            <div class="actions clear vertically-spaced">
-                <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="cancelCreate">
-                        {{ localize("Cancel") }}
-                    </button>
+            <div class="middle flex-row flex-row-container">
+                <slot name="middle-content"></slot>
+            </div>
+
+            <div class="footer flex-row">
+                <div class="vertically-spaced">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <BAlert v-if="extensions?.length" class="w-100 py-0" variant="secondary" show>
+                            <HelpText
+                                uri="galaxy.collections.collectionBuilder.filteredExtensions"
+                                :text="localize('Filtered extensions: ')" />
+                            <strong>{{ orList(extensions) }}</strong>
+                        </BAlert>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between">
+                        <BFormGroup class="inputs-form-group">
+                            <BFormCheckbox
+                                v-if="renderExtensionsToggle"
+                                name="remove-extensions"
+                                switch
+                                :checked="extensionsToggle"
+                                @input="emit('remove-extensions-toggle')">
+                                {{ localize("Remove file extensions?") }}
+                            </BFormCheckbox>
+
+                            <div data-description="hide original elements">
+                                <BFormCheckbox v-model="localHideSourceItems" name="hide-originals" switch>
+                                    <HelpText
+                                        uri="galaxy.collections.collectionBuilder.hideOriginalElements"
+                                        :text="localize('Hide original elements')" />
+                                </BFormCheckbox>
+                            </div>
+                        </BFormGroup>
+
+                        <BFormGroup
+                            class="flex-gapx-1 d-flex align-items-center w-50 inputs-form-group"
+                            :label="localize('Name:')"
+                            label-for="collection-name">
+                            <BFormInput
+                                id="collection-name"
+                                v-model="collectionName"
+                                class="collection-name"
+                                :placeholder="localize('Enter a name for your new collection')"
+                                size="sm"
+                                required
+                                :state="!collectionName ? false : null" />
+                        </BFormGroup>
+                    </div>
                 </div>
 
-                <div class="main-options float-right">
-                    <button
-                        class="create-collection btn btn-primary"
+                <div class="actions vertically-spaced d-flex justify-content-between">
+                    <BButton tabindex="-1" @click="cancelCreate">
+                        {{ localize("Cancel") }}
+                    </BButton>
+
+                    <BButton
+                        class="create-collection"
+                        variant="primary"
                         :disabled="!validInput"
                         @click="emit('clicked-create', collectionName)">
                         {{ localize("Create collection") }}
-                    </button>
+                    </BButton>
                 </div>
             </div>
-        </div>
-    </div>
+        </BTab>
+        <BTab>
+            <template v-slot:title>
+                <FontAwesomeIcon :icon="faUpload" fixed-width />
+                <span>{{ localize("Upload Files to Add to Collection") }}</span>
+            </template>
+            <!-- TODO: This is incomplete; need to return uploadValues to parent -->
+            <DefaultBox
+                v-if="configOptions && extensionsSet"
+                :chunk-upload-size="configOptions.chunkUploadSize"
+                :default-db-key="configOptions.defaultDbKey"
+                :default-extension="defaultExtension"
+                :effective-extensions="props.extensions?.length ? validExtensions : listExtensions"
+                :file-sources-configured="configOptions.fileSourcesConfigured"
+                :ftp-upload-site="ftpUploadSite"
+                :has-callback="false"
+                :history-id="historyId"
+                :list-db-keys="[]"
+                disable-footer
+                emit-uploaded
+                @uploaded="addUploadedFiles"
+                @dismiss="currentTab = Tabs.create">
+                <template v-slot:footer>
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                        <BAlert v-if="extensions?.length" class="w-100 py-0" variant="secondary" show>
+                            <HelpText
+                                uri="galaxy.collections.collectionBuilder.requiredUploadExtensions"
+                                :text="localize('Required extensions: ')" />
+                            <strong>{{ orList(extensions) }}</strong>
+                        </BAlert>
+                    </div>
+                </template>
+                <template v-slot:emit-btn-txt>
+                    <FontAwesomeIcon :icon="faPlus" fixed-width />
+                    {{ localize("Add Uploaded") }}
+                </template>
+            </DefaultBox>
+        </BTab>
+    </BTabs>
 </template>
 
 <style lang="scss">
@@ -146,9 +283,6 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
 .collection-creator {
     height: 100%;
     overflow: hidden;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     // ------------------------------------------------------------------------ general
     ol,
     li {
@@ -367,38 +501,11 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
     }
     // ------------------------------------------------------------------------ footer
     .footer {
-        .attributes {
-            .setting-prompt {
-                //margin-right: 32px;
-                line-height: 32px;
-                padding-left: 10px;
-                .remove-extensions {
-                    display: inline-block;
-                    width: 24px;
-                    height: 24px;
-                }
-                .hide-originals {
-                    display: inline-block;
-                    width: 24px;
-                    height: 24px;
-                }
-            }
-            // actually appears/floats to the left of the input
-            .collection-name-prompt {
-                margin: 5px 4px 0 0;
-            }
-            .collection-name-prompt.validation-warning:before {
-                //TODO: localize (somehow)
-                content: "(required)";
-                margin-right: 4px;
-                color: red;
-            }
-            .collection-name {
-                width: 50%;
-                &.validation-warning {
-                    border-color: red;
-                }
-            }
+        .inputs-form-group > div {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            column-gap: 0.25rem;
         }
         .actions {
             .other-options > * {
