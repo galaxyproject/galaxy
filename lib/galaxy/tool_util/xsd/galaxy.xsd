@@ -750,11 +750,11 @@ It can contain multiple ``variable`` and ``secret`` tags.
 
 ```xml
 <requirements>
-  <credentials name="Apollo" reference="gmod.org/apollo" required="true" label="Apollo credential set" description="Please provide credentials for Apollo">
-    <variable name="server" inject_as_env="apollo_url" label="Your Apollo server" />
-    <secret name="username" inject_as_env="apollo_user" label="Your Apollo username" />
-    <secret name="password" inject_as_env="apollo_pass" label="Your Apollo password" />
-  </credentials>
+    <credentials name="service1" reference="service/54687" optional="false" multiple="true" label="Your credentials set" description="Optional description of the service using credentials">
+        <variable name="server" inject_as_env="service1_url" label="Your Service1 server" description="You can set the server..." />
+        <secret name="username" inject_as_env="service1_user" label="Your Service1 username" description="Your username is your email" />
+        <secret name="password" inject_as_env="service1_pass" label="Your Service1 password" description="This needs to be a strong password" />
+    </credentials>
 </requirements>
 ```
 ]]></xs:documentation>
@@ -783,9 +783,14 @@ It can contain multiple ``variable`` and ``secret`` tags.
         <xs:documentation xml:lang="en">The description of the credential set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="required" type="xs:boolean">
+    <xs:attribute name="optional" type="xs:boolean">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Whether the credentials are required for the tool to run.</xs:documentation>
+        <xs:documentation xml:lang="en">Whether the credentials are optional for the tool to run.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="multiple" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Indicates multiple sets of credentials can be provided.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
