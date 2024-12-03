@@ -34,6 +34,13 @@ import DirectoryDatasetPicker from "@/components/Libraries/LibraryFolder/TopTool
 import ProgressBar from "@/components/ProgressBar.vue";
 import HistoryDatasetPicker from "@/components/SelectionDialog/HistoryDatasetPicker.vue";
 
+type CollectionElement = {
+    deleted: boolean;
+    id: string;
+    name: string;
+    src: string;
+};
+
 interface Props {
     metadata: any;
     selected: any[];
@@ -195,11 +202,15 @@ async function importToHistoryModal(isCollection: boolean) {
         if (isCollection) {
             new mod_import_collection.ImportCollectionModal({
                 selected: checkedItems,
-                onCollectionImport: async (collectionType: string, selection: any, historyId: string) => {
+                onCollectionImport: async (
+                    collectionType: string,
+                    selection: { models: CollectionElement[] },
+                    historyId: string
+                ) => {
                     try {
                         collectionHistoryId.value = historyId;
                         collectionModalType.value = collectionType as CollectionType;
-                        collectionSelection.value = selection;
+                        collectionSelection.value = selection.models;
                         collectionModalShow.value = true;
                     } catch (err) {
                         console.error(err);

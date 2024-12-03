@@ -51,9 +51,9 @@ function getExtension(): string {
         @keydown.enter="emit('element-is-selected', props.element)"
         @click="emit('element-is-selected', props.element)">
         <span ref="elementName" class="element-name" :class="{ moves: shouldMoveElement }">
-            <span v-if="props.showHid">{{ props.element.hid }}:</span>
+            <span v-if="props.element.hid && props.showHid">{{ props.element.hid }}:</span>
             <strong>{{ props.element.name }}</strong>
-            <i v-if="props.showExtension"> ({{ getExtension() }}) </i>
+            <i v-if="props.element.extension && props.showExtension"> ({{ getExtension() }}) </i>
         </span>
     </li>
 </template>
