@@ -36,7 +36,6 @@ const emit = defineEmits<{
 }>();
 
 const state = ref("build");
-const originalNamedElements = ref([]);
 const duplicateNames = ref<string[]>([]);
 const invalidElements = ref<string[]>([]);
 const workingElements = ref<HDASummary[]>([]);
@@ -78,17 +77,10 @@ const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
 /** Are we filtering by datatype? */
 const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
 
-/** set up instance vars function */
-function _instanceSetUp() {
-    /** Ids of elements that have been selected by the user - to preserve over renders */
-    selectedDatasetElements.value = [];
-}
-
 // ----------------------------------------------------------------------- process raw list
 /** set up main data */
 function _elementsSetUp() {
     /** a list of invalid elements and the reasons they aren't valid */
-
     invalidElements.value = [];
 
     //TODO: handle fundamental problem of syncing DOM, views, and list here
@@ -201,16 +193,6 @@ function changeDatatypeFilter(newFilter: "all" | "datatype" | "ext") {
     _elementsSetUp();
 }
 
-function saveOriginalNames() {
-    // Deep copy elements
-    originalNamedElements.value = JSON.parse(JSON.stringify(workingElements.value));
-}
-
-function getOriginalNames() {
-    // Deep copy elements
-    workingElements.value = JSON.parse(JSON.stringify(originalNamedElements.value));
-}
-
 function elementSelected(e: HDASummary) {
     if (!selectedDatasetElements.value.includes(e.id)) {
         selectedDatasetElements.value.push(e.id);
@@ -276,8 +258,9 @@ function checkForDuplicates() {
 
 /** reset all data to the initial state */
 function reset() {
-    _instanceSetUp();
-    getOriginalNames();
+    /** Ids of elements that have been selected by the user - to preserve over renders */
+    selectedDatasetElements.value = [];
+    _elementsSetUp();
 }
 
 function sortByName() {
@@ -298,9 +281,6 @@ function compareNames(a: HDASummary, b: HDASummary) {
 function onUpdateHideSourceItems(newHideSourceItems: boolean) {
     hideSourceItems.value = newHideSourceItems;
 }
-
-_instanceSetUp();
-saveOriginalNames();
 
 watch(
     () => props.initialElements,
