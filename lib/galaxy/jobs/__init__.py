@@ -97,6 +97,7 @@ from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tools.evaluation import (
     PartialToolEvaluator,
     ToolEvaluator,
+    UserToolEvaluator,
 )
 from galaxy.tools.parameters import params_to_json_internal
 from galaxy.util import (
@@ -1415,7 +1416,12 @@ class MinimalJobWrapper(HasResourceParameters):
         return job
 
     def _get_tool_evaluator(self, job):
-        klass = PartialToolEvaluator if self.remote_command_line else ToolEvaluator
+        if self.remote_command_line:
+            klass = PartialToolEvaluator
+        elif self.tool.base_command or self.tool.shell_command:
+            klass = UserToolEvaluator
+        else:
+            klass = ToolEvaluator
         tool_evaluator = klass(
             app=self.app,
             job=job,

@@ -147,7 +147,7 @@ class ConditionalStepWhen(BooleanToolParameter):
     pass
 
 
-def to_cwl(value, hda_references, step):
+def to_cwl(value, hda_references, step: Optional[WorkflowStep] = None):
     element_identifier = None
     if isinstance(value, model.HistoryDatasetCollectionAssociation):
         value = value.collection
@@ -157,15 +157,16 @@ def to_cwl(value, hda_references, step):
     if isinstance(value, model.HistoryDatasetAssociation):
         # I think the following two checks are needed but they may
         # not be needed.
-        if not value.dataset.in_ready_state():
-            why = f"dataset [{value.id}] is needed for valueFrom expression and is non-ready"
-            raise DelayedWorkflowEvaluation(why=why)
-        if not value.is_ok:
-            raise FailWorkflowEvaluation(
-                why=InvocationFailureDatasetFailed(
-                    reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
+        if step:
+            if not value.dataset.in_ready_state():
+                why = f"dataset [{value.id}] is needed for valueFrom expression and is non-ready"
+                raise DelayedWorkflowEvaluation(why=why)
+            if not value.is_ok:
+                raise FailWorkflowEvaluation(
+                    why=InvocationFailureDatasetFailed(
+                        reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
+                    )
                 )
-            )
         if value.ext == "expression.json":
             with open(value.get_file_name()) as f:
                 # OUR safe_loads won't work, will not load numbers, etc...
@@ -176,6 +177,7 @@ def to_cwl(value, hda_references, step):
                 "class": "File",
                 "location": f"step_input://{len(hda_references)}",
                 "format": value.extension,
+                "path": value.get_file_name(),
             }
             set_basename_and_derived_properties(
                 properties, value.dataset.created_from_basename or element_identifier or value.name

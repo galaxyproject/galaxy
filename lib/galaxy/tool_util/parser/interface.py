@@ -220,6 +220,18 @@ class ToolSource(metaclass=ABCMeta):
     def parse_command(self):
         """Return string contianing command to run."""
 
+    def parse_shell_command(self) -> Optional[str]:
+        """Return string that after input binding can be executed."""
+        return None
+
+    def parse_base_command(self) -> Optional[List[str]]:
+        """Return string containing script entrypoint."""
+        return None
+
+    def parse_arguments(self) -> Optional[List[str]]:
+        """Return list of strings to append to base_command."""
+        return None
+
     def parse_expression(self):
         """Return string contianing command to run."""
         return None

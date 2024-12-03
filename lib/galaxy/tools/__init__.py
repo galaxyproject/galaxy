@@ -1044,6 +1044,10 @@ class Tool(UsesDictVisibleKeys):
         self.tool_source = tool_source
         self.outputs: Dict[str, ToolOutputBase] = {}
         self.output_collections: Dict[str, ToolOutputCollection] = {}
+        self.command: Optional[str] = None
+        self.base_command: Optional[List[str]] = None
+        self.arguments: Optional[List[str]] = []
+        self.shell_command: Optional[str] = None
         self._is_workflow_compatible = None
         self.__help = None
         self.__tests: Optional[str] = None
@@ -1286,6 +1290,9 @@ class Tool(UsesDictVisibleKeys):
             self.input_translator = None
 
         self.parse_command(tool_source)
+        self.parse_shell_command(tool_source)
+        self.parse_base_command(tool_source)
+        self.parse_arguments(tool_source)
         self.environment_variables = self.parse_environment_variables(tool_source)
         self.tmp_directory_vars = tool_source.parse_tmp_directory_vars()
 
@@ -1616,6 +1623,15 @@ class Tool(UsesDictVisibleKeys):
         else:
             self.command = ""
             self.interpreter = None
+
+    def parse_shell_command(self, tool_source: ToolSource):
+        self.shell_command = tool_source.parse_shell_command()
+
+    def parse_base_command(self, tool_source: ToolSource):
+        self.base_command = tool_source.parse_base_command()
+
+    def parse_arguments(self, tool_source: ToolSource):
+        self.arguments = tool_source.parse_arguments()
 
     def parse_environment_variables(self, tool_source):
         return tool_source.parse_environment_variables()
@@ -2656,11 +2672,12 @@ class Tool(UsesDictVisibleKeys):
             tool_tup = (os.path.abspath(self.config_file), os.path.split(self.config_file)[-1])
         tarball_files.append(tool_tup)
         # TODO: This feels hacky.
-        tool_command = self.command.strip().split()[0]
-        tool_path = os.path.dirname(os.path.abspath(self.config_file))
-        # Add the tool XML to the tuple that will be used to populate the tarball.
-        if os.path.exists(os.path.join(tool_path, tool_command)):
-            tarball_files.append((os.path.join(tool_path, tool_command), tool_command))
+        if self.command:
+            tool_command = self.command.strip().split()[0]
+            tool_path = os.path.dirname(os.path.abspath(self.config_file))
+            # Add the tool XML to the tuple that will be used to populate the tarball.
+            if os.path.exists(os.path.join(tool_path, tool_command)):
+                tarball_files.append((os.path.join(tool_path, tool_command), tool_command))
         # Find and add macros and code files.
         for external_file in self.get_externally_referenced_paths(os.path.abspath(self.config_file)):
             external_file_abspath = os.path.abspath(os.path.join(tool_path, external_file))

@@ -57,6 +57,45 @@ MINIMAL_TOOL_NO_ID = {
         output1=dict(format="txt"),
     ),
 }
+TOOL_WITH_BASE_COMMAND = {
+    "name": "Base command tool",
+    "class": "GalaxyTool",
+    "version": "1.0.0",
+    "base_command": "cat",
+    "arguments": ["$(inputs.input.path)", ">", "output.fastq"],
+    "inputs": [
+        {
+            "type": "data",
+            "name": "input",
+        }
+    ],
+    "outputs": {
+        "output": {
+            "type": "data",
+            "from_work_dir": "output.fastq",
+            "name": "output",
+        }
+    },
+}
+TOOL_WITH_SHELL_COMMAND = {
+    "name": "Base command tool",
+    "class": "GalaxyTool",
+    "version": "1.0.0",
+    "shell_command": "cat '$(inputs.input.path)' > output.fastq",
+    "inputs": [
+        {
+            "type": "data",
+            "name": "input",
+        }
+    ],
+    "outputs": {
+        "output": {
+            "type": "data",
+            "from_work_dir": "output.fastq",
+            "name": "output",
+        }
+    },
+}
 
 
 class TestsTools:
@@ -1586,6 +1625,40 @@ class TestToolsApi(ApiTestCase, TestsTools):
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
         assert output_content == "Hello World 2\n"
+
+    def test_dynamic_tool_base_command(self):
+        tool_response = self.dataset_populator.create_tool(TOOL_WITH_BASE_COMMAND)
+        self._assert_has_keys(tool_response, "uuid")
+
+        # Run tool.
+        history_id = self.dataset_populator.new_history()
+        dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc")
+        self._run(
+            history_id=history_id,
+            tool_uuid=tool_response["uuid"],
+            inputs={"input": {"src": "hda", "id": dataset["id"]}},
+        )
+
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        assert output_content == "abc\n"
+
+    def test_dynamic_tool_shell_command(self):
+        tool_response = self.dataset_populator.create_tool(TOOL_WITH_SHELL_COMMAND)
+        self._assert_has_keys(tool_response, "uuid")
+
+        # Run tool.
+        history_id = self.dataset_populator.new_history()
+        dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc")
+        self._run(
+            history_id=history_id,
+            tool_uuid=tool_response["uuid"],
+            inputs={"input": {"src": "hda", "id": dataset["id"]}},
+        )
+
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        assert output_content == "abc\n"
 
     def test_show_dynamic_tools(self):
         # Create tool.
