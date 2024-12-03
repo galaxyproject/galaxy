@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Vitessce">
-    <description>Visual integration tool for exploration of spatial single cell experiments.</description>
+    <description>Visual integration tool for exploration of experiments</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
