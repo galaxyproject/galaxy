@@ -87,6 +87,7 @@
     "pinia": "^2.1.7",
     "popper.js": "^1.16.1",
     "pretty-bytes": "^6.1.1",
+    "prismjs": "^1.29.0",
     "pyre-to-regexp": "^0.0.6",
     "querystring-es3": "^0.2.1",
     "regenerator-runtime": "^0.14.0",
