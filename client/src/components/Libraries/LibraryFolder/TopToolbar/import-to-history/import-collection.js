@@ -106,15 +106,13 @@ var ImportCollectionModal = Backbone.View.extend({
     },
     collectionImport: function (collectionElements, historyId) {
         const collectionType = this.modal.$el.find("#library-collection-type-select").val();
-        let selection = null;
+        let selection = {};
         if (collectionType == "rules") {
-            selection = collectionElements;
             selection.selectionType = "library_datasets";
-        } else {
-            selection = {
-                models: collectionElements,
-            };
         }
+        selection = {
+            models: collectionElements,
+        };
         if (collectionType === "rules") {
             const Galaxy = getGalaxyInstance();
             Galaxy.currHistoryPanel.buildCollectionFromRules(selection, historyId);
