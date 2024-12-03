@@ -718,6 +718,12 @@ workflow_editor:
       connector_destroy_callout: "${_} [input-name='${name}'] + .delete-terminal-button"
       workflow_output_toggle: "${_} [data-output-name='${name}'] .callout-terminal "
       workflow_output_toggle_active: "${_} [data-output-name='${name}'] .mark-terminal-active"
+  changes:
+    selectors:
+      action_insert_data_input: ".action[data-type='step-insert'][data-step-type='data_input']"
+      action_insert_data_collection_input: ".action[data-type='step-insert'][data-step-type='data_collection_input']"
+      action_insert_parameter: ".action[data-type='step-insert'][data-step-type='parameter_input']"
+
   tool_bar:
     selectors:
       _: ".workflow-editor-toolbar"
@@ -738,6 +744,7 @@ workflow_editor:
       duplicate_selection: "[title='duplicate selected']"
       delete_selection: "[title='delete selected']"
       auto_layout: "#auto-layout-button"
+      changes: "#activity-workflow-undo-redo"
   comment:
     selectors:
       _: ".workflow-editor-comment"
