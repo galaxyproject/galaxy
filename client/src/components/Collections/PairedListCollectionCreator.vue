@@ -1318,6 +1318,8 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "~@fortawesome/fontawesome-free/scss/solid";
 @import "~@fortawesome/fontawesome-free/scss/fontawesome";
 @import "~@fortawesome/fontawesome-free/scss/brands";
+@import "~bootstrap/scss/_functions.scss";
+@import "theme/blue.scss";
 .paired-column {
     text-align: center;
     // mess with these two to make center more/scss priority
@@ -1364,7 +1366,7 @@ li.dataset.paired {
             white-space: nowrap;
             overflow: hidden;
             border: 2px solid grey;
-            background: #aff1af;
+            background: $state-success-bg;
             text-align: center;
             span {
                 display: inline-block;
