@@ -97,48 +97,25 @@
                     @onClick="onExecute(config, currentHistoryId)" />
             </template>
             <template v-slot:buttons>
-                <div class="tagging-section" ref="tagContainer">
-                    <div class="run-tool-container">
-                        <ButtonSpinner
-                            title="Run Tool"
-                            class="mt-3 mb-3 run-tool-btn"
-                            :disabled="!canMutateHistory"
-                            :wait="showExecuting"
-                            :tooltip="tooltip"
-                            @onClick="onExecute(config, currentHistoryId)" />
-                            <BButton
-                                type="button"
-                                class="btn btn-secondary"
-                                v-b-tooltip.hover.bottom
-                                title="Add tags for output datasets"
-                                @click="toggleTagsContainer">
-                                <FontAwesomeIcon icon="fa-tags" />
-                            </BButton>
-                    </div>
-                    <div
-                        v-if="isDropdownVisible"
-                        class="tags-container">
-                        <div class="existing-tags">
-                            <div class="tag-list">
-                                <Tag
-                                    v-for="(tag, index) in tags"
-                                    :key="index"
-                                    :option="tag"
-                                    editable
-                                    @deleted="removeTag(index)"
-                                />
-                            </div>
-                        </div>
-                        <div class="add-tag-section">
-                            <input
-                                class="tag-input"
-                                v-model="newTag"
-                                placeholder="Add tag and press Enter"
-                                @keyup.enter="addTag"
-                            />
-                        </div>
+                <div class="tagging-section">
+                    <label><b>Add tags for output datasets</b></label>
+                    <div class="tags-container">
+                        <StatelessTags
+                            clickable
+                            :value="tags"
+                            :disabled="disabled || showExecuting"
+                            :max-visible-tags="8"
+                            @input="updateTags"
+                        />
                     </div>
                 </div>
+                <ButtonSpinner
+                    title="Run Tool"
+                    class="mt-3 mb-3"
+                    :disabled="!canMutateHistory"
+                    :wait="showExecuting"
+                    :tooltip="tooltip"
+                    @onClick="onExecute(config, currentHistoryId)" />
             </template>
         </ToolCard>
     </div>
@@ -168,14 +145,7 @@ import ToolCard from "./ToolCard";
 import { allowCachedJobs } from "./utilities";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
-import Tag from "@/components/TagsMultiselect/Tag.vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTags } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref, onMounted, onBeforeUnmount } from "vue";
-import { BButton } from "bootstrap-vue";
-
-library.add(faTags);
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 export default {
     components: {
@@ -188,9 +158,7 @@ export default {
         ToolEntryPoints,
         ToolRecommendation,
         Heading,
-        Tag,
-        FontAwesomeIcon,
-        BButton,
+        StatelessTags,
     },
     props: {
         id: {
@@ -251,8 +219,6 @@ export default {
             immutableHistoryMessage:
                 "This history is immutable and you cannot run tools in it. Please switch to a different history.",
             tags: [],
-            newTag: "",
-            isDropdownVisible: false,
         };
     },
     computed: {
@@ -466,80 +432,9 @@ export default {
                 }
             );
         },
-        toggleTagsContainer() {
-            this.isDropdownVisible = !this.isDropdownVisible;
+        updateTags(newTags) {
+            this.tags = newTags;
         },
-        addTag() {
-            if (this.newTag.trim() && !this.tags.includes(this.newTag.trim())) {
-                this.tags.push(this.newTag.trim());
-                this.newTag = "";
-            }
-        },
-        removeTag(index) {
-            this.tags.splice(index, 1);
-        },
-        handleClickOutside(event) {
-            const tagContainer = this.$refs.tagContainer;
-            if (tagContainer && !tagContainer.contains(event.target)) {
-                this.isDropdownVisible = false;
-            }
-        },
-    },
-    mounted() {
-        document.addEventListener("click", this.handleClickOutside);
-    },
-    beforeUnmount() {
-        document.removeEventListener("click", this.handleClickOutside);
     },
 };
 </script>
-
-<style scoped>
-.tagging-section {
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-    position: relative; 
-}
-
-.run-tool-container {
-    display: inline-flex;
-    align-items: center;
-    position: relative; 
-}
-
-.tags-container {
-    position: absolute;
-    top: 100%; 
-    left: 0;
-    margin-top: -15px;
-    padding: 0.5rem;
-    background: #fff; 
-    border: 1px solid #ddd; 
-    border-radius: 4px;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-width: max-content;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
-    z-index: 10; 
-}
-
-.tag-list {
-    display: flex;
-    flex-wrap: wrap; 
-}
-
-.tag-input {
-    padding: 0;
-    background: none;
-    border: none;
-    outline: none;
-    border-bottom: 1px solid #ccc; 
-    width: 100%;
-}
-
-.tag-input::placeholder {
-    font-size: 0.9rem;
-    color: #888; 
-}
-</style>
