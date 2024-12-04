@@ -15,7 +15,7 @@ const MAX_OFFSET_SHIFT_X = MAX_OFFSET - NODE_WIDTH / 2;
 const MIN_OFFSET_SHIFT_Y = MIN_OFFSET - NODE_HEIGHT / 2;
 const MAX_OFFSET_SHIFT_Y = MAX_OFFSET - NODE_HEIGHT / 2;
 
-export function defaultPosition(rootOffset: ElementBounding, transform: ZoomTransform) {
+export function defaultPosition(rootOffset: ElementBounding, transform: Pick<ZoomTransform, "x" | "y" | "k">) {
     const left =
         (-transform.x + rootOffset.width / 2 + randomInteger(MIN_OFFSET_SHIFT_X, MAX_OFFSET_SHIFT_X)) / transform.k;
     const top =
