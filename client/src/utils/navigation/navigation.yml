@@ -240,7 +240,7 @@ history_panel:
       name_input: '${_} [data-description="name input"]'
       annotation_input: '${_} [data-description="annotation input"]'
       tags_input: '${_} .stateless-tags button'
-      save_button: '${_} [data-description="editor save button"]'
+      save_button: '#workflow-save-button'
 
   # history tags
   tag_editor:
