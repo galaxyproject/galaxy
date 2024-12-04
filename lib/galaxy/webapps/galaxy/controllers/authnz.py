@@ -19,6 +19,7 @@ from galaxy.webapps.base.controller import JSAppLauncher
 log = logging.getLogger(__name__)
 
 PROVIDER_COOKIE_NAME = "galaxy-oidc-provider"
+LOGIN_NEXT_COOKIE_NAME = "galaxy-oidc-login-next"
 
 
 class OIDC(JSAppLauncher):
@@ -77,7 +78,9 @@ class OIDC(JSAppLauncher):
             msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance."
             log.debug(msg)
             return trans.show_error_message(msg)
-        success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans, idphint=idphint)
+        if next:
+            trans.set_cookie(value=next, name=LOGIN_NEXT_COOKIE_NAME)
+        success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans, idphint)
         if success:
             return {"redirect_uri": redirect_uri}
         else:
@@ -86,6 +89,7 @@ class OIDC(JSAppLauncher):
     @web.expose
     def callback(self, trans, provider, idphint=None, **kwargs):
         user = trans.user.username if trans.user is not None else "anonymous"
+        login_next = url_for(trans.get_cookie(name=LOGIN_NEXT_COOKIE_NAME) or "/")
         if not bool(kwargs):
             log.error(f"OIDC callback received no data for provider `{provider}` and user `{user}`")
             return trans.show_error_message(
@@ -110,7 +114,7 @@ class OIDC(JSAppLauncher):
                 kwargs.get("state", " "),
                 kwargs["code"],
                 trans,
-                login_redirect_url=url_for("/"),
+                login_redirect_url=login_next,
                 idphint=idphint,
             )
         except exceptions.AuthenticationFailed:
