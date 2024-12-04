@@ -5,7 +5,6 @@ import { BAlert, BBadge, BButton, BTab, BTabs } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import { type InvocationJobsSummary, type InvocationStep, type WorkflowInvocationElementView } from "@/api/invocations";
-import { cancelWorkflowScheduling } from "@/api/invocations";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -200,6 +199,16 @@ watch(
 
 const storeId = computed(() => (invocation.value ? `invocation-${invocation.value.id}` : undefined));
 
+watch(
+    () => invocationSchedulingTerminal.value,
+    async (newVal, oldVal) => {
+        if (oldVal && !newVal) {
+            // If the invocation was terminal and now is not, start polling again
+            await pollStepStatesUntilTerminal();
+        }
+    }
+);
+
 onUnmounted(() => {
     clearTimeout(stepStatesInterval.value);
     clearTimeout(jobStatesInterval.value);
@@ -223,18 +232,12 @@ function onError(e: any) {
 async function onCancel() {
     try {
         cancellingInvocation.value = true;
-        await cancelWorkflowScheduling(props.invocationId);
+        await invocationStore.cancelWorkflowScheduling(props.invocationId);
     } catch (e) {
         onError(e);
     } finally {
         emit("invocation-cancelled");
-
-        // Update the invocation state to reflect the cancellation
-        setTimeout(async () => {
-            await invocationStore.fetchInvocationForId({ id: props.invocationId });
-            await invocationStore.fetchInvocationJobsSummaryForId({ id: props.invocationId });
-            cancellingInvocation.value = false;
-        }, 3000);
+        cancellingInvocation.value = false;
     }
 }
 </script>
@@ -255,7 +258,7 @@ async function onCancel() {
                     size="sm"
                     class="text-decoration-none"
                     variant="link"
-                    :disabled="cancellingInvocation"
+                    :disabled="cancellingInvocation || invocationState == 'cancelling'"
                     @click="onCancel">
                     <FontAwesomeIcon :icon="faSquare" fixed-width />
                     Cancel
@@ -314,7 +317,6 @@ async function onCancel() {
                     :invocation="invocation"
                     :is-full-page="props.isFullPage"
                     :invocation-and-job-terminal="invocationAndJobTerminal"
-                    :invocation-scheduling-terminal="invocationSchedulingTerminal"
                     :is-subworkflow="isSubworkflow" />
             </BTab>
             <BTab v-if="!isSubworkflow" title="Steps" lazy>
