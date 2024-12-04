@@ -2,6 +2,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { reactive } from "vue";
 
 import { getWorkflowInfo } from "@/api/workflows";
 
@@ -10,6 +11,13 @@ import Index from "@/components/Workflow/Editor/Index.vue";
 
 const localVue = getLocalVue(true);
 
+// A reactive route stub: vue-router's real `route.query` is reactive
+let mockRoute = reactive<{ path: string; query: Record<string, string> }>({ path: "/", query: {} });
+
+vi.mock("vue-router/composables", () => ({
+    useRoute: () => mockRoute,
+}));
+
 vi.mock("@/api/workflows", () => ({
     getWorkflowInfo: vi.fn(),
 }));
@@ -17,32 +25,18 @@ vi.mock("@/api/workflows", () => ({
 const mockedGetWorkflowInfo = getWorkflowInfo as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
-    mockedGetWorkflowInfo.mockReset();
+    mockRoute = reactive({ path: "/", query: {} });
+    vi.clearAllMocks();
 });
 
-/**
- * `WorkflowEditor` reads the id/version params from `window.location.search`
- * directly (see `@/utils/query-string-parsing`); `$route.query` is only used
- * to trigger a re-parse of the URL, so both need to be set for each scenario.
- */
-function setLocationSearch(search: string) {
-    Object.defineProperty(window.location, "search", {
-        configurable: true,
-        writable: true,
-        value: search,
-    });
+function setQuery(search: string) {
+    mockRoute.query = Object.fromEntries(new URLSearchParams(search));
 }
 
 async function mountWorkflowEditor(search = "") {
-    setLocationSearch(search);
-    const query = Object.fromEntries(new URLSearchParams(search));
+    setQuery(search);
 
-    const wrapper = shallowMount(WorkflowEditor as object, {
-        localVue,
-        mocks: {
-            $route: { query },
-        },
-    });
+    const wrapper = shallowMount(WorkflowEditor as object, { localVue });
     await flushPromises();
     return wrapper;
 }
@@ -67,7 +61,7 @@ describe("WorkflowEditor", () => {
     });
 
     it("resolves the workflow id via getWorkflowInfo when only workflow_id is present", async () => {
-        mockedGetWorkflowInfo.mockResolvedValueOnce({ id: "resolved789" });
+        mockedGetWorkflowInfo.mockResolvedValueOnce({ id: "resolved789", tags: ["tag1"] });
 
         const wrapper = await mountWorkflowEditor("?workflow_id=instance456");
 
@@ -75,6 +69,7 @@ describe("WorkflowEditor", () => {
 
         const editor = wrapper.findComponent(Index);
         expect(editor.props("workflowId")).toBe("resolved789");
+        expect(editor.props("workflowTags")).toEqual(["tag1"]);
     });
 
     it("parses the version query parameter as an integer and passes it to Editor", async () => {
