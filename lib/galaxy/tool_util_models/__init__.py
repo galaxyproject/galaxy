@@ -29,6 +29,7 @@ from typing_extensions import (
 
 from .assertions import assertions
 from .parameters import (
+    GalaxyParameterT,
     ToolParameterT,
 )
 from .tool_outputs import (
@@ -40,6 +41,28 @@ from .tool_source import (
     OutputCompareType,
     XrefDict,
 )
+from .tool_outputs import (
+    IncomingToolOutput,
+    ToolOutput,
+)
+
+
+class UserToolSource(BaseModel):
+    class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
+    name: str
+    container: str
+    version: str
+    description: Optional[str] = None
+    shell_command: str
+    inputs: List[GalaxyParameterT]
+    outputs: List[IncomingToolOutput]
+    citations: Optional[List[Citation]] = None
+    license: Optional[str] = None
+    profile: Optional[str] = None
+    edam_operations: Optional[List[str]] = None
+    edam_topics: Optional[List[str]] = None
+    xrefs: Optional[List[XrefDict]] = None
+    help: Optional[HelpContent] = None
 
 
 class ParsedTool(BaseModel):

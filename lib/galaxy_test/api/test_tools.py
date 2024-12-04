@@ -79,22 +79,24 @@ TOOL_WITH_BASE_COMMAND = {
 }
 TOOL_WITH_SHELL_COMMAND = {
     "name": "Base command tool",
-    "class": "GalaxyTool",
+    "class": "GalaxyUserTool",
+    "container": "busybox",
     "version": "1.0.0",
     "shell_command": "cat '$(inputs.input.path)' > output.fastq",
     "inputs": [
         {
             "type": "data",
             "name": "input",
+            "format": "txt",
         }
     ],
-    "outputs": {
-        "output": {
+    "outputs": [
+        {
             "type": "data",
             "from_work_dir": "output.fastq",
             "name": "output",
         }
-    },
+    ],
 }
 
 
@@ -1580,7 +1582,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     def test_nonadmin_users_cannot_create_tools(self):
         payload = dict(
-            representation=json.dumps(MINIMAL_TOOL),
+            representation=MINIMAL_TOOL,
         )
         create_response = self._post("dynamic_tools", data=payload, admin=False)
         self._assert_status_code_is(create_response, 403)

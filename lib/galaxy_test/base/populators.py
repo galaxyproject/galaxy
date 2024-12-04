@@ -891,8 +891,6 @@ class BaseDatasetPopulator(BasePopulator):
         return self._create_tool_raw(payload)
 
     def create_tool(self, representation, tool_directory: Optional[str] = None) -> Dict[str, Any]:
-        if isinstance(representation, dict):
-            representation = json.dumps(representation)
         payload = dict(
             representation=representation,
             tool_directory=tool_directory,
@@ -902,9 +900,9 @@ class BaseDatasetPopulator(BasePopulator):
     def _create_tool_raw(self, payload) -> Dict[str, Any]:
         using_requirement("admin")
         try:
-            create_response = self._post("dynamic_tools", data=payload, admin=True)
+            create_response = self._post("dynamic_tools", data=payload, admin=True, json=True)
         except TypeError:
-            create_response = self._post("dynamic_tools", data=payload)
+            create_response = self._post("dynamic_tools", data=payload, json=True)
         assert create_response.status_code == 200, create_response.text
         return create_response.json()
 

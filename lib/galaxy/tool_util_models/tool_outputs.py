@@ -6,6 +6,7 @@ code where actual tool objects aren't created.
 """
 
 from typing import (
+    Generic,
     List,
     Optional,
     Union,
@@ -18,38 +19,68 @@ from pydantic import (
 from typing_extensions import (
     Annotated,
     Literal,
+    TypeVar,
 )
 
+AnyT = TypeVar("AnyT")
+NotRequired = Annotated[Optional[AnyT], Field(None)]
+IncomingNotRequiredBoolT = TypeVar("IncomingNotRequiredBoolT")
+IncomingNotRequiredStringT = TypeVar("IncomingNotRequiredStringT")
+IncomingNotRequiredDatasetCollectionDescriptionT = TypeVar("IncomingNotRequiredDatasetCollectionDescriptionT")
+IncomingNotRequiredDatasetCollectionDescription = NotRequired[List["DatasetCollectionDescriptionT"]]
 
-class ToolOutputBaseModel(BaseModel):
-    name: str
-    label: Optional[str]
-    hidden: bool
+# Use IncomingNotRequired when concrete key: Optional[str] = None would be incorrect
 
 
-class ToolOutputDataset(ToolOutputBaseModel):
+class ToolOutputBaseModelG(BaseModel, Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT]):
+    name: IncomingNotRequiredStringT
+    label: Optional[str] = None
+    hidden: IncomingNotRequiredBoolT
+
+
+IncomingToolOutputBaseModel = ToolOutputBaseModelG[NotRequired[bool], NotRequired[str]]
+
+
+class ToolOutputDatasetG(
+    ToolOutputBaseModelG[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
+    Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
+):
     type: Literal["data"]
-    format: str
-    format_source: Optional[str]
-    metadata_source: Optional[str]
-    discover_datasets: Optional[List["DatasetCollectionDescriptionT"]]
+    format: IncomingNotRequiredStringT
+    format_source: Optional[str] = None
+    metadata_source: Optional[str] = None
+    discover_datasets: Optional[List["DatasetCollectionDescriptionT"]] = None
     from_work_dir: Optional[str] = None
 
 
+ToolOutputDataset = ToolOutputDatasetG[bool, str]
+IncomingToolOutputDataset = ToolOutputDatasetG[
+    NotRequired[bool],
+    NotRequired[str],
+]
+
+
 class ToolOutputCollectionStructure(BaseModel):
-    collection_type: Optional[str]
-    collection_type_source: Optional[str]
-    collection_type_from_rules: Optional[str]
-    structured_like: Optional[str]
-    discover_datasets: Optional[List["DatasetCollectionDescriptionT"]]
+    collection_type: Optional[str] = None
+    collection_type_source: Optional[str] = None
+    collection_type_from_rules: Optional[str] = None
+    structured_like: Optional[str] = None
+    discover_datasets: Optional[List["DatasetCollectionDescriptionT"]] = None
 
 
-class ToolOutputCollection(ToolOutputBaseModel):
+class ToolOutputCollectionG(
+    ToolOutputBaseModelG[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
+    Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
+):
     type: Literal["collection"]
     structure: ToolOutputCollectionStructure
 
 
-class ToolOutputSimple(ToolOutputBaseModel):
+ToolOutputCollection = ToolOutputCollectionG[bool, str]
+IncomingToolOutputCollection = ToolOutputCollectionG[NotRequired[bool], NotRequired[str]]
+
+
+class ToolOutputSimple(ToolOutputBaseModelG):
     pass
 
 
@@ -98,6 +129,15 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
 DatasetCollectionDescriptionT = Union[FilePatternDatasetCollectionDescription, ToolProvidedMetadataDatasetCollection]
 
 
+IncomingToolOutputT = Union[
+    IncomingToolOutputDataset,
+    IncomingToolOutputCollection,
+    ToolOutputText,
+    ToolOutputInteger,
+    ToolOutputFloat,
+    ToolOutputBoolean,
+]
+IncomingToolOutput = Annotated[IncomingToolOutputT, Field(discriminator="type")]
 ToolOutputT = Union[
     ToolOutputDataset, ToolOutputCollection, ToolOutputText, ToolOutputInteger, ToolOutputFloat, ToolOutputBoolean
 ]
