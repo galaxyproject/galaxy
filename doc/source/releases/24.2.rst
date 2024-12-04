@@ -14,6 +14,9 @@ Enhancements
 
 .. feature
 
+* Backport of Workflow Editor Activity Bar
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 19212`_
 * Add onedata templates
   (thanks to `@bwalkowi <https://github.com/bwalkowi>`__).
   `Pull Request 18457`_
@@ -106,6 +109,9 @@ Enhancements
   `Pull Request 16837`_
 .. enhancement_tag_workflows
 
+* Fix default value handling for parameters connected to required parameters
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19219`_
 * Allow connecting text param into data column parameter
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 18674`_
@@ -189,6 +195,9 @@ Enhancements
   `Pull Request 19096`_
 .. enhancement
 
+* Guide users to collection builders
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18857`_
 * Updates the About Page
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 18461`_
@@ -587,6 +596,18 @@ Fixes
 
 .. bug
 
+* Avoid a class of unhelpful accepted format drop downs
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19241`_
+* Improve the empty history message for guiding users to collections.
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19242`_
+* Fix PSA Redirect
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 19247`_
+* release testing - UI tests for new workflow parameters
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19182`_
 * Return generic message for password reset email
   (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
   `Pull Request 18479`_
