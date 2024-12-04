@@ -169,10 +169,10 @@ class StagingInterface(metaclass=abc.ABCMeta):
                 uri = path_or_uri_to_uri(uri)
                 is_path = uri.startswith("file://")
                 if not is_path or use_path_paste:
-                    upload_payload["inputs"]["files_%d|url_paste" % index] = uri
+                    upload_payload["inputs"][f"files_{index}|url_paste"] = uri
                 else:
                     path = uri[len("file://") :]
-                    upload_payload["__files"]["files_%d|file_data" % index] = self._attach_file(path)
+                    upload_payload["__files"][f"files_{index}|file_data"] = self._attach_file(path)
 
             if isinstance(upload_target, FileUploadTarget):
                 file_path = upload_target.path

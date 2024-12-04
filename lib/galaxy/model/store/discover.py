@@ -1050,7 +1050,7 @@ class JsonCollectedDatasetMatch:
         identifiers = []
         i = 0
         while True:
-            key = "identifier_%d" % i
+            key = f"identifier_{i}"
             if key in self.as_dict:
                 identifiers.append(self.as_dict.get(key))
             else:
