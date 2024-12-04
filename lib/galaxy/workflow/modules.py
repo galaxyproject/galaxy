@@ -2567,23 +2567,6 @@ def load_module_sections(trans):
     is configured with.
     """
     module_sections = {}
-    module_sections["inputs"] = {
-        "name": "inputs",
-        "title": "Inputs",
-        "modules": [
-            {"name": "data_input", "title": "Input Dataset", "description": "Input dataset"},
-            {
-                "name": "data_collection_input",
-                "title": "Input Dataset Collection",
-                "description": "Input dataset collection",
-            },
-            {
-                "name": "parameter_input",
-                "title": "Parameter Input",
-                "description": "Simple inputs used for workflow logic",
-            },
-        ],
-    }
 
     if trans.app.config.enable_beta_workflow_modules:
         module_sections["experimental"] = {

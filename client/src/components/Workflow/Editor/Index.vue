@@ -47,7 +47,6 @@
                     workflow
                     :module-sections="moduleSections"
                     :data-managers="dataManagers"
-                    :editor-workflows="workflows"
                     @onInsertTool="onInsertTool"
                     @onInsertModule="onInsertModule"
                     @onInsertWorkflow="onInsertWorkflow"
@@ -262,10 +261,6 @@ export default {
             required: true,
         },
         dataManagers: {
-            type: Array,
-            required: true,
-        },
-        workflows: {
             type: Array,
             required: true,
         },

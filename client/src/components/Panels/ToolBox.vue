@@ -33,7 +33,6 @@ const props = defineProps({
     panelView: { type: String, required: true },
     showAdvanced: { type: Boolean, default: false, required: true },
     panelQuery: { type: String, required: true },
-    editorWorkflows: { type: Array, default: null },
     dataManagers: { type: Array, default: null },
     moduleSections: { type: Array as PropType<Record<string, any>>, default: null },
 });
