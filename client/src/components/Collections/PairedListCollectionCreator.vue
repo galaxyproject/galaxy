@@ -81,6 +81,7 @@ const invalidElements = ref<string[]>([]);
 const generatedPairs = ref<DatasetPair[]>([]);
 const selectedForwardElement = ref<HDASummary | null>(null);
 const selectedReverseElement = ref<HDASummary | null>(null);
+const atLeastOnePair = ref(true);
 
 // Filters
 const forwardFilter = ref(COMMON_FILTERS[DEFAULT_FILTER][0] || "");
@@ -751,7 +752,8 @@ function addUploadedFiles(files: HDASummary[]) {
 
 async function clickedCreate(collectionName: string) {
     checkForDuplicates();
-    if (state.value == "build") {
+    atLeastOnePair.value = generatedPairs.value.length > 0;
+    if (state.value == "build" && atLeastOnePair.value) {
         emit("clicked-create", generatedPairs.value, collectionName, hideSourceItems.value);
     }
 }
@@ -827,6 +829,19 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                     </ul>
                 </BAlert>
             </div>
+
+            <div v-if="!atLeastOnePair">
+                <BAlert show variant="warning" dismissible @dismissed="atLeastOnePair = true">
+                    {{ localize("At least one pair is needed for the paired list.") }}
+                    <span v-if="fromSelection">
+                        <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
+                            {{ localize("Cancel") }}
+                        </a>
+                        {{ localize("and reselect new elements.") }}
+                    </span>
+                </BAlert>
+            </div>
+
             <div v-if="!autoPairsPossible">
                 <BAlert show variant="danger" dismissible @dismissed="autoPairsPossible = true">
                     {{
@@ -842,6 +857,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                     </span>
                 </BAlert>
             </div>
+
             <div v-if="state == 'duplicates'">
                 <BAlert show variant="danger">
                     {{
@@ -853,6 +869,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                     {{ localize("Please fix these duplicates and try again.") }}
                 </BAlert>
             </div>
+
             <CollectionCreator
                 :oncancel="() => emit('on-cancel')"
                 :history-id="props.historyId"
