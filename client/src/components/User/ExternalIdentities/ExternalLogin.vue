@@ -77,7 +77,14 @@ async function submitOIDCLogin(idp: string) {
     loading.value = true;
 
     try {
-        const { data } = await axios.post(withPrefix(`/authnz/${idp}/login`));
+        const loginUrl = withPrefix(`/authnz/${idp}/login`);
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectParam = urlParams.get("redirect");
+
+        const formData = new FormData();
+        formData.append("next", redirectParam || "");
+
+        const { data } = await axios.post(loginUrl, formData, { withCredentials: true });
 
         if (data.redirect_uri) {
             window.location = data.redirect_uri;
