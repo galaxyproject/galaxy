@@ -914,8 +914,7 @@ class NavigatesGalaxy(HasDriver):
         if not hide_source_items:
             self.collection_builder_hide_originals()
 
-        self.collection_builder_clear_filters()
-        # TODO: generalize and loop these clicks so we don't need the assert
+        self.ensure_collection_builder_filters_cleared()
         assert len(test_paths) == 2
         self.collection_builder_click_paired_item("forward", 0)
         self.collection_builder_click_paired_item("reverse", 1)
@@ -2053,8 +2052,15 @@ class NavigatesGalaxy(HasDriver):
     def collection_builder_create(self):
         self.wait_for_and_click_selector("button.create-collection")
 
+    def ensure_collection_builder_filters_cleared(self):
+        clear_filters = self.components.collection_builders.clear_filters
+        element = clear_filters.wait_for_present()
+        if "disabled" not in element.get_attribute("class").split(" "):
+            self.collection_builder_clear_filters()
+
     def collection_builder_clear_filters(self):
-        self.wait_for_and_click_selector("button.clear-filters-link")
+        clear_filters = self.components.collection_builders.clear_filters
+        clear_filters.wait_for_and_click()
 
     def collection_builder_click_paired_item(self, forward_or_reverse, item):
         assert forward_or_reverse in ["forward", "reverse"]
