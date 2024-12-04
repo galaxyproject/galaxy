@@ -341,7 +341,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             "environment": _add_galaxy_environment_variables(
                 destination_params.get("vcpu"), destination_params.get("memory"),
             ),
-            "user": "%d:%d" % (os.getuid(), os.getgid()),
+            "user": f"{os.getuid()}:{os.getgid()}",
             "privileged": destination_params.get("privileged"),
             "logConfiguration": {"logDriver": "awslogs"},
         }

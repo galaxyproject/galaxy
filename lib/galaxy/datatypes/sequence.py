@@ -76,7 +76,7 @@ class SequenceSplitLocations(data.Text):
                 parsed_data = json.load(open(dataset.get_file_name()))
                 # dataset.peek = json.dumps(data, sort_keys=True, indent=4)
                 dataset.peek = data.get_file_peek(dataset.get_file_name())
-                dataset.blurb = "%d sections" % len(parsed_data["sections"])
+                dataset.blurb = "{} sections".format(len(parsed_data["sections"]))
             except Exception:
                 dataset.peek = "Not FQTOC file"
                 dataset.blurb = "Not FQTOC file"
@@ -465,7 +465,7 @@ class Fasta(Sequence):
             raise Exception("Tool does not define a split mode")
         elif split_params["split_mode"] == "number_of_parts":
             split_size = int(split_params["split_size"])
-            log.debug("Split %s into %i parts..." % (input_file, split_size))
+            log.debug("Split %s into %i parts...", input_file, split_size)
             # if split_mode = number_of_parts, and split_size = 10, and
             # we know the number of sequences (say 1234), then divide by
             # by ten, giving ten files of approx 123 sequences each.
@@ -484,7 +484,7 @@ class Fasta(Sequence):
             # Split the input file into as many sub-files as required,
             # each containing to_size many sequences
             batch_size = int(split_params["split_size"])
-            log.debug("Split %s into batches of %i records..." % (input_file, batch_size))
+            log.debug("Split %s into batches of %i records...", input_file, batch_size)
             cls._count_split(input_file, batch_size, subdir_generator_function)
         else:
             raise Exception(f"Unsupported split mode {split_params['split_mode']}")
@@ -496,7 +496,7 @@ class Fasta(Sequence):
         This does of course preserve complete records - it only splits at the
         start of a new FASTQ sequence record.
         """
-        log.debug("Attemping to split FASTA file %s into chunks of %i bytes" % (input_file, chunk_size))
+        log.debug("Attemping to split FASTA file %s into chunks of %i bytes", input_file, chunk_size)
         with open(input_file) as f:
             part_file = None
             try:
@@ -530,7 +530,7 @@ class Fasta(Sequence):
     @classmethod
     def _count_split(cls, input_file: str, chunk_size: int, subdir_generator_function: Callable) -> None:
         """Split a FASTA file into chunks based on counting records."""
-        log.debug("Attemping to split FASTA file %s into chunks of %i sequences" % (input_file, chunk_size))
+        log.debug("Attemping to split FASTA file %s into chunks of %i sequences", input_file, chunk_size)
         with open(input_file) as f:
             part_file = None
             try:

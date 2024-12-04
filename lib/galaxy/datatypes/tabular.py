@@ -1321,7 +1321,7 @@ class Eland(Tabular):
                     if line:
                         line_pieces = line.split("\t")
                         if len(line_pieces) != 22:
-                            raise Exception("%s:%d:Corrupt line!" % (dataset.get_file_name(), i))
+                            raise Exception(f"{dataset.get_file_name()}:{i}:Corrupt line!")
                         lanes[line_pieces[2]] = 1
                         tiles[line_pieces[3]] = 1
                         barcodes[line_pieces[6]] = 1
@@ -1353,7 +1353,7 @@ class Eland(Tabular):
                 "str",
             ]
             dataset.metadata.lanes = list(lanes.keys())
-            dataset.metadata.tiles = ["%04d" % int(t) for t in tiles.keys()]
+            dataset.metadata.tiles = [f"{int(t):04d}" for t in tiles.keys()]
             dataset.metadata.barcodes = [_ for _ in barcodes.keys() if _ != "0"] + [
                 "NoIndex" for _ in barcodes.keys() if _ == "0"
             ]
@@ -1477,7 +1477,7 @@ class BaseCSV(TabularData):
                 except StopIteration:
                     pass
                 except csv.Error as e:
-                    raise Exception("CSV reader error - line %d: %s" % (reader.line_num, e))
+                    raise Exception(f"CSV reader error - line {reader.line_num}: {e}")
                 else:
                     data_lines = reader.line_num - 1
 
