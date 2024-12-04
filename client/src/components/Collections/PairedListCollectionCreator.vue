@@ -13,6 +13,7 @@ import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
@@ -724,10 +725,22 @@ function addUploadedFiles(files: HDASummary[]) {
     });
 }
 
+const { confirm } = useConfirmDialog();
+
 async function clickedCreate(collectionName: string) {
     checkForDuplicates();
     atLeastOnePair.value = generatedPairs.value.length > 0;
-    if (state.value == "build" && atLeastOnePair.value) {
+
+    let confirmed = false;
+    if (!atLeastOnePair.value) {
+        confirmed = await confirm("Are you sure you want to create a list with no pairs?", {
+            title: "Create an empty list of pairs",
+            okTitle: "Create",
+            okVariant: "primary",
+        });
+    }
+
+    if (state.value == "build" && (atLeastOnePair.value || confirmed)) {
         emit("clicked-create", generatedPairs.value, collectionName, hideSourceItems.value);
     }
 }
@@ -806,7 +819,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
 
             <div v-if="!atLeastOnePair">
                 <BAlert show variant="warning" dismissible @dismissed="atLeastOnePair = true">
-                    {{ localize("At least one pair is needed for the paired list.") }}
+                    {{ localize("At least one pair is needed for the list of pairs.") }}
                     <span v-if="fromSelection">
                         <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                             {{ localize("Cancel") }}

@@ -9,6 +9,7 @@ import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
@@ -228,14 +229,24 @@ function clickSelectAll() {
         return element.id;
     });
 }
+const { confirm } = useConfirmDialog();
 
-function clickedCreate(collectionName: string) {
+async function clickedCreate(collectionName: string) {
     checkForDuplicates();
 
     const returnedElements = props.fromSelection ? workingElements.value : inListElements.value;
     atLeastOneElement.value = returnedElements.length > 0;
 
-    if (state.value !== "error" && atLeastOneElement.value) {
+    let confirmed = false;
+    if (!atLeastOneElement.value) {
+        confirmed = await confirm("Are you sure you want to create a list with no datasets?", {
+            title: "Create an empty list",
+            okTitle: "Create",
+            okVariant: "primary",
+        });
+    }
+
+    if (state.value !== "error" && (atLeastOneElement.value || confirmed)) {
         emit("clicked-create", returnedElements, collectionName, hideSourceItems.value);
     }
 }
