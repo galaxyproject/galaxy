@@ -193,6 +193,17 @@ defineExpose({
     isActiveSideBar,
     setActiveSideBar,
 });
+
+const syncActivities = () => {
+    activityStore.sync();
+    if (config.value && ["workflow_centric", "workflow_runner"].indexOf(config.value.client_mode) >= 0) {
+        userStore.untoggleToolbarIfNeeded();
+    }
+};
+
+watch(() => hashedUserId.value, syncActivities);
+
+watch(isConfigLoaded, syncActivities);
 </script>
 
 <template>

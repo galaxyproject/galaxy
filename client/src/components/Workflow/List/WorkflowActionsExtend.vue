@@ -30,12 +30,14 @@ interface Props {
     published?: boolean;
     editor?: boolean;
     current?: boolean;
+    allowWorkflowManagement?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     published: false,
     editor: false,
     current: false,
+    allowWorkflowManagement: true,
 });
 
 const emit = defineEmits<{

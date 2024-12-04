@@ -17,6 +17,14 @@ const userStore = useUserStore();
 
 const { isAnonymous } = storeToRefs(userStore);
 
+interface Props {
+    advancedOptions: boolean;
+}
+
+withDefaults(defineProps<Props>(), {
+    advancedOptions: true,
+});
+
 const createButtonTitle = computed(() => {
     if (isAnonymous.value) {
         return "Log in to create workflow";
@@ -45,6 +53,7 @@ function navigateToOldCreate() {
     <div id="workflow-list-actions" class="d-flex justify-content-between">
         <div>
             <BButton
+                v-if="advancedOptions"
                 id="workflow-create"
                 v-b-tooltip.hover.noninteractive
                 size="sm"

@@ -43,6 +43,7 @@ from .models import (
     FloatParameterModel,
     HiddenParameterModel,
     IntegerParameterModel,
+    is_optional,
     LabelValue,
     RawStateDict,
     RepeatParameterModel,
@@ -66,6 +67,7 @@ from .models import (
     ValidationFunctionT,
 )
 from .state import (
+    HasToolParameters,
     JobInternalToolState,
     LandingRequestInternalToolState,
     LandingRequestToolState,
@@ -126,6 +128,7 @@ __all__ = (
     "RepeatParameterModel",
     "RawStateDict",
     "ValidationFunctionT",
+    "is_optional",
     "validate_against_model",
     "validate_internal_job",
     "validate_internal_landing_request",
@@ -140,6 +143,7 @@ __all__ = (
     "ToolState",
     "TestCaseToolState",
     "ToolParameterT",
+    "HasToolParameters",
     "to_json_schema_string",
     "test_case_state",
     "validate_test_cases_for_tool_source",
