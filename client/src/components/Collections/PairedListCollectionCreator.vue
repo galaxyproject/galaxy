@@ -64,7 +64,7 @@ const emit = defineEmits<{
 const noElementsHeader = props.fromSelection ? localize("No elements selected") : localize("No elements available");
 const allInvalidElementsPartTwo = props.fromSelection
     ? localize("and reselect new elements.")
-    : localize("and change your current history or add valid datasets for this collection.");
+    : localize("and change your current history or upload valid datasets for this collection.");
 
 // Flags
 const state = ref<"build" | "error" | "duplicates">("build");
@@ -817,261 +817,245 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
             </BAlert>
         </div>
         <div v-else>
-            <div v-if="noElementsSelected">
+            <div v-if="fromSelection && returnInvalidElementsLength">
                 <BAlert show variant="warning" dismissible>
-                    {{ noElementsHeader }}
-                    {{ ALL_INVALID_ELEMENTS_PART_ONE }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                        {{ CANCEL_TEXT }}
-                    </a>
-                    {{ allInvalidElementsPartTwo }}
-                </BAlert>
-                <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
-                        {{ CANCEL_TEXT }}
-                    </button>
-                </div>
-            </div>
-            <div v-else-if="allElementsAreInvalid">
-                <BAlert v-if="!fromSelection" show variant="warning">
-                    {{
-                        localize(
-                            "No elements in your history are valid for this collection. You may need to switch to a different history."
-                        )
-                    }}
-                    <span v-if="extensions?.length">
-                        {{ localize("The following extensions are required for this collection: ") }}
-                        <ul>
-                            <li v-for="extension in extensions" :key="extension">
-                                {{ extension }}
-                            </li>
-                        </ul>
-                    </span>
-                </BAlert>
-                <BAlert v-else show variant="warning" dismissible>
                     {{ INVALID_HEADER }}
                     <ul>
                         <li v-for="problem in returnInvalidElements" :key="problem">
                             {{ problem }}
                         </li>
                     </ul>
-                    {{ ALL_INVALID_ELEMENTS_PART_ONE }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                        {{ CANCEL_TEXT }}
-                    </a>
-                    {{ allInvalidElementsPartTwo }}
                 </BAlert>
-                <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
-                        {{ CANCEL_TEXT }}
-                    </button>
-                </div>
             </div>
-            <div v-else-if="tooFewElementsSelected">
-                <div v-if="returnInvalidElementsLength">
-                    <BAlert show variant="warning" dismissible>
-                        {{ INVALID_HEADER }}
-                        <ul>
-                            <li v-for="problem in returnInvalidElements" :key="problem">
-                                {{ problem }}
-                            </li>
-                        </ul>
-                    </BAlert>
-                </div>
-                <BAlert show variant="warning" dismissible>
-                    {{ ALL_INVALID_ELEMENTS_PART_ONE }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                        {{ CANCEL_TEXT }}
-                    </a>
-                    {{ allInvalidElementsPartTwo }}
+            <div v-if="!autoPairsPossible">
+                <BAlert show variant="danger" dismissible @dismissed="autoPairsPossible = true">
+                    {{
+                        localize(
+                            "Could not automatically create any pairs from the given dataset names. You may want to choose or enter different filters and try auto-pairing again."
+                        )
+                    }}
+                    <span v-if="fromSelection">
+                        <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
+                            {{ CANCEL_TEXT }}
+                        </a>
+                        {{ allInvalidElementsPartTwo }}
+                    </span>
                 </BAlert>
-                <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
-                        {{ CANCEL_TEXT }}
-                    </button>
-                </div>
             </div>
-            <div v-else>
-                <div v-if="fromSelection && returnInvalidElementsLength">
-                    <BAlert show variant="warning" dismissible>
-                        {{ INVALID_HEADER }}
-                        <ul>
-                            <li v-for="problem in returnInvalidElements" :key="problem">
-                                {{ problem }}
-                            </li>
-                        </ul>
-                    </BAlert>
-                </div>
-                <div v-if="!autoPairsPossible">
-                    <BAlert show variant="danger" dismissible @dismissed="autoPairsPossible = true">
+            <div v-if="state == 'duplicates'">
+                <BAlert show variant="danger">
+                    {{
+                        localize("Collections cannot have duplicated names. The following list names are duplicated: ")
+                    }}
+                    <ul>
+                        <li v-for="name in duplicatePairNames" :key="name">{{ name }}</li>
+                    </ul>
+                    {{ localize("Please fix these duplicates and try again.") }}
+                </BAlert>
+            </div>
+            <CollectionCreator
+                :oncancel="() => emit('on-cancel')"
+                :history-id="props.historyId"
+                :hide-source-items="hideSourceItems"
+                render-extensions-toggle
+                :extensions-toggle="removeExtensions"
+                :extensions="extensions"
+                :no-items="props.initialElements.length == 0 && !props.fromSelection"
+                @add-uploaded-files="addUploadedFiles"
+                @onUpdateHideSourceItems="hideSourceItems = $event"
+                @clicked-create="clickedCreate"
+                @remove-extensions-toggle="removeExtensionsToggle">
+                <template v-slot:help-content>
+                    <!-- TODO: Update help content for case where `fromSelection` is false -->
+                    <p>
                         {{
                             localize(
-                                "Could not automatically create any pairs from the given dataset names. You may want to choose or enter different filters and try auto-pairing again."
+                                [
+                                    "Collections of paired datasets are ordered lists of dataset pairs (often forward and reverse reads). ",
+                                    "These collections can be passed to tools and workflows in order to have analyses done on each member of ",
+                                    "the entire group. This interface allows you to create a collection, choose which datasets are paired, ",
+                                    "and re-order the final collection.",
+                                ].join("")
                             )
                         }}
-                        <span v-if="fromSelection">
+                    </p>
+                    <p>
+                        {{ localize("Unpaired datasets are shown in the") }}
+                        <i data-target=".unpaired-columns">
+                            {{ localize("unpaired section") }}
+                        </i>
+                        {{ "." }}
+                        {{ localize("Paired datasets are shown in the") }}
+                        <i data-target=".paired-columns">
+                            {{ localize("paired section") }}
+                        </i>
+                        {{ "." }}
+                    </p>
+                    <ul>
+                        {{
+                            localize("To pair datasets, you can:")
+                        }}
+                        <li>
+                            {{ localize("Click a dataset in the") }}
+                            <i data-target=".forward-column">
+                                {{ localize("forward column") }}
+                            </i>
+                            {{ localize("to select it then click a dataset in the") }}
+                            <i data-target=".reverse-column">
+                                {{ localize("reverse column") }}
+                            </i>
+                        </li>
+                        <li>
+                            {{
+                                localize(
+                                    "Click one of the Pair these datasets buttons in the middle column to pair the datasets in a particular row."
+                                )
+                            }}
+                        </li>
+                        <li>
+                            {{ localize("Click") }}
+                            <i data-target=".autopair-link">
+                                {{ localize("Auto-pair") }}
+                            </i>
+                            {{ localize("to have your datasets automatically paired based on name.") }}
+                        </li>
+                    </ul>
+                    <ul>
+                        {{
+                            localize("You can filter what is shown in the unpaired sections by:")
+                        }}
+                        <li>
+                            {{ localize("Entering partial dataset names in either the ") }}
+                            <i data-target=".forward-unpaired-filter input">
+                                {{ localize("forward filter") }}
+                            </i>
+                            {{ localize("or ") }}
+                            <i data-target=".reverse-unpaired-filter input">
+                                {{ localize("reverse filter") }}
+                            </i>
+                            {{ "." }}
+                        </li>
+                        <li>
+                            {{
+                                localize(
+                                    "Choosing from a list of preset filters by clicking the arrow beside the filter input."
+                                )
+                            }}
+                        </li>
+                        <li>
+                            {{ localize("Entering regular expressions to match dataset names. See:") }}
+                            <a
+                                href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions"
+                                target="_blank">
+                                {{ localize("MDN's JavaScript Regular Expression Tutorial") }}</a
+                            >
+                            {{ localize("Note: forward slashes (\\) are not needed.") }}
+                        </li>
+                        <li>
+                            {{ localize("Clearing the filters by clicking the ") }}
+                            <i data-target=".clear-filters-link">
+                                {{ localize("Clear filters link") }}
+                            </i>
+                            {{ "." }}
+                        </li>
+                    </ul>
+                    <p>
+                        {{ localize("To unpair individual dataset pairs, click the ") }}
+                        <i data-target=".unpair-btn">
+                            {{ localize("unpair buttons (") }}
+                            <span class="fa fa-unlink"></span>
+                            {{ ")" }}
+                        </i>
+                        {{ localize("Click the") }}
+                        <i data-target=".unpair-all-link">
+                            {{ localize("Unpair all") }}
+                        </i>
+                        {{ localize("link to unpair all pairs.") }}
+                    </p>
+                    <p>
+                        {{
+                            localize(
+                                'You can include or remove the file extensions (e.g. ".fastq") from your pair names by toggling the'
+                            )
+                        }}
+                        <i data-target=".remove-extensions-prompt">
+                            {{ localize("Remove file extensions from pair names?") }}
+                        </i>
+                        {{ localize("control.") }}
+                    </p>
+                    <p>
+                        {{ localize("Once your collection is complete, enter a") }}
+                        <i data-target=".collection-name">
+                            {{ localize("name") }}
+                        </i>
+                        {{ localize("and click ") }}
+                        <i data-target=".create-collection">
+                            {{ localize("Create list") }}
+                        </i>
+                        {{ localize(". (Note: you do not have to pair all unpaired datasets to finish.)") }}
+                    </p>
+                </template>
+                <template v-slot:middle-content>
+                    <div v-if="noElementsSelected">
+                        <BAlert show variant="warning" dismissible>
+                            {{ noElementsHeader }}
+                            {{ ALL_INVALID_ELEMENTS_PART_ONE }}
                             <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                                 {{ CANCEL_TEXT }}
                             </a>
                             {{ allInvalidElementsPartTwo }}
-                        </span>
-                    </BAlert>
-                </div>
-                <div v-if="state == 'duplicates'">
-                    <BAlert show variant="danger">
-                        {{
-                            localize(
-                                "Collections cannot have duplicated names. The following list names are duplicated: "
-                            )
-                        }}
-                        <ul>
-                            <li v-for="name in duplicatePairNames" :key="name">{{ name }}</li>
-                        </ul>
-                        {{ localize("Please fix these duplicates and try again.") }}
-                    </BAlert>
-                </div>
-                <CollectionCreator
-                    :oncancel="() => emit('on-cancel')"
-                    :history-id="props.historyId"
-                    :hide-source-items="hideSourceItems"
-                    render-extensions-toggle
-                    :extensions-toggle="removeExtensions"
-                    :extensions="extensions"
-                    @add-uploaded-files="addUploadedFiles"
-                    @onUpdateHideSourceItems="hideSourceItems = $event"
-                    @clicked-create="clickedCreate"
-                    @remove-extensions-toggle="removeExtensionsToggle">
-                    <template v-slot:help-content>
-                        <!-- TODO: Update help content for case where `fromSelection` is false -->
-                        <p>
+                        </BAlert>
+                    </div>
+                    <div v-else-if="allElementsAreInvalid">
+                        <BAlert v-if="!fromSelection" show variant="warning">
                             {{
                                 localize(
-                                    [
-                                        "Collections of paired datasets are ordered lists of dataset pairs (often forward and reverse reads). ",
-                                        "These collections can be passed to tools and workflows in order to have analyses done on each member of ",
-                                        "the entire group. This interface allows you to create a collection, choose which datasets are paired, ",
-                                        "and re-order the final collection.",
-                                    ].join("")
+                                    "No elements in your history are valid for this collection. You may need to switch to a different history."
                                 )
                             }}
-                        </p>
-                        <p>
-                            {{ localize("Unpaired datasets are shown in the") }}
-                            <i data-target=".unpaired-columns">
-                                {{ localize("unpaired section") }}
-                            </i>
-                            {{ "." }}
-                            {{ localize("Paired datasets are shown in the") }}
-                            <i data-target=".paired-columns">
-                                {{ localize("paired section") }}
-                            </i>
-                            {{ "." }}
-                        </p>
-                        <ul>
-                            {{
-                                localize("To pair datasets, you can:")
-                            }}
-                            <li>
-                                {{ localize("Click a dataset in the") }}
-                                <i data-target=".forward-column">
-                                    {{ localize("forward column") }}
-                                </i>
-                                {{ localize("to select it then click a dataset in the") }}
-                                <i data-target=".reverse-column">
-                                    {{ localize("reverse column") }}
-                                </i>
-                            </li>
-                            <li>
-                                {{
-                                    localize(
-                                        "Click one of the Pair these datasets buttons in the middle column to pair the datasets in a particular row."
-                                    )
-                                }}
-                            </li>
-                            <li>
-                                {{ localize("Click") }}
-                                <i data-target=".autopair-link">
-                                    {{ localize("Auto-pair") }}
-                                </i>
-                                {{ localize("to have your datasets automatically paired based on name.") }}
-                            </li>
-                        </ul>
-                        <ul>
-                            {{
-                                localize("You can filter what is shown in the unpaired sections by:")
-                            }}
-                            <li>
-                                {{ localize("Entering partial dataset names in either the ") }}
-                                <i data-target=".forward-unpaired-filter input">
-                                    {{ localize("forward filter") }}
-                                </i>
-                                {{ localize("or ") }}
-                                <i data-target=".reverse-unpaired-filter input">
-                                    {{ localize("reverse filter") }}
-                                </i>
-                                {{ "." }}
-                            </li>
-                            <li>
-                                {{
-                                    localize(
-                                        "Choosing from a list of preset filters by clicking the arrow beside the filter input."
-                                    )
-                                }}
-                            </li>
-                            <li>
-                                {{ localize("Entering regular expressions to match dataset names. See:") }}
-                                <a
-                                    href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions"
-                                    target="_blank">
-                                    {{ localize("MDN's JavaScript Regular Expression Tutorial") }}</a
-                                >
-                                {{ localize("Note: forward slashes (\\) are not needed.") }}
-                            </li>
-                            <li>
-                                {{ localize("Clearing the filters by clicking the ") }}
-                                <i data-target=".clear-filters-link">
-                                    {{ localize("Clear filters link") }}
-                                </i>
-                                {{ "." }}
-                            </li>
-                        </ul>
-                        <p>
-                            {{ localize("To unpair individual dataset pairs, click the ") }}
-                            <i data-target=".unpair-btn">
-                                {{ localize("unpair buttons (") }}
-                                <span class="fa fa-unlink"></span>
-                                {{ ")" }}
-                            </i>
-                            {{ localize("Click the") }}
-                            <i data-target=".unpair-all-link">
-                                {{ localize("Unpair all") }}
-                            </i>
-                            {{ localize("link to unpair all pairs.") }}
-                        </p>
-                        <p>
-                            {{
-                                localize(
-                                    'You can include or remove the file extensions (e.g. ".fastq") from your pair names by toggling the'
-                                )
-                            }}
-                            <i data-target=".remove-extensions-prompt">
-                                {{ localize("Remove file extensions from pair names?") }}
-                            </i>
-                            {{ localize("control.") }}
-                        </p>
-                        <p>
-                            {{ localize("Once your collection is complete, enter a") }}
-                            <i data-target=".collection-name">
-                                {{ localize("name") }}
-                            </i>
-                            {{ localize("and click ") }}
-                            <i data-target=".create-collection">
-                                {{ localize("Create list") }}
-                            </i>
-                            {{ localize(". (Note: you do not have to pair all unpaired datasets to finish.)") }}
-                        </p>
-                    </template>
-                    <template v-slot:middle-content>
+                            <span v-if="extensions?.length">
+                                {{ localize("The following extensions are required for this collection: ") }}
+                                <ul>
+                                    <li v-for="extension in extensions" :key="extension">
+                                        {{ extension }}
+                                    </li>
+                                </ul>
+                            </span>
+                        </BAlert>
+                        <BAlert v-else show variant="warning" dismissible>
+                            {{ INVALID_HEADER }}
+                            <ul>
+                                <li v-for="problem in returnInvalidElements" :key="problem">
+                                    {{ problem }}
+                                </li>
+                            </ul>
+                            {{ ALL_INVALID_ELEMENTS_PART_ONE }}
+                            <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
+                                {{ CANCEL_TEXT }}
+                            </a>
+                            {{ allInvalidElementsPartTwo }}
+                        </BAlert>
+                    </div>
+                    <div v-else-if="tooFewElementsSelected">
+                        <div v-if="returnInvalidElementsLength">
+                            <BAlert show variant="warning" dismissible>
+                                {{ INVALID_HEADER }}
+                                <ul>
+                                    <li v-for="problem in returnInvalidElements" :key="problem">
+                                        {{ problem }}
+                                    </li>
+                                </ul>
+                            </BAlert>
+                        </div>
+                        <BAlert show variant="warning" dismissible>
+                            {{ ALL_INVALID_ELEMENTS_PART_ONE }}
+                            <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
+                                {{ CANCEL_TEXT }}
+                            </a>
+                            {{ allInvalidElementsPartTwo }}
+                        </BAlert>
+                    </div>
+                    <div v-else>
                         <BCard no-body class="mb-2">
                             <BCardHeader
                                 class="d-flex justify-content-between align-items-center unselectable"
@@ -1308,9 +1292,9 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                 </div>
                             </div>
                         </div>
-                    </template>
-                </CollectionCreator>
-            </div>
+                    </div>
+                </template>
+            </CollectionCreator>
         </div>
     </div>
 </template>
