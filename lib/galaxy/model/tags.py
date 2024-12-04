@@ -211,7 +211,7 @@ class TagHandler:
         value=None,
         flush=True,
     ):
-        #self._ensure_user_owns_item(user, item)   TEMPORARY!!!
+        self._ensure_user_owns_item(user, item)
         # Use lowercase name for searching/creating tag.
         if name is None:
             return
@@ -253,7 +253,7 @@ class TagHandler:
         flush=True,
     ):
         """Apply tags to an item."""
-        #self._ensure_user_owns_item(user, item)  # TEMPORARY!!!
+        self._ensure_user_owns_item(user, item)
         # Parse tags.
         parsed_tags = self.parse_tags(tags_str)
         # Apply each tag.
