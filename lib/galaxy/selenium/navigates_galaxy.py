@@ -1209,7 +1209,7 @@ class NavigatesGalaxy(HasDriver):
         # Make sure we're on the workflow editor and not clicking the main tool panel.
         editor.canvas_body.wait_for_visible()
 
-        editor.tool_menu.wait_for_visible()
+        self.open_toolbox()
         editor.tool_menu_section_link(section_name="inputs").wait_for_and_click()
         editor.tool_menu_item_link(item_name=item_name).wait_for_and_click()
 
@@ -1227,7 +1227,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_editor_click_option(self, option_label):
         self.workflow_editor_click_options()
         menu_element = self.workflow_editor_options_menu_element()
-        option_elements = menu_element.find_elements(By.CSS_SELECTOR, "a")
+        option_elements = menu_element.find_elements(By.CSS_SELECTOR, "button")
         assert len(option_elements) > 0, "Failed to find workflow editor options"
         self.sleep_for(WAIT_TYPES.UX_RENDER)
         found_option = False
@@ -1244,10 +1244,10 @@ class NavigatesGalaxy(HasDriver):
             raise Exception(f"Failed to find workflow editor option with label [{option_label}]")
 
     def workflow_editor_click_options(self):
-        return self.wait_for_and_click_selector("#workflow-options-button")
+        return self.wait_for_and_click_selector("#activity-settings")
 
     def workflow_editor_options_menu_element(self):
-        return self.wait_for_selector_visible("#workflow-options-button")
+        return self.wait_for_selector_visible(".activity-settings")
 
     def workflow_editor_click_run(self):
         return self.wait_for_and_click_selector("#workflow-run-button")
@@ -1255,6 +1255,33 @@ class NavigatesGalaxy(HasDriver):
     def workflow_editor_click_save(self):
         self.wait_for_and_click_selector("#workflow-save-button")
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
+
+    def workflow_editor_search_for_workflow(self, name: str):
+        self.wait_for_and_click(self.components.workflow_editor.workflow_activity)
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        input = self.wait_for_selector(".activity-panel input")
+        input.send_keys(name)
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+    def workflow_editor_add_steps(self, name: str):
+        self.workflow_editor_search_for_workflow(name)
+
+        insert_button = self.components.workflows.workflow_card_button(name=name, title="Copy steps into workflow")
+        insert_button.wait_for_and_click()
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+    def workflow_editor_add_subworkflow(self, name: str):
+        self.workflow_editor_search_for_workflow(name)
+
+        insert_button = self.components.workflows.workflow_card_button(name=name, title="Insert as sub-workflow")
+        insert_button.wait_for_and_click()
+
+        self.components.workflow_editor.node._(label=name).wait_for_present()
+
+        self.sleep_for(self.wait_types.UX_RENDER)
 
     def navigate_to_histories_page(self):
         self.home()
@@ -1658,7 +1685,26 @@ class NavigatesGalaxy(HasDriver):
         invocations.invocations_table.wait_for_visible()
         return invocations.invocations_table_rows.all()
 
+    def open_toolbox(self):
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        if self.element_absent(self.components.tools.tools_activity_workflow_editor):
+            if self.element_absent(self.components._.toolbox_panel):
+                self.components.tools.activity.wait_for_and_click()
+        else:
+            if self.element_absent(self.components._.toolbox_panel):
+                self.components.tools.tools_activity_workflow_editor.wait_for_and_click()
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
     def tool_open(self, tool_id, outer=False):
+        self.open_toolbox()
+
+        self.components.tools.clear_search.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        self.components.tools.search.wait_for_and_send_keys(f"id:{tool_id}")
+
         if outer:
             tool_link = self.components.tool_panel.outer_tool_link(tool_id=tool_id)
         else:

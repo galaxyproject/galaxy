@@ -1,32 +1,21 @@
 <template>
-    <div class="unified-panel">
-        <div class="unified-panel-header" unselectable="on">
-            <div class="unified-panel-header-inner">
-                <div class="panel-header-text">Insert Objects</div>
-            </div>
-        </div>
-        <div class="unified-panel-body">
-            <div class="toolMenuContainer">
-                <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
-                    {{ error }}
-                </b-alert>
-                <ToolSection v-if="isWorkflow" :category="historyInEditorSection" :expanded="true" @onClick="onClick" />
-                <ToolSection v-else :category="historySection" :expanded="true" @onClick="onClick" />
-                <ToolSection :category="jobSection" :expanded="true" @onClick="onClick" />
-                <ToolSection
-                    v-if="isWorkflow"
-                    :category="workflowInEditorSection"
-                    :expanded="true"
-                    @onClick="onClick" />
-                <ToolSection v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
-                <ToolSection :category="linksSection" :expanded="false" @onClick="onClick" />
-                <ToolSection :category="otherSection" :expanded="true" @onClick="onClick" />
-                <ToolSection
-                    v-if="hasVisualizations"
-                    :category="visualizationSection"
-                    :expanded="true"
-                    @onClick="onClick" />
-            </div>
+    <ActivityPanel title="Insert Markdown Objects">
+        <div class="toolMenuContainer">
+            <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
+                {{ error }}
+            </b-alert>
+            <ToolSection v-if="isWorkflow" :category="historyInEditorSection" :expanded="true" @onClick="onClick" />
+            <ToolSection v-else :category="historySection" :expanded="true" @onClick="onClick" />
+            <ToolSection :category="jobSection" :expanded="true" @onClick="onClick" />
+            <ToolSection v-if="isWorkflow" :category="workflowInEditorSection" :expanded="true" @onClick="onClick" />
+            <ToolSection v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
+            <ToolSection :category="linksSection" :expanded="false" @onClick="onClick" />
+            <ToolSection :category="otherSection" :expanded="true" @onClick="onClick" />
+            <ToolSection
+                v-if="hasVisualizations"
+                :category="visualizationSection"
+                :expanded="true"
+                @onClick="onClick" />
         </div>
         <MarkdownDialog
             v-if="selectedShow"
@@ -37,7 +26,7 @@
             :use-labels="isWorkflow"
             @onInsert="onInsert"
             @onCancel="onCancel" />
-    </div>
+    </ActivityPanel>
 </template>
 
 <script>
@@ -50,6 +39,8 @@ import Vue from "vue";
 import { directiveEntry } from "./directives.ts";
 import { fromSteps } from "./labels.ts";
 import MarkdownDialog from "./MarkdownDialog";
+
+import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
 Vue.use(BootstrapVue);
 
@@ -95,6 +86,7 @@ export default {
     components: {
         MarkdownDialog,
         ToolSection,
+        ActivityPanel,
     },
     props: {
         steps: {
@@ -317,7 +309,7 @@ export default {
             }
         },
         onInsert(markdownBlock) {
-            this.$emit("onInsert", markdownBlock);
+            this.$emit("insert", markdownBlock);
             this.selectedShow = false;
         },
         onCancel() {

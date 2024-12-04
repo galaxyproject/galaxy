@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { faCaretDown, faCaretRight, faFile, faFolder, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown, faCaretRight, faFile, faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox, BFormRadio } from "bootstrap-vue";
 import { computed, type ComputedRef, onMounted, ref } from "vue";

@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import { useEntryPointStore } from "@/stores/entryPointStore";
 
-import ActivityItem from "components/ActivityBar/ActivityItem.vue";
+import ActivityItem from "@/components/ActivityBar/ActivityItem.vue";
 
 const { entryPoints } = storeToRefs(useEntryPointStore());
 
@@ -13,7 +14,7 @@ const totalCount = computed(() => entryPoints.value.length);
 export interface Props {
     id: string;
     title: string;
-    icon: string;
+    icon: IconDefinition;
     isActive: boolean;
     to: string;
 }
@@ -35,6 +36,7 @@ const tooltip = computed(() =>
     <ActivityItem
         v-if="totalCount > 0"
         :id="id"
+        :activity-bar-id="id"
         :icon="icon"
         :indicator="totalCount"
         :is-active="isActive"

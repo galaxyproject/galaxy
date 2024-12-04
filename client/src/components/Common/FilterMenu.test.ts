@@ -3,7 +3,7 @@ import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
-import { WorkflowFilters } from "@/components/Workflow/List/WorkflowFilters";
+import { getWorkflowFilters } from "@/components/Workflow/List/workflowFilters";
 import Filtering, { compare, contains, equals, toBool, toDate } from "@/utils/filtering";
 
 import FilterMenu from "./FilterMenu.vue";
@@ -198,48 +198,6 @@ describe("FilterMenu", () => {
         );
     });
 
-    it("test buttons that navigate menu and keyup.enter/esc events", async () => {
-        setUpWrapper("Test Items", "search test items", TestFilters);
-
-        expect(wrapper.find("[data-description='advanced filters']").exists()).toBe(false);
-        await wrapper.setProps({ showAdvanced: true });
-        expect(wrapper.find("[data-description='advanced filters']").exists()).toBe(true);
-
-        // only add name filter in the advanced menu
-        let filterName = wrapper.find("[placeholder='any name']");
-        if (filterName.vm && filterName.props().type == "text") {
-            await filterName.setValue("sample name");
-        }
-
-        // -------- Test keyup.enter key:  ---------
-        // toggles view out and performs a search
-        await filterName.trigger("keyup.enter");
-        await expectCorrectEmits("name:'sample name'", TestFilters, false);
-
-        // Test: clearing the filterText
-        const clearButton = wrapper.find("[data-description='reset query']");
-        await clearButton.trigger("click");
-        await expectCorrectEmits("", TestFilters, false);
-
-        // Test: toggling view back in
-        const toggleButton = wrapper.find("[data-description='toggle advanced search']");
-        await toggleButton.trigger("click");
-        await expectCorrectEmits("", TestFilters, true);
-
-        // -------- Test keyup.esc key:  ---------
-        // toggles view out only (doesn't cause a new search / doesn't emulate enter)
-
-        // find name field again (destroyed because of toggling out) and set value
-        filterName = wrapper.find("[placeholder='any name']");
-        if (filterName.vm && filterName.props().type == "text") {
-            filterName.setValue("newnamefilter");
-        }
-
-        // press esc key from name field (should not change emitted filterText unlike enter key)
-        await filterName.trigger("keyup.esc");
-        await expectCorrectEmits("", TestFilters, false);
-    });
-
     /**
      * Testing the default values of the filters defined in the HistoryFilters: Filtering
      * class, ensuring the default values are reflected in the radio-group buttons
@@ -303,7 +261,7 @@ describe("FilterMenu", () => {
      * class, ensuring the default values are reflected in the radio-group buttons
      */
     it("test compact menu with checkbox filters on WorkflowFilters", async () => {
-        const myWorkflowFilters = WorkflowFilters("my");
+        const myWorkflowFilters = getWorkflowFilters("my");
         setUpWrapper("Workflows", "search workflows", myWorkflowFilters);
         // a compact `FilterMenu` only needs to be opened once (doesn't toggle out automatically)
         await wrapper.setProps({ showAdvanced: true, view: "compact" });

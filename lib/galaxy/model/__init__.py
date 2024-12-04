@@ -7770,6 +7770,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
 
     dict_collection_visible_keys = [
         "id",
+        "latest_workflow_id",
         "name",
         "create_time",
         "update_time",
@@ -7780,6 +7781,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
     ]
     dict_element_visible_keys = [
         "id",
+        "latest_workflow_id",
         "name",
         "create_time",
         "update_time",

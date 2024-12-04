@@ -7,9 +7,22 @@ import { type XYPosition } from "@/stores/workflowEditorStateStore";
 
 // if element is draggable it may implement its own drag handler,
 // but d3zoom would call preventDefault
-const filter = (event: any) => {
-    const preventZoom = event.target.classList.contains("prevent-zoom");
-    return !preventZoom;
+const filter = (event: D3ZoomEvent<HTMLElement, unknown>["sourceEvent"]) => {
+    const target = event.target as HTMLElement;
+
+    if (target.classList.contains("prevent-zoom")) {
+        return false;
+    }
+
+    if (event.type === "dblclick") {
+        const style = getComputedStyle(target);
+
+        if (style.getPropertyValue("--dblclick") === "prevent") {
+            return false;
+        }
+    }
+
+    return true;
 };
 
 export function useD3Zoom(

@@ -1,77 +1,69 @@
 <template>
-    <b-card id="lint-panel" header-tag="header" body-class="p-0" class="right-content">
-        <template v-slot:header>
-            <div class="mb-1 font-weight-bold">
-                <FontAwesomeIcon icon="magic" class="mr-1" />
-                Best Practices Review
-            </div>
-            <div v-if="showRefactor">
-                <a class="refactor-button" href="#" @click="onRefactor"> Try to automatically fix issues. </a>
-            </div>
+    <ActivityPanel title="Best Practices Review">
+        <template v-if="showRefactor" v-slot:header>
+            <button class="refactor-button ui-link" @click="onRefactor">Try to automatically fix issues.</button>
         </template>
-        <b-card-body>
-            <LintSection
-                :okay="checkAnnotation"
-                success-message="This workflow is annotated. Ideally, this helps the executors of the workflow
+        <LintSection
+            :okay="checkAnnotation"
+            success-message="This workflow is annotated. Ideally, this helps the executors of the workflow
                     understand the purpose and usage of the workflow."
-                warning-message="This workflow is not annotated. Providing an annotation helps workflow executors
+            warning-message="This workflow is not annotated. Providing an annotation helps workflow executors
                     understand the purpose and usage of the workflow."
-                attribute-link="Annotate your Workflow."
-                @onClick="onAttributes" />
-            <LintSection
-                :okay="checkCreator"
-                success-message="This workflow defines creator information."
-                warning-message="This workflow does not specify creator(s). This is important metadata for workflows
+            attribute-link="Annotate your Workflow."
+            @onClick="onAttributes" />
+        <LintSection
+            :okay="checkCreator"
+            success-message="This workflow defines creator information."
+            warning-message="This workflow does not specify creator(s). This is important metadata for workflows
                     that will be published and/or shared to help workflow executors know how to cite the
                     workflow authors."
-                attribute-link="Provide Creator Details."
-                @onClick="onAttributes" />
-            <LintSection
-                :okay="checkLicense"
-                success-message="This workflow defines a license."
-                warning-message="This workflow does not specify a license. This is important metadata for workflows
+            attribute-link="Provide Creator Details."
+            @onClick="onAttributes" />
+        <LintSection
+            :okay="checkLicense"
+            success-message="This workflow defines a license."
+            warning-message="This workflow does not specify a license. This is important metadata for workflows
                     that will be published and/or shared to help workflow executors understand how it
                     may be used."
-                attribute-link="Specify a License."
-                @onClick="onAttributes" />
-            <LintSection
-                success-message="Workflow parameters are using formal input parameters."
-                warning-message="This workflow uses legacy workflow parameters. They should be replaced with
+            attribute-link="Specify a License."
+            @onClick="onAttributes" />
+        <LintSection
+            success-message="Workflow parameters are using formal input parameters."
+            warning-message="This workflow uses legacy workflow parameters. They should be replaced with
                 formal workflow inputs. Formal input parameters make tracking workflow provenance, usage within subworkflows,
                 and executing the workflow via the API more robust:"
-                :warning-items="warningUntypedParameters"
-                @onMouseOver="onHighlight"
-                @onMouseLeave="onUnhighlight"
-                @onClick="onFixUntypedParameter" />
-            <LintSection
-                success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
-                warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
+            :warning-items="warningUntypedParameters"
+            @onMouseOver="onHighlight"
+            @onMouseLeave="onUnhighlight"
+            @onClick="onFixUntypedParameter" />
+        <LintSection
+            success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
+            warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
                 make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
-                :warning-items="warningDisconnectedInputs"
-                @onMouseOver="onHighlight"
-                @onMouseLeave="onUnhighlight"
-                @onClick="onFixDisconnectedInput" />
-            <LintSection
-                success-message="All workflow inputs have labels and annotations."
-                warning-message="Some workflow inputs are missing labels and/or annotations:"
-                :warning-items="warningMissingMetadata"
-                @onMouseOver="onHighlight"
-                @onMouseLeave="onUnhighlight"
-                @onClick="onScrollTo" />
-            <LintSection
-                success-message="This workflow has outputs and they all have valid labels."
-                warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
+            :warning-items="warningDisconnectedInputs"
+            @onMouseOver="onHighlight"
+            @onMouseLeave="onUnhighlight"
+            @onClick="onFixDisconnectedInput" />
+        <LintSection
+            success-message="All workflow inputs have labels and annotations."
+            warning-message="Some workflow inputs are missing labels and/or annotations:"
+            :warning-items="warningMissingMetadata"
+            @onMouseOver="onHighlight"
+            @onMouseLeave="onUnhighlight"
+            @onClick="openAndFocus" />
+        <LintSection
+            success-message="This workflow has outputs and they all have valid labels."
+            warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
                     unchecked in the workflow editor to mark them as no longer being a workflow output:"
-                :warning-items="warningUnlabeledOutputs"
-                @onMouseOver="onHighlight"
-                @onMouseLeave="onUnhighlight"
-                @onClick="onFixUnlabeledOutputs" />
-            <div v-if="!hasActiveOutputs">
-                <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
-                <span>This workflow has no labeled outputs, please select and label at least one output.</span>
-            </div>
-        </b-card-body>
-    </b-card>
+            :warning-items="warningUnlabeledOutputs"
+            @onMouseOver="onHighlight"
+            @onMouseLeave="onUnhighlight"
+            @onClick="onFixUnlabeledOutputs" />
+        <div v-if="!hasActiveOutputs">
+            <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
+            <span>This workflow has no labeled outputs, please select and label at least one output.</span>
+        </div>
+    </ActivityPanel>
 </template>
 
 <script>
@@ -79,7 +71,6 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationTriangle, faMagic } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import LintSection from "components/Workflow/Editor/LintSection";
 import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
 import { storeToRefs } from "pinia";
 import Vue from "vue";
@@ -98,6 +89,9 @@ import {
     getUntypedParameters,
 } from "./modules/linting";
 
+import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
+import LintSection from "@/components/Workflow/Editor/LintSection.vue";
+
 Vue.use(BootstrapVue);
 
 library.add(faExclamationTriangle);
@@ -107,6 +101,7 @@ export default {
     components: {
         FontAwesomeIcon,
         LintSection,
+        ActivityPanel,
     },
     props: {
         untypedParameters: {
@@ -136,9 +131,9 @@ export default {
     },
     setup() {
         const stores = useWorkflowStores();
-        const { connectionStore, stepStore } = stores;
+        const { connectionStore, stepStore, stateStore } = stores;
         const { hasActiveOutputs } = storeToRefs(stepStore);
-        return { stores, connectionStore, stepStore, hasActiveOutputs };
+        return { stores, connectionStore, stepStore, hasActiveOutputs, stateStore };
     },
     computed: {
         showRefactor() {
@@ -218,7 +213,8 @@ export default {
                 this.$emit("onScrollTo", item.stepId);
             }
         },
-        onScrollTo(item) {
+        openAndFocus(item) {
+            this.stateStore.activeNodeId = item.stepId;
             this.$emit("onScrollTo", item.stepId);
         },
         onHighlight(item) {

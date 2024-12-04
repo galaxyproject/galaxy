@@ -1,9 +1,9 @@
-import { HistoryFilters } from "components/History/HistoryFilters";
-import { WorkflowFilters } from "components/Workflow/List/WorkflowFilters";
+import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { getWorkflowFilters } from "@/components/Workflow/List/workflowFilters";
 
 describe("test filtering helpers to convert filters to filter text", () => {
-    const MyWorkflowFilters = WorkflowFilters("my");
-    const PublishedWorkflowFilters = WorkflowFilters("published");
+    const MyWorkflowFilters = getWorkflowFilters("my");
+    const PublishedWorkflowFilters = getWorkflowFilters("published");
     it("conversion from filters to new filter text", async () => {
         const normalized = HistoryFilters.defaultFilters;
         expect(Object.keys(normalized).length).toBe(2);
@@ -66,7 +66,7 @@ describe("test filtering helpers to convert filters to filter text", () => {
 });
 
 describe("test filtering helpers to convert filter text to filters", () => {
-    const PublishedWorkflowFilters = WorkflowFilters("published");
+    const PublishedWorkflowFilters = getWorkflowFilters("published");
     function getFilters(filteringClass, filterText) {
         return filteringClass.getValidFilters(Object.fromEntries(filteringClass.getFiltersForText(filterText)))
             .validFilters;
