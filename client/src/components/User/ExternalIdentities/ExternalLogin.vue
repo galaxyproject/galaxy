@@ -86,8 +86,6 @@ async function submitOIDCLogin(idp: string) {
 
         const { data } = await axios.post(loginUrl, formData, { withCredentials: true });
 
-        console.debug("LOGIN POST DATA", data);
-
         if (data.redirect_uri) {
             window.location = data.redirect_uri;
         }

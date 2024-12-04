@@ -73,7 +73,7 @@ class OIDC(JSAppLauncher):
 
     @web.json
     @web.expose
-    def login(self, trans, provider, idphint=None):
+    def login(self, trans, provider, idphint=None, next=None):
         if not trans.app.config.enable_oidc:
             msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance."
             log.debug(msg)
