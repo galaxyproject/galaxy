@@ -8,6 +8,7 @@ import { toSimple } from "./model";
 export async function getVersions(id) {
     try {
         const { data } = await axios.get(`${getAppRoot()}api/workflows/${id}/versions`);
+
         return data;
     } catch (e) {
         rethrowSimple(e);
@@ -51,24 +52,24 @@ export async function loadWorkflow({ id, version = null }) {
     }
 }
 
-export async function saveWorkflow(workflow) {
-    if (workflow.hasChanges) {
-        try {
-            const requestData = { workflow: toSimple(workflow.id, workflow), from_tool_form: true };
-            const { data } = await axios.put(`${getAppRoot()}api/workflows/${workflow.id}`, requestData);
-            workflow.name = data.name;
-            workflow.hasChanges = false;
-            workflow.stored = true;
-            workflow.version = data.version;
-            if (workflow.annotation || data.annotation) {
-                workflow.annotation = data.annotation;
-            }
-            return data;
-        } catch (e) {
-            rethrowSimple(e);
+export async function saveWorkflow(id, workflow) {
+    try {
+        const requestData = { workflow, from_tool_form: true };
+        const { data } = await axios.put(`${getAppRoot()}api/workflows/${id}`, requestData);
+
+        workflow.name = data.name;
+        workflow.hasChanges = false;
+        workflow.stored = true;
+        workflow.version = data.version;
+
+        if (workflow.annotation || data.annotation) {
+            workflow.annotation = data.annotation;
         }
+
+        return data;
+    } catch (e) {
+        rethrowSimple(e);
     }
-    return {};
 }
 
 export async function getToolPredictions(requestData) {
