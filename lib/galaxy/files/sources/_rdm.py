@@ -25,9 +25,10 @@ class RDMFilesSourceProperties(FilesSourceProperties):
     public_name: str
 
 
-class RecordFilename(NamedTuple):
-    record_id: str
-    filename: str
+class ContainerAndFileIdentifier(NamedTuple):
+    """The file_identifier could be a filename or a file_id."""
+    container_id: str
+    file_identifier: str
 
 
 class RDMRepositoryInteractor:
@@ -109,14 +110,14 @@ class RDMRepositoryInteractor:
         """
         raise NotImplementedError()
 
-    def download_file_from_record(
+    def download_file_from_container(
         self,
-        record_id: str,
-        filename: str,
+        container_id: str,
+        file_identifier: str,
         file_path: str,
         user_context: OptionalUserContext = None,
     ) -> None:
-        """Downloads a file with the provided filename from the record with the given record_id.
+        """Downloads a file with the provided filename from the container with the given container_id.
 
         The file will be downloaded to the file system at the given file_path.
         The user_context might be required to authenticate the user in the repository if the
@@ -164,35 +165,16 @@ class RDMFilesSource(BaseFilesSource):
         This must be implemented by subclasses."""
         raise NotImplementedError()
 
-    def parse_path(self, source_path: str, record_id_only: bool = False) -> RecordFilename:
-        """Parses the given source path and returns the record_id and filename.
+    def parse_path(self, source_path: str, container_id_only: bool = False) -> ContainerAndFileIdentifier:
+        """Parses the given source path and returns the container_id and filename.
+        
+        If container_id_only is True, an empty filename will be returned.
 
-        The source path must have the format '/<record_id>/<file_name>'.
-        If record_id_only is True, the source path must have the format '/<record_id>' and an
-        empty filename will be returned.
-        """
+        This must be implemented by subclasses."""
+        raise NotImplementedError()
 
-        def get_error_msg(details: str) -> str:
-            return f"Invalid source path: '{source_path}'. Expected format: '{expected_format}'. {details}"
-
-        expected_format = "/<record_id>"
-        if not source_path.startswith("/"):
-            raise ValueError(get_error_msg("Must start with '/'."))
-        parts = source_path[1:].split("/", 2)
-        if record_id_only:
-            if len(parts) != 1:
-                raise ValueError(get_error_msg("Please provide the record_id only."))
-            return RecordFilename(record_id=parts[0], filename="")
-        expected_format = "/<record_id>/<file_name>"
-        if len(parts) < 2:
-            raise ValueError(get_error_msg("Please provide both the record_id and file_name."))
-        if len(parts) > 2:
-            raise ValueError(get_error_msg("Too many parts. Please provide the record_id and file_name only."))
-        record_id, file_name = parts
-        return RecordFilename(record_id=record_id, filename=file_name)
-
-    def get_record_id_from_path(self, source_path: str) -> str:
-        return self.parse_path(source_path, record_id_only=True).record_id
+    def get_container_id_from_path(self, source_path: str) -> str:
+        raise NotImplementedError()
 
     def _serialization_props(self, user_context: OptionalUserContext = None):
         effective_props = {}
