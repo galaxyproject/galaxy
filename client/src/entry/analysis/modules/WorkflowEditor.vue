@@ -5,7 +5,7 @@ import { useRouter } from "vue-router/composables";
 import { getQueryValue } from "@/utils/route";
 import { urlData } from "@/utils/url";
 
-import NewEditor from "@/components/Workflow/Editor/NewEditor.vue";
+import Editor from "@/components/Workflow/Editor/Index.vue";
 
 const router = useRouter();
 
@@ -71,7 +71,7 @@ watch(
 </script>
 
 <template>
-    <NewEditor
+    <Editor
         v-if="editorConfig"
         :key="editorReloadKey"
         :workflow-id="editorConfig.id"
