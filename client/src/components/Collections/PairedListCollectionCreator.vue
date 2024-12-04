@@ -91,6 +91,10 @@ const hasFilter = computed(() => forwardFilter.value || reverseFilter.value);
 const strategy = ref(autoPairLCS);
 const duplicatePairNames = ref<string[]>([]);
 
+const canClearFilters = computed(() => {
+    return forwardFilter.value || reverseFilter.value;
+});
+
 const canAutoPair = computed(() => {
     return forwardFilter.value && reverseFilter.value;
 });
@@ -1140,6 +1144,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                         <BButtonGroup vertical>
                                             <BButton
                                                 class="clear-filters-link"
+                                                :disabled="!canClearFilters"
                                                 size="sm"
                                                 :variant="hasFilter ? 'danger' : 'secondary'"
                                                 @click="clickClearFilters">
