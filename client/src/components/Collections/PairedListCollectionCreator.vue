@@ -243,8 +243,11 @@ function initialFiltersSet() {
             illumina++;
         }
     });
-
-    if (illumina > dot12s && illumina > Rs) {
+    // if we cannot filter don't set an initial filter and hide all the data
+    if (illumina == 0 && dot12s == 0 && Rs == 0) {
+        forwardFilter.value = "";
+        reverseFilter.value = "";
+    } else if (illumina > dot12s && illumina > Rs) {
         changeFilters("illumina");
     } else if (dot12s > illumina && dot12s > Rs) {
         changeFilters("dot12s");
