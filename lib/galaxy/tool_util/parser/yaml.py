@@ -1,4 +1,5 @@
 import json
+from collections.abc import MutableMapping
 from typing import (
     Any,
     Dict,
@@ -148,11 +149,17 @@ class YamlToolSource(ToolSource):
             return None
 
     def parse_outputs(self, tool):
-        outputs = self.root_dict.get("outputs", {})
+        outputs = self.root_dict.get("outputs", [])
+        if isinstance(outputs, MutableMapping):
+            for name, output_dict in outputs.items():
+                output_dict["name"] = name
+            outputs = outputs.values()
+
         output_defs = []
         output_collection_defs = []
-        for name, output_dict in outputs.items():
+        for output_dict in outputs:
             output_type = output_dict.get("type", "data")
+            name = output_dict["name"]
             if output_type == "data":
                 output_defs.append(self._parse_output(tool, name, output_dict))
             elif output_type == "collection":

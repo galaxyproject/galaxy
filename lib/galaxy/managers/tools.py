@@ -57,7 +57,7 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
             )
 
         dynamic_tool = None
-        uuid_str = tool_payload.get("uuid")
+        uuid_str = tool_payload.uuid
         # Convert uuid_str to UUID or generate new if None
         uuid = model.get_uuid(uuid_str)
         if uuid_str:
@@ -69,14 +69,14 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
                     raise DuplicatedIdentifierException(dynamic_tool.id)
                 assert dynamic_tool.uuid == uuid
         if not dynamic_tool:
-            src = tool_payload.get("src", "representation")
+            src = tool_payload.src
             is_path = src == "from_path"
 
             if is_path:
                 tool_format, representation, _ = artifact_class(None, tool_payload)
             else:
                 assert src == "representation"
-                representation = tool_payload.get("representation")
+                representation = tool_payload.representation.dict(by_alias=True, exclude_unset=True)
                 if not representation:
                     raise exceptions.ObjectAttributeMissingException("A tool 'representation' is required.")
 
@@ -84,9 +84,9 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
                 if not tool_format:
                     raise exceptions.ObjectAttributeMissingException("Current tool representations require 'class'.")
 
-            tool_path = tool_payload.get("path")
-            tool_directory = tool_payload.get("tool_directory")
-            if tool_format == "GalaxyTool":
+            tool_path = tool_payload.path
+            tool_directory = tool_payload.tool_directory
+            if tool_format in ("GalaxyTool", "GalaxyUserTool"):
                 tool_id = representation.get("id")
                 if not tool_id:
                     tool_id = str(uuid)
@@ -113,8 +113,8 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
                 tool_path=tool_path,
                 tool_directory=tool_directory,
                 uuid=uuid,
-                active=tool_payload.get("active"),
-                hidden=tool_payload.get("hidden"),
+                active=tool_payload.active,
+                hidden=tool_payload.hidden,
                 value=representation,
             )
         self.app.toolbox.load_dynamic_tool(dynamic_tool)

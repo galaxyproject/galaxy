@@ -107,6 +107,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             min_int = int(min_raw) if min_raw is not None else None
             max_int = int(max_raw) if max_raw is not None else None
             return IntegerParameterModel(
+                type="integer",
                 name=input_source.parse_name(),
                 optional=optional,
                 value=int_value,
@@ -118,6 +119,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             nullable = input_source.parse_optional()
             value = input_source.get_bool_or_none("checked", None if nullable else False)
             return BooleanParameterModel(
+                type="boolean",
                 name=input_source.parse_name(),
                 optional=nullable,
                 value=value,
@@ -126,6 +128,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             optional, optionality_inferred = text_input_is_optional(input_source)
             text_validators: List[TextCompatiableValidators] = _text_validators(input_source)
             return TextParameterModel(
+                type="text",
                 name=input_source.parse_name(),
                 optional=optional,
                 validators=text_validators,
@@ -150,6 +153,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             min_float = float(min_raw) if min_raw is not None else None
             max_float = float(max_raw) if max_raw is not None else None
             return FloatParameterModel(
+                type="float",
                 name=input_source.parse_name(),
                 optional=optional,
                 value=float_value,
@@ -170,6 +174,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         elif param_type == "color":
             optional = input_source.parse_optional()
             return ColorParameterModel(
+                type="color",
                 name=input_source.parse_name(),
                 optional=optional,
                 value=get_color_value(input_source),
@@ -182,6 +187,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             optional = input_source.parse_optional()
             multiple = input_source.get_bool("multiple", False)
             return DataParameterModel(
+                type="data",
                 name=input_source.parse_name(),
                 optional=optional,
                 multiple=multiple,
@@ -190,6 +196,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             optional = input_source.parse_optional()
             default_value = input_source.parse_default()
             return DataCollectionParameterModel(
+                type="data_collection",
                 name=input_source.parse_name(),
                 optional=optional,
                 value=default_value,
