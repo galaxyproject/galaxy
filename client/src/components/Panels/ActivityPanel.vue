@@ -79,17 +79,6 @@ const hasGoToAll = computed(() => props.goToAllTitle && props.href);
         flex-grow: 1;
         overflow-y: auto;
         position: relative;
-        button:first-child {
-            background: none;
-            border: none;
-            text-align: left;
-            transition: none;
-            width: 100%;
-            border-color: transparent;
-        }
-        button:first-child:hover {
-            background: $gray-200;
-        }
     }
 
     .activity-panel-footer {
