@@ -173,6 +173,7 @@ class ToolOutput(ToolOutputBase):
             format_source=self.format_source,
             metadata_source=self.metadata_source or None,  # model is decorated as Optional
             discover_datasets=[d.to_model() for d in self.dataset_collector_descriptions],
+            from_work_dir=self.from_work_dir,
         )
 
     @staticmethod

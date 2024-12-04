@@ -244,6 +244,7 @@ def pydantic_validator_for(static_validator_models: Sequence[VT]) -> Optional[Af
 
 class TextParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_text"] = "gx_text"
+    type: Literal["text"]
     area: bool = False
     default_value: Optional[str] = Field(default=None, alias="value")
     default_options: List[LabelValue] = []
@@ -272,6 +273,7 @@ NumberCompatiableValidators = Union[InRangeParameterValidatorModel,]
 
 class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_integer"] = "gx_integer"
+    type: Literal["integer"]
     optional: bool
     value: Optional[int] = None
     min: Optional[int] = None
@@ -304,6 +306,7 @@ class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_float"] = "gx_float"
+    type: Literal["float"]
     value: Optional[float] = None
     min: Optional[float] = None
     max: Optional[float] = None
@@ -447,6 +450,7 @@ MultiDataRequestInternalDereferenced: Type = union_type(
 
 class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_data"] = "gx_data"
+    type: Literal["data"]
     extensions: List[str] = ["data"]
     multiple: bool = False
     min: Optional[int] = None
@@ -535,6 +539,7 @@ class DataCollectionRequestInternal(StrictModel):
 
 class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_data_collection"] = "gx_data_collection"
+    type: Literal["data_collection"]
     collection_type: Optional[str] = None
     extensions: List[str] = ["data"]
     value: Optional[Dict[str, Any]]
@@ -622,6 +627,7 @@ def ensure_color_valid(value: Optional[Any]):
 
 class ColorParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_color"] = "gx_color"
+    type: Literal["color"]
     value: Optional[str] = None
 
     @property
@@ -671,6 +677,7 @@ class ColorParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 class BooleanParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_boolean"] = "gx_boolean"
+    type: Literal["boolean"]
     value: Optional[bool] = False
     truevalue: Optional[str] = None
     falsevalue: Optional[str] = None
