@@ -553,32 +553,6 @@ function _addToUnpaired(dataset: HDASummary) {
 
     workingElements.value.splice(binSearchSortedIndex(0, workingElements.value.length), 0, dataset);
 }
-// /** add a dataset to the unpaired list in it's proper order */
-// _addToUnpaired: function (dataset) {
-//     // currently, unpaired is natural sorted by name, use binary search to find insertion point
-//     var binSearchSortedIndex = (low, hi) => {
-//         if (low === hi) {
-//             return low;
-//         }
-
-//         var mid = Math.floor((hi - low) / 2) + low;
-
-//         var compared = naturalSort(dataset.name, this.workingElements[mid].name);
-
-//         if (compared < 0) {
-//             return binSearchSortedIndex(low, mid);
-//         } else if (compared > 0) {
-//             return binSearchSortedIndex(mid + 1, hi);
-//         }
-//         // walk the equal to find the last
-//         while (this.workingElements[mid] && this.workingElements[mid].name === dataset.name) {
-//             mid++;
-//         }
-//         return mid;
-//     };
-
-//     this.workingElements.splice(binSearchSortedIndex(0, this.workingElements.length), 0, dataset);
-// },
 
 /**
  * Unpair a pair, removing it from paired, and adding the fwd,rev
