@@ -2,8 +2,6 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
-import { toSimple } from "./model";
-
 /** Workflow data request helper **/
 export async function getVersions(id) {
     try {
