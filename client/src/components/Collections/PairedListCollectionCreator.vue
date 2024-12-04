@@ -93,6 +93,10 @@ const hasFilter = computed(() => forwardFilter.value || reverseFilter.value);
 const strategy = ref(autoPairLCS);
 const duplicatePairNames = ref<string[]>([]);
 
+const canAutoPair = computed(() => {
+    return forwardFilter.value && reverseFilter.value;
+});
+
 const forwardElements = computed<HDASummary[]>(() => {
     return filterElements(workingElements.value, forwardFilter.value);
 });
@@ -117,7 +121,11 @@ const autoPairButton = computed(() => {
     let variant;
     let icon;
     let text;
-    if (!firstAutoPairDone.value && pairableElements.value.length > 0) {
+    if (!canAutoPair.value) {
+        variant = "secondary";
+        icon = faLink;
+        text = localize("Specify simple filters to divide datasets into forward and reverse reads for pairing.");
+    } else if (!firstAutoPairDone.value && pairableElements.value.length > 0) {
         variant = "primary";
         icon = faExclamationCircle;
         text = localize("Click to auto-pair datasets based on the current filters");
@@ -1141,6 +1149,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                             </BButton>
                                             <BButton
                                                 class="autopair-link"
+                                                :disabled="!canAutoPair"
                                                 size="sm"
                                                 :title="autoPairButton.text"
                                                 :variant="autoPairButton.variant"
