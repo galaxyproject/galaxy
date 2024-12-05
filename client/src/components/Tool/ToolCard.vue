@@ -14,6 +14,7 @@ import { useUserStore } from "@/stores/userStore";
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
 
+import ToolCredentials from "./ToolCredentials.vue";
 import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
@@ -171,6 +172,12 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
         </template>
 
         <template v-slot>
+            <ToolCredentials
+                v-if="props.options.credentials"
+                :tool-id="props.id"
+                :tool-version="props.version"
+                :tool-credentials="props.options.credentials" />
+
             <FormMessage variant="danger" :message="errorText" :persistent="true" />
             <FormMessage :variant="props.messageVariant" :message="props.messageText" />
             <slot name="default" />
