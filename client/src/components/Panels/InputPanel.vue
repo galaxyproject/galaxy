@@ -20,11 +20,12 @@ const emit = defineEmits<{
             <button
                 v-for="(input, index) in props.inputs"
                 :key="index"
+                :data-id="input.id ?? input.moduleId"
                 class="workflow-input-button"
-                @click="emit('insertModule', input.id, input.title, input.stateOverwrites)">
+                @click="emit('insertModule', input.moduleId, input.title, input.stateOverwrites)">
                 <FontAwesomeIcon class="input-icon" fixed-width :icon="input.icon" />
-                <span class="input-title">{{ input.title }}</span>
-                <span class="input-description">{{ input.description }}</span>
+                <span class="input-title"> {{ input.title }} </span>
+                <span class="input-description"> {{ input.description }} </span>
             </button>
         </div>
     </ActivityPanel>
