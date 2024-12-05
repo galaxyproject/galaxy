@@ -18,7 +18,8 @@ const props = defineProps<Props>();
 
 const userStore = useUserStore();
 
-const checkingUserCredentials = ref(true);
+const isBusy = ref(true);
+const busyMessage = ref<string>("");
 const userCredentials = ref<UserCredentials[] | undefined>(undefined);
 
 const hasUserProvidedCredentials = computed<boolean>(() => {
@@ -42,7 +43,7 @@ const provideCredentialsButtonTitle = computed(() => {
 });
 
 const bannerVariant = computed(() => {
-    if (checkingUserCredentials.value) {
+    if (isBusy.value) {
         return "info";
     }
     return hasUserProvidedCredentials.value ? "success" : "warning";
@@ -54,7 +55,8 @@ const showModal = ref(false);
  * Check if the user has credentials for the tool.
  */
 async function checkUserCredentials(providedCredentials?: UserCredentials[]) {
-    checkingUserCredentials.value = true;
+    busyMessage.value = "Checking your credentials...";
+    isBusy.value = true;
     try {
         if (userStore.isAnonymous) {
             return;
@@ -81,7 +83,7 @@ async function checkUserCredentials(providedCredentials?: UserCredentials[]) {
         // TODO: Implement error handling.
         console.error("Error checking user credentials", error);
     } finally {
-        checkingUserCredentials.value = false;
+        isBusy.value = false;
     }
 }
 
@@ -91,10 +93,19 @@ function provideCredentials() {
 
 async function onSavedCredentials(providedCredentials: UserCredentials[]) {
     showModal.value = false;
-    await saveCredentials(providedCredentials);
+    busyMessage.value = "Saving your credentials...";
+    try {
+        isBusy.value = true;
+        userCredentials.value = await saveCredentials(providedCredentials);
+    } catch (error) {
+        // TODO: Implement error handling.
+        console.error("Error saving user credentials", error);
+    } finally {
+        isBusy.value = false;
+    }
 }
 
-async function saveCredentials(providedCredentials: UserCredentials[]) {
+async function saveCredentials(providedCredentials: UserCredentials[]): Promise<UserCredentials[]> {
     // TODO: Implement store and real API request to save the provided credentials.
     console.log("SAVING CREDENTIALS", providedCredentials);
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -103,6 +114,7 @@ async function saveCredentials(providedCredentials: UserCredentials[]) {
             secret.alreadySet = true;
         }
     }
+    return providedCredentials;
 }
 
 checkUserCredentials();
@@ -111,7 +123,7 @@ checkUserCredentials();
 <template>
     <div>
         <BAlert show :variant="bannerVariant" class="tool-credentials-banner">
-            <LoadingSpan v-if="checkingUserCredentials" message="Checking your credentials..." />
+            <LoadingSpan v-if="isBusy" :message="busyMessage" />
             <div v-else-if="userStore.isAnonymous">
                 <span v-if="credentialsRequired">
                     <strong>
