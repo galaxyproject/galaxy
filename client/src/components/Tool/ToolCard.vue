@@ -179,7 +179,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
             v-if="props.options.credentials"
             :tool-id="props.id"
             :tool-version="props.version"
-            :tool-credentials="props.options.credentials" />
+            :tool-credentials-definition="props.options.credentials" />
 
         <div id="tool-card-body">
             <FormMessage variant="danger" :message="errorText" :persistent="true" />
