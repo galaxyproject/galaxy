@@ -24,31 +24,50 @@ const isBusy = ref(true);
 const busyMessage = ref<string>("");
 const userCredentials = ref<UserCredentials[] | undefined>(undefined);
 
-const hasUserProvidedCredentials = computed<boolean>(() => {
+const hasUserProvidedRequiredCredentials = computed<boolean>(() => {
     if (!userCredentials.value) {
         return false;
     }
-    return userCredentials.value.every(
-        (credentials) =>
-            !credentials.optional &&
-            credentials.secrets.every((secret) => secret.alreadySet) &&
-            credentials.variables.every((variable) => variable.value !== undefined)
-    );
+    return userCredentials.value.every((credentials) => {
+        if (credentials.optional) {
+            return true;
+        }
+        return (
+            credentials.variables.every((variable) => variable.value) &&
+            credentials.secrets.every((secret) => secret.value)
+        );
+    });
 });
 
-const credentialsRequired = computed<boolean>(() => {
-    return props.toolCredentials.every((credentials) => !credentials.optional);
+const hasUserProvidedAllCredentials = computed<boolean>(() => {
+    if (!userCredentials.value) {
+        return false;
+    }
+    return userCredentials.value.every((credentials) => {
+        return (
+            credentials.variables.every((variable) => variable.value) &&
+            credentials.secrets.every((secret) => secret.value)
+        );
+    });
+});
+
+const hasSomeOptionalCredentials = computed<boolean>(() => {
+    return props.toolCredentialsDefinition.some((credentials) => credentials.optional);
+});
+
+const hasSomeRequiredCredentials = computed<boolean>(() => {
+    return props.toolCredentialsDefinition.some((credentials) => !credentials.optional);
 });
 
 const provideCredentialsButtonTitle = computed(() => {
-    return hasUserProvidedCredentials.value ? "Manage credentials" : "Provide credentials";
+    return hasUserProvidedRequiredCredentials.value ? "Manage credentials" : "Provide credentials";
 });
 
 const bannerVariant = computed(() => {
     if (isBusy.value) {
         return "info";
     }
-    return hasUserProvidedCredentials.value ? "success" : "warning";
+    return hasUserProvidedRequiredCredentials.value ? "success" : "warning";
 });
 
 const showModal = ref(false);
@@ -113,10 +132,10 @@ checkUserCredentials();
         <BAlert show :variant="bannerVariant" class="tool-credentials-banner">
             <LoadingSpan v-if="isBusy" :message="busyMessage" />
             <div v-else-if="userStore.isAnonymous">
-                <span v-if="credentialsRequired">
+                <span v-if="hasSomeRequiredCredentials">
                     <strong>
                         This tool requires credentials to access its services and you need to be logged in to provide
-                        credentials.
+                        them.
                     </strong>
                 </span>
                 <span v-else>
@@ -124,15 +143,18 @@ checkUserCredentials();
                     <strong>or you can use it anonymously</strong>.
                 </span>
                 <br />
-                If you want to provide credentials, please <a href="/login/start">log in or register here</a>.
+                Please <a href="/login/start">log in or register here</a>.
             </div>
             <div v-else class="d-flex justify-content-between align-items-center">
                 <div class="credentials-info">
-                    <span v-if="hasUserProvidedCredentials">
+                    <span v-if="hasUserProvidedRequiredCredentials">
                         <strong>You have already provided credentials for this tool.</strong> You can update or delete
                         your credentials, using the <i>{{ provideCredentialsButtonTitle }}</i> button.
+                        <span v-if="hasSomeOptionalCredentials && !hasUserProvidedAllCredentials">
+                            You can still provide some optional credentials for this tool.
+                        </span>
                     </span>
-                    <span v-else-if="credentialsRequired">
+                    <span v-else-if="hasSomeRequiredCredentials">
                         This tool <strong>requires you to enter credentials</strong> to access its services. Please
                         provide your credentials before using the tool using the
                         <i>{{ provideCredentialsButtonTitle }}</i> button.
