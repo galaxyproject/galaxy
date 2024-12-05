@@ -35,3 +35,37 @@ export async function fetchCurrentUserQuotaSourceUsage(quotaSourceLabel?: string
 
     return toQuotaUsage(data);
 }
+
+// TODO: Temporarily using these interfaces until the new API is implemented
+export interface CredentialsDefinition {
+    name: string;
+    reference: string;
+    optional: boolean;
+    multiple: boolean;
+    label?: string;
+    description?: string;
+}
+export interface UserCredentials extends CredentialsDefinition {
+    variables: Variable[];
+    secrets: Secret[];
+}
+
+export interface ToolCredentials extends CredentialsDefinition {
+    variables: CredentialDetail[];
+    secrets: CredentialDetail[];
+}
+
+export interface CredentialDetail {
+    name: string;
+    label?: string;
+    description?: string;
+}
+
+export interface Secret extends CredentialDetail {
+    alreadySet: boolean;
+    value?: string;
+}
+
+export interface Variable extends CredentialDetail {
+    value?: string;
+}
