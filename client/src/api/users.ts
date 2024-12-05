@@ -50,7 +50,7 @@ export interface UserCredentials extends CredentialsDefinition {
     secrets: Secret[];
 }
 
-export interface ToolCredentials extends CredentialsDefinition {
+export interface ToolCredentialsDefinition extends CredentialsDefinition {
     variables: CredentialDetail[];
     secrets: CredentialDetail[];
 }
