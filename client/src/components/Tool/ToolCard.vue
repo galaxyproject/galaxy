@@ -14,6 +14,7 @@ import { useUserStore } from "@/stores/userStore";
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
 
+import ToolCredentials from "./ToolCredentials.vue";
 import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
@@ -173,6 +174,12 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                 </div>
             </div>
         </div>
+
+        <ToolCredentials
+            v-if="props.options.credentials"
+            :tool-id="props.id"
+            :tool-version="props.version"
+            :tool-credentials="props.options.credentials" />
 
         <div id="tool-card-body">
             <FormMessage variant="danger" :message="errorText" :persistent="true" />
