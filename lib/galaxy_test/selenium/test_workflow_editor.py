@@ -102,7 +102,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
 
         parameter_name = "text_param"
         name = self.create_and_wait_for_new_workflow_in_editor()
-        self.workflow_editor_add_input("parameter_input_text")
+        self.workflow_editor_add_input("parameter_input")
         editor.label_input.wait_for_and_send_keys(parameter_name)
         # this really should be parameterized with the repeat name
         self.components.tool_form.repeat_insert.wait_for_and_click()
@@ -131,7 +131,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
 
         parameter_name = "int_param"
         name = self.create_and_wait_for_new_workflow_in_editor()
-        self.workflow_editor_add_input("parameter_input_text")
+        self.workflow_editor_add_input("parameter_input")
         editor.label_input.wait_for_and_send_keys(parameter_name)
         select_field = self.components.tool_form.parameter_select(parameter="parameter_definition|parameter_type")
         self.select_set_value(select_field, "integer")
