@@ -39,6 +39,10 @@ const props = defineProps({
         type: Array as PropType<SelectValue | SelectValue[]>,
         default: null,
     },
+    maintainSelectionOrder: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits<{
@@ -48,6 +52,7 @@ const emit = defineEmits<{
 const searchValue = ref("");
 const useRegex = ref(false);
 const caseSensitive = ref(false);
+const localSelectionOrder = computed(() => props.maintainSelectionOrder);
 
 const searchRegex = computed(() => {
     if (useRegex.value) {
@@ -94,6 +99,7 @@ const { unselectedOptionsFiltered, selectedOptionsFiltered, running, moreUnselec
     selectedDisplayCount,
     unselectedDisplayCount,
     caseSensitive,
+    maintainSelectionOrder: localSelectionOrder,
 });
 
 // debounced to it doesn't blink, and only appears when relevant
@@ -364,7 +370,9 @@ const selectedCount = computed(() => {
                     :class="{ highlighted: highlightUnselected.highlightedIndexes.includes(i) }"
                     @click="(e) => selectOption(e, i)"
                     @keydown="(e) => optionOnKey('unselected', e, i)">
-                    {{ option.label }}
+                    <slot name="label-area" v-bind="option">
+                        {{ option.label }}
+                    </slot>
                 </button>
 
                 <span v-if="moreUnselected" class="show-more-indicator">
@@ -396,7 +404,9 @@ const selectedCount = computed(() => {
                     :class="{ highlighted: highlightSelected.highlightedIndexes.includes(i) }"
                     @click="(e) => deselectOption(e, i)"
                     @keydown="(e) => optionOnKey('selected', e, i)">
-                    {{ option.label }}
+                    <slot name="label-area" v-bind="option">
+                        {{ option.label }}
+                    </slot>
                 </button>
 
                 <span v-if="moreSelected" class="show-more-indicator">

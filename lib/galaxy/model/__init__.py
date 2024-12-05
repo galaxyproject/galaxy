@@ -8172,10 +8172,6 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         assert self.is_input_type, "step.input_type can only be called on input step types"
         return self.STEP_TYPE_TO_INPUT_TYPE[self.type]
 
-    @property
-    def input_default_value(self):
-        self.get_input_default_value(None)
-
     def get_input_default_value(self, default_default):
         # parameter_input and the data parameters handle this slightly differently
         # unfortunately.

@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCopy, faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
-import { faCaretDown, faCaretUp, faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCaretDown,
+    faCaretUp,
+    faExclamation,
+    faLink,
+    faPlus,
+    faSpinner,
+    faUnlink,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { isDatasetElement, isDCE } from "@/api";
@@ -11,16 +18,22 @@ import { getGalaxyInstance } from "@/app";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { orList } from "@/utils/strings";
 
 import type { DataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
+import CollectionCreatorModal from "@/components/Collections/CollectionCreatorModal.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
-library.add(faCopy, faFile, faFolder, faCaretDown, faCaretUp, faExclamation, faLink, faUnlink);
+const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
+    list: "list",
+    "list:paired": "list of dataset pairs",
+    paired: "dataset pair",
+};
 
 type SelectOption = {
     label: string;
@@ -72,6 +85,19 @@ const currentHighlighting: Ref<string | null> = ref(null);
 // Drag/Drop related values
 const dragData: Ref<EventData | null> = ref(null);
 const dragTarget: Ref<EventTarget | null> = ref(null);
+
+// Collection creator modal settings
+const collectionModalShow = ref(false);
+const collectionModalType = ref<"list" | "list:paired" | "paired">("list");
+const { currentHistoryId } = storeToRefs(useHistoryStore());
+const restrictsExtensions = computed(() => {
+    const extensions = props.extensions;
+    if (!extensions || extensions.length == 0 || extensions.indexOf("data") >= 0) {
+        return false;
+    } else {
+        return true;
+    }
+});
 
 /** Store options which need to be preserved **/
 const keepOptions: Record<string, SelectOption> = {};
@@ -471,6 +497,23 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
+/** Allowed collection types for collection creation */
+const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) =>
+    ["list", "list:paired", "paired"].includes(collectionType)
+);
+
+function buildNewCollection(collectionType: string) {
+    if (!["list", "list:paired", "paired"].includes(collectionType)) {
+        throw Error(`Unknown collection type: ${collectionType}`);
+    }
+    collectionModalType.value = collectionType as "list" | "list:paired" | "paired";
+    collectionModalShow.value = true;
+}
+
+function createdCollection(collection: any) {
+    handleIncoming(collection);
+}
+
 // Drag/Drop event handlers
 function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragData();
@@ -599,15 +642,26 @@ const noOptionsWarningMessage = computed(() => {
                     <FontAwesomeIcon :icon="['far', v.icon]" />
                 </BButton>
                 <BButton v-if="canBrowse" v-b-tooltip.hover.bottom title="Browse or Upload Datasets" @click="onBrowse">
-                    <FontAwesomeIcon v-if="loading" icon="fa-spinner" spin />
+                    <FontAwesomeIcon v-if="loading" :icon="faSpinner" spin />
                     <span v-else class="font-weight-bold">...</span>
                 </BButton>
+                <BButtonGroup v-if="effectiveCollectionTypes?.length > 0" size="sm" buttons>
+                    <BButton
+                        v-for="collectionType in effectiveCollectionTypes"
+                        :key="collectionType"
+                        v-b-tooltip.hover.bottom
+                        :title="`Create a new ${COLLECTION_TYPE_TO_LABEL[collectionType]}`"
+                        :variant="formattedOptions.length === 0 ? 'warning' : 'secondary'"
+                        @click="buildNewCollection(collectionType)">
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
+                    </BButton>
+                </BButtonGroup>
             </BButtonGroup>
-            <div v-if="extensions && extensions.length > 0">
+            <div v-if="restrictsExtensions">
                 <BButton :id="formatsButtonId" class="ui-link" @click="formatsVisible = !formatsVisible">
                     accepted formats
-                    <FontAwesomeIcon v-if="formatsVisible" icon="fa-caret-up" />
-                    <FontAwesomeIcon v-else icon="fa-caret-down" />
+                    <FontAwesomeIcon v-if="formatsVisible" :icon="faCaretUp" />
+                    <FontAwesomeIcon v-else :icon="faCaretDown" />
                 </BButton>
                 <BCollapse v-model="formatsVisible">
                     <ul class="pl-3 m-0">
@@ -631,7 +685,7 @@ const noOptionsWarningMessage = computed(() => {
             :options="formattedOptions"
             :placeholder="`Select a ${placeholder}`">
             <template v-slot:no-options>
-                <BAlert variant="warning" show>
+                <BAlert class="w-100 align-items-center" variant="warning" show>
                     {{ noOptionsWarningMessage }}
                 </BAlert>
             </template>
@@ -643,6 +697,14 @@ const noOptionsWarningMessage = computed(() => {
             optional
             multiple />
 
+        <CollectionCreatorModal
+            v-if="currentHistoryId && effectiveCollectionTypes?.length > 0"
+            :history-id="currentHistoryId"
+            :collection-type="collectionModalType"
+            :extensions="props.extensions.filter((ext) => ext !== 'data')"
+            :show-modal.sync="collectionModalShow"
+            @created-collection="createdCollection" />
+
         <template v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
             <BFormCheckbox
                 v-if="currentVariant.batch === BATCH.ENABLED"
@@ -650,18 +712,18 @@ const noOptionsWarningMessage = computed(() => {
                 class="checkbox no-highlight"
                 switch>
                 <span v-if="currentLinked">
-                    <FontAwesomeIcon icon="fa-link" />
+                    <FontAwesomeIcon :icon="faLink" />
                     <b v-localize class="mr-1">Linked:</b>
                     <span v-localize>Datasets will be run in matched order with other datasets.</span>
                 </span>
                 <span v-else>
-                    <FontAwesomeIcon icon="fa-unlink" />
+                    <FontAwesomeIcon :icon="faUnlink" />
                     <b v-localize class="mr-1">Unlinked:</b>
                     <span v-localize>Dataset will be run against *all* other datasets.</span>
                 </span>
             </BFormCheckbox>
             <div class="info text-info">
-                <FontAwesomeIcon icon="fa-exclamation" />
+                <FontAwesomeIcon :icon="faExclamation" />
                 <span v-if="props.type == 'data' && currentVariant.src == SOURCE.COLLECTION" class="ml-1">
                     The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
                     tool.
