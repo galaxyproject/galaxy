@@ -345,149 +345,133 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
             </BAlert>
         </div>
         <div v-else>
-            <div v-if="noElementsSelected">
+            <div v-if="fromSelection && invalidElements.length">
                 <BAlert show variant="warning" dismissible>
-                    {{ localize("No datasets were selected.") }}
-                    {{ localize("Exactly two elements needed for the collection. You may need to") }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                        {{ localize("cancel") }}
-                    </a>
-                    {{ localize("and reselect new elements.") }}
-                </BAlert>
-
-                <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
-                        {{ localize("Cancel") }}
-                    </button>
-                </div>
-            </div>
-            <div v-else-if="allElementsAreInvalid">
-                <BAlert v-if="!fromSelection" show variant="warning">
-                    {{
-                        localize(
-                            "No elements in your history are valid for this pair. You may need to switch to a different history."
-                        )
-                    }}
-                    <span v-if="extensions?.length">
-                        {{ localize("The following extensions are required for this pair: ") }}
-                        <ul>
-                            <li v-for="extension in extensions" :key="extension">
-                                {{ extension }}
-                            </li>
-                        </ul>
-                    </span>
-                </BAlert>
-                <BAlert v-else show variant="warning" dismissible>
                     {{ localize("The following selections could not be included due to problems:") }}
                     <ul>
                         <li v-for="problem in invalidElements" :key="problem">
                             {{ problem }}
                         </li>
                     </ul>
-                    {{ localize("Exactly two elements needed for the collection. You may need to") }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                        {{ localize("cancel") }}
-                    </a>
-                    {{ localize("and reselect new elements.") }}
                 </BAlert>
-
-                <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
-                        {{ localize("Cancel") }}
-                    </button>
-                </div>
             </div>
-            <div v-else>
-                <div v-if="fromSelection && invalidElements.length">
-                    <BAlert show variant="warning" dismissible>
-                        {{ localize("The following selections could not be included due to problems:") }}
-                        <ul>
-                            <li v-for="problem in invalidElements" :key="problem">
-                                {{ problem }}
-                            </li>
-                        </ul>
-                    </BAlert>
-                </div>
-                <div v-if="!exactlyTwoValidElements">
-                    <BAlert show variant="warning" dismissible>
-                        {{ localize("Exactly two elements are needed for the pair.") }}
-                        <span v-if="fromSelection">
-                            <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
-                                {{ localize("Cancel") }}
-                            </a>
-                            {{ localize("and reselect new elements.") }}
-                        </span>
-                    </BAlert>
-
-                    <div v-if="fromSelection" class="float-left">
-                        <button class="cancel-create btn" tabindex="-1" @click="emit('on-cancel')">
+            <div v-if="!exactlyTwoValidElements">
+                <BAlert show variant="warning" dismissible>
+                    {{ localize("Exactly two elements are needed for the pair.") }}
+                    <span v-if="fromSelection">
+                        <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
                             {{ localize("Cancel") }}
-                        </button>
-                    </div>
-                </div>
+                        </a>
+                        {{ localize("and reselect new elements.") }}
+                    </span>
+                </BAlert>
+            </div>
 
-                <CollectionCreator
-                    :oncancel="() => emit('on-cancel')"
-                    :history-id="props.historyId"
-                    :hide-source-items="hideSourceItems"
-                    :suggested-name="initialSuggestedName"
-                    :extensions="props.extensions"
-                    :extensions-toggle="removeExtensions"
-                    @add-uploaded-files="addUploadedFiles"
-                    @onUpdateHideSourceItems="onUpdateHideSourceItems"
-                    @clicked-create="clickedCreate"
-                    @remove-extensions-toggle="removeExtensionsToggle">
-                    <template v-slot:help-content>
-                        <!-- TODO: Update help content for case where `fromSelection` is false -->
-                        <p>
+            <CollectionCreator
+                :oncancel="() => emit('on-cancel')"
+                :history-id="props.historyId"
+                :hide-source-items="hideSourceItems"
+                :suggested-name="initialSuggestedName"
+                :extensions="props.extensions"
+                :extensions-toggle="removeExtensions"
+                :no-items="props.initialElements.length == 0 && !props.fromSelection"
+                @add-uploaded-files="addUploadedFiles"
+                @onUpdateHideSourceItems="onUpdateHideSourceItems"
+                @clicked-create="clickedCreate"
+                @remove-extensions-toggle="removeExtensionsToggle">
+                <template v-slot:help-content>
+                    <!-- TODO: Update help content for case where `fromSelection` is false -->
+                    <p>
+                        {{
+                            localize(
+                                [
+                                    "Pair collections are permanent collections containing two datasets: one forward and one reverse. ",
+                                    "Often these are forward and reverse reads. The pair collections can be passed to tools and workflows in ",
+                                    "order to have analyses done on both datasets. This interface allows you to create a pair, name it, and ",
+                                    "swap which is forward and which reverse.",
+                                ].join("")
+                            )
+                        }}
+                    </p>
+
+                    <ul>
+                        <li>
+                            {{ localize("Click the ") }}
+                            <i data-target=".swap">
+                                {{ localize("Swap") }}
+                            </i>
                             {{
                                 localize(
-                                    [
-                                        "Pair collections are permanent collections containing two datasets: one forward and one reverse. ",
-                                        "Often these are forward and reverse reads. The pair collections can be passed to tools and workflows in ",
-                                        "order to have analyses done on both datasets. This interface allows you to create a pair, name it, and ",
-                                        "swap which is forward and which reverse.",
-                                    ].join("")
+                                    "link to make your forward dataset the reverse and the reverse dataset forward"
                                 )
                             }}
-                        </p>
+                        </li>
 
-                        <ul>
-                            <li>
-                                {{ localize("Click the ") }}
-                                <i data-target=".swap">
-                                    {{ localize("Swap") }}
-                                </i>
-                                {{
-                                    localize(
-                                        "link to make your forward dataset the reverse and the reverse dataset forward"
-                                    )
-                                }}
-                            </li>
-
-                            <li>
-                                {{ localize("Click the ") }}
-                                <i data-target=".cancel-create">
-                                    {{ localize("Cancel") }}
-                                </i>
-                                {{ localize("button to exit the interface.") }}
-                            </li>
-                        </ul>
-
-                        <br />
-
-                        <p>
-                            {{ localize("Once your collection is complete, enter a ") }}
-                            <i data-target=".collection-name"> {{ localize("name") }}</i>
-                            {{ localize("and click ") }}
-                            <i data-target=".create-collection">
-                                {{ localize("Create list") }}
+                        <li>
+                            {{ localize("Click the ") }}
+                            <i data-target=".cancel-create">
+                                {{ localize("Cancel") }}
                             </i>
-                            {{ localize(".") }}
-                        </p>
-                    </template>
+                            {{ localize("button to exit the interface.") }}
+                        </li>
+                    </ul>
 
-                    <template v-slot:middle-content>
+                    <br />
+
+                    <p>
+                        {{ localize("Once your collection is complete, enter a ") }}
+                        <i data-target=".collection-name"> {{ localize("name") }}</i>
+                        {{ localize("and click ") }}
+                        <i data-target=".create-collection">
+                            {{ localize("Create list") }}
+                        </i>
+                        {{ localize(".") }}
+                    </p>
+                </template>
+
+                <template v-slot:middle-content>
+                    <div v-if="noElementsSelected">
+                        <BAlert show variant="warning" dismissible>
+                            {{ localize("No datasets were selected.") }}
+                            {{ localize("Exactly two elements needed for the collection. You may need to") }}
+                            <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
+                                {{ localize("cancel") }}
+                            </a>
+                            {{ localize("and reselect new elements, or upload datasets.") }}
+                        </BAlert>
+                    </div>
+                    <div v-else-if="allElementsAreInvalid">
+                        <BAlert v-if="!fromSelection" show variant="warning">
+                            {{
+                                localize(
+                                    "No elements in your history are valid for this pair. \
+                                    You may need to switch to a different history or upload valid datasets."
+                                )
+                            }}
+                            <div v-if="extensions?.length">
+                                {{ localize("The following extensions are required for this pair: ") }}
+                                <ul>
+                                    <li v-for="extension in extensions" :key="extension">
+                                        {{ extension }}
+                                    </li>
+                                </ul>
+                            </div>
+                        </BAlert>
+                        <BAlert v-else show variant="warning" dismissible>
+                            {{ localize("The following selections could not be included due to problems:") }}
+                            <ul>
+                                <li v-for="problem in invalidElements" :key="problem">
+                                    {{ problem }}
+                                </li>
+                            </ul>
+                            {{ localize("Exactly two elements needed for the collection. You may need to") }}
+                            <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
+                                {{ localize("cancel") }}
+                            </a>
+                            {{ localize("and reselect new elements, or upload datasets.") }}
+                        </BAlert>
+                    </div>
+                    <div v-else>
                         <div class="collection-elements-controls">
                             <BButton
                                 class="swap"
@@ -531,9 +515,9 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                     @onRename="(name) => (element.name = name)" />
                             </div>
                         </div>
-                    </template>
-                </CollectionCreator>
-            </div>
+                    </div>
+                </template>
+            </CollectionCreator>
         </div>
     </div>
 </template>

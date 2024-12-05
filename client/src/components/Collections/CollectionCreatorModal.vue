@@ -260,9 +260,6 @@ function resetModal() {
         <BAlert v-else-if="!fromSelection && historyItemsError" variant="danger" show>
             {{ historyItemsError }}
         </BAlert>
-        <BAlert v-else-if="!creatorItems?.length" variant="info" show>
-            {{ localize("No items available to create a collection.") }}
-        </BAlert>
         <BAlert v-else-if="creatingCollection" variant="info" show>
             <LoadingSpan :message="localize('Creating collection')" />
         </BAlert>
@@ -289,7 +286,7 @@ function resetModal() {
         <ListCollectionCreator
             v-else-if="props.collectionType === 'list'"
             :history-id="props.historyId"
-            :initial-elements="creatorItems"
+            :initial-elements="creatorItems || []"
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
@@ -298,7 +295,7 @@ function resetModal() {
         <PairedListCollectionCreator
             v-else-if="props.collectionType === 'list:paired'"
             :history-id="props.historyId"
-            :initial-elements="creatorItems"
+            :initial-elements="creatorItems || []"
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
@@ -307,7 +304,7 @@ function resetModal() {
         <PairCollectionCreator
             v-else-if="props.collectionType === 'paired'"
             :history-id="props.historyId"
-            :initial-elements="creatorItems"
+            :initial-elements="creatorItems || []"
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"

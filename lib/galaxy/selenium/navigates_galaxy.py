@@ -1209,7 +1209,7 @@ class NavigatesGalaxy(HasDriver):
         # Make sure we're on the workflow editor and not clicking the main tool panel.
         editor.canvas_body.wait_for_visible()
 
-        editor.tool_menu.wait_for_visible()
+        self.open_toolbox()
         editor.tool_menu_section_link(section_name="inputs").wait_for_and_click()
         editor.tool_menu_item_link(item_name=item_name).wait_for_and_click()
 
