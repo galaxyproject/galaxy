@@ -18,6 +18,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    model_validator,
     RootModel,
 )
 from typing_extensions import (
@@ -47,15 +48,22 @@ from .tool_outputs import (
 )
 
 
-class UserToolSource(BaseModel):
-    class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
-    name: str
-    container: str
-    version: str
+def normalize_dict(values, keys: List[str]):
+    for key in keys:
+        items = values.get(key)
+        if isinstance(items, dict):  # dict-of-dicts format
+            # Transform dict-of-dicts to list-of-dicts
+            values[key] = [{"name": k, **v} for k, v in items.items()]
+
+
+class ToolSourceBase(BaseModel):
+    id: Optional[str] = None
+    name: Optional[str] = None
+    version: Optional[str] = "1.0"
     description: Optional[str] = None
-    shell_command: str
-    inputs: List[GalaxyParameterT]
-    outputs: List[IncomingToolOutput]
+    container: Optional[str] = None
+    inputs: List[GalaxyParameterT] = []
+    outputs: List[IncomingToolOutput] = []
     citations: Optional[List[Citation]] = None
     license: Optional[str] = None
     profile: Optional[str] = None
@@ -63,6 +71,28 @@ class UserToolSource(BaseModel):
     edam_topics: Optional[List[str]] = None
     xrefs: Optional[List[XrefDict]] = None
     help: Optional[HelpContent] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_items(cls, values):
+        if isinstance(values, dict):
+            normalize_dict(values, ["inputs", "outputs"])
+        return values
+
+
+class UserToolSource(ToolSourceBase):
+    class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
+    name: str
+    shell_command: str
+    container: str
+
+
+class AdminToolSource(ToolSourceBase):
+    class_: Annotated[Literal["GalaxyTool"], Field(alias="class")]
+    command: str
+
+
+DynamicToolSources = Annotated[Union[UserToolSource, AdminToolSource], Field(discriminator="class_")]
 
 
 class ParsedTool(BaseModel):

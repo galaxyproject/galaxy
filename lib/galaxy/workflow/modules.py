@@ -53,6 +53,7 @@ from galaxy.schema.invocation import (
     InvocationFailureWhenNotBoolean,
     InvocationFailureWorkflowParameterInvalid,
 )
+from galaxy.schema.tools import DynamicToolCreatePayload
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util.parser import get_input_source
 from galaxy.tool_util.parser.output_objects import (
@@ -1891,9 +1892,7 @@ class ToolModule(WorkflowModule):
         if tool_id is None and tool_uuid is None:
             tool_representation = d.get("tool_representation")
             if tool_representation:
-                create_request = {
-                    "representation": tool_representation,
-                }
+                create_request = DynamicToolCreatePayload(src="representation", representation=tool_representation)
                 if not trans.user_is_admin:
                     raise exceptions.AdminRequiredException("Only admin users can create tools dynamically.")
                 dynamic_tool = trans.app.dynamic_tool_manager.create_tool(trans, create_request, allow_load=False)

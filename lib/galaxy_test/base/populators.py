@@ -915,12 +915,13 @@ class BaseDatasetPopulator(BasePopulator):
     def show_dynamic_tool(self, uuid) -> dict:
         using_requirement("admin")
         show_response = self._get(f"dynamic_tools/{uuid}", admin=True)
-        assert show_response.status_code == 200, show_response
+        assert show_response.status_code == 200, show_response.text
         return show_response.json()
 
     def deactivate_dynamic_tool(self, uuid) -> dict:
         using_requirement("admin")
-        delete_response = self._delete(f"dynamic_tools/{uuid}", admin=True)
+        delete_response = self._delete(f"dynamic_tools/{uuid}", admin=True, json=True)
+        assert delete_response.status_code == 200, delete_response.text
         return delete_response.json()
 
     @abstractmethod
@@ -2537,7 +2538,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         }
         data.update(**kwds)
         upload_response = self._post("workflows", data=data)
-        assert upload_response.status_code == 200, upload_response.content
+        assert upload_response.status_code == 200, upload_response.text
         return upload_response.json()
 
     def import_tool(self, tool) -> Dict[str, Any]:
@@ -2545,7 +2546,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         comparable interface into Galaxy.
         """
         upload_response = self._import_tool_response(tool)
-        assert upload_response.status_code == 200, upload_response
+        assert upload_response.status_code == 200, upload_response.text
         return upload_response.json()
 
     def build_module(self, step_type: str, content_id: Optional[str] = None, inputs: Optional[Dict[str, Any]] = None):
@@ -2556,9 +2557,8 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
 
     def _import_tool_response(self, tool) -> Response:
         using_requirement("admin")
-        tool_str = json.dumps(tool, indent=4)
-        data = {"representation": tool_str}
-        upload_response = self._post("dynamic_tools", data=data, admin=True)
+        data = {"representation": tool}
+        upload_response = self._post("dynamic_tools", data=data, admin=True, json=True)
         return upload_response
 
     def scaling_workflow_yaml(self, **kwd):
