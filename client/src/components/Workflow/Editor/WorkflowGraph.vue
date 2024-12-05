@@ -11,7 +11,7 @@
             id="canvas-container"
             ref="canvas"
             class="canvas-content"
-            :class="props.isInvocation ? 'fixed-window-height' : 'h-100'"
+            :class="props.fixedHeight ? 'fixed-window-height' : 'h-100'"
             @drop.prevent
             @dragover.prevent>
             <AdaptiveGrid
@@ -104,6 +104,7 @@ const props = defineProps({
     isInvocation: { type: Boolean, default: false },
     showMinimap: { type: Boolean, default: true },
     showZoomControls: { type: Boolean, default: true },
+    fixedHeight: { type: Boolean, default: false },
 });
 
 const { stateStore, stepStore } = useWorkflowStores();
