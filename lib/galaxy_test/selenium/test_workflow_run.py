@@ -34,6 +34,52 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
 
     @selenium_test
     @managed_history
+    def test_workflow_export_file_native(self):
+        self._setup_simple_invocation_for_export_testing()
+        invocations = self.components.invocations
+        invocations.export_tab.wait_for_and_click()
+        self.screenshot("invocation_export_formats")
+        invocations.export_output_format(type="ro-crate").wait_for_and_click()
+        invocations.wizard_next_button.wait_for_and_click()
+        download_option = invocations.export_destination(destination="download")
+        download_option.wait_for_present()
+        self.screenshot("invocation_export_rocrate_destinations")
+        download_option.wait_for_and_click()
+        invocations.wizard_next_button.wait_for_and_click()
+        export_button = invocations.wizard_export_button
+        export_button.wait_for_present()
+        self.screenshot("invocation_export_rocrate_download_options")
+        export_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.screenshot("invocation_export_crate_preparing_download")
+        invocations.export_download_link.wait_for_present()
+        self.screenshot("invocation_export_crate_download_ready")
+
+    @selenium_test
+    @managed_history
+    def test_workflow_export_file_native(self):
+        self._setup_simple_invocation_for_export_testing()
+        invocations = self.components.invocations
+        invocations.export_tab.wait_for_and_click()
+        self.screenshot("invocation_export_formats")
+        invocations.export_output_format(type="default-file").wait_for_and_click()
+        invocations.wizard_next_button.wait_for_and_click()
+        download_option = invocations.export_destination(destination="download")
+        download_option.wait_for_present()
+        self.screenshot("invocation_export_native_destinations")
+        download_option.wait_for_and_click()
+        invocations.wizard_next_button.wait_for_and_click()
+        export_button = invocations.wizard_export_button
+        export_button.wait_for_present()
+        self.screenshot("invocation_export_native_download_options")
+        export_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.screenshot("invocation_export_native_preparing_download")
+        invocations.export_download_link.wait_for_present()
+        self.screenshot("invocation_export_native_download_ready")
+
+    @selenium_test
+    @managed_history
     def test_simple_execution(self):
         self.perform_upload(self.get_filename("1.fasta"))
         self.wait_for_history()
@@ -376,3 +422,13 @@ steps: {}
         assert initial_value == "", initial_value
         input_element.clear()
         input_element.send_keys(value)
+
+    def _setup_simple_invocation_for_export_testing(self):
+        # precondition: refresh history
+        self.perform_upload(self.get_filename("1.fasta"))
+        self.wait_for_history()
+        self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+        self.workflow_run_submit()
+        history_id = self.current_history_id()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        return self.workflow_populator.history_invocations(history_id)[0]
