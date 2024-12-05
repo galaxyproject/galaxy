@@ -18,7 +18,9 @@ from galaxy import (
     model,
 )
 from galaxy.exceptions import DuplicatedIdentifierException
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import DynamicTool
+from galaxy.schema.tools import DynamicToolPayload
 from galaxy.tool_util.cwl import tool_proxy
 from .base import (
     ModelManager,
@@ -38,6 +40,12 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
 
     model_class = model.DynamicTool
 
+    def get_tool_by_id_or_uuid(self, id_or_uuid: Union[int, str]):
+        if isinstance(id_or_uuid, int):
+            return self.get_tool_by_id(id_or_uuid)
+        else:
+            return self.get_tool_by_uuid(id_or_uuid)
+
     def get_tool_by_uuid(self, uuid: Optional[Union[UUID, str]]):
         stmt = select(DynamicTool).where(DynamicTool.uuid == uuid)
         return self.session().scalars(stmt).one_or_none()
@@ -50,7 +58,7 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
         stmt = select(DynamicTool).where(DynamicTool.id == object_id)
         return self.session().scalars(stmt).one_or_none()
 
-    def create_tool(self, trans: "ProvidesUserContext", tool_payload: Dict[str, Any], allow_load: bool = True):
+    def create_tool(self, trans: ProvidesUserContext, tool_payload: DynamicToolPayload, allow_load=True):
         if not getattr(self.app.config, "enable_beta_tool_formats", False):
             raise exceptions.ConfigDoesNotAllowException(
                 "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
@@ -66,17 +74,15 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
             dynamic_tool = self.get_tool_by_uuid(uuid_str)
             if dynamic_tool:
                 if not allow_load:
-                    raise DuplicatedIdentifierException(dynamic_tool.id)
+                    raise DuplicatedIdentifierException(
+                        f"Attempted to create dynamic tool with duplicate UUID '{uuid_str}'"
+                    )
                 assert dynamic_tool.uuid == uuid
         if not dynamic_tool:
-            src = tool_payload.src
-            is_path = src == "from_path"
-
-            if is_path:
-                tool_format, representation, _ = artifact_class(None, tool_payload)
+            if tool_payload.src == "from_path":
+                tool_format, representation, _ = artifact_class(None, tool_payload.model_dump())
             else:
-                assert src == "representation"
-                representation = tool_payload.representation.dict(by_alias=True, exclude_unset=True)
+                representation = tool_payload.representation.model_dump(by_alias=True, exclude_unset=True)
                 if not representation:
                     raise exceptions.ObjectAttributeMissingException("A tool 'representation' is required.")
 
@@ -84,15 +90,15 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
                 if not tool_format:
                     raise exceptions.ObjectAttributeMissingException("Current tool representations require 'class'.")
 
-            tool_path = tool_payload.path
             tool_directory = tool_payload.tool_directory
+            tool_path = tool_payload.path if tool_payload.src == "from_path" else None
             if tool_format in ("GalaxyTool", "GalaxyUserTool"):
                 tool_id = representation.get("id")
                 if not tool_id:
                     tool_id = str(uuid)
             elif tool_format in ("CommandLineTool", "ExpressionTool"):
                 # CWL tools
-                if is_path:
+                if tool_path:
                     proxy = tool_proxy(tool_path=tool_path, uuid=uuid)
                 else:
                     # Build a tool proxy so that we can convert to the persistable

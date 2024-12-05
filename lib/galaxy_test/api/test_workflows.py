@@ -1135,6 +1135,7 @@ steps:
       outputs:
         output1:
           format: txt
+          type: data
   - tool_id: cat1
     state:
       input1:
@@ -7962,6 +7963,7 @@ steps:
       outputs:
         output1:
           format: txt
+          type: data
   - tool_id: cat1
     state:
       input1:
