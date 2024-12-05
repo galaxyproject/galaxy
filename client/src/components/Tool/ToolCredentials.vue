@@ -2,7 +2,8 @@
 import { BAlert, BButton, BModal } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import type { ToolCredentials, UserCredentials } from "@/api/users";
+import type { ToolCredentialsDefinition, UserCredentials } from "@/api/users";
+import { useUserCredentialsStore } from "@/stores/userCredentials";
 import { useUserStore } from "@/stores/userStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -11,12 +12,13 @@ import ManageToolCredentials from "@/components/User/Credentials/ManageToolCrede
 interface Props {
     toolId: string;
     toolVersion: string;
-    toolCredentials: ToolCredentials[];
+    toolCredentialsDefinition: ToolCredentialsDefinition[];
 }
 
 const props = defineProps<Props>();
 
 const userStore = useUserStore();
+const userCredentialsStore = useUserCredentialsStore();
 
 const isBusy = ref(true);
 const busyMessage = ref<string>("");
@@ -53,6 +55,8 @@ const showModal = ref(false);
 
 /**
  * Check if the user has credentials for the tool.
+ * @param providedCredentials - The provided credentials to check. If not provided, the function will fetch the
+ * credentials from the store if they exist.
  */
 async function checkUserCredentials(providedCredentials?: UserCredentials[]) {
     busyMessage.value = "Checking your credentials...";
@@ -61,23 +65,16 @@ async function checkUserCredentials(providedCredentials?: UserCredentials[]) {
         if (userStore.isAnonymous) {
             return;
         }
-        // TODO: Implement store and real API request to check if the user has credentials for the tool.
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+
         if (!providedCredentials) {
-            providedCredentials = [];
-            for (const credentials of props.toolCredentials) {
-                providedCredentials.push({
-                    ...credentials,
-                    secrets: credentials.secrets.map((secret) => ({
-                        ...secret,
-                        alreadySet: false,
-                        value: "placeholder",
-                    })),
-                    variables: credentials.variables.map((variable) => ({ ...variable, value: "test" })),
-                });
-            }
+            providedCredentials =
+                userCredentialsStore.getAllUserCredentialsForTool(props.toolId) ??
+                (await userCredentialsStore.fetchAllUserCredentialsForTool(
+                    props.toolId,
+                    props.toolCredentialsDefinition
+                ));
         }
-        //----------------------------------------------
+
         userCredentials.value = providedCredentials;
     } catch (error) {
         // TODO: Implement error handling.
@@ -96,25 +93,16 @@ async function onSavedCredentials(providedCredentials: UserCredentials[]) {
     busyMessage.value = "Saving your credentials...";
     try {
         isBusy.value = true;
-        userCredentials.value = await saveCredentials(providedCredentials);
+        userCredentials.value = await userCredentialsStore.saveUserCredentialsForTool(
+            props.toolId,
+            providedCredentials
+        );
     } catch (error) {
         // TODO: Implement error handling.
         console.error("Error saving user credentials", error);
     } finally {
         isBusy.value = false;
     }
-}
-
-async function saveCredentials(providedCredentials: UserCredentials[]): Promise<UserCredentials[]> {
-    // TODO: Implement store and real API request to save the provided credentials.
-    console.log("SAVING CREDENTIALS", providedCredentials);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    for (const credentials of providedCredentials) {
-        for (const secret of credentials.secrets) {
-            secret.alreadySet = true;
-        }
-    }
-    return providedCredentials;
 }
 
 checkUserCredentials();
