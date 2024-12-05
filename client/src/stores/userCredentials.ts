@@ -56,10 +56,10 @@ export const useUserCredentialsStore = defineStore("userCredentialsStore", () =>
                 ...credentials,
                 secrets: credentials.secrets.map((secret) => ({
                     ...secret,
-                    alreadySet: true,
+                    alreadySet: !!secret.value && secret.value !== SECRET_PLACEHOLDER,
                     value: SECRET_PLACEHOLDER,
                 })),
-                variables: credentials.variables.map((variable) => ({ ...variable, value: variable.value ?? "test" })),
+                variables: credentials.variables.map((variable) => ({ ...variable })),
             };
             savedUserCredentials.push(savedCredentials);
         }
