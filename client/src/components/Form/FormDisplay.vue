@@ -12,7 +12,8 @@
         :collapsed-disable-icon="collapsedDisableIcon"
         :on-change="onChange"
         :on-change-form="onChangeForm"
-        :workflow-building-mode="workflowBuildingMode" />
+        :workflow-building-mode="workflowBuildingMode"
+        :active-node-id="activeNodeId" />
 </template>
 
 <script>
@@ -89,6 +90,10 @@ export default {
         allowEmptyValueOnRequiredInput: {
             type: Boolean,
             default: false,
+        },
+        activeNodeId: {
+            type: Number,
+            default: null,
         },
     },
     data() {
