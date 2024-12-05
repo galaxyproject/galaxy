@@ -33,7 +33,7 @@ defineProps<Props>();
         <p>{{ credential.description }}</p>
         <div v-for="variable in credential.variables" :key="variable.name">
             <label :for="variable.name">{{ variable.label || variable.name }}</label>
-            <input :id="variable.name" v-model="variable.value" type="text" />
+            <input :id="variable.name" v-model="variable.value" type="text" autocomplete="off" />
         </div>
         <div v-for="secret in credential.secrets" :key="secret.name" class="secret-input">
             <label :for="secret.name">{{ secret.label || secret.name }}</label>

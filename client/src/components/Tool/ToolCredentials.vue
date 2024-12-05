@@ -28,27 +28,14 @@ const hasUserProvidedRequiredCredentials = computed<boolean>(() => {
     if (!userCredentials.value) {
         return false;
     }
-    return userCredentials.value.every((credentials) => {
-        if (credentials.optional) {
-            return true;
-        }
-        return (
-            credentials.variables.every((variable) => variable.value) &&
-            credentials.secrets.every((secret) => secret.value)
-        );
-    });
+    return userCredentials.value.every((credentials) => credentials.optional || areSetByUser(credentials));
 });
 
 const hasUserProvidedAllCredentials = computed<boolean>(() => {
     if (!userCredentials.value) {
         return false;
     }
-    return userCredentials.value.every((credentials) => {
-        return (
-            credentials.variables.every((variable) => variable.value) &&
-            credentials.secrets.every((secret) => secret.value)
-        );
-    });
+    return userCredentials.value.every(areSetByUser);
 });
 
 const hasSomeOptionalCredentials = computed<boolean>(() => {
@@ -103,6 +90,13 @@ async function checkUserCredentials(providedCredentials?: UserCredentials[]) {
     }
 }
 
+function areSetByUser(credentials: UserCredentials): boolean {
+    return (
+        credentials.variables.every((variable) => variable.value) &&
+        credentials.secrets.every((secret) => secret.alreadySet)
+    );
+}
+
 function provideCredentials() {
     showModal.value = true;
 }
@@ -151,6 +145,7 @@ checkUserCredentials();
                         <strong>You have already provided credentials for this tool.</strong> You can update or delete
                         your credentials, using the <i>{{ provideCredentialsButtonTitle }}</i> button.
                         <span v-if="hasSomeOptionalCredentials && !hasUserProvidedAllCredentials">
+                            <br />
                             You can still provide some optional credentials for this tool.
                         </span>
                     </span>
