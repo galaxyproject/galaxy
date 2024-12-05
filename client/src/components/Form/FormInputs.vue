@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-for="(input, index) in inputs" :key="index">
+        <div v-for="(input, index) in inputs" :key="index" :class="{ 'bordered-input': activeNodeId === index }">
             <div v-if="input.type == 'conditional'" class="ui-portlet-section mt-3">
                 <div class="portlet-header">
                     <b>{{ input.test_param.label || input.test_param.name }}</b>
@@ -131,6 +131,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        activeNodeId: {
+            type: Number,
+            default: null,
+        },
     },
     methods: {
         getPrefix(name, index) {
@@ -170,3 +174,12 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.bordered-input {
+    border: 1px solid blue;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+}
+</style>

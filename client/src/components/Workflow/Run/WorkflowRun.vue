@@ -208,7 +208,7 @@ defineExpose({
                 v-else-if="invocations.length > 0"
                 :invocations="invocations"
                 :workflow-name="workflowName" />
-            <div v-else class="ui-form-composite">
+            <div v-else>
                 <BAlert
                     v-if="hasUpgradeMessages || hasStepVersionChanges"
                     class="mb-4"
