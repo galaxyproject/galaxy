@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BCard } from "bootstrap-vue";
+import { BBadge, BCard } from "bootstrap-vue";
 
 import type { UserCredentials } from "@/api/users";
 
@@ -12,7 +12,24 @@ defineProps<Props>();
 
 <template>
     <BCard>
-        <h3>{{ credential.label || credential.name }}</h3>
+        <h3>
+            {{ credential.label || credential.name }}
+            <BBadge
+                v-if="credential.optional"
+                variant="secondary"
+                class="optional-credentials"
+                title="These credentials are optional. If you do not provide them, the tool will use default values or
+                    anonymous access.">
+                Optional
+            </BBadge>
+            <BBadge
+                v-else
+                variant="danger"
+                class="required-credentials"
+                title="These credentials are required. You must provide them to use the tool.">
+                Required
+            </BBadge>
+        </h3>
         <p>{{ credential.description }}</p>
         <div v-for="variable in credential.variables" :key="variable.name">
             <label :for="variable.name">{{ variable.label || variable.name }}</label>
