@@ -9,6 +9,7 @@ import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
@@ -41,6 +42,7 @@ const invalidElements = ref<string[]>([]);
 const workingElements = ref<HDASummary[]>([]);
 const selectedDatasetElements = ref<string[]>([]);
 const hideSourceItems = ref(props.defaultHideSourceItems || false);
+const atLeastOneElement = ref(true);
 
 const atLeastOneDatasetIsSelected = computed(() => {
     return selectedDatasetElements.value.length > 0;
@@ -227,13 +229,24 @@ function clickSelectAll() {
         return element.id;
     });
 }
+const { confirm } = useConfirmDialog();
 
-function clickedCreate(collectionName: string) {
+async function clickedCreate(collectionName: string) {
     checkForDuplicates();
 
     const returnedElements = props.fromSelection ? workingElements.value : inListElements.value;
+    atLeastOneElement.value = returnedElements.length > 0;
 
-    if (state.value !== "error") {
+    let confirmed = false;
+    if (!atLeastOneElement.value) {
+        confirmed = await confirm("Are you sure you want to create a list with no datasets?", {
+            title: "Create an empty list",
+            okTitle: "Create",
+            okVariant: "primary",
+        });
+    }
+
+    if (state.value !== "error" && (atLeastOneElement.value || confirmed)) {
         emit("clicked-create", returnedElements, collectionName, hideSourceItems.value);
     }
 }
@@ -367,6 +380,18 @@ function renameElement(element: any, name: string) {
                             {{ problem }}
                         </li>
                     </ul>
+                </BAlert>
+            </div>
+
+            <div v-if="!atLeastOneElement">
+                <BAlert show variant="warning" dismissible @dismissed="atLeastOneElement = true">
+                    {{ localize("At least one element is needed for the list.") }}
+                    <span v-if="fromSelection">
+                        <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
+                            {{ localize("Cancel") }}
+                        </a>
+                        {{ localize("and reselect new elements.") }}
+                    </span>
                 </BAlert>
             </div>
 
