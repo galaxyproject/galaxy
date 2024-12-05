@@ -13,7 +13,7 @@ interface ManageToolCredentialsProps {
 
 const props = defineProps<ManageToolCredentialsProps>();
 
-const providedCredentials = ref<UserCredentials[]>(props.credentials || []);
+const providedCredentials = ref<UserCredentials[]>(initializeCredentials());
 
 const emit = defineEmits<{
     (e: "save-credentials", credentials: UserCredentials[]): void;
@@ -21,6 +21,11 @@ const emit = defineEmits<{
 
 function saveCredentials() {
     emit("save-credentials", providedCredentials.value);
+}
+
+function initializeCredentials(): UserCredentials[] {
+    // If credentials are provided, clone them to avoid modifying the original data
+    return props.credentials ? JSON.parse(JSON.stringify(props.credentials)) : [];
 }
 </script>
 
