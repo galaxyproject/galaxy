@@ -13,6 +13,7 @@ import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
@@ -81,6 +82,7 @@ const invalidElements = ref<string[]>([]);
 const generatedPairs = ref<DatasetPair[]>([]);
 const selectedForwardElement = ref<HDASummary | null>(null);
 const selectedReverseElement = ref<HDASummary | null>(null);
+const atLeastOnePair = ref(true);
 
 // Filters
 const forwardFilter = ref(COMMON_FILTERS[DEFAULT_FILTER][0] || "");
@@ -552,32 +554,6 @@ function _addToUnpaired(dataset: HDASummary) {
 
     workingElements.value.splice(binSearchSortedIndex(0, workingElements.value.length), 0, dataset);
 }
-// /** add a dataset to the unpaired list in it's proper order */
-// _addToUnpaired: function (dataset) {
-//     // currently, unpaired is natural sorted by name, use binary search to find insertion point
-//     var binSearchSortedIndex = (low, hi) => {
-//         if (low === hi) {
-//             return low;
-//         }
-
-//         var mid = Math.floor((hi - low) / 2) + low;
-
-//         var compared = naturalSort(dataset.name, this.workingElements[mid].name);
-
-//         if (compared < 0) {
-//             return binSearchSortedIndex(low, mid);
-//         } else if (compared > 0) {
-//             return binSearchSortedIndex(mid + 1, hi);
-//         }
-//         // walk the equal to find the last
-//         while (this.workingElements[mid] && this.workingElements[mid].name === dataset.name) {
-//             mid++;
-//         }
-//         return mid;
-//     };
-
-//     this.workingElements.splice(binSearchSortedIndex(0, this.workingElements.length), 0, dataset);
-// },
 
 /**
  * Unpair a pair, removing it from paired, and adding the fwd,rev
@@ -749,9 +725,22 @@ function addUploadedFiles(files: HDASummary[]) {
     });
 }
 
+const { confirm } = useConfirmDialog();
+
 async function clickedCreate(collectionName: string) {
     checkForDuplicates();
-    if (state.value == "build") {
+    atLeastOnePair.value = generatedPairs.value.length > 0;
+
+    let confirmed = false;
+    if (!atLeastOnePair.value) {
+        confirmed = await confirm("Are you sure you want to create a list with no pairs?", {
+            title: "Create an empty list of pairs",
+            okTitle: "Create",
+            okVariant: "primary",
+        });
+    }
+
+    if (state.value == "build" && (atLeastOnePair.value || confirmed)) {
         emit("clicked-create", generatedPairs.value, collectionName, hideSourceItems.value);
     }
 }
@@ -827,6 +816,19 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                     </ul>
                 </BAlert>
             </div>
+
+            <div v-if="!atLeastOnePair">
+                <BAlert show variant="warning" dismissible @dismissed="atLeastOnePair = true">
+                    {{ localize("At least one pair is needed for the list of pairs.") }}
+                    <span v-if="fromSelection">
+                        <a class="cancel-text" href="javascript:void(0)" role="button" @click="emit('on-cancel')">
+                            {{ localize("Cancel") }}
+                        </a>
+                        {{ localize("and reselect new elements.") }}
+                    </span>
+                </BAlert>
+            </div>
+
             <div v-if="!autoPairsPossible">
                 <BAlert show variant="danger" dismissible @dismissed="autoPairsPossible = true">
                     {{
@@ -842,6 +844,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                     </span>
                 </BAlert>
             </div>
+
             <div v-if="state == 'duplicates'">
                 <BAlert show variant="danger">
                     {{
@@ -853,6 +856,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                     {{ localize("Please fix these duplicates and try again.") }}
                 </BAlert>
             </div>
+
             <CollectionCreator
                 :oncancel="() => emit('on-cancel')"
                 :history-id="props.historyId"

@@ -79,7 +79,10 @@ class OIDC(JSAppLauncher):
             log.debug(msg)
             return trans.show_error_message(msg)
         if next:
-            trans.set_cookie(value=next, name=LOGIN_NEXT_COOKIE_NAME)
+            trans.set_cookie(value=next, name=LOGIN_NEXT_COOKIE_NAME, age=1)
+        else:
+            # If no next parameter is provided, ensure we unset any existing next cookie.
+            trans.set_cookie(value="/", name=LOGIN_NEXT_COOKIE_NAME)
         success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans, idphint)
         if success:
             return {"redirect_uri": redirect_uri}
@@ -138,6 +141,8 @@ class OIDC(JSAppLauncher):
         trans.handle_user_login(user)
         # Record which idp provider was logged into, so we can logout of it later
         trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
+        # Clear the login next cookie back to default.
+        trans.set_cookie(value="/", name=LOGIN_NEXT_COOKIE_NAME)
         return trans.response.send_redirect(url_for(redirect_url))
 
     @web.expose
