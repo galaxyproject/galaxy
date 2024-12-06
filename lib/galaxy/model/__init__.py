@@ -12133,6 +12133,37 @@ class CeleryUserRateLimit(Base):
         )
 
 
+class UserCredentials(Base):
+    """
+    Represents a credential associated with a user for a specific service.
+    """
+
+    __tablename__ = "user_credentials"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
+    service_reference: Mapped[str] = mapped_column(nullable=False)  # tool|tool_id|refrence|set
+    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+
+
+class Credentials(Base):
+    """
+    Represents a credential associated with a user for a specific
+    service.
+    """
+
+    __tablename__ = "credentials"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_credentials_id: Mapped[int] = mapped_column(ForeignKey("user_credentials.id"), index=True, nullable=False)
+    name: Mapped[str] = mapped_column(nullable=False)
+    type: Mapped[str] = mapped_column(nullable=False)
+    value: Mapped[str] = mapped_column(nullable=False)
+    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+
+
 # The following models (HDA, LDDA) are mapped imperatively (for details see discussion in PR #12064)
 # TLDR: there are issues ('metadata' property, Galaxy object wrapping) that need to be addressed separately
 # before these models can be mapped declaratively. Keeping them in the mapping module breaks the auth package
