@@ -77,7 +77,8 @@
                     v-else-if="isActiveSideBar('workflow-editor-workflows')"
                     :current-workflow-id="id"
                     @insertWorkflow="onInsertWorkflow"
-                    @insertWorkflowSteps="onInsertWorkflowSteps" />
+                    @insertWorkflowSteps="onInsertWorkflowSteps"
+                    @createWorkflow="createNewWorkflow" />
                 <WorkflowAttributes
                     v-else-if="isActiveSideBar('workflow-editor-attributes')"
                     :id="id"
