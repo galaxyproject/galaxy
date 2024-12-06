@@ -34,7 +34,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
 
     @selenium_test
     @managed_history
-    def test_workflow_export_file_native(self):
+    def test_workflow_export_file_rocrate(self):
         self._setup_simple_invocation_for_export_testing()
         invocations = self.components.invocations
         invocations.export_tab.wait_for_and_click()
