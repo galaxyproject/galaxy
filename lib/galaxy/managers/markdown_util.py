@@ -620,9 +620,7 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         pass
 
     def handle_invocation_time(self, line, invocation):
-        self.ensure_rendering_data_for("invocations", invocation)["create_time"] = _database_time_to_str(
-            invocation.create_time
-        )
+        self.ensure_rendering_data_for("invocations", invocation)["create_time"] = invocation.create_time.isoformat()
 
     def handle_invocation_inputs(self, line, invocation):
         pass
@@ -884,7 +882,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return (content, True)
 
     def handle_invocation_time(self, line, invocation):
-        content = literal_via_fence(_database_time_to_str(invocation.create_time))
+        content = literal_via_fence(invocation.create_time.isoformat())
         return (content, True)
 
     def handle_invocation_inputs(self, line, invocation):
