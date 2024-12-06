@@ -257,9 +257,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> Tuple[List[RemoteDirectory], int]:
-        """Gets the records in the repository and returns the total count of records.
-        An Invenio "Record" is a Galaxy "Collection".
-        """
+        """Gets the records in the repository and returns the total count of records."""
         params: Dict[str, Any] = {}
         request_url = self.records_url
         if writeable:
