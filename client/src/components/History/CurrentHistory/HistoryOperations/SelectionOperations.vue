@@ -145,6 +145,7 @@
             :filter-text="filterText"
             :selected-items="collectionSelection"
             :show-modal.sync="collectionModalShow"
+            hide-modal-on-create
             default-hide-source-items
             @created-collection="createdCollection" />
     </section>
