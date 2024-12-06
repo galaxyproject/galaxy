@@ -39,7 +39,7 @@ class RDMRepositoryInteractor:
 
     Different RDM repositories use different terminology. Also they use the same term for different things.
     To prevent confusion, we use the term "container" in the base repository.
-    This is an abstract term for the entity that contains multiple files, i.e. what is a "Collection" in galaxy.
+    This is an abstract term for the entity that contains multiple files.
     """
 
     def __init__(self, repository_url: str, plugin: "RDMFilesSource"):
