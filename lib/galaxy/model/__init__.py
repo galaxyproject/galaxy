@@ -3934,6 +3934,8 @@ class Role(Base, Dictifiable, RepresentById):
         USER = "user"
         ADMIN = "admin"
         SHARING = "sharing"
+        USER_TOOL_CREATION = "user_tool_create"
+        USER_TOOL_EXECUTION = "user_tool_execution"
 
     @staticmethod
     def default_name(role_type):
