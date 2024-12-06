@@ -6,7 +6,7 @@ import shlex
 import string
 import tempfile
 from datetime import datetime
-from typing import (
+from typing import (  # cast,
     Any,
     Callable,
     Dict,
@@ -28,7 +28,9 @@ from galaxy.model.deferred import (
 )
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
-from galaxy.structured_app import (
+
+# from galaxy.security.vault import UserVaultWrapper
+from galaxy.structured_app import (  # StructuredApp,
     BasicSharedApp,
     MinimalToolApp,
 )
@@ -187,6 +189,18 @@ class ToolEvaluator:
             output_collections=out_collections,
         )
         self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
+
+        if self.tool.credentials:
+            # app = cast(StructuredApp, self.app)
+            # user_vault = UserVaultWrapper(app.vault, self._user)
+            for credentials in self.tool.credentials:
+                reference = credentials.reference
+                for secret in credentials.secret:
+                    secret_value = f"{reference}/{secret.name}"
+                    self.environment_variables.append({"name": secret.inject_as_env, "value": secret_value})
+                for variable in credentials.variable:
+                    variable_value = f"{reference}/{variable.name}"
+                    self.environment_variables.append({"name": variable.inject_as_env, "value": variable_value})
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution
