@@ -39,12 +39,15 @@ interface Props {
     extensions?: string[];
     extensionsToggle?: boolean;
     noItems?: boolean;
+    collectionType?: string;
+    showHelp?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     suggestedName: "",
     extensions: undefined,
     extensionsToggle: false,
+    showHelp: true,
 });
 
 const emit = defineEmits<{
@@ -146,7 +149,7 @@ watch(
             </div>
             <div v-else>
                 <div class="header flex-row no-flex">
-                    <div class="main-help well clear" :class="{ expanded: isExpanded }">
+                    <div v-if="showHelp" class="main-help well clear" :class="{ expanded: isExpanded }">
                         <a
                             class="more-help"
                             href="javascript:void(0);"
