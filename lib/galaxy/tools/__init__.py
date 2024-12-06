@@ -2070,10 +2070,6 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
     ]:
         rerun_remap_job_id = _rerun_remap_job_id(request_context, incoming, self.id)
         set_dataset_matcher_factory(request_context, self)
-        tags = incoming.get("tags", [])
-        if tags:
-            request_context.tags = tags
-
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool executions).
         expanded_incomings: list[ToolStateJobInstanceT]
@@ -2226,7 +2222,8 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             collection_info=collection_info,
             completed_jobs=completed_jobs,
         )
-        tags = getattr(request_context, "tags", [])
+
+        tags = incoming.get("tags", [])
         if tags:
             tag_handler = self.app.tag_handler
             for _, hda in execution_tracker.output_datasets:
