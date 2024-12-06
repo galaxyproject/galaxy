@@ -113,22 +113,25 @@ watch(
     }
 );
 
+const extensionInTitle = computed<string>(() => {
+    const extensions = props.extensions;
+    if (!extensions || extensions.length == 0 || extensions.indexOf("data") >= 0) {
+        return "";
+    } else {
+        return orList(extensions);
+    }
+});
+
 const modalTitle = computed(() => {
     if (props.collectionType === "list") {
-        return localize(
-            `Create a collection from a list of ${fromSelection.value ? "selected" : ""} ${
-                props.extensions?.length ? orList(props.extensions) : ""
-            } datasets`
-        );
+        return localize(`Create a list of ${fromSelection.value ? "selected" : ""} ${extensionInTitle.value} datasets`);
     } else if (props.collectionType === "list:paired") {
         return localize(
-            `Create a collection of ${fromSelection.value ? "selected" : ""} ${
-                props.extensions?.length ? orList(props.extensions) : ""
-            } dataset pairs`
+            `Create a list of ${fromSelection.value ? "selected" : ""} ${extensionInTitle.value} paired datasets`
         );
     } else if (props.collectionType === "paired") {
         return localize(
-            `Create a ${props.extensions?.length ? orList(props.extensions) : ""} dataset pair collection ${
+            `Create a ${extensionInTitle.value} paired dataset collection ${
                 fromSelection.value ? "from selected items" : ""
             }`
         );

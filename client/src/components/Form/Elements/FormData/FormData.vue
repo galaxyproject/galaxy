@@ -607,10 +607,20 @@ watch(
 const formatsVisible = ref(false);
 const formatsButtonId = useUid("form-data-formats-");
 
+function collectionTypeToText(collectionType: string): string {
+    if (collectionType == "list:paired") {
+        return "list of pairs";
+    } else {
+        return collectionType;
+    }
+}
+
 const warningListAmount = 4;
 const noOptionsWarningMessage = computed(() => {
     const itemType = props.type === "data" ? "datasets" : "dataset collections";
-    const collectionTypeLabel = props.collectionTypes?.length ? `${orList(props.collectionTypes)} ` : "";
+    const collectionTypeLabel = props.collectionTypes?.length
+        ? `${orList(props.collectionTypes.map(collectionTypeToText))} `
+        : "";
     if (!props.extensions || props.extensions.length === 0 || props.extensions.includes("data")) {
         return `No ${collectionTypeLabel}${itemType} available`;
     } else if (props.extensions.length <= warningListAmount) {

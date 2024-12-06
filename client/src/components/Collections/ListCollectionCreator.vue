@@ -412,13 +412,13 @@ function renameElement(element: any, name: string) {
                 :history-id="props.historyId"
                 :hide-source-items="hideSourceItems"
                 :extensions="extensions"
+                collectionType="list"
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
                 @add-uploaded-files="addUploadedFiles"
                 @on-update-datatype-toggle="changeDatatypeFilter"
                 @onUpdateHideSourceItems="onUpdateHideSourceItems"
                 @clicked-create="clickedCreate">
                 <template v-slot:help-content>
-                    <!-- TODO: Update help content for case where `fromSelection` is false -->
                     <p>
                         {{
                             localize(
