@@ -886,6 +886,12 @@ invocations:
     step_job_details: '[data-step="${order_index}"] .invocation-step-job-details'
     step_job_information: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table'
     step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table #galaxy-tool-id'
+    export_tab: '.invocation-export-tab'
+    export_output_format: '[data-invocation-export-type="${type}"] .card-body'
+    export_destination: '[data-invocation-export-destination="${destination}"] .card-body'
+    wizard_next_button: '.wizard-actions .go-next-btn'
+    wizard_export_button: '.wizard-actions .go-next-btn.btn-primary'
+    export_download_link: '.download-link'
 
 tour:
   popover:

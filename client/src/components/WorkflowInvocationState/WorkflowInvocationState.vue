@@ -334,7 +334,7 @@ function cancelWorkflowSchedulingLocal() {
                 </template>
                 <InvocationReport v-if="invocationStateSuccess" :invocation-id="invocation.id" />
             </BTab>
-            <BTab title="Export" lazy>
+            <BTab title="Export" title-item-class="invocation-export-tab" lazy>
                 <div v-if="invocationAndJobTerminal">
                     <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
                 </div>
