@@ -10,7 +10,6 @@ import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { cancelWorkflowScheduling } from "./services";
 import {
     errorCount as jobStatesSummaryErrorCount,
     isTerminal,
@@ -53,6 +52,7 @@ const stepStatesInterval = ref<any>(undefined);
 const jobStatesInterval = ref<any>(undefined);
 const invocationLoaded = ref(false);
 const errorMessage = ref<string | null>(null);
+const cancellingInvocation = ref(false);
 
 // after the report tab is first activated, no longer lazy-render it from then on
 const reportActive = ref(false);
@@ -199,6 +199,16 @@ watch(
 
 const storeId = computed(() => (invocation.value ? `invocation-${invocation.value.id}` : undefined));
 
+watch(
+    () => invocationSchedulingTerminal.value,
+    async (newVal, oldVal) => {
+        if (oldVal && !newVal) {
+            // If the invocation was terminal and now is not, start polling again
+            await pollStepStatesUntilTerminal();
+        }
+    }
+);
+
 onUnmounted(() => {
     clearTimeout(stepStatesInterval.value);
     clearTimeout(jobStatesInterval.value);
@@ -219,11 +229,16 @@ async function pollJobStatesUntilTerminal() {
 function onError(e: any) {
     console.error(e);
 }
-function onCancel() {
-    emit("invocation-cancelled");
-}
-function cancelWorkflowSchedulingLocal() {
-    cancelWorkflowScheduling(props.invocationId).then(onCancel).catch(onError);
+async function onCancel() {
+    try {
+        cancellingInvocation.value = true;
+        await invocationStore.cancelWorkflowScheduling(props.invocationId);
+    } catch (e) {
+        onError(e);
+    } finally {
+        emit("invocation-cancelled");
+        cancellingInvocation.value = false;
+    }
 }
 </script>
 
@@ -243,6 +258,7 @@ function cancelWorkflowSchedulingLocal() {
                     size="sm"
                     class="text-decoration-none"
                     variant="link"
+                    :disabled="cancellingInvocation || invocationState == 'cancelling'"
                     @click="onCancel">
                     <FontAwesomeIcon :icon="faSquare" fixed-width />
                     Cancel
@@ -301,9 +317,7 @@ function cancelWorkflowSchedulingLocal() {
                     :invocation="invocation"
                     :is-full-page="props.isFullPage"
                     :invocation-and-job-terminal="invocationAndJobTerminal"
-                    :invocation-scheduling-terminal="invocationSchedulingTerminal"
-                    :is-subworkflow="isSubworkflow"
-                    @invocation-cancelled="cancelWorkflowSchedulingLocal" />
+                    :is-subworkflow="isSubworkflow" />
             </BTab>
             <BTab v-if="!isSubworkflow" title="Steps" lazy>
                 <WorkflowInvocationSteps
