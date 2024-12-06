@@ -412,7 +412,7 @@ function renameElement(element: any, name: string) {
                 :history-id="props.historyId"
                 :hide-source-items="hideSourceItems"
                 :extensions="extensions"
-                collectionType="list"
+                collection-type="list"
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
                 @add-uploaded-files="addUploadedFiles"
                 @on-update-datatype-toggle="changeDatatypeFilter"
@@ -423,7 +423,8 @@ function renameElement(element: any, name: string) {
                         {{
                             localize(
                                 [
-                                    "Lists are a type of Galaxy dataset collection that are a permanent, ordered lists of datasets that can be passed to tools ",
+                                    "This interface allows you to build a new Galaxy list of datasets. ",
+                                    "A list is a type of Galaxy dataset collection that is a permanent, ordered list of datasets that can be passed to tools ",
                                     "and workflows in order to have analyses done on each member of the entire group. This interface allows ",
                                     "you to create and re-order a list of datasets. The datasets in a Galaxy collection have an identifier that is preserved accross ",
                                     "tool executions and serves as a form of sample tracking - setting the name in this form will pick the identifier for that element ",
@@ -435,8 +436,8 @@ function renameElement(element: any, name: string) {
 
                     <ul>
                         <li v-if="!fromSelection">
-                            Move datsets from the "Unselected" column to the "Selected" column below to compose the
-                            list in the intended order and with the intended datasets.
+                            Move datsets from the "Unselected" column to the "Selected" column below to compose the list
+                            in the intended order and with the intended datasets.
                         </li>
                         <li v-if="!fromSelection">
                             The filter textbox can be used to rapidly find the datasets of interest by name.
