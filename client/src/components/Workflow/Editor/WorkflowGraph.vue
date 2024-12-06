@@ -24,7 +24,8 @@
                 <WorkflowEdges
                     :transform="transform"
                     :dragging-terminal="draggingTerminal"
-                    :dragging-connection="draggingPosition" />
+                    :dragging-connection="draggingPosition"
+                    :ignore-errors="props.ignoreErrors" />
                 <WorkflowNode
                     v-for="(step, key) in steps"
                     :id="step.id"
@@ -38,6 +39,7 @@
                     :scroll="scroll"
                     :scale="scale"
                     :readonly="readonly"
+                    :ignore-errors="props.ignoreErrors"
                     :is-invocation="props.isInvocation"
                     @pan-by="panBy"
                     @stopDragging="onStopDragging"
@@ -62,6 +64,7 @@
             :comments="comments"
             :viewport-bounds="elementBounding"
             :viewport-bounding-box="viewportBoundingBox"
+            :ignore-errors="props.ignoreErrors"
             @panBy="panBy"
             @moveTo="moveTo" />
         <slot></slot>
@@ -104,6 +107,7 @@ const props = defineProps({
     isInvocation: { type: Boolean, default: false },
     showMinimap: { type: Boolean, default: true },
     showZoomControls: { type: Boolean, default: true },
+    ignoreErrors: { type: Boolean, default: false },
 });
 
 const { stateStore, stepStore } = useWorkflowStores();
