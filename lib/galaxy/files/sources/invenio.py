@@ -118,7 +118,6 @@ class InvenioRecord(TypedDict):
 
 
 class InvenioRepositoryInteractor(RDMRepositoryInteractor):
-    """In Invenio a "Record" represents what we refer to as container in the rdm base class"""
     @property
     def records_url(self) -> str:
         return f"{self.repository_url}/api/records"
@@ -402,10 +401,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     
 
 class InvenioRDMFilesSource(RDMFilesSource):
-    """A files source for Invenio turn-key research data management repository.
-    
-    In Invenio a "Record" represents what we refer to as container in the rdm base class"
-    """
+    """A files source for Invenio turn-key research data management repository."""
 
     plugin_type = "inveniordm"
     supports_pagination = True
