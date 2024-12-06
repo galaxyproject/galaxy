@@ -25,6 +25,7 @@ export default {
             version: null,
             editorConfig: null,
             editorReloadKey: 0,
+            previousHistoryLength: 0,
         };
     },
     watch: {
@@ -39,14 +40,18 @@ export default {
         async getEditorConfig() {
             let reloadEditor = true;
 
+            const noStoredIds = !this.storedWorkflowId && !this.workflowId;
+            const historyNavigatedForwards = window.history.length > this.previousHistoryLength;
+
             // this will only be the case the first time the route updates from a new workflow
-            if (!this.storedWorkflowId && !this.workflowId) {
+            if (noStoredIds && historyNavigatedForwards) {
                 reloadEditor = false;
             }
 
             this.storedWorkflowId = Query.get("id");
             this.workflowId = Query.get("workflow_id");
             this.version = Query.get("version");
+            this.previousHistoryLength = window.history.length;
 
             const params = {};
 
