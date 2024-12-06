@@ -374,6 +374,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                 :suggested-name="initialSuggestedName"
                 :extensions="props.extensions"
                 :extensions-toggle="removeExtensions"
+                collection-type="paired"
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
                 @add-uploaded-files="addUploadedFiles"
                 @onUpdateHideSourceItems="onUpdateHideSourceItems"
@@ -423,7 +424,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         <i data-target=".collection-name"> {{ localize("name") }}</i>
                         {{ localize("and click ") }}
                         <i data-target=".create-collection">
-                            {{ localize("Create list") }}
+                            {{ localize("Create dataset pair") }}
                         </i>
                         {{ localize(".") }}
                     </p>

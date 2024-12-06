@@ -864,6 +864,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                 render-extensions-toggle
                 :extensions-toggle="removeExtensions"
                 :extensions="extensions"
+                collection-type="list:paired"
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
                 @add-uploaded-files="addUploadedFiles"
                 @onUpdateHideSourceItems="hideSourceItems = $event"
@@ -875,9 +876,10 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         {{
                             localize(
                                 [
-                                    "Collections of paired datasets are ordered lists of dataset pairs (often forward and reverse reads). ",
-                                    "These collections can be passed to tools and workflows in order to have analyses done on each member of ",
-                                    "the entire group. This interface allows you to create a collection, choose which datasets are paired, ",
+                                    "This interface allows you to build a new Galaxy list of pairs. List of pairs are an ordered list of ",
+                                    "individual dataset paired together in their own paired collection (often forward and reverse reads). ",
+                                    "These lists can be passed to tools and workflows in order to have analyses done on each member of ",
+                                    "the entire group. This interface allows you to create such a list of paired datasets, choose which datasets are paired, ",
                                     "and re-order the final collection.",
                                 ].join("")
                             )
@@ -994,7 +996,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         </i>
                         {{ localize("and click ") }}
                         <i data-target=".create-collection">
-                            {{ localize("Create list") }}
+                            {{ localize("Create list or pairs") }}
                         </i>
                         {{ localize(". (Note: you do not have to pair all unpaired datasets to finish.)") }}
                     </p>
