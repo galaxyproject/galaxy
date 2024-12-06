@@ -11,6 +11,8 @@ from uuid import UUID
 from sqlalchemy import (
     select,
     sql,
+    true,
+    update,
 )
 
 from galaxy import (
@@ -19,8 +21,14 @@ from galaxy import (
 )
 from galaxy.exceptions import DuplicatedIdentifierException
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.model import DynamicTool
-from galaxy.schema.tools import DynamicToolPayload
+from galaxy.model import (
+    DynamicTool,
+    UserDynamicToolAssociation,
+)
+from galaxy.schema.tools import (
+    DynamicToolPayload,
+    DynamicUnprivilegedToolCreatePayload,
+)
 from galaxy.tool_util.cwl import tool_proxy
 from .base import (
     ModelManager,
@@ -51,11 +59,15 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
         return self.session().scalars(stmt).one_or_none()
 
     def get_tool_by_tool_id(self, tool_id):
-        stmt = select(DynamicTool).where(DynamicTool.tool_id == tool_id)
+        stmt = select(DynamicTool).where(DynamicTool.tool_id == tool_id, DynamicTool.public == true())
+        return self.session().scalars(stmt).one_or_none()
+
+    def get_unprivileged_tool_by_tool_id(self, user: model.User, tool_id: str):
+        stmt = self.owned_unprivileged_statement(user).where(DynamicTool.tool_id == tool_id)
         return self.session().scalars(stmt).one_or_none()
 
     def get_tool_by_id(self, object_id):
-        stmt = select(DynamicTool).where(DynamicTool.id == object_id)
+        stmt = select(DynamicTool).where(DynamicTool.id == object_id, DynamicTool.public == true())
         return self.session().scalars(stmt).one_or_none()
 
     def create_tool(self, trans: ProvidesUserContext, tool_payload: DynamicToolPayload, allow_load=True):
@@ -90,8 +102,12 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
                 if not tool_format:
                     raise exceptions.ObjectAttributeMissingException("Current tool representations require 'class'.")
 
-            tool_directory = tool_payload.tool_directory
-            tool_path = tool_payload.path if tool_payload.src == "from_path" else None
+            tool_directory: Optional[str] = None
+            tool_path: Optional[str] = None
+            if tool_payload.src == "from_path":
+                tool_directory = tool_payload.tool_directory
+                tool_path = tool_payload.path
+
             if tool_format in ("GalaxyTool", "GalaxyUserTool"):
                 tool_id = representation.get("id")
                 if not tool_id:
@@ -122,13 +138,61 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
                 active=tool_payload.active,
                 hidden=tool_payload.hidden,
                 value=representation,
+                public=True,
             )
         self.app.toolbox.load_dynamic_tool(dynamic_tool)
+        return dynamic_tool
+
+    def create_unprivileged_tool(self, user: model.User, tool_payload: DynamicUnprivilegedToolCreatePayload):
+        if not getattr(self.app.config, "enable_beta_tool_formats", False):
+            raise exceptions.ConfigDoesNotAllowException(
+                "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
+            )
+        if self.get_unprivileged_tool_by_tool_id(user, tool_payload.representation.id):
+            raise exceptions.Conflict("Tool with id already exists for your user")
+
+        dynamic_tool = self.create(
+            tool_format=tool_payload.representation.class_,
+            tool_id=tool_payload.representation.id,
+            tool_version=tool_payload.representation.version,
+            active=tool_payload.active,
+            hidden=tool_payload.hidden,
+            value=tool_payload.representation,
+            public=False,
+        )
         return dynamic_tool
 
     def list_tools(self, active=True):
         stmt = select(DynamicTool).where(DynamicTool.active == active)
         return self.session().scalars(stmt)
+
+    def list_unprivileged_tools(self, user: model.User, active=True):
+        owned_statement = self.owned_unprivileged_statement(user=user)
+        stmt = owned_statement.where(
+            DynamicTool.active == active,
+            UserDynamicToolAssociation.active == active,
+        )
+        return self.session().scalars(stmt)
+
+    def owned_unprivileged_statement(self, user: model.User):
+        return (
+            select(DynamicTool)
+            .join(UserDynamicToolAssociation, DynamicTool.id == UserDynamicToolAssociation.dynamic_tool_id)
+            .where(
+                UserDynamicToolAssociation.user_id == user.id,
+            )
+        )
+
+    def deactivate_unprivileged_tool(self, user: model.User, dynamic_tool: DynamicTool):
+        update_stmt = (
+            update(UserDynamicToolAssociation)
+            .where(
+                UserDynamicToolAssociation.user_id == user.id,
+                UserDynamicToolAssociation.dynamic_tool_id == dynamic_tool.id,
+            )
+            .values(active=False)
+        )
+        self.session().execute(update_stmt)
 
     def deactivate(self, dynamic_tool):
         self.update(dynamic_tool, {"active": False})

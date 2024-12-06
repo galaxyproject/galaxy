@@ -55,6 +55,7 @@ MINIMAL_TOOL_NO_ID = {
 }
 
 TOOL_WITH_SHELL_COMMAND = {
+    "id": "basecommand",
     "name": "Base command tool",
     "class": "GalaxyUserTool",
     "container": "busybox",
