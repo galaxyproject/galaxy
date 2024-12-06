@@ -131,7 +131,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
     def get_scheme(self) -> str:
         return "invenio"
 
-    def score_url_match(self, url: str):
+    def score_url_match(self, url: str) -> int:
         if match := self._scheme_regex.match(url):
             return match.span()[1]
         else:
@@ -191,12 +191,12 @@ class InvenioRDMFilesSource(RDMFilesSource):
         writeable = opts and opts.writeable or False
         is_root_path = path == "/"
         if is_root_path:
-            records, total_hits = self.repository.get_records(
+            records, total_hits = self.repository.get_file_containers(
                 writeable, user_context, limit=limit, offset=offset, query=query
             )
             return cast(List[AnyRemoteEntry], records), total_hits
         record_id = self.get_container_id_from_path(path)
-        files = self.repository.get_files_in_record(record_id, writeable, user_context)
+        files = self.repository.get_files_in_container(record_id, writeable, user_context)
         return cast(List[AnyRemoteEntry], files), len(files)
 
     def _create_entry(
@@ -206,7 +206,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
         opts: Optional[FilesSourceOptions] = None,
     ) -> Entry:
         public_name = self.get_public_name(user_context)
-        record = self.repository.create_draft_record(entry_data["name"], public_name, user_context=user_context)
+        record = self.repository.create_draft_container(entry_data["name"], public_name, user_context=user_context)
         return {
             "uri": self.repository.to_plugin_uri(record["id"]),
             "name": record["title"],
@@ -233,7 +233,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
         opts: Optional[FilesSourceOptions] = None,
     ):
         record_id, filename = self.parse_path(target_path)
-        self.repository.upload_file_to_draft_record(record_id, filename, native_path, user_context=user_context)
+        self.repository.upload_file_to_draft_container(record_id, filename, native_path, user_context=user_context)
 
 
 class InvenioRepositoryInteractor(RDMRepositoryInteractor):
@@ -248,7 +248,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     def to_plugin_uri(self, record_id: str, filename: Optional[str] = None) -> str:
         return f"{self.plugin.get_uri_root()}/{record_id}{f'/{filename}' if filename else ''}"
 
-    def get_records(
+    def get_file_containers(
         self,
         writeable: bool,
         user_context: OptionalUserContext = None,
@@ -257,6 +257,9 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> Tuple[List[RemoteDirectory], int]:
+        """Gets the records in the repository and returns the total count of records.
+        An Invenio "Record" is a Galaxy "Collection".
+        """
         params: Dict[str, Any] = {}
         request_url = self.records_url
         if writeable:
@@ -280,15 +283,15 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         page = (offset or 0) // size + 1
         return size, page
 
-    def get_files_in_record(
-        self, record_id: str, writeable: bool, user_context: OptionalUserContext = None
+    def get_files_in_container(
+        self, container_id: str, writeable: bool, user_context: OptionalUserContext = None
     ) -> List[RemoteFile]:
         conditionally_draft = "/draft" if writeable else ""
-        request_url = f"{self.records_url}/{record_id}{conditionally_draft}/files"
+        request_url = f"{self.records_url}/{container_id}{conditionally_draft}/files"
         response_data = self._get_response(user_context, request_url)
-        return self._get_record_files_from_response(record_id, response_data)
+        return self._get_record_files_from_response(container_id, response_data)
 
-    def create_draft_record(
+    def create_draft_container(
         self, title: str, public_name: Optional[str] = None, user_context: OptionalUserContext = None
     ) -> RemoteDirectory:
         today = datetime.date.today().isoformat()
@@ -312,7 +315,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         record["title"] = self._get_record_title(record)
         return record
 
-    def upload_file_to_draft_record(
+    def upload_file_to_draft_container(
         self,
         record_id: str,
         filename: str,
