@@ -4,6 +4,7 @@ import { computed, ref, watch } from "vue";
 import { type ComputedRef } from "vue";
 
 import { type components, GalaxyApi } from "@/api";
+import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 const VegaWrapper = () => import("./VegaWrapper.vue");
@@ -72,6 +73,8 @@ function metricToSpecData(
         return {
             y,
             x: itemToX(item),
+            job_id: item.job_id,
+            tooltip: "click to view job",
         };
     });
     return {
@@ -109,6 +112,10 @@ function itemToSpec(item: boxplotData) {
                 calculate: "random() - 0.5",
                 as: "random_jitter",
             },
+            {
+                calculate: "'" + getAppRoot() + "jobs/' + datum.job_id + '/view'",
+                as: "url",
+            },
         ],
         layer: [
             {
@@ -141,6 +148,8 @@ function itemToSpec(item: boxplotData) {
                         scale: { zero: false },
                         title: item.y_title,
                     },
+                    tooltip: { field: "tooltip", type: "nominal" },
+                    href: { field: "url", type: "nominal" },
                 },
                 width: "container",
             },
