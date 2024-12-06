@@ -72,8 +72,23 @@ galaxy:
         each individual file above. If there is only one extension, Galaxy will attempt to set that as the
         extension for each file.
 
-
   jobs:
+    metrics:
+      cores: |
+        This is how many [cores](https://en.wikipedia.org/wiki/Central_processing_unit) (or distinct central processing units (CPUs)) are
+        allocated to run the job for the tool. This value is generally configured for the tool by the Galaxy administrator. This value
+        does not guarantee how many cores the job actually used - the job may have used more and less based on how Galaxy is configured
+        and how the tool is programmed.
+
+      walltime: |
+        This is estimate of the length of time the job ran created by recording the start and stop of the job in the job script
+        created for the tool execution and subtracting these values. 
+
+      allocated_core_time: |
+        This is the number of cores Galaxy believes is allocated for the job times the estimated walltime for the job. This can be thought
+        of as scaling the runtime/walltime metric by the number of cores allocated - when purchasing compute time per core hour or consuming
+        compute time from a compute center's allocation - this is likely to be a more interesting and useful number than the walltime.
+
     states:
       # upload, waiting, failed, paused, deleting, deleted, stop, stopped, skipped.
       ok: |
