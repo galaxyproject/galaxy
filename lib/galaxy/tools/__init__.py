@@ -2229,7 +2229,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         tags = getattr(request_context, "tags", [])
         if tags:
             tag_handler = self.app.tag_handler
-            for output_name, hda in execution_tracker.output_datasets:
+            for _, hda in execution_tracker.output_datasets:
                 tag_handler.apply_item_tags(user=trans.user, item=hda, tags_str=",".join(tags))
 
         # Raise an exception if there were jobs to execute and none of them were submitted,
