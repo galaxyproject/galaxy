@@ -85,6 +85,14 @@
                         :options="bundleOptions"
                         title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
                 </div>
+                <FormElement
+                    id="tags"
+                    :attributes="{ optional: true }"
+                    :value="tags"
+                    title="Output tags"
+                    type="tags"
+                    help="Adding tags to output datasets will help you organize and find them later."
+                    @input="updateTags" />
             </template>
             <template v-slot:header-buttons>
                 <ButtonSpinner
@@ -97,18 +105,6 @@
                     @onClick="onExecute(config, currentHistoryId)" />
             </template>
             <template v-slot:buttons>
-                <div class="tagging-section">
-                    <label><b>Add tags for output datasets</b></label>
-                    <div class="tags-container">
-                        <StatelessTags
-                            clickable
-                            :value="tags"
-                            :disabled="disabled || showExecuting"
-                            :max-visible-tags="8"
-                            @input="updateTags"
-                        />
-                    </div>
-                </div>
                 <ButtonSpinner
                     title="Run Tool"
                     class="mt-3 mb-3"
@@ -145,7 +141,6 @@ import ToolCard from "./ToolCard";
 import { allowCachedJobs } from "./utilities";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 export default {
     components: {
@@ -158,7 +153,6 @@ export default {
         ToolEntryPoints,
         ToolRecommendation,
         Heading,
-        StatelessTags,
     },
     props: {
         id: {
@@ -358,7 +352,7 @@ export default {
                 tool_version: this.formConfig.version,
                 inputs: {
                     ...this.formData,
-                    tags: this.tags, 
+                    tags: this.tags,
                 },
             };
             if (this.useEmail) {
