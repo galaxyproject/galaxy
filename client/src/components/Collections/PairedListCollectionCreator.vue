@@ -876,9 +876,9 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         {{
                             localize(
                                 [
-                                    "Collections of paired datasets are ordered lists of dataset pairs (often forward and reverse reads). ",
-                                    "These collections can be passed to tools and workflows in order to have analyses done on each member of ",
-                                    "the entire group. This interface allows you to create a collection, choose which datasets are paired, ",
+                                    "Lists of pairs are an ordered list of individual dataset paired together in their own collection (often forward and reverse reads). ",
+                                    "These lists can be passed to tools and workflows in order to have analyses done on each member of ",
+                                    "the entire group. This interface allows you to create such a list of paired datasets, choose which datasets are paired, ",
                                     "and re-order the final collection.",
                                 ].join("")
                             )
