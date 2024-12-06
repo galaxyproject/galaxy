@@ -61,7 +61,10 @@ class DataverseDataset(TypedDict):
 AccessStatus = Literal["public", "restricted"]
 
 class DataverseRDMFilesSource(RDMFilesSource):
-    """A files source for Dataverse turn-key research data management repository."""
+    """A files source for Dataverse turn-key research data management repository.
+    
+    In Dataverse a "Dataset" represents what we refer to as container in the rdm base class
+    """
 
     plugin_type = "dataverse"
     supports_pagination = True
@@ -74,14 +77,14 @@ class DataverseRDMFilesSource(RDMFilesSource):
     def get_scheme(self) -> str:
         return "dataverse"
     
-    # TODO: Test this method
-    def score_url_match(self, url: str):
-        if match := self._scheme_regex.match(url):
-            return match.span()[1]
-        else:
-            return 0
-
-    # TODO: Test this method    
+    # TODO: Maybe we dont need this
+    # def score_url_match(self, url: str) ->
+    #     if match := self._scheme_regex.match(url):
+    #         return match.span()[1]
+    #     else:
+    #         return 0
+        
+    # TODO: Test this method (maybe we dont need it)
     def to_relative_path(self, url: str) -> str:
         legacy_uri_root = f"{DEFAULT_SCHEME}://{self.id}"
         if url.startswith(legacy_uri_root):
@@ -93,19 +96,17 @@ class DataverseRDMFilesSource(RDMFilesSource):
         return DataverseRepositoryInteractor(repository_url, self)
 
     def parse_path(self, source_path: str, container_id_only: bool = False) -> ContainerAndFileIdentifier:
-        """Parses the given source path and returns the dataset_id(=dataverse file container id) and the file_id.
+        """Parses the given source path and returns the dataset_id and the file_id. 
 
         The source path must have the format '/<dataset_id>/<file_id>'.
+        If dataset_id_only is True, the source path must have the format '/<dataset_id>' and an empty file_id will be returned.
 
         Example dataset_id: 
         doi:10.70122/FK2/DIG2DG
 
         Example file_id:
         doi:10.70122/FK2/DIG2DG/AVNCLL
-
-        If container_id_only is True, the source path must have the format '/<dataset_id>' and an empty file_id will be returned.
         """
-
         def get_error_msg(details: str) -> str:
             return f"Invalid source path: '{source_path}'. Expected format: '{expected_format}'. {details}"
 
@@ -117,7 +118,6 @@ class DataverseRDMFilesSource(RDMFilesSource):
         if container_id_only:
             if len(parts) != 3:
                 raise ValueError(get_error_msg("Please provide the dataset_id only."))
-            # concatenate the first 3 parts to get the dataset_id
             dataset_id = "/".join(parts[0:3])
             return ContainerAndFileIdentifier(dataset_id=parts[0:3], file_identifier="")
         expected_format = "/<dataset_id>/<file_id>"
@@ -142,16 +142,16 @@ class DataverseRDMFilesSource(RDMFilesSource):
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> Tuple[List[AnyRemoteEntry], int]:
-        '''In Dataverse a "dataset" is equivalent to a "record". This method lists the datasets in the repository.'''
+        """This method lists the files in the Dataverse Dataset."""
         writeable = opts and opts.writeable or False
         is_root_path = path == "/"
         if is_root_path:
-            records, total_hits = self.repository.get_records(
+            datasets, total_hits = self.repository.get_file_containers(
                 writeable, user_context, limit=limit, offset=offset, query=query
             )
-            return cast(List[AnyRemoteEntry], records), total_hits
-        record_id = self._get_dataset_id_from_path(path)
-        files = self.repository.get_files_in_record(record_id, writeable, user_context)
+            return cast(List[AnyRemoteEntry], datasets), total_hits
+        dataset_id = self._get_dataset_id_from_path(path)
+        files = self.repository.get_files_in_container(dataset_id, writeable, user_context)
         return cast(List[AnyRemoteEntry], files), len(files)
 
     def _create_entry(
@@ -170,8 +170,8 @@ class DataverseRDMFilesSource(RDMFilesSource):
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ):
-        record_id, file_id = self.parse_path(source_path)
-        self.repository.download_file_from_container(record_id, file_id, native_path, user_context=user_context)
+        dataset_id, file_id = self.parse_path(source_path)
+        self.repository.download_file_from_container(dataset_id, file_id, native_path, user_context=user_context)
 
     # TODO: Test this method
     def _write_from(
@@ -181,14 +181,16 @@ class DataverseRDMFilesSource(RDMFilesSource):
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ):
-        record_id, file_id = self.parse_path(target_path)
-        self.repository.upload_file_to_draft_record(record_id, file_id, native_path, user_context=user_context)
+        dataset_id, file_id = self.parse_path(target_path)
+        self.repository.upload_file_to_draft_dataset(dataset_id, file_id, native_path, user_context=user_context)
 
     def _get_dataset_id_from_path(self, path: str) -> str:
         # /doi:10.70122/FK2/DIG2DG => doi:10.70122/FK2/DIG2DG
         return path.lstrip("/")
     
 class DataverseRepositoryInteractor(RDMRepositoryInteractor):
+    """In Dataverse a "Dataset" represents what we refer to as container in the rdm base class"""
+
     @property
     def api_base_url(self) -> str:
         return f"{self.repository_url}/api"
@@ -199,7 +201,9 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     
     @property
     def user_datasets_url(self) -> str:
-        return f"{self.repository_url}/api/user/records"
+        # TODO fix
+        # return f"{self.repository_url}/api/user/records"
+        pass
     
     def file_access_url(self, file_id: str) -> str:
         return f"{self.api_base_url}/access/datafile/:persistentId?persistentId={file_id}"
@@ -207,10 +211,10 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     def files_of_dataset_url(self, dataset_id: str, dataset_version: str = 1.0) -> str:
         return f"{self.api_base_url}/datasets/:persistentId/versions/{dataset_version}/files?persistentId={dataset_id}"
 
-    def to_plugin_uri(self, record_id: str, filename: Optional[str] = None) -> str:
-        return f"{self.plugin.get_uri_root()}/{f'{filename}' if filename else f'{record_id}'}"
+    def to_plugin_uri(self, dataset_id: str, file_identifier: Optional[str] = None) -> str:
+        return f"{self.plugin.get_uri_root()}/{f'{file_identifier}' if file_identifier else f'{dataset_id}'}"
         
-    def get_records(
+    def get_file_containers(
         self,
         writeable: bool,
         user_context: OptionalUserContext = None,
@@ -219,8 +223,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> Tuple[List[RemoteDirectory], int]:
-        '''In Dataverse a "dataset" is equivalent to a "record" in invenio. This method lists the dataverse datasets in the repository.'''
-        # https://demo.dataverse.org/api/search?q=*&type=dataset&per_page=25&page=1&start=0
+        """Lists the Dataverse datasets in the repository."""
         request_url = self.search_url
         params: Dict[str, Any] = {}
         params["type"] = "dataset"
@@ -235,29 +238,29 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         params["sort"] = sort_by or "date" # can be     either "name" or "date"
         response_data = self._get_response(user_context, request_url, params=params)
         total_hits = response_data["data"]["total_count"]
-        return self._get_records_from_response(response_data["data"]), total_hits
+        return self._get_datasets_from_response(response_data["data"]), total_hits
 
-    def get_files_in_record(
-        self, record_id: str, writeable: bool, user_context: OptionalUserContext = None
+    def get_files_in_container(
+        self, dataset_id: str, writeable: bool, user_context: OptionalUserContext = None
     ) -> List[RemoteFile]:
-        '''In Dataverse a "file" is a equivalent to "record" in invenio. This method lists the files in a dataverse dataset.'''
+        """This method lists the files in a dataverse dataset."""
         # TODO: Handle drafts?
         # conditionally_draft = "/draft" if writeable else ""
-        # request_url = f"{self.records_url}/{record_id}{conditionally_draft}/files"
-        request_url = self.files_of_dataset_url(dataset_id=record_id)
+        # request_url = f"{self.records_url}/{dataset_id}{conditionally_draft}/files"
+        request_url = self.files_of_dataset_url(dataset_id=dataset_id)
         response_data = self._get_response(user_context, request_url)
         total_hits = response_data["totalCount"]
-        return self._get_files_from_response(record_id, response_data["data"])
+        return self._get_files_from_response(dataset_id, response_data["data"])
 
-    def create_draft_record(
+    def create_draft_container(
         self, title: str, public_name: Optional[str] = None, user_context: OptionalUserContext = None
     ) -> RemoteDirectory:
         # TODO: Implement this for Dataverse
         pass
 
-    def upload_file_to_draft_record(
+    def upload_file_to_draft_container(
         self,
-        record_id: str,
+        dataset_id: str,
         filename: str,
         file_path: str,
         user_context: OptionalUserContext = None,
@@ -278,7 +281,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         # TODO: User auth
         # if self._is_api_url(download_file_content_url):
             # pass the token as a header only when using the API
-        #     headers = self._get_request_headers(user_context)
+            # headers = self._get_request_headers(user_context)
         try:
             req = urllib.request.Request(download_file_content_url, headers=headers)
             with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
@@ -287,10 +290,10 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                     page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
                 )
         except urllib.error.HTTPError as e:
-            # TODO: We can only download files from published records for now
+            # TODO: We can only download files from published datasets for now
             if e.code in [401, 403, 404]:
                 raise Exception(
-                    f"Cannot download file '{file_identifier}' from record '{container_id}'. Please make sure the record exists and it is public."
+                    f"Cannot download file '{file_identifier}' from dataset '{container_id}'. Please make sure the dataset exists and it is public."
                 )
 
     def _get_download_file_url(self, container_id: str, file_id: str, user_context: OptionalUserContext = None):
@@ -334,26 +337,25 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         # More info: https://inveniordm.docs.cern.ch/reference/file_storage/
         return file_details["storage_class"] == "L"
 
-    def _is_draft_record(self, record_id: str, user_context: OptionalUserContext = None):
+    def _is_draft_dataset(self, dataset_id: str, user_context: OptionalUserContext = None):
         # TODO: Implement this for Dataverse
         pass
 
-    def _get_draft_record_url(self, record_id: str):
+    def _get_draft_dataset_url(self, dataset_id: str):
         # TODO: Implement this for Dataverse
         pass
 
-    def _get_draft_record(self, record_id: str, user_context: OptionalUserContext = None):
+    def _get_draft_dataset(self, dataset_id: str, user_context: OptionalUserContext = None):
         # TODO: Implement this for Dataverse
         pass
 
-    def _get_records_from_response(self, response: dict) -> List[RemoteDirectory]:
-        '''In Dataverse a "dataset" is equivalent to a "record". This method gets the datasets in the repository.'''
+    def _get_datasets_from_response(self, response: dict) -> List[RemoteDirectory]:
         datasets = response["items"]
         rval: List[RemoteDirectory] = []
         for dataset in datasets:
-            uri = self.to_plugin_uri(record_id=dataset["global_id"])
+            uri = self.to_plugin_uri(dataset_id=dataset["global_id"])
             path = self.plugin.to_relative_path(uri)
-            name = self._get_record_title(dataset)
+            name = self._get_dataset_title(dataset)
             rval.append(
                 {
                     "class": "Directory",
@@ -364,13 +366,13 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             )
         return rval
 
-    def _get_record_title(self, record: DataverseDataset) -> str:
-        title = record.get("name")
+    def _get_dataset_title(self, dataset: DataverseDataset) -> str:
+        title = dataset.get("name")
         return title or "No title"
 
-    def _get_files_from_response(self, record_id: str, response: dict) -> List[RemoteFile]:   
-        # TODO: Implement this for Dataverse 
+    def _get_files_from_response(self, dataset_id: str, response: dict) -> List[RemoteFile]:   
         
+        # TODO Do we need this for Dataverse?
         # this is used in invenio, do we need it for dataverse?
         # files_enabled = response.get("enabled", False)
         # if not files_enabled:
@@ -381,7 +383,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             dataFile = entry.get("dataFile")
             filename = dataFile.get("filename")
             persistendId = dataFile.get("persistentId")
-            uri = self.to_plugin_uri(record_id=record_id, filename=persistendId)
+            uri = self.to_plugin_uri(dataset_id=dataset_id, file_identifier=persistendId)
             path = self.plugin.to_relative_path(uri)
             rval.append(
                 {
