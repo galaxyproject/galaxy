@@ -90,11 +90,11 @@ class RDMRepositoryInteractor:
         """
         raise NotImplementedError()
 
-    def create_draft_container(
+    def create_draft_file_container(
 
         self, title: str, public_name: Optional[str] = None, user_context: OptionalUserContext = None
     ):
-        """Creates a draft container (directory) in the repository with basic metadata.
+        """Creates a draft file container in the repository with basic metadata.
 
         The metadata is usually just the title of the container and the user that created it.
         Some plugins might also provide additional metadata defaults in the user settings."""
@@ -109,7 +109,7 @@ class RDMRepositoryInteractor:
     ) -> None:
         """Uploads a file with the provided filename (from file_path) to a draft container with the given container_id.
 
-        The draft container must have been created in advance with the `create_draft_container` method.
+        The draft container must have been created in advance with the `create_draft_file_container` method.
 
         The file must exist in the file system at the given file_path.
         The user_context might be required to authenticate the user in the repository.
