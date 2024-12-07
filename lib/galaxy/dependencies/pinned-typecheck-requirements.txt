@@ -10,8 +10,8 @@ mypy==1.13.0
 mypy-boto3-s3==1.35.61
 mypy-extensions==1.0.0
 pycparser==2.22 ; platform_python_implementation != 'PyPy'
-pydantic==2.9.2
-pydantic-core==2.23.4
+pydantic==2.10.3
+pydantic-core==2.27.1
 tomli==2.1.0 ; python_full_version < '3.11'
 types-awscrt==0.23.0
 types-bleach==6.1.0.20240331

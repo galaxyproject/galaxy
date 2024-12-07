@@ -136,8 +136,8 @@ psutil==6.1.0
 pulsar-galaxy-lib==0.15.6
 pycparser==2.22
 pycryptodome==3.21.0
-pydantic==2.9.2
-pydantic-core==2.23.4
+pydantic==2.10.3
+pydantic-core==2.27.1
 pydantic-tes==0.1.5
 pydot==2.0.0
 pyeventsystem==0.1.0

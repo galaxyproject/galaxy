@@ -44,7 +44,7 @@ STEP_PARAMETERS_NORMALIZED_DESCRIPTION = "Indicates if legacy parameters are alr
 STEP_PARAMETERS_TITLE = "Legacy Step Parameters"
 STEP_PARAMETERS_DESCRIPTION = "Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead."
 ReplacementParametersField = Field(
-    {},
+    None,
     title="Replacement Parameters",
     description="Class of parameters mostly used for string replacement in PJAs. In best practice workflows, these should be replaced with input parameters",
 )
@@ -69,7 +69,7 @@ PreferredOutputsObjectStoreIdField = Field(
     description="The ID of the object store that should be used to store the marked output datasets of this workflow - Galaxy's job configuration may override this in some cases but this workflow preference will override tool and user preferences.",
 )
 ResourceParametersField = Field(
-    {},
+    None,
     title="Resource Parameters",
     description="If a workflow_resource_params_file file is defined and the target workflow is configured to consumer resource parameters, they can be specified with this parameter. See https://github.com/galaxyproject/galaxy/pull/4830 for more information.",
 )
