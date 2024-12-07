@@ -229,6 +229,24 @@
   public_name: ${user.preferences['zenodo_sandbox|public_name']}
   writable: true
 
+- type: dataverse
+  id: dataverse
+  doc: Dataverse is an open-source data repository platform designed for sharing, preserving, and managing research data, offering tools for data citation, exploration, and collaboration.
+  label: Dataverse
+  url: https://dataverse.org
+  token: ${user.user_vault.read_secret('preferences/dataverse/token')}
+  public_name: ${user.preferences['dataverse|public_name']}
+  writable: true
+
+- type: dataverse
+  id: dataverse_sandbox
+  doc: This is the sandbox instance of Dataverse. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.
+  label: Dataverse Sandbox (use only for testing purposes)
+  url: https://demo.dataverse.org
+  token: ${user.user_vault.read_secret('preferences/dataverse_sandbox/token')}
+  public_name: ${user.preferences['dataverse_sandbox|public_name']}
+  writable: true
+
 # Note for developers: you can easily set up a minimal, dockerized Onedata environment
 # using the so-called "demo-mode": https://onedata.org/#/home/documentation/topic/stable/demo-mode
 - type: onedata
