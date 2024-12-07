@@ -78,7 +78,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
     def get_scheme(self) -> str:
         return "dataverse"
     
-    # TODO: Maybe we dont need this
+    # TODO: Maybe we dont need this?
     # def score_url_match(self, url: str) ->
     #     if match := self._scheme_regex.match(url):
     #         return match.span()[1]
@@ -241,9 +241,6 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         self, dataset_id: str, writeable: bool, user_context: OptionalUserContext = None
     ) -> List[RemoteFile]:
         """This method lists the files in a dataverse dataset."""
-        # TODO: Handle drafts?
-        # conditionally_draft = "/draft" if writeable else ""
-        # request_url = f"{self.records_url}/{dataset_id}{conditionally_draft}/files"
         request_url = self.files_of_dataset_url(dataset_id=dataset_id)
         response_data = self._get_response(user_context, request_url)
         total_hits = response_data["totalCount"]
@@ -297,17 +294,8 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
 
         This method is used to download files from both published and draft datasets that are accessible by the user.
         """
-        # TODO: Implement draft feature for Dataverse
-        # is_draft_record = self._is_draft_record(container_id, user_context)
-
         download_file_content_url = self.file_access_url(file_id=file_id)
-        
-        # https://demo.dataverse.org/api/access/datafile/:persistentId?persistentId=doi:10.70122/FK2/DIG2DG/AVNCLL
-        # TODO: Implement draft feature for Dataverse
-        # if is_draft_record:
-        #    file_details_url = self._to_draft_url(file_details_url)
-        #    download_file_content_url = self._to_draft_url(download_file_content_url)
-        
+
         # file_details = self._get_response(user_context, file_details_url)
         # TODO: This is a temporary workaround from invenio for the fact that the "content" API
         # does not support downloading files from S3 or other remote storage classes.
@@ -321,28 +309,12 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     def _is_api_url(self, url: str) -> bool:
         return "/api/" in url
 
-    # TODO: Test this method
-    def _to_draft_url(self, url: str) -> str:
-        return url.replace("/files/", "/draft/files/")
-
     def _can_download_from_api(self, file_details: dict) -> bool:
         # TODO: Have a look at this problem
 
         # Only files stored locally seems to be fully supported by the API for now
         # More info: https://inveniordm.docs.cern.ch/reference/file_storage/
         return file_details["storage_class"] == "L"
-
-    def _is_draft_dataset(self, dataset_id: str, user_context: OptionalUserContext = None):
-        # TODO: Implement this for Dataverse
-        pass
-
-    def _get_draft_dataset_url(self, dataset_id: str):
-        # TODO: Implement this for Dataverse
-        pass
-
-    def _get_draft_dataset(self, dataset_id: str, user_context: OptionalUserContext = None):
-        # TODO: Implement this for Dataverse
-        pass
 
     def _get_datasets_from_response(self, response: dict) -> List[RemoteDirectory]:
         datasets = response["items"]
