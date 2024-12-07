@@ -368,8 +368,6 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     # def _get_creator_from_public_name(self, public_name: Optional[str] = None) -> Creator:  
         # pass
 
-
-    # TODO: Test this method
     def _get_response(
         self,
         user_context: OptionalUserContext,
@@ -382,7 +380,6 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         self._ensure_response_has_expected_status_code(response, 200)
         return response.json()
 
-    # TODO: Test this method
     def _get_request_headers(self, user_context: OptionalUserContext, auth_required: bool = False):
         token = self.plugin.get_authorization_token(user_context)
         headers = {"X-Dataverse-Key": f"{token}"} if token else {}
@@ -390,7 +387,6 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             self._raise_auth_required()
         return headers
 
-    # TODO: Test this method
     def _ensure_response_has_expected_status_code(self, response, expected_status_code: int):
         if response.status_code != expected_status_code:
             if response.status_code == 403:
