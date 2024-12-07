@@ -162,6 +162,13 @@ class DataverseRDMFilesSource(RDMFilesSource):
         opts: Optional[FilesSourceOptions] = None,
     ) -> Entry:
         # TODO: Implement this for Dataverse
+        # public_name = self.get_public_name(user_context)
+        # dataset = self.repository.create_draft_file_container(entry_data.name, public_name, user_context)
+        # return {
+        #     "uri": self.to_plugin_uri(dataset["global_id"]),
+        #     "name": dataset["name"],
+        #     "external_link": 'test', 
+        # }
         pass
 
     def _realize_to(
@@ -185,7 +192,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         opts: Optional[FilesSourceOptions] = None,
     ):
         dataset_id, file_id = self.parse_path(target_path)
-        self.repository.upload_file_to_draft_dataset(dataset_id, file_id, native_path, user_context=user_context)
+        self.repository.upload_file_to_draft_container(dataset_id, file_id, native_path, user_context=user_context)
 
     def _get_dataset_id_from_path(self, path: str) -> str:
         # /doi:10.70122/FK2/DIG2DG => doi:10.70122/FK2/DIG2DG
@@ -207,6 +214,9 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     
     def files_of_dataset_url(self, dataset_id: str, dataset_version: str = ':latest') -> str:
         return f"{self.api_base_url}/datasets/:persistentId/versions/{dataset_version}/files?persistentId={dataset_id}"
+    
+    def add_files_to_dataset_url(self, dataset_id: str) -> str:
+        return f"{self.api_base_url}/datasets/:persistentId/add?persistentId={dataset_id}"
 
     def to_plugin_uri(self, dataset_id: str, file_identifier: Optional[str] = None) -> str:
         return f"{self.plugin.get_uri_root()}/{f'{file_identifier}' if file_identifier else f'{dataset_id}'}"
@@ -246,10 +256,10 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         total_hits = response_data["totalCount"]
         return self._get_files_from_response(dataset_id, response_data["data"])
 
-    def create_draft_container(
+    def create_draft_file_container(
         self, title: str, public_name: Optional[str] = None, user_context: OptionalUserContext = None
     ) -> RemoteDirectory:
-        # TODO: Implement this for Dataverse
+        # TODO Implement for Dataverse, see invenio
         pass
 
     def upload_file_to_draft_container(
@@ -259,8 +269,22 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         file_path: str,
         user_context: OptionalUserContext = None,
     ):
-        # TODO: Implement this for Dataverse
-        pass
+        headers = self._get_request_headers(user_context, auth_required=True)
+
+        with open(file_path, "rb") as file:
+            files = {'file': (filename, file)}
+            # --------------------------------------------------
+            # Using a "jsonData" parameter, add optional description + file tags
+            # --------------------------------------------------
+            # params = dict(description='Blue skies!',
+            #   categories=['Lily', 'Rosemary', 'Jack of Hearts'])
+            # params_as_json_string = json.dumps(params)
+            payload = dict()
+            add_files_url = self.add_files_to_dataset_url(dataset_id)
+            response = requests.post(add_files_url, data=payload, files=files, headers=headers)
+            print(response.json())
+            print(response.status_code)
+            self._ensure_response_has_expected_status_code(response, 200)
 
     def download_file_from_container(
         self,
