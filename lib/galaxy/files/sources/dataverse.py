@@ -209,7 +209,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     def file_access_url(self, file_id: str) -> str:
         return f"{self.api_base_url}/access/datafile/:persistentId?persistentId={file_id}"
     
-    def files_of_dataset_url(self, dataset_id: str, dataset_version: str = 1.0) -> str:
+    def files_of_dataset_url(self, dataset_id: str, dataset_version: str = ':latest') -> str:
         return f"{self.api_base_url}/datasets/:persistentId/versions/{dataset_version}/files?persistentId={dataset_id}"
 
     def to_plugin_uri(self, dataset_id: str, file_identifier: Optional[str] = None) -> str:
@@ -233,7 +233,6 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             # This is not tested and assumes that drafts are never public, 
             # i.e. we automatically only get the drafts from our user
             params["fq"] = "publicationStatus:Draft"
-            request_url = self.user_records_url
         params["per_page"] = limit or DEFAULT_PAGE_LIMIT
         params["start"] = offset
         params["q"] = query or "*"
