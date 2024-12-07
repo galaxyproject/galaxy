@@ -229,7 +229,9 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         params: Dict[str, Any] = {}
         params["type"] = "dataset"
         if writeable:
-            # Only draft records owned by the user can be written to.
+            # Only draft datasets can be written to.
+            # This is not tested and assumes that drafts are never public, 
+            # i.e. we automatically only get the drafts from our user
             params["fq"] = "publicationStatus:Draft"
             request_url = self.user_records_url
         params["per_page"] = limit or DEFAULT_PAGE_LIMIT
