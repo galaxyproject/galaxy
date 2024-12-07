@@ -130,6 +130,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
     def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
         super().__init__(**kwd)
         self._scheme_regex = re.compile(rf"^{self.get_scheme()}?://{self.id}|^{DEFAULT_SCHEME}://{self.id}")
+        self.repository: InvenioRepositoryInteractor
 
     def get_scheme(self) -> str:
         return "invenio"
