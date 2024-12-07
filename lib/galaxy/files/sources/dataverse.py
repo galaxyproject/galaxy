@@ -73,6 +73,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
     def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
         super().__init__(**kwd)
         self._scheme_regex = re.compile(rf"^{self.get_scheme()}?://{self.id}|^{DEFAULT_SCHEME}://{self.id}")
+        self.repository: DataverseRepositoryInteractor
 
     def get_scheme(self) -> str:
         return "dataverse"
@@ -227,11 +228,10 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         request_url = self.search_url
         params: Dict[str, Any] = {}
         params["type"] = "dataset"
-        # if writeable:
-            # TODO: Do we need this for dataverse?
+        if writeable:
             # Only draft records owned by the user can be written to.
-            # params["is_published"] = "false"
-            # request_url = self.user_records_url
+            params["fq"] = "publicationStatus:Draft"
+            request_url = self.user_records_url
         params["per_page"] = limit or DEFAULT_PAGE_LIMIT
         params["start"] = offset
         params["q"] = query or "*"
@@ -418,7 +418,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     # TODO: Test this method
     def _get_request_headers(self, user_context: OptionalUserContext, auth_required: bool = False):
         token = self.plugin.get_authorization_token(user_context)
-        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        headers = {"X-Dataverse-key": f"{token}"} if token else {}
         if auth_required and token is None:
             self._raise_auth_required()
         return headers
