@@ -196,7 +196,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
 
     @property
     def api_base_url(self) -> str:
-        return f"{self.repository_url}/api"
+        return f"{self.repository_url}/api/v1"
 
     @property
     def search_url(self) -> str:
