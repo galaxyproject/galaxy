@@ -171,6 +171,8 @@ class DataverseRDMFilesSource(RDMFilesSource):
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ):
+        # TODO: user_context is always None here when called from a data fetch. (same problem as in invenio.py)
+        # This prevents downloading files that require authentication even if the user provided a token.
         dataset_id, file_id = self.parse_path(source_path)
         self.repository.download_file_from_container(dataset_id, file_id, native_path, user_context=user_context)
 
@@ -199,12 +201,6 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     @property
     def search_url(self) -> str:
         return f"{self.api_base_url}/search"
-    
-    @property
-    def user_datasets_url(self) -> str:
-        # TODO fix
-        # return f"{self.repository_url}/api/user/records"
-        pass
     
     def file_access_url(self, file_id: str) -> str:
         return f"{self.api_base_url}/access/datafile/:persistentId?persistentId={file_id}"
@@ -236,7 +232,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         params["per_page"] = limit or DEFAULT_PAGE_LIMIT
         params["start"] = offset
         params["q"] = query or "*"
-        params["sort"] = sort_by or "date" # can be     either "name" or "date"
+        params["sort"] = sort_by or "date" # can be either "name" or "date"
         response_data = self._get_response(user_context, request_url, params=params)
         total_hits = response_data["data"]["total_count"]
         return self._get_datasets_from_response(response_data["data"]), total_hits
@@ -279,10 +275,9 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         download_file_content_url = self._get_download_file_url(container_id, file_identifier, user_context)
         headers = {}
 
-        # TODO: User auth
-        # if self._is_api_url(download_file_content_url):
+        if self._is_api_url(download_file_content_url):
             # pass the token as a header only when using the API
-            # headers = self._get_request_headers(user_context)
+            headers = self._get_request_headers(user_context)
         try:
             req = urllib.request.Request(download_file_content_url, headers=headers)
             with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
@@ -323,7 +318,6 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
 
         return download_file_content_url
 
-    # TODO: Test this method
     def _is_api_url(self, url: str) -> bool:
         return "/api/" in url
 
@@ -419,7 +413,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     # TODO: Test this method
     def _get_request_headers(self, user_context: OptionalUserContext, auth_required: bool = False):
         token = self.plugin.get_authorization_token(user_context)
-        headers = {"X-Dataverse-key": f"{token}"} if token else {}
+        headers = {"X-Dataverse-Key": f"{token}"} if token else {}
         if auth_required and token is None:
             self._raise_auth_required()
         return headers
