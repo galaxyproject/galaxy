@@ -552,22 +552,22 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 if job_state == JOB_WAIT:
                     new_waiting_jobs.append(job.id)
                 elif job_state == JOB_INPUT_ERROR:
-                    log.info("(%d) Job unable to run: one or more inputs in error state" % job.id)
+                    log.info("(%d) Job unable to run: one or more inputs in error state", job.id)
                 elif job_state == JOB_INPUT_DELETED:
-                    log.info("(%d) Job unable to run: one or more inputs deleted" % job.id)
+                    log.info("(%d) Job unable to run: one or more inputs deleted", job.id)
                 elif job_state == JOB_READY:
                     self.dispatcher.put(self.job_wrappers.pop(job.id))
-                    log.info("(%d) Job dispatched" % job.id)
+                    log.info("(%d) Job dispatched", job.id)
                 elif job_state == JOB_DELETED:
-                    log.info("(%d) Job deleted by user while still queued" % job.id)
+                    log.info("(%d) Job deleted by user while still queued", job.id)
                 elif job_state == JOB_ADMIN_DELETED:
-                    log.info("(%d) Job deleted by admin while still queued" % job.id)
+                    log.info("(%d) Job deleted by admin while still queued", job.id)
                 elif job_state in (JOB_USER_OVER_QUOTA, JOB_USER_OVER_TOTAL_WALLTIME):
                     if job_state == JOB_USER_OVER_QUOTA:
-                        log.info("(%d) User (%s) is over quota: job paused" % (job.id, job.user_id))
+                        log.info("(%d) User (%s) is over quota: job paused", job.id, job.user_id)
                         what = "your disk quota"
                     else:
-                        log.info("(%d) User (%s) is over total walltime limit: job paused" % (job.id, job.user_id))
+                        log.info("(%d) User (%s) is over total walltime limit: job paused", job.id, job.user_id)
                         what = "your total job runtime"
 
                     job.set_state(model.Job.states.PAUSED)
@@ -580,7 +580,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                     # A more informative message is shown wherever the job state is set to error
                     pass
                 else:
-                    log.error("(%d) Job in unknown state '%s'" % (job.id, job_state))
+                    log.error("(%d) Job in unknown state '%s'", job.id, job_state)
                     new_waiting_jobs.append(job.id)
             except Exception:
                 log.exception("failure running job %d", job.id)
@@ -1277,7 +1277,7 @@ class DefaultJobDispatcher:
 
     def recover(self, job, job_wrapper):
         runner_name = (job.job_runner_name.split(":", 1))[0]
-        log.debug("recovering job %d in %s runner" % (job.id, runner_name))
+        log.debug("recovering job %d in %s runner", job.id, runner_name)
         runner = self.get_job_runner(job_wrapper)
         try:
             runner.recover(job, job_wrapper)

@@ -317,7 +317,7 @@ class PBSJobRunner(AsynchronousJobRunner):
                 pbs.pbs_disconnect(c)
                 break
             errno, text = pbs.error()
-            log.warning("(%s) pbs_submit failed (try %d/5), PBS error %d: %s" % (galaxy_job_id, tries, errno, text))
+            log.warning("(%s) pbs_submit failed (try %d/5), PBS error %d: %s", galaxy_job_id, tries, errno, text)
             time.sleep(2)
         else:
             log.error(f"({galaxy_job_id}) All attempts to submit job failed")
@@ -386,7 +386,7 @@ class PBSJobRunner(AsynchronousJobRunner):
                     else:
                         # Unhandled error, continue to monitor
                         log.info(
-                            "(%s/%s) PBS state check resulted in error (%d): %s" % (galaxy_job_id, job_id, errno, text)
+                            "(%s/%s) PBS state check resulted in error (%d): %s", galaxy_job_id, job_id, errno, text
                         )
                         new_watched.append(pbs_job_state)
                 continue

@@ -38,7 +38,7 @@ def do_split(job_wrapper):
     task_dirs = []
 
     def get_new_working_directory_name():
-        dir = os.path.join(working_directory, "task_%d" % subdir_index[0])
+        dir = os.path.join(working_directory, f"task_{subdir_index[0]}")
         subdir_index[0] = subdir_index[0] + 1
         if not os.path.exists(dir):
             os.makedirs(dir)
@@ -93,7 +93,7 @@ def do_split(job_wrapper):
         log_error = f"The type '{str(input_type)}' does not define a method for splitting files"
         log.error(log_error)
         raise
-    log.debug("do_split created %d parts" % len(task_dirs))
+    log.debug("do_split created %d parts", len(task_dirs))
     # next, after we know how many divisions there are, add the shared inputs via soft links
     for input in parent_job.input_datasets:
         if input and input.name in shared_inputs:
@@ -154,13 +154,15 @@ def do_merge(job_wrapper, task_wrappers):
                     log.debug(f"files {output_files} ")
                     if len(output_files) < len(task_dirs):
                         log.debug(
-                            "merging only %i out of expected %i files for %s"
-                            % (len(output_files), len(task_dirs), output_file_name)
+                            "merging only %i out of expected %i files for %s",
+                            len(output_files),
+                            len(task_dirs),
+                            output_file_name,
                         )
                     output_type.merge(output_files, output_file_name)
                     log.debug(f"merge finished: {output_file_name}")
                 else:
-                    msg = "nothing to merge for %s (expected %i files)" % (output_file_name, len(task_dirs))
+                    msg = f"nothing to merge for {output_file_name} (expected {len(task_dirs)} files)"
                     log.debug(msg)
                     stderr += f"{msg}\n"
             elif output in pickone_outputs:

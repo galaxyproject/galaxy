@@ -738,9 +738,10 @@ class WorkflowContentsManager(UsesAnnotations):
         )
 
         if missing_tool_tups and not workflow_update_options.allow_missing_tools:
-            errors = []
-            for missing_tool_tup in missing_tool_tups:
-                errors.append("Step %i: Requires tool '%s'." % (int(missing_tool_tup[3]) + 1, missing_tool_tup[0]))
+            errors = [
+                f"Step {int(missing_tool_tup[3]) + 1}: Requires tool '{missing_tool_tup[0]}'."
+                for missing_tool_tup in missing_tool_tups
+            ]
             raise MissingToolsException(workflow, errors)
 
         # Connect up
@@ -1107,7 +1108,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     if not isinstance(conns, list):
                         conns = [conns]
                     value_list = [
-                        "Output '%s' from Step %d." % (conn.output_name, int(conn.output_step.order_index) + 1)
+                        f"Output '{conn.output_name}' from Step {int(conn.output_step.order_index) + 1}."
                         for conn in conns
                     ]
                     value = ",".join(value_list)
@@ -1132,7 +1133,7 @@ class WorkflowContentsManager(UsesAnnotations):
                         for i in range(len(repeat_values)):
                             nested_input_dict = {}
                             index = repeat_values[i]["__index__"]
-                            nested_input_dict["title"] = "%i. %s" % (i + 1, input.title)
+                            nested_input_dict["title"] = f"{i + 1}. {input.title}"
                             try:
                                 nested_input_dict["inputs"] = do_inputs(
                                     input.inputs,

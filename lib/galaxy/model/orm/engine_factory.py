@@ -43,10 +43,7 @@ def stripwd(s):
 
 
 def pretty_stack():
-    rval = []
-    for _, fname, line, funcname, _, _ in inspect.stack()[2:]:
-        rval.append("%s:%s@%d" % (stripwd(fname), funcname, line))
-    return rval
+    return [f"{stripwd(fname)}:{funcname}@{line}" for _, fname, line, funcname, _, _ in inspect.stack()[2:]]
 
 
 def build_engine(

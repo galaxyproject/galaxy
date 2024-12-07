@@ -28,7 +28,7 @@ class ErrorCode:
 
     def __repr__(self):
         """Return object representation of this error code."""
-        return "ErrorCode[code=%d,message=%s]" % (self.code, str(self.default_error_message))
+        return f"ErrorCode[code={self.code},message={str(self.default_error_message)}]"
 
     def __int__(self):
         """Return the error code integer."""

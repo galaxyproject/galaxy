@@ -544,7 +544,7 @@ class ImgtJson(Json):
                     tax_names = []
                     for entry in json_dict:
                         if "taxonId" in entry:
-                            names = "%d: %s" % (entry["taxonId"], ",".join(entry["speciesNames"]))
+                            names = "{}: {}".format(entry["taxonId"], ",".join(entry["speciesNames"]))
                             tax_names.append(names)
                     dataset.metadata.taxon_names = tax_names
                 except Exception:

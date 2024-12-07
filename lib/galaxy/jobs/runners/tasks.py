@@ -100,7 +100,7 @@ class TaskedJobRunner(BaseJobRunner):
                     task_state = tw.get_state()
                     if model.Task.states.ERROR == task_state:
                         job_exit_code = tw.get_exit_code()
-                        log.debug("Canceling job %d: Task %s returned an error" % (tw.job_id, tw.task_id))
+                        log.debug("Canceling job %d: Task %s returned an error", tw.job_id, tw.task_id)
                         self._cancel_job(job_wrapper, task_wrappers)
                         tasks_complete = True
                         break
@@ -196,9 +196,7 @@ class TaskedJobRunner(BaseJobRunner):
             task = task_wrapper.get_task()
             task_state = task.get_state()
             if model.Task.states.QUEUED == task_state:
-                log.debug(
-                    "_cancel_job for job %d: Task %d is not running; setting state to DELETED" % (job.id, task.id)
-                )
+                log.debug("_cancel_job for job %d: Task %d is not running; setting state to DELETED", job.id, task.id)
                 task_wrapper.change_state(task.states.DELETED)
         # If a task failed, then the caller will have waited a few seconds
         # before recognizing the failure. In that time, a queued task could
@@ -209,7 +207,7 @@ class TaskedJobRunner(BaseJobRunner):
         for task_wrapper in task_wrappers:
             if model.Task.states.RUNNING == task_wrapper.get_state():
                 task = task_wrapper.get_task()
-                log.debug("_cancel_job for job %d: Stopping running task %d" % (job.id, task.id))
+                log.debug("_cancel_job for job %d: Stopping running task %d", job.id, task.id)
                 job_wrapper.app.job_manager.job_handler.dispatcher.stop(task)
 
     def _check_pid(self, pid):
@@ -226,7 +224,7 @@ class TaskedJobRunner(BaseJobRunner):
         pid = int(pid)
         log.debug(f"Stopping pid {pid}")
         if not self._check_pid(pid):
-            log.warning("_stop_pid(): %s: PID %d was already dead or can't be signaled" % (job_id, pid))
+            log.warning("_stop_pid(): %s: PID %d was already dead or can't be signaled", job_id, pid)
             return
         for sig in [15, 9]:
             try:
@@ -235,15 +233,19 @@ class TaskedJobRunner(BaseJobRunner):
                 # This warning could be bogus; many tasks are stopped with
                 # SIGTERM (signal 15), but ymmv depending on the platform.
                 log.warning(
-                    "_stop_pid(): %s: Got errno %s when attempting to signal %d to PID %d: %s"
-                    % (job_id, errno.errorcode[e.errno], sig, pid, e.strerror)
+                    "_stop_pid(): %s: Got errno %s when attempting to signal %d to PID %d: %s",
+                    job_id,
+                    errno.errorcode[e.errno],
+                    sig,
+                    pid,
+                    e.strerror,
                 )
                 return
             # TODO: If we're stopping lots of tasks, then we will want to put this
             # avoid a two-second overhead using some other asynchronous method.
             sleep(2)
             if not self._check_pid(pid):
-                log.debug("_stop_pid(): %s: PID %d successfully killed with signal %d" % (job_id, pid, sig))
+                log.debug("_stop_pid(): %s: PID %d successfully killed with signal %d", job_id, pid, sig)
                 return
         else:
-            log.warning("_stop_pid(): %s: PID %d refuses to die after signaling TERM/KILL" % (job_id, pid))
+            log.warning("_stop_pid(): %s: PID %d refuses to die after signaling TERM/KILL", job_id, pid)

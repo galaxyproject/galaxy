@@ -1171,7 +1171,7 @@ ON CONFLICT
             sa_session.commit()
 
     @staticmethod
-    def user_template_environment(user):
+    def user_template_environment(user: Optional["User"]):
         """
 
         >>> env = User.user_template_environment(None)
@@ -1189,7 +1189,7 @@ ON CONFLICT
         'foo2'
         """
         if user:
-            user_id = "%d" % user.id
+            user_id = f"{user.id}"
             user_email = str(user.email)
             user_name = str(user.username)
         else:
@@ -1197,7 +1197,7 @@ ON CONFLICT
             user_id = "Anonymous"
             user_email = "Anonymous"
             user_name = "Anonymous"
-        environment = {}
+        environment: Dict[str, Any] = {}
         environment["__user__"] = user
         environment["__user_id__"] = environment["userId"] = user_id
         environment["__user_email__"] = environment["userEmail"] = user_email
@@ -1205,7 +1205,7 @@ ON CONFLICT
         return environment
 
     @staticmethod
-    def expand_user_properties(user, in_string):
+    def expand_user_properties(user, in_string: str):
         """ """
         environment = User.user_template_environment(user)
         return Template(in_string).safe_substitute(environment)
@@ -2381,7 +2381,7 @@ class Task(Base, JobLike, RepresentById):
         # This method is available for runners that do not want/need to
         # differentiate between the kinds of Runnable things (Jobs and Tasks)
         # that they're using.
-        log.debug("Task %d: Set external id to %s" % (self.id, task_runner_external_id))
+        log.debug("Task %d: Set external id to %s", self.id, task_runner_external_id)
         self.task_runner_external_id = task_runner_external_id
 
     def set_task_runner_external_id(self, task_runner_external_id):
@@ -8069,7 +8069,7 @@ class Workflow(Base, Dictifiable, RepresentById):
         extra = ""
         if self.stored_workflow:
             extra = f",name={self.stored_workflow.name}"
-        return "Workflow[id=%d%s]" % (self.id, extra)
+        return f"Workflow[id={self.id}{extra}]"
 
 
 InputConnDictType = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
@@ -9959,7 +9959,7 @@ class MetadataFile(Base, StorableObject, Serializable):
                 if e.errno != errno.EEXIST:
                     raise
             # Return filename inside hashed directory
-            return os.path.abspath(os.path.join(path, "metadata_%d.dat" % self.id))
+            return os.path.abspath(os.path.join(path, f"metadata_{self.id}.dat"))
 
     def _serialize(self, id_encoder, serialization_options):
         as_dict = dict_for(self)
@@ -10744,7 +10744,7 @@ class Tag(Base, RepresentById):
     parent: Mapped[Optional["Tag"]] = relationship(back_populates="children", remote_side=[id])
 
     def __str__(self):
-        return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type or -1, self.parent_id, self.name)
+        return f"Tag(id={self.id}, type={self.type or -1}, parent_id={self.parent_id}, name={self.name})"
 
 
 class ItemTagAssociation(Dictifiable):

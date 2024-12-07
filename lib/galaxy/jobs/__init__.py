@@ -2768,8 +2768,10 @@ class TaskWrapper(JobWrapper):
 
         # This may have ended too soon
         log.debug(
-            "task %s for job %d ended; exit code: %d"
-            % (self.task_id, self.job_id, tool_exit_code if tool_exit_code is not None else -256)
+            "task %s for job %d ended; exit code: %d",
+            self.task_id,
+            self.job_id,
+            tool_exit_code if tool_exit_code is not None else -256,
         )
         # default post job setup_external_metadata
         task = self.get_task()
