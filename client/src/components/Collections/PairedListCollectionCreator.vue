@@ -98,7 +98,7 @@ const canClearFilters = computed(() => {
 });
 
 const canAutoPair = computed(() => {
-    return forwardFilter.value && reverseFilter.value;
+    return forwardFilter.value && reverseFilter.value && pairableElements.value.length > 0;
 });
 
 const forwardElements = computed<HDASummary[]>(() => {
