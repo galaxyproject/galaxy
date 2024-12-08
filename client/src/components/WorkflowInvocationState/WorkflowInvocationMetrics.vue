@@ -55,12 +55,14 @@ interface boxplotData {
     x_title: string;
     y_title: string;
     values?: { x: string; y: Number }[];
+    description: string;
 }
 
 function metricToSpecData(
     jobMetrics: components["schemas"]["WorkflowJobMetric"][] | undefined,
     metricName: string,
     yTitle: string,
+    description: string,
     transform?: (param: number) => number
 ) {
     const wallclock = jobMetrics?.filter((jobMetric) => jobMetric.name == metricName);
@@ -78,29 +80,41 @@ function metricToSpecData(
         x_title: attributeToLabel[groupBy.value],
         y_title: yTitle,
         values,
+        description,
     };
 }
 
 const wallclock: ComputedRef<boxplotData> = computed(() => {
-    return metricToSpecData(jobMetrics.value, "runtime_seconds", "Runtime (in Seconds)");
+    return metricToSpecData(jobMetrics.value, "runtime_seconds", "Runtime (in Seconds)", "Boxplot of runtime");
 });
 
 const coresAllocated: ComputedRef<boxplotData> = computed(() => {
-    return metricToSpecData(jobMetrics.value, "galaxy_slots", "Cores Allocated");
+    return metricToSpecData(jobMetrics.value, "galaxy_slots", "Cores Allocated", "Boxplot of cores allocated");
 });
 
 const memoryAllocated: ComputedRef<boxplotData> = computed(() => {
-    return metricToSpecData(jobMetrics.value, "galaxy_memory_mb", "Memory Allocated (in MB)");
+    return metricToSpecData(
+        jobMetrics.value,
+        "galaxy_memory_mb",
+        "Memory Allocated (in MB)",
+        "Boxplot of memory allocated"
+    );
 });
 
 const peakMemory: ComputedRef<boxplotData> = computed(() => {
-    return metricToSpecData(jobMetrics.value, "memory.peak", "Max memory usage recorded (in MB)", (v) => v / 1024 ** 2);
+    return metricToSpecData(
+        jobMetrics.value,
+        "memory.peak",
+        "Max memory usage recorded (in MB)",
+        "Boxplot of peak memory consumed",
+        (v) => v / 1024 ** 2
+    );
 });
 
 function itemToSpec(item: boxplotData) {
     const spec: VisualizationSpec = {
         $schema: "https://vega.github.io/schema/vega-lite/v5.json",
-        description: "A boxplot with jittered points.",
+        description: item.description,
         data: {
             values: item.values!,
         },
