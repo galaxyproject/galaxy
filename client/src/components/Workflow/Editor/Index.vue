@@ -47,11 +47,14 @@
                     workflow
                     :module-sections="moduleSections"
                     :data-managers="dataManagers"
-                    :editor-workflows="workflows"
                     @onInsertTool="onInsertTool"
                     @onInsertModule="onInsertModule"
                     @onInsertWorkflow="onInsertWorkflow"
                     @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+                <InputPanel
+                    v-if="isActiveSideBar('workflow-editor-inputs')"
+                    :inputs="inputs"
+                    @insertModule="onInsertModule" />
                 <WorkflowLint
                     v-else-if="isActiveSideBar('workflow-best-practices')"
                     :untyped-parameters="parameters"
@@ -211,6 +214,7 @@ import { InsertStepAction, useStepActions } from "./Actions/stepActions";
 import { CopyIntoWorkflowAction, SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { useActivityLogic, useSpecialWorkflowActivities, workflowEditorActivities } from "./modules/activities";
+import { getWorkflowInputs } from "./modules/inputs";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
@@ -226,6 +230,7 @@ import WorkflowAttributes from "./WorkflowAttributes.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
+import InputPanel from "@/components/Panels/InputPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
@@ -248,6 +253,7 @@ export default {
         UndoRedoStack,
         WorkflowPanel,
         NodeInspector,
+        InputPanel,
     },
     props: {
         workflowId: {
@@ -267,10 +273,6 @@ export default {
             required: true,
         },
         dataManagers: {
-            type: Array,
-            required: true,
-        },
-        workflows: {
             type: Array,
             required: true,
         },
@@ -473,6 +475,7 @@ export default {
         );
 
         const { confirm } = useConfirmDialog();
+        const inputs = getWorkflowInputs();
 
         return {
             id,
@@ -517,6 +520,7 @@ export default {
             isNewTempWorkflow,
             saveWorkflowTitle,
             confirm,
+            inputs,
         };
     },
     data() {
@@ -671,8 +675,8 @@ export default {
         onInsertTool(tool_id, tool_name) {
             this._insertStep(tool_id, tool_name, "tool");
         },
-        onInsertModule(module_id, module_name) {
-            this._insertStep(module_name, module_name, module_id);
+        async onInsertModule(module_id, module_name, state) {
+            this._insertStep(module_name, module_name, module_id, state);
         },
         onInsertWorkflow(workflow_id, workflow_name) {
             this._insertStep(workflow_id, workflow_name, "subworkflow");
@@ -921,7 +925,7 @@ export default {
                 this._loadCurrent(this.id, version);
             }
         },
-        _insertStep(contentId, name, type) {
+        async _insertStep(contentId, name, type, state) {
             const action = new InsertStepAction(this.stepStore, this.stateStore, {
                 contentId,
                 name,
@@ -932,22 +936,24 @@ export default {
             this.undoRedoStore.applyAction(action);
             const stepData = action.getNewStepData();
 
-            getModule({ name, type, content_id: contentId }, stepData.id, this.stateStore.setLoadingState).then(
-                (response) => {
-                    const updatedStep = {
-                        ...stepData,
-                        tool_state: response.tool_state,
-                        inputs: response.inputs,
-                        outputs: response.outputs,
-                        config_form: response.config_form,
-                    };
-
-                    this.stepStore.updateStep(updatedStep);
-                    action.updateStepData = updatedStep;
-
-                    this.stateStore.activeNodeId = stepData.id;
-                }
+            const response = await getModule(
+                { name, type, content_id: contentId, tool_state: state },
+                stepData.id,
+                this.stateStore.setLoadingState
             );
+
+            const updatedStep = {
+                ...stepData,
+                tool_state: response.tool_state,
+                inputs: response.inputs,
+                outputs: response.outputs,
+                config_form: response.config_form,
+            };
+
+            this.stepStore.updateStep(updatedStep);
+            action.updateStepData = updatedStep;
+
+            this.stateStore.activeNodeId = stepData.id;
         },
         async _loadEditorData(data) {
             if (data.name !== undefined) {

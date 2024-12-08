@@ -13,6 +13,7 @@ import {
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { watchImmediate } from "@vueuse/core";
+import { faDiagramNext } from "font-awesome-6";
 import { computed, type Ref } from "vue";
 
 import { type Activity, useActivityStore } from "@/stores/activityStore";
@@ -25,6 +26,15 @@ export const workflowEditorActivities = [
         description: "View and edit the attributes of this workflow.",
         panel: true,
         icon: faPencilAlt,
+        visible: true,
+    },
+    {
+        title: "Inputs",
+        id: "workflow-editor-inputs",
+        tooltip: "Add input steps to your workflow",
+        description: "Add input steps to your workflow.",
+        icon: faDiagramNext,
+        panel: true,
         visible: true,
     },
     {
