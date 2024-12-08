@@ -4,9 +4,12 @@ import HelpPopover from "./HelpPopover.vue";
 interface Props {
     uri: string;
     text: string;
+    forTitle?: boolean;
 }
 
-defineProps<Props>();
+withDefaults(defineProps<Props>(), {
+    forTitle: false,
+});
 </script>
 
 <template>
@@ -18,7 +21,7 @@ defineProps<Props>();
                 }
             "
             :term="uri" />
-        <span ref="helpTarget" class="help-text">{{ text }}</span>
+        <span ref="helpTarget" class="help-text" :class="{ 'title-help-text': forTitle }">{{ text }}</span>
     </span>
 </template>
 
@@ -27,5 +30,8 @@ defineProps<Props>();
 .help-text {
     text-decoration-line: underline;
     text-decoration-style: dashed;
+}
+.title-help-text {
+    text-decoration-thickness: 1px;
 }
 </style>

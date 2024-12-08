@@ -1,17 +1,24 @@
 <template>
-    <div ref="chartContainer" class="chart"></div>
+    <div ref="chartContainer" class="chart" :style="style"></div>
 </template>
 
 <script setup lang="ts">
 import { useResizeObserver } from "@vueuse/core";
 import embed, { type VisualizationSpec } from "vega-embed";
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 export interface VisSpec {
     spec: VisualizationSpec;
+    width: string;
 }
 
-const props = defineProps<VisSpec>();
+const props = withDefaults(defineProps<VisSpec>(), {
+    width: "100%",
+});
+
+const style = computed(() => {
+    return { width: props.width };
+});
 
 const chartContainer = ref<HTMLDivElement | null>(null);
 let vegaView: any;
@@ -30,7 +37,9 @@ onMounted(embedChart);
 
 watch(props, embedChart, { immediate: true, deep: true });
 useResizeObserver(chartContainer, () => {
-    embedChart();
+    if (vegaView) {
+        vegaView.resize();
+    }
 });
 
 // Cleanup the chart when the component is unmounted
@@ -43,7 +52,5 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .chart {
-    width: 100%;
-    height: 100%;
 }
 </style>
