@@ -18470,6 +18470,8 @@ export interface components {
          *     }
          */
         WorkflowJobMetric: {
+            /** Job Id */
+            job_id: string;
             /**
              * Name
              * @description The name of the metric variable.
