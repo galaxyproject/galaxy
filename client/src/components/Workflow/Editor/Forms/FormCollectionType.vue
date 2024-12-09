@@ -23,6 +23,7 @@ const collectionTypeOptions = [
     { value: "list", label: "List of Datasets" },
     { value: "paired", label: "Dataset Pair" },
     { value: "list:paired", label: "List of Dataset Pairs" },
+    { value: "sample_sheet", label: "Sample Sheet of Datasets" },
 ];
 
 function updateValue(newValue: string | undefined) {

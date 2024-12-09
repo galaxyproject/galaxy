@@ -90,6 +90,7 @@ from typing_extensions import (
 from galaxy.schema.schema import (
     CreateToolLandingRequestPayload,
     CreateWorkflowLandingRequestPayload,
+    SampleSheetColumnDefinitions,
     ToolLandingRequest,
     WorkflowLandingRequest,
 )
@@ -418,8 +419,11 @@ class BasePopulator(metaclass=ABCMeta):
         """Perform a _get and store the result in a tempfile."""
         get_response = self._get(route, **kwd)
         get_response.raise_for_status()
+        return self._get_response_to_tempfile(get_response)
+
+    def _get_response_to_tempfile(self, response, suffix=None) -> str:
         temp_file = tempfile.NamedTemporaryFile("wb", delete=False, suffix=suffix)
-        temp_file.write(get_response.content)
+        temp_file.write(response.content)
         temp_file.flush()
         return temp_file.name
 
@@ -2971,6 +2975,17 @@ class BaseDatasetCollectionPopulator:
         return self.create_nested_collection(
             history_id=history_id, collection=pairs, collection_type="list:paired", name=name
         )
+
+    def download_workbook(self, column_definitions: SampleSheetColumnDefinitions) -> str:
+        url = f"sample_sheet_workbook/generate"
+        column_definitions_bytes = json.dumps(column_definitions).encode("utf-8")
+        column_definitions_b64 = base64.b64encode(column_definitions_bytes).decode("utf-8")
+        query_params = {
+            "column_definitions": column_definitions_b64,
+            "filename": "workbook.xlsx",
+        }
+        download_response = self.dataset_populator._get(url, query_params)
+        return self.dataset_populator._get_response_to_tempfile(download_response)
 
     def nested_collection_identifiers(self, history_id: str, collection_type):
         rank_types = list(reversed(collection_type.split(":")))

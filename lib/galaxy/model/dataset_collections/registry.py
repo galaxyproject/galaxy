@@ -3,12 +3,14 @@ from .types import (
     list,
     paired,
     record,
+    sample_sheet,
 )
 
 PLUGIN_CLASSES = [
     list.ListDatasetCollectionType,
     paired.PairedDatasetCollectionType,
     record.RecordDatasetCollectionType,
+    sample_sheet.SampleSheetDatasetCollectionType,
 ]
 
 

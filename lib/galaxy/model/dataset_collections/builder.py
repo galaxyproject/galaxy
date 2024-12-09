@@ -4,19 +4,31 @@ from galaxy.util.oset import OrderedSet
 from .type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 
 
-def build_collection(type, dataset_instances, collection=None, associated_identifiers=None, fields=None):
+def build_collection(
+    type,
+    dataset_instances,
+    collection=None,
+    associated_identifiers=None,
+    fields=None,
+    column_definitions=None,
+    rows=None,
+):
     """
     Build DatasetCollection with populated DatasetcollectionElement objects
     corresponding to the supplied dataset instances or throw exception if
     this is not a valid collection of the specified type.
     """
-    dataset_collection = collection or model.DatasetCollection(fields=fields)
+    dataset_collection = collection or model.DatasetCollection(fields=fields, column_definitions=column_definitions)
     associated_identifiers = associated_identifiers or set()
-    set_collection_elements(dataset_collection, type, dataset_instances, associated_identifiers, fields=fields)
+    set_collection_elements(
+        dataset_collection, type, dataset_instances, associated_identifiers, fields=fields, rows=rows
+    )
     return dataset_collection
 
 
-def set_collection_elements(dataset_collection, type, dataset_instances, associated_identifiers, fields=None):
+def set_collection_elements(
+    dataset_collection, type, dataset_instances, associated_identifiers, fields=None, rows=None
+):
     new_element_keys = OrderedSet(dataset_instances.keys()) - associated_identifiers
     new_dataset_instances = {k: dataset_instances[k] for k in new_element_keys}
     dataset_collection.element_count = dataset_collection.element_count or 0
@@ -24,7 +36,10 @@ def set_collection_elements(dataset_collection, type, dataset_instances, associa
     elements = []
     if fields == "auto":
         fields = guess_fields(dataset_instances)
-    for element in type.generate_elements(new_dataset_instances, fields=fields):
+    column_definitions = dataset_collection.column_definitions
+    for element in type.generate_elements(
+        new_dataset_instances, fields=fields, rows=rows, column_definitions=column_definitions
+    ):
         element.element_index = element_index
         add_object_to_object_session(element, dataset_collection)
         element.collection = dataset_collection
