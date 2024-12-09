@@ -372,6 +372,10 @@ function getTimingInTitle(timing: string): string {
 const timingInTitles = computed(() => {
     return getTimingInTitle(timing.value);
 });
+
+const groupByInTitles = computed(() => {
+    return attributeToLabel[groupBy.value];
+});
 </script>
 
 <template>
@@ -384,7 +388,7 @@ const timingInTitles = computed(() => {
                         <b-dropdown-item @click="timing = 'minutes'">{{ getTimingInTitle("minutes") }}</b-dropdown-item>
                         <b-dropdown-item @click="timing = 'hours'">{{ getTimingInTitle("hours") }}</b-dropdown-item>
                     </b-dropdown>
-                    <b-dropdown right text="Group By: Tool">
+                    <b-dropdown right :text="'Group By: ' + groupByInTitles">
                         <b-dropdown-item @click="groupBy = 'tool_id'">Tool</b-dropdown-item>
                         <b-dropdown-item @click="groupBy = 'step_id'">Workflow Step</b-dropdown-item>
                     </b-dropdown>
