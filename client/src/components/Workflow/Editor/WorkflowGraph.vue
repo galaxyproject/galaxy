@@ -38,6 +38,7 @@ const props = defineProps({
     showMinimap: { type: Boolean, default: true },
     showZoomControls: { type: Boolean, default: true },
     fixedHeight: { type: Boolean, default: false },
+    populatedInputs: { type: Boolean, default: false },
 });
 
 const { stateStore, stepStore } = useWorkflowStores();
@@ -198,6 +199,7 @@ defineExpose({
                     :scale="scale"
                     :readonly="readonly"
                     :is-invocation="props.isInvocation"
+                    :populated-inputs="props.populatedInputs"
                     @pan-by="panBy"
                     @stopDragging="onStopDragging"
                     @onDragConnector="onDragConnector"
