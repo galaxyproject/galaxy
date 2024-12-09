@@ -12,7 +12,10 @@
         :collapsed-disable-icon="collapsedDisableIcon"
         :on-change="onChange"
         :on-change-form="onChangeForm"
-        :workflow-building-mode="workflowBuildingMode" />
+        :workflow-building-mode="workflowBuildingMode"
+        :active-node-id="activeNodeId"
+        :sync-with-graph="syncWithGraph"
+        @update:active-node-id="($event) => $emit('update:active-node-id', $event)" />
 </template>
 
 <script>
@@ -87,6 +90,14 @@ export default {
             default: false,
         },
         allowEmptyValueOnRequiredInput: {
+            type: Boolean,
+            default: false,
+        },
+        activeNodeId: {
+            type: Number,
+            default: null,
+        },
+        syncWithGraph: {
             type: Boolean,
             default: false,
         },
