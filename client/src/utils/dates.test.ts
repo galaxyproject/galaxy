@@ -1,12 +1,14 @@
+import MockDate from "timezone-mock";
+
 import { formatGalaxyPrettyDateString, galaxyTimeToDate, localizeUTCPretty } from "./dates";
 
 describe("dates.ts", () => {
     beforeEach(() => {
-        process.env.TZ = "America/New_York";
+        MockDate.register("Etc/GMT+4");
     });
 
     afterEach(() => {
-        delete process.env.TZ;
+        MockDate.unregister();
     });
 
     describe("galaxyTimeToDate", () => {
