@@ -12,6 +12,7 @@ from galaxy.schema.credentials import (
     CredentialsListResponse,
     CredentialsPayload,
     DeleteCredentialsResponse,
+    UpdateCredentialsPayload,
     UserCredentialsListResponse,
     VerifyCredentialsResponse,
 )
@@ -90,17 +91,17 @@ class FastAPICredentials:
         return self.service.provide_credential(trans, user_id, payload)
 
     @router.put(
-        "/api/users/{user_id}/credentials/{credentials_id}",
+        "/api/users/{user_id}/credentials/{user_credentials_id}",
         summary="Updates credentials for a specific secret/variable",
     )
     def update_credential(
         self,
         user_id: UserIdPathParam,
-        credentials_id: DecodedDatabaseIdField,
-        payload: CredentialsPayload,
+        user_credentials_id: DecodedDatabaseIdField,
+        payload: UpdateCredentialsPayload,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> CredentialsListResponse:
-        return self.service.update_credential(trans, user_id, credentials_id, payload)
+        return self.service.update_credential(trans, user_id, user_credentials_id, payload)
 
     @router.delete(
         "/api/users/{user_id}/credentials/{user_credentials_id}",

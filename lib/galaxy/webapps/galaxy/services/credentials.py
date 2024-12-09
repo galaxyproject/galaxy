@@ -17,6 +17,7 @@ from galaxy.schema.credentials import (
     CredentialsListResponse,
     CredentialsPayload,
     DeleteCredentialsResponse,
+    UpdateCredentialsPayload,
     UserCredentialsListResponse,
     VerifyCredentialsResponse,
 )
@@ -90,11 +91,11 @@ class CredentialsService:
         self,
         trans: ProvidesUserContext,
         user_id: UserIdPathParam,
-        credentials_id: DecodedDatabaseIdField,
-        payload: CredentialsPayload,
+        user_credentials_id: DecodedDatabaseIdField,
+        payload: UpdateCredentialsPayload,
     ) -> CredentialsListResponse:
         """Updates credentials for a specific secret/variable."""
-        return self._create_user_credential(trans, user_id, payload, credentials_id)
+        return self._update_user_credential(trans, user_id, user_credentials_id, payload)
 
     def delete_service_credentials(
         self,
@@ -184,12 +185,50 @@ class CredentialsService:
             for credential in credentials_list
         ]
 
+    def _update_user_credential(
+        self,
+        trans: ProvidesUserContext,
+        user_id: UserIdPathParam,
+        user_credential_id: DecodedDatabaseIdField,
+        payload: UpdateCredentialsPayload,
+    ) -> CredentialsListResponse:
+        user_credentials, credentials_dict = self._user_credentials(
+            trans, user_id, user_credentials_id=user_credential_id
+        )
+        user_credential = user_credentials[0] if user_credentials else None
+        if not user_credential:
+            raise exceptions.ObjectNotFound(f"User credential {user_credential_id} not found.", type="error")
+        db_credentials = sum(credentials_dict.values(), [])
+        session = trans.sa_session
+        for credential in payload.root:
+            existing_credential = next(
+                (cred for cred in db_credentials if cred.id == credential.id),
+                None,
+            )
+            if not existing_credential:
+                raise exceptions.ObjectNotFound(f"Credential {credential.id} not found.", type="error")
+
+            if existing_credential.type == "secret":
+                user_vault = UserVaultWrapper(self._app.vault, trans.user)
+                user_vault.write_secret(
+                    f"{user_credential.service_reference}|{existing_credential.name}", credential.value
+                )
+            elif existing_credential.type == "variable":
+                existing_credential.value = credential.value
+            session.add(existing_credential)
+        with transaction(session):
+            session.commit()
+        return CredentialsListResponse(
+            service_reference=user_credential.service_reference,
+            user_credentials_id=user_credential_id,
+            credentials=self._credentials_response(db_credentials),
+        )
+
     def _create_user_credential(
         self,
         trans: ProvidesUserContext,
         user_id: UserIdPathParam,
         payload: CredentialsPayload,
-        credentials_id: Optional[DecodedDatabaseIdField] = None,
     ) -> CredentialsListResponse:
         service_reference = payload.service_reference
         user_credentials_list, credentials_dict = self._user_credentials(
@@ -208,34 +247,28 @@ class CredentialsService:
             session.flush()
 
         user_credential_id = user_credential.id
-
+        db_credentials = credentials_dict.get(service_reference, [])
         provided_credentials_list: List[Credentials] = []
         for credential_payload in payload.credentials:
             credential_name = credential_payload.name
             credential_type = credential_payload.type
             credential_value = credential_payload.value
 
-            credential = next(
-                (
-                    cred
-                    for sref, creds in credentials_dict.items()
-                    if sref == service_reference
-                    for cred in creds
-                    if cred.name == credential_name and cred.type == credential_type
-                ),
+            existing_credential = next(
+                (cred for cred in db_credentials if cred.name == credential_name and cred.type == credential_type),
                 None,
             )
-
-            if not credential:
-                credential = Credentials(
-                    user_credentials_id=user_credential_id,
-                    name=credential_name,
-                    type=credential_type,
-                )
-            elif not credentials_id:
+            if existing_credential:
                 raise exceptions.RequestParameterInvalidException(
                     f"Credential {service_reference}|{credential_name} already exists.", type="error"
                 )
+
+            credential = Credentials(
+                user_credentials_id=user_credential_id,
+                name=credential_name,
+                type=credential_type,
+            )
+
             if credential_type == "secret":
                 user_vault = UserVaultWrapper(self._app.vault, trans.user)
                 user_vault.write_secret(f"{service_reference}|{credential_name}", credential_value)
