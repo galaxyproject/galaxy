@@ -1,5 +1,6 @@
 import json
 import logging
+from dataclasses import dataclass
 from datetime import (
     date,
     datetime,
@@ -11,6 +12,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
 )
 
@@ -50,14 +52,20 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.datasets import DatasetManager
-from galaxy.managers.hdas import HDAManager
+from galaxy.managers.hdas import (
+    dereference_input,
+    HDAManager,
+)
+from galaxy.managers.histories import HistoryManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.managers.users import UserManager
 from galaxy.model import (
     ImplicitCollectionJobs,
     ImplicitCollectionJobsJobAssociation,
     Job,
     JobMetricNumeric,
     JobParameter,
+    ToolRequest,
     User,
     Workflow,
     WorkflowInvocation,
@@ -75,8 +83,23 @@ from galaxy.schema.schema import (
     JobIndexQueryPayload,
     JobIndexSortByEnum,
 )
+from galaxy.schema.tasks import (
+    MaterializeDatasetInstanceTaskRequest,
+    QueueJobs,
+)
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import (
+    MinimalManagerApp,
+    StructuredApp,
+)
+from galaxy.tool_util.parameters import (
+    DataRequestInternalHda,
+    DataRequestUri,
+    dereference,
+    RequestInternalDereferencedToolState,
+    RequestInternalToolState,
+)
+from galaxy.tools import Tool
 from galaxy.tools._types import (
     ToolStateDumpedToJsonInternalT,
     ToolStateJobInstancePopulatedT,
@@ -92,6 +115,7 @@ from galaxy.util.search import (
     parse_filters_structured,
     RawTextTerm,
 )
+from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -144,6 +168,8 @@ class JobManager:
         workflow_id = payload.workflow_id
         invocation_id = payload.invocation_id
         implicit_collection_jobs_id = payload.implicit_collection_jobs_id
+        tool_request_id = payload.tool_request_id
+
         search = payload.search
         order_by = payload.order_by
 
@@ -160,6 +186,7 @@ class JobManager:
 
         def add_workflow_jobs():
             wfi_step = select(WorkflowInvocationStep)
+
             if workflow_id is not None:
                 wfi_step = (
                     wfi_step.join(WorkflowInvocation).join(Workflow).where(Workflow.stored_workflow_id == workflow_id)
@@ -174,6 +201,7 @@ class JobManager:
                 ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id
                 == wfi_step_sq.c.implicit_collection_jobs_id,
             )
+
             # Ensure the result is models, not tuples
             sq = stmt1.union(stmt2).subquery()
             # SQLite won't recognize Job.foo as a valid column for the ORDER BY clause due to the UNION clause, so we'll use the subquery `columns` collection (`sq.c`).
@@ -250,6 +278,9 @@ class JobManager:
 
         if history_id is not None:
             stmt = stmt.where(Job.history_id == history_id)
+
+        if tool_request_id is not None:
+            stmt = stmt.filter(model.Job.tool_request_id == tool_request_id)
 
         order_by_columns = Job
         if workflow_id or invocation_id:
@@ -1250,3 +1281,102 @@ def get_jobs_to_check_at_startup(session: galaxy_scoped_session, track_jobs_in_d
 def get_job(session, *where_clauses):
     stmt = select(Job).where(*where_clauses).limit(1)
     return session.scalars(stmt).first()
+
+
+@dataclass
+class DereferencedDatasetPair:
+    hda: model.HistoryDatasetAssociation
+    request: DataRequestUri
+
+
+class JobSubmitter:
+    def __init__(
+        self,
+        history_manager: HistoryManager,
+        user_manager: UserManager,
+        hda_manager: HDAManager,
+        app: MinimalManagerApp,
+    ):
+        self.history_manager = history_manager
+        self.user_manager = user_manager
+        self.hda_manager = hda_manager
+        self.app = app
+
+    def materialize_request_for(
+        self, trans: WorkRequestContext, hda: model.HistoryDatasetAssociation
+    ) -> MaterializeDatasetInstanceTaskRequest:
+        return MaterializeDatasetInstanceTaskRequest(
+            user=trans.async_request_user,
+            history_id=trans.history.id,
+            source="hda",
+            content=hda.id,
+        )
+
+    def dereference(
+        self, trans: WorkRequestContext, tool: Tool, request: QueueJobs, tool_request: ToolRequest
+    ) -> Tuple[RequestInternalDereferencedToolState, List[DereferencedDatasetPair]]:
+        new_hdas: List[DereferencedDatasetPair] = []
+
+        def dereference_callback(data_request: DataRequestUri) -> DataRequestInternalHda:
+            # a deferred dataset corresponding to request
+            hda = dereference_input(trans, data_request)
+            new_hdas.append(DereferencedDatasetPair(hda, data_request))
+            return DataRequestInternalHda(id=hda.id)
+
+        tool_state = RequestInternalToolState(tool_request.request)
+        return dereference(tool_state, tool, dereference_callback), new_hdas
+
+    def queue_jobs(self, tool: Tool, request: QueueJobs) -> None:
+        tool_request: ToolRequest = self._tool_request(request.tool_request_id)
+        sa_session = self.app.model.context
+        try:
+            request_context = self._context(tool_request, request)
+            target_history = request_context.history
+            use_cached_jobs = request.use_cached_jobs
+            rerun_remap_job_id = request.rerun_remap_job_id
+            tool_state: RequestInternalDereferencedToolState
+            new_hdas: List[DereferencedDatasetPair]
+            tool_state, new_hdas = self.dereference(request_context, tool, request, tool_request)
+            to_materialize_list: List[DereferencedDatasetPair] = [p for p in new_hdas if not p.request.deferred]
+            for to_materialize in to_materialize_list:
+                materialize_request = self.materialize_request_for(request_context, to_materialize.hda)
+                # API dataset materialization is immutable and produces new datasets
+                # here we just created the datasets - lets just materialize them in place
+                # and avoid extra and confusing input copies
+                self.hda_manager.materialize(materialize_request, in_place=True)
+            tool.handle_input_async(
+                request_context,
+                tool_request,
+                tool_state,
+                history=target_history,
+                use_cached_job=use_cached_jobs,
+                rerun_remap_job_id=rerun_remap_job_id,
+            )
+            tool_request.state = ToolRequest.states.SUBMITTED
+            sa_session.add(tool_request)
+            with transaction(sa_session):
+                sa_session.commit()
+        except Exception as e:
+            log.exception("Problem here....")
+            tool_request.state = ToolRequest.states.FAILED
+            tool_request.state_message = str(e)
+            sa_session.add(tool_request)
+            with transaction(sa_session):
+                sa_session.commit()
+
+    def _context(self, tool_request: ToolRequest, request: QueueJobs) -> WorkRequestContext:
+        user = self.user_manager.by_id(request.user.user_id)
+        target_history = tool_request.history
+        trans = WorkRequestContext(
+            self.app,
+            user,
+            history=target_history,
+        )
+        return trans
+
+    def _tool_request(self, tool_request_id: int) -> ToolRequest:
+        sa_session = self.app.model.context
+        tool_request: ToolRequest = cast(ToolRequest, sa_session.query(ToolRequest).get(tool_request_id))
+        if tool_request is None:
+            raise Exception(f"Problem fetching request with ID {tool_request_id}")
+        return tool_request
