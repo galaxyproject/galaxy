@@ -5193,23 +5193,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/{user_id}/credentials/{credentials_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Updates credentials for a specific secret/variable */
-        put: operations["update_credential_api_users__user_id__credentials__credentials_id__put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/users/{user_id}/credentials/{user_credentials_id}": {
         parameters: {
             query?: never;
@@ -5219,7 +5202,8 @@ export interface paths {
         };
         /** Verifies if credentials have been provided for a specific service */
         get: operations["verify_service_credentials_api_users__user_id__credentials__user_credentials_id__get"];
-        put?: never;
+        /** Updates credentials for a specific secret/variable */
+        put: operations["update_credential_api_users__user_id__credentials__user_credentials_id__put"];
         post?: never;
         /** Deletes all credentials for a specific service */
         delete: operations["delete_service_credentials_api_users__user_id__credentials__user_credentials_id__delete"];
@@ -21521,6 +21505,28 @@ export interface components {
             action_type: "update_creator";
             /** Creator */
             creator?: unknown;
+        };
+        /** UpdateCredentialPayload */
+        UpdateCredentialPayload: {
+            /**
+             * ID
+             * @description ID of the credential
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Value
+             * @description Value of the credential
+             */
+            value: string;
+        };
+        /** UpdateCredentialsPayload */
+        UpdateCredentialsPayload: {
+            /**
+             * Update Credentials
+             * @description List of credentials to update
+             */
+            root: components["schemas"]["UpdateCredentialPayload"][];
         };
         /** UpdateDatasetPermissionsPayload */
         UpdateDatasetPermissionsPayload: {
@@ -40208,55 +40214,6 @@ export interface operations {
             };
         };
     };
-    update_credential_api_users__user_id__credentials__credentials_id__put: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path: {
-                /** @description The ID of the user. */
-                user_id: string;
-                credentials_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CredentialsPayload"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CredentialsListResponse"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
     verify_service_credentials_api_users__user_id__credentials__user_credentials_id__get: {
         parameters: {
             query?: never;
@@ -40280,6 +40237,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VerifyCredentialsResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_credential_api_users__user_id__credentials__user_credentials_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+                user_credentials_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCredentialsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CredentialsListResponse"];
                 };
             };
             /** @description Request Error */
