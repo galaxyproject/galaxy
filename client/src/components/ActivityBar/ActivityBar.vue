@@ -189,6 +189,10 @@ function setActiveSideBar(key: string) {
     activityStore.toggledSideBar = key;
 }
 
+const canDrag = computed(() => {
+    return isActiveSideBar("settings");
+});
+
 defineExpose({
     isActiveSideBar,
     setActiveSideBar,
@@ -209,6 +213,7 @@ defineExpose({
                 <draggable
                     :list="activities"
                     :class="{ 'activity-popper-disabled': isDragging }"
+                    :disabled="!canDrag"
                     :force-fallback="true"
                     chosen-class="activity-chosen-class"
                     :delay="DRAG_DELAY"
@@ -216,7 +221,10 @@ defineExpose({
                     ghost-class="activity-chosen-class"
                     @start="isDragging = true"
                     @end="isDragging = false">
-                    <div v-for="(activity, activityIndex) in activities" :key="activityIndex">
+                    <div
+                        v-for="(activity, activityIndex) in activities"
+                        :key="activityIndex"
+                        :class="{ 'can-drag': canDrag }">
                         <div v-if="activity.visible && (activity.anonymous || !isAnonymous)">
                             <UploadItem
                                 v-if="activity.id === 'upload'"
@@ -379,5 +387,12 @@ defineExpose({
 .vertical-overflow {
     overflow-y: auto;
     overflow-x: hidden;
+}
+
+.can-drag {
+    border-radius: 12px;
+    border: 1px;
+    outline: dashed darkgray;
+    outline-offset: -3px;
 }
 </style>

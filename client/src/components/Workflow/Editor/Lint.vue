@@ -7,26 +7,21 @@
             :okay="checkAnnotation"
             success-message="This workflow is annotated. Ideally, this helps the executors of the workflow
                     understand the purpose and usage of the workflow."
-            warning-message="This workflow is not annotated. Providing an annotation helps workflow executors
-                    understand the purpose and usage of the workflow."
+            :warning-message="bestPracticeWarningAnnotation"
             attribute-link="Annotate your Workflow."
-            @onClick="onAttributes" />
+            @onClick="onAttributes('annotation')" />
         <LintSection
             :okay="checkCreator"
             success-message="This workflow defines creator information."
-            warning-message="This workflow does not specify creator(s). This is important metadata for workflows
-                    that will be published and/or shared to help workflow executors know how to cite the
-                    workflow authors."
+            :warning-message="bestPracticeWarningCreator"
             attribute-link="Provide Creator Details."
-            @onClick="onAttributes" />
+            @onClick="onAttributes('creator')" />
         <LintSection
             :okay="checkLicense"
             success-message="This workflow defines a license."
-            warning-message="This workflow does not specify a license. This is important metadata for workflows
-                    that will be published and/or shared to help workflow executors understand how it
-                    may be used."
+            :warning-message="bestPracticeWarningLicense"
             attribute-link="Specify a License."
-            @onClick="onAttributes" />
+            @onClick="onAttributes('license')" />
         <LintSection
             success-message="Workflow parameters are using formal input parameters."
             warning-message="This workflow uses legacy workflow parameters. They should be replaced with
@@ -79,6 +74,9 @@ import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStores } from "@/composables/workflowStores";
 
 import {
+    bestPracticeWarningAnnotation,
+    bestPracticeWarningCreator,
+    bestPracticeWarningLicense,
     fixAllIssues,
     fixDisconnectedInput,
     fixUnlabeledOutputs,
@@ -135,6 +133,13 @@ export default {
         const { hasActiveOutputs } = storeToRefs(stepStore);
         return { stores, connectionStore, stepStore, hasActiveOutputs, stateStore };
     },
+    data() {
+        return {
+            bestPracticeWarningAnnotation: bestPracticeWarningAnnotation,
+            bestPracticeWarningCreator: bestPracticeWarningCreator,
+            bestPracticeWarningLicense: bestPracticeWarningLicense,
+        };
+    },
     computed: {
         showRefactor() {
             // we could be even more precise here and check the inputs and such, because
@@ -177,8 +182,9 @@ export default {
         },
     },
     methods: {
-        onAttributes() {
-            this.$emit("onAttributes");
+        onAttributes(highlight) {
+            const args = { highlight: highlight };
+            this.$emit("onAttributes", args);
         },
         onFixUntypedParameter(item) {
             if (
