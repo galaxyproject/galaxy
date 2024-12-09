@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       # Install Python 3.8 for update_lint_requirements.sh
       # Install Python 3.9 (as default) to allow `uv lock` to generate metadata for rucio-clients
       - uses: actions/setup-python@v5
