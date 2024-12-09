@@ -2,11 +2,15 @@ from enum import Enum
 from typing import List
 
 from pydantic import (
+    BaseModel,
     Field,
     RootModel,
 )
 
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+)
 from galaxy.schema.schema import Model
 
 
@@ -87,6 +91,27 @@ class CredentialsPayload(Model):
         ...,
         title="Credentials",
         description="List of credentials",
+    )
+
+
+class UpdateCredentialPayload(Model):
+    id: DecodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="ID of the credential",
+    )
+    value: str = Field(
+        ...,
+        title="Value",
+        description="Value of the credential",
+    )
+
+
+class UpdateCredentialsPayload(BaseModel):
+    root: List[UpdateCredentialPayload] = Field(
+        ...,
+        title="Update Credentials",
+        description="List of credentials to update",
     )
 
 
