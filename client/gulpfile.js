@@ -21,6 +21,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "fits_graph_viewer",
     "fits_image_viewer",
     "hyphyvision",
+    "jmol",
     "jqplot/jqplot_bar",
     "media_player",
     "mvpapp",
