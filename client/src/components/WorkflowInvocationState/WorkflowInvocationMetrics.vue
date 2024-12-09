@@ -276,6 +276,8 @@ function itemToPieChartSpec(item: piechartData) {
                 legend: {
                     type: "symbol",
                     title: item.category_title,
+                    titleFontSize: 16,
+                    labelFontSize: 14,
                 },
             },
             tooltip: [
