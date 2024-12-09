@@ -17,7 +17,6 @@ import Heading from "@/components/Common/Heading.vue";
 
 const props = defineProps({
     workflow: { type: Boolean, default: false },
-    editorWorkflows: { type: Array, default: null },
     dataManagers: { type: Array, default: null },
     moduleSections: { type: Array, default: null },
     useSearchWorker: { type: Boolean, default: true },
@@ -199,7 +198,6 @@ watch(
             :panel-query.sync="query"
             :panel-view="currentPanelView"
             :show-advanced.sync="showAdvanced"
-            :editor-workflows="editorWorkflows"
             :data-managers="dataManagers"
             :module-sections="moduleSections"
             :use-search-worker="useSearchWorker"

@@ -750,6 +750,11 @@ workflow_editor:
       freehand_comment: ".freehand-workflow-comment"
       freehand_path: ".freehand-workflow-comment path"
       delete: "button[title='Delete comment']"
+  inputs:
+    selectors:
+      activity_button: "#activity-workflow-editor-inputs"
+      activity_panel: ".activity-panel[data-description='Inputs']"
+      input: ".workflow-input-button[data-id='${id}']"
   selectors:
     node_inspector: '.tool-inspector'
     node_inspector_close: ".tool-inspector [title='close']"

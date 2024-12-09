@@ -412,28 +412,38 @@ function renameElement(element: any, name: string) {
                 :history-id="props.historyId"
                 :hide-source-items="hideSourceItems"
                 :extensions="extensions"
+                collection-type="list"
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
                 @add-uploaded-files="addUploadedFiles"
                 @on-update-datatype-toggle="changeDatatypeFilter"
                 @onUpdateHideSourceItems="onUpdateHideSourceItems"
                 @clicked-create="clickedCreate">
                 <template v-slot:help-content>
-                    <!-- TODO: Update help content for case where `fromSelection` is false -->
                     <p>
                         {{
                             localize(
                                 [
-                                    "Collections of datasets are permanent, ordered lists of datasets that can be passed to tools ",
+                                    "This interface allows you to build a new Galaxy list of datasets. ",
+                                    "A list is a type of Galaxy dataset collection that is a permanent, ordered list of datasets that can be passed to tools ",
                                     "and workflows in order to have analyses done on each member of the entire group. This interface allows ",
-                                    "you to create a collection and re-order the final collection.",
+                                    "you to create and re-order a list of datasets. The datasets in a Galaxy collection have an identifier that is preserved accross ",
+                                    "tool executions and serves as a form of sample tracking - setting the name in this form will pick the identifier for that element ",
+                                    "of the list but will not change the dataset's actual name in Galaxy.",
                                 ].join("")
                             )
                         }}
                     </p>
 
                     <ul>
+                        <li v-if="!fromSelection">
+                            Move datsets from the "Unselected" column to the "Selected" column below to compose the list
+                            in the intended order and with the intended datasets.
+                        </li>
+                        <li v-if="!fromSelection">
+                            The filter textbox can be used to rapidly find the datasets of interest by name.
+                        </li>
                         <li>
-                            {{ localize("Rename elements in the list by clicking on") }}
+                            {{ localize("Change the identifier of elements in the list by clicking on") }}
                             <i data-target=".collection-element .name">
                                 {{ localize("the existing name") }}
                             </i>
@@ -442,13 +452,16 @@ function renameElement(element: any, name: string) {
 
                         <li>
                             {{ localize("Discard elements from the final created list by clicking on the ") }}
-                            <i data-target=".collection-element .discard">
-                                {{ localize("Discard") }}
+                            <i v-if="fromSelection" data-target=".collection-element .discard">
+                                {{ localize("Remove") }}
+                            </i>
+                            <i v-else data-target=".collection-element .discard">
+                                {{ localize("discard") }}
                             </i>
                             {{ localize("button.") }}
                         </li>
 
-                        <li>
+                        <li v-if="fromSelection">
                             {{
                                 localize(
                                     "Reorder the list by clicking and dragging elements. Select multiple elements by clicking on"
@@ -468,7 +481,7 @@ function renameElement(element: any, name: string) {
                             {{ localize("link.") }}
                         </li>
 
-                        <li>
+                        <li v-if="fromSelection">
                             {{ localize("Click ") }}
                             <i data-target=".reset">
                                 <FontAwesomeIcon :icon="faUndo" />
@@ -476,7 +489,7 @@ function renameElement(element: any, name: string) {
                             {{ localize("to begin again as if you had just opened the interface.") }}
                         </li>
 
-                        <li>
+                        <li v-if="fromSelection">
                             {{ localize("Click ") }}
                             <i data-target=".sort-items">
                                 <FontAwesomeIcon :icon="faSortAlphaDown" />

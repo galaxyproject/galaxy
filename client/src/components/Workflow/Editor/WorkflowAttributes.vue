@@ -28,7 +28,10 @@
                 </b-list-group-item>
             </b-list-group>
         </div>
-        <div id="workflow-annotation-area" class="mt-2">
+        <div
+            id="workflow-annotation-area"
+            class="mt-2"
+            :class="{ 'bg-secondary': showAnnotationHightlight, 'highlight-attribute': showAnnotationHightlight }">
             <b>Annotation</b>
             <meta itemprop="description" :content="annotationCurrent" />
             <b-textarea
@@ -36,14 +39,50 @@
                 v-model="annotationCurrent"
                 @keyup="$emit('update:annotationCurrent', annotationCurrent)" />
             <div class="form-text text-muted">These notes will be visible when this workflow is viewed.</div>
+            <b-popover
+                custom-class="best-practice-popover"
+                target="workflow-annotation"
+                boundary="window"
+                placement="right"
+                :show.sync="showAnnotationHightlight"
+                triggers="manual"
+                title="Best Practice"
+                :content="bestPracticeWarningAnnotation">
+            </b-popover>
         </div>
-        <div id="workflow-license-area" class="mt-2">
+        <div
+            id="workflow-license-area"
+            class="mt-2"
+            :class="{ 'bg-secondary': showLicenseHightlight, 'highlight-attribute': showLicenseHightlight }">
             <b>License</b>
-            <LicenseSelector :input-license="license" @onLicense="onLicense" />
+            <LicenseSelector id="license-selector" :input-license="license" @onLicense="onLicense" />
+            <b-popover
+                custom-class="best-practice-popover"
+                target="license-selector"
+                boundary="window"
+                placement="right"
+                :show.sync="showLicenseHightlight"
+                triggers="manual"
+                title="Best Practice"
+                :content="bestPracticeWarningLicense">
+            </b-popover>
         </div>
-        <div id="workflow-creator-area" class="mt-2">
+        <div
+            id="workflow-creator-area"
+            class="mt-2"
+            :class="{ 'bg-secondary': showCreatorHightlight, 'highlight-attribute': showCreatorHightlight }">
             <b>Creator</b>
-            <CreatorEditor :creators="creatorAsList" @onCreators="onCreator" />
+            <CreatorEditor id="creator-editor" :creators="creatorAsList" @onCreators="onCreator" />
+            <b-popover
+                custom-class="best-practice-popover"
+                target="creator-editor"
+                boundary="window"
+                placement="right"
+                :show.sync="showCreatorHightlight"
+                triggers="manual"
+                title="Best Practice"
+                :content="bestPracticeWarningCreator">
+            </b-popover>
         </div>
         <div class="mt-2">
             <b>Tags</b>
@@ -60,12 +99,19 @@ import { format, parseISO } from "date-fns";
 
 import { Services } from "@/components/Workflow/services";
 
+import {
+    bestPracticeWarningAnnotation,
+    bestPracticeWarningCreator,
+    bestPracticeWarningLicense,
+} from "./modules/linting";
 import { UntypedParameters } from "./modules/parameters";
 
 import LicenseSelector from "@/components/License/LicenseSelector.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import CreatorEditor from "@/components/SchemaOrg/CreatorEditor.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+
+const bestPracticeHighlightTime = 10000;
 
 export default {
     name: "WorkflowAttributes",
@@ -81,6 +127,10 @@ export default {
             required: true,
         },
         name: {
+            type: String,
+            default: null,
+        },
+        highlight: {
             type: String,
             default: null,
         },
@@ -115,11 +165,17 @@ export default {
     },
     data() {
         return {
+            bestPracticeWarningAnnotation: bestPracticeWarningAnnotation,
+            bestPracticeWarningCreator: bestPracticeWarningCreator,
+            bestPracticeWarningLicense: bestPracticeWarningLicense,
             message: null,
             messageVariant: null,
             versionCurrent: this.version,
             annotationCurrent: this.annotation,
             nameCurrent: this.name,
+            showAnnotationHightlight: false,
+            showLicenseHightlight: false,
+            showCreatorHightlight: false,
         };
     },
     computed: {
@@ -179,6 +235,36 @@ export default {
         name() {
             this.nameCurrent = this.name;
         },
+        highlight: {
+            immediate: true,
+            handler(newHighlight, oldHighlight) {
+                if (newHighlight == oldHighlight) {
+                    return;
+                }
+                if (newHighlight == "annotation") {
+                    this.showAnnotationHightlight = true;
+                    this.showCreatorHightlight = false;
+                    this.showLicenseHightlight = false;
+                    setTimeout(() => {
+                        this.showAnnotationHightlight = false;
+                    }, bestPracticeHighlightTime);
+                } else if (newHighlight == "creator") {
+                    this.showAnnotationHightlight = false;
+                    this.showCreatorHightlight = true;
+                    this.showLicenseHightlight = false;
+                    setTimeout(() => {
+                        this.showCreatorHightlight = false;
+                    }, bestPracticeHighlightTime);
+                } else if (newHighlight == "license") {
+                    this.showAnnotationHightlight = false;
+                    this.showCreatorHightlight = false;
+                    this.showLicenseHightlight = true;
+                    setTimeout(() => {
+                        this.showLicenseHightlight = false;
+                    }, bestPracticeHighlightTime);
+                }
+            },
+        },
     },
     created() {
         this.services = new Services();
@@ -211,3 +297,14 @@ export default {
     },
 };
 </script>
+
+<style>
+.highlight-attribute {
+    border: 1px outset;
+    padding: 10px;
+}
+
+.best-practice-popover {
+    max-width: 250px !important;
+}
+</style>

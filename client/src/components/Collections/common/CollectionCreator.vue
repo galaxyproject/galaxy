@@ -39,6 +39,7 @@ interface Props {
     extensions?: string[];
     extensionsToggle?: boolean;
     noItems?: boolean;
+    collectionType?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -99,6 +100,19 @@ const defaultExtension = computed(() => {
         return configOptions.value.defaultExtension || "auto";
     } else {
         return props.extensions[0];
+    }
+});
+
+const shortWhatIsBeingCreated = computed<string>(() => {
+    // plain language for what is being created
+    if (props.collectionType === "list") {
+        return "list";
+    } else if (props.collectionType === "list:paired") {
+        return "list of pairs";
+    } else if (props.collectionType == "paired") {
+        return "dataset pair";
+    } else {
+        return "collection";
     }
 });
 
@@ -222,7 +236,7 @@ watch(
                                     id="collection-name"
                                     v-model="collectionName"
                                     class="collection-name"
-                                    :placeholder="localize('Enter a name for your new collection')"
+                                    :placeholder="localize('Enter a name for your new ' + shortWhatIsBeingCreated)"
                                     size="sm"
                                     required
                                     :state="!collectionName ? false : null" />
@@ -240,7 +254,7 @@ watch(
                             variant="primary"
                             :disabled="!validInput"
                             @click="emit('clicked-create', collectionName)">
-                            {{ localize("Create collection") }}
+                            {{ localize("Create " + shortWhatIsBeingCreated) }}
                         </BButton>
                     </div>
                 </div>

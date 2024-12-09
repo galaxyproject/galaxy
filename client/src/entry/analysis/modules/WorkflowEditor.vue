@@ -7,7 +7,6 @@
         :initial-version="editorConfig.initialVersion"
         :module-sections="editorConfig.moduleSections"
         :workflow-tags="editorConfig.tags"
-        :workflows="editorConfig.workflows"
         @update:confirmation="$emit('update:confirmation', $event)" />
 </template>
 <script>
