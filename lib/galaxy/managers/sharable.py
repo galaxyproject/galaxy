@@ -335,7 +335,7 @@ class SharableModelManager(
         while importable_item_slug_exists(self.session(), item.__class__, item.user, new_slug):
             # Slug taken; choose a new slug based on count. This approach can
             # handle numerous items with the same name gracefully.
-            new_slug = "%s-%i" % (slug_base, count)
+            new_slug = f"{slug_base}-{count}"
             count += 1
 
         return new_slug

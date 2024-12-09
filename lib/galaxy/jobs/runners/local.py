@@ -171,7 +171,7 @@ class LocalJobRunner(BaseJobRunner):
             return
         pid = int(pid)
         if not check_pg(pid):
-            log.warning("stop_job(): %s: Process group %d was already dead or can't be signaled" % (job.id, pid))
+            log.warning("stop_job(): %s: Process group %d was already dead or can't be signaled", job.id, pid)
             return
         log.debug("stop_job(): %s: Terminating process group %d", job.id, pid)
         kill_pg(pid)
