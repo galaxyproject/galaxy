@@ -95,7 +95,6 @@ from galaxy.schema.schema import (
 )
 from galaxy.tool_util.client.staging import InteractorStaging
 from galaxy.tool_util.cwl.util import (
-    download_output,
     GalaxyOutput,
     guess_artifact_type,
     invocation_to_output,
@@ -110,9 +109,11 @@ from galaxy.tool_util.verify.wait import (
 )
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
+    download_to_file,
     galaxy_root_path,
     UNKNOWN,
 )
+from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.path import StrPath
 from galaxy.util.resources import resource_string
 from galaxy.util.unittest_utils import skip_if_site_down
@@ -295,6 +296,75 @@ def conformance_tests_gen(directory, filename="conformance_tests.yaml"):
             yield conformance_test
 
 
+def to_local_location(listing, location):
+    for item in listing:
+        if "basename" in item:
+            item["location"] = f"file://{os.path.join(location[len('file://'):], item['basename'])}"
+            if "listing" in item:
+                to_local_location(item["listing"], location=item["location"])
+
+
+def fix_conflicts(path):
+    # find first key that does not clash with an existing entry in targets
+    # start with entry.target + '_' + 2 and then keep incrementing
+    # the number till there is no clash
+    i = 2
+    tgt = f"{path}_{i}"
+    while os.path.exists(tgt):
+        i += 1
+        tgt = f"{path}_{i}"
+    return tgt
+
+
+def output_to_disk(output, download_folder):
+    if isinstance(output, list):
+        return [output_to_disk(item, download_folder=download_folder) for item in output]
+    if isinstance(output, dict):
+        if "secondaryFiles" in output:
+            output["secondaryFiles"] = [
+                output_to_disk(secondary, download_folder=download_folder) for secondary in output["secondaryFiles"]
+            ]
+        if "basename" in output:
+            download_path = os.path.join(download_folder, output["basename"])
+            if os.path.exists(download_path):
+                download_path = fix_conflicts(download_path)
+            if output["class"] == "Directory":
+                zip_path = f"{download_path}.zip"
+                download_to_file(output["location"], zip_path)
+                CompressedFile(zip_path).extract(download_folder)
+                os.remove(zip_path)
+            else:
+                download_to_file(output["location"], download_path)
+            output["path"] = download_path
+            output["location"] = f"file://{download_path}"
+            if "listing" in output:
+                to_local_location(output["listing"], output["location"])
+
+            return output
+        elif output.get("class") == "Directory":
+            # Directory in secondary files
+            download_folder = os.path.join(download_folder, output["location"])
+            os.makedirs(download_folder, exist_ok=True)
+            output["location"] = download_folder
+            new_listing = [
+                output_to_disk(secondary, download_folder=download_folder) for secondary in output["listing"]
+            ]
+            output["listing"] = new_listing
+            return output
+        else:
+            new_output = {}
+            for key, value in output.items():
+                if isinstance(value, dict) and "basename" in value:
+                    new_dir = os.path.join(download_folder, key)
+                    os.makedirs(new_dir, exist_ok=True)
+                    new_output[key] = output_to_disk(value, download_folder=new_dir)
+                else:
+                    new_output[key] = value
+            return new_output
+    else:
+        return output
+
+
 class CwlRun:
     def __init__(self, dataset_populator, history_id):
         self.dataset_populator = dataset_populator
@@ -343,14 +413,13 @@ class CwlRun:
             get_metadata,
             get_dataset,
             get_extra_files,
-            pseudo_location=True,
+            pseudo_location=self.dataset_populator.galaxy_interactor.api_url,
         )
         if download_folder:
-            if isinstance(output, dict) and "basename" in output:
-                download_path = os.path.join(download_folder, output["basename"])
-                download_output(galaxy_output, get_metadata, get_dataset, get_extra_files, download_path)
-                output["path"] = download_path
-                output["location"] = f"file://{download_path}"
+            return output_to_disk(
+                output,
+                download_folder=download_folder,
+            )
         return output
 
     @abstractmethod
@@ -368,6 +437,12 @@ class CwlToolRun(CwlRun):
     @property
     def job_id(self):
         return self.run_response.json()["jobs"][0]["id"]
+
+    def output(self, output_index):
+        return self.run_response.json()["outputs"][output_index]
+
+    def output_collection(self, output_index):
+        return self.run_response.json()["output_collections"][output_index]
 
     def _output_name_to_object(self, output_name):
         return tool_response_to_output(self.run_response.json(), self.history_id, output_name)
@@ -1001,6 +1076,10 @@ class BaseDatasetPopulator(BasePopulator):
                     kwds["__files"] = {}
                 kwds["__files"][key] = value
                 del inputs[key]
+
+        ir = kwds.get("inputs_representation")
+        if ir is None and "inputs_representation" in kwds:
+            del kwds["inputs_representation"]
 
         return dict(tool_id=tool_id, inputs=json.dumps(inputs), history_id=history_id, **kwds)
 
@@ -2625,7 +2704,11 @@ class CwlPopulator:
         assert_ok: bool = True,
     ):
         workflow_path, object_id = urllib.parse.urldefrag(workflow_path)
-        workflow_id = self.workflow_populator.import_workflow_from_path(workflow_path, object_id)
+        from .cwl_location_rewriter import rewrite_locations
+
+        with tempfile.NamedTemporaryFile() as temp:
+            rewrite_locations(workflow_path=workflow_path, output_path=temp.name)
+            workflow_id = self.workflow_populator.import_workflow_from_path(temp.name, object_id)
 
         request = {
             # TODO: rework tool state corrections so more of these are valid in Galaxy
@@ -2644,6 +2727,7 @@ class CwlPopulator:
         job: Optional[Dict] = None,
         test_data_directory: Optional[str] = None,
         history_id: Optional[str] = None,
+        skip_input_staging: bool = False,
         assert_ok: bool = True,
     ) -> CwlRun:
         """
@@ -2668,16 +2752,18 @@ class CwlPopulator:
                 job = yaml.safe_load(f)
         elif job is None:
             job = {}
-        _, datasets = stage_inputs(
-            self.dataset_populator.galaxy_interactor,
-            history_id,
-            job,
-            use_fetch_api=False,
-            tool_or_workflow=tool_or_workflow,
-            job_dir=test_data_directory,
-        )
-        if datasets:
-            self.dataset_populator.wait_for_history(history_id=history_id, assert_ok=True)
+        if not skip_input_staging:
+            _, datasets = stage_inputs(
+                self.dataset_populator.galaxy_interactor,
+                history_id,
+                job,
+                use_fetch_api=True,
+                tool_or_workflow=tool_or_workflow,
+                job_dir=test_data_directory,
+                use_path_paste=False,
+            )
+            if datasets:
+                self.dataset_populator.wait_for_history(history_id=history_id, assert_ok=True)
         if tool_or_workflow == "tool":
             run_object = self._run_cwl_tool_job(
                 artifact,
@@ -2722,12 +2808,13 @@ class CwlPopulator:
 
         expected_outputs = test["output"]
         for key, value in expected_outputs.items():
-            try:
-                actual_output = run.get_output_as_object(key)
-                cwltest.compare.compare(value, actual_output)
-            except Exception:
-                self.dataset_populator._summarize_history(run.history_id)
-                raise
+            with tempfile.TemporaryDirectory() as tmpdir:
+                try:
+                    actual_output = run.get_output_as_object(key, download_folder=tmpdir)
+                    cwltest.compare.compare(value, actual_output)
+                except Exception:
+                    self.dataset_populator._summarize_history(run.history_id)
+                    raise
 
 
 class LibraryPopulator:
