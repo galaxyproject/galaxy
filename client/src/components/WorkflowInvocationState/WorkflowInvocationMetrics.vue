@@ -275,18 +275,9 @@ function itemToPieChartSpec(item: piechartData) {
                 type: "nominal",
                 legend: {
                     type: "symbol",
-                    title: "", // should be item.category_title but it doesn't align right so just hide it
-                    direction: "vertical",
-                    titleAlign: "right",
-                    padding: 10,
-                    // rowPadding: 3,
-                    labelOffset: 40,
-                    // symbolOffset: 50,
-                    labelLimit: 120,
-                    // labelAlign: 'center',
-                    columnPadding: 5,
-                    // clipHeight: 20,
-                    titleOrient: "top",
+                    title: item.category_title,
+                    titleFontSize: 16,
+                    labelFontSize: 14,
                 },
             },
             tooltip: [
@@ -381,6 +372,10 @@ function getTimingInTitle(timing: string): string {
 const timingInTitles = computed(() => {
     return getTimingInTitle(timing.value);
 });
+
+const groupByInTitles = computed(() => {
+    return attributeToLabel[groupBy.value];
+});
 </script>
 
 <template>
@@ -393,22 +388,22 @@ const timingInTitles = computed(() => {
                         <b-dropdown-item @click="timing = 'minutes'">{{ getTimingInTitle("minutes") }}</b-dropdown-item>
                         <b-dropdown-item @click="timing = 'hours'">{{ getTimingInTitle("hours") }}</b-dropdown-item>
                     </b-dropdown>
-                    <b-dropdown right text="Group By: Tool">
+                    <b-dropdown right :text="'Group By: ' + groupByInTitles">
                         <b-dropdown-item @click="groupBy = 'tool_id'">Tool</b-dropdown-item>
                         <b-dropdown-item @click="groupBy = 'step_id'">Workflow Step</b-dropdown-item>
                     </b-dropdown>
                 </BButtonGroup>
             </BRow>
             <BRow>
-                <BCol v-if="wallclockAggregate && wallclockAggregate.values">
+                <BCol v-if="wallclockAggregate && wallclockAggregate.values" class="text-center">
                     <h2 class="h-l truncate text-center">
                         Aggregate
                         <HelpText :for-title="true" uri="galaxy.jobs.metrics.walltime" text="Runtime Time" /> (in
                         {{ timingInTitles }})
                     </h2>
-                    <VegaWrapper :spec="itemToPieChartSpec(wallclockAggregate)" />
+                    <VegaWrapper :spec="itemToPieChartSpec(wallclockAggregate)" :fill-width="false" />
                 </BCol>
-                <BCol v-if="allocatedCoreTimeAggregate && allocatedCoreTimeAggregate.values">
+                <BCol v-if="allocatedCoreTimeAggregate && allocatedCoreTimeAggregate.values" class="text-center">
                     <h2 class="h-l truncate text-center">
                         Aggregate
                         <HelpText
@@ -417,14 +412,14 @@ const timingInTitles = computed(() => {
                             text="Allocated Core Time" />
                         (in {{ timingInTitles }})
                     </h2>
-                    <VegaWrapper :spec="itemToPieChartSpec(allocatedCoreTimeAggregate)" />
+                    <VegaWrapper :spec="itemToPieChartSpec(allocatedCoreTimeAggregate)" :fill-width="false" />
                 </BCol>
             </BRow>
             <BRow v-for="({ spec, item }, key) in metrics" :key="key">
                 <BCol>
                     <h2 class="h-l truncate text-center">
                         <span v-if="item.helpTerm">
-                            <HelpText :for-title="true" :uri="item.helpTerm" :text="key" />
+                            <HelpText :for-title="true" :uri="item.helpTerm" :text="`${key}`" />
                         </span>
                         <span v-else>
                             {{ key }}
