@@ -395,15 +395,15 @@ const groupByInTitles = computed(() => {
                 </BButtonGroup>
             </BRow>
             <BRow>
-                <BCol v-if="wallclockAggregate && wallclockAggregate.values">
+                <BCol v-if="wallclockAggregate && wallclockAggregate.values" class="text-center">
                     <h2 class="h-l truncate text-center">
                         Aggregate
                         <HelpText :for-title="true" uri="galaxy.jobs.metrics.walltime" text="Runtime Time" /> (in
                         {{ timingInTitles }})
                     </h2>
-                    <VegaWrapper :spec="itemToPieChartSpec(wallclockAggregate)" />
+                    <VegaWrapper :spec="itemToPieChartSpec(wallclockAggregate)" :fill-width="false" />
                 </BCol>
-                <BCol v-if="allocatedCoreTimeAggregate && allocatedCoreTimeAggregate.values">
+                <BCol v-if="allocatedCoreTimeAggregate && allocatedCoreTimeAggregate.values" class="text-center">
                     <h2 class="h-l truncate text-center">
                         Aggregate
                         <HelpText
@@ -412,14 +412,14 @@ const groupByInTitles = computed(() => {
                             text="Allocated Core Time" />
                         (in {{ timingInTitles }})
                     </h2>
-                    <VegaWrapper :spec="itemToPieChartSpec(allocatedCoreTimeAggregate)" />
+                    <VegaWrapper :spec="itemToPieChartSpec(allocatedCoreTimeAggregate)" :fill-width="false" />
                 </BCol>
             </BRow>
             <BRow v-for="({ spec, item }, key) in metrics" :key="key">
                 <BCol>
                     <h2 class="h-l truncate text-center">
                         <span v-if="item.helpTerm">
-                            <HelpText :for-title="true" :uri="item.helpTerm" :text="key" />
+                            <HelpText :for-title="true" :uri="item.helpTerm" :text="`${key}`" />
                         </span>
                         <span v-else>
                             {{ key }}
