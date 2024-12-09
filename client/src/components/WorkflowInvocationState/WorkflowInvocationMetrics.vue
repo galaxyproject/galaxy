@@ -275,18 +275,7 @@ function itemToPieChartSpec(item: piechartData) {
                 type: "nominal",
                 legend: {
                     type: "symbol",
-                    title: "", // should be item.category_title but it doesn't align right so just hide it
-                    direction: "vertical",
-                    titleAlign: "right",
-                    padding: 10,
-                    // rowPadding: 3,
-                    labelOffset: 40,
-                    // symbolOffset: 50,
-                    labelLimit: 120,
-                    // labelAlign: 'center',
-                    columnPadding: 5,
-                    // clipHeight: 20,
-                    titleOrient: "top",
+                    title: item.category_title,
                 },
             },
             tooltip: [

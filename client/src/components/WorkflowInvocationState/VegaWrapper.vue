@@ -1,5 +1,5 @@
 <template>
-    <div ref="chartContainer" class="chart" :style="style"></div>
+    <div ref="chartContainer" :style="style"></div>
 </template>
 
 <script setup lang="ts">
@@ -49,8 +49,3 @@ onBeforeUnmount(() => {
     }
 });
 </script>
-
-<style scoped>
-.chart {
-}
-</style>
