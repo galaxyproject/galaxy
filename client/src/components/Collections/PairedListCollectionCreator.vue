@@ -93,6 +93,14 @@ const hasFilter = computed(() => forwardFilter.value || reverseFilter.value);
 const strategy = ref(autoPairLCS);
 const duplicatePairNames = ref<string[]>([]);
 
+const canClearFilters = computed(() => {
+    return forwardFilter.value || reverseFilter.value;
+});
+
+const canAutoPair = computed(() => {
+    return forwardFilter.value && reverseFilter.value && pairableElements.value.length > 0;
+});
+
 const forwardElements = computed<HDASummary[]>(() => {
     return filterElements(workingElements.value, forwardFilter.value);
 });
@@ -117,7 +125,11 @@ const autoPairButton = computed(() => {
     let variant;
     let icon;
     let text;
-    if (!firstAutoPairDone.value && pairableElements.value.length > 0) {
+    if (!canAutoPair.value) {
+        variant = "secondary";
+        icon = faLink;
+        text = localize("Specify simple filters to divide datasets into forward and reverse reads for pairing.");
+    } else if (!firstAutoPairDone.value && pairableElements.value.length > 0) {
         variant = "primary";
         icon = faExclamationCircle;
         text = localize("Click to auto-pair datasets based on the current filters");
@@ -235,8 +247,11 @@ function initialFiltersSet() {
             illumina++;
         }
     });
-
-    if (illumina > dot12s && illumina > Rs) {
+    // if we cannot filter don't set an initial filter and hide all the data
+    if (illumina == 0 && dot12s == 0 && Rs == 0) {
+        forwardFilter.value = "";
+        reverseFilter.value = "";
+    } else if (illumina > dot12s && illumina > Rs) {
         changeFilters("illumina");
     } else if (dot12s > illumina && dot12s > Rs) {
         changeFilters("dot12s");
@@ -1135,6 +1150,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                         <BButtonGroup vertical>
                                             <BButton
                                                 class="clear-filters-link"
+                                                :disabled="!canClearFilters"
                                                 size="sm"
                                                 :variant="hasFilter ? 'danger' : 'secondary'"
                                                 @click="clickClearFilters">
@@ -1143,6 +1159,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                             </BButton>
                                             <BButton
                                                 class="autopair-link"
+                                                :disabled="!canAutoPair"
                                                 size="sm"
                                                 :title="autoPairButton.text"
                                                 :variant="autoPairButton.variant"
@@ -1311,6 +1328,8 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "~@fortawesome/fontawesome-free/scss/solid";
 @import "~@fortawesome/fontawesome-free/scss/fontawesome";
 @import "~@fortawesome/fontawesome-free/scss/brands";
+@import "~bootstrap/scss/_functions.scss";
+@import "theme/blue.scss";
 .paired-column {
     text-align: center;
     // mess with these two to make center more/scss priority
@@ -1357,7 +1376,7 @@ li.dataset.paired {
             white-space: nowrap;
             overflow: hidden;
             border: 2px solid grey;
-            background: #aff1af;
+            background: $state-success-bg;
             text-align: center;
             span {
                 display: inline-block;
