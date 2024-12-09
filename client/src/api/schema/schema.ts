@@ -5175,6 +5175,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{user_id}/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lists all credentials the user has provided */
+        get: operations["list_user_credentials_api_users__user_id__credentials_get"];
+        put?: never;
+        /** Allows users to provide credentials for a secret/variable */
+        post: operations["provide_credential_api_users__user_id__credentials_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{user_id}/credentials/{credentials_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Updates credentials for a specific secret/variable */
+        put: operations["update_credential_api_users__user_id__credentials__credentials_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{user_id}/credentials/{user_credentials_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Verifies if credentials have been provided for a specific service */
+        get: operations["verify_service_credentials_api_users__user_id__credentials__user_credentials_id__get"];
+        put?: never;
+        post?: never;
+        /** Deletes all credentials for a specific service */
+        delete: operations["delete_service_credentials_api_users__user_id__credentials__user_credentials_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{user_id}/credentials/{user_credentials_id}/{credentials_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Verifies if a credential have been provided */
+        get: operations["verify_credentials_api_users__user_id__credentials__user_credentials_id___credentials_id__get"];
+        put?: never;
+        post?: never;
+        /** Deletes a specific credential */
+        delete: operations["delete_credentials_api_users__user_id__credentials__user_credentials_id___credentials_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{user_id}/custom_builds": {
         parameters: {
             query?: never;
@@ -8531,6 +8602,80 @@ export interface components {
              */
             username: string;
         };
+        /** CredentialPayload */
+        CredentialPayload: {
+            /**
+             * Credential Name
+             * @description Name of the credential
+             */
+            name: string;
+            /**
+             * Type
+             * @description Type of the credential(secret/variable)
+             */
+            type: components["schemas"]["CredentialType"];
+            /**
+             * Credential Value
+             * @description Value of the credential
+             */
+            value: string;
+        };
+        /** CredentialResponse */
+        CredentialResponse: {
+            /**
+             * ID
+             * @description ID of the credential
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Credential Name
+             * @description Name of the credential
+             */
+            name: string;
+            /**
+             * Type
+             * @description Type of the credential
+             */
+            type: components["schemas"]["CredentialType"];
+        };
+        /**
+         * CredentialType
+         * @enum {string}
+         */
+        CredentialType: "secret" | "variable";
+        /** CredentialsListResponse */
+        CredentialsListResponse: {
+            /**
+             * Credentials
+             * @description List of credentials
+             */
+            credentials: components["schemas"]["CredentialResponse"][];
+            /**
+             * Service Reference
+             * @description Reference to the service
+             */
+            service_reference: string;
+            /**
+             * User Credentials ID
+             * @description ID of the user credentials
+             * @example 0123456789ABCDEF
+             */
+            user_credentials_id: string;
+        };
+        /** CredentialsPayload */
+        CredentialsPayload: {
+            /**
+             * Credentials
+             * @description List of credentials
+             */
+            credentials: components["schemas"]["CredentialPayload"][];
+            /**
+             * Service Reference
+             * @description Reference to the service
+             */
+            service_reference: string;
+        };
         /** CsvDialect */
         CsvDialect: {
             /** Delimiter */
@@ -9988,6 +10133,14 @@ export interface components {
          * @enum {string}
          */
         DefaultQuotaValues: "unregistered" | "registered" | "no";
+        /** DeleteCredentialsResponse */
+        DeleteCredentialsResponse: {
+            /**
+             * Deleted
+             * @description Indicates if the credentials were deleted
+             */
+            deleted: boolean;
+        };
         /** DeleteDatasetBatchPayload */
         DeleteDatasetBatchPayload: {
             /**
@@ -21971,6 +22124,11 @@ export interface components {
              */
             username: string;
         };
+        /**
+         * UserCredentialsListResponse
+         * @description List of user credentials
+         */
+        UserCredentialsListResponse: components["schemas"]["CredentialsListResponse"][];
         /** UserDeletionPayload */
         UserDeletionPayload: {
             /**
@@ -22432,6 +22590,14 @@ export interface components {
              * @description The name of the user.
              */
             username?: string | null;
+        };
+        /** VerifyCredentialsResponse */
+        VerifyCredentialsResponse: {
+            /**
+             * Exists
+             * @description Indicates if the credentials exist
+             */
+            exists: boolean;
         };
         /** Visualization */
         Visualization: Record<string, never>;
@@ -39923,6 +40089,334 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserBeaconSetting"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    list_user_credentials_api_users__user_id__credentials_get: {
+        parameters: {
+            query?: {
+                /** @description The type of source to filter by. */
+                source_type?: string | null;
+                /** @description The ID of the source to filter by. */
+                source_id?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserCredentialsListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    provide_credential_api_users__user_id__credentials_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CredentialsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CredentialsListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_credential_api_users__user_id__credentials__credentials_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+                credentials_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CredentialsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CredentialsListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    verify_service_credentials_api_users__user_id__credentials__user_credentials_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+                user_credentials_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifyCredentialsResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_service_credentials_api_users__user_id__credentials__user_credentials_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+                user_credentials_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteCredentialsResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    verify_credentials_api_users__user_id__credentials__user_credentials_id___credentials_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+                user_credentials_id: string;
+                credentials_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifyCredentialsResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_credentials_api_users__user_id__credentials__user_credentials_id___credentials_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+                user_credentials_id: string;
+                credentials_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteCredentialsResponse"];
                 };
             };
             /** @description Request Error */
