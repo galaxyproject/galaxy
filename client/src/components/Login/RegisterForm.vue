@@ -14,7 +14,7 @@ import {
     BFormInput,
     BFormText,
 } from "bootstrap-vue";
-import { computed, type Ref, ref } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 
 import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";
@@ -43,7 +43,7 @@ const emit = defineEmits<{
 
 const email = ref(null);
 const confirm = ref(null);
-const password = ref(null);
+const password = ref<string | null>(null);
 const username = ref(null);
 const subscribe = ref(null);
 const messageText: Ref<string | null> = ref(null);
@@ -53,9 +53,70 @@ const labelPublicName = ref(localize("Public name"));
 const labelEmailAddress = ref(localize("Email address"));
 const labelConfirmPassword = ref(localize("Confirm password"));
 const labelSubscribe = ref(localize("Stay in the loop and join the galaxy-announce mailing list."));
+const showPasswordGuidelines: Ref<boolean> = ref(false);
+
 
 const custosPreferred = computed(() => {
     return props.enableOidc && props.preferCustosLogin;
+});
+
+// reactive variable for password strength and color
+const passwordStrength = ref<string>("empty");
+const strengthScore = ref<number>(0);
+const commonPasswords = ["password", "123456", "123456789", "qwerty", "abc123", "password1", "111111", "letmein", "123123", "admin"];
+
+// evaluation of password strength
+function evaluatePasswordStrength(newPassword: string) {
+    if (newPassword.length === 0) {
+        passwordStrength.value = "empty";
+        return;
+    }
+
+    strengthScore.value = 0;
+
+    // score for length
+    if (newPassword.length >= 8) {strengthScore.value++}
+    if (newPassword.length >= 12) {strengthScore.value++}
+
+    // testing if password contains different characters
+    const hasLowerCase = /[a-z]/.test(newPassword);
+    const hasUpperCase = /[A-Z]/.test(newPassword);
+    const hasNumbers = /[0-9]/.test(newPassword);
+    const hasSpecialChars = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+
+    if (hasLowerCase) {strengthScore.value++}
+    if (hasUpperCase) {strengthScore.value++}
+    if (hasNumbers) {strengthScore.value++}
+    if (hasSpecialChars) {strengthScore.value++}
+
+    // check for common password
+    if (commonPasswords.includes(newPassword)) {
+        strengthScore.value = 0;  // score gets zero if common
+        passwordStrength.value = "weak";
+        return;
+    }
+
+    // check for repeating characters
+    const repeatedCharMatch = newPassword.match(/(.)\1{2,}/);
+    if (repeatedCharMatch) {
+        strengthScore.value--;
+    }
+
+    // evaluation of the strength
+    if (strengthScore.value <= 2) {
+        passwordStrength.value = "weak";
+    } else if (strengthScore.value <= 4) {
+        passwordStrength.value = "medium";
+    } else {
+        passwordStrength.value = "strong";
+    }
+}
+
+// function to watch the evaluation of the password
+watch(password, (newPassword) => {
+    if (typeof newPassword === "string") {
+        evaluatePasswordStrength(newPassword);
+    }
 });
 
 function toggleLogin() {
@@ -85,6 +146,7 @@ async function submit() {
         messageText.value = errorMessageAsString(error, "Registration failed for an unknown reason.");
     }
 }
+
 </script>
 
 <template>
@@ -145,7 +207,28 @@ async function submit() {
                                         name="password"
                                         type="password"
                                         autocomplete="new-password"
-                                        required />
+                                        required 
+                                    />
+                                    <!-- Password Guidelines -->
+                                    <BButton variant="info" class="mt-3" @click="showPasswordGuidelines = true">
+                                        Password Guidelines
+                                    </BButton>
+                                    <!-- Strength Bar -->
+                                    <div v-if="passwordStrength !== null" class="password-strength-bar-container mt-2">
+                                        <div
+                                            class="password-strength-bar"
+                                            :class="passwordStrength"
+                                            :style="{ width: `${(strengthScore / 5) * 100}%` }"
+                                        ></div>
+                                    </div>
+
+                                    <!--Password Strength Component -->
+                                    <div :class="['password-strength', passwordStrength]" class="mt-2">
+                                        <span v-if="passwordStrength === 'empty'"></span>
+                                        <span v-else-if="passwordStrength === 'weak'">Weak Password</span>
+                                        <span v-else-if="passwordStrength === 'medium'">Medium Password</span>
+                                        <span v-else>Strong Password</span>
+                                    </div>
                                 </BFormGroup>
 
                                 <BFormGroup :label="labelConfirmPassword" label-for="register-form-confirm">
@@ -210,6 +293,22 @@ async function submit() {
                 </BForm>
             </div>
 
+            <div>
+                <BModal v-model="showPasswordGuidelines" title="Tips for a secure Password">
+                    <p>A good password should meet the following criteria:</p>
+                    <ul>
+                        <li>At least 12 characters long.</li>
+                        <li>Use uppercase and lowercase letters.</li>
+                        <li>At least one number and one special character.</li>
+                        <li>Avoid common passwords like <code>123456</code> or <code>password</code>.</li>
+                        <li>No repeated patterns like <code>aaaa</code> or <code>123123</code>.</li>
+                    </ul>
+                    <template v-slot:modal-footer>
+                        <BButton variant="secondary" @click="showPasswordGuidelines = false">Schließen</BButton>
+                    </template>
+                </BModal>
+            </div>
+
             <div v-if="termsUrl" class="col position-relative embed-container">
                 <iframe title="terms-of-use" :src="termsUrl" frameborder="0" class="terms-iframe"></iframe>
                 <div v-localize class="scroll-hint">↓ Scroll to review ↓</div>
@@ -239,4 +338,42 @@ async function submit() {
         border-radius: 4px;
     }
 }
+// container for strength bar
+.password-strength-bar-container {
+    background-color: #e0e0e0;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+// components for strength bar
+.password-strength-bar {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.password-strength-bar.weak {
+    background-color: red;
+}
+
+.password-strength-bar.medium {
+    background-color: orange;
+}
+
+.password-strength-bar.strong {
+    background-color: green;
+}
+
+// Color for the text
+.password-strength.weak {
+    color: red;
+}
+.password-strength.medium {
+    color: orange;
+}
+.password-strength.strong {
+    color: green;
+}
+
 </style>
