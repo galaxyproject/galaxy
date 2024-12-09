@@ -6,12 +6,16 @@ import { format, parseISO } from "date-fns";
  * @returns {Date} The parsed Date object.
  */
 export function galaxyTimeToDate(galaxyTime: string): Date {
-    // We likely don't have tzinfo, but this will always be UTC coming
-    // from Galaxy so append Z to assert that prior to parsing
-    if (!galaxyTime.endsWith("Z")) {
-        galaxyTime += "Z";
+    // Galaxy doesn't include Zulu time zone designator, but it's always UTC
+    // so we need to add it to parse the string correctly in JavaScript.
+    let time = galaxyTime;
+    if (!time.endsWith("Z")) {
+        time += "Z";
     }
-    const date = parseISO(galaxyTime);
+    const date = parseISO(time);
+    if (isNaN(date.getTime())) {
+        throw new Error(`Invalid galaxyTime string: ${galaxyTime}`);
+    }
     return date;
 }
 
