@@ -81,7 +81,6 @@ onMounted(() => {
         :options-show="optionsShow"
         :modal-show="modalShow"
         :modal-static="modalStatic"
-        leaf-icon="fa fa-folder"
         :items="items"
         @onCancel="onCancel"
         @onClick="onClick" />
