@@ -34,8 +34,6 @@ interface Props {
     workflow: Workflow;
     /** Whether the invocation is terminal */
     isTerminal: boolean;
-    /** Whether the invocation is scheduled */
-    isScheduled: boolean;
     /** The zoom level for the graph */
     zoom?: number;
     /** Whether to show the minimap */

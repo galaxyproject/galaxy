@@ -3,6 +3,7 @@ import { faPlay } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router/composables";
 
 interface Props {
     id: string;
@@ -20,13 +21,22 @@ const props = withDefaults(defineProps<Props>(), {
     variant: "primary",
 });
 
+const route = useRoute();
+const router = useRouter();
+
 const runPath = computed(
     () => `/workflows/run?id=${props.id}${props.version !== undefined ? `&version=${props.version}` : ""}`
 );
 
-function forceRunPath() {
-    if (props.force) {
-        window.open(runPath.value);
+function routeToPath() {
+    if (props.force && route.fullPath === runPath.value) {
+        // vue-router 4 supports a native force push with clean URLs,
+        // but we're using a __vkey__ bit as a workaround
+        // Only conditionally force to keep urls clean most of the time.
+        // @ts-ignore - monkeypatched router, drop with migration.
+        router.push(runPath.value, { force: true });
+    } else {
+        router.push(runPath.value);
     }
 }
 </script>
@@ -42,7 +52,7 @@ function forceRunPath() {
         class="text-decoration-none"
         :disabled="disabled"
         :to="runPath"
-        @click="forceRunPath">
+        @click="routeToPath">
         <FontAwesomeIcon :icon="faPlay" fixed-width />
 
         <span v-if="full" v-localize>Run</span>
