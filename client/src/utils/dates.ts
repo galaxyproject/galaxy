@@ -20,7 +20,7 @@ export function galaxyTimeToDate(galaxyTime: string): Date {
 }
 
 /**
- * Formats a UTC Date object into a human-readable string.
+ * Formats a UTC Date object into a human-readable string, localized to the user's time zone.
  * @param {Date} utcDate - The UTC Date object.
  * @returns {string} The formatted date string.
  */
@@ -29,7 +29,7 @@ export function localizeUTCPretty(utcDate: Date): string {
 }
 
 /**
- * Converts a Galaxy time string to a human-readable formatted date string.
+ * Converts a Galaxy time string to a human-readable formatted date string, localized to the user's time zone.
  * @param {string} galaxyTime - The Galaxy time string in ISO format.
  * @returns {string} The formatted date string.
  */
