@@ -738,7 +738,7 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
             "namespace": namespace,
             "hash_func": self.hash_func,
             "command": "build-and-test",
-            "use_mamba": True,
+            "use_mamba": False,
         }
         self._mulled_kwds["channels"] = default_mulled_conda_channels_from_env() or self._get_config_option(
             "mulled_channels", DEFAULT_CHANNELS
@@ -789,7 +789,7 @@ class BuildMulledSingularityContainerResolver(SingularityCliContainerResolver):
             "namespace": "local",
             "singularity": True,
             "singularity_image_dir": self.cache_directory.path,
-            "use_mamba": True,
+            "use_mamba": False,
         }
         self.involucro_context = InvolucroContext(**self._involucro_context_kwds)
         auto_init = self._get_config_option("involucro_auto_init", True)
