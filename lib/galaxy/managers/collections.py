@@ -176,6 +176,8 @@ class DatasetCollectionManager:
         completed_job=None,
         output_name=None,
         fields=None,
+        column_definitions=None,
+        rows=None,
     ):
         """
         PRECONDITION: security checks on ability to add to parent
@@ -201,6 +203,8 @@ class DatasetCollectionManager:
                 copy_elements=copy_elements,
                 history=history,
                 fields=fields,
+                column_definitions=column_definitions,
+                rows=rows,
             )
 
         implicit_inputs = []
@@ -288,6 +292,8 @@ class DatasetCollectionManager:
         copy_elements=False,
         history=None,
         fields=None,
+        column_definitions=None,
+        rows=None,
     ):
         # Make sure at least one of these is None.
         assert element_identifiers is None or elements is None
@@ -324,9 +330,12 @@ class DatasetCollectionManager:
 
         if elements is not self.ELEMENTS_UNINITIALIZED:
             type_plugin = collection_type_description.rank_type_plugin()
-            dataset_collection = builder.build_collection(type_plugin, elements, fields=fields)
+            dataset_collection = builder.build_collection(
+                type_plugin, elements, fields=fields, column_definitions=column_definitions, rows=rows
+            )
         else:
             # TODO: Pass fields here - need test case first.
+            # TODO: same with column definitions I think.
             dataset_collection = model.DatasetCollection(populated=False)
         dataset_collection.collection_type = collection_type
         return dataset_collection
@@ -783,10 +792,16 @@ class DatasetCollectionManager:
             identifiers = parent_identifiers + [element.element_identifier]
             if not element.is_collection:
                 data.append([])
+                columns = None
+                collection_type_str = collection_type_description.collection_type
+                if collection_type_str == "sample_sheet":
+                    columns = element.columns
+                    assert isinstance(columns, list)
                 source = {
                     "identifiers": identifiers,
                     "dataset": element_object,
                     "tags": element_object.make_tag_string_list(),
+                    "columns": columns,
                 }
                 sources.append(source)
             else:

@@ -312,4 +312,7 @@ export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskRe
 export type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
 export type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
 
+export type SampleSheetColumnDefinition = components["schemas"]["SampleSheetColumnDefinition"];
+export type SampleSheetColumnDefinitions = SampleSheetColumnDefinition[] | null;
+
 export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, toRef } from "vue";
 
+import { type SampleSheetColumnDefinitions } from "@/api";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { Step } from "@/stores/workflowStepStore";
 
@@ -8,6 +9,7 @@ import { useToolState } from "../composables/useToolState";
 
 import FormElement from "@/components/Form/FormElement.vue";
 import FormCollectionType from "@/components/Workflow/Editor/Forms/FormCollectionType.vue";
+import FormColumnDefinitions from "@/components/Workflow/Editor/Forms/FormColumnDefinitions.vue";
 import FormDatatype from "@/components/Workflow/Editor/Forms/FormDatatype.vue";
 
 interface ToolState {
@@ -15,6 +17,7 @@ interface ToolState {
     optional: boolean;
     format: string | null;
     tag: string | null;
+    column_definitions: SampleSheetColumnDefinitions;
 }
 
 const props = defineProps<{
@@ -34,6 +37,7 @@ function cleanToolState(): ToolState {
             optional: false,
             tag: null,
             format: null,
+            column_definitions: null,
         };
     }
 }
@@ -61,6 +65,13 @@ function onOptional(newOptional: boolean) {
 function onCollectionType(newCollectionType: string | null) {
     const state = cleanToolState();
     state.collection_type = newCollectionType;
+    emit("onChange", state);
+}
+
+function onColumnDefinitions(newColumnDefinitions: SampleSheetColumnDefinitions) {
+    const state = cleanToolState();
+    console.log(newColumnDefinitions);
+    state.column_definitions = newColumnDefinitions;
     emit("onChange", state);
 }
 
@@ -97,5 +108,9 @@ emit("onChange", cleanToolState());
             type="text"
             help="Tags to automatically filter inputs"
             @input="onTags" />
+        <FormColumnDefinitions
+            v-if="toolState?.collection_type == 'sample_sheet'"
+            :value="toolState?.column_definitions"
+            @onChange="onColumnDefinitions" />
     </div>
 </template>

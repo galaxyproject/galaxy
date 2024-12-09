@@ -28,10 +28,12 @@ dataset_collection_table = "dataset_collection"
 def upgrade():
     with transaction():
         add_column(dataset_collection_table, Column("column_definitions", JSONType(), default=None))
+        add_column(dataset_collection_table, Column("fields", JSONType(), default=None))
         add_column(dataset_collection_element_table, Column("columns", JSONType(), default=None))
 
 
 def downgrade():
     with transaction():
         drop_column(dataset_collection_table, "column_definitions")
+        drop_column(dataset_collection_table, "fields")
         drop_column(dataset_collection_element_table, "columns")

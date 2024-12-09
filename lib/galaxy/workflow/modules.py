@@ -1161,7 +1161,12 @@ class InputDataCollectionModule(InputModule):
             collection_type = inputs["collection_type"]
         else:
             collection_type = self.default_collection_type
+        if "column_definitions" in inputs:
+            column_definitions = inputs["column_definitions"]
+        else:
+            column_definitions = None
         state_as_dict["collection_type"] = collection_type
+        state_as_dict["column_definitions"] = column_definitions
         return state_as_dict
 
 
