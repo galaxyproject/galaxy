@@ -1,6 +1,14 @@
 import { formatGalaxyPrettyDateString, galaxyTimeToDate, localizeUTCPretty } from "./dates";
 
 describe("dates.ts", () => {
+    beforeEach(() => {
+        process.env.TZ = "America/New_York";
+    });
+
+    afterEach(() => {
+        delete process.env.TZ;
+    });
+
     describe("galaxyTimeToDate", () => {
         it("should convert valid galaxyTime string to Date object", () => {
             const galaxyTime = "2023-10-01T12:00:00";
