@@ -12,16 +12,6 @@ export function galaxyTimeToDate(galaxyTime: string): Date {
 
 export function formatUTCPrettyString(utcDate: Date): string {
     return format(utcDate, "eeee MMM do H:mm:ss yyyy zz");
-
-    return utcDate.toLocaleString("default", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        minute: "numeric",
-        hour: "numeric",
-        timeZone: "UTC",
-        timeZoneName: "short",
-    });
 }
 
 export function formatGalaxyPrettyDateString(galaxyTime: string): string {
