@@ -50,7 +50,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
     def _open_fs(self, user_context: OptionalUserContext = None, opts: Optional[FilesSourceOptions] = None) -> FS:
         """Subclasses must instantiate a PyFilesystem2 handle for this file system."""
 
-    def _list(
+    async def _list(
         self,
         path="/",
         recursive=False,

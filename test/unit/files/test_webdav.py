@@ -25,7 +25,8 @@ skip_if_no_webdav = pytest.mark.skipif(not os.environ.get("GALAXY_TEST_WEBDAV"),
 
 
 @skip_if_no_webdav
-def test_file_source():
+@pytest.mark.asyncio
+async def test_file_source():
     file_sources = configured_file_sources(FILE_SOURCES_CONF)
     file_source_pair = file_sources.get_file_source_path("gxfiles://test1")
 
@@ -46,7 +47,7 @@ def test_file_source():
     assert subdir1["class"] == "Directory"
     assert subdir1["uri"] == "gxfiles://test1/subdir1"
 
-    res = list_dir(file_sources, "gxfiles://test1/subdir1", recursive=False)
+    res = await list_dir(file_sources, "gxfiles://test1/subdir1", recursive=False)
     subdir2 = find(res, name="subdir2")
     assert subdir2, res
     assert subdir2["uri"] == "gxfiles://test1/subdir1/subdir2"
@@ -63,17 +64,18 @@ def test_sniff_to_tmp():
 
 
 @skip_if_no_webdav
-def test_serialization():
+@pytest.mark.asyncio
+async def test_serialization():
     configs = [FILE_SOURCES_CONF_NO_USE_TEMP_FILES, FILE_SOURCES_CONF]
     for config in configs:
         # serialize the configured file sources and rematerialize them,
         # ensure they still function. This is needed for uploading files.
         file_sources = serialize_and_recover(configured_file_sources(config))
 
-        res = list_root(file_sources, "gxfiles://test1", recursive=True)
+        res = await list_root(file_sources, "gxfiles://test1", recursive=True)
         assert find_file_a(res)
 
-        res = list_root(file_sources, "gxfiles://test1", recursive=False)
+        res = await list_root(file_sources, "gxfiles://test1", recursive=False)
         assert find_file_a(res)
 
         _download_and_check_file(file_sources)
@@ -101,13 +103,14 @@ def test_config_options():
 
 
 @skip_if_no_webdav
-def test_serialization_user():
+@pytest.mark.asyncio
+async def test_serialization_user():
     file_sources_o = configured_file_sources(USER_FILE_SOURCES_CONF)
     user_context = user_context_fixture()
 
-    res = list_root(file_sources_o, "gxfiles://test1", recursive=True, user_context=user_context)
+    res = await list_root(file_sources_o, "gxfiles://test1", recursive=True, user_context=user_context)
     assert find_file_a(res)
 
     file_sources = serialize_and_recover(file_sources_o, user_context=user_context)
-    res = list_root(file_sources, "gxfiles://test1", recursive=True, user_context=None)
+    res = await list_root(file_sources, "gxfiles://test1", recursive=True, user_context=None)
     assert find_file_a(res)
