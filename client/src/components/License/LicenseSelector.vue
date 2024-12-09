@@ -12,24 +12,23 @@ import License from "@/components/License/License.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const defaultLicense: LicenseType = {
-    licenseId: null,
     name: "*Do not specify a license.*",
 };
 
 type LicenseMetadataModel = components["schemas"]["LicenseMetadataModel"];
 type LicenseType = {
-    licenseId: string | null;
+    licenseId?: string;
     name: string;
 };
 
 interface Props {
-    inputLicense: string;
+    inputLicense?: string;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "onLicense", license: string | null): void;
+    (e: "onLicense", license?: string): void;
 }>();
 
 const licensesLoading = ref(false);
