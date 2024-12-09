@@ -307,7 +307,7 @@ export default {
             ensureParametersSet();
             stateStore.activeNodeId = null;
             activityBar.value?.setActiveSideBar("workflow-editor-attributes");
-            if (args.highlight) {
+            if (args && args.highlight) {
                 this.highlightAttribute = args.highlight;
             }
         }
