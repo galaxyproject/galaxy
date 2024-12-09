@@ -157,9 +157,13 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
             tool_version=tool_payload.representation.version,
             active=tool_payload.active,
             hidden=tool_payload.hidden,
-            value=tool_payload.representation,
+            value=tool_payload.representation.model_dump(),
             public=False,
+            flush=True,
         )
+        session = self.session()
+        session.add(UserDynamicToolAssociation(user_id=user.id, dynamic_tool_id=dynamic_tool.id))
+        session.commit()
         return dynamic_tool
 
     def list_tools(self, active=True):
