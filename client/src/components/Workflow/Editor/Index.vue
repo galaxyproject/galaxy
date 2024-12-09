@@ -77,7 +77,8 @@
                     v-else-if="isActiveSideBar('workflow-editor-workflows')"
                     :current-workflow-id="id"
                     @insertWorkflow="onInsertWorkflow"
-                    @insertWorkflowSteps="onInsertWorkflowSteps" />
+                    @insertWorkflowSteps="onInsertWorkflowSteps"
+                    @createWorkflow="createNewWorkflow" />
                 <WorkflowAttributes
                     v-else-if="isActiveSideBar('workflow-editor-attributes')"
                     :id="id"
@@ -738,6 +739,10 @@ export default {
         onSaveAs() {
             this.showSaveAsModal = true;
         },
+        async createNewWorkflow() {
+            await this.saveOrCreate();
+            this.$router.push("/workflows/edit");
+        },
         async saveOrCreate() {
             if (this.hasInvalidConnections) {
                 const confirmed = await this.confirm(
@@ -787,6 +792,10 @@ export default {
 
             if (activityId === "save-workflow-as") {
                 this.onSaveAs();
+            }
+
+            if (activityId === "workflow-create") {
+                this.createNewWorkflow();
             }
         },
         onAnnotation(nodeId, newAnnotation) {
