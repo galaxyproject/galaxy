@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { format, formatDistanceToNow, parseISO } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { computed } from "vue";
+
+import { galaxyTimeToDate, localizeUTCPretty } from "@/utils/dates";
 
 interface UtcDateProps {
     date: string;
@@ -11,10 +13,10 @@ const props = withDefaults(defineProps<UtcDateProps>(), {
     mode: "date",
 });
 
-const parsedDate = computed(() => parseISO(`${props.date}Z`));
+const parsedDate = computed(() => galaxyTimeToDate(props.date));
 const elapsedTime = computed(() => formatDistanceToNow(parsedDate.value, { addSuffix: true }));
 const fullISO = computed(() => parsedDate.value.toISOString());
-const pretty = computed(() => format(parsedDate.value, "eeee MMM do H:mm:ss yyyy zz"));
+const pretty = computed(() => localizeUTCPretty(parsedDate.value));
 </script>
 
 <template>
