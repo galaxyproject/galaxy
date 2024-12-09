@@ -12,6 +12,9 @@ Vue.config.devtools = false;
 and this makes the tag tests work correctly */
 global.setImmediate = global.setTimeout;
 
+// Consistent timezone for tests so we can compare date strings
+process.env.TZ = "America/New_York";
+
 // Always mock the following imports
 jest.mock("@/composables/hashedUserId");
 jest.mock("@/composables/userLocalStorage");
