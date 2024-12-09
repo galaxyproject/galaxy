@@ -93,6 +93,7 @@ from galaxy.schema.schema import (
     ToolLandingRequest,
     WorkflowLandingRequest,
 )
+from galaxy.schema.tools import DynamicUnprivilegedToolCreatePayload
 from galaxy.tool_util.client.staging import InteractorStaging
 from galaxy.tool_util.cwl.util import (
     download_output,
@@ -108,6 +109,7 @@ from galaxy.tool_util.verify.wait import (
     TimeoutAssertionError,
     wait_on as tool_util_wait_on,
 )
+from galaxy.tool_util_models import UserToolSource
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     galaxy_root_path,
@@ -889,6 +891,18 @@ class BaseDatasetPopulator(BasePopulator):
             tool_directory=tool_directory,
         )
         return self._create_tool_raw(payload)
+
+    def create_unprivileged_tool(self, representation: UserToolSource, active=True, hidden=False, uuid=None):
+        data = DynamicUnprivilegedToolCreatePayload(
+            active=active, hidden=hidden, uuid=uuid, src="representation", representation=representation
+        ).model_dump(by_alias=True, exclude_unset=True)
+        return self._post("unprivileged_tools", data=data, json=True)
+
+    def get_unprivileged_tools(self, active=True):
+        return self._get("unprivileged_tools", data={"active": active})
+
+    def show_unprivileged_tool(self, tool_id: str):
+        return self._get(f"unprivileged_tools/{tool_id}")
 
     def create_tool(self, representation, tool_directory: Optional[str] = None) -> Dict[str, Any]:
         payload = dict(
