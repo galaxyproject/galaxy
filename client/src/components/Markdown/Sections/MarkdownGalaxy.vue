@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 
 import { useConfig } from "@/composables/config";
+import { getArgs } from "@/components/Markdown/parse";
 
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
@@ -25,12 +26,8 @@ const { config, isConfigLoaded } = useConfig();
 
 const toggle = ref(false);
 const props = defineProps({
-    name: {
+    content: {
         type: String,
-        required: true,
-    },
-    args: {
-        type: Object,
         required: true,
     },
     datasets: {
@@ -63,7 +60,11 @@ const props = defineProps({
     },
 });
 
-const isCollapsible = computed(() => props.args.collapse !== undefined);
+const parsedArgs = computed(() => getArgs(props.content));
+const args = computed(() => parsedArgs.value.args);
+const name = computed(() => parsedArgs.value.name);
+
+const isCollapsible = computed(() => args.value.collapse !== undefined);
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
 
 function argToBoolean(args, name, booleanDefault) {
