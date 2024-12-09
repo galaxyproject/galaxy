@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { BAlert, BDropdown, BDropdownForm, BFormCheckbox } from "bootstrap-vue";
+import { faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton, BDropdown, BDropdownForm, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, set } from "vue";
 
 import { allowCachedJobs } from "@/components/Tool/utilities";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
-import { provideScopedWorkflowStores } from "@/composables/workflowStores";
+import { usePanels } from "@/composables/usePanels";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -15,10 +17,10 @@ import { invokeWorkflow } from "./services";
 
 import WorkflowAnnotation from "../WorkflowAnnotation.vue";
 import WorkflowNavigationTitle from "../WorkflowNavigationTitle.vue";
-import WorkflowRunInfo from "./WorkflowRunInfo.vue";
+import WorkflowRunGraph from "./WorkflowRunGraph.vue";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
+import Heading from "@/components/Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
-import FlexPanel from "@/components/Panels/FlexPanel.vue";
 
 interface Props {
     model: Record<string, any>;
@@ -40,12 +42,11 @@ const emit = defineEmits<{
     (e: "submissionError", error: string): void;
 }>();
 
-provideScopedWorkflowStores(props.model.workflowId);
-
 const { activeNodeId } = storeToRefs(useWorkflowStateStore(props.model.workflowId));
 
 const { config, isConfigLoaded } = useConfig(true);
 const { currentUser } = storeToRefs(useUserStore());
+const { showPanels } = usePanels();
 
 const formData = ref<Record<string, any>>({});
 const inputTypes = ref<Record<string, string>>({});
@@ -56,6 +57,10 @@ const splitObjectStore = ref(false);
 const preferredObjectStoreId = ref<string | null>(null);
 const preferredIntermediateObjectStoreId = ref<string | null>(null);
 const waitingForRequest = ref(false);
+// TODO: Once we add readme/help to the right side of the form, we can default the unified `showRightPanel`
+//       (panel that toggles between readme/help or graph) to `true` if the readme/help exists, and if no
+//       readme/help exists, it will be `false`.
+const showGraph = ref(!showPanels.value);
 
 const formInputs = computed(() => {
     const inputs = [] as any[];
@@ -195,6 +200,15 @@ async function onExecute() {
                 :run-waiting="waitingForRequest"
                 @on-execute="onExecute">
                 <template v-slot:workflow-title-actions>
+                    <BButton
+                        v-b-tooltip.hover.noninteractive.html
+                        size="sm"
+                        :title="!showGraph ? 'Show workflow graph' : 'Hide workflow graph'"
+                        variant="link"
+                        :pressed="showGraph"
+                        @click="showGraph = !showGraph">
+                        <FontAwesomeIcon :icon="faSitemap" fixed-width />
+                    </BButton>
                     <BDropdown
                         v-if="showRuntimeSettings(currentUser)"
                         id="dropdown-form"
@@ -238,10 +252,12 @@ async function onExecute() {
         <WorkflowAnnotation :workflow-id="model.runData.workflow_id" :history-id="model.historyId" show-details />
 
         <div ref="runFormContainer" class="d-flex">
-            <div class="w-100 overflow-auto">
+            <div class="overflow-auto" :class="!showGraph ? 'w-100' : 'w-50'">
+                <Heading h2 separator bold size="sm"> Parameters </Heading>
                 <FormDisplay
                     :inputs="formInputs"
                     :allow-empty-value-on-required-input="true"
+                    :sync-with-graph="showGraph"
                     :active-node-id.sync="activeNodeId"
                     @onChange="onChange"
                     @onValidation="onValidation" />
@@ -250,13 +266,15 @@ async function onExecute() {
                     Expand to full workflow form.
                 </a>
             </div>
-            <FlexPanel side="right">
-                <WorkflowRunInfo
+            <div v-show="showGraph" class="w-50">
+                <WorkflowRunGraph
                     v-if="isConfigLoaded"
                     :workflow-id="model.workflowId"
                     :stored-id="model.runData.workflow_id"
-                    :version="model.runData.version" />
-            </FlexPanel>
+                    :version="model.runData.version"
+                    :inputs="formData"
+                    :form-inputs="formInputs" />
+            </div>
         </div>
     </div>
 </template>
