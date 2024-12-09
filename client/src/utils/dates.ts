@@ -10,11 +10,11 @@ export function galaxyTimeToDate(galaxyTime: string): Date {
     return date;
 }
 
-export function formatUTCPrettyString(utcDate: Date): string {
+export function localizeUTCPretty(utcDate: Date): string {
     return format(utcDate, "eeee MMM do H:mm:ss yyyy zz");
 }
 
 export function formatGalaxyPrettyDateString(galaxyTime: string): string {
     const date = galaxyTimeToDate(galaxyTime);
-    return formatUTCPrettyString(date);
+    return localizeUTCPretty(date);
 }
