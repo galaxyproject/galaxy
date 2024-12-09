@@ -73,6 +73,7 @@ import { mapActions } from "pinia";
 import Vue from "vue";
 
 import { useWorkflowStore } from "@/stores/workflowStore";
+import { formatGalaxyPrettyDateString } from "@/utils/dates";
 
 import { splitMarkdown as splitMarkdownUnrendered } from "./parse";
 
@@ -138,23 +139,9 @@ export default {
             return this.enable_beta_markdown_export ? this.exportLink : null;
         },
         time() {
-            let generateTime = this.markdownConfig.generate_time;
+            const generateTime = this.markdownConfig.generate_time;
             if (generateTime) {
-                if (!generateTime.endsWith("Z")) {
-                    // We don't have tzinfo, but this will always be UTC coming
-                    // from Galaxy so append Z to assert that prior to parsing
-                    generateTime += "Z";
-                }
-                const date = new Date(generateTime);
-                return date.toLocaleString("default", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                    minute: "numeric",
-                    hour: "numeric",
-                    timeZone: "UTC",
-                    timeZoneName: "short",
-                });
+                return formatGalaxyPrettyDateString(generateTime);
             }
             return "unavailable";
         },
