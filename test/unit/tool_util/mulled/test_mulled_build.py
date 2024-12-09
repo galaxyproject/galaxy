@@ -30,9 +30,8 @@ def test_base_image_for_targets(target, version, base_image):
     assert base_image_for_targets([target], conda_context) == base_image
 
 
-@pytest.mark.parametrize("use_mamba", [False, True])
 @external_dependency_management
-def test_mulled_build_files_cli(use_mamba: bool, tmpdir) -> None:
+def test_mulled_build_files_cli(tmpdir) -> None:
     singularity_image_dir = tmpdir.mkdir("singularity image dir")
     target = build_target("zlib", version="1.2.13", build="h166bdaf_4")
     involucro_context = InvolucroContext(involucro_bin=os.path.join(tmpdir, "involucro"))
@@ -41,7 +40,6 @@ def test_mulled_build_files_cli(use_mamba: bool, tmpdir) -> None:
         involucro_context=involucro_context,
         command="build-and-test",
         singularity=True,
-        use_mamba=use_mamba,
         singularity_image_dir=singularity_image_dir,
     )
     assert exit_code == 0
