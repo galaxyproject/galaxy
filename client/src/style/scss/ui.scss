@@ -195,6 +195,17 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
+.ui-form-header-underlay::after {
+    content: "";
+    display: block;
+    position: absolute;
+    top: -$margin-h;
+    left: -0.5rem;
+    right: -0.5rem;
+    height: 50px;
+    background: linear-gradient($white 75%, change-color($white, $alpha: 0));
+}
+
 // popovers
 .popover {
     max-width: 70%;
