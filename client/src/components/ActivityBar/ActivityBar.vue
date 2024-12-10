@@ -352,7 +352,7 @@ defineExpose({
     display: none;
 }
 
-.activity-can-drag {
+.activity-can-drag .activity-item {
     border-radius: $border-radius-extralarge;
     outline: 2px dashed $border-color;
     outline-offset: -3px;
