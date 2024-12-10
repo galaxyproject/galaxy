@@ -88,14 +88,16 @@ function _mountSelectionDialog(clazz, options) {
  * Creates a history dataset by submitting an upload request
  * TODO: This should live somewhere else.
  */
-export function create(options) {
+export async function create(options) {
     async function getHistory() {
         if (!options.history_id) {
             return getCurrentGalaxyHistory();
         }
         return options.history_id;
     }
-    getHistory().then((history_id) => {
+    try {
+        const history_id = await getHistory();
+        const payload = await uploadPayload([options], history_id);
         uploadSubmit({
             success: (response) => {
                 refreshContentsWrapper();
@@ -105,10 +107,15 @@ export function create(options) {
             },
             error: options.error,
             data: {
-                payload: uploadPayload([options], history_id),
+                payload,
             },
         });
-    });
+    } catch (err) {
+        console.error("Error creating history dataset via upload:", err);
+        if (options.error) {
+            options.error(err);
+        }
+    }
 }
 
 export function refreshContentsWrapper() {
