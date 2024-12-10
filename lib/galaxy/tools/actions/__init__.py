@@ -139,7 +139,9 @@ class DefaultToolAction(ToolAction):
                     if converted_dataset:
                         data = converted_dataset
                     else:
-                        data = data.get_converted_dataset(trans, target_ext, target_context=parent, history=history)
+                        data = data.get_converted_dataset(
+                            trans, target_ext, target_context=parent, history=history, return_output=True
+                        )
 
                 input_name = prefixed_name
                 # Checked security of whole collection all at once if mapping over this input, else
