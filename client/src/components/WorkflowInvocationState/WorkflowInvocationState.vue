@@ -78,11 +78,11 @@ const tabsDisabled = computed(
 const disabledTabTooltip = computed(() => {
     const state = invocationState.value;
     if (state != "scheduled") {
-        return `This workflow is not currently scheduled. The current state is ${state}. Once the workflow is fully scheduled and jobs have complete this option will become available.`;
+        return `This workflow is not currently scheduled. The current state is ${state}. Once the workflow is fully scheduled and jobs have complete any disabled tabs will become available.`;
     } else if (runningCount.value != 0) {
-        return `The workflow invocation still contains ${runningCount.value} running job(s). Once these jobs have completed this option will become available.`;
+        return `The workflow invocation still contains ${runningCount.value} running job(s). Once these jobs have completed any disabled tabs will become available.`;
     } else {
-        return "Steps for this workflow are still running. This option will be available once complete.";
+        return "Steps for this workflow are still running. Any disabled tabs will be available once complete.";
     }
 });
 
@@ -332,33 +332,14 @@ async function onCancel() {
             </BTab> -->
             <BTab
                 v-if="!props.isSubworkflow"
+                title="Report"
                 title-item-class="invocation-report-tab"
                 :disabled="tabsDisabled"
                 :lazy="reportLazy"
                 :active.sync="reportActive">
-                <template v-slot:title>
-                    <span>Report</span>
-                    <BBadge
-                        v-if="tabsDisabled"
-                        v-b-tooltip.hover.noninteractive
-                        :title="disabledTabTooltip"
-                        variant="warning">
-                        <FontAwesomeIcon :icon="faExclamation" />
-                    </BBadge>
-                </template>
                 <InvocationReport v-if="invocationStateSuccess" :invocation-id="invocation.id" />
             </BTab>
-            <BTab title-item-class="invocation-export-tab" :disabled="tabsDisabled" lazy>
-                <template v-slot:title>
-                    <span>Export</span>
-                    <BBadge
-                        v-if="tabsDisabled"
-                        v-b-tooltip.hover.noninteractive
-                        :title="disabledTabTooltip"
-                        variant="warning">
-                        <FontAwesomeIcon :icon="faExclamation" />
-                    </BBadge>
-                </template>
+            <BTab title="Export" title-item-class="invocation-export-tab" :disabled="tabsDisabled" lazy>
                 <div v-if="invocationAndJobTerminal">
                     <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
                 </div>
@@ -367,17 +348,27 @@ async function onCancel() {
                 <WorkflowInvocationMetrics :invocation-id="invocation.id" :not-terminal="!invocationAndJobTerminal" />
             </BTab>
             <template v-slot:tabs-end>
-                <BButton
-                    v-if="!props.isFullPage && !invocationAndJobTerminal"
-                    v-b-tooltip.noninteractive.hover
-                    class="ml-auto my-1"
-                    title="Cancel scheduling of workflow invocation"
-                    data-description="cancel invocation button"
-                    size="sm"
-                    @click="onCancel">
-                    <FontAwesomeIcon :icon="faTimes" fixed-width />
-                    Cancel Workflow
-                </BButton>
+                <div class="ml-auto d-flex align-items-center">
+                    <BBadge
+                        v-if="tabsDisabled"
+                        v-b-tooltip.hover.noninteractive
+                        class="mr-1"
+                        :title="disabledTabTooltip"
+                        variant="primary">
+                        <FontAwesomeIcon :icon="faExclamation" />
+                    </BBadge>
+                    <BButton
+                        v-if="!props.isFullPage && !invocationAndJobTerminal"
+                        v-b-tooltip.noninteractive.hover
+                        class="my-1"
+                        title="Cancel scheduling of workflow invocation"
+                        data-description="cancel invocation button"
+                        size="sm"
+                        @click="onCancel">
+                        <FontAwesomeIcon :icon="faTimes" fixed-width />
+                        Cancel Workflow
+                    </BButton>
+                </div>
             </template>
         </BTabs>
     </div>
@@ -397,7 +388,7 @@ async function onCancel() {
 .invocation-report-tab,
 .invocation-export-tab {
     .nav-link.disabled {
-        pointer-events: auto !important;
+        background-color: #e9edf0;
     }
 }
 </style>
