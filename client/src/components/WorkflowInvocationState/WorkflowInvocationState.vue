@@ -360,7 +360,9 @@ async function onCancel() {
                     </BBadge>
                 </template>
                 <div v-if="invocationAndJobTerminal">
-                    <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
+                    <WorkflowInvocationExportOptions
+                        :invocation-id="invocation.id"
+                        :terminal="invocationAndJobTerminal" />
                 </div>
                 <BAlert v-else variant="info" show>
                     <LoadingSpan message="Waiting to complete invocation" />

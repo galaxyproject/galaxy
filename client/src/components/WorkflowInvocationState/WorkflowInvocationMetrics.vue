@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BButtonGroup, BCol, BContainer, BRow } from "bootstrap-vue";
+import { BAlert, BButtonGroup, BCol, BContainer, BRow } from "bootstrap-vue";
 import type { VisualizationSpec } from "vega-embed";
 import { computed, ref, watch } from "vue";
 import { type ComputedRef } from "vue";
@@ -8,16 +8,16 @@ import { type components, GalaxyApi } from "@/api";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import LoadingSpan from "../LoadingSpan.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
 const VegaWrapper = () => import("./VegaWrapper.vue");
 
-const props = defineProps({
-    invocationId: {
-        type: String,
-        required: true,
-    },
-});
+interface Props {
+    invocationId: string;
+    terminal?: boolean;
+}
+const props = defineProps<Props>();
 
 const groupBy = ref<"tool_id" | "step_id">("tool_id");
 const timing = ref<"seconds" | "minutes" | "hours">("seconds");
@@ -44,7 +44,11 @@ async function fetchMetrics() {
     }
 }
 
-watch(props, () => fetchMetrics(), { immediate: true });
+watch(
+    () => props.invocationId,
+    () => fetchMetrics(),
+    { immediate: true }
+);
 
 function itemToX(item: components["schemas"]["WorkflowJobMetric"]) {
     if (groupBy.value === "tool_id") {
@@ -380,6 +384,10 @@ const groupByInTitles = computed(() => {
 
 <template>
     <div>
+        <BAlert v-if="!props.terminal" variant="warning" show>
+            <LoadingSpan
+                message="The workflow might still be running. Metrics will update and change as the workflow progresses." />
+        </BAlert>
         <BContainer>
             <BRow align-h="end" class="mb-2">
                 <BButtonGroup>
