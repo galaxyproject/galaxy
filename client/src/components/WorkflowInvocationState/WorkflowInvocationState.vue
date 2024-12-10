@@ -360,16 +360,11 @@ async function onCancel() {
                     </BBadge>
                 </template>
                 <div v-if="invocationAndJobTerminal">
-                    <WorkflowInvocationExportOptions
-                        :invocation-id="invocation.id"
-                        :terminal="invocationAndJobTerminal" />
+                    <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
                 </div>
-                <BAlert v-else variant="info" show>
-                    <LoadingSpan message="Waiting to complete invocation" />
-                </BAlert>
             </BTab>
             <BTab title="Metrics" :lazy="true">
-                <WorkflowInvocationMetrics :invocation-id="invocation.id"></WorkflowInvocationMetrics>
+                <WorkflowInvocationMetrics :invocation-id="invocation.id" :not-terminal="!invocationAndJobTerminal" />
             </BTab>
             <template v-slot:tabs-end>
                 <BButton

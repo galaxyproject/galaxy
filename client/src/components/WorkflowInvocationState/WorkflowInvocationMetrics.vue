@@ -15,7 +15,7 @@ const VegaWrapper = () => import("./VegaWrapper.vue");
 
 interface Props {
     invocationId: string;
-    terminal?: boolean;
+    notTerminal?: boolean;
 }
 const props = defineProps<Props>();
 
@@ -384,7 +384,7 @@ const groupByInTitles = computed(() => {
 
 <template>
     <div>
-        <BAlert v-if="!props.terminal" variant="warning" show>
+        <BAlert v-if="props.notTerminal" variant="warning" show>
             <LoadingSpan message="Metrics will update and change as the workflow progresses." />
         </BAlert>
         <BContainer>
