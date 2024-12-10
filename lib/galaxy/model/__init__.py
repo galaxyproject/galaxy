@@ -4768,6 +4768,10 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return None
 
     @property
+    def cwl_formats(self):
+        return [f"http://edamontology.org/{self.datatype.edam_format}"]
+
+    @property
     def state(self):
         # self._state holds state that should only affect this particular dataset association, not the dataset state itself
         if self._state:
@@ -4805,6 +4809,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         self.extension = "expression.json"
         self.state = self.states.OK
         self.blurb = "skipped"
+        self.peek = json.dumps(None)
         self.visible = False
         null = json.dumps(None)
         with open(self.dataset.get_file_name(), "w") as out:
@@ -5610,6 +5615,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             uuid=(lambda uuid: str(uuid) if uuid else None)(hda.dataset.uuid),
             hid=hda.hid,
             file_ext=hda.ext,
+            cwl_formats=hda.cwl_formats,
             peek=unicodify(hda.display_peek()) if hda.peek and hda.peek != "no peek" else None,
             model_class=self.__class__.__name__,
             name=hda.name,
@@ -6545,12 +6551,21 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
     populated_states = DatasetCollectionPopulatedState
 
-    def __init__(self, id=None, collection_type=None, populated=True, element_count=None):
+    def __init__(
+        self,
+        id=None,
+        collection_type=None,
+        populated=True,
+        element_count=None,
+        fields=None,
+    ):
         self.id = id
         self.collection_type = collection_type
         if not populated:
             self.populated_state = DatasetCollection.populated_states.NEW
         self.element_count = element_count
+        # TODO: persist fields...
+        self.fields = fields
 
     def _build_nested_collection_attributes_stmt(
         self,
@@ -6724,6 +6739,10 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             self._populated_optimized = _populated_optimized
 
         return self._populated_optimized
+
+    @property
+    def allow_implicit_mapping(self):
+        return self.collection_type != "record"
 
     @property
     def populated(self):
@@ -8152,6 +8171,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
     DEFAULT_POSITION = {"left": 0, "top": 0}
 
     def __init__(self):
+        self.position = WorkflowStep.DEFAULT_POSITION
         self.uuid = uuid4()
         self._input_connections_by_name = None
         self._inputs_by_name = None
@@ -8448,6 +8468,9 @@ class WorkflowStepInput(Base, RepresentById):
         cascade_backrefs=False,
     )
 
+    default_merge_type = "merge_flattened"
+    default_scatter_type = "dotproduct"
+
     def __init__(self, workflow_step):
         add_object_to_object_session(self, workflow_step)
         self.workflow_step = workflow_step
@@ -8519,6 +8542,9 @@ class WorkflowStepConnection(Base, RepresentById):
         copied_connection = WorkflowStepConnection()
         copied_connection.output_name = self.output_name
         return copied_connection
+
+    def log_str(self):
+        return f"WorkflowStepConnection[output_step_id={self.output_step_id},output_name={self.output_name},input_step_id={self.input_step_id},input_name={self.input_name}]"
 
 
 class WorkflowOutput(Base, Serializable):
@@ -9472,6 +9498,8 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         return self.state == self.states.NEW
 
     def add_output(self, output_name, output_object):
+        if getattr(output_object, "ephemeral", False):
+            return
         if output_object.history_content_type == "dataset":
             output_assoc = WorkflowInvocationStepOutputDatasetAssociation()
             output_assoc.workflow_invocation_step = self

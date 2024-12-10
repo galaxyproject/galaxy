@@ -7,9 +7,11 @@ from typing import (
     List,
     Optional,
 )
+from uuid import uuid4
 
 from yaml import safe_load
 
+from galaxy.tool_util.cwl.parser import tool_proxy_from_persistent_representation
 from galaxy.tool_util.loader import load_tool_with_refereces
 from galaxy.util import (
     ElementTree,
@@ -17,10 +19,7 @@ from galaxy.util import (
 )
 from galaxy.util.path import StrPath
 from galaxy.util.yaml_util import ordered_load
-from .cwl import (
-    CwlToolSource,
-    tool_proxy,
-)
+from .cwl import CwlToolSource
 from .interface import (
     InputSource,
     ToolSource,
@@ -42,9 +41,8 @@ def build_xml_tool_source(xml_string: str) -> XmlToolSource:
     return XmlToolSource(parse_xml_string_to_etree(xml_string))
 
 
-def build_cwl_tool_source(yaml_string: str) -> CwlToolSource:
-    proxy = tool_proxy(tool_object=safe_load(yaml_string))
-    # regular CwlToolSource sets basename as tool id, but that's not going to cut it in production
+def build_cwl_tool_source(persistent_representation: str) -> CwlToolSource:
+    proxy = tool_proxy_from_persistent_representation(persistent_representation)
     return CwlToolSource(tool_proxy=proxy)
 
 
@@ -65,6 +63,8 @@ def get_tool_source(
     enable_beta_formats: bool = True,
     tool_location_fetcher: Optional[ToolLocationFetcher] = None,
     macro_paths: Optional[List[str]] = None,
+    strict_cwl_validation: bool = True,
+    uuid: Optional[str] = None,
     tool_source_class: Optional[str] = None,
     raw_tool_source: Optional[str] = None,
 ) -> ToolSource:
@@ -100,21 +100,33 @@ def get_tool_source(
             return YamlToolSource(as_dict, source_path=config_file)
     elif config_file.endswith(".json") or config_file.endswith(".cwl"):
         log.info(
-            "Loading CWL tool - this is experimental - tool likely will not function in future at least in same way."
+            "Loading CWL tool [%s]. This is experimental - tool likely will not function in future at least in same way.",
+            config_file,
         )
-        return CwlToolSource(config_file)
+        uuid = uuid or str(uuid4())
+        return CwlToolSource(config_file, strict_cwl_validation=strict_cwl_validation, uuid=uuid)
     else:
         tree, macro_paths = load_tool_with_refereces(config_file)
         return XmlToolSource(tree, source_path=config_file, macro_paths=macro_paths)
 
 
-def get_tool_source_from_representation(tool_format, tool_representation):
+def get_tool_source_from_representation(
+    tool_format, tool_representation, strict_cwl_validation=True, tool_directory=None, uuid=None
+):
+    # TODO: PRE-MERGE - ensure strict_cwl_validation is being set on caller - ignored right now.
     # TODO: make sure whatever is consuming this method uses ordered load.
     log.info("Loading dynamic tool - this is experimental - tool may not function in future.")
     if tool_format == "GalaxyTool":
         if "version" not in tool_representation:
             tool_representation["version"] = "1.0.0"  # Don't require version for embedded tools.
         return YamlToolSource(tool_representation)
+    elif tool_format in ["CommandLineTool", "ExpressionTool"]:
+        return CwlToolSource(
+            tool_object=tool_representation,
+            strict_cwl_validation=strict_cwl_validation,
+            tool_directory=tool_directory,
+            uuid=uuid,
+        )
     else:
         raise Exception(f"Unknown tool representation format [{tool_format}].")
 
