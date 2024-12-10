@@ -98,6 +98,10 @@ const dragItem: Ref<Activity | null> = ref(null);
 // drag state
 const isDragging = ref(false);
 
+// computed values
+const canDrag = computed(() => isActiveSideBar("settings"));
+const isSideBarOpen = computed(() => activityStore.toggledSideBar !== "");
+
 /**
  * Checks if the route of an activity is currently being visited and panels are collapsed
  */
@@ -111,8 +115,6 @@ function isActiveRoute(activityTo?: string | null) {
 function isActiveSideBar(menuKey: string) {
     return activityStore.toggledSideBar === menuKey;
 }
-
-const isSideBarOpen = computed(() => activityStore.toggledSideBar !== "");
 
 /**
  * Checks if an activity that has a panel should have the `is-active` prop
@@ -188,10 +190,6 @@ function onActivityClicked(activity: Activity) {
 function setActiveSideBar(key: string) {
     activityStore.toggledSideBar = key;
 }
-
-const canDrag = computed(() => {
-    return isActiveSideBar("settings");
-});
 
 defineExpose({
     isActiveSideBar,
