@@ -31,6 +31,7 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
+from urllib.parse import urlparse
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
@@ -2615,8 +2616,18 @@ class BcoExportOptions:
     override_xref: Optional[List[XrefItem]] = None
 
 
-class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
-    def __init__(self, uri, export_options: BcoExportOptions, **kwds):
+class FileSourceModelExportStore(abc.ABC, DirectoryModelExportStore):
+    """
+    Export to file sources, from where data can be retrieved later on using a URI.
+    """
+
+    file_source_uri: Optional[StrPath] = None
+    # data can be retrieved later using this URI
+
+    out_file: StrPath
+    # the output file is written to this path, from which it is written to the file source
+
+    def __init__(self, uri, **kwds):
         temp_output_dir = tempfile.mkdtemp()
         self.temp_output_dir = temp_output_dir
         if "://" in str(uri):
@@ -2627,18 +2638,46 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
             self.out_file = uri
             self.file_source_uri = None
             export_directory = temp_output_dir
-        self.export_options = export_options
         super().__init__(export_directory, **kwds)
 
+    @abc.abstractmethod
+    def _generate_output_file(self) -> None:
+        """
+        Generate the output file that will be uploaded to the file source.
+
+        Produce an output file and save it to `self.out_file`. A common pattern for this method to create an archive out
+        of `self.export_directory`.
+
+        This method runs after `DirectoryModelExportStore._finalize()`. Therefore, `self.export_directory` will already
+        have been populated when it runs.
+        """
+
     def _finalize(self):
-        super()._finalize()
-        core_biocompute_object, object_id = self._core_biocompute_object_and_object_id()
-        write_to_file(object_id, core_biocompute_object, self.out_file)
+        super()._finalize()  # populate `self.export_directory`
+        self._generate_output_file()  # generate the output file `self.out_file`
         if self.file_source_uri:
+            # upload output file to file source
+            if not self.file_sources:
+                raise Exception(f"Need self.file_sources but {type(self)} is missing it: {self.file_sources}.")
+            file_source_uri = urlparse(str(self.file_source_uri))
             file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
             file_source = file_source_path.file_source
             assert os.path.exists(self.out_file)
-            file_source.write_from(file_source_path.path, self.out_file, user_context=self.user_context)
+            self.file_source_uri = f"{file_source_uri.scheme}://{file_source_uri.netloc}" + file_source.write_from(
+                file_source_path.path, self.out_file, user_context=self.user_context
+            )
+        shutil.rmtree(self.temp_output_dir)
+
+
+class BcoModelExportStore(FileSourceModelExportStore, WorkflowInvocationOnlyExportStore):
+
+    def __init__(self, uri, export_options: BcoExportOptions, **kwds):
+        self.export_options = export_options
+        super().__init__(uri, **kwds)
+
+    def _generate_output_file(self):
+        core_biocompute_object, object_id = self._core_biocompute_object_and_object_id()
+        write_to_file(object_id, core_biocompute_object, self.out_file)
 
     def _core_biocompute_object_and_object_id(self) -> Tuple[BioComputeObjectCore, str]:
         assert self.app  # need app.security to do anything...
@@ -2828,25 +2867,9 @@ class ROCrateModelExportStore(DirectoryModelExportStore, WriteCrates):
         ro_crate.write(self.crate_directory)
 
 
-class ROCrateArchiveModelExportStore(DirectoryModelExportStore, WriteCrates):
-    file_source_uri: Optional[StrPath]
-    out_file: StrPath
+class ROCrateArchiveModelExportStore(FileSourceModelExportStore, WriteCrates):
 
-    def __init__(self, uri: StrPath, **kwds) -> None:
-        temp_output_dir = tempfile.mkdtemp()
-        self.temp_output_dir = temp_output_dir
-        if "://" in str(uri):
-            self.out_file = os.path.join(temp_output_dir, "out")
-            self.file_source_uri = uri
-            export_directory = os.path.join(temp_output_dir, "export")
-        else:
-            self.out_file = uri
-            self.file_source_uri = None
-            export_directory = temp_output_dir
-        super().__init__(export_directory, **kwds)
-
-    def _finalize(self) -> None:
-        super()._finalize()
+    def _generate_output_file(self):
         ro_crate = self._init_crate()
         ro_crate.write(self.export_directory)
         out_file_name = str(self.out_file)
@@ -2854,48 +2877,18 @@ class ROCrateArchiveModelExportStore(DirectoryModelExportStore, WriteCrates):
             out_file = out_file_name[: -len(".zip")]
         else:
             out_file = out_file_name
-        rval = shutil.make_archive(out_file, "fastzip", self.export_directory)
-        if not self.file_source_uri:
-            shutil.move(rval, self.out_file)
-        else:
-            if not self.file_sources:
-                raise Exception(f"Need self.file_sources but {type(self)} is missing it: {self.file_sources}.")
-            file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
-            file_source = file_source_path.file_source
-            assert os.path.exists(rval), rval
-            file_source.write_from(file_source_path.path, rval, user_context=self.user_context)
-        shutil.rmtree(self.temp_output_dir)
+        archive = shutil.make_archive(out_file, "fastzip", self.export_directory)
+        shutil.move(archive, self.out_file)
 
 
-class TarModelExportStore(DirectoryModelExportStore):
-    file_source_uri: Optional[StrPath]
-    out_file: StrPath
+class TarModelExportStore(FileSourceModelExportStore):
 
     def __init__(self, uri: StrPath, gzip: bool = True, **kwds) -> None:
         self.gzip = gzip
-        temp_output_dir = tempfile.mkdtemp()
-        self.temp_output_dir = temp_output_dir
-        if "://" in str(uri):
-            self.out_file = os.path.join(temp_output_dir, "out")
-            self.file_source_uri = uri
-            export_directory = os.path.join(temp_output_dir, "export")
-        else:
-            self.out_file = uri
-            self.file_source_uri = None
-            export_directory = temp_output_dir
-        super().__init__(export_directory, **kwds)
+        super().__init__(uri, **kwds)
 
-    def _finalize(self) -> None:
-        super()._finalize()
+    def _generate_output_file(self):
         tar_export_directory(self.export_directory, self.out_file, self.gzip)
-        if self.file_source_uri:
-            if not self.file_sources:
-                raise Exception(f"Need self.file_sources but {type(self)} is missing it: {self.file_sources}.")
-            file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
-            file_source = file_source_path.file_source
-            assert os.path.exists(self.out_file)
-            file_source.write_from(file_source_path.path, self.out_file, user_context=self.user_context)
-        shutil.rmtree(self.temp_output_dir)
 
 
 class BagDirectoryModelExportStore(DirectoryModelExportStore):
@@ -2908,37 +2901,16 @@ class BagDirectoryModelExportStore(DirectoryModelExportStore):
         bdb.make_bag(self.out_directory)
 
 
-class BagArchiveModelExportStore(BagDirectoryModelExportStore):
-    file_source_uri: Optional[StrPath]
+class BagArchiveModelExportStore(FileSourceModelExportStore, BagDirectoryModelExportStore):
 
     def __init__(self, uri: StrPath, bag_archiver: str = "tgz", **kwds) -> None:
         # bag_archiver in tgz, zip, tar
         self.bag_archiver = bag_archiver
-        temp_output_dir = tempfile.mkdtemp()
-        self.temp_output_dir = temp_output_dir
-        if "://" in str(uri):
-            # self.out_file = os.path.join(temp_output_dir, "out")
-            self.file_source_uri = uri
-            export_directory = os.path.join(temp_output_dir, "export")
-        else:
-            self.out_file = uri
-            self.file_source_uri = None
-            export_directory = temp_output_dir
-        super().__init__(export_directory, **kwds)
+        super().__init__(uri, **kwds)
 
-    def _finalize(self) -> None:
-        super()._finalize()
-        rval = bdb.archive_bag(self.export_directory, self.bag_archiver)
-        if not self.file_source_uri:
-            shutil.move(rval, self.out_file)
-        else:
-            if not self.file_sources:
-                raise Exception(f"Need self.file_sources but {type(self)} is missing it: {self.file_sources}.")
-            file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
-            file_source = file_source_path.file_source
-            assert os.path.exists(rval)
-            file_source.write_from(file_source_path.path, rval, user_context=self.user_context)
-        shutil.rmtree(self.temp_output_dir)
+    def _generate_output_file(self):
+        archive = bdb.archive_bag(self.export_directory, self.bag_archiver)
+        shutil.move(archive, self.out_file)
 
 
 def get_export_store_factory(
@@ -2947,13 +2919,8 @@ def get_export_store_factory(
     export_files=None,
     bco_export_options: Optional[BcoExportOptions] = None,
     user_context=None,
-) -> Callable[[StrPath], ModelExportStore]:
-    export_store_class: Union[
-        Type[TarModelExportStore],
-        Type[BagArchiveModelExportStore],
-        Type[ROCrateArchiveModelExportStore],
-        Type[BcoModelExportStore],
-    ]
+) -> Callable[[StrPath], FileSourceModelExportStore]:
+    export_store_class: Type[FileSourceModelExportStore]
     export_store_class_kwds = {
         "app": app,
         "export_files": export_files,
