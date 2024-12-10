@@ -2655,7 +2655,7 @@ class PostJobAction(Base, RepresentById):
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
     action_type: Mapped[str] = mapped_column(String(255))
     output_name: Mapped[Optional[str]] = mapped_column(String(255))
-    action_arguments: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    _action_arguments: Mapped[Optional[Dict[str, Any]]] = mapped_column("action_arguments", MutableJSONType)
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship(
         back_populates="post_job_actions",
         primaryjoin=(lambda: WorkflowStep.id == PostJobAction.workflow_step_id),
@@ -2667,6 +2667,18 @@ class PostJobAction(Base, RepresentById):
         self.action_arguments = action_arguments
         self.workflow_step = workflow_step
         ensure_object_added_to_session(self, object_in_session=workflow_step)
+
+    @property
+    def action_arguments(self):
+        if self.action_type in ("HideDatasetAction", "DeleteIntermediatesAction") and self._action_arguments is True:
+            # Fix up broken workflows resulting from imports with gxformat2 <= 0.20.0
+            return {}
+        else:
+            return self._action_arguments
+
+    @action_arguments.setter
+    def action_arguments(self, value: Dict[str, Any]):
+        self._action_arguments = value
 
 
 class PostJobActionAssociation(Base, RepresentById):
@@ -7020,11 +7032,6 @@ class HistoryDatasetCollectionAssociation(
         primaryjoin=copied_from_history_dataset_collection_association_id == id,
         remote_side=[id],
         uselist=False,
-        back_populates="copied_to_history_dataset_collection_association",
-    )
-    copied_to_history_dataset_collection_association = relationship(
-        "HistoryDatasetCollectionAssociation",
-        back_populates="copied_from_history_dataset_collection_association",
     )
     implicit_input_collections: Mapped[List["ImplicitlyCreatedDatasetCollectionInput"]] = relationship(
         primaryjoin=(
