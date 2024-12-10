@@ -67,11 +67,11 @@ export class UploadQueue {
     }
 
     // Initiate upload process
-    start() {
+    async start() {
         if (!this.isRunning) {
             this.isRunning = true;
-            this._processUrls();
-            this._process();
+            await this._processUrls();
+            await this._process();
         }
     }
 
@@ -81,7 +81,7 @@ export class UploadQueue {
     }
 
     // Process an upload, recursive
-    _process() {
+    async _process() {
         if (this.size === 0 || this.isPaused) {
             this.isRunning = false;
             this.isPaused = false;
@@ -96,19 +96,19 @@ export class UploadQueue {
             // Remove item from queue
             this.remove(index);
             // Collect upload request data
-            const data = uploadPayload([this.opts.get(index)], this.opts.historyId);
+            const data = await uploadPayload([this.opts.get(index)], this.opts.historyId);
             // Initiate upload request
             this._processSubmit(index, data);
         } catch (e) {
             // Parse error message for failed upload item
             this.opts.error(index, String(e));
             // Continue queue
-            this._process();
+            await this._process();
         }
     }
 
     // Submit remote files as single batch request
-    _processUrls() {
+    async _processUrls() {
         const list = [];
         for (const index of this.queue.keys()) {
             const model = this.opts.get(index);
@@ -119,7 +119,7 @@ export class UploadQueue {
         }
         if (list.length > 0) {
             try {
-                const data = uploadPayload(list, this.opts.historyId);
+                const data = await uploadPayload(list, this.opts.historyId);
                 sendPayload(data, {
                     success: (message) => {
                         list.forEach((model) => {
