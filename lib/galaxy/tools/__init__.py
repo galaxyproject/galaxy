@@ -3786,14 +3786,13 @@ class HarmonizeTool(DatabaseOperationTool):
         final_sorted_identifiers = [
             element.element_identifier for element in elements1 if element.element_identifier in old_elements2_dict
         ]
-        # Raise Exception if it is empty
         if len(final_sorted_identifiers) == 0:
             # Create empty collections:
             output_collections.create_collection(
-                next(iter(self.outputs.values())), "output1", elements={}, propagate_hda_tags=False
+                self.outputs["output1"], "output1", elements={}, propagate_hda_tags=False
             )
             output_collections.create_collection(
-                next(iter(self.outputs.values())), "output2", elements={}, propagate_hda_tags=False
+                self.outputs["output2"], "output2", elements={}, propagate_hda_tags=False
             )
             return
 
@@ -3811,7 +3810,7 @@ class HarmonizeTool(DatabaseOperationTool):
             self._add_datasets_to_history(history, new_elements.values())
             # Create collections:
             output_collections.create_collection(
-                next(iter(self.outputs.values())), output_label, elements=new_elements, propagate_hda_tags=False
+                self.outputs[output_label], output_label, elements=new_elements, propagate_hda_tags=False
             )
 
         # Create outputs:
