@@ -999,14 +999,16 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             # sense.
             hdca_copied_from_sinks = object_import_tracker.hdca_copied_from_sinks
             if copied_from_object_key in object_import_tracker.hdcas_by_key:
-                hdca.copied_from_history_dataset_collection_association = object_import_tracker.hdcas_by_key[
-                    copied_from_object_key
-                ]
+                source_hdca = object_import_tracker.hdcas_by_key[copied_from_object_key]
+                if source_hdca is not hdca:
+                    # We may not have the copied source, in which case the first included HDCA in the chain
+                    # acts as the source, so here we make sure we don't create a cycle.
+                    hdca.copied_from_history_dataset_collection_association = source_hdca
             else:
                 if copied_from_object_key in hdca_copied_from_sinks:
-                    hdca.copied_from_history_dataset_collection_association = object_import_tracker.hdcas_by_key[
-                        hdca_copied_from_sinks[copied_from_object_key]
-                    ]
+                    source_hdca = object_import_tracker.hdcas_by_key[hdca_copied_from_sinks[copied_from_object_key]]
+                    if source_hdca is not hdca:
+                        hdca.copied_from_history_dataset_collection_association = source_hdca
                 else:
                     hdca_copied_from_sinks[copied_from_object_key] = dataset_collection_key
 
@@ -1072,7 +1074,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             for step_attrs in invocation_attrs["steps"]:
                 imported_invocation_step = model.WorkflowInvocationStep()
                 imported_invocation_step.workflow_invocation = imported_invocation
-                ensure_object_added_to_session(imported_invocation, session=self.sa_session)
+                ensure_object_added_to_session(imported_invocation_step, session=self.sa_session)
                 attach_workflow_step(imported_invocation_step, step_attrs)
                 restore_times(imported_invocation_step, step_attrs)
                 imported_invocation_step.action = step_attrs["action"]
@@ -1926,12 +1928,14 @@ class DirectoryModelExportStore(ModelExportStore):
         self.export_files = export_files
         self.included_datasets: Dict[model.DatasetInstance, Tuple[model.DatasetInstance, bool]] = {}
         self.dataset_implicit_conversions: Dict[model.DatasetInstance, model.ImplicitlyConvertedDatasetAssociation] = {}
-        self.included_collections: List[Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]] = []
+        self.included_collections: Dict[
+            Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation],
+            Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation],
+        ] = {}
         self.included_libraries: List[model.Library] = []
         self.included_library_folders: List[model.LibraryFolder] = []
         self.included_invocations: List[model.WorkflowInvocation] = []
         self.collection_datasets: Set[int] = set()
-        self.collections_attrs: List[Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]] = []
         self.dataset_id_to_path: Dict[int, Tuple[Optional[str], Optional[str]]] = {}
 
         self.job_output_dataset_associations: Dict[int, Dict[str, model.DatasetInstance]] = {}
@@ -2298,8 +2302,7 @@ class DirectoryModelExportStore(ModelExportStore):
     def add_dataset_collection(
         self, collection: Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]
     ) -> None:
-        self.collections_attrs.append(collection)
-        self.included_collections.append(collection)
+        self.included_collections[collection] = collection
 
     def add_implicit_conversion_dataset(
         self,
@@ -2362,7 +2365,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
         collections_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_COLLECTIONS)
         with open(collections_attrs_filename, "w") as collections_attrs_out:
-            collections_attrs_out.write(to_json(self.collections_attrs))
+            collections_attrs_out.write(to_json(self.included_collections.values()))
 
         conversions_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_CONVERSIONS)
         with open(conversions_attrs_filename, "w") as conversions_attrs_out:
@@ -2383,12 +2386,12 @@ class DirectoryModelExportStore(ModelExportStore):
             #
 
             # Get all jobs associated with included HDAs.
-            jobs_dict: Dict[str, model.Job] = {}
+            jobs_dict: Dict[int, model.Job] = {}
             implicit_collection_jobs_dict = {}
 
             def record_job(job):
-                if not job:
-                    # No viable job.
+                if not job or job.id in jobs_dict:
+                    # No viable job or job already recorded.
                     return
 
                 jobs_dict[job.id] = job
@@ -2414,10 +2417,11 @@ class DirectoryModelExportStore(ModelExportStore):
                     )
                 job_hda = hda
                 while job_hda.copied_from_history_dataset_association:  # should this check library datasets as well?
+                    # record job (if one exists) even if dataset was copied
+                    # copy could have been created manually through UI/API or using database operation tool,
+                    # in which case we have a relevant job to export.
+                    record_associated_jobs(job_hda)
                     job_hda = job_hda.copied_from_history_dataset_association
-                if not job_hda.creating_job_associations:
-                    # No viable HDA found.
-                    continue
 
                 record_associated_jobs(job_hda)
 

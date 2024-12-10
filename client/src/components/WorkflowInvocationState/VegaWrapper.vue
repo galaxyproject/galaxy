@@ -1,5 +1,5 @@
 <template>
-    <div ref="chartContainer" class="chart" :style="style"></div>
+    <div ref="chartContainer" :style="style"></div>
 </template>
 
 <script setup lang="ts">
@@ -9,15 +9,18 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 export interface VisSpec {
     spec: VisualizationSpec;
-    width: string;
+    fillWidth?: boolean;
 }
 
 const props = withDefaults(defineProps<VisSpec>(), {
-    width: "100%",
+    fillWidth: true,
 });
 
 const style = computed(() => {
-    return { width: props.width };
+    if (props.fillWidth) {
+        return { width: "100%" };
+    }
+    return {};
 });
 
 const chartContainer = ref<HTMLDivElement | null>(null);
@@ -49,8 +52,3 @@ onBeforeUnmount(() => {
     }
 });
 </script>
-
-<style scoped>
-.chart {
-}
-</style>

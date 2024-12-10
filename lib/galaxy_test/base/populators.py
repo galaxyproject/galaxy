@@ -1911,6 +1911,8 @@ class BaseWorkflowPopulator(BasePopulator):
                 invocations = self.history_invocations(history_id)
                 if len(invocations) == expected_invocation_count:
                     return True
+                elif len(invocations) > expected_invocation_count:
+                    raise AssertionError("More than the expect number of invocations found in workflow")
 
             wait_on(invocation_count, f"{expected_invocation_count} history invocations")
         for invocation in self.history_invocations(history_id):
