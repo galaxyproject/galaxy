@@ -385,8 +385,7 @@ const groupByInTitles = computed(() => {
 <template>
     <div>
         <BAlert v-if="!props.terminal" variant="warning" show>
-            <LoadingSpan
-                message="The workflow might still be running. Metrics will update and change as the workflow progresses." />
+            <LoadingSpan message="Metrics will update and change as the workflow progresses." />
         </BAlert>
         <BContainer>
             <BRow align-h="end" class="mb-2">
