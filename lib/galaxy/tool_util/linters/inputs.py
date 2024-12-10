@@ -710,12 +710,14 @@ class InputsSelectOptionsDefinesOptions(Linter):
             # TODO check if input param is present for from_dataset
             from_dataset = options.get("from_dataset", None)
             from_data_table = options.get("from_data_table", None)
+            from_url = options.get("from_url", None)
 
             if (
                 from_file is None
                 and from_parameter is None
                 and from_dataset is None
                 and from_data_table is None
+                and from_url is None
                 and not filter_adds_options
             ):
                 lint_ctx.error(
