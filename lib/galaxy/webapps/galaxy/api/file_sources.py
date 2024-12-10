@@ -96,12 +96,12 @@ class FastAPIFileSources:
         summary="Test payload for creating user-bound file source.",
         operation_id="file_sources__test_new_instance_configuration",
     )
-    def test_instance_configuration(
+    async def test_instance_configuration(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: CreateInstancePayload = Body(...),
     ) -> PluginStatus:
-        return self.file_source_instances_manager.plugin_status(trans, payload)
+        return await self.file_source_instances_manager.plugin_status(trans, payload)
 
     @router.get(
         "/api/file_source_instances",
@@ -131,12 +131,12 @@ class FastAPIFileSources:
         summary="Test a file source instance and return status.",
         operation_id="file_sources__instances_test_instance",
     )
-    def instance_test(
+    async def instance_test(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         uuid: UUID4 = UserFileSourceIdPathParam,
     ) -> PluginStatus:
-        return self.file_source_instances_manager.plugin_status_for_instance(trans, uuid)
+        return await self.file_source_instances_manager.plugin_status_for_instance(trans, uuid)
 
     @router.put(
         "/api/file_source_instances/{uuid}",
@@ -156,13 +156,13 @@ class FastAPIFileSources:
         summary="Test updating or upgrading user file source instance.",
         operation_id="file_sources__test_instances_update",
     )
-    def test_update_instance(
+    async def test_update_instance(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         uuid: UUID4 = UserFileSourceIdPathParam,
         payload: TestModifyInstancePayload = Body(...),
     ) -> PluginStatus:
-        return self.file_source_instances_manager.test_modify_instance(trans, uuid, payload)
+        return await self.file_source_instances_manager.test_modify_instance(trans, uuid, payload)
 
     @router.delete(
         "/api/file_source_instances/{uuid}",

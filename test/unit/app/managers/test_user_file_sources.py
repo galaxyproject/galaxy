@@ -46,7 +46,7 @@ from galaxy.model import (
 from galaxy.schema.schema import OAuth2State
 from galaxy.util import config_templates
 from galaxy.util.config_templates import RawTemplateConfig
-from .base import BaseTestCase
+from .base import BaseIsolatedAsyncioTestCase
 
 SIMPLE_FILE_SOURCE_NAME = "myfilesource"
 SIMPLE_FILE_SOURCE_DESCRIPTION = "a description of my file source"
@@ -205,7 +205,7 @@ UPGRADE_INITIAL_PAYLOAD = CreateInstancePayload(
 )
 
 
-class TestFileSourcesTestCase(BaseTestCase):
+class TestFileSourcesTestCase(BaseIsolatedAsyncioTestCase):
     manager: FileSourceInstancesManager
     file_sources: UserDefinedFileSourcesImpl
 
@@ -282,7 +282,7 @@ class TestFileSourcesTestCase(BaseTestCase):
         user_object = self._create_instance(create_payload)
         assert get_uuid(user_object.uuid) == get_uuid(uuid)
 
-    def test_oauth2_access_token_injection_during_verify(self, tmp_path, monkeypatch):
+    async def test_oauth2_access_token_injection_during_verify(self, tmp_path, monkeypatch):
         if DropboxFS is None:
             raise SkipTest("Optional dropbpox dependency not available")
         self._init_dropbox_env(tmp_path, monkeypatch)
@@ -320,14 +320,14 @@ class TestFileSourcesTestCase(BaseTestCase):
 
         monkeypatch.setattr(config_templates, "get_token_from_refresh_raw", mock_get_token_from_refresh_raw)
         monkeypatch.setattr(dropbox, "DropboxFS", MockDropboxFS)
-        status = self.manager.plugin_status(self.trans, create_payload)
+        status = await self.manager.plugin_status(self.trans, create_payload)
         assert status.oauth2_access_token_generation
         assert not status.oauth2_access_token_generation.is_not_ok
         assert status.connection
         assert not status.connection.is_not_ok
         assert pyfilesystem_fs_init_kwd["access_token"] == "my_test_access_token"
 
-    def test_report_oauth2_access_token_generation_failure(self, tmp_path, monkeypatch):
+    async def test_report_oauth2_access_token_generation_failure(self, tmp_path, monkeypatch):
         self._init_dropbox_env(tmp_path, monkeypatch)
 
         uuid = uuid4().hex
@@ -350,7 +350,7 @@ class TestFileSourcesTestCase(BaseTestCase):
             return MockExceptionResponse(excepton_message)
 
         monkeypatch.setattr(config_templates, "get_token_from_refresh_raw", mock_get_token_from_refresh_raw)
-        status = self.manager.plugin_status(self.trans, create_payload)
+        status = await self.manager.plugin_status(self.trans, create_payload)
         assert status.oauth2_access_token_generation
         assert status.oauth2_access_token_generation.is_not_ok
         assert excepton_message in status.oauth2_access_token_generation.message
@@ -605,7 +605,7 @@ class TestFileSourcesTestCase(BaseTestCase):
 
         self._assert_modify_throws_exception(user_object_store, upgrade_to_1, RequestParameterMissingException)
 
-    def test_status_valid(self, tmp_path):
+    async def test_status_valid(self, tmp_path):
         self.init_user_in_database()
         self._init_managers(tmp_path)
         (tmp_path / self.trans.user.username).mkdir()
@@ -617,14 +617,14 @@ class TestFileSourcesTestCase(BaseTestCase):
             variables={},
             secrets={},
         )
-        status = self.manager.plugin_status(self.trans, create_payload)
+        status = await self.manager.plugin_status(self.trans, create_payload)
         assert status.connection
         assert not status.connection.is_not_ok
         assert not status.template_definition.is_not_ok
         assert status.template_settings
         assert not status.template_settings.is_not_ok
 
-    def test_status_invalid_connection(self, tmp_path):
+    async def test_status_invalid_connection(self, tmp_path):
         self.init_user_in_database()
         self._init_managers(tmp_path)
         # We don't make the directory like above so it doesn't exist
@@ -637,7 +637,7 @@ class TestFileSourcesTestCase(BaseTestCase):
             variables={},
             secrets={},
         )
-        status = self.manager.plugin_status(self.trans, create_payload)
+        status = await self.manager.plugin_status(self.trans, create_payload)
         assert not status.template_definition.is_not_ok
         assert status.template_settings
         assert not status.template_settings.is_not_ok
@@ -647,7 +647,7 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert status.connection
         assert status.connection.is_not_ok
 
-    def test_status_invalid_settings_undefined_variable(self, tmp_path):
+    async def test_status_invalid_settings_undefined_variable(self, tmp_path):
         self.init_user_in_database()
         self._init_managers(tmp_path, config_dict=invalid_home_directory_template(tmp_path))
         create_payload = CreateInstancePayload(
@@ -658,7 +658,7 @@ class TestFileSourcesTestCase(BaseTestCase):
             variables={},
             secrets={},
         )
-        status = self.manager.plugin_status(self.trans, create_payload)
+        status = await self.manager.plugin_status(self.trans, create_payload)
         assert not status.template_definition.is_not_ok
         assert status.template_settings
         assert status.template_settings.is_not_ok
@@ -667,7 +667,7 @@ class TestFileSourcesTestCase(BaseTestCase):
         )
         assert status.connection is None
 
-    def test_status_invalid_settings_configuration_validation(self, tmp_path):
+    async def test_status_invalid_settings_configuration_validation(self, tmp_path):
         self.init_user_in_database()
         self._init_managers(tmp_path, config_dict=invalid_home_directory_template_type_error(tmp_path))
         create_payload = CreateInstancePayload(
@@ -678,14 +678,14 @@ class TestFileSourcesTestCase(BaseTestCase):
             variables={},
             secrets={},
         )
-        status = self.manager.plugin_status(self.trans, create_payload)
+        status = await self.manager.plugin_status(self.trans, create_payload)
         assert not status.template_definition.is_not_ok
         assert status.template_settings
         assert status.template_settings.is_not_ok
         assert "Input should be a valid boolean" in status.template_settings.message
         assert status.connection is None
 
-    def test_status_existing_valid(self, tmp_path):
+    async def test_status_existing_valid(self, tmp_path):
         self.init_user_in_database()
         self._init_managers(tmp_path)
         (tmp_path / self.trans.user.username).mkdir()
@@ -698,14 +698,14 @@ class TestFileSourcesTestCase(BaseTestCase):
             secrets={},
         )
         user_file_source = self._create_instance(create_payload)
-        status = self.manager.plugin_status_for_instance(self.trans, user_file_source.uuid)
+        status = await self.manager.plugin_status_for_instance(self.trans, user_file_source.uuid)
         assert status.connection
         assert not status.connection.is_not_ok
         assert not status.template_definition.is_not_ok
         assert status.template_settings
         assert not status.template_settings.is_not_ok
 
-    def test_status_update_valid(self, tmp_path):
+    async def test_status_update_valid(self, tmp_path):
         self._init_managers(tmp_path, config_dict=simple_variable_template(tmp_path))
         create_payload = CreateInstancePayload(
             name=SIMPLE_FILE_SOURCE_NAME,
@@ -723,14 +723,14 @@ class TestFileSourcesTestCase(BaseTestCase):
             }
         )
 
-        status = self.manager.test_modify_instance(self.trans, user_file_source.uuid, update)
+        status = await self.manager.test_modify_instance(self.trans, user_file_source.uuid, update)
         assert not status.template_definition.is_not_ok
         assert status.template_settings
         assert not status.template_settings.is_not_ok
         assert status.connection
         assert status.connection.is_not_ok
 
-    def test_status_upgrade_valid(self, tmp_path):
+    async def test_status_upgrade_valid(self, tmp_path):
         user_file_source = self._init_upgrade_test_case(tmp_path)
         assert "sec1" in user_file_source.secrets
         assert "sec2" not in user_file_source.secrets
@@ -745,21 +745,21 @@ class TestFileSourcesTestCase(BaseTestCase):
             },
             variables={},
         )
-        status = self.manager.test_modify_instance(self.trans, user_file_source.uuid, upgrade_to_1)
+        status = await self.manager.test_modify_instance(self.trans, user_file_source.uuid, upgrade_to_1)
         assert not status.template_definition.is_not_ok
         assert status.template_settings
         assert not status.template_settings.is_not_ok
         assert status.connection
         assert status.connection.is_not_ok
 
-    def test_status_upgrade_invalid(self, tmp_path):
+    async def test_status_upgrade_invalid(self, tmp_path):
         user_file_source = self._init_invalid_upgrade_test_case(tmp_path)
         upgrade_to_1 = TestUpgradeInstancePayload(
             template_version=1,
             secrets={},
             variables={},
         )
-        status = self.manager.test_modify_instance(self.trans, user_file_source.uuid, upgrade_to_1)
+        status = await self.manager.test_modify_instance(self.trans, user_file_source.uuid, upgrade_to_1)
         assert not status.template_definition.is_not_ok
         assert status.template_settings
         assert status.template_settings.is_not_ok
