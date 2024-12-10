@@ -357,18 +357,27 @@ def _encode_callback_for(encode_id: EncodeFunctionT) -> Callback:
         else:
             return src_dict
 
+    def encode_element(element: dict):
+        if element.get("__class__") == "Batch":
+            encoded = element.copy()
+            values = encoded.pop("values")
+            encoded["values"] = list(map(encode_src_dict, values))
+            return encoded
+        else:
+            return encode_src_dict(element)
+
     def encode_callback(parameter: ToolParameterT, value: Any):
         if parameter.parameter_type == "gx_data":
             data_parameter = cast(DataParameterModel, parameter)
             if data_parameter.multiple:
                 assert isinstance(value, list), str(value)
-                return list(map(encode_src_dict, value))
+                return list(map(encode_element, value))
             else:
                 assert isinstance(value, dict), str(value)
-                return encode_src_dict(value)
+                return encode_element(value)
         elif parameter.parameter_type == "gx_data_collection":
             assert isinstance(value, dict), str(value)
-            return encode_src_dict(value)
+            return encode_element(value)
         else:
             return VISITOR_NO_REPLACEMENT
 
@@ -385,6 +394,15 @@ def _decode_callback_for(decode_id: DecodeFunctionT) -> Callback:
         else:
             return src_dict
 
+    def decode_element(element: dict):
+        if element.get("__class__") == "Batch":
+            decoded = element.copy()
+            values = decoded.pop("values")
+            decoded["values"] = list(map(decode_src_dict, values))
+            return decoded
+        else:
+            return decode_src_dict(element)
+
     def decode_callback(parameter: ToolParameterT, value: Any):
         if parameter.parameter_type == "gx_data":
             if value is None:
@@ -392,10 +410,10 @@ def _decode_callback_for(decode_id: DecodeFunctionT) -> Callback:
             data_parameter = cast(DataParameterModel, parameter)
             if data_parameter.multiple:
                 assert isinstance(value, list), str(value)
-                return list(map(decode_src_dict, value))
+                return list(map(decode_element, value))
             else:
                 assert isinstance(value, dict), str(value)
-                return decode_src_dict(value)
+                return decode_element(value)
         elif parameter.parameter_type == "gx_data_collection":
             if value is None:
                 return VISITOR_NO_REPLACEMENT
