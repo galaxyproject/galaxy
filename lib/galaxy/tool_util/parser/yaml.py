@@ -115,6 +115,7 @@ class YamlToolSource(ToolSource):
             software_requirements=[r for r in mixed_requirements if r.get("type") != "resource"],
             containers=self.root_dict.get("containers", []),
             resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
+            credentials=self.root_dict.get("credentials", []),
         )
 
     def parse_input_pages(self) -> PagesSource:

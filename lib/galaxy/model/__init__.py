@@ -11600,6 +11600,70 @@ class CeleryUserRateLimit(Base):
         )
 
 
+class UserCredentials(Base):
+    """
+    Represents a credential associated with a user for a specific service.
+    """
+
+    __tablename__ = "user_credentials"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
+    service_reference: Mapped[str] = mapped_column(nullable=False)
+    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
+
+
+class CredentialsSet(Base):
+    """
+    Represents a set of credentials associated with a user for a specific
+    service.
+    """
+
+    __tablename__ = "user_credentials_set"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(nullable=False)
+    user_credentials_id: Mapped[int] = mapped_column(ForeignKey("user_credentials.id"), index=True, nullable=False)
+    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+
+
+class Credential(Base):
+    """
+    Represents a credential associated with a user for a specific
+    service.
+    """
+
+    __tablename__ = "credential"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_credential_set_id: Mapped[int] = mapped_column(
+        ForeignKey("user_credentials_set.id"), index=True, nullable=False
+    )
+    name: Mapped[str] = mapped_column(nullable=False)
+    type: Mapped[str] = mapped_column(nullable=False)
+    value: Mapped[str] = mapped_column(nullable=False)
+    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+
+
+class UserToolCredentials(Base):
+    """
+    Represents a credential associated with a tool.
+    """
+
+    __tablename__ = "user_tool_credentials"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_credential_set_id: Mapped[int] = mapped_column(
+        ForeignKey("user_credentials_set.id"), index=True, nullable=False
+    )
+    tool_id: Mapped[str] = mapped_column(nullable=False)
+    tool_version: Mapped[str] = mapped_column(nullable=False)
+    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+
+
 # The following models (HDA, LDDA) are mapped imperatively (for details see discussion in PR #12064)
 # TLDR: there are issues ('metadata' property, Galaxy object wrapping) that need to be addressed separately
 # before these models can be mapped declaratively. Keeping them in the mapping module breaks the auth package
