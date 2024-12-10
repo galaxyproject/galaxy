@@ -43,6 +43,7 @@ const INSTALL_PLUGIN_BUILD_IDS = [
     "phylocanvas",
     "plotly",
     "venn",
+    "vitessce",
     "vizarr",
 ]; // todo: derive from XML
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
