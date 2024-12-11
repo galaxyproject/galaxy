@@ -402,5 +402,6 @@ export default {
 <style>
 .modal-with-selector {
     overflow: initial;
+    height: 300px; /* To make room for the selector */
 }
 </style>
