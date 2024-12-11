@@ -82,7 +82,7 @@ class ToolSourceBase(BaseModel):
 
 class UserToolSource(ToolSourceBase):
     class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
-    id: str
+    id: Optional[str]
     name: str
     shell_command: str
     container: str
