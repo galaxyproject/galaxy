@@ -3,11 +3,33 @@ History
 
 .. to_doc
 
------------
-24.1.4.dev0
------------
+-------------------
+24.1.4 (2024-12-11)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Replace busybox:ubuntu-14.04 image with busybox:1.36.1-glibc by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18428 <https://github.com/galaxyproject/galaxy/pull/18428>`_
+* Strip whitespace when listifying admin users by `@jdavcs <https://github.com/jdavcs>`_ in `#18656 <https://github.com/galaxyproject/galaxy/pull/18656>`_
+* Remove defaults channel for conda usage by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18859 <https://github.com/galaxyproject/galaxy/pull/18859>`_
+
+============
+Enhancements
+============
+
+* Make `default_panel_view` a `_by_host` option by `@natefoo <https://github.com/natefoo>`_ in `#18471 <https://github.com/galaxyproject/galaxy/pull/18471>`_
+* More datatype deprecation warnings by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18612 <https://github.com/galaxyproject/galaxy/pull/18612>`_
+* Implemented the generic OIDC backend from python-social-auth into Gal… by `@Edmontosaurus <https://github.com/Edmontosaurus>`_ in `#18670 <https://github.com/galaxyproject/galaxy/pull/18670>`_
+
+=============
+Other changes
+=============
+
+* Backport pod5 datatype by `@TomHarrop <https://github.com/TomHarrop>`_ in `#18507 <https://github.com/galaxyproject/galaxy/pull/18507>`_
+* Backport PR 18630 "Add BlobToolkit to the list of interactive tools" to release_24.1 by `@cat-bro <https://github.com/cat-bro>`_ in `#18784 <https://github.com/galaxyproject/galaxy/pull/18784>`_
 
 -------------------
 24.1.3 (2024-10-25)

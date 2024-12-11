@@ -3,11 +3,23 @@ History
 
 .. to_doc
 
------------
-24.1.4.dev0
------------
+-------------------
+24.1.4 (2024-12-11)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix Archive header encoding by `@arash77 <https://github.com/arash77>`_ in `#18583 <https://github.com/galaxyproject/galaxy/pull/18583>`_
+* File source and object store instance api fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18685 <https://github.com/galaxyproject/galaxy/pull/18685>`_
+
+============
+Enhancements
+============
+
+* Use smtplib send_message to support utf-8 chars in to and from by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18805 <https://github.com/galaxyproject/galaxy/pull/18805>`_
 
 -------------------
 24.1.3 (2024-10-25)

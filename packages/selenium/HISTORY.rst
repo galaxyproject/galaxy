@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-24.1.4.dev0
------------
+-------------------
+24.1.4 (2024-12-11)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Persist uploaded data between Regular and Collection upload tabs by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#19083 <https://github.com/galaxyproject/galaxy/pull/19083>`_
 
 -------------------
 24.1.3 (2024-10-25)

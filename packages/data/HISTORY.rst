@@ -3,11 +3,46 @@ History
 
 .. to_doc
 
------------
-24.1.4.dev0
------------
+-------------------
+24.1.4 (2024-12-11)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Replace busybox:ubuntu-14.04 image with busybox:1.36.1-glibc by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18428 <https://github.com/galaxyproject/galaxy/pull/18428>`_
+* Improve workflow-related exception reporting by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18447 <https://github.com/galaxyproject/galaxy/pull/18447>`_
+* Increase API robustness to invalid requests, improve compressed data serving by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18494 <https://github.com/galaxyproject/galaxy/pull/18494>`_
+* Prevent job submission if input collection element is deleted by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18517 <https://github.com/galaxyproject/galaxy/pull/18517>`_
+* Fix shared caches with extended metadata collection. by `@jmchilton <https://github.com/jmchilton>`_ in `#18520 <https://github.com/galaxyproject/galaxy/pull/18520>`_
+* Also check dataset.deleted when determining if data can be displayed by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18547 <https://github.com/galaxyproject/galaxy/pull/18547>`_
+* Fix for not-null in 'column_list' object by `@hujambo-dunia <https://github.com/hujambo-dunia>`_ in `#18553 <https://github.com/galaxyproject/galaxy/pull/18553>`_
+* Fix h5ad metadata by `@nilchia <https://github.com/nilchia>`_ in `#18635 <https://github.com/galaxyproject/galaxy/pull/18635>`_
+* Don't set file size to zero by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18653 <https://github.com/galaxyproject/galaxy/pull/18653>`_
+* Make sure we set file size also for purged outputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18681 <https://github.com/galaxyproject/galaxy/pull/18681>`_
+* Fix wrong extension on pick data output by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18798 <https://github.com/galaxyproject/galaxy/pull/18798>`_
+* Fix copying workflow with subworkflow step for step that you own by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18802 <https://github.com/galaxyproject/galaxy/pull/18802>`_
+* Make pylibmagic import optional by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18813 <https://github.com/galaxyproject/galaxy/pull/18813>`_
+* Ignore converted datasets in invalid input states by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18850 <https://github.com/galaxyproject/galaxy/pull/18850>`_
+* Fix discovered outputs with directory metadata and distributed object by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18855 <https://github.com/galaxyproject/galaxy/pull/18855>`_
+* Raise MessageException instead of assertions on rerun problems by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18858 <https://github.com/galaxyproject/galaxy/pull/18858>`_
+* Fix wrong final state when init_from is used by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18871 <https://github.com/galaxyproject/galaxy/pull/18871>`_
+* Fix history import when parent_hda not serialized by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18873 <https://github.com/galaxyproject/galaxy/pull/18873>`_
+* Limit max number of items in dataproviders by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18881 <https://github.com/galaxyproject/galaxy/pull/18881>`_
+* Allow cors in biom and q2view display applications by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18890 <https://github.com/galaxyproject/galaxy/pull/18890>`_
+* Disable locking when opening h5 files, add missing ``with`` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18976 <https://github.com/galaxyproject/galaxy/pull/18976>`_
+* Optimize/fix sqlite hid update statement by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19106 <https://github.com/galaxyproject/galaxy/pull/19106>`_
+* Prefer auto-decompressed datatype when picking conversion target  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19162 <https://github.com/galaxyproject/galaxy/pull/19162>`_
+* Fix various invocation export issues by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19215 <https://github.com/galaxyproject/galaxy/pull/19215>`_
+* Fix bad merge conflict resolution by `@nsoranzo <https://github.com/nsoranzo>`_ in `#19297 <https://github.com/galaxyproject/galaxy/pull/19297>`_
+
+=============
+Other changes
+=============
+
+* Backport pod5 datatype by `@TomHarrop <https://github.com/TomHarrop>`_ in `#18507 <https://github.com/galaxyproject/galaxy/pull/18507>`_
 
 -------------------
 24.1.3 (2024-10-25)
