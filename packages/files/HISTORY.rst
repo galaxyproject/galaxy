@@ -4,10 +4,21 @@ History
 .. to_doc
 
 ---------
-24.2.dev0
+25.0.dev0
 ---------
 
 
+
+-------------------
+24.1.4 (2024-12-11)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix production_aws_private_bucket.yml by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19155 <https://github.com/galaxyproject/galaxy/pull/19155>`_
 
 -------------------
 24.1.3 (2024-10-25)

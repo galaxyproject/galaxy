@@ -4,10 +4,35 @@ History
 .. to_doc
 
 ---------
-24.2.dev0
+25.0.dev0
 ---------
 
 
+
+-------------------
+24.1.4 (2024-12-11)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Handle all requests error in ``ApiBiotoolsMetadataSource._raw_get_metadata`` by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18510 <https://github.com/galaxyproject/galaxy/pull/18510>`_
+* xsd: allow `change_format` and `actions` also in statically defined collection elements, and break recursion by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18605 <https://github.com/galaxyproject/galaxy/pull/18605>`_
+* Remove defaults channel for conda usage by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18859 <https://github.com/galaxyproject/galaxy/pull/18859>`_
+* Don't check availability of shellescape by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18954 <https://github.com/galaxyproject/galaxy/pull/18954>`_
+* Backport 2 CI fixes by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18973 <https://github.com/galaxyproject/galaxy/pull/18973>`_
+* Disable locking when opening h5 files, add missing ``with`` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18976 <https://github.com/galaxyproject/galaxy/pull/18976>`_
+* Fix extra call to test_data_path that requires an admin key by `@jmchilton <https://github.com/jmchilton>`_ in `#19011 <https://github.com/galaxyproject/galaxy/pull/19011>`_
+* flip default value for use_mamba to false by `@bgruening <https://github.com/bgruening>`_ in `#19295 <https://github.com/galaxyproject/galaxy/pull/19295>`_
+* Linter: allow dynamic option definition by from_url by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19300 <https://github.com/galaxyproject/galaxy/pull/19300>`_
+
+============
+Enhancements
+============
+
+* Make `default_panel_view` a `_by_host` option by `@natefoo <https://github.com/natefoo>`_ in `#18471 <https://github.com/galaxyproject/galaxy/pull/18471>`_
 
 -------------------
 24.1.3 (2024-10-25)

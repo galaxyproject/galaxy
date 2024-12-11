@@ -4,10 +4,52 @@ History
 .. to_doc
 
 ---------
-24.2.dev0
+25.0.dev0
 ---------
 
 
+
+-------------------
+24.1.4 (2024-12-11)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Return generic message for password reset email by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#18479 <https://github.com/galaxyproject/galaxy/pull/18479>`_
+* Fix view parameter type in Job index API by `@davelopez <https://github.com/davelopez>`_ in `#18521 <https://github.com/galaxyproject/galaxy/pull/18521>`_
+* Check if dataset has any data before running provider checks by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18526 <https://github.com/galaxyproject/galaxy/pull/18526>`_
+* Raise appropriate exception if ldda not found by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18569 <https://github.com/galaxyproject/galaxy/pull/18569>`_
+* Close install model session when request ends by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18629 <https://github.com/galaxyproject/galaxy/pull/18629>`_
+* Fix resume_paused_jobs if no session provided by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18640 <https://github.com/galaxyproject/galaxy/pull/18640>`_
+* Fix extract workflow from history when implicit collection has no jobs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18661 <https://github.com/galaxyproject/galaxy/pull/18661>`_
+* Return error when following a link to a non-ready display application by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18672 <https://github.com/galaxyproject/galaxy/pull/18672>`_
+* Only load authnz routes when oidc enabled by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18683 <https://github.com/galaxyproject/galaxy/pull/18683>`_
+* File source and object store instance api fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18685 <https://github.com/galaxyproject/galaxy/pull/18685>`_
+* Fix sorting users in admin by last login by `@jdavcs <https://github.com/jdavcs>`_ in `#18694 <https://github.com/galaxyproject/galaxy/pull/18694>`_
+* Fix resume paused jobs response handling by `@dannon <https://github.com/dannon>`_ in `#18733 <https://github.com/galaxyproject/galaxy/pull/18733>`_
+* Fix wrong extension on pick data output by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18798 <https://github.com/galaxyproject/galaxy/pull/18798>`_
+* Tighten TRS url check by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18841 <https://github.com/galaxyproject/galaxy/pull/18841>`_
+* Fix Workflow index bookmark filter by `@itisAliRH <https://github.com/itisAliRH>`_ in `#18842 <https://github.com/galaxyproject/galaxy/pull/18842>`_
+* Extend on disk checks to running, queued and error states by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18846 <https://github.com/galaxyproject/galaxy/pull/18846>`_
+* Limit max number of items in dataproviders by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18881 <https://github.com/galaxyproject/galaxy/pull/18881>`_
+* Access tool data table filters in workflow building mode by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18900 <https://github.com/galaxyproject/galaxy/pull/18900>`_
+* Don't use ``async def`` where not appropriate by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18944 <https://github.com/galaxyproject/galaxy/pull/18944>`_
+* Fix very slow workflow editor loading by `@mvdbeek <https://github.com/mvdbeek>`_ in `#19068 <https://github.com/galaxyproject/galaxy/pull/19068>`_
+
+============
+Enhancements
+============
+
+* Make `default_panel_view` a `_by_host` option by `@natefoo <https://github.com/natefoo>`_ in `#18471 <https://github.com/galaxyproject/galaxy/pull/18471>`_
+
+=============
+Other changes
+=============
+
+* Fix check dataset check by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18856 <https://github.com/galaxyproject/galaxy/pull/18856>`_
 
 -------------------
 24.1.3 (2024-10-25)
