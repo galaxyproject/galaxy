@@ -5,16 +5,10 @@ import sys
 
 import bx.intervals.io
 
-assert sys.version_info[:2] >= (2, 6)
 
-
-def stop_err(msg):
-    sys.exit(msg)
-
-
-def force_bed_field_count(fields, region_count, force_num_columns):
+def force_bed_field_count(fields, region_count: int, force_num_columns: int):
     if force_num_columns >= 4 and len(fields) < 4:
-        fields.append("region_%i" % (region_count))
+        fields.append(f"region_{region_count}")
     if force_num_columns >= 5 and len(fields) < 5:
         fields.append("0")
     if force_num_columns >= 6 and len(fields) < 6:
@@ -40,19 +34,19 @@ def __main__():
     try:
         chromCol = int(sys.argv[3]) - 1
     except Exception:
-        stop_err(
+        sys.exit(
             f"'{str(sys.argv[3])}' is an invalid chrom column, correct the column settings before attempting to convert the data format."
         )
     try:
         startCol = int(sys.argv[4]) - 1
     except Exception:
-        stop_err(
+        sys.exit(
             f"'{str(sys.argv[4])}' is an invalid start column, correct the column settings before attempting to convert the data format."
         )
     try:
         endCol = int(sys.argv[5]) - 1
     except Exception:
-        stop_err(
+        sys.exit(
             f"'{str(sys.argv[5])}' is an invalid end column, correct the column settings before attempting to convert the data format."
         )
     try:
@@ -176,7 +170,7 @@ def __main__():
                     else:
                         raise IndexError
                 except Exception:
-                    name = "region_%i" % count
+                    name = f"region_{count}"
                 try:
                     fields = [str(item) for item in (region.chrom, region.start, region.end, name, 0, region.strand)]
                     if force_num_columns is not None and len(fields) != force_num_columns:
@@ -186,9 +180,9 @@ def __main__():
                     skipped_lines += 1
                     if first_skipped_line is None:
                         first_skipped_line = count + 1
-    print("%i regions converted to BED." % (count + 1 - skipped_lines))
+    print(f"{count + 1 - skipped_lines} regions converted to BED.")
     if skipped_lines > 0:
-        print("Skipped %d blank or invalid lines starting with line # %d." % (skipped_lines, first_skipped_line))
+        print(f"Skipped {skipped_lines} blank or invalid lines starting with line # {first_skipped_line}.")
 
 
 if __name__ == "__main__":
