@@ -1,9 +1,9 @@
-import { useLocalStorage } from "@vueuse/core";
 import { computed, customRef, type Ref, ref } from "vue";
 
 import { type AnyUser } from "@/api";
 
 import { useHashedUserId } from "./hashedUserId";
+import { usePersistentRef } from "./persistentRef";
 
 /**
  * Local storage composable specific to current user.
