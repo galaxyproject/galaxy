@@ -118,7 +118,10 @@ class ToolsService(ServiceBase):
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterMissingException("Must specify either a tool_id or a tool_uuid.")
 
-        tool = trans.app.toolbox.get_tool(**get_kwds)
+        if tool_uuid:
+            tool = trans.app.toolbox.get_unprivileged_tool(trans.user, tool_uuid=tool_uuid)
+        else:
+            tool = trans.app.toolbox.get_tool(**get_kwds)
         if not tool:
             log.debug(f"Not found tool with kwds [{get_kwds}]")
             raise exceptions.ToolMissingException("Tool not found.")

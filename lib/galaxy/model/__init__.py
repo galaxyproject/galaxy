@@ -1527,6 +1527,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     state_history: Mapped[List["JobStateHistory"]] = relationship()
     text_metrics: Mapped[List["JobMetricText"]] = relationship()
     numeric_metrics: Mapped[List["JobMetricNumeric"]] = relationship()
+    dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship()
     interactivetool_entry_points: Mapped[List["InteractiveToolEntryPoint"]] = relationship(
         back_populates="job", uselist=True
     )
