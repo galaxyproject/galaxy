@@ -6930,6 +6930,11 @@ export interface components {
              */
             collection_type?: string | null;
             /**
+             * Column Definitions
+             * @description Specify definitions for row data if collection_type if sample_sheet
+             */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            /**
              * Content
              * @description Depending on the `source` it can be:
              *     - The encoded id from the library dataset
@@ -6982,6 +6987,13 @@ export interface components {
              * @description The name of the new collection.
              */
             name?: string | null;
+            /**
+             * Row data
+             * @description Specify rows of metadata data corresponding to an indentifier if collection_type is sample_sheet
+             */
+            rows?: {
+                [key: string]: (string | number | boolean)[];
+            } | null;
             /**
              * Source
              * @description The source of the content. Can be other history element to be copied or library elements.
@@ -7137,6 +7149,11 @@ export interface components {
              */
             collection_type?: string | null;
             /**
+             * Column Definitions
+             * @description Specify definitions for row data if collection_type if sample_sheet
+             */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            /**
              * Copy Elements
              * @description Whether to create a copy of the source HDAs for the new collection.
              * @default true
@@ -7174,6 +7191,13 @@ export interface components {
              * @description The name of the new collection.
              */
             name?: string | null;
+            /**
+             * Row data
+             * @description Specify rows of metadata data corresponding to an indentifier if collection_type is sample_sheet
+             */
+            rows?: {
+                [key: string]: (string | number | boolean)[];
+            } | null;
         };
         /** CreatePagePayload */
         CreatePagePayload: {
@@ -7774,6 +7798,11 @@ export interface components {
          * @description Dataset Collection Element summary information.
          */
         DCESummary: {
+            /**
+             * Columns
+             * @description A row (or list of columns) of data associated with this element
+             */
+            columns?: (string | number | boolean)[] | null;
             /**
              * Element Identifier
              * @description The actual name of this element.
@@ -10377,6 +10406,11 @@ export interface components {
              */
             collection_type?: string | null;
             /**
+             * Column Definitions
+             * @description Column data associated with each element of this collection.
+             */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
              */
@@ -10515,6 +10549,11 @@ export interface components {
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
             collection_type: string;
+            /**
+             * Column Definitions
+             * @description Column data associated with each element of this collection.
+             */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -15734,6 +15773,20 @@ export interface components {
         /** RootModel[Dict[str, int]] */
         RootModel_Dict_str__int__: {
             [key: string]: number;
+        };
+        /** SampleSheetColumnDefinition */
+        SampleSheetColumnDefinition: {
+            /** Restrictions */
+            restrictions?: string[] | null;
+            /** Suggestions */
+            suggestions?: string[] | null;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "string" | "int" | "float" | "boolean";
+            /** Validators */
+            validators?: Record<string, never>[] | null;
         };
         /** SearchJobsPayload */
         SearchJobsPayload: {
