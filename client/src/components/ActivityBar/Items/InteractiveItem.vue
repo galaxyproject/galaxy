@@ -13,14 +13,14 @@ const totalCount = computed(() => entryPoints.value.length);
 
 export interface Props {
     id: string;
+    activityBarId: string;
     title: string;
     icon: IconDefinition;
     isActive: boolean;
     to: string;
-    activityBarId: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "click"): void;
@@ -37,7 +37,7 @@ const tooltip = computed(() =>
     <ActivityItem
         v-if="totalCount > 0"
         :id="id"
-        :activity-bar-id="activityBarId"
+        :activity-bar-id="props.activityBarId"
         :icon="icon"
         :indicator="totalCount"
         :is-active="isActive"
