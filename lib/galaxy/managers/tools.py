@@ -62,6 +62,10 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
         stmt = select(DynamicTool).where(DynamicTool.tool_id == tool_id, DynamicTool.public == true())
         return self.session().scalars(stmt).one_or_none()
 
+    def get_unprivileged_tool_by_uuid(self, user: model.User, uuid: str):
+        stmt = self.owned_unprivileged_statement(user).where(DynamicTool.uuid == uuid)
+        return self.session().scalars(stmt).one_or_none()
+
     def get_unprivileged_tool_by_tool_id(self, user: model.User, tool_id: str):
         stmt = self.owned_unprivileged_statement(user).where(DynamicTool.tool_id == tool_id)
         return self.session().scalars(stmt).one_or_none()
@@ -148,8 +152,6 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
             raise exceptions.ConfigDoesNotAllowException(
                 "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
             )
-        if self.get_unprivileged_tool_by_tool_id(user, tool_payload.representation.id):
-            raise exceptions.Conflict("Tool with id already exists for your user")
 
         dynamic_tool = self.create(
             tool_format=tool_payload.representation.class_,
