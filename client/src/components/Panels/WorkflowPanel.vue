@@ -52,7 +52,7 @@ const loadWorkflowsOptions = {
     sortBy: "update_time",
     sortDesc: true,
     limit: 20,
-    showPublished: true,
+    showPublished: false,
     skipStepCounts: false,
 } as const;
 
