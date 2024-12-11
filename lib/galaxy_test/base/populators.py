@@ -892,17 +892,28 @@ class BaseDatasetPopulator(BasePopulator):
         )
         return self._create_tool_raw(payload)
 
-    def create_unprivileged_tool(self, representation: UserToolSource, active=True, hidden=False, uuid=None):
+    def create_unprivileged_tool(
+        self, representation: UserToolSource, active=True, hidden=False, uuid=None, assert_ok=True
+    ):
         data = DynamicUnprivilegedToolCreatePayload(
             active=active, hidden=hidden, uuid=uuid, src="representation", representation=representation
         ).model_dump(by_alias=True, exclude_unset=True)
-        return self._post("unprivileged_tools", data=data, json=True)
+        response = self._post("unprivileged_tools", data=data, json=True)
+        if assert_ok:
+            assert response.status_code == 200, response.text
+        return response.json()
 
-    def get_unprivileged_tools(self, active=True):
-        return self._get("unprivileged_tools", data={"active": active})
+    def get_unprivileged_tools(self, active=True, assert_ok=True):
+        response = self._get("unprivileged_tools", data={"active": active})
+        if assert_ok:
+            assert response.status_code == 200
+        return response.json()
 
-    def show_unprivileged_tool(self, tool_id: str):
-        return self._get(f"unprivileged_tools/{tool_id}")
+    def show_unprivileged_tool(self, uuid: str, assert_ok=True):
+        response = self._get(f"unprivileged_tools/{uuid}")
+        if assert_ok:
+            assert response.status_code == 200, response.text
+        return response.json()
 
     def create_tool(self, representation, tool_directory: Optional[str] = None) -> Dict[str, Any]:
         payload = dict(

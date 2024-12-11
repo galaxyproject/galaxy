@@ -36,9 +36,9 @@ class UnprivilegedToolsApi:
             return []
         return [t.to_dict() for t in self.dynamic_tools_manager.list_unprivileged_tools(trans.user, active=active)]
 
-    @router.get("/api/unprivileged_tools/{tool_id}")
-    def show(self, tool_id: str, user: User = DependsOnUser):
-        dynamic_tool = self.dynamic_tools_manager.get_unprivileged_tool_by_tool_id(user, tool_id)
+    @router.get("/api/unprivileged_tools/{uuid}")
+    def show(self, uuid: str, user: User = DependsOnUser):
+        dynamic_tool = self.dynamic_tools_manager.get_unprivileged_tool_by_uuid(user, uuid)
         if dynamic_tool is None:
             raise ObjectNotFound()
         return dynamic_tool.to_dict()

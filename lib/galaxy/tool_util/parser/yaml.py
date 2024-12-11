@@ -73,20 +73,20 @@ class YamlToolSource(ToolSource):
         return str(rval)
 
     def parse_description(self) -> str:
-        return self.root_dict.get("description", "")
+        return self.root_dict.get("description") or ""
 
     def parse_icon(self) -> Optional[str]:
         icon_elem = self.root_dict.get("icon", {})
         return icon_elem.get("src") if icon_elem is not None else None
 
     def parse_edam_operations(self) -> List[str]:
-        return self.root_dict.get("edam_operations", [])
+        return self.root_dict.get("edam_operations") or []
 
     def parse_edam_topics(self) -> List[str]:
-        return self.root_dict.get("edam_topics", [])
+        return self.root_dict.get("edam_topics") or []
 
     def parse_xrefs(self) -> List[XrefDict]:
-        xrefs = self.root_dict.get("xrefs", [])
+        xrefs = self.root_dict.get("xrefs") or []
         return [XrefDict(value=xref["value"], type=xref["type"]) for xref in xrefs if xref["type"]]
 
     def parse_sanitize(self):
