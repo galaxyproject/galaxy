@@ -14,6 +14,7 @@ export interface Props {
     title: string;
     icon: IconDefinition;
     tooltip: string;
+    activityBarId: string;
 }
 
 defineProps<Props>();
@@ -40,7 +41,7 @@ function onUploadModal() {
 <template>
     <ActivityItem
         :id="id"
-        :activity-bar-id="id"
+        :activity-bar-id="activityBarId"
         :title="title"
         :tooltip="tooltip"
         :icon="icon"
