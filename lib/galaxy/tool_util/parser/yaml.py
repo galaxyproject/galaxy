@@ -73,16 +73,16 @@ class YamlToolSource(ToolSource):
         return str(rval)
 
     def parse_description(self) -> str:
-        return self.root_dict.get("description", "")
+        return self.root_dict.get("description") or ""
 
     def parse_edam_operations(self) -> List[str]:
-        return self.root_dict.get("edam_operations", [])
+        return self.root_dict.get("edam_operations") or []
 
     def parse_edam_topics(self) -> List[str]:
-        return self.root_dict.get("edam_topics", [])
+        return self.root_dict.get("edam_topics") or []
 
     def parse_xrefs(self) -> List[XrefDict]:
-        xrefs = self.root_dict.get("xrefs", [])
+        xrefs = self.root_dict.get("xrefs") or []
         return [XrefDict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
 
     def parse_sanitize(self):
@@ -227,7 +227,7 @@ class YamlToolSource(ToolSource):
         return rval
 
     def parse_profile(self) -> str:
-        return self.root_dict.get("profile", "16.04")
+        return self.root_dict.get("profile") or "16.04"
 
     def parse_license(self) -> Optional[str]:
         return self.root_dict.get("license")
