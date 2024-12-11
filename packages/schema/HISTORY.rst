@@ -3,11 +3,34 @@ History
 
 .. to_doc
 
----------
-24.2.dev0
----------
+-------
+24.2rc1
+-------
 
 
+
+-------------------
+24.1.4 (2024-12-11)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Handle error when workflow is unowned in Invocation view by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#18730 <https://github.com/galaxyproject/galaxy/pull/18730>`_
+* Fix datatype validation of newly built collection by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18738 <https://github.com/galaxyproject/galaxy/pull/18738>`_
+* Fix job summary for optional unset job data inputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18754 <https://github.com/galaxyproject/galaxy/pull/18754>`_
+* Fix ``TypeError`` from Pydantic 2.9.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18788 <https://github.com/galaxyproject/galaxy/pull/18788>`_
+* Fix wrong extension on pick data output by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18798 <https://github.com/galaxyproject/galaxy/pull/18798>`_
+* Make all fields optional for HelpForumPost by `@davelopez <https://github.com/davelopez>`_ in `#18839 <https://github.com/galaxyproject/galaxy/pull/18839>`_
+* Remove the default `Incoming` suffix in `GenericModel` class by `@davelopez <https://github.com/davelopez>`_ in `#19174 <https://github.com/galaxyproject/galaxy/pull/19174>`_
+
+============
+Enhancements
+============
+
+* Include workflow invocation id in exception logs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18594 <https://github.com/galaxyproject/galaxy/pull/18594>`_
 
 -------------------
 24.1.3 (2024-10-25)
