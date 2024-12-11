@@ -132,6 +132,7 @@ const { keyObject } = useKeyedObjects();
                         <b-button
                             :id="getButtonId(cacheId, 'up')"
                             v-b-tooltip.hover.bottom
+                            :disabled="cacheId == 0"
                             title="move up"
                             role="button"
                             variant="link"
@@ -143,6 +144,7 @@ const { keyObject } = useKeyedObjects();
                         <b-button
                             :id="getButtonId(cacheId, 'down')"
                             v-b-tooltip.hover.bottom
+                            :disabled="cacheId >= props.input.cache?.length - 1"
                             title="move down"
                             role="button"
                             variant="link"
