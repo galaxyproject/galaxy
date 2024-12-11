@@ -17,7 +17,7 @@ export function useUserLocalStorage<T>(key: string, initialValue: T, user?: Ref<
 
     const storedRef = computed(() => {
         if (hashedUserId.value) {
-            return useLocalStorage(`${key}-${hashedUserId.value}`, refSyncedRawValue);
+            return usePersistentRef(`${key}-${hashedUserId.value}`, refSyncedRawValue);
         } else {
             return ref(initialValue);
         }
