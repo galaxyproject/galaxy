@@ -109,6 +109,12 @@ Enhancements
   `Pull Request 16837`_
 .. enhancement_tag_workflows
 
+* Fix usability of workflow best practice attribute checking.
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 19230`_
+* Workflow Inputs Activity
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 19252`_
 * Fix default value handling for parameters connected to required parameters
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 19219`_
@@ -558,6 +564,9 @@ Fixes
   `Pull Request 18919`_
 .. bug_tag_workflows
 
+* Fix cancellation of workflow scheduling
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 19238`_
 * Fix collection type drag and drop validation
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 18623`_
@@ -596,6 +605,12 @@ Fixes
 
 .. bug
 
+* Login redirect followup
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 19251`_
+* Build collection only if populated in collection builder
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 19250`_
 * Avoid a class of unhelpful accepted format drop downs
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 19241`_
