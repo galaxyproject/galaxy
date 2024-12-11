@@ -570,9 +570,6 @@ Fixes
 * Fix collection type drag and drop validation
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 18623`_
-* Fix very slow workflow editor loading
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 19068`_
 .. bug_tag_ui
 
 * Bump requirejs from 2.3.6 to 2.3.7 in /client
