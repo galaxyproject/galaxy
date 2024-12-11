@@ -2083,6 +2083,7 @@ class WorkflowContentsManager(UsesAnnotations):
             .join(model.Workflow, model.Workflow.id == model.StoredWorkflow.latest_workflow_id)
             .filter(
                 and_(
+                    model.StoredWorkflow.deleted == false(),
                     to_json(model.Workflow.source_metadata, ["trs_tool_id"]) == trs_id,
                     to_json(model.Workflow.source_metadata, ["trs_version_id"]) == trs_version,
                 )
@@ -2094,7 +2095,7 @@ class WorkflowContentsManager(UsesAnnotations):
             )
         else:
             stmnt = stmnt.filter(model.StoredWorkflow.importable == true())
-        return sa_session.execute(stmnt).scalar()
+        return sa_session.execute(stmnt.order_by(model.StoredWorkflow.id.desc()).limit(1)).scalar()
 
 
 class RefactorRequest(RefactorActions):
