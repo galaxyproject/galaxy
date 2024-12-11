@@ -16,6 +16,7 @@ const selectors = {
     bAlertStub: "balert-stub",
     spanElement: "span",
     invocationReportTab: '[titleitemclass="invocation-report-tab"]',
+    invocationExportTab: '[titleitemclass="invocation-export-tab"]',
     fullPageHeading: "anonymous-stub[h1='true']",
 };
 
@@ -177,16 +178,20 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
     });
 });
 
-describe("WorkflowInvocationState check 'Report' tab disabled state and header", () => {
-    it("determines that 'Report' tab is disabled for non-terminal invocation", async () => {
+describe("WorkflowInvocationState check 'Report' and 'Export' tab disabled state and header", () => {
+    it("for non-terminal invocation", async () => {
         const wrapper = await mountWorkflowInvocationState("non-terminal-id");
         const reportTab = wrapper.find(selectors.invocationReportTab);
         expect(reportTab.attributes("disabled")).toBe("true");
+        const exportTab = wrapper.find(selectors.invocationExportTab);
+        expect(exportTab.attributes("disabled")).toBe("true");
     });
-    it("determines that 'Report' tab is not disabled for terminal invocation", async () => {
+    it("for terminal invocation", async () => {
         const wrapper = await mountWorkflowInvocationState(invocationData.id);
         const reportTab = wrapper.find(selectors.invocationReportTab);
         expect(reportTab.attributes("disabled")).toBeUndefined();
+        const exportTab = wrapper.find(selectors.invocationExportTab);
+        expect(exportTab.attributes("disabled")).toBeUndefined();
     });
 });
 
