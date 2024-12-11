@@ -96,6 +96,7 @@ from galaxy.tool_util.parser.xml import (
     XmlPageSource,
     XmlToolSource,
 )
+from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
 from galaxy.tool_util.toolbox import (
     AbstractToolBox,
@@ -472,6 +473,8 @@ class ToolBox(AbstractToolBox):
     dependency management, etc.
     """
 
+    app: "UniverseApplication"
+
     def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel: bool = True):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
@@ -613,6 +616,23 @@ class ToolBox(AbstractToolBox):
 
     def _create_tool_from_source(self, tool_source: ToolSource, **kwds):
         return create_tool_from_source(self.app, tool_source, **kwds)
+
+    def get_unprivileged_tool(self, user: model.User, tool_uuid: str) -> Optional["Tool"]:
+        dynamic_tool = self.app.dynamic_tool_manager.get_unprivileged_tool_by_uuid(user, tool_uuid)
+        return self.dynamic_tool_to_tool(dynamic_tool)
+
+    def dynamic_tool_to_tool(self, dynamic_tool: Optional[model.DynamicTool]) -> Optional["Tool"]:
+        if dynamic_tool and dynamic_tool.active and dynamic_tool.value:
+            tool_source = YamlToolSource(dynamic_tool.value)
+            tool = create_tool_from_source(self.app, tool_source=tool_source, tool_dir=None)
+            tool.dynamic_tool = dynamic_tool
+            return tool
+
+    def tool_for_job(self, job: model.Job, exact=True) -> Optional["Tool"]:
+        if job.dynamic_tool:
+            return self.dynamic_tool_to_tool(job.dynamic_tool)
+        else:
+            return self.get_tool(job.tool_id, tool_version=job.tool_version, exact=exact)
 
     def create_dynamic_tool(self, dynamic_tool, **kwds):
         tool_format = dynamic_tool.tool_format

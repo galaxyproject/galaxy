@@ -169,6 +169,10 @@ class MockToolbox:
         tool = self.get(tool_id)
         return tool
 
+    def tool_for_job(self, job, exact):
+        tool = self.get(job.tool_id)
+        return tool
+
 
 class MockObjectStore:
     def __init__(self, working_directory):

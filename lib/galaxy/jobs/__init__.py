@@ -2754,7 +2754,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
     def _report_error(self):
         job = self.get_job()
-        tool = self.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
+        tool = self.app.toolbox.tool_for_job(job)
         for dataset in job.output_datasets:
             self.app.error_reports.default_error_plugin.submit_report(dataset, job, tool, user_submission=False)
 
@@ -2777,7 +2777,7 @@ class JobWrapper(MinimalJobWrapper):
             job,
             app=app,
             use_persisted_destination=use_persisted_destination,
-            tool=app.toolbox.get_tool(job.tool_id, job.tool_version, exact=True),
+            tool=app.toolbox.tool_for_job(job, exact=True),
         )
         self.queue = queue
         self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
