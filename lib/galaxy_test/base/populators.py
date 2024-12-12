@@ -95,7 +95,6 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.tools import (
     DynamicUnprivilegedToolCreatePayload,
-    UserToolSource,
 )
 from galaxy.tool_util.client.staging import InteractorStaging
 from galaxy.tool_util.cwl.util import (
@@ -106,6 +105,7 @@ from galaxy.tool_util.cwl.util import (
     output_to_cwl_json,
     tool_response_to_output,
 )
+from galaxy.tool_util.models import UserToolSource
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tool_util.verify.wait import (
     timeout_type,

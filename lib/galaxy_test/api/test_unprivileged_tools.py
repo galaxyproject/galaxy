@@ -1,5 +1,5 @@
 # Test tools API.
-from galaxy.schema.tools import UserToolSource
+from galaxy.tool_util.models import UserToolSource
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,

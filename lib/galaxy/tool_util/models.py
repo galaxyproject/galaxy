@@ -60,13 +60,13 @@ class ToolSourceBase(BaseModel):
     id: Optional[str] = None
     name: Optional[str] = None
     version: Optional[str] = "1.0"
+    profile: Optional[float] = None
     description: Optional[str] = None
     container: Optional[str] = None
     inputs: List[GalaxyParameterT] = []
     outputs: List[IncomingToolOutput] = []
     citations: Optional[List[Citation]] = None
     license: Optional[str] = None
-    profile: Optional[str] = None
     edam_operations: Optional[List[str]] = None
     edam_topics: Optional[List[str]] = None
     xrefs: Optional[List[XrefDict]] = None
@@ -80,12 +80,30 @@ class ToolSourceBase(BaseModel):
         return values
 
 
-class UserToolSource(ToolSourceBase):
+# repeated fields to get consistent order, ugh, FIXME obviously
+class UserToolSource(BaseModel):
     class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
     id: Optional[str]
+    version: Optional[str] = "1.0"
     name: str
-    shell_command: str
+    description: Optional[str] = None
     container: str
+    shell_command: str
+    inputs: List[GalaxyParameterT] = []
+    outputs: List[IncomingToolOutput] = []
+    citations: Optional[List[Citation]] = None
+    license: Optional[str] = None
+    edam_operations: Optional[List[str]] = None
+    edam_topics: Optional[List[str]] = None
+    xrefs: Optional[List[XrefDict]] = None
+    help: Optional[HelpContent] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_items(cls, values):
+        if isinstance(values, dict):
+            normalize_dict(values, ["inputs", "outputs"])
+        return values
 
 
 class AdminToolSource(ToolSourceBase):
