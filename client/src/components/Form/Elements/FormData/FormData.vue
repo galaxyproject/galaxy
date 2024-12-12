@@ -497,13 +497,15 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
+const collectionTypesWithBuilders = ["list", "list:paired", "paired"];
+
 /** Allowed collection types for collection creation */
 const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) =>
-    ["list", "list:paired", "paired"].includes(collectionType)
+    collectionTypesWithBuilders.includes(collectionType)
 );
 
 function buildNewCollection(collectionType: string) {
-    if (!["list", "list:paired", "paired"].includes(collectionType)) {
+    if (!collectionTypesWithBuilders.includes(collectionType)) {
         throw Error(`Unknown collection type: ${collectionType}`);
     }
     collectionModalType.value = collectionType as "list" | "list:paired" | "paired";
