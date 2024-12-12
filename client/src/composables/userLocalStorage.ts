@@ -13,9 +13,11 @@ import { useHashedUserId } from "./hashedUserId";
 export function useUserLocalStorage<T>(key: string, initialValue: T, user?: Ref<AnyUser>) {
     const { hashedUserId } = useHashedUserId(user);
 
+    let refSyncedRawValue = initialValue;
+
     const storedRef = computed(() => {
         if (hashedUserId.value) {
-            return useLocalStorage(`${key}-${hashedUserId.value}`, initialValue);
+            return useLocalStorage(`${key}-${hashedUserId.value}`, refSyncedRawValue);
         } else {
             return ref(initialValue);
         }
@@ -28,6 +30,7 @@ export function useUserLocalStorage<T>(key: string, initialValue: T, user?: Ref<
         },
         set(newValue) {
             storedRef.value.value = newValue;
+            refSyncedRawValue = newValue as T;
             trigger();
         },
     }));

@@ -11,6 +11,7 @@ const { totalUnreadCount } = storeToRefs(useNotificationsStore());
 
 export interface Props {
     id: string;
+    activityBarId: string;
     title: string;
     icon: IconDefinition;
     isActive: boolean;
@@ -32,7 +33,7 @@ const tooltip = computed(() =>
 <template>
     <ActivityItem
         :id="id"
-        :activity-bar-id="'notifications'"
+        :activity-bar-id="activityBarId"
         :icon="icon"
         :indicator="totalUnreadCount"
         :is-active="isActive"
