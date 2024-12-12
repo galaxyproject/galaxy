@@ -591,10 +591,13 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
+const collectionTypesWithBuilders = ["list", "list:paired", "paired"];
+
 /** Allowed collection types for collection creation */
 const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) =>
-    ["list", "list:paired", "paired"].includes(collectionType)
+    collectionTypesWithBuilders.includes(collectionType)
 );
+
 const currentCollectionTypeTab = ref(effectiveCollectionTypes?.[0]);
 
 /**
