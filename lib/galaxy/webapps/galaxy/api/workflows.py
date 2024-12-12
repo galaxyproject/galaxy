@@ -531,12 +531,12 @@ class WorkflowsAPIController(
         inputs = payload.get("inputs", {})
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         module = module_factory.from_dict(trans, payload, from_tool_form=True)
-        if "tool_state" not in payload:
-            module_state: Dict[str, Any] = {}
-            errors: ParameterValidationErrorsT = {}
-            populate_state(trans, module.get_inputs(), inputs, module_state, errors=errors, check=True)
-            module.recover_state(module_state, from_tool_form=True)
-            module.check_and_update_state()
+
+        module_state: Dict[str, Any] = {}
+        errors: ParameterValidationErrorsT = {}
+        populate_state(trans, module.get_inputs(), inputs, module_state, errors=errors, check=True)
+        module.recover_state(module_state, from_tool_form=True)
+        module.check_and_update_state()
         step_dict = {
             "name": module.get_name(),
             "tool_state": module_state,

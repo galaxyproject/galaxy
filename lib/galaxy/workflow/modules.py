@@ -14,7 +14,6 @@ from typing import (
     get_args,
     Iterable,
     List,
-    Literal,
     Optional,
     Tuple,
     Type,
@@ -109,12 +108,14 @@ from galaxy.util.json import safe_loads
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
-from galaxy.workflow.workflow_parameter_input_definitions import get_default_parameter
+from galaxy.workflow.workflow_parameter_input_definitions import (
+    get_default_parameter,
+    INPUT_PARAMETER_TYPES,
+)
 
 if TYPE_CHECKING:
     from galaxy.schema.invocation import InvocationMessageUnion
     from galaxy.workflow.run import WorkflowProgress
-
 
 log = logging.getLogger(__name__)
 
@@ -125,7 +126,6 @@ RUNTIME_STEP_META_STATE_KEY = "__STEP_META_STATE__"
 # ones.
 RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
 
-INPUT_PARAMETER_TYPES = Literal["text", "integer", "float", "boolean", "color", "directory_uri"]
 POSSIBLE_PARAMETER_TYPES: Tuple[INPUT_PARAMETER_TYPES] = get_args(INPUT_PARAMETER_TYPES)
 
 
@@ -1260,12 +1260,15 @@ class InputParameterModule(WorkflowModule):
 
             when_true = ConditionalWhen()
             when_true.value = "true"
-            when_true.inputs = {}
-            when_true.inputs["default"] = specify_default_cond
+            when_true.inputs = {"default": specify_default_cond}
 
             when_false = ConditionalWhen()
             when_false.value = "false"
-            when_false.inputs = {}
+            # This is only present for backwards compatibility,
+            # We don't need this conditional since you can set
+            # a default value for optional and required parameters.
+            # TODO: version the state and upgrade it to a simpler version
+            when_false.inputs = {"default": specify_default_cond}
 
             optional_cases = [when_true, when_false]
             optional_cond.cases = optional_cases
@@ -1504,8 +1507,9 @@ class InputParameterModule(WorkflowModule):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
         optional = parameter_def["optional"]
+        default_value_set = "default" in parameter_def
         default_value = parameter_def.get("default", self.default_default_value)
-        if parameter_type not in ["text", "boolean", "integer", "float", "color", "directory_uri"]:
+        if parameter_type not in POSSIBLE_PARAMETER_TYPES:
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
         # Optional parameters for tool input source definition.
@@ -1557,7 +1561,7 @@ class InputParameterModule(WorkflowModule):
 
         parameter_class = parameter_types[client_parameter_type]
 
-        if optional:
+        if default_value_set:
             if client_parameter_type == "select":
                 parameter_kwds["selected"] = default_value
             else:
@@ -1633,7 +1637,6 @@ class InputParameterModule(WorkflowModule):
         if "default" in state:
             default_set = True
             default_value = state["default"]
-            state["optional"] = True
         multiple = state.get("multiple")
         source_validators = state.get("validators")
         restrictions = state.get("restrictions")
@@ -2564,23 +2567,6 @@ def load_module_sections(trans):
     is configured with.
     """
     module_sections = {}
-    module_sections["inputs"] = {
-        "name": "inputs",
-        "title": "Inputs",
-        "modules": [
-            {"name": "data_input", "title": "Input Dataset", "description": "Input dataset"},
-            {
-                "name": "data_collection_input",
-                "title": "Input Dataset Collection",
-                "description": "Input dataset collection",
-            },
-            {
-                "name": "parameter_input",
-                "title": "Parameter Input",
-                "description": "Simple inputs used for workflow logic",
-            },
-        ],
-    }
 
     if trans.app.config.enable_beta_workflow_modules:
         module_sections["experimental"] = {

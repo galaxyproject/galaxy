@@ -66,6 +66,7 @@
     "elkjs": "^0.8.2",
     "file-saver": "^2.0.5",
     "flush-promises": "^1.0.2",
+    "font-awesome-6": "npm:@fortawesome/free-solid-svg-icons@6",
     "glob": "^10.3.10",
     "handsontable": "^4.0.0",
     "hsluv": "^1.0.1",

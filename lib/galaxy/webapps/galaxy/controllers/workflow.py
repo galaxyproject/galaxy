@@ -1,13 +1,6 @@
 import logging
 
 from markupsafe import escape
-from sqlalchemy import (
-    and_,
-    desc,
-    false,
-    func,
-    select,
-)
 
 from galaxy import (
     model,
@@ -168,35 +161,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             else:
                 new_workflow = True
 
-        # The following query loads all user-owned workflows,
-        # So that they can be copied or inserted in the workflow editor.
-        assert trans.user  # help out type checker, require_login means we will have a user
-        workflow_stmnt = (
-            select(
-                model.StoredWorkflow.id,
-                model.StoredWorkflow.latest_workflow_id,
-                model.StoredWorkflow.name,
-                func.coalesce(func.count(model.WorkflowStep.id), 0).label("step_count"),
-            )
-            .join(
-                model.WorkflowStep,
-                model.StoredWorkflow.latest_workflow_id == model.WorkflowStep.workflow_id,
-                isouter=True,
-            )
-            .where(
-                and_(
-                    model.StoredWorkflow.user_id == trans.user.id,
-                    model.StoredWorkflow.deleted == false(),
-                    model.StoredWorkflow.hidden == false(),
-                )
-            )
-            .group_by(
-                model.StoredWorkflow.id,
-            )
-            .order_by(desc(model.StoredWorkflow.update_time))
-        )
-        workflow_results = trans.sa_session.execute(workflow_stmnt).all()
-
         # create workflow module models
         module_sections = []
         for module_section in load_module_sections(trans).values():
@@ -239,23 +203,10 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # identify item tags
             item_tags = stored.make_tag_string_list()
 
-        # create workflow models
-        workflows = [
-            {
-                "id": trans.security.encode_id(stored_workflow_id),
-                "latest_id": trans.security.encode_id(latest_workflow_id),
-                "step_count": step_count,
-                "name": workflow_name,
-            }
-            for stored_workflow_id, latest_workflow_id, workflow_name, step_count in workflow_results
-            if not stored or stored_workflow_id != stored.id
-        ]
-
         # build workflow editor model
         editor_config = {
             "moduleSections": module_sections,
             "dataManagers": data_managers,
-            "workflows": workflows,
         }
 
         # for existing workflow add its data to the model

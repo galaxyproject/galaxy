@@ -86,12 +86,12 @@ WHITE_SPACE_ONLY_PATTERN = re.compile(r"^[\s]+$")
 def validate_galaxy_markdown(galaxy_markdown, internal=True):
     """Validate the supplied markdown and throw an ValueError with reason if invalid."""
 
-    def invalid_line(template, line_no, **kwd):
+    def invalid_line(template, line_no: int, **kwd):
         if "line" in kwd:
             kwd["line"] = kwd["line"].rstrip("\r\n")
-        raise ValueError("Invalid line %d: %s" % (line_no + 1, template.format(**kwd)))
+        raise ValueError(f"Invalid line {line_no + 1}: {template.format(**kwd)}")
 
-    def _validate_arg(arg_str, valid_args, line_no):
+    def _validate_arg(arg_str, valid_args, line_no: int):
         if arg_str is not None:
             arg_name = arg_str.split("=", 1)[0].strip()
             if arg_name not in valid_args and arg_name not in SHARED_ARGUMENTS:

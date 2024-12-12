@@ -98,6 +98,10 @@ const dragItem: Ref<Activity | null> = ref(null);
 // drag state
 const isDragging = ref(false);
 
+// computed values
+const canDrag = computed(() => isActiveSideBar("settings"));
+const isSideBarOpen = computed(() => activityStore.toggledSideBar !== "");
+
 /**
  * Checks if the route of an activity is currently being visited and panels are collapsed
  */
@@ -111,8 +115,6 @@ function isActiveRoute(activityTo?: string | null) {
 function isActiveSideBar(menuKey: string) {
     return activityStore.toggledSideBar === menuKey;
 }
-
-const isSideBarOpen = computed(() => activityStore.toggledSideBar !== "");
 
 /**
  * Checks if an activity that has a panel should have the `is-active` prop
@@ -209,6 +211,7 @@ defineExpose({
                 <draggable
                     :list="activities"
                     :class="{ 'activity-popper-disabled': isDragging }"
+                    :disabled="!canDrag"
                     :force-fallback="true"
                     chosen-class="activity-chosen-class"
                     :delay="DRAG_DELAY"
@@ -216,7 +219,10 @@ defineExpose({
                     ghost-class="activity-chosen-class"
                     @start="isDragging = true"
                     @end="isDragging = false">
-                    <div v-for="(activity, activityIndex) in activities" :key="activityIndex">
+                    <div
+                        v-for="(activity, activityIndex) in activities"
+                        :key="activityIndex"
+                        :class="{ 'activity-can-drag': canDrag }">
                         <div v-if="activity.visible && (activity.anonymous || !isAnonymous)">
                             <UploadItem
                                 v-if="activity.id === 'upload'"
@@ -344,6 +350,12 @@ defineExpose({
 
 .activity-bar::-webkit-scrollbar {
     display: none;
+}
+
+.activity-can-drag .activity-item {
+    border-radius: $border-radius-extralarge;
+    outline: 2px dashed $border-color;
+    outline-offset: -3px;
 }
 
 .activity-chosen-class {

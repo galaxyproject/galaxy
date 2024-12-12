@@ -17,6 +17,7 @@ from galaxy_test.api.test_workflows import RunsWorkflowFixtures
 from galaxy_test.base import api_asserts
 from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.base.populators import (
+    DatasetCollectionPopulator,
     DatasetPopulator,
     RunJobsSummary,
     WorkflowPopulator,
@@ -27,6 +28,7 @@ from galaxy_test.driver.integration_util import IntegrationTestCase
 
 class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, UsesCeleryTasks, RunsWorkflowFixtures):
     dataset_populator: DatasetPopulator
+    dataset_collection_populator: DatasetCollectionPopulator
     framework_tool_and_types = True
 
     @classmethod
@@ -37,6 +39,7 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self._write_file_fixtures()
 
@@ -123,6 +126,47 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
             summary = self._run_workflow_with_runtime_data_column_parameter(history_id)
             invocation_details = self._export_and_import_workflow_invocation(summary, use_uris)
             self._rerun_imported_workflow(summary, invocation_details)
+
+    def test_export_import_invocation_with_copied_hdca_and_database_operation_tool(self):
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_collection_populator.create_list_in_history(history_id=history_id, wait=True).json()
+            new_history = self.dataset_populator.copy_history(history_id=history_id).json()
+            copied_collection = self.dataset_populator.get_history_collection_details(new_history["id"])
+            workflow_id = self.workflow_populator.upload_yaml_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input:
+    type: collection
+    collection_type: list
+steps:
+  extract_dataset:
+    tool_id: __EXTRACT_DATASET__
+    in:
+      input:
+        source: input
+"""
+            )
+            inputs = {"input": {"src": "hdca", "id": copied_collection["id"]}}
+            workflow_request = {"history": f"hist_id={new_history['id']}", "inputs_by": "name", "inputs": inputs}
+            invocation = self.workflow_populator.invoke_workflow_raw(
+                workflow_id, workflow_request, assert_ok=True
+            ).json()
+            invocation_id = invocation["id"]
+            self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+            jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
+            summary = RunJobsSummary(
+                history_id=history_id,
+                workflow_id=workflow_id,
+                invocation_id=invocation["id"],
+                inputs=inputs,
+                jobs=jobs,
+                invocation=invocation,
+                workflow_request=workflow_request,
+            )
+            imported_invocation_details = self._export_and_import_workflow_invocation(summary)
+            original_contents = self.dataset_populator.get_history_contents(new_history["id"])
+            contents = self.dataset_populator.get_history_contents(imported_invocation_details["history_id"])
+            assert len(contents) == len(original_contents) == 5
 
     def _export_and_import_workflow_invocation(
         self, summary: RunJobsSummary, use_uris: bool = True, model_store_format="tgz"

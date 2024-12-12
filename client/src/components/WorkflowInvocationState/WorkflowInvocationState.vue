@@ -10,7 +10,6 @@ import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { cancelWorkflowScheduling } from "./services";
 import {
     errorCount as jobStatesSummaryErrorCount,
     isTerminal,
@@ -53,6 +52,7 @@ const stepStatesInterval = ref<any>(undefined);
 const jobStatesInterval = ref<any>(undefined);
 const invocationLoaded = ref(false);
 const errorMessage = ref<string | null>(null);
+const cancellingInvocation = ref(false);
 
 // after the report tab is first activated, no longer lazy-render it from then on
 const reportActive = ref(false);
@@ -67,22 +67,22 @@ watch(
 );
 
 const workflowStore = useWorkflowStore();
-const reportTabDisabled = computed(
+const tabsDisabled = computed(
     () =>
         !invocationStateSuccess.value ||
         !invocation.value ||
         !workflowStore.getStoredWorkflowByInstanceId(invocation.value.workflow_id)
 );
 
-/** Tooltip message for the report tab when it is disabled */
-const disabledReportTooltip = computed(() => {
+/** Tooltip message for the a tab when it is disabled */
+const disabledTabTooltip = computed(() => {
     const state = invocationState.value;
     if (state != "scheduled") {
-        return `This workflow is not currently scheduled. The current state is ${state}. Once the workflow is fully scheduled and jobs have complete this option will become available.`;
+        return `This workflow is not currently scheduled. The current state is ${state}. Once the workflow is fully scheduled and jobs have complete any disabled tabs will become available.`;
     } else if (runningCount.value != 0) {
-        return `The workflow invocation still contains ${runningCount.value} running job(s). Once these jobs have completed this option will become available.`;
+        return `The workflow invocation still contains ${runningCount.value} running job(s). Once these jobs have completed any disabled tabs will become available.`;
     } else {
-        return "Steps for this workflow are still running. A report will be available once complete.";
+        return "Steps for this workflow are still running. Any disabled tabs will be available once complete.";
     }
 });
 
@@ -199,6 +199,16 @@ watch(
 
 const storeId = computed(() => (invocation.value ? `invocation-${invocation.value.id}` : undefined));
 
+watch(
+    () => invocationSchedulingTerminal.value,
+    async (newVal, oldVal) => {
+        if (oldVal && !newVal) {
+            // If the invocation was terminal and now is not, start polling again
+            await pollStepStatesUntilTerminal();
+        }
+    }
+);
+
 onUnmounted(() => {
     clearTimeout(stepStatesInterval.value);
     clearTimeout(jobStatesInterval.value);
@@ -219,11 +229,16 @@ async function pollJobStatesUntilTerminal() {
 function onError(e: any) {
     console.error(e);
 }
-function onCancel() {
-    emit("invocation-cancelled");
-}
-function cancelWorkflowSchedulingLocal() {
-    cancelWorkflowScheduling(props.invocationId).then(onCancel).catch(onError);
+async function onCancel() {
+    try {
+        cancellingInvocation.value = true;
+        await invocationStore.cancelWorkflowScheduling(props.invocationId);
+    } catch (e) {
+        onError(e);
+    } finally {
+        emit("invocation-cancelled");
+        cancellingInvocation.value = false;
+    }
 }
 </script>
 
@@ -243,6 +258,7 @@ function cancelWorkflowSchedulingLocal() {
                     size="sm"
                     class="text-decoration-none"
                     variant="link"
+                    :disabled="cancellingInvocation || invocationState == 'cancelling'"
                     @click="onCancel">
                     <FontAwesomeIcon :icon="faSquare" fixed-width />
                     Cancel
@@ -301,9 +317,7 @@ function cancelWorkflowSchedulingLocal() {
                     :invocation="invocation"
                     :is-full-page="props.isFullPage"
                     :invocation-and-job-terminal="invocationAndJobTerminal"
-                    :invocation-scheduling-terminal="invocationSchedulingTerminal"
-                    :is-subworkflow="isSubworkflow"
-                    @invocation-cancelled="cancelWorkflowSchedulingLocal" />
+                    :is-subworkflow="isSubworkflow" />
             </BTab>
             <BTab v-if="!isSubworkflow" title="Steps" lazy>
                 <WorkflowInvocationSteps
@@ -318,45 +332,43 @@ function cancelWorkflowSchedulingLocal() {
             </BTab> -->
             <BTab
                 v-if="!props.isSubworkflow"
+                title="Report"
                 title-item-class="invocation-report-tab"
-                :disabled="reportTabDisabled"
+                :disabled="tabsDisabled"
                 :lazy="reportLazy"
                 :active.sync="reportActive">
-                <template v-slot:title>
-                    <span>Report</span>
-                    <BBadge
-                        v-if="reportTabDisabled"
-                        v-b-tooltip.hover.noninteractive
-                        :title="disabledReportTooltip"
-                        variant="warning">
-                        <FontAwesomeIcon :icon="faExclamation" />
-                    </BBadge>
-                </template>
                 <InvocationReport v-if="invocationStateSuccess" :invocation-id="invocation.id" />
             </BTab>
-            <BTab title="Export" lazy>
+            <BTab title="Export" title-item-class="invocation-export-tab" :disabled="tabsDisabled" lazy>
                 <div v-if="invocationAndJobTerminal">
                     <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
                 </div>
-                <BAlert v-else variant="info" show>
-                    <LoadingSpan message="Waiting to complete invocation" />
-                </BAlert>
             </BTab>
             <BTab title="Metrics" :lazy="true">
-                <WorkflowInvocationMetrics :invocation-id="invocation.id"></WorkflowInvocationMetrics>
+                <WorkflowInvocationMetrics :invocation-id="invocation.id" :not-terminal="!invocationAndJobTerminal" />
             </BTab>
             <template v-slot:tabs-end>
-                <BButton
-                    v-if="!props.isFullPage && !invocationAndJobTerminal"
-                    v-b-tooltip.noninteractive.hover
-                    class="ml-auto my-1"
-                    title="Cancel scheduling of workflow invocation"
-                    data-description="cancel invocation button"
-                    size="sm"
-                    @click="onCancel">
-                    <FontAwesomeIcon :icon="faTimes" fixed-width />
-                    Cancel Workflow
-                </BButton>
+                <div class="ml-auto d-flex align-items-center">
+                    <BBadge
+                        v-if="tabsDisabled"
+                        v-b-tooltip.hover.noninteractive
+                        class="mr-1"
+                        :title="disabledTabTooltip"
+                        variant="primary">
+                        <FontAwesomeIcon :icon="faExclamation" />
+                    </BBadge>
+                    <BButton
+                        v-if="!props.isFullPage && !invocationAndJobTerminal"
+                        v-b-tooltip.noninteractive.hover
+                        class="my-1"
+                        title="Cancel scheduling of workflow invocation"
+                        data-description="cancel invocation button"
+                        size="sm"
+                        @click="onCancel">
+                        <FontAwesomeIcon :icon="faTimes" fixed-width />
+                        Cancel Workflow
+                    </BButton>
+                </div>
             </template>
         </BTabs>
     </div>
@@ -373,9 +385,10 @@ function cancelWorkflowSchedulingLocal() {
 
 <style lang="scss">
 // To show the tooltip on the disabled report tab badge
-.invocation-report-tab {
+.invocation-report-tab,
+.invocation-export-tab {
     .nav-link.disabled {
-        pointer-events: auto !important;
+        background-color: #e9edf0;
     }
 }
 </style>

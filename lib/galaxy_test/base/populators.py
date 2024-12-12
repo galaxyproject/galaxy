@@ -1911,6 +1911,8 @@ class BaseWorkflowPopulator(BasePopulator):
                 invocations = self.history_invocations(history_id)
                 if len(invocations) == expected_invocation_count:
                     return True
+                elif len(invocations) > expected_invocation_count:
+                    raise AssertionError("More than the expect number of invocations found in workflow")
 
             wait_on(invocation_count, f"{expected_invocation_count} history invocations")
         for invocation in self.history_invocations(history_id):
@@ -3369,8 +3371,6 @@ def load_data_dict(
             hda = dataset_populator.new_dataset(history_id, content=value)
             label_map[key] = dataset_populator.ds_entry(hda)
             inputs[key] = hda
-        else:
-            raise ValueError(f"Invalid test_data def {test_data}")
 
     return inputs, label_map, has_uploads
 

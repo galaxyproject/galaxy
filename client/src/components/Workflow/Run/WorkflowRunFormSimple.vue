@@ -1,6 +1,7 @@
 <template>
     <div>
-        <div v-if="isConfigLoaded">
+        <div class="ui-form-header-underlay sticky-top" />
+        <div v-if="isConfigLoaded" class="sticky-top">
             <BAlert v-if="!canRunOnHistory" variant="warning" show>
                 <span v-localize>
                     The workflow cannot run because the current history is immutable. Please select a different history

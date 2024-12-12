@@ -327,6 +327,7 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
                     <BCard
                         v-for="plugin in exportPlugins"
                         :key="plugin.id"
+                        :data-invocation-export-type="plugin.id"
                         class="wizard-selection-card"
                         :border-variant="exportData.exportPluginFormat === plugin.id ? 'primary' : 'default'"
                         @click="exportData.exportPluginFormat = plugin.id">
@@ -350,6 +351,7 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
                     <BCard
                         v-for="target in exportDestinationTargets"
                         :key="target.destination"
+                        :data-invocation-export-destination="target.destination"
                         :border-variant="exportData.destination === target.destination ? 'primary' : 'default'"
                         :header-bg-variant="exportData.destination === target.destination ? 'primary' : 'default'"
                         :header-text-variant="exportData.destination === target.destination ? 'white' : 'default'"

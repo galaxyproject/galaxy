@@ -47,7 +47,7 @@ def validate_input_element_identifiers(element_identifiers):
     """Scan through the list of element identifiers supplied by the API consumer
     and verify the structure is valid.
     """
-    log.debug("Validating %d element identifiers for collection creation." % len(element_identifiers))
+    log.debug("Validating %d element identifiers for collection creation.", len(element_identifiers))
     identifier_names = set()
     for element_identifier in element_identifiers:
         if "__object__" in element_identifier:

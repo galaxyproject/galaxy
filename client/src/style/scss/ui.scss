@@ -71,6 +71,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .ui-modal {
     display: none;
     overflow: auto;
+    .title {
+        width: 100%;
+    }
     .modal-header.no-separator {
         border: none !important;
         padding-bottom: 0px !important;
@@ -190,6 +193,17 @@ $ui-margin-horizontal-large: $margin-v * 2;
     > .portlet-content {
         @extend .pl-2;
     }
+}
+
+.ui-form-header-underlay::after {
+    content: "";
+    display: block;
+    position: absolute;
+    top: -$margin-h;
+    left: -0.5rem;
+    right: -0.5rem;
+    height: 50px;
+    background: linear-gradient($white 75%, change-color($white, $alpha: 0));
 }
 
 // popovers

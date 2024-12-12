@@ -620,7 +620,7 @@ class WorkflowContentsManager(UsesAnnotations):
         import_options = ImportOptions()
         import_options.deduplicate_subworkflows = True
         as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=None, import_options=import_options)
-        raw_description = RawWorkflowDescription(as_dict, path)
+        raw_description = RawWorkflowDescription(as_dict)
         created_workflow = self.build_workflow_from_raw_description(trans, raw_description, WorkflowCreateOptions())
         return created_workflow.workflow
 
@@ -738,9 +738,10 @@ class WorkflowContentsManager(UsesAnnotations):
         )
 
         if missing_tool_tups and not workflow_update_options.allow_missing_tools:
-            errors = []
-            for missing_tool_tup in missing_tool_tups:
-                errors.append("Step %i: Requires tool '%s'." % (int(missing_tool_tup[3]) + 1, missing_tool_tup[0]))
+            errors = [
+                f"Step {int(missing_tool_tup[3]) + 1}: Requires tool '{missing_tool_tup[0]}'."
+                for missing_tool_tup in missing_tool_tups
+            ]
             raise MissingToolsException(workflow, errors)
 
         # Connect up
@@ -958,8 +959,9 @@ class WorkflowContentsManager(UsesAnnotations):
         return wf_dict
 
     def _sync_stored_workflow(self, trans, stored_workflow):
-        workflow_path = stored_workflow.from_path
-        self.store_workflow_to_path(workflow_path, stored_workflow, stored_workflow.latest_workflow, trans=trans)
+        if trans.user_is_admin:
+            workflow_path = stored_workflow.from_path
+            self.store_workflow_to_path(workflow_path, stored_workflow, stored_workflow.latest_workflow, trans=trans)
 
     def store_workflow_artifacts(self, directory, filename_base, workflow, **kwd):
         modern_workflow_path = os.path.join(directory, f"{filename_base}.gxwf.yml")
@@ -1107,7 +1109,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     if not isinstance(conns, list):
                         conns = [conns]
                     value_list = [
-                        "Output '%s' from Step %d." % (conn.output_name, int(conn.output_step.order_index) + 1)
+                        f"Output '{conn.output_name}' from Step {int(conn.output_step.order_index) + 1}."
                         for conn in conns
                     ]
                     value = ",".join(value_list)
@@ -1132,7 +1134,7 @@ class WorkflowContentsManager(UsesAnnotations):
                         for i in range(len(repeat_values)):
                             nested_input_dict = {}
                             index = repeat_values[i]["__index__"]
-                            nested_input_dict["title"] = "%i. %s" % (i + 1, input.title)
+                            nested_input_dict["title"] = f"{i + 1}. {input.title}"
                             try:
                                 nested_input_dict["inputs"] = do_inputs(
                                     input.inputs,

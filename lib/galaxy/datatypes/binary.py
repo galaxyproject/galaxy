@@ -1196,7 +1196,7 @@ class Bcf(BaseBcf):
         # Create the bcf index
         dataset_symlink = os.path.join(
             os.path.dirname(index_file.get_file_name()),
-            "__dataset_%d_%s" % (dataset.id, os.path.basename(index_file.get_file_name())),
+            f"__dataset_{dataset.id}_{os.path.basename(index_file.get_file_name())}",
         )
         os.symlink(dataset.get_file_name(), dataset_symlink)
         try:
@@ -1677,7 +1677,7 @@ class Anndata(H5):
             def _makelayerstrings(layer, count, names):
                 "Format the layers."
                 if layer in tmp.layers_names:
-                    return "\n[%s]: %d %s\n    %s" % (
+                    return "\n[{}]: {} {}\n    {}".format(
                         layer,
                         count,
                         "layer" if count == 1 else "layers",
@@ -1685,7 +1685,7 @@ class Anndata(H5):
                     )
                 return ""
 
-            peekstr = "[n_obs x n_vars]\n    %d x %d" % tuple(tmp.shape)
+            peekstr = "[n_obs x n_vars]\n    {} x {}".format(*tuple(tmp.shape))
             peekstr += _makelayerstrings("obs", tmp.obs_count, tmp.obs_layers)
             peekstr += _makelayerstrings("var", tmp.var_count, tmp.var_layers)
             peekstr += _makelayerstrings("obsm", tmp.obsm_count, tmp.obsm_layers)

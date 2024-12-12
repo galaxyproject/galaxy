@@ -3212,7 +3212,7 @@ steps:
 """,
                 test_data="""
 num_lines_param:
-  type: int
+  type: raw
   value: 2
 input collection 1:
   collection_type: list
@@ -7034,12 +7034,14 @@ inputs:
   outer_input_1:
     type: int
     default: 1
+    optional: true
     position:
       left: 0
       top: 0
   outer_input_2:
     type: int
     default: 2
+    optional: true
     position:
       left: 100
       top: 0

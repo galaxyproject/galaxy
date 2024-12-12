@@ -4,10 +4,21 @@ History
 .. to_doc
 
 ---------
-24.2.dev0
+25.0.dev0
 ---------
 
 
+
+-------------------
+24.1.4 (2024-12-11)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix shared caches with extended metadata collection. by `@jmchilton <https://github.com/jmchilton>`_ in `#18520 <https://github.com/galaxyproject/galaxy/pull/18520>`_
 
 -------------------
 24.1.3 (2024-10-25)

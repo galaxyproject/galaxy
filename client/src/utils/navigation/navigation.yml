@@ -440,7 +440,7 @@ history_copy_elements:
 
 collection_builders:
   selectors:
-    clear_filters: "a.clear-filters-link"
+    clear_filters: "button.clear-filters-link"
     forward_datasets: ".forward-column .column-datasets"
     reverse_datasets: ".reverse-column .column-datasets"
     name: "input.collection-name"
@@ -570,6 +570,7 @@ tool_form:
     parameter_div: 'div.ui-form-element[id="form-element-${parameter}"]'
     parameter_error: 'div.ui-form-element[id="form-element-${parameter}"] .ui-form-error-text'
     parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch'
+    parameter_select: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect'
     parameter_input: 'div.ui-form-element[id="form-element-${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
     parameter_data_input_single: 'div.ui-form-element[id="form-element-${parameter}"] button[title="Single dataset"]'
@@ -677,6 +678,7 @@ trs_import:
 workflow_run:
   selectors:
     warning: '[data-description="workflow run warning"]'
+    run_error: '[data-description="workflow run error"]'
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .multiselect"
     # TODO: put step labels in the DOM ideally
@@ -748,6 +750,11 @@ workflow_editor:
       freehand_comment: ".freehand-workflow-comment"
       freehand_path: ".freehand-workflow-comment path"
       delete: "button[title='Delete comment']"
+  inputs:
+    selectors:
+      activity_button: "#activity-workflow-editor-inputs"
+      activity_panel: ".activity-panel[data-description='Inputs']"
+      input: ".workflow-input-button[data-id='${id}']"
   selectors:
     node_inspector: '.tool-inspector'
     node_inspector_close: ".tool-inspector [title='close']"
@@ -884,6 +891,12 @@ invocations:
     step_job_details: '[data-step="${order_index}"] .invocation-step-job-details'
     step_job_information: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table'
     step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table #galaxy-tool-id'
+    export_tab: '.invocation-export-tab'
+    export_output_format: '[data-invocation-export-type="${type}"] .card-body'
+    export_destination: '[data-invocation-export-destination="${destination}"] .card-body'
+    wizard_next_button: '.wizard-actions .go-next-btn'
+    wizard_export_button: '.wizard-actions .go-next-btn.btn-primary'
+    export_download_link: '.download-link'
 
 tour:
   popover:
@@ -1060,7 +1073,7 @@ libraries:
       export_to_history_paired_option: 'option[value="${collection_option}"]'
       export_to_history_collection_name: '.collection-name'
       export_to_history_new_history: 'input[name=history_name]'
-      clear_filters: '.clear-filters-link'
+      clear_filters: "button.clear-filters-link"
       import_progress_bar: '.progress-bar-import'
       import_from_path_textarea: '#import_paths'
       select_all: '#select-all-checkboxes'

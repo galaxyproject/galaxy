@@ -723,11 +723,13 @@ class PulsarJobRunner(AsynchronousJobRunner):
             return True
         except OSError as e:
             if e.errno == errno.ESRCH:
-                log.debug("check_pid(): PID %d is dead" % pid)
+                log.debug("check_pid(): PID %d is dead", pid)
             else:
                 log.warning(
-                    "check_pid(): Got errno %s when attempting to check PID %d: %s"
-                    % (errno.errorcode[e.errno], pid, e.strerror)
+                    "check_pid(): Got errno %s when attempting to check PID %d: %s",
+                    errno.errorcode[e.errno],
+                    pid,
+                    e.strerror,
                 )
             return False
 
@@ -747,23 +749,27 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 return
             pid = int(pid)
             if not self.check_pid(pid):
-                log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.id, pid))
+                log.warning("stop_job(): %s: PID %d was already dead or can't be signaled", job.id, pid)
                 return
             for sig in [15, 9]:
                 try:
                     os.killpg(pid, sig)
                 except OSError as e:
                     log.warning(
-                        "stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s"
-                        % (job.id, errno.errorcode[e.errno], sig, pid, e.strerror)
+                        "stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s",
+                        job.id,
+                        errno.errorcode[e.errno],
+                        sig,
+                        pid,
+                        e.strerror,
                     )
                     return  # give up
                 sleep(2)
                 if not self.check_pid(pid):
-                    log.debug("stop_job(): %s: PID %d successfully killed with signal %d" % (job.id, pid, sig))
+                    log.debug("stop_job(): %s: PID %d successfully killed with signal %d", job.id, pid, sig)
                     return
                 else:
-                    log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" % (job.id, pid))
+                    log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL", job.id, pid)
         else:
             # Remote kill
             pulsar_url = job.job_runner_name
