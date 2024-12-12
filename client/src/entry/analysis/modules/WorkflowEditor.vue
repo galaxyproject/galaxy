@@ -7,7 +7,8 @@
         :initial-version="editorConfig.initialVersion"
         :module-sections="editorConfig.moduleSections"
         :workflow-tags="editorConfig.tags"
-        @update:confirmation="$emit('update:confirmation', $event)" />
+        @update:confirmation="$emit('update:confirmation', $event)"
+        @skipNextReload="() => (skipNextReload = true)" />
 </template>
 <script>
 import Editor from "components/Workflow/Editor/Index";
@@ -25,7 +26,7 @@ export default {
             version: null,
             editorConfig: null,
             editorReloadKey: 0,
-            previousHistoryLength: 0,
+            skipNextReload: false,
         };
     },
     watch: {
@@ -40,12 +41,9 @@ export default {
         async getEditorConfig() {
             let reloadEditor = true;
 
-            const noStoredIds = !this.storedWorkflowId && !this.workflowId;
-            const historyNavigatedForwards = window.history.length > this.previousHistoryLength;
-
-            // this will only be the case the first time the route updates from a new workflow
-            if (noStoredIds && historyNavigatedForwards) {
+            if (this.skipNextReload) {
                 reloadEditor = false;
+                this.skipNextReload = false;
             }
 
             this.storedWorkflowId = Query.get("id");

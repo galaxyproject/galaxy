@@ -819,6 +819,7 @@ export default {
                 const { id, name, number_of_steps } = await this.services.createWorkflow(this);
                 const message = `Created new workflow '${name}' with ${number_of_steps} steps.`;
                 this.hasChanges = false;
+                this.$emit("skipNextReload");
                 await this.routeToWorkflow(id);
                 Toast.success(message);
             } catch (e) {
