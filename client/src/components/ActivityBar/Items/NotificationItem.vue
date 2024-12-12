@@ -17,7 +17,7 @@ export interface Props {
     isActive: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "click"): void;
@@ -33,7 +33,7 @@ const tooltip = computed(() =>
 <template>
     <ActivityItem
         :id="id"
-        :activity-bar-id="activityBarId"
+        :activity-bar-id="props.activityBarId"
         :icon="icon"
         :indicator="totalUnreadCount"
         :is-active="isActive"

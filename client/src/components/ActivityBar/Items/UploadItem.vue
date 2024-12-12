@@ -11,13 +11,13 @@ import ActivityItem from "@/components/ActivityBar/ActivityItem.vue";
 
 export interface Props {
     id: string;
+    activityBarId: string;
     title: string;
     icon: IconDefinition;
     tooltip: string;
-    activityBarId: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "click"): void;
@@ -41,7 +41,7 @@ function onUploadModal() {
 <template>
     <ActivityItem
         :id="id"
-        :activity-bar-id="activityBarId"
+        :activity-bar-id="props.activityBarId"
         :title="title"
         :tooltip="tooltip"
         :icon="icon"
