@@ -1410,8 +1410,27 @@ class DynamicTool(Base, Dictifiable, RepresentById):
     value: Mapped[Optional[Dict[str, Any]]] = mapped_column(MutableJSONType)
     public: Mapped[bool] = mapped_column(default=False, server_default=false())
 
-    dict_collection_visible_keys = ("id", "tool_id", "tool_format", "tool_version", "uuid", "active", "hidden")
-    dict_element_visible_keys = ("id", "tool_id", "tool_format", "tool_version", "uuid", "active", "hidden")
+    dict_collection_visible_keys = (
+        "id",
+        "tool_id",
+        "tool_format",
+        "tool_version",
+        "uuid",
+        "active",
+        "hidden",
+        "create_time",
+    )
+    dict_element_visible_keys = (
+        "id",
+        "tool_id",
+        "tool_format",
+        "tool_version",
+        "uuid",
+        "active",
+        "hidden",
+        "create_time",
+        "representation",
+    )
 
     def __init__(self, active=True, hidden=True, **kwd):
         super().__init__(**kwd)
@@ -1419,6 +1438,11 @@ class DynamicTool(Base, Dictifiable, RepresentById):
         self.hidden = hidden
         _uuid = kwd.get("uuid")
         self.uuid = get_uuid(_uuid)
+
+    def to_dict(self, view="collection", value_mapper=None):
+        rval = super().to_dict(view, value_mapper=None)
+        rval["representation"] = self.value
+        return rval
 
 
 class BaseJobMetric(Base):
