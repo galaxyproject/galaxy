@@ -181,7 +181,12 @@ class DataverseRDMFilesSource(RDMFilesSource):
         # TODO: user_context is always None here when called from a data fetch. (same problem as in invenio.py)
         # This prevents downloading files that require authentication even if the user provided a token.
         dataset_id, file_id = self.parse_path(source_path)
-        self.repository.download_file_from_container(dataset_id, file_id, native_path, user_context=user_context)
+        if "rocrate.zip" in file_id:
+            # If file path contains "rocrate.zip", we need to change the URL, so we use the dataverse API URL to download a dataset as a zip file
+            file_id = re.sub(r"/[^/]*\.rocrate\.zip$", "", file_id)
+            self.repository._download_dataset_as_zip(dataset_id, native_path, user_context)
+        else: 
+            self.repository.download_file_from_container(dataset_id, file_id, native_path, user_context=user_context)
 
     # TODO: Test this method
     def _write_from(
@@ -294,6 +299,18 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         user_context: OptionalUserContext = None,
     ):
         download_file_content_url = self._get_download_file_url(container_id, file_identifier, user_context)
+        self._download_file(file_path, download_file_content_url, user_context)
+
+    def _download_dataset_as_zip(self, dataset_id: str, file_path: str, user_context: OptionalUserContext = None):
+        download_file_content_url = f"{self.api_base_url}/access/dataset/:persistentId/?persistentId={dataset_id}"
+        self._download_file(file_path, download_file_content_url, user_context)
+
+    def _download_file(
+            self, 
+            file_path: str, 
+            download_file_content_url: str, 
+            user_context: OptionalUserContext = None,
+        ):
         headers = {}
 
         if self._is_api_url(download_file_content_url):
@@ -310,7 +327,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             # TODO: We can only download files from published datasets for now
             if e.code in [401, 403, 404]:
                 raise Exception(
-                    f"Cannot download file '{file_identifier}' from dataset '{container_id}'. Please make sure the dataset exists and it is public."
+                    f"Cannot download file from URL '{file_path}'. Please make sure the dataset and/or file exists and it is public."
                 )
 
     def _get_download_file_url(self, container_id: str, file_id: str, user_context: OptionalUserContext = None):
