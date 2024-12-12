@@ -1,9 +1,10 @@
-import { computed, customRef, type Ref, ref } from "vue";
+import { watchImmediate } from "@vueuse/core";
+import { type Ref, ref } from "vue";
 
 import { type AnyUser } from "@/api";
 
 import { useHashedUserId } from "./hashedUserId";
-import { usePersistentRef } from "./persistentRef";
+import { syncRefToLocalStorage } from "./persistentRef";
 
 /**
  * Local storage composable specific to current user.
@@ -13,27 +14,18 @@ import { usePersistentRef } from "./persistentRef";
 export function useUserLocalStorage<T>(key: string, initialValue: T, user?: Ref<AnyUser>) {
     const { hashedUserId } = useHashedUserId(user);
 
-    let refSyncedRawValue = initialValue;
+    const refToSync = ref(initialValue);
+    let hasSynced = false;
 
-    const storedRef = computed(() => {
-        if (hashedUserId.value) {
-            return usePersistentRef(`${key}-${hashedUserId.value}`, refSyncedRawValue);
-        } else {
-            return ref(initialValue);
+    watchImmediate(
+        () => hashedUserId.value,
+        () => {
+            if (hashedUserId.value && !hasSynced) {
+                syncRefToLocalStorage(`${key}-${hashedUserId.value}`, refToSync);
+                hasSynced = true;
+            }
         }
-    });
+    );
 
-    const currentValue = customRef((track, trigger) => ({
-        get() {
-            track();
-            return storedRef.value.value;
-        },
-        set(newValue) {
-            storedRef.value.value = newValue;
-            refSyncedRawValue = newValue as T;
-            trigger();
-        },
-    }));
-
-    return currentValue;
+    return refToSync;
 }
