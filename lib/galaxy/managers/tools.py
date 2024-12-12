@@ -147,7 +147,9 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
         self.app.toolbox.load_dynamic_tool(dynamic_tool)
         return dynamic_tool
 
-    def create_unprivileged_tool(self, user: model.User, tool_payload: DynamicUnprivilegedToolCreatePayload):
+    def create_unprivileged_tool(
+        self, user: model.User, tool_payload: DynamicUnprivilegedToolCreatePayload
+    ) -> DynamicTool:
         if not getattr(self.app.config, "enable_beta_tool_formats", False):
             raise exceptions.ConfigDoesNotAllowException(
                 "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
@@ -159,7 +161,7 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
             tool_version=tool_payload.representation.version,
             active=tool_payload.active,
             hidden=tool_payload.hidden,
-            value=tool_payload.representation.model_dump(),
+            value=tool_payload.representation.model_dump(by_alias=True),
             public=False,
             flush=True,
         )

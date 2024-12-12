@@ -1,5 +1,8 @@
 import logging
-from typing import Union
+from typing import (
+    List,
+    Union,
+)
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesUserContext
@@ -9,6 +12,7 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.tools import (
     DynamicToolPayload,
     DynamicUnprivilegedToolCreatePayload,
+    UnprivilegedToolResponse,
 )
 from . import (
     depends,
@@ -31,25 +35,27 @@ class UnprivilegedToolsApi:
     dynamic_tools_manager: DynamicToolManager = depends(DynamicToolManager)
 
     @router.get("/api/unprivileged_tools")
-    def index(self, active: bool = True, trans: ProvidesUserContext = DependsOnTrans):
+    def index(self, active: bool = True, trans: ProvidesUserContext = DependsOnTrans) -> List[UnprivilegedToolResponse]:
         if not trans.user:
             return []
         return [t.to_dict() for t in self.dynamic_tools_manager.list_unprivileged_tools(trans.user, active=active)]
 
     @router.get("/api/unprivileged_tools/{uuid}")
-    def show(self, uuid: str, user: User = DependsOnUser):
+    def show(self, uuid: str, user: User = DependsOnUser) -> UnprivilegedToolResponse:
         dynamic_tool = self.dynamic_tools_manager.get_unprivileged_tool_by_uuid(user, uuid)
         if dynamic_tool is None:
             raise ObjectNotFound()
-        return dynamic_tool.to_dict()
+        return UnprivilegedToolResponse(**dynamic_tool.to_dict())
 
     @router.post("/api/unprivileged_tools")
-    def create(self, payload: DynamicUnprivilegedToolCreatePayload, user: User = DependsOnUser):
+    def create(
+        self, payload: DynamicUnprivilegedToolCreatePayload, user: User = DependsOnUser
+    ) -> UnprivilegedToolResponse:
         dynamic_tool = self.dynamic_tools_manager.create_unprivileged_tool(
             user,
             payload,
         )
-        return dynamic_tool.to_dict()
+        return UnprivilegedToolResponse(**dynamic_tool.to_dict())
 
     @router.delete("/api/dynamic_tools/{tool_id}")
     def delete(self, tool_id: str, user: User = DependsOnUser):
@@ -63,7 +69,7 @@ class UnprivilegedToolsApi:
         if not dynamic_tool:
             raise ObjectNotFound()
         updated_dynamic_tool = self.dynamic_tools_manager.deactivate_unprivileged_tool(user, dynamic_tool)
-        return updated_dynamic_tool.to_dict()
+        return UnprivilegedToolResponse(**updated_dynamic_tool.to_dict())
 
 
 @router.cbv
