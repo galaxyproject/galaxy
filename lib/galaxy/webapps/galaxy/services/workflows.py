@@ -147,7 +147,11 @@ class WorkflowsService(ServiceBase):
             tool
             for tool in tools
             if not trans.app.toolbox.has_tool(
-                tool["tool_id"], tool_version=tool["tool_version"], exact=require_exact_tool_versions
+                tool["tool_id"],
+                tool_version=tool["tool_version"],
+                tool_uuid=tool["tool_uuid"],
+                exact=require_exact_tool_versions,
+                user=trans.user,
             )
         ]
         if missing_tools:

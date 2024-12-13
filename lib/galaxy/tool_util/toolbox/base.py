@@ -16,6 +16,7 @@ from typing import (
     Union,
 )
 from urllib.parse import urlparse
+from uuid import UUID
 
 from markupsafe import escape
 
@@ -60,7 +61,11 @@ from .views.interface import (
 from .views.static import StaticToolPanelView
 
 if TYPE_CHECKING:
-    from galaxy.model import DynamicTool
+    from galaxy.model import (
+        DynamicTool,
+        User,
+    )
+    from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
 
@@ -693,8 +698,23 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             elif elem.tag == "label":
                 self._integrated_tool_panel.stub_label(key)
 
-    def get_tool(self, tool_id, tool_version=None, get_all_versions=False, exact=False, tool_uuid=None):
+    def get_unprivileged_tool(self, user: "User", tool_uuid: Union[UUID, str]) -> Optional["Tool"]:
+        return None
+
+    def get_tool(
+        self,
+        tool_id: Optional[str] = None,
+        tool_version: Optional[str] = None,
+        tool_uuid: Optional[Union[UUID, str]] = None,
+        get_all_versions: Optional[bool] = False,
+        exact: Optional[bool] = False,
+        user: Optional["User"] = None,
+    ):
         """Attempt to locate a tool in the tool box. Note that `exact` only refers to the `tool_id`, not the `tool_version`."""
+        if tool_uuid and user:
+            unprivileged_tool = self.get_unprivileged_tool(user, tool_uuid=tool_uuid)
+            if unprivileged_tool:
+                return unprivileged_tool
         if tool_version:
             tool_version = str(tool_version)
 
@@ -777,8 +797,17 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                     return self._tools_by_id[tool_id]
         return None
 
-    def has_tool(self, tool_id: str, tool_version: Optional[str] = None, exact: bool = False):
-        return self.get_tool(tool_id, tool_version=tool_version, exact=exact) is not None
+    def has_tool(
+        self,
+        tool_id: Optional[str],
+        tool_version: Optional[str] = None,
+        tool_uuid: Optional[Union[UUID, str]] = None,
+        exact: bool = False,
+        user: Optional["User"] = None,
+    ):
+        return (
+            self.get_tool(tool_id, tool_version=tool_version, tool_uuid=tool_uuid, exact=exact, user=user) is not None
+        )
 
     def is_missing_shed_tool(self, tool_id: str) -> bool:
         """Confirm that the tool ID does reference a shed tool and is not installed."""

@@ -117,6 +117,7 @@ from galaxy.workflow.workflow_parameter_input_definitions import (
 )
 
 if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesUserContext
     from galaxy.schema.invocation import InvocationMessageUnion
     from galaxy.workflow.run import WorkflowProgress
 
@@ -1853,16 +1854,21 @@ class ToolModule(WorkflowModule):
     type = "tool"
     name = "Tool"
 
-    def __init__(self, trans, tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds):
+    def __init__(
+        self, trans: "ProvidesUserContext", tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds
+    ):
         super().__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
         self.tool_version = str(tool_version) if tool_version else None
         self.tool_uuid = tool_uuid
         self.tool = None
         if getattr(trans.app, "toolbox", None):
-            self.tool = trans.app.toolbox.get_tool(
-                tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
-            )
+            if trans.user and tool_uuid:
+                self.tool = trans.app.toolbox.get_unprivileged_tool(trans.user, tool_uuid=tool_uuid)
+            if not self.tool:
+                self.tool = trans.app.toolbox.get_tool(
+                    tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
+                )
         if self.tool:
             current_tool_version = str(self.tool.version)
             if exact_tools and self.tool_version and self.tool_version != current_tool_version:
@@ -1876,10 +1882,10 @@ class ToolModule(WorkflowModule):
                         f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}]."
                     )
                     self.tool = None
-        self.post_job_actions = {}
-        self.runtime_post_job_actions = {}
-        self.workflow_outputs = []
-        self.version_changes = []
+        self.post_job_actions: Dict[str, Any] = {}
+        self.runtime_post_job_actions: Dict[str, Any] = {}
+        self.workflow_outputs: List[Dict[str, Any]] = []
+        self.version_changes: List[str] = []
 
     # ---- Creating modules from various representations ---------------------
 
@@ -2278,7 +2284,9 @@ class ToolModule(WorkflowModule):
     ) -> Optional[bool]:
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
-        tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid)
+        tool = trans.app.toolbox.get_tool(
+            step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid, user=trans.user
+        )
         if not tool.is_workflow_compatible:
             # TODO: why do we even create an invocation, seems like something we could check on submit?
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
