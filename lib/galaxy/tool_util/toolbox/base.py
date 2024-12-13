@@ -734,6 +734,10 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         user: Optional["User"] = None,
     ) -> Union[Optional["Tool"], List["Tool"]]:
         """Attempt to locate a tool in the tool box. Note that `exact` only refers to the `tool_id`, not the `tool_version`."""
+        if tool_uuid and user:
+            unprivileged_tool = self.get_unprivileged_tool(user, tool_uuid=tool_uuid)
+            if unprivileged_tool:
+                return unprivileged_tool
         if tool_version:
             tool_version = str(tool_version)
 
@@ -827,6 +831,9 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         return (
             self.get_tool(tool_id, tool_version=tool_version, tool_uuid=tool_uuid, exact=exact, user=user) is not None
         )
+
+    def get_unprivileged_tool(self, user: model.User, tool_uuid: Union[UUID, str]) -> Optional["Tool"]:
+        return None
 
     def is_missing_shed_tool(self, tool_id: str) -> bool:
         """Confirm that the tool ID does reference a shed tool and is not installed."""

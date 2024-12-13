@@ -1055,7 +1055,7 @@ class WorkflowContentsManager(UsesAnnotations):
             if step.type == "tool":
                 incoming: Dict[str, Any] = {}
                 tool = trans.app.toolbox.get_tool(
-                    step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid
+                    step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid, user=trans.user
                 )
                 if not tool:
                     raise exceptions.MessageException(

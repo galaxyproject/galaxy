@@ -26,6 +26,7 @@ from typing import (
     Union,
 )
 from urllib.parse import unquote_plus
+from uuid import UUID
 
 import webob.exc
 from mako.template import Template
@@ -617,7 +618,7 @@ class ToolBox(AbstractToolBox):
     def _create_tool_from_source(self, tool_source: ToolSource, **kwds):
         return create_tool_from_source(self.app, tool_source, **kwds)
 
-    def get_unprivileged_tool(self, user: model.User, tool_uuid: str) -> Optional["Tool"]:
+    def get_unprivileged_tool(self, user: model.User, tool_uuid: Union[UUID, str]) -> Optional["Tool"]:
         dynamic_tool = self.app.dynamic_tool_manager.get_unprivileged_tool_by_uuid(user, tool_uuid)
         return self.dynamic_tool_to_tool(dynamic_tool)
 
@@ -627,6 +628,7 @@ class ToolBox(AbstractToolBox):
             tool = create_tool_from_source(self.app, tool_source=tool_source, tool_dir=None)
             tool.dynamic_tool = dynamic_tool
             return tool
+        return None
 
     def tool_for_job(self, job: model.Job, exact=True) -> Optional["Tool"]:
         if job.dynamic_tool:
