@@ -9,6 +9,7 @@ const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
 const CircularDependencyPlugin = require("circular-dependency-plugin");
+const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -211,6 +212,10 @@ module.exports = (env = {}, argv = {}) => {
                     test: /\.ya?ml$/,
                     use: "yaml-loader",
                 },
+                {
+                    test: /\.ttf$/,
+                    type: "asset/resource",
+                },
             ],
         },
         resolveLoader: {
@@ -249,6 +254,19 @@ module.exports = (env = {}, argv = {}) => {
                     hash: stats.hash,
                     epoch: Date.parse(buildDate),
                 }),
+            }),
+            new MonacoWebpackPlugin({
+                languages: ["yaml"],
+                customLanguages: [
+                    {
+                        label: "yaml",
+                        entry: "monaco-yaml",
+                        worker: {
+                            id: "monaco-yaml/yamlWorker",
+                            entry: "monaco-yaml/yaml.worker",
+                        },
+                    },
+                ],
             }),
             new ForkTsCheckerWebpackPlugin({
                 async: false,
