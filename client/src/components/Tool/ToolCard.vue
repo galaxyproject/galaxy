@@ -30,6 +30,10 @@ const props = defineProps({
         required: false,
         default: "1.0",
     },
+    toolUuid: {
+        type: String,
+        default: null,
+    },
     title: {
         type: String,
         required: true,
@@ -139,6 +143,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                             @onChangeVersion="onChangeVersion" />
                         <ToolOptionsButton
                             :id="props.id"
+                            :tool-uuid="props.toolUuid"
                             :sharable-url="props.options.sharable_url"
                             :options="props.options" />
                         <b-button

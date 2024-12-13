@@ -21,6 +21,10 @@ const props = defineProps({
         type: String,
         required: true,
     },
+    toolUuid: {
+        type: String,
+        default: null,
+    },
     sharableUrl: {
         type: String,
         default: null,
@@ -98,7 +102,7 @@ function onLink() {
             <FontAwesomeIcon icon="fa-download" /><span v-localize>Download</span>
         </b-dropdown-item>
 
-        <ToolSourceMenuItem :tool-id="id" />
+        <ToolSourceMenuItem :tool-id="id" :tool-uuid="toolUuid" />
 
         <b-dropdown-item v-if="showLink" @click="onLink">
             <FontAwesomeIcon icon="fa-external-link-alt" /><span v-localize>See in Tool Shed</span>
