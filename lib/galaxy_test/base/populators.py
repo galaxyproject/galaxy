@@ -93,9 +93,7 @@ from galaxy.schema.schema import (
     ToolLandingRequest,
     WorkflowLandingRequest,
 )
-from galaxy.schema.tools import (
-    DynamicUnprivilegedToolCreatePayload,
-)
+from galaxy.schema.tools import DynamicUnprivilegedToolCreatePayload
 from galaxy.tool_util.client.staging import InteractorStaging
 from galaxy.tool_util.cwl.util import (
     download_output,
