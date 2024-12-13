@@ -254,26 +254,6 @@ export interface paths {
         patch?: never
         trace?: never
     }
-    "/api/repositories/reset_metadata_on_repositories": {
-        parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        get?: never
-        put?: never
-        /**
-         * Reset Metadata On Repositories
-         * @description reset metadata on all of your repositories
-         */
-        post: operations["repositories__reset_all"]
-        delete?: never
-        options?: never
-        head?: never
-        patch?: never
-        trace?: never
-    }
     "/api/repositories/reset_metadata_on_repository": {
         parameters: {
             query?: never
@@ -856,6 +836,12 @@ export interface components {
             /** Truevalue */
             truevalue?: string | null
             /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "boolean"
+            /**
              * Value
              * @default false
              */
@@ -935,6 +921,12 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_color"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "color"
             /** Value */
             value?: string | null
         }
@@ -1231,6 +1223,12 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_data_collection"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "data_collection"
             /** Value */
             value: Record<string, never> | null
         }
@@ -1315,6 +1313,12 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_data"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "data"
         }
         /**
          * DescriptorType
@@ -1575,6 +1579,12 @@ export interface components {
              */
             parameter_type: "gx_float"
             /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "float"
+            /**
              * Validators
              * @default []
              */
@@ -1811,6 +1821,12 @@ export interface components {
              */
             parameter_type: "gx_integer"
             /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "integer"
+            /**
              * Validators
              * @default []
              */
@@ -1894,18 +1910,68 @@ export interface components {
              */
             url: string
         }
-        /** PaginatedRepositoryIndexResults */
-        PaginatedRepositoryIndexResults: {
-            /** Hits */
-            hits: components["schemas"]["Repository"][]
-            /** Hostname */
-            hostname: string
-            /** Page */
-            page: number
-            /** Page Size */
-            page_size: number
-            /** Total Results */
-            total_results: number
+        /** ParsedTool */
+        ParsedTool: {
+            /** Citations */
+            citations: components["schemas"]["Citation"][]
+            /** Description */
+            description: string | null
+            /** Edam Operations */
+            edam_operations: string[]
+            /** Edam Topics */
+            edam_topics: string[]
+            help: components["schemas"]["HelpContent"] | null
+            /** Id */
+            id: string
+            /** Inputs */
+            inputs: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
+            )[]
+            /** License */
+            license: string | null
+            /** Name */
+            name: string
+            /** Outputs */
+            outputs: (
+                | components["schemas"]["ToolOutputDatasetG_bool_str_"]
+                | components["schemas"]["ToolOutputCollectionG_bool_str_"]
+                | components["schemas"]["ToolOutputText"]
+                | components["schemas"]["ToolOutputInteger"]
+                | components["schemas"]["ToolOutputFloat"]
+                | components["schemas"]["ToolOutputBoolean"]
+            )[]
+            /** Profile */
+            profile: string | null
+            /** Version */
+            version: string | null
+            /** Xrefs */
+            xrefs: components["schemas"]["XrefDict"][]
         }
         /**
          * RegexParameterValidatorModel
@@ -2247,15 +2313,6 @@ export interface components {
         RepositoryUpdate:
             | components["schemas"]["ValidRepostiroyUpdateMessage"]
             | components["schemas"]["FailedRepositoryUpdateMessage"]
-        /** ResetMetadataOnRepositoriesResponse */
-        ResetMetadataOnRepositoriesResponse: {
-            /** Repository Status */
-            repository_status: string[]
-            /** Start Time */
-            start_time: string
-            /** Stop Time */
-            stop_time: string
-        }
         /** ResetMetadataOnRepositoryResponse */
         ResetMetadataOnRepositoryResponse: {
             /** Repository Status */
@@ -2468,70 +2525,6 @@ export interface components {
              */
             version: string
         }
-        /** ShedParsedTool */
-        ShedParsedTool: {
-            /** Citations */
-            citations: components["schemas"]["Citation"][]
-            /** Description */
-            description: string | null
-            /** Edam Operations */
-            edam_operations: string[]
-            /** Edam Topics */
-            edam_topics: string[]
-            help: components["schemas"]["HelpContent"] | null
-            /** Id */
-            id: string
-            /** Inputs */
-            inputs: (
-                | components["schemas"]["CwlIntegerParameterModel"]
-                | components["schemas"]["CwlFloatParameterModel"]
-                | components["schemas"]["CwlStringParameterModel"]
-                | components["schemas"]["CwlBooleanParameterModel"]
-                | components["schemas"]["CwlNullParameterModel"]
-                | components["schemas"]["CwlFileParameterModel"]
-                | components["schemas"]["CwlDirectoryParameterModel"]
-                | components["schemas"]["CwlUnionParameterModel"]
-                | components["schemas"]["TextParameterModel"]
-                | components["schemas"]["IntegerParameterModel"]
-                | components["schemas"]["FloatParameterModel"]
-                | components["schemas"]["BooleanParameterModel"]
-                | components["schemas"]["HiddenParameterModel"]
-                | components["schemas"]["SelectParameterModel"]
-                | components["schemas"]["DataParameterModel"]
-                | components["schemas"]["DataCollectionParameterModel"]
-                | components["schemas"]["DataColumnParameterModel"]
-                | components["schemas"]["DirectoryUriParameterModel"]
-                | components["schemas"]["RulesParameterModel"]
-                | components["schemas"]["DrillDownParameterModel"]
-                | components["schemas"]["GroupTagParameterModel"]
-                | components["schemas"]["BaseUrlParameterModel"]
-                | components["schemas"]["GenomeBuildParameterModel"]
-                | components["schemas"]["ColorParameterModel"]
-                | components["schemas"]["ConditionalParameterModel"]
-                | components["schemas"]["RepeatParameterModel"]
-                | components["schemas"]["SectionParameterModel"]
-            )[]
-            /** License */
-            license: string | null
-            /** Name */
-            name: string
-            /** Outputs */
-            outputs: (
-                | components["schemas"]["ToolOutputDataset"]
-                | components["schemas"]["ToolOutputCollection"]
-                | components["schemas"]["ToolOutputText"]
-                | components["schemas"]["ToolOutputInteger"]
-                | components["schemas"]["ToolOutputFloat"]
-                | components["schemas"]["ToolOutputBoolean"]
-            )[]
-            /** Profile */
-            profile: string | null
-            repository_revision?: components["schemas"]["RepositoryRevisionMetadata"] | null
-            /** Version */
-            version: string | null
-            /** Xrefs */
-            xrefs: components["schemas"]["XrefDict"][]
-        }
         /** TextParameterModel */
         TextParameterModel: {
             /**
@@ -2573,6 +2566,12 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_text"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "text"
             /**
              * Validators
              * @default []
@@ -2664,23 +2663,23 @@ export interface components {
         /** ToolOutputBoolean */
         ToolOutputBoolean: {
             /** Hidden */
-            hidden: boolean
+            hidden: unknown
             /** Label */
-            label: string | null
+            label?: string | null
             /** Name */
-            name: string
+            name: unknown
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "boolean"
         }
-        /** ToolOutputCollection */
-        ToolOutputCollection: {
+        /** ToolOutputCollectionG[bool, str] */
+        ToolOutputCollectionG_bool_str_: {
             /** Hidden */
             hidden: boolean
             /** Label */
-            label: string | null
+            label?: string | null
             /** Name */
             name: string
             structure: components["schemas"]["ToolOutputCollectionStructure"]
@@ -2693,25 +2692,25 @@ export interface components {
         /** ToolOutputCollectionStructure */
         ToolOutputCollectionStructure: {
             /** Collection Type */
-            collection_type: string | null
+            collection_type?: string | null
             /** Collection Type From Rules */
-            collection_type_from_rules: string | null
+            collection_type_from_rules?: string | null
             /** Collection Type Source */
-            collection_type_source: string | null
+            collection_type_source?: string | null
             /** Discover Datasets */
-            discover_datasets:
+            discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
                       | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
                   )[]
                 | null
             /** Structured Like */
-            structured_like: string | null
+            structured_like?: string | null
         }
-        /** ToolOutputDataset */
-        ToolOutputDataset: {
+        /** ToolOutputDatasetG[bool, str] */
+        ToolOutputDatasetG_bool_str_: {
             /** Discover Datasets */
-            discover_datasets:
+            discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
                       | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
@@ -2720,13 +2719,15 @@ export interface components {
             /** Format */
             format: string
             /** Format Source */
-            format_source: string | null
+            format_source?: string | null
+            /** From Work Dir */
+            from_work_dir?: string | null
             /** Hidden */
             hidden: boolean
             /** Label */
-            label: string | null
+            label?: string | null
             /** Metadata Source */
-            metadata_source: string | null
+            metadata_source?: string | null
             /** Name */
             name: string
             /**
@@ -2738,11 +2739,11 @@ export interface components {
         /** ToolOutputFloat */
         ToolOutputFloat: {
             /** Hidden */
-            hidden: boolean
+            hidden: unknown
             /** Label */
-            label: string | null
+            label?: string | null
             /** Name */
-            name: string
+            name: unknown
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -2752,11 +2753,11 @@ export interface components {
         /** ToolOutputInteger */
         ToolOutputInteger: {
             /** Hidden */
-            hidden: boolean
+            hidden: unknown
             /** Label */
-            label: string | null
+            label?: string | null
             /** Name */
-            name: string
+            name: unknown
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -2766,11 +2767,11 @@ export interface components {
         /** ToolOutputText */
         ToolOutputText: {
             /** Hidden */
-            hidden: boolean
+            hidden: unknown
             /** Label */
-            label: string | null
+            label?: string | null
             /** Name */
-            name: string
+            name: unknown
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -3418,20 +3419,12 @@ export interface operations {
     repositories__index: {
         parameters: {
             query?: {
-                /** @description This will perform a full search with whoosh on the backend and will cause the API endpoint to return a RepositorySearchResult. This should not be used with the 'filter' parameter. */
                 q?: string | null
-                /** @description This will perform a quick search using database operators. This should not be used with the 'q' parameter. */
-                filter?: string | null
                 page?: number | null
                 page_size?: number | null
                 deleted?: boolean | null
                 owner?: string | null
                 name?: string | null
-                category_id?: string | null
-                /** @description Direction of sort. This defaults to False and causes an ascending sort on the field specified by sort_on. This field is ignored if 'q' is specified an whoosh search is used. */
-                sort_desc?: boolean | null
-                /** @description Sort by the this repository field - direction is controlled by sort_desc that defaults to False and causes an ascending sort on this field. This field is ignored if 'q' is specified an whoosh search is used. */
-                sort_by?: ("name" | "create_time") | null
             }
             header?: never
             path?: never
@@ -3448,7 +3441,6 @@ export interface operations {
                     "application/json":
                         | components["schemas"]["RepositorySearchResults"]
                         | components["schemas"]["Repository"][]
-                        | components["schemas"]["PaginatedRepositoryIndexResults"]
                 }
             }
             /** @description Request Error */
@@ -3623,44 +3615,6 @@ export interface operations {
                 }
                 content: {
                     "application/json": components["schemas"]["InstallInfo"]
-                }
-            }
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown
-                }
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"]
-                }
-            }
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown
-                }
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"]
-                }
-            }
-        }
-    }
-    repositories__reset_all: {
-        parameters: {
-            query?: never
-            header?: never
-            path?: never
-            cookie?: never
-        }
-        requestBody?: never
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown
-                }
-                content: {
-                    "application/json": components["schemas"]["ResetMetadataOnRepositoriesResponse"]
                 }
             }
             /** @description Request Error */
@@ -4454,7 +4408,7 @@ export interface operations {
                     [name: string]: unknown
                 }
                 content: {
-                    "application/json": components["schemas"]["ShedParsedTool"]
+                    "application/json": components["schemas"]["ParsedTool"]
                 }
             }
             /** @description Request Error */
