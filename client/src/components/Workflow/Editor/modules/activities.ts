@@ -129,6 +129,17 @@ export const workflowEditorActivities = [
         optional: true,
     },
     {
+        description: "Insert custom tools.",
+        icon: faWrench,
+        id: "workflow-editor-user-defined-tools",
+        optional: true,
+        panel: true,
+        title: "Custom Tools",
+        to: null,
+        tooltip: "Search and run user-defined tools",
+        visible: true,
+    },
+    {
         title: "Download",
         id: "workflow-download",
         description: "Download this workflow in '.ga' format.",

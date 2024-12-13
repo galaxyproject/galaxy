@@ -178,6 +178,19 @@ export const defaultActivities = [
         to: "/rules",
         visible: false,
     },
+    {
+        anonymous: false,
+        description: "Displays tools defined by you.",
+        icon: faWrench,
+        id: "user-defined-tools",
+        mutable: false,
+        optional: true,
+        panel: true,
+        title: "Custom Tools",
+        to: null,
+        tooltip: "Search and run user-defined tools",
+        visible: true,
+    },
 ] as const;
 
 export function convertDropData(data: EventData): Activity | null {
