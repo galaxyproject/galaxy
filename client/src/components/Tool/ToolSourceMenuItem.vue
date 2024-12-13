@@ -19,6 +19,10 @@ const props = defineProps({
         type: String,
         required: true,
     },
+    toolUuid: {
+        type: String,
+        default: null,
+    },
 });
 </script>
 
@@ -28,7 +32,7 @@ const props = defineProps({
             <FontAwesomeIcon icon="far fa-eye" /><span v-localize>View Tool source</span>
         </b-dropdown-item>
         <b-modal id="tool-source-viewer" :title="`Tool Source for ${props.toolId}`" size="lg" ok-only ok-title="Close">
-            <ToolSource :tool-id="props.toolId" />
+            <ToolSource :tool-id="props.toolId" :tool-uuid="props.toolUuid" />
         </b-modal>
     </div>
 </template>
