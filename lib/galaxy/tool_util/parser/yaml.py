@@ -82,7 +82,7 @@ class YamlToolSource(ToolSource):
 
     def parse_xrefs(self) -> List[XrefDict]:
         xrefs = self.root_dict.get("xrefs") or []
-        return [XrefDict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
+        return [XrefDict(value=xref["value"], reftype=xref["reftype"]) for xref in xrefs if xref["reftype"]]
 
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)
@@ -142,9 +142,9 @@ class YamlToolSource(ToolSource):
         return error_on_exit_code()
 
     def parse_help(self) -> Optional[HelpContent]:
-        content = self.root_dict.get("help", None)
-        if content:
-            return HelpContent(format="markdown", content=content)
+        help = self.root_dict.get("help")
+        if help and "content" in help:
+            return HelpContent(format="markdown", content=help["content"])
         else:
             return None
 
@@ -242,7 +242,7 @@ class YamlToolSource(ToolSource):
 
     def to_string(self):
         # TODO: Unit test for dumping/restoring
-        return json.dumps(self.root_dict)
+        return json.dumps(self.root_dict, sort_keys=False)
 
 
 def _parse_test(i, test_dict) -> ToolSourceTest:
