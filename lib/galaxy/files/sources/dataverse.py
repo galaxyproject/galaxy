@@ -301,7 +301,12 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         download_file_content_url = self._get_download_file_url(container_id, file_identifier, user_context)
         self._download_file(file_path, download_file_content_url, user_context)
 
-    def _download_dataset_as_zip(self, dataset_id: str, file_path: str, user_context: OptionalUserContext = None):
+    def _download_dataset_as_zip(
+            self, 
+            dataset_id: str, 
+            file_path: str, 
+            user_context: OptionalUserContext = None
+        ):
         download_file_content_url = f"{self.api_base_url}/access/dataset/:persistentId/?persistentId={dataset_id}"
         self._download_file(file_path, download_file_content_url, user_context)
 
