@@ -198,7 +198,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
                 # Workaround explanation:
                 # When we archive our history to dataverse, the zip sent from Galaxy to dataverse is extracted automatically.
                 # Only the contents are stored, not the zip itself. 
-                # So, if a zip is not called, we suppose we are trying to reimport an archived history
+                # So, if a zip is not found, we suppose we are trying to reimport an archived history
                 # and make an API call ti Dataverse to download the dataset as a zip.
                 self.repository._download_dataset_as_zip(dataset_id, native_path, user_context)
 
