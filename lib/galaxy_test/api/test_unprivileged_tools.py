@@ -5,7 +5,6 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
 )
 from ._framework import ApiTestCase
-
 from .test_tools import (
     TestsTools,
     TOOL_WITH_SHELL_COMMAND,
