@@ -13,6 +13,7 @@ from queue import (
 from typing import (
     Dict,
     List,
+    Optional,
     Tuple,
     Type,
     Union,
@@ -241,7 +242,7 @@ class BaseJobHandlerQueue(Monitors):
         # Keep track of the pid that started the job manager, only it has valid threads
         self.parent_pid = os.getpid()
         # This queue is not used if track_jobs_in_database is True.
-        self.queue: Queue[Tuple[int, str]] = Queue()
+        self.queue: Queue[Tuple[int, Optional[str]]] = Queue()
 
 
 class JobHandlerQueue(BaseJobHandlerQueue):
@@ -308,8 +309,13 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             session.commit()
 
     def _check_job_at_startup(self, job: model.Job):
-        assert job.tool_id is not None
-        if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
+        assert job.tool_id or job.dynamic_tool_id
+        tool_uuid = None
+        if job.dynamic_tool and (uuid := job.dynamic_tool.uuid):
+            tool_uuid = uuid
+        if not self.app.toolbox.has_tool(
+            tool_id=job.tool_id, tool_version=job.tool_version, tool_uuid=tool_uuid, exact=True, user=job.user
+        ):
             log.warning(f"({job.id}) Tool '{job.tool_id}' removed from tool config, unable to recover job")
             self.job_wrapper(job).fail(
                 "This tool was disabled before the job completed.  Please contact your Galaxy administrator."

@@ -62,7 +62,7 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
         stmt = select(DynamicTool).where(DynamicTool.tool_id == tool_id, DynamicTool.public == true())
         return self.session().scalars(stmt).one_or_none()
 
-    def get_unprivileged_tool_by_uuid(self, user: model.User, uuid: str):
+    def get_unprivileged_tool_by_uuid(self, user: model.User, uuid: Union[UUID, str]):
         stmt = self.owned_unprivileged_statement(user).where(DynamicTool.uuid == uuid)
         return self.session().scalars(stmt).one_or_none()
 
@@ -189,6 +189,7 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
             .where(
                 UserDynamicToolAssociation.user_id == user.id,
             )
+            .order_by(UserDynamicToolAssociation.id.desc())
         )
 
     def deactivate_unprivileged_tool(self, user: model.User, dynamic_tool: DynamicTool):
