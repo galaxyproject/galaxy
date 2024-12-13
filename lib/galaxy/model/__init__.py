@@ -644,6 +644,7 @@ FROM dataset
 LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
 WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
     AND library_dataset_dataset_association.id IS NULL
+    AND dataset.object_store_id NOT LIKE 'user_objects://%'
     {and_dataset_condition}
 """
 
