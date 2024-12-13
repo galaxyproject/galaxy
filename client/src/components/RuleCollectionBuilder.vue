@@ -452,12 +452,20 @@
                 <!--  style="width: 70%;" -->
                 <div v-if="initialElements !== null" class="table-column" :class="orientation" style="width: 100%">
                     <HotTable
+                        v-if="gridImplementation == 'hot'"
                         id="hot-table"
                         ref="hotTable"
                         :data="hotData.data"
                         :col-headers="colHeadersDisplay"
                         :read-only="true"
                         stretch-h="all"></HotTable>
+                    <RuleGrid
+                        v-else
+                        id="hot-table"
+                        ref="hotTable"
+                        :data="hotData.data"
+                        :col-headers="colHeadersDisplay"
+                        stretch-h="all"></RuleGrid>
                 </div>
             </div>
         </RuleModalMiddle>
@@ -576,6 +584,7 @@ import RegularExpressionInput from "components/RuleBuilder/RegularExpressionInpu
 import RuleDefs from "components/RuleBuilder/rule-definitions";
 import RuleComponent from "components/RuleBuilder/RuleComponent";
 import RuleDisplay from "components/RuleBuilder/RuleDisplay";
+import RuleGrid from "components/RuleBuilder/RuleGrid";
 import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
 import RuleModalHeader from "components/RuleBuilder/RuleModalHeader";
 import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
@@ -612,6 +621,7 @@ export default {
     components: {
         TooltipOnHover,
         HotTable,
+        RuleGrid,
         RuleComponent,
         RuleTargetComponent,
         SavedRulesSelector,
@@ -674,6 +684,11 @@ export default {
             type: String,
             required: false,
             default: null,
+        },
+        gridImplementation: {
+            type: String,
+            required: false,
+            default: "aggrid",
         },
     },
     data: function () {
