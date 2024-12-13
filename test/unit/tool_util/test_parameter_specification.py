@@ -41,7 +41,7 @@ if sys.version_info < (3, 8):  # noqa: UP036
 
 def specification_object():
     try:
-        yaml_str = resource_string(__package__, "parameter_specification.yml")
+        yaml_str = resource_string(__name__, "parameter_specification.yml")
     except AttributeError:
         # hack for the main() function below where this file is interpreted as part of the
         # Galaxy tree.
@@ -54,7 +54,7 @@ def framework_tool_checks():
     # There is something beautiful about a targeted tool for every parameter feature but realistically
     # we've been doing a version of the for a decade with tool tests and we can leverage those also.
     try:
-        yaml_str = resource_string(__package__, "framework_tool_checks.yml")
+        yaml_str = resource_string(__name__, "framework_tool_checks.yml")
     except AttributeError:
         # hack for the main() function below where this file is interpreted as part of the
         # Galaxy tree.

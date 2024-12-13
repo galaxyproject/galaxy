@@ -3,17 +3,17 @@
 
 import sys
 
-if sys.version_info >= (3, 9):
+if sys.version_info >= (3, 12):
     from importlib.resources import (
         as_file,
         files,
-        Package as Anchor,
     )
+    from importlib.resources.abc import Traversable
 
-    if sys.version_info >= (3, 12):
-        from importlib.resources.abc import Traversable
+    if sys.version_info >= (3, 13):
+        from importlib.resources import Anchor
     else:
-        from importlib.abc import Traversable
+        from importlib.resources import Package as Anchor
 else:
     from importlib_resources import (
         as_file,
@@ -23,20 +23,24 @@ else:
     from importlib_resources.abc import Traversable
 
 
-def resource_path(package_or_requirement: Anchor, resource_name: str) -> Traversable:
+def resource_path(anchor: Anchor, resource_name: str) -> Traversable:
     """
     Return specified resource as a Traversable.
+
+    anchor is either a module object or a module name as a string.
     """
-    return files(package_or_requirement).joinpath(resource_name)
+    return files(anchor).joinpath(resource_name)
 
 
-def resource_string(package_or_requirement: Anchor, resource_name: str) -> str:
+def resource_string(anchor: Anchor, resource_name: str) -> str:
     """
     Return specified resource as a string.
 
     Replacement function for pkg_resources.resource_string, but returns unicode string instead of bytestring.
+
+    anchor is either a module object or a module name as a string.
     """
-    return resource_path(package_or_requirement, resource_name).read_text()
+    return resource_path(anchor, resource_name).read_text()
 
 
 __all__ = (

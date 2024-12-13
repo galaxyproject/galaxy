@@ -767,7 +767,7 @@ def to_pdf_raw(basic_markdown: str, css_paths: Optional[List[str]] = None) -> by
         output_file.write(as_html)
         output_file.close()
         html = weasyprint.HTML(filename=index)
-        stylesheets = [weasyprint.CSS(string=resource_string(__package__, "markdown_export_base.css"))]
+        stylesheets = [weasyprint.CSS(string=resource_string(__name__, "markdown_export_base.css"))]
         for css_path in css_paths:
             with open(css_path) as f:
                 css_content = f.read()

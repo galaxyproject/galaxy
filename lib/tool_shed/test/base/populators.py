@@ -53,7 +53,7 @@ from .api_util import (
 HasRepositoryId = Union[str, Repository]
 
 DEFAULT_PREFIX = "repofortest"
-TEST_DATA_REPO_FILES = resource_path(__package__, "../test_data")
+TEST_DATA_REPO_FILES = resource_path(__name__, "../test_data")
 COLUMN_MAKER_PATH = TEST_DATA_REPO_FILES.joinpath("column_maker/column_maker.tar")
 COLUMN_MAKER_1_1_1_PATH = TEST_DATA_REPO_FILES.joinpath("column_maker/column_maker_1.1.1.tar")
 DEFAULT_COMMIT_MESSAGE = "a test commit message"
