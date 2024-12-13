@@ -34,9 +34,12 @@ steps:
   sleep:
     run:
       class: GalaxyTool
+      name: sleep hello
+      version: "0.1"
       command: sleep 10s && echo 'hello world 2' > '$output1'
       outputs:
         output1:
+          type: data
           format: txt
   cat:
     tool_id: cat1
