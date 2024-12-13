@@ -227,6 +227,8 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/login/start")
     webapp.add_client_route("/tools/list")
     webapp.add_client_route("/tools/json")
+    webapp.add_client_route("/tools/editor")
+    webapp.add_client_route("/tools/editor/{uuid}")
     webapp.add_client_route("/tool_landings/{uuid}")
     webapp.add_client_route("/workflow_landings/{uuid}")
     webapp.add_client_route("/tours")
