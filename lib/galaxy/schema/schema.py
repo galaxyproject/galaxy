@@ -1703,7 +1703,10 @@ class ModelStoreFormat(str, Enum):
     @classmethod
     def is_bag(cls, value: "ModelStoreFormat"):
         return value in [cls.BAG_DOT_TAR, cls.BAG_DOT_TGZ, cls.BAG_DOT_ZIP]
-
+    
+    @classmethod
+    def available_formats(cls):
+        return [item.value for item in cls]
 
 class StoreContentSource(Model):
     store_content_uri: Optional[str] = None

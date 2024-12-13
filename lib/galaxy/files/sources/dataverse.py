@@ -43,6 +43,13 @@ from galaxy.util import (
     stream_to_open_named_file,
 )
 
+from galaxy.schema.schema import (
+    ModelStoreFormat,
+)
+
+class NotFoundException(Exception):
+    def __init__(self, message):
+        super().__init__(message)
 
 class DataverseDataset(TypedDict):
     name: str
@@ -180,13 +187,20 @@ class DataverseRDMFilesSource(RDMFilesSource):
     ):
         # TODO: user_context is always None here when called from a data fetch. (same problem as in invenio.py)
         # This prevents downloading files that require authentication even if the user provided a token.
+        
         dataset_id, file_id = self.parse_path(source_path)
-        if "rocrate.zip" in file_id:
-            # If file path contains "rocrate.zip", we need to change the URL, so we use the dataverse API URL to download a dataset as a zip file
-            file_id = re.sub(r"/[^/]*\.rocrate\.zip$", "", file_id)
-            self.repository._download_dataset_as_zip(dataset_id, native_path, user_context)
-        else: 
+        try:
             self.repository.download_file_from_container(dataset_id, file_id, native_path, user_context=user_context)
+        except NotFoundException as e:
+            filename = file_id.split("/")[-1]
+            is_archive = any(format in filename for format in ModelStoreFormat.available_formats())
+            if is_archive:
+                # Workaround explanation:
+                # When we archive our history to dataverse, the zip sent from Galaxy to dataverse is extracted automatically.
+                # Only the contents are stored, not the zip itself. 
+                # So, if a zip is not called, we suppose we are trying to reimport an archived history
+                # and make an API call ti Dataverse to download the dataset as a zip.
+                self.repository._download_dataset_as_zip(dataset_id, native_path, user_context)
 
     # TODO: Test this method
     def _write_from(
@@ -215,7 +229,8 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         return f"{self.api_base_url}/search"
     
     def file_access_url(self, file_id: str) -> str:
-        return f"{self.api_base_url}/access/datafile/:persistentId?persistentId={file_id}"
+        encoded_file_id = quote(encoded_file_id, safe="")
+        return f"{self.api_base_url}/access/datafile/:persistentId?persistentId={encoded_file_id}"
     
     def files_of_dataset_url(self, dataset_id: str, dataset_version: str = ':latest') -> str:
         return f"{self.api_base_url}/datasets/:persistentId/versions/{dataset_version}/files?persistentId={dataset_id}"
@@ -331,7 +346,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         except urllib.error.HTTPError as e:
             # TODO: We can only download files from published datasets for now
             if e.code in [401, 403, 404]:
-                raise Exception(
+                raise NotFoundException(
                     f"Cannot download file from URL '{file_path}'. Please make sure the dataset and/or file exists and it is public."
                 )
 
