@@ -106,6 +106,7 @@ export interface NewStep {
     position?: StepPosition;
     post_job_actions?: PostJobActions;
     tool_id?: string;
+    tool_uuid?: string;
     tool_state: Record<string, unknown>;
     tool_version?: string;
     tooltip?: string | null;
