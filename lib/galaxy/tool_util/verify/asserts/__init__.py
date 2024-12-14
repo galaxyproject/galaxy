@@ -6,8 +6,10 @@ from inspect import (
 )
 from tempfile import NamedTemporaryFile
 from typing import (
+    Any,
     Callable,
     Dict,
+    List,
     Tuple,
 )
 
@@ -39,6 +41,18 @@ for assertion_module_name in assertion_module_names:
 # source file "test/base/asserts/<MODULE_NAME>.py" and add
 # <MODULE_NAME> to the list of assertion module names defined above.
 assertion_functions: Dict[str, Callable] = {k: v[1] for (k, v) in assertion_module_and_functions.items()}
+
+
+def parse_xml_assertions(assertion_els: list) -> List[Dict[str, Any]]:
+    python_dict_assertions: List[Dict[str, Any]] = []
+    for raw_assert in assertion_els:
+        as_dict = {"that": raw_assert["tag"], **raw_assert.get("attributes", {})}
+        children = raw_assert.get("children")
+        if children:
+            as_dict["children"] = parse_xml_assertions(children)
+        python_dict_assertions.append(as_dict)
+
+    return python_dict_assertions
 
 
 def verify_assertions(data: bytes, assertion_description_list: list, decompress: bool = False):
