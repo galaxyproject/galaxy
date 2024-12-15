@@ -4,6 +4,7 @@ import { computed, reactive, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
+import { borderVariant } from "@/components/Common/Wizard/utils";
 import {
     AVAILABLE_INVOCATION_EXPORT_PLUGINS,
     getInvocationExportPluginByType,
@@ -329,7 +330,7 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
                         :key="plugin.id"
                         :data-invocation-export-type="plugin.id"
                         class="wizard-selection-card"
-                        :border-variant="exportData.exportPluginFormat === plugin.id ? 'primary' : 'default'"
+                        :border-variant="borderVariant(exportData.exportPluginFormat)"
                         @click="exportData.exportPluginFormat = plugin.id">
                         <BCardTitle>
                             <b>{{ plugin.title }}</b>
@@ -352,7 +353,7 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
                         v-for="target in exportDestinationTargets"
                         :key="target.destination"
                         :data-invocation-export-destination="target.destination"
-                        :border-variant="exportData.destination === target.destination ? 'primary' : 'default'"
+                        :border-variant="borderVariant(exportData.destination === target.destination)"
                         :header-bg-variant="exportData.destination === target.destination ? 'primary' : 'default'"
                         :header-text-variant="exportData.destination === target.destination ? 'white' : 'default'"
                         :header="target.label"

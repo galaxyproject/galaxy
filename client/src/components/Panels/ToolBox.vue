@@ -4,9 +4,9 @@ import { faEye, faEyeSlash } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, type ComputedRef, type PropType, type Ref, ref } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
+import { useToolRouting } from "@/composables/route";
 import { type Tool, type ToolSection as ToolSectionType } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
@@ -19,7 +19,7 @@ import ToolSection from "./Common/ToolSection.vue";
 const SECTION_IDS_TO_EXCLUDE = ["expression_tools"]; // if this isn't the Workflow Editor panel
 
 const { openGlobalUploadModal } = useGlobalUploadModal();
-const router = useRouter();
+const { routeToTool } = useToolRouting();
 
 const emit = defineEmits<{
     (e: "update:show-advanced", showAdvanced: boolean): void;
@@ -143,8 +143,7 @@ function onToolClick(tool: Tool, evt: Event) {
         } else if (tool.form_style === "regular") {
             evt.preventDefault();
             // encode spaces in tool.id
-            const toolId = tool.id;
-            router.push(`/?tool_id=${encodeURIComponent(toolId)}&version=latest`);
+            routeToTool(tool.id);
         }
     } else {
         evt.preventDefault();
