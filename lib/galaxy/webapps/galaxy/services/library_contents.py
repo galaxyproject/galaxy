@@ -58,7 +58,7 @@ MaybeLibraryFolderOrDatasetID = Annotated[
     str,
     Path(
         title="The encoded ID of a library folder or dataset.",
-        example="F0123456789ABCDEF",
+        examples=["F0123456789ABCDEF"],
         min_length=16,
         pattern="F?[0-9a-fA-F]+",
     ),

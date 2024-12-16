@@ -28958,7 +28958,6 @@ export interface operations {
             };
             path: {
                 library_id: string;
-                /** @example F0123456789ABCDEF */
                 id: string;
             };
             cookie?: never;
