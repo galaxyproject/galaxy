@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faStar, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
 import { faTrashRestore } from "font-awesome-6";
@@ -10,7 +10,7 @@ import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
 import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";
-import { deleteWorkflow, undeleteWorkflow } from "@/components/Workflow/workflows.services";
+import { deleteWorkflow, undeleteWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
@@ -21,6 +21,7 @@ import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
 import LoginRequired from "@/components/Common/LoginRequired.vue";
+import TagsSelectionDialog from "@/components/Common/TagsSelectionDialog.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.vue";
 
@@ -56,6 +57,8 @@ const filterText = ref("");
 const totalWorkflows = ref(0);
 const showAdvanced = ref(false);
 const listHeader = ref<any>(null);
+const showBulkAddTagsModal = ref(false);
+const bulkTagsLoading = ref(false);
 const bulkDeleteOrRestoreLoading = ref(false);
 const workflowsLoaded = ref<WorkflowsList>([]);
 const selectedWorkflowIds = ref<SelectedWorkflow[]>([]);
@@ -303,6 +306,41 @@ async function onBulkRestore() {
     }
 }
 
+async function onToggleBulkTags() {
+    showBulkAddTagsModal.value = !showBulkAddTagsModal.value;
+}
+
+async function onBulkTagsAdd(tags: string[]) {
+    const tmpSelected = [...selectedWorkflowIds.value];
+    const totalSelected = selectedWorkflowIds.value.length;
+
+    try {
+        overlay.value = true;
+        bulkTagsLoading.value = true;
+
+        for (const w of selectedWorkflowIds.value) {
+            const prevTags = workflowsLoaded.value.find((workflow) => workflow.id === w.id)?.tags || [];
+
+            await updateWorkflow(w.id, { tags: [...new Set([...prevTags, ...tags])] });
+
+            tmpSelected.splice(
+                tmpSelected.findIndex((s) => s.id === w.id),
+                1
+            );
+        }
+
+        Toast.success(`Added tag(s) to ${totalSelected} workflows.`);
+    } catch (e) {
+        Toast.error(`Failed to add tag(s) to some workflows. ${e}`);
+    } finally {
+        bulkTagsLoading.value = false;
+
+        selectedWorkflowIds.value = tmpSelected;
+
+        await load(true);
+    }
+}
+
 watch([filterText, sortBy, sortDesc], async () => {
     offset.value = 0;
 
@@ -487,6 +525,22 @@ onMounted(() => {
                     </span>
                     <LoadingSpan v-else message="Restoring" />
                 </BButton>
+
+                <BButton
+                    v-if="!showDeleted"
+                    id="workflow-list-footer-bulk-add-tags-button"
+                    v-b-tooltip.hover
+                    :title="bulkTagsLoading ? 'Adding tags' : 'Add tags to selected workflows'"
+                    :disabled="bulkTagsLoading"
+                    size="sm"
+                    variant="primary"
+                    @click="onToggleBulkTags">
+                    <span v-if="!bulkTagsLoading">
+                        <FontAwesomeIcon :icon="faTags" fixed-width />
+                        Add tags ({{ selectedWorkflowIds.length }})
+                    </span>
+                    <LoadingSpan v-else message="Adding tags" />
+                </BButton>
             </div>
 
             <BPagination
@@ -500,6 +554,14 @@ onMounted(() => {
                 last-number
                 @change="onPageChange" />
         </div>
+
+        <TagsSelectionDialog
+            v-if="showBulkAddTagsModal"
+            :title="`Add tags to ${selectedWorkflowIds.length} selected workflow${
+                selectedWorkflowIds.length > 1 ? 's' : ''
+            }`"
+            @cancel="onToggleBulkTags"
+            @ok="onBulkTagsAdd" />
     </div>
 </template>
 
