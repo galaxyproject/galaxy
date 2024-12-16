@@ -43,13 +43,6 @@ from galaxy.util import (
     stream_to_open_named_file,
 )
 
-from galaxy.schema.schema import (
-    ModelStoreFormat,
-)
-
-class NotFoundException(Exception):
-    def __init__(self, message):
-        super().__init__(message)
 
 class DataverseDataset(TypedDict):
     name: str
@@ -193,8 +186,8 @@ class DataverseRDMFilesSource(RDMFilesSource):
             self.repository.download_file_from_container(dataset_id, file_id, native_path, user_context=user_context)
         except NotFoundException as e:
             filename = file_id.split("/")[-1]
-            is_archive = any(format in filename for format in ModelStoreFormat.available_formats())
-            if is_archive:
+            is_zip_file = self._is_zip_archive(filename)
+            if is_zip_file:
                 # Workaround explanation:
                 # When we archive our history to dataverse, the zip sent from Galaxy to dataverse is extracted automatically.
                 # Only the contents are stored, not the zip itself. 
@@ -202,6 +195,9 @@ class DataverseRDMFilesSource(RDMFilesSource):
                 # and make an API call to Dataverse to download the dataset as a zip.
                 self.repository._download_dataset_as_zip(dataset_id, native_path, user_context)
 
+    def _is_zip_archive(self, file_name: str) -> bool:
+        return file_name.endswith(".zip")
+    
     # TODO: Test this method
     def _write_from(
         self,
@@ -301,7 +297,11 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             # params_as_json_string = json.dumps(params)
             payload = dict()
             add_files_url = self.add_files_to_dataset_url(dataset_id)
-            response = requests.post(add_files_url, data=payload, files=files, headers=headers)
+            response = requests.post(
+                add_files_url, 
+                data=payload, 
+                files=files, 
+                headers=headers)
             print(response.json())
             print(response.status_code)
             self._ensure_response_has_expected_status_code(response, 200)
