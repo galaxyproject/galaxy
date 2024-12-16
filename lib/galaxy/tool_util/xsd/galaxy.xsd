@@ -3801,7 +3801,7 @@ In output filters sections are represented as dictionary with the same name as t
 In order to reference parameters in sections from tags in the `<outputs>` section, e.g. in the `format_source` attribute of `<data>` tags, the syntax is currently:
 
 ```
-<data name="output" format_source="parameter_name" metadata_source="parameter_name"/>
+<data name="output" format_source="section|parameter_name" metadata_source="section|parameter_name"/>
 ```
 
 Note that references to other parameters in the `<inputs>` section are only possible if the reference is in the same section or its parents (and is defined earlier), therefore only `parameter_name` is used.
@@ -5949,7 +5949,7 @@ discovered data sets on Galaxy versions prior to 24.0 and should be specified us
     </xs:attribute>
     <xs:attribute name="format_source" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.</xs:documentation>
+        <xs:documentation xml:lang="en">This sets the data type of the output dataset(s) to be the same format as that of the specified tool input. References to parameters in sections or conditionals must be qualified using ``|`` syntax. Elements of collection parameters can be referred to by pythons element access syntax.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="label" type="xs:string">
@@ -6063,8 +6063,10 @@ same as that of the input dataset selected (and named ``input1``) for the tool.
 
 The following will create datasets in the history panel, setting the output data
 type to be the same as that of an input dataset named by the ``format_source``
-attribute. Note that a conditional name is not included, so 2 separate
-conditional blocks should not contain parameters with the same name.
+attribute. If the parameter is contained in sections or conditionals they need
+to be listed separated by ``|``. If the referred  parameter is a collection, collection
+elements can be referred python's element access syntax, e.g. ``input_collection["forward"]``
+would refer to the forward dataset of a paired collection.
 
 ```xml
 <inputs>
@@ -6085,7 +6087,7 @@ conditional blocks should not contain parameters with the same name.
 <outputs>
     <data format_source="fasta" name="trim_fasta"
           label="${tool.name} on ${on_string}: trim.fasta"/>
-    <data format_source="qfile" name="trim_qual"
+    <data format_source="qual|qfile" name="trim_qual"
           label="${tool.name} on ${on_string}: trim.qual">
         <filter>qual['add'] == 'yes'</filter>
     </data>
