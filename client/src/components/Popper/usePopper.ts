@@ -67,13 +67,9 @@ export function usePopperjs(
     const doClose = () => (visible.value = false);
 
     const doCloseForDocument = (e: Event) => {
-        if (reference.value?.contains(e.target as Element)) {
-            return;
+        if (!reference.value?.contains(e.target as Element) && !popper.value?.contains(e.target as Element)) {
+            visible.value = false;
         }
-        if (popper.value?.contains(e.target as Element)) {
-            return;
-        }
-        doClose();
     };
 
     watch(
