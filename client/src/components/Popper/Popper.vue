@@ -47,15 +47,11 @@ const props = defineProps({
     title: String,
 });
 
-const emit = defineEmits(["show", "hide"]);
-
 const reference = ref();
 const popper = ref();
 const { visible } = usePopperjs(reference, popper, {
     placement: props.placement,
     trigger: props.trigger,
-    onShow: () => emit("show"),
-    onHide: () => emit("hide"),
 });
 
 watch(

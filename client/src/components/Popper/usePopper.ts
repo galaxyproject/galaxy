@@ -3,11 +3,6 @@ import { onMounted, onUnmounted, type Ref, ref, watch } from "vue";
 
 export type Trigger = "click" | "hover" | "manual";
 
-export type EventOptions = {
-    onShow: () => void;
-    onHide: () => void;
-};
-
 const defaultTrigger: Trigger = "hover";
 
 export function usePopperjs(
@@ -16,8 +11,6 @@ export function usePopperjs(
     options: {
         placement: Placement | undefined;
         trigger: Trigger | undefined;
-        onShow: () => void;
-        onHide: () => void;
     }
 ) {
     const instance = ref<ReturnType<typeof createPopper>>();
@@ -89,11 +82,9 @@ export function usePopperjs(
             if (instance.value) {
                 if (visible.value) {
                     popper.value?.classList.remove("vue-use-popperjs-none");
-                    options?.onShow?.();
                     instance.value?.update();
                 } else {
                     popper.value?.classList.add("vue-use-popperjs-none");
-                    options?.onHide?.();
                 }
             }
         }
