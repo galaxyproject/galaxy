@@ -54,19 +54,18 @@ export function usePopperjs(
     watch(
         () => [isMounted.value, updatedFlag.value],
         () => {
-            if (!isMounted.value) {
-                return;
-            }
-            if ((unref(reference) as any)?.$el) {
-                referenceRef.value = (unref(reference) as any).$el;
-            } else {
-                referenceRef.value = unref(reference) as Element;
-            }
+            if (isMounted.value) {
+                if ((reference.value as any)?.$el) {
+                    referenceRef.value = (reference.value as any).$el;
+                } else {
+                    referenceRef.value = reference.value as Element;
+                }
 
-            if ((unref(popper) as any)?.$el) {
-                popperRef.value = (unref(popper) as any).$el;
-            } else {
-                popperRef.value = unref(popper);
+                if ((popper.value as any)?.$el) {
+                    popperRef.value = (popper.value as any).$el;
+                } else {
+                    popperRef.value = popper.value;
+                }
             }
         }
     );
@@ -103,39 +102,33 @@ export function usePopperjs(
     const doOpen = () => (visible.value = true);
     const doClose = () => (visible.value = false);
     watch(
-        () => [instance.value, unref(options?.trigger), unref(options?.forceShow)],
+        () => [instance.value, options?.trigger, options?.forceShow],
         () => {
-            if (!instance.value) {
-                return;
-            }
+            if (instance.value) {
+                if (options?.forceShow) {
+                    visible.value = true;
+                    doOff();
+                    return;
+                }
 
-            if (unref(options?.forceShow)) {
-                visible.value = true;
-                doOff();
-                return;
+                doOn();
             }
-
-            doOn();
         }
     );
 
     watch(
-        () => unref(options?.forceShow),
+        () => options?.forceShow,
         () => {
-            if (unref(options?.forceShow)) {
-                return;
+            if (!options?.forceShow && options?.trigger !== "manual") {
+                visible.value = false;
             }
-            if (unref(options?.trigger) === "manual") {
-                return;
-            }
-            visible.value = false;
         }
     );
 
     watch(
-        () => unref(options?.disabled),
+        () => options?.disabled,
         () => {
-            if (unref(options?.disabled)) {
+            if (options?.disabled) {
                 doOff();
             } else {
                 doOn();
@@ -145,30 +138,30 @@ export function usePopperjs(
 
     const timer = ref<any>();
     const doMouseover = () => {
-        if (unref(options?.delayOnMouseover) === 0) {
+        if (options?.delayOnMouseover === 0) {
             doOpen();
         } else {
             clearTimeout(timer.value);
             timer.value = setTimeout(() => {
                 doOpen();
-            }, unref(options?.delayOnMouseover) ?? 100);
+            }, options?.delayOnMouseover ?? 100);
         }
     };
     const doMouseout = () => {
-        if (unref(options?.delayOnMouseout) === 0) {
+        if (options?.delayOnMouseout === 0) {
             doClose();
         } else {
             clearTimeout(timer.value);
             timer.value = setTimeout(() => {
                 doClose();
-            }, unref(options?.delayOnMouseout) ?? 100);
+            }, options?.delayOnMouseout ?? 100);
         }
     };
 
     const doOn = () => {
         doOff();
 
-        switch (unref(options?.trigger) ?? defaultTrigger) {
+        switch (options?.trigger ?? defaultTrigger) {
             case "click-to-open": {
                 on(referenceRef.value!, "click", doOpen);
                 on(document as any, "click", doCloseForDocument);
@@ -229,16 +222,15 @@ export function usePopperjs(
     watch(
         () => [instance.value, visible.value],
         () => {
-            if (!instance.value) {
-                return;
-            }
-            if (visible.value || unref(options?.forceShow)) {
-                popperRef.value?.classList.remove("vue-use-popperjs-none");
-                options?.onShow?.();
-                instance.value?.update();
-            } else {
-                popperRef.value?.classList.add("vue-use-popperjs-none");
-                options?.onHide?.();
+            if (instance.value) {
+                if (visible.value || options?.forceShow) {
+                    popperRef.value?.classList.remove("vue-use-popperjs-none");
+                    options?.onShow?.();
+                    instance.value?.update();
+                } else {
+                    popperRef.value?.classList.add("vue-use-popperjs-none");
+                    options?.onHide?.();
+                }
             }
         }
     );

@@ -27,7 +27,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { PropType, UnwrapRef } from "vue";
-import { ref, toRef, watch } from "vue";
+import { ref, watch } from "vue";
 
 import { usePopperjs } from "./usePopper";
 
