@@ -16,11 +16,13 @@ from galaxy.model import (
     CredentialsGroup,
     UserCredentials,
 )
-from galaxy.schema.credentials import (  # CredentialResponse,; UpdateCredentialsPayload,
+from galaxy.schema.credentials import (
     CredentialGroupResponse,
     CredentialsPayload,
     SecretResponse,
     SOURCE_TYPE,
+    UpdateCredentialsPayload,
+    UpdateGroupPayload,
     UserCredentialCreateResponse,
     UserCredentialsListResponse,
     UserCredentialsResponse,
@@ -59,48 +61,58 @@ class CredentialsService:
         user_id: UserIdPathParam,
         payload: CredentialsPayload,
     ) -> UserCredentialCreateResponse:
-        """Allows users to provide credentials for a secret/variable."""
+        """Allows users to provide credentials for a group of secrets and variables."""
         return self._create_user_credential(trans, user_id, payload)
 
-    # def update_credential(
-    #     self,
-    #     trans: ProvidesUserContext,
-    #     user_id: UserIdPathParam,
-    #     user_credentials_id: DecodedDatabaseIdField,
-    #     payload: UpdateCredentialsPayload,
-    # ) -> CredentialsListResponse:
-    #     """Updates credentials for a specific secret/variable."""
-    #     return self._update_user_credential(trans, user_id, user_credentials_id, payload)
+    def update_credential(
+        self,
+        trans: ProvidesUserContext,
+        user_id: UserIdPathParam,
+        user_credentials_id: DecodedDatabaseIdField,
+        payload: UpdateCredentialsPayload,
+    ):
+        """Updates credentials for a group of secrets and variables."""
+        return self._update_user_credential(trans, user_id, user_credentials_id, payload)
 
-    # def delete_service_credentials(
-    #     self,
-    #     trans: ProvidesUserContext,
-    #     user_id: UserIdPathParam,
-    #     user_credentials_id: DecodedDatabaseIdField,
-    # ):
-    #     """Deletes all credentials for a specific service."""
-    #     user_credentials = self._user_credentials(trans, user_id=user_id, user_credentials_id=user_credentials_id)
-    #     session = trans.sa_session
-    #     for credentials in credentials_dict.values():
-    #         for credential in credentials:
-    #             session.delete(credential)
-    #     for user_credential in user_credentials:
-    #         session.delete(user_credential)
-    #         session.commit()
+    def update_current_group_id(
+        self,
+        trans: ProvidesUserContext,
+        user_id: UserIdPathParam,
+        user_credentials_id: DecodedDatabaseIdField,
+        payload: UpdateGroupPayload,
+    ):
+        """Updates the current group ID for a specific user credential."""
+        self._update_current_group_id(trans, user_id, user_credentials_id, payload)
 
-    # def delete_credentials(
-    #     self,
-    #     trans: ProvidesUserContext,
-    #     user_id: UserIdPathParam,
-    #     group_id: DecodedDatabaseIdField,
-    #     credentials_id: DecodedDatabaseIdField,
-    # ):
-    #     """Deletes a specific credential group."""
-    #     credentials = self._credentials(trans, group_id=group_id, id=credentials_id)
-    #     session = trans.sa_session
-    #     for credential in credentials:
-    #         session.delete(credential)
-    #     session.commit()
+    def delete_service_credentials(
+        self,
+        trans: ProvidesUserContext,
+        user_id: UserIdPathParam,
+        user_credentials_id: DecodedDatabaseIdField,
+    ):
+        """Deletes all credentials for a specific service."""
+        session = trans.sa_session
+
+        user_credentials = self._user_credentials(trans, user_id=user_id, user_credentials_id=user_credentials_id)
+        rows_to_be_deleted = {item for uc in user_credentials for item in uc}
+        for row in rows_to_be_deleted:
+            session.delete(row)
+        session.commit()
+
+    def delete_credentials(
+        self,
+        trans: ProvidesUserContext,
+        user_id: UserIdPathParam,
+        group_id: DecodedDatabaseIdField,
+    ):
+        """Deletes a specific credential group."""
+        session = trans.sa_session
+
+        user_credentials = self._user_credentials(trans, user_id=user_id, group_id=group_id)
+        rows_to_be_deleted = {item for uc in user_credentials for item in uc if type(item) != UserCredentials}
+        for row in rows_to_be_deleted:
+            session.delete(row)
+        session.commit()
 
     def _user_credentials(
         self,
@@ -111,6 +123,7 @@ class CredentialsService:
         reference: Optional[str] = None,
         group_name: Optional[str] = None,
         user_credentials_id: Optional[DecodedDatabaseIdField] = None,
+        group_id: Optional[DecodedDatabaseIdField] = None,
     ) -> List[Tuple[UserCredentials, CredentialsGroup, Credential]]:
         if not trans.user_is_admin and (not trans.user or trans.user != user_id):
             raise exceptions.ItemOwnershipException(
@@ -120,7 +133,7 @@ class CredentialsService:
         credential_alias = aliased(Credential)
         stmt = (
             select(UserCredentials, group_alias, credential_alias)
-            .join(group_alias, UserCredentials.groups)
+            .join(group_alias, group_alias.user_credentials_id == UserCredentials.id)
             .join(credential_alias, credential_alias.user_credential_group_id == group_alias.id)
             .where(UserCredentials.user_id == user_id)
         )
@@ -141,8 +154,12 @@ class CredentialsService:
 
         if reference:
             stmt = stmt.where(UserCredentials.reference == reference)
+
         if user_credentials_id:
             stmt = stmt.where(UserCredentials.id == user_credentials_id)
+
+        if group_id:
+            stmt = stmt.where(group_alias.id == group_id)
 
         result = trans.sa_session.execute(stmt).all()
         return [(row[0], row[1], row[2]) for row in result]
@@ -151,6 +168,7 @@ class CredentialsService:
         self, db_user_credentials: List[Tuple[UserCredentials, CredentialsGroup, Credential]]
     ) -> Dict[int, Dict[str, Any]]:
         grouped_data: Dict[int, Dict[str, Any]] = {}
+        group_name = {group.id: group.name for _, group, _ in db_user_credentials}
         for user_credentials, credentials_group, credential in db_user_credentials:
             grouped_data.setdefault(
                 user_credentials.id,
@@ -161,7 +179,7 @@ class CredentialsService:
                     source_type=user_credentials.source_type,
                     source_id=user_credentials.source_id,
                     current_group_id=user_credentials.current_group_id,
-                    current_group_name=credentials_group.name,
+                    current_group_name=group_name[user_credentials.current_group_id],
                     groups={},
                 ),
             )
@@ -226,23 +244,27 @@ class CredentialsService:
                     )
 
         credentials_group = CredentialsGroup(name=group_name)
+        session.add(credentials_group)
+        session.flush()
+        user_credential_group_id = credentials_group.id
         existing_user_credentials = next(iter(db_user_credentials), None)
         if existing_user_credentials:
             user_credentials = existing_user_credentials[0]
-            user_credentials.current_group = credentials_group
+            user_credentials.current_group_id = user_credential_group_id
         else:
             user_credentials = UserCredentials(
                 user_id=user_id,
                 reference=reference,
                 source_type=source_type,
                 source_id=source_id,
-                current_group=credentials_group,
+                current_group_id=user_credential_group_id,
             )
-        credentials_group.user_credentials_rel = user_credentials
-        session.add(user_credentials)
-        session.flush()
+            session.add(user_credentials)
+            session.flush()
+
         user_credentials_id = user_credentials.id
-        user_credential_group_id = credentials_group.id
+        credentials_group.user_credentials_id = user_credentials_id
+        session.add(credentials_group)
 
         provided_credentials_list: List[Credential] = []
         for credential_payload in payload.credentials:
@@ -307,39 +329,59 @@ class CredentialsService:
             group=credentials_group_response,
         )
 
-    # def _update_user_credential(
-    #     self,
-    #     trans: ProvidesUserContext,
-    #     user_id: UserIdPathParam,
-    #     user_credential_id: DecodedDatabaseIdField,
-    #     payload: UpdateCredentialsPayload,
-    # ) -> CredentialsListResponse:
-    #     user_credential = next(self._user_credentials(trans, user_id, user_credentials_id=user_credential_id), None)
-    #     if not user_credential:
-    #         raise exceptions.ObjectNotFound(f"User credential {user_credential_id} not found.", type="error")
-    #     db_credentials = user_credential.credentials
-    #     session = trans.sa_session
-    #     group_id = payload.group_id
-    #     for credential in payload.credentials:
-    #         existing_credential = next(
-    #             (cred for cred in db_credentials if cred.id == credential.id),
-    #             None,
-    #         )
-    #         if not existing_credential:
-    #             raise exceptions.ObjectNotFound(f"Credential {credential.id} not found.", type="error")
+    def _update_user_credential(
+        self,
+        trans: ProvidesUserContext,
+        user_id: UserIdPathParam,
+        user_credential_id: DecodedDatabaseIdField,
+        payload: UpdateCredentialsPayload,
+    ):
+        db_user_credentials = self._user_credentials(trans, user_id=user_id, user_credentials_id=user_credential_id)
 
-    #         if existing_credential.type == "secret":
-    #             user_vault = UserVaultWrapper(self._app.vault, trans.user)
-    #             user_vault.write_secret(f"{user_credential.reference}|{existing_credential.name}", credential.value)
-    #         elif existing_credential.type == "variable":
-    #             existing_credential.value = credential.value
-    #         session.add(existing_credential)
-    #         session.commit()
-    #     return CredentialsListResponse(
-    #         user_credentials_id=user_credential_id,
-    #         source_type=user_credential.source_type,
-    #         source_id=user_credential.source_id,
-    #         reference=user_credential.reference,
-    #         group_name=user_credential.group_name,
-    #         credentials=self._credentials_response(db_credentials),
-    #     )
+        existing_user_credentials = next(iter(db_user_credentials), None)
+        if not existing_user_credentials:
+            raise exceptions.ObjectNotFound("User credential not found.", type="error")
+
+        session = trans.sa_session
+        for provided_credential in payload.credentials:
+            user_credentials, user_credentials_group, existing_credential = None, None, None
+            for cred in db_user_credentials:
+                if cred[2].id == provided_credential.id:
+                    user_credentials, user_credentials_group, existing_credential = cred
+                    break
+            if not existing_credential or not user_credentials or not user_credentials_group:
+                raise exceptions.ObjectNotFound("Credential not found.", type="error")
+
+            if existing_credential and existing_credential.type == "secret":
+                user_vault = UserVaultWrapper(self._app.vault, trans.user)
+                vault_ref = f"{user_credentials.source_type}|{user_credentials.source_id}|{user_credentials.reference}|{user_credentials_group.name}|{existing_credential.name}"
+                user_vault.write_secret(vault_ref, provided_credential.value)
+                existing_credential.value = ""
+            elif existing_credential and existing_credential.type == "variable":
+                existing_credential.value = provided_credential.value
+            session.add(existing_credential)
+        session.commit()
+
+    def _update_current_group_id(
+        self,
+        trans: ProvidesUserContext,
+        user_id: UserIdPathParam,
+        user_credential_id: DecodedDatabaseIdField,
+        payload: UpdateGroupPayload,
+    ):
+        db_user_credentials = self._user_credentials(trans, user_id=user_id, user_credentials_id=user_credential_id)
+
+        existing_user_credentials = next(iter(db_user_credentials), None)
+        if not existing_user_credentials:
+            raise exceptions.ObjectNotFound("User credential not found.", type="error")
+        user_credentials, _, _ = existing_user_credentials
+
+        current_group_id = payload.current_group_id
+        if not any(group.id == current_group_id for _, group, _ in db_user_credentials):
+            raise exceptions.ObjectNotFound("Group ID not found in user credentials.", type="error")
+
+        user_credentials.current_group_id = current_group_id
+
+        session = trans.sa_session
+        session.add(user_credentials)
+        session.commit()
