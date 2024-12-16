@@ -109,7 +109,7 @@ class CredentialsService:
         session = trans.sa_session
 
         user_credentials = self._user_credentials(trans, user_id=user_id, group_id=group_id)
-        rows_to_be_deleted = {item for uc in user_credentials for item in uc if type(item) != UserCredentials}
+        rows_to_be_deleted = {item for uc in user_credentials for item in uc if not isinstance(item, UserCredentials)}
         for row in rows_to_be_deleted:
             session.delete(row)
         session.commit()
