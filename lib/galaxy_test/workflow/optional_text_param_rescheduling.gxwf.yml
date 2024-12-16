@@ -1,0 +1,30 @@
+class: GalaxyWorkflow
+inputs:
+  optional_text:
+    type: text
+    optional: true
+  when:
+    type: boolean
+    default: true
+outputs:
+  out:
+    outputSource: gx_text_optional/inputs_json
+steps:
+  pick_value:
+    tool_id: pick_value
+    tool_state:
+      style_cond:
+        pick_style: first
+        type_cond:
+          param_type: boolean
+          pick_from:
+          - value: true
+  gx_text_optional:
+    tool_id: gx_text_optional
+    # the when expression requires pick_value to execute, which recapitulates https://github.com/galaxyproject/galaxy/issues/19328
+    when: $(inputs.when)
+    in:
+      parameter:
+        source: optional_text
+      when:
+        source: pick_value/boolean_param
