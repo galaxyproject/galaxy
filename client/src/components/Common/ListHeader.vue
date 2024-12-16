@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDown, faAngleUp, faBars, faGripVertical } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BFormCheckbox } from "bootstrap-vue";
+import { BButton, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
@@ -74,32 +74,34 @@ defineExpose({
         </div>
 
         <div class="list-header-filters">
-            Sort by:
-            <BButtonGroup>
-                <BButton
-                    id="sortby-name"
-                    v-b-tooltip.hover
-                    size="sm"
-                    :title="sortDesc ? 'Sort by name ascending' : 'Sort by name descending'"
-                    :pressed="sortBy === 'name'"
-                    variant="outline-primary"
-                    @click="onSort('name')">
-                    <FontAwesomeIcon v-show="sortBy === 'name'" :icon="sortDesc ? faAngleDown : faAngleUp" />
-                    Name
-                </BButton>
+            <div>
+                Sort by:
+                <BButtonGroup>
+                    <BButton
+                        id="sortby-name"
+                        v-b-tooltip.hover
+                        size="sm"
+                        :title="sortDesc ? 'Sort by name ascending' : 'Sort by name descending'"
+                        :pressed="sortBy === 'name'"
+                        variant="outline-primary"
+                        @click="onSort('name')">
+                        <FontAwesomeIcon v-show="sortBy === 'name'" :icon="sortDesc ? faAngleDown : faAngleUp" />
+                        Name
+                    </BButton>
 
-                <BButton
-                    id="sortby-update-time"
-                    v-b-tooltip.hover
-                    size="sm"
-                    :title="sortDesc ? 'Sort by update time ascending' : 'Sort by update time descending'"
-                    :pressed="sortBy === 'update_time'"
-                    variant="outline-primary"
-                    @click="onSort('update_time')">
-                    <FontAwesomeIcon v-show="sortBy === 'update_time'" :icon="sortDesc ? faAngleDown : faAngleUp" />
-                    Update time
-                </BButton>
-            </BButtonGroup>
+                    <BButton
+                        id="sortby-update-time"
+                        v-b-tooltip.hover
+                        size="sm"
+                        :title="sortDesc ? 'Sort by update time ascending' : 'Sort by update time descending'"
+                        :pressed="sortBy === 'update_time'"
+                        variant="outline-primary"
+                        @click="onSort('update_time')">
+                        <FontAwesomeIcon v-show="sortBy === 'update_time'" :icon="sortDesc ? faAngleDown : faAngleUp" />
+                        Update time
+                    </BButton>
+                </BButtonGroup>
+            </div>
 
             <slot name="extra-filter" />
         </div>
@@ -141,7 +143,7 @@ defineExpose({
 
     .list-header-filters {
         display: flex;
-        gap: 0.25rem;
+        gap: 1rem;
         flex-wrap: wrap;
         align-items: center;
     }
