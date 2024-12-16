@@ -1,7 +1,7 @@
 import { createPopper } from "@popperjs/core";
 import { onMounted, onUnmounted, onUpdated, type Ref, ref, watch } from "vue";
 
-export type Trigger = "hover" | "click" | "manual";
+export type Trigger = "click" | "hover" | "manual";
 
 export type EventOptions = {
     onShow: () => void;
@@ -30,8 +30,6 @@ export function usePopperjs(
                 trigger: Trigger | undefined;
                 delayOnMouseover: number | undefined;
                 delayOnMouseout: number | undefined;
-                disabled: boolean | undefined;
-                forceShow: boolean | undefined;
             }
     >
 ) {
@@ -101,35 +99,9 @@ export function usePopperjs(
     const doOpen = () => (visible.value = true);
     const doClose = () => (visible.value = false);
     watch(
-        () => [instance.value, options?.trigger, options?.forceShow],
+        () => [instance.value, options?.trigger],
         () => {
             if (instance.value) {
-                if (options?.forceShow) {
-                    visible.value = true;
-                    doOff();
-                    return;
-                }
-
-                doOn();
-            }
-        }
-    );
-
-    watch(
-        () => options?.forceShow,
-        () => {
-            if (!options?.forceShow && options?.trigger !== "manual") {
-                visible.value = false;
-            }
-        }
-    );
-
-    watch(
-        () => options?.disabled,
-        () => {
-            if (options?.disabled) {
-                doOff();
-            } else {
                 doOn();
             }
         }
@@ -205,7 +177,7 @@ export function usePopperjs(
         () => [instance.value, visible.value],
         () => {
             if (instance.value) {
-                if (visible.value || options?.forceShow) {
+                if (visible.value) {
                     popperRef.value?.classList.remove("vue-use-popperjs-none");
                     options?.onShow?.();
                     instance.value?.update();

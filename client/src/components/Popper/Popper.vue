@@ -58,8 +58,6 @@ const popper = ref();
 const { visible } = usePopperjs(reference, popper, {
     ...props,
     trigger: props.trigger,
-    forceShow: props.forceShow,
-    disabled: props.disabled,
     delayOnMouseover: props.delayOnMouseover,
     delayOnMouseout: props.delayOnMouseout,
     onShow: () => emit("show"),
