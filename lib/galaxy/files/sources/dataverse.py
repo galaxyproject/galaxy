@@ -1,4 +1,3 @@
-import datetime
 import json
 import re
 import urllib.request
@@ -82,11 +81,11 @@ class DataverseRDMFilesSource(RDMFilesSource):
         return "dataverse"
     
     # TODO: Maybe we dont need this?
-    # def score_url_match(self, url: str) ->
-    #     if match := self._scheme_regex.match(url):
-    #         return match.span()[1]
-    #     else:
-    #         return 0
+    def score_url_match(self, url: str) -> int:
+        if match := self._scheme_regex.match(url):
+            return match.span()[1]
+        else:
+            return 0
         
     def to_relative_path(self, url: str) -> str:
         legacy_uri_root = f"{DEFAULT_SCHEME}://{self.id}"
