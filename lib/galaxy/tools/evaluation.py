@@ -227,16 +227,16 @@ class ToolEvaluator:
                     self.environment_variables.append({"name": secret.inject_as_env, "value": vault_value})
                 for variable in credentials.variable:
                     service_refrence = f"{reference}|{variable.name}"
-                    model = app.model
+                    app_model = app.model
                     query = (
-                        model.context.query(model.UserCredential)
+                        app_model.context.query(app_model.UserCredential)
                         .filter_by(user_id=self._user.id, service_reference=service_refrence)
                         .first()
                     )
                     if query:
                         credential_id = query.id
                         credential = (
-                            model.context.query(model.Credential)
+                            app_model.context.query(app_model.Credential)
                             .filter_by(user_credential_id=credential_id, name=variable.name)
                             .first()
                         )
