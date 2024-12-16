@@ -256,7 +256,7 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
 
         return cast(eLabFTWFilesSourceProperties, effective_props)
 
-    async def _list(
+    def _list(
         self,
         path="/",
         recursive=False,
@@ -272,10 +272,54 @@ class eLabFTWFilesSource(BaseFilesSource):  # noqa
         # `sort_by: Optional[Literal[*(get_type_hints(RemoteDirectory) | get_type_hints(RemoteFile)).keys()]] = None,`
     ) -> Tuple[List[AnyRemoteEntry], int]:
         """
+        List the contents of an eLabFTW endpoint.
+
+        FastAPI runs sync routes on a separate thread (from a threadpool), and async routes on the main thread's event
+        loop. Originally, it was conceived to convert `_list` to an async method (see
+        https://github.com/galaxyproject/galaxy/pull/19256). However, given that all other file source plugins are
+        blocking, they could block the main thread for a significant amount of time (see
+        https://github.com/fastapi/fastapi/issues/3091). Thus, the implementation below creates a new event loop within
+        the sync route's thread so that the eLabFTW plugin can still send concurrent requests without blocking the main
+        thread.
+        """
+        event_loop = asyncio.new_event_loop()
+        try:
+            asyncio.set_event_loop(event_loop)
+            return event_loop.run_until_complete(
+                self._list_async(
+                    path=path,
+                    recursive=recursive,
+                    user_context=user_context,
+                    opts=opts,
+                    limit=limit,
+                    offset=offset,
+                    query=query,
+                    sort_by=sort_by,
+                ),
+            )
+        finally:
+            event_loop.close()
+
+    async def _list_async(
+        self,
+        path="/",
+        recursive=False,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+        # in particular, expecting
+        # `sort_by: Optional[Literal["name", "uri", "path", "class", "size", "ctime"]] = None,`
+    ) -> Tuple[List[AnyRemoteEntry], int]:
+        """
         List remote entries in a remote directory.
 
         List entity types ("experiment" and "resource"), entity ids of a specific type, or the ids of files attached to
         an entity.
+
+        Meant to be called only by `_list()`.
 
         :param path: Path referring to the root, an entity type, or an entity id.
         :type path: str
