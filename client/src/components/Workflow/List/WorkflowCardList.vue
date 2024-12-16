@@ -16,11 +16,21 @@ interface Props {
     publishedView?: boolean;
     editorView?: boolean;
     currentWorkflowId?: string;
+    selectedWorkflowIds?: Workflow[];
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    gridView: false,
+    hideRuns: false,
+    filterable: true,
+    publishedView: false,
+    editorView: false,
+    currentWorkflowId: "",
+    selectedWorkflowIds: () => [],
+});
 
 const emit = defineEmits<{
+    (e: "select", workflow: Workflow): void;
     (e: "tagClick", tag: string): void;
     (e: "refreshList", overlayLoading?: boolean, silent?: boolean): void;
     (e: "updateFilter", key: string, value: any): void;
@@ -39,6 +49,7 @@ const modalOptions = reactive({
 });
 
 const showRename = ref(false);
+const showPreview = ref(false);
 
 function onRenameClose() {
     showRename.value = false;
@@ -50,8 +61,6 @@ function onRename(id: string, name: string) {
     modalOptions.rename.name = name;
     showRename.value = true;
 }
-
-const showPreview = ref(false);
 
 function onPreview(id: string) {
     modalOptions.preview.id = id;
@@ -74,6 +83,8 @@ function onInsertSteps(workflow: Workflow) {
             v-for="workflow in props.workflows"
             :key="workflow.id"
             :workflow="workflow"
+            :selectable="!publishedView && !editorView"
+            :selected="props.selectedWorkflowIds.some((w) => w.id === workflow.id)"
             :grid-view="props.gridView"
             :hide-runs="props.hideRuns"
             :filterable="props.filterable"
@@ -81,6 +92,7 @@ function onInsertSteps(workflow: Workflow) {
             :editor-view="props.editorView"
             :current="workflow.id === props.currentWorkflowId"
             class="workflow-card"
+            @select="(...args) => emit('select', ...args)"
             @tagClick="(...args) => emit('tagClick', ...args)"
             @refreshList="(...args) => emit('refreshList', ...args)"
             @updateFilter="(...args) => emit('updateFilter', ...args)"
@@ -130,15 +142,20 @@ function onInsertSteps(workflow: Workflow) {
         width: 100%;
     }
 
-    &.grid .workflow-card {
-        width: calc(100% / 3);
+    &.grid {
+        // it is overwriting the base non used css for the grid class
+        padding-top: 0 !important;
 
-        @container card-list (max-width: #{$breakpoint-xl}) {
-            width: calc(100% / 2);
-        }
+        .workflow-card {
+            width: calc(100% / 3);
 
-        @container card-list (max-width: #{$breakpoint-sm}) {
-            width: 100%;
+            @container card-list (max-width: #{$breakpoint-xl}) {
+                width: calc(100% / 2);
+            }
+
+            @container card-list (max-width: #{$breakpoint-sm}) {
+                width: 100%;
+            }
         }
     }
 }
