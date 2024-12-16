@@ -8,17 +8,6 @@ export type EventOptions = {
     onHide: () => void;
 };
 
-function on(element: Element, event: string, handler: EventListenerOrEventListenerObject) {
-    if (element && event && handler) {
-        element.addEventListener(event, handler, false);
-    }
-}
-function off(element: Element, event: string, handler: EventListenerOrEventListenerObject) {
-    if (element && event) {
-        element.removeEventListener(event, handler, false);
-    }
-}
-
 const defaultTrigger: Trigger = "hover";
 
 export function usePopperjs(
@@ -94,39 +83,42 @@ export function usePopperjs(
     };
 
     const doOn = () => {
-        doOff();
+        if (referenceRef.value) {
+            doOff();
 
-        switch (options?.trigger ?? defaultTrigger) {
-            case "click": {
-                on(referenceRef.value!, "click", doOpen);
-                on(document as any, "click", doCloseForDocument);
-                break;
-            }
+            switch (options?.trigger ?? defaultTrigger) {
+                case "click": {
+                    referenceRef.value.addEventListener("click", doOpen);
+                    document.addEventListener("click", doCloseForDocument);
+                    break;
+                }
 
-            case "hover": {
-                on(referenceRef.value!, "mouseover", doMouseover);
-                on(referenceRef.value!, "mouseout", doMouseout);
-                on(referenceRef.value!, "mousedown", doMouseout);
-                break;
-            }
+                case "hover": {
+                    referenceRef.value.addEventListener("mousedown", doMouseout);
+                    referenceRef.value.addEventListener("mouseout", doMouseout);
+                    referenceRef.value.addEventListener("mouseover", doMouseover);
+                    break;
+                }
 
-            case "manual": {
-                break;
-            }
+                case "manual": {
+                    break;
+                }
 
-            default: {
-                throw TypeError();
+                default: {
+                    throw TypeError();
+                }
             }
         }
     };
 
     const doOff = () => {
-        off(referenceRef.value!, "click", doOpen);
-        off(document as any, "click", doCloseForDocument);
-
-        off(referenceRef.value!, "mouseover", doMouseover);
-        off(referenceRef.value!, "mouseout", doMouseout);
-        off(referenceRef.value!, "mousedown", doMouseout);
+        document.removeEventListener("click", doCloseForDocument, false);
+        if (referenceRef.value) {
+            referenceRef.value.removeEventListener("click", doOpen, false);
+            referenceRef.value.removeEventListener("mousedown", doMouseout, false);
+            referenceRef.value.removeEventListener("mouseover", doMouseover, false);
+            referenceRef.value.removeEventListener("mouseout", doMouseout, false);
+        }
     };
 
     const doCloseForDocument = (e: Event) => {
@@ -143,17 +135,8 @@ export function usePopperjs(
         () => [isMounted.value, updatedFlag.value],
         () => {
             if (isMounted.value) {
-                if ((reference.value as any)?.$el) {
-                    referenceRef.value = (reference.value as any).$el;
-                } else {
-                    referenceRef.value = reference.value as Element;
-                }
-
-                if ((popper.value as any)?.$el) {
-                    popperRef.value = (popper.value as any).$el;
-                } else {
-                    popperRef.value = popper.value;
-                }
+                referenceRef.value = reference.value as Element;
+                popperRef.value = popper.value;
             }
         }
     );
