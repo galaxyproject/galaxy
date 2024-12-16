@@ -1,4 +1,4 @@
-import { createPopper } from "@popperjs/core";
+import { createPopper, type Placement } from "@popperjs/core";
 import { onMounted, onUnmounted, type Ref, ref, watch } from "vue";
 
 export type Trigger = "click" | "hover" | "manual";
@@ -13,14 +13,14 @@ const defaultTrigger: Trigger = "hover";
 export function usePopperjs(
     reference: Ref<HTMLElement>,
     popper: Ref<HTMLElement>,
-    options?: Partial<
-        Parameters<typeof createPopper>["2"] &
-            EventOptions & {
-                trigger: Trigger | undefined;
-                delayOnMouseover: number | undefined;
-                delayOnMouseout: number | undefined;
-            }
-    >
+    options: {
+        placement: Placement | undefined;
+        trigger: Trigger | undefined;
+        delayOnMouseover: number | undefined;
+        delayOnMouseout: number | undefined;
+        onShow: () => void;
+        onHide: () => void;
+    }
 ) {
     const instance = ref<ReturnType<typeof createPopper>>();
 
@@ -28,9 +28,7 @@ export function usePopperjs(
         // create instance
         instance.value = createPopper(reference.value, popper.value!, {
             placement: options?.placement ?? "bottom",
-            modifiers: options?.modifiers ?? [],
-            strategy: options?.strategy ?? "absolute",
-            onFirstUpdate: options?.onFirstUpdate ?? undefined,
+            strategy: "absolute",
         });
 
         // attach event handlers

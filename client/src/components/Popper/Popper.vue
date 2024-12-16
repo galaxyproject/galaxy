@@ -38,9 +38,7 @@ const props = defineProps({
     delayOnMouseover: Number,
     trigger: String as PropType<Exclude<UnwrapRef<Required<Parameters<typeof usePopperjs>>["2"]["trigger"]>, "manual">>,
     forceShow: Boolean,
-    modifiers: Array as PropType<Required<Parameters<typeof usePopperjs>>["2"]["modifiers"]>,
     placement: String as PropType<Required<Parameters<typeof usePopperjs>>["2"]["placement"]>,
-    strategy: String as PropType<Required<Parameters<typeof usePopperjs>>["2"]["strategy"]>,
     popperIs: { type: String, default: "div" },
     popperProps: Object,
     referenceIs: { type: String, default: "span" },
@@ -56,7 +54,7 @@ const emit = defineEmits(["show", "hide"]);
 const reference = ref();
 const popper = ref();
 const { visible } = usePopperjs(reference, popper, {
-    ...props,
+    placement: props.placement,
     trigger: props.trigger,
     delayOnMouseover: props.delayOnMouseover,
     delayOnMouseout: props.delayOnMouseout,
