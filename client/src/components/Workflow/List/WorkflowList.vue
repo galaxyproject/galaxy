@@ -3,12 +3,15 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
+import { faTrashRestore } from "font-awesome-6";
 import { filter } from "underscore";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
 import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";
+import { deleteWorkflow, undeleteWorkflow } from "@/components/Workflow/workflows.services";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -43,6 +46,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const router = useRouter();
 const userStore = useUserStore();
+const { confirm } = useConfirmDialog();
 
 const limit = ref(24);
 const offset = ref(0);
@@ -52,6 +56,7 @@ const filterText = ref("");
 const totalWorkflows = ref(0);
 const showAdvanced = ref(false);
 const listHeader = ref<any>(null);
+const bulkDeleteOrRestoreLoading = ref(false);
 const workflowsLoaded = ref<WorkflowsList>([]);
 const selectedWorkflowIds = ref<SelectedWorkflow[]>([]);
 
@@ -214,6 +219,89 @@ function onSelectAllWorkflows() {
     }
 }
 
+async function onBulkDelete() {
+    const totalSelected = selectedWorkflowIds.value.length;
+    const hasPublished = selectedWorkflowIds.value.some((w) => w.published);
+
+    const confirmed = await confirm(
+        `${hasPublished ? "Some of the selected workflows are published and will be removed from public view. " : ""}
+            Are you sure you want to delete ${totalSelected} workflows?`,
+        {
+            title: "Delete workflows",
+            okTitle: "Delete workflows",
+            okVariant: "danger",
+        }
+    );
+
+    if (confirmed) {
+        const tmpSelected = [...selectedWorkflowIds.value];
+
+        try {
+            overlay.value = true;
+            bulkDeleteOrRestoreLoading.value = true;
+
+            for (const w of selectedWorkflowIds.value) {
+                await deleteWorkflow(w.id);
+
+                tmpSelected.splice(
+                    tmpSelected.findIndex((s) => s.id === w.id),
+                    1
+                );
+            }
+
+            Toast.success(`Deleted ${totalSelected} workflows.`);
+
+            selectedWorkflowIds.value = [];
+        } catch (e) {
+            Toast.error(`Failed to delete some workflows.`);
+        } finally {
+            bulkDeleteOrRestoreLoading.value = false;
+
+            selectedWorkflowIds.value = tmpSelected;
+
+            await load(true);
+        }
+    }
+}
+
+async function onBulkRestore() {
+    const totalSelected = selectedWorkflowIds.value.length;
+
+    const confirmed = await confirm(`Are you sure you want to restore ${totalSelected} workflows?`, {
+        okTitle: "Restore workflows",
+        okVariant: "primary",
+    });
+
+    if (confirmed) {
+        const tmpSelected = [...selectedWorkflowIds.value];
+
+        try {
+            overlay.value = true;
+            bulkDeleteOrRestoreLoading.value = true;
+
+            for (const w of selectedWorkflowIds.value) {
+                await undeleteWorkflow(w.id);
+
+                tmpSelected.splice(
+                    tmpSelected.findIndex((s) => s.id === w.id),
+                    1
+                );
+            }
+
+            Toast.success(`Restored ${totalSelected} workflows.`);
+
+            selectedWorkflowIds.value = [];
+        } catch (e) {
+            Toast.error(`Failed to restore some workflows.`);
+        } finally {
+            bulkDeleteOrRestoreLoading.value = false;
+
+            selectedWorkflowIds.value = tmpSelected;
+
+            await load(true);
+        }
+    }
+}
 
 watch([filterText, sortBy, sortDesc], async () => {
     offset.value = 0;
@@ -353,8 +441,7 @@ onMounted(() => {
                 </a>
             </BAlert>
         </span>
-
-        <BOverlay v-else id="workflow-cards" :show="overlay" rounded="sm" class="cards-list mt-2">
+        <BOverlay v-else id="workflow-cards" :show="overlay" rounded="sm" class="cards-list">
             <WorkflowCardList
                 :workflows="workflowsLoaded"
                 :published-view="published"
@@ -364,6 +451,43 @@ onMounted(() => {
                 @refreshList="load"
                 @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
                 @updateFilter="updateFilterValue" />
+        </BOverlay>
+
+        <div class="workflow-list-footer">
+            <div
+                v-if="!published && !sharedWithMe && selectedWorkflowIds.length"
+                class="workflow-list-footer-bulk-actions">
+                <BButton
+                    v-if="!showDeleted"
+                    id="workflow-list-footer-bulk-delete-button"
+                    v-b-tooltip.hover
+                    :title="bulkDeleteOrRestoreLoading ? 'Deleting workflows' : 'Delete selected workflows'"
+                    :disabled="bulkDeleteOrRestoreLoading"
+                    size="sm"
+                    variant="primary"
+                    @click="onBulkDelete">
+                    <span v-if="!bulkDeleteOrRestoreLoading">
+                        <FontAwesomeIcon :icon="faTrash" fixed-width />
+                        Delete ({{ selectedWorkflowIds.length }})
+                    </span>
+                    <LoadingSpan v-else message="Deleting" />
+                </BButton>
+                <BButton
+                    v-else
+                    id="workflow-list-footer-bulk-restore-button"
+                    v-b-tooltip.hover
+                    :title="bulkDeleteOrRestoreLoading ? 'Restoring workflows' : 'Restore selected workflows'"
+                    :disabled="bulkDeleteOrRestoreLoading"
+                    size="sm"
+                    variant="primary"
+                    @click="onBulkRestore">
+                    <span v-if="!bulkDeleteOrRestoreLoading">
+                        <FontAwesomeIcon :icon="faTrashRestore" fixed-width />
+                        Restore ({{ selectedWorkflowIds.length }})
+                    </span>
+                    <LoadingSpan v-else message="Restoring" />
+                </BButton>
+            </div>
 
             <BPagination
                 v-if="!loading && totalWorkflows > limit"
@@ -375,7 +499,7 @@ onMounted(() => {
                 first-number
                 last-number
                 @change="onPageChange" />
-        </BOverlay>
+        </div>
     </div>
 </template>
 
@@ -404,6 +528,18 @@ onMounted(() => {
 
         overflow-y: auto;
         overflow-x: hidden;
+    }
+
+    .workflow-list-footer {
+        display: flex;
+        margin-top: 0.5rem;
+
+        .workflow-list-footer-bulk-actions {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+            position: absolute;
+        }
     }
 }
 </style>
