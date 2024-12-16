@@ -233,7 +233,7 @@ PopulatedField = Annotated[
     ),
 ]
 
-ElementsField = Field(
+ElementsField: List["DCESummary"] = Field(
     [],
     title="Elements",
     description="The summary information of each of the elements inside the dataset collection.",

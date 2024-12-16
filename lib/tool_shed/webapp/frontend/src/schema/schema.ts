@@ -790,7 +790,6 @@ export interface components {
              * Parameter Type
              * @default gx_baseurl
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_baseurl"
         }
@@ -832,7 +831,6 @@ export interface components {
              * Parameter Type
              * @default gx_boolean
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_boolean"
             /** Truevalue */
@@ -915,7 +913,6 @@ export interface components {
              * Parameter Type
              * @default gx_color
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_color"
             /** Value */
@@ -950,7 +947,6 @@ export interface components {
              * Parameter Type
              * @default gx_conditional
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_conditional"
             /** Test Parameter */
@@ -1042,7 +1038,6 @@ export interface components {
              * Parameter Type
              * @default cwl_boolean
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_boolean"
         }
@@ -1075,7 +1070,6 @@ export interface components {
              * Parameter Type
              * @default cwl_directory
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_directory"
         }
@@ -1108,7 +1102,6 @@ export interface components {
              * Parameter Type
              * @default cwl_file
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_file"
         }
@@ -1120,7 +1113,6 @@ export interface components {
              * Parameter Type
              * @default cwl_float
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_float"
         }
@@ -1132,7 +1124,6 @@ export interface components {
              * Parameter Type
              * @default cwl_integer
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_integer"
         }
@@ -1144,7 +1135,6 @@ export interface components {
              * Parameter Type
              * @default cwl_null
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_null"
         }
@@ -1156,7 +1146,6 @@ export interface components {
              * Parameter Type
              * @default cwl_string
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_string"
         }
@@ -1168,7 +1157,6 @@ export interface components {
              * Parameter Type
              * @default cwl_union
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_union"
             /** Parameters */
@@ -1221,7 +1209,6 @@ export interface components {
              * Parameter Type
              * @default gx_data_collection
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_data_collection"
             /** Value */
@@ -1258,7 +1245,6 @@ export interface components {
              * Parameter Type
              * @default gx_data_column
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_data_column"
         }
@@ -1307,7 +1293,6 @@ export interface components {
              * Parameter Type
              * @default gx_data
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_data"
         }
@@ -1383,7 +1368,6 @@ export interface components {
              * Parameter Type
              * @default gx_directory_uri
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_directory_uri"
             /**
@@ -1446,7 +1430,6 @@ export interface components {
              * Parameter Type
              * @default gx_drill_down
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_drill_down"
         }
@@ -1468,7 +1451,6 @@ export interface components {
              * Type
              * @default empty_field
              * @constant
-             * @enum {string}
              */
             type: "empty_field"
         }
@@ -1497,7 +1479,6 @@ export interface components {
              * Type
              * @default expression
              * @constant
-             * @enum {string}
              */
             type: "expression"
         }
@@ -1515,7 +1496,6 @@ export interface components {
             /**
              * Discover Via
              * @constant
-             * @enum {string}
              */
             discover_via: "pattern"
             /** Format */
@@ -1572,7 +1552,6 @@ export interface components {
              * Parameter Type
              * @default gx_float
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_float"
             /**
@@ -1614,7 +1593,6 @@ export interface components {
              * Parameter Type
              * @default gx_genomebuild
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_genomebuild"
         }
@@ -1649,7 +1627,6 @@ export interface components {
              * Parameter Type
              * @default gx_group_tag
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_group_tag"
         }
@@ -1692,7 +1669,6 @@ export interface components {
              * Parameter Type
              * @default gx_hidden
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_hidden"
             /**
@@ -1774,7 +1750,6 @@ export interface components {
              * Type
              * @default in_range
              * @constant
-             * @enum {string}
              */
             type: "in_range"
         }
@@ -1813,7 +1788,6 @@ export interface components {
              * Parameter Type
              * @default gx_integer
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_integer"
             /**
@@ -1855,7 +1829,6 @@ export interface components {
              * Type
              * @default length
              * @constant
-             * @enum {string}
              */
             type: "length"
         }
@@ -1884,7 +1857,6 @@ export interface components {
              * Type
              * @default no_options
              * @constant
-             * @enum {string}
              */
             type: "no_options"
         }
@@ -1992,7 +1964,6 @@ export interface components {
              * Type
              * @default regex
              * @constant
-             * @enum {string}
              */
             type: "regex"
         }
@@ -2029,7 +2000,6 @@ export interface components {
              * Parameter Type
              * @default gx_repeat
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_repeat"
             /** Parameters */
@@ -2347,7 +2317,6 @@ export interface components {
              * Parameter Type
              * @default gx_rules
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_rules"
         }
@@ -2380,7 +2349,6 @@ export interface components {
              * Parameter Type
              * @default gx_section
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_section"
             /** Parameters */
@@ -2447,7 +2415,6 @@ export interface components {
              * Parameter Type
              * @default gx_select
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_select"
             /** Validators */
@@ -2561,7 +2528,6 @@ export interface components {
              * Parameter Type
              * @default gx_text
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_text"
             /**
@@ -2777,7 +2743,6 @@ export interface components {
             /**
              * Discover Via
              * @constant
-             * @enum {string}
              */
             discover_via: "tool_provided_metadata"
             /** Format */
