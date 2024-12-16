@@ -1756,12 +1756,16 @@ class QuotaSourceMap:
         self.default_quota_source = source
         self.default_quota_enabled = enabled
         self.info = QuotaSourceInfo(self.default_quota_source, self.default_quota_enabled)
+        # Private sources are provided by the user and the quota is not tracked
+        self.private_source_info = QuotaSourceInfo(label=None, use=False)
         self.backends = {}
         self._labels = None
 
-    def get_quota_source_info(self, object_store_id):
+    def get_quota_source_info(self, object_store_id: Optional[str]) -> QuotaSourceInfo:
         if object_store_id in self.backends:
             return self.backends[object_store_id].get_quota_source_info(object_store_id)
+        elif self._is_private_source(object_store_id):
+            return self.private_source_info
         else:
             return self.info
 
@@ -1808,6 +1812,9 @@ class QuotaSourceMap:
                 quota_sources[quota_source_label] = []
             quota_sources[quota_source_label].append(object_id)
         return quota_sources
+
+    def _is_private_source(self, object_store_id: Optional[str]) -> bool:
+        return object_store_id is not None and object_store_id.startswith("user_objects://")
 
 
 class ObjectCreationProblem(Exception):
