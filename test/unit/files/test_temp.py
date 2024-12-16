@@ -46,16 +46,14 @@ def test_file_source(file_sources: TestConfiguredFileSources):
     assert_realizes_contains(file_sources, f"{ROOT_URI}/dir1/sub1/f", "f")
 
 
-@pytest.mark.asyncio
-async def test_list(temp_file_source: TempFilesSource):
-    await assert_list_names(temp_file_source, "/", recursive=False, expected_names=["a", "b", "c", "dir1"])
-    await assert_list_names(temp_file_source, "/dir1", recursive=False, expected_names=["d", "e", "sub1"])
+def test_list(temp_file_source: TempFilesSource):
+    assert_list_names(temp_file_source, "/", recursive=False, expected_names=["a", "b", "c", "dir1"])
+    assert_list_names(temp_file_source, "/dir1", recursive=False, expected_names=["d", "e", "sub1"])
 
 
-@pytest.mark.asyncio
-async def test_list_recursive(temp_file_source: TempFilesSource):
+def test_list_recursive(temp_file_source: TempFilesSource):
     expected_names = ["a", "b", "c", "dir1", "d", "e", "sub1", "f"]
-    await assert_list_names(temp_file_source, "/", recursive=True, expected_names=expected_names)
+    assert_list_names(temp_file_source, "/", recursive=True, expected_names=expected_names)
 
 
 @pytest.mark.asyncio
@@ -211,6 +209,7 @@ def _upload_to(file_source: TempFilesSource, target_uri: str, content: str, user
         file_source.write_from(target_uri, f.name, user_context=user_context)
 
 
+@pytest.mark.asyncio
 async def assert_list_names(file_source: TempFilesSource, uri: str, recursive: bool, expected_names: List[str]):
     result, count = await file_source.list(uri, recursive=recursive)
     assert count == len(expected_names)
