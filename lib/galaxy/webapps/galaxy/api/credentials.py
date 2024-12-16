@@ -5,17 +5,22 @@ API operations on credentials (credentials and variables).
 import logging
 from typing import Optional
 
-from fastapi import Query  # Response,; status,
+from fastapi import (
+    Query,
+    Response,
+    status,
+)
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.credentials import (  # UpdateCredentialsPayload,
+from galaxy.schema.credentials import (
     CredentialsPayload,
     SOURCE_TYPE,
+    UpdateCredentialsPayload,
+    UpdateGroupPayload,
     UserCredentialCreateResponse,
     UserCredentialsListResponse,
 )
-
-# from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -68,42 +73,57 @@ class FastAPICredentials:
     ) -> UserCredentialCreateResponse:
         return self.service.provide_credential(trans, user_id, payload)
 
-    # @router.put(
-    #     "/api/users/{user_id}/credentials/{user_credentials_id}",
-    #     summary="Updates credentials for a specific secret/variable",
-    # )
-    # def update_credential(
-    #     self,
-    #     user_id: UserIdPathParam,
-    #     user_credentials_id: DecodedDatabaseIdField,
-    #     payload: UpdateCredentialsPayload,
-    #     trans: ProvidesUserContext = DependsOnTrans,
-    # ) -> CredentialsListResponse:
-    #     return self.service.update_credential(trans, user_id, user_credentials_id, payload)
+    @router.put(
+        "/api/users/{user_id}/credentials/{user_credentials_id}",
+        summary="Updates credentials for a specific secret/variable",
+    )
+    def update_credential(
+        self,
+        user_id: UserIdPathParam,
+        user_credentials_id: DecodedDatabaseIdField,
+        payload: UpdateCredentialsPayload,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        self.service.update_credential(trans, user_id, user_credentials_id, payload)
+        return Response(status_code=status.HTTP_200_OK)
 
-    # @router.delete(
-    #     "/api/users/{user_id}/credentials/{user_credentials_id}",
-    #     summary="Deletes all credentials for a specific service",
-    # )
-    # def delete_service_credentials(
-    #     self,
-    #     user_id: UserIdPathParam,
-    #     user_credentials_id: DecodedDatabaseIdField,
-    #     trans: ProvidesUserContext = DependsOnTrans,
-    # ):
-    #     self.service.delete_service_credentials(trans, user_id, user_credentials_id)
-    #     return Response(status_code=status.HTTP_204_NO_CONTENT)
+    @router.patch(
+        "/api/users/{user_id}/credentials/{user_credentials_id}",
+        summary="Updates the current group ID for a specific service",
+    )
+    def update_current_group_id(
+        self,
+        user_id: UserIdPathParam,
+        user_credentials_id: DecodedDatabaseIdField,
+        payload: UpdateGroupPayload,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        self.service.update_current_group_id(trans, user_id, user_credentials_id, payload)
+        return Response(status_code=status.HTTP_200_OK)
 
-    # @router.delete(
-    #     "/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}",
-    #     summary="Deletes a specific credential",
-    # )
-    # def delete_credentials(
-    #     self,
-    #     user_id: UserIdPathParam,
-    #     user_credentials_id: DecodedDatabaseIdField,
-    #     group_id: DecodedDatabaseIdField,
-    #     trans: ProvidesUserContext = DependsOnTrans,
-    # ):
-    #     self.service.delete_credentials(trans, user_id, user_credentials_id, group_id)
-    #     return Response(status_code=status.HTTP_204_NO_CONTENT)
+    @router.delete(
+        "/api/users/{user_id}/credentials/{user_credentials_id}",
+        summary="Deletes all credentials for a specific service",
+    )
+    def delete_service_credentials(
+        self,
+        user_id: UserIdPathParam,
+        user_credentials_id: DecodedDatabaseIdField,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        self.service.delete_service_credentials(trans, user_id, user_credentials_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.delete(
+        "/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}",
+        summary="Deletes a specific credential",
+    )
+    def delete_credentials(
+        self,
+        user_id: UserIdPathParam,
+        user_credentials_id: DecodedDatabaseIdField,
+        group_id: DecodedDatabaseIdField,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        self.service.delete_credentials(trans, user_id, group_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
