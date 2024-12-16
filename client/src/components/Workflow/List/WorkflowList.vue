@@ -26,6 +26,13 @@ library.add(faStar, faTrash);
 type ListView = "grid" | "list";
 type WorkflowsList = Record<string, never>[];
 
+// Temporary interface to match the `Workflow` interface from `WorkflowCard`
+interface SelectedWorkflow {
+    id: string;
+    name: string;
+    published: boolean;
+}
+
 interface Props {
     activeList?: "my" | "shared_with_me" | "published";
 }
@@ -46,6 +53,7 @@ const totalWorkflows = ref(0);
 const showAdvanced = ref(false);
 const listHeader = ref<any>(null);
 const workflowsLoaded = ref<WorkflowsList>([]);
+const selectedWorkflowIds = ref<SelectedWorkflow[]>([]);
 
 const searchPlaceHolder = computed(() => {
     let placeHolder = "Search my workflows";
@@ -178,8 +186,24 @@ function validatedFilterText() {
     return workflowFilters.value.getFilterText(validFilters.value, true);
 }
 
+function onSelectWorkflow(w: SelectedWorkflow) {
+    const index = selectedWorkflowIds.value.findIndex((selected) => selected.id === w.id);
+
+    if (index === -1) {
+        selectedWorkflowIds.value.push(w);
+    } else {
+        selectedWorkflowIds.value.splice(index, 1);
+    }
+}
+
+
 watch([filterText, sortBy, sortDesc], async () => {
     offset.value = 0;
+
+    if (showDeleted.value) {
+        selectedWorkflowIds.value = [];
+    }
+
     await load(true);
 });
 
@@ -310,6 +334,8 @@ onMounted(() => {
                 :workflows="workflowsLoaded"
                 :published-view="published"
                 :grid-view="view === 'grid'"
+                :selected-workflow-ids="selectedWorkflowIds"
+                @select="onSelectWorkflow"
                 @refreshList="load"
                 @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
                 @updateFilter="updateFilterValue" />
