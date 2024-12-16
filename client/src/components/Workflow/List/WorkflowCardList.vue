@@ -134,6 +134,7 @@ function onInsertSteps(workflow: Workflow) {
 @import "_breakpoints.scss";
 
 .workflow-card-list {
+    overflow: auto;
     container: card-list / inline-size;
     display: flex;
     flex-wrap: wrap;
