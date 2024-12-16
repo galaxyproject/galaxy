@@ -194,13 +194,16 @@ class UpdateCredentialPayload(Model):
 
 
 class UpdateCredentialsPayload(Model):
-    group_id: DecodedDatabaseIdField = Field(
-        ...,
-        title="Group ID",
-        description="ID of the group",
-    )
     credentials: List[UpdateCredentialPayload] = Field(
         ...,
         title="Update Credentials",
         description="List of credentials to update",
+    )
+
+
+class UpdateGroupPayload(Model):
+    current_group_id: DecodedDatabaseIdField = Field(
+        ...,
+        title="Group ID",
+        description="ID of the group",
     )
