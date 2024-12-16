@@ -43,6 +43,9 @@ from galaxy.util import (
     stream_to_open_named_file,
 )
 
+class NotFoundException(Exception):
+    def __init__(self, message):
+        super().__init__(message)
 
 class DataverseDataset(TypedDict):
     name: str
