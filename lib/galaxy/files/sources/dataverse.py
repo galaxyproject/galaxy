@@ -80,7 +80,6 @@ class DataverseRDMFilesSource(RDMFilesSource):
     def get_scheme(self) -> str:
         return "dataverse"
     
-    # TODO: Maybe we dont need this?
     def score_url_match(self, url: str) -> int:
         if match := self._scheme_regex.match(url):
             return match.span()[1]
@@ -397,13 +396,6 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         return title or "No title"
 
     def _get_files_from_response(self, dataset_id: str, response: dict) -> List[RemoteFile]:   
-        
-        # TODO Do we need this for Dataverse?
-        # this is used in invenio, do we need it for dataverse?
-        # files_enabled = response.get("enabled", False)
-        # if not files_enabled:
-        #    return []
-
         rval: List[RemoteFile] = []
         for entry in response:
             dataFile = entry.get("dataFile")
