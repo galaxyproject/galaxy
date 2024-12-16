@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faStar, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
@@ -24,8 +23,6 @@ import LoginRequired from "@/components/Common/LoginRequired.vue";
 import TagsSelectionDialog from "@/components/Common/TagsSelectionDialog.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.vue";
-
-library.add(faStar, faTrash);
 
 type ListView = "grid" | "list";
 type WorkflowsList = Record<string, never>[];
@@ -86,13 +83,12 @@ const view = computed(() => (userStore.preferredListViewMode as ListView) || "gr
 const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) ?? true);
 const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "update_time");
 const noItems = computed(() => !loading.value && workflowsLoaded.value.length === 0 && !filterText.value);
-const noResults = computed(() => !loading.value && workflowsLoaded.value.length === 0 && filterText.value);
+const noResults = computed(() => !loading.value && workflowsLoaded.value.length === 0 && Boolean(filterText.value));
 const deleteButtonTitle = computed(() => (showDeleted.value ? "Hide deleted workflows" : "Show deleted workflows"));
 const bookmarkButtonTitle = computed(() =>
     showBookmarked.value ? "Hide bookmarked workflows" : "Show bookmarked workflows"
 );
 
-// Filtering computed refs
 const workflowFilters = computed(() => getWorkflowFilters(props.activeList));
 const rawFilters = computed(() =>
     Object.fromEntries(workflowFilters.value.getFiltersForText(filterText.value, true, false))
@@ -127,7 +123,9 @@ async function load(overlayLoading = false, silent = false) {
             loading.value = true;
         }
     }
+
     let search;
+
     if (!hasInvalidFilters.value) {
         search = validatedFilterText();
 
@@ -443,16 +441,17 @@ onMounted(() => {
             </ListHeader>
         </div>
 
-        <BAlert v-if="loading" variant="info" show>
-            <LoadingSpan message="Loading workflows..." />
-        </BAlert>
-
-        <BAlert v-if="!loading && !overlay && noItems" id="workflow-list-empty" variant="info" show>
-            No workflows found. You may create or import new workflows using the buttons above.
-        </BAlert>
-
-        <!-- There are either `noResults` or `invalidFilters` -->
-        <span v-else-if="!loading && !overlay && (noResults || hasInvalidFilters)">
+        <div v-if="loading" class="workflow-list-alert">
+            <BAlert variant="info" show>
+                <LoadingSpan message="Loading workflows" />
+            </BAlert>
+        </div>
+        <div v-else-if="!loading && !overlay && noItems" class="workflow-list-alert">
+            <BAlert id="workflow-list-empty" variant="info" show>
+                No workflows found. You may create or import new workflows using the buttons above.
+            </BAlert>
+        </div>
+        <span v-else-if="!loading && !overlay && (noResults || hasInvalidFilters)" class="workflow-list-alert">
             <BAlert v-if="!hasInvalidFilters" id="no-workflow-found" variant="info" show>
                 No workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
             </BAlert>
@@ -544,8 +543,7 @@ onMounted(() => {
             </div>
 
             <BPagination
-                v-if="!loading && totalWorkflows > limit"
-                class="mt-2 w-100"
+                class="workflow-list-footer-pagination"
                 :value="currentPage"
                 :total-rows="totalWorkflows"
                 :per-page="limit"
@@ -582,6 +580,10 @@ onMounted(() => {
         z-index: 100;
     }
 
+    .workflow-list-alert {
+        height: 100%;
+    }
+
     .cards-list {
         scroll-behavior: smooth;
         min-height: 150px;
@@ -601,6 +603,11 @@ onMounted(() => {
             gap: 0.5rem;
             width: 100%;
             position: absolute;
+        }
+
+        .workflow-list-footer-pagination {
+            margin: 0 auto;
+            width: 100%;
         }
     }
 }
