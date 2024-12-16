@@ -1,8 +1,6 @@
 import { createPopper } from "@popperjs/core";
 import { onMounted, onUnmounted, onUpdated, type Ref, ref, unref, watch } from "vue";
 
-export type MaybeRef<T> = T | Ref<T>;
-
 export type Trigger = "hover" | "focus" | "click-to-open" | "click-to-toggle" | "manual";
 
 export type EventOptions = {
@@ -24,16 +22,16 @@ function off(element: Element, event: string, handler: EventListenerOrEventListe
 const defaultTrigger: Trigger = "hover";
 
 export function usePopperjs(
-    reference: MaybeRef<Parameters<typeof createPopper>["0"]>,
-    popper: MaybeRef<Parameters<typeof createPopper>["1"]>,
+    reference: Ref<Parameters<typeof createPopper>["0"]>,
+    popper: Ref<Parameters<typeof createPopper>["1"]>,
     options?: Partial<
         Parameters<typeof createPopper>["2"] &
             EventOptions & {
-                trigger: MaybeRef<Trigger | undefined>;
-                delayOnMouseover: MaybeRef<number | undefined>;
-                delayOnMouseout: MaybeRef<number | undefined>;
-                disabled: MaybeRef<boolean | undefined>;
-                forceShow: MaybeRef<boolean | undefined>;
+                trigger: Trigger | undefined;
+                delayOnMouseover: number | undefined;
+                delayOnMouseout: number | undefined;
+                disabled: boolean | undefined;
+                forceShow: boolean | undefined;
             }
     >
 ) {
