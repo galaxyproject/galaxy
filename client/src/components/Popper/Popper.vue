@@ -34,8 +34,6 @@ import { usePopperjs } from "./usePopper";
 library.add(faTimesCircle);
 
 const props = defineProps({
-    delayOnMouseout: Number,
-    delayOnMouseover: Number,
     trigger: String as PropType<Exclude<UnwrapRef<Required<Parameters<typeof usePopperjs>>["2"]["trigger"]>, "manual">>,
     forceShow: Boolean,
     placement: String as PropType<Required<Parameters<typeof usePopperjs>>["2"]["placement"]>,
@@ -56,8 +54,6 @@ const popper = ref();
 const { visible } = usePopperjs(reference, popper, {
     placement: props.placement,
     trigger: props.trigger,
-    delayOnMouseover: props.delayOnMouseover,
-    delayOnMouseout: props.delayOnMouseout,
     onShow: () => emit("show"),
     onHide: () => emit("hide"),
 });

@@ -16,8 +16,6 @@ export function usePopperjs(
     options: {
         placement: Placement | undefined;
         trigger: Trigger | undefined;
-        delayOnMouseover: number | undefined;
-        delayOnMouseout: number | undefined;
         onShow: () => void;
         onHide: () => void;
     }
@@ -40,9 +38,9 @@ export function usePopperjs(
             }
 
             case "hover": {
-                reference.value.addEventListener("mousedown", doMouseout);
-                reference.value.addEventListener("mouseout", doMouseout);
-                reference.value.addEventListener("mouseover", doMouseover);
+                reference.value.addEventListener("mousedown", doClose);
+                reference.value.addEventListener("mouseout", doClose);
+                reference.value.addEventListener("mouseover", doOpen);
                 break;
             }
 
@@ -65,38 +63,15 @@ export function usePopperjs(
         document.removeEventListener("click", doCloseForDocument, false);
         if (reference.value) {
             reference.value.removeEventListener("click", doOpen, false);
-            reference.value.removeEventListener("mousedown", doMouseout, false);
-            reference.value.removeEventListener("mouseover", doMouseover, false);
-            reference.value.removeEventListener("mouseout", doMouseout, false);
+            reference.value.removeEventListener("mousedown", doClose, false);
+            reference.value.removeEventListener("mouseout", doClose, false);
+            reference.value.removeEventListener("mouseover", doOpen, false);
         }
     });
 
     const visible = ref(false);
     const doOpen = () => (visible.value = true);
     const doClose = () => (visible.value = false);
-    const timer = ref<any>();
-
-    const doMouseover = () => {
-        if (options?.delayOnMouseover === 0) {
-            doOpen();
-        } else {
-            clearTimeout(timer.value);
-            timer.value = setTimeout(() => {
-                doOpen();
-            }, options?.delayOnMouseover ?? 100);
-        }
-    };
-
-    const doMouseout = () => {
-        if (options?.delayOnMouseout === 0) {
-            doClose();
-        } else {
-            clearTimeout(timer.value);
-            timer.value = setTimeout(() => {
-                doClose();
-            }, options?.delayOnMouseout ?? 100);
-        }
-    };
 
     const doCloseForDocument = (e: Event) => {
         if (reference.value?.contains(e.target as Element)) {
