@@ -3,15 +3,10 @@ from typing import (
     Dict,
     List,
     Optional,
-    Sequence,
     Tuple,
 )
 
-from sqlalchemy import (
-    false,
-    select,
-    update,
-)
+from sqlalchemy import select
 from sqlalchemy.orm import aliased
 
 from galaxy import exceptions
@@ -22,13 +17,11 @@ from galaxy.model import (
     UserCredentials,
 )
 from galaxy.model.base import transaction
-from galaxy.schema.credentials import (
+from galaxy.schema.credentials import (  # CredentialResponse,; UpdateCredentialsPayload,
     CredentialGroupResponse,
-    CredentialResponse,
     CredentialsPayload,
     SecretResponse,
     SOURCE_TYPE,
-    UpdateCredentialsPayload,
     UserCredentialCreateResponse,
     UserCredentialsListResponse,
     UserCredentialsResponse,
@@ -155,7 +148,7 @@ class CredentialsService:
             stmt = stmt.where(UserCredentials.id == user_credentials_id)
 
         result = trans.sa_session.execute(stmt).all()
-        return [(uc, cg, c) for uc, cg, c in result]
+        return [(row[0], row[1], row[2]) for row in result]
 
     def _user_credentials_to_dict(
         self, db_user_credentials: List[Tuple[UserCredentials, CredentialsGroup, Credential]]
@@ -172,7 +165,7 @@ class CredentialsService:
                     source_id=user_credentials.source_id,
                     current_group_id=user_credentials.current_group_id,
                     current_group_name=credentials_group.name,
-                    groups=dict(),
+                    groups={},
                 ),
             )
 
