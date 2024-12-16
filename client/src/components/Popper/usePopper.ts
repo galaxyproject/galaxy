@@ -1,5 +1,5 @@
 import { createPopper } from "@popperjs/core";
-import { onMounted, onUnmounted, onUpdated, type Ref, ref, unref, watch } from "vue";
+import { onMounted, onUnmounted, onUpdated, type Ref, ref, watch } from "vue";
 
 export type Trigger = "hover" | "focus" | "click-to-open" | "click-to-toggle" | "manual";
 
