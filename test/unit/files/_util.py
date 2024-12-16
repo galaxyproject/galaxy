@@ -36,7 +36,7 @@ def find(dir_list, class_=None, name=None):
     return None
 
 
-async def list_root(
+def list_root(
     file_sources: ConfiguredFileSources,
     uri: str,
     recursive: bool,
@@ -44,11 +44,11 @@ async def list_root(
 ):
     file_source_pair = file_sources.get_file_source_path(uri)
     file_source = file_source_pair.file_source
-    res, _ = await file_source.list("/", recursive=recursive, user_context=user_context)
+    res, _ = file_source.list("/", recursive=recursive, user_context=user_context)
     return res
 
 
-async def list_dir(
+def list_dir(
     file_sources: ConfiguredFileSources,
     uri: str,
     recursive: bool,
@@ -58,7 +58,7 @@ async def list_dir(
     file_source = file_source_pair.file_source
     print(file_source_pair.path)
     print(uri)
-    res, _ = await file_source.list(file_source_pair.path, recursive=recursive, user_context=user_context)
+    res, _ = file_source.list(file_source_pair.path, recursive=recursive, user_context=user_context)
     return res
 
 
@@ -186,14 +186,14 @@ def assert_can_write_and_read_to_conf(conf: dict):
     )
 
 
-async def assert_simple_file_realize(conf_file, recursive=False, filename="a", contents="a\n", contains=False):
+def assert_simple_file_realize(conf_file, recursive=False, filename="a", contents="a\n", contains=False):
     user_context = user_context_fixture()
     file_sources = configured_file_sources(conf_file)
     file_source_pair = file_sources.get_file_source_path("gxfiles://test1")
 
     assert file_source_pair.path == "/"
     file_source = file_source_pair.file_source
-    res, _ = await file_source.list("/", recursive=recursive, user_context=user_context)
+    res, _ = file_source.list("/", recursive=recursive, user_context=user_context)
     a_file = find(res, class_="File", name=filename)
     assert a_file
 

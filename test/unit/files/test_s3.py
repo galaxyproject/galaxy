@@ -17,9 +17,8 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "s3_file_sources_conf.yml")
 
 
-@pytest.mark.asyncio
-async def test_file_source():
-    await assert_simple_file_realize(
+def test_file_source():
+    assert_simple_file_realize(
         FILE_SOURCES_CONF,
         recursive=False,
         filename="data_use_policies.txt",

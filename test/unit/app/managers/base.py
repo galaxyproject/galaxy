@@ -8,13 +8,8 @@ import sqlalchemy
 
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers.users import UserManager
-from galaxy.util.unittest import (
-    IsolatedAsyncioTestCase,
-    TestCase,
-)
+from galaxy.util.unittest import TestCase
 from galaxy.work.context import SessionRequestContext
-
-__all__ = ("BaseIsolatedAsyncioTestCase", "BaseTestCase", "CreatesCollectionsMixin")
 
 # =============================================================================
 admin_email = "admin@admin.admin"
@@ -107,14 +102,6 @@ class BaseTestCase(TestCase):
     def assertIsJsonifyable(self, item):
         # TODO: use galaxy's override
         assert isinstance(json.dumps(item), str)
-
-
-class BaseIsolatedAsyncioTestCase(BaseTestCase, IsolatedAsyncioTestCase):
-    """
-    Asynchronous version of `BaseTestCase`.
-
-    Can run sync tests too.
-    """
 
 
 class CreatesCollectionsMixin:

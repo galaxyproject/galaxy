@@ -60,7 +60,7 @@ class PosixFilesSource(BaseFilesSource):
     def prefer_links(self) -> bool:
         return self._prefer_links
 
-    async def _list(
+    def _list(
         self,
         path="/",
         recursive=True,

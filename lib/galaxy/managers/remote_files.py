@@ -43,7 +43,7 @@ class RemoteFilesManager:
     def __init__(self, app: MinimalManagerApp):
         self._app = app
 
-    async def index(
+    def index(
         self,
         user_ctx: ProvidesUserContext,
         target: str,
@@ -93,7 +93,7 @@ class RemoteFilesManager:
         opts = FilesSourceOptions()
         opts.writeable = writeable or False
         try:
-            index, count = await file_source.list(
+            index, count = file_source.list(
                 file_source_path.path,
                 recursive=recursive,
                 user_context=user_file_source_context,

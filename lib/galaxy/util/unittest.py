@@ -1,5 +1,3 @@
-import inspect
-
 import pytest
 
 
@@ -45,24 +43,3 @@ class TestCase:
 
     def assertRaisesRegex(self, exception, regex):
         return pytest.raises(exception, match=regex)
-
-
-class MarkAsyncMeta(type):
-    """
-    Metaclass that marks all asynchronous methods of a class as async tests.
-
-    Methods that are not recognized by pytest as tests will simply be ignored, despite having been marked as async
-    tests.
-    """
-
-    def __new__(cls, name, bases, dict_):
-        for attribute_name, attribute_value in dict_.items():
-            if inspect.iscoroutinefunction(attribute_value):
-                dict_[attribute_name] = pytest.mark.asyncio(attribute_value)
-        return super().__new__(cls, name, bases, dict_)
-
-
-class IsolatedAsyncioTestCase(TestCase, metaclass=MarkAsyncMeta):
-    """
-    Partial re-implementation of standard library `unittest.IsolatedAsyncioTestCase` using pytest methods.
-    """

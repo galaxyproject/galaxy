@@ -128,7 +128,7 @@ class FastAPIRemoteFiles:
         deprecated=True,
         summary="Displays remote files available to the user. Please use /api/remote_files instead.",
     )
-    async def index(
+    def index(
         self,
         response: Response,
         user_ctx: ProvidesUserContext = DependsOnTrans,
@@ -146,7 +146,7 @@ class FastAPIRemoteFiles:
 
         The total count of files and directories is returned in the 'total_matches' header.
         """
-        result, count = await self.manager.index(
+        result, count = self.manager.index(
             user_ctx, target, format, recursive, disable, writeable, limit, offset, query, sort_by
         )
         response.headers["total_matches"] = str(count)

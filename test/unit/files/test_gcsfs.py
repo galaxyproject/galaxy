@@ -19,8 +19,7 @@ skip_if_no_gcsfs_libs = pytest.mark.skipif(
 
 
 @skip_if_no_gcsfs_libs
-@pytest.mark.asyncio
-async def test_file_source():
-    await assert_simple_file_realize(
+def test_file_source():
+    assert_simple_file_realize(
         FILE_SOURCES_CONF, recursive=False, filename="README", contents="1000genomes", contains=True
     )

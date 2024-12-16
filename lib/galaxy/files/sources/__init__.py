@@ -299,7 +299,7 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
         """Return a prefix for the root (e.g. gxfiles://prefix/)."""
 
     @abc.abstractmethod
-    async def list(
+    def list(
         self,
         path="/",
         recursive=False,
@@ -446,7 +446,7 @@ class BaseFilesSource(FilesSource):
         Used in to_dict method if for_serialization is True.
         """
 
-    async def list(
+    def list(
         self,
         path="/",
         recursive=False,
@@ -470,9 +470,9 @@ class BaseFilesSource(FilesSource):
             if offset is not None and offset < 0:
                 raise RequestParameterInvalidException("Offset must be greater than or equal to 0.")
 
-        return await self._list(path, recursive, user_context, opts, limit, offset, query)
+        return self._list(path, recursive, user_context, opts, limit, offset, query)
 
-    async def _list(
+    def _list(
         self,
         path="/",
         recursive=False,

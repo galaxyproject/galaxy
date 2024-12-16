@@ -68,7 +68,7 @@ class S3FsFilesSource(BaseFilesSource):
         if self._endpoint_url:
             self._props.update({"client_kwargs": {"endpoint_url": self._endpoint_url}})
 
-    async def _list(
+    def _list(
         self,
         path="/",
         recursive=True,

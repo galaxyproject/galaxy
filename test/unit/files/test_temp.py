@@ -56,35 +56,34 @@ def test_list_recursive(temp_file_source: TempFilesSource):
     assert_list_names(temp_file_source, "/", recursive=True, expected_names=expected_names)
 
 
-@pytest.mark.asyncio
-async def test_pagination(temp_file_source: TempFilesSource):
+def test_pagination(temp_file_source: TempFilesSource):
     # Pagination is only supported for non-recursive listings.
     recursive = False
-    root_lvl_entries, count = await temp_file_source.list("/", recursive=recursive)
+    root_lvl_entries, count = temp_file_source.list("/", recursive=recursive)
     assert count == 4
     assert len(root_lvl_entries) == 4
 
     # Get first entry
-    result, count = await temp_file_source.list("/", recursive=recursive, limit=1, offset=0)
+    result, count = temp_file_source.list("/", recursive=recursive, limit=1, offset=0)
     assert count == 4
     assert len(result) == 1
     assert result[0] == root_lvl_entries[0]
 
     # Get second entry
-    result, count = await temp_file_source.list("/", recursive=recursive, limit=1, offset=1)
+    result, count = temp_file_source.list("/", recursive=recursive, limit=1, offset=1)
     assert count == 4
     assert len(result) == 1
     assert result[0] == root_lvl_entries[1]
 
     # Get second and third entry
-    result, count = await temp_file_source.list("/", recursive=recursive, limit=2, offset=1)
+    result, count = temp_file_source.list("/", recursive=recursive, limit=2, offset=1)
     assert count == 4
     assert len(result) == 2
     assert result[0] == root_lvl_entries[1]
     assert result[1] == root_lvl_entries[2]
 
     # Get last three entries
-    result, count = await temp_file_source.list("/", recursive=recursive, limit=3, offset=1)
+    result, count = temp_file_source.list("/", recursive=recursive, limit=3, offset=1)
     assert count == 4
     assert len(result) == 3
     assert result[0] == root_lvl_entries[1]
@@ -92,101 +91,95 @@ async def test_pagination(temp_file_source: TempFilesSource):
     assert result[2] == root_lvl_entries[3]
 
 
-@pytest.mark.asyncio
-async def test_search(temp_file_source: TempFilesSource):
+def test_search(temp_file_source: TempFilesSource):
     # Search is only supported for non-recursive listings.
     recursive = False
-    root_lvl_entries, count = await temp_file_source.list("/", recursive=recursive)
+    root_lvl_entries, count = temp_file_source.list("/", recursive=recursive)
     assert count == 4
     assert len(root_lvl_entries) == 4
 
-    result, count = await temp_file_source.list("/", recursive=recursive, query="a")
+    result, count = temp_file_source.list("/", recursive=recursive, query="a")
     assert count == 1
     assert len(result) == 1
     assert result[0]["name"] == "a"
 
-    result, count = await temp_file_source.list("/", recursive=recursive, query="b")
+    result, count = temp_file_source.list("/", recursive=recursive, query="b")
     assert count == 1
     assert len(result) == 1
     assert result[0]["name"] == "b"
 
-    result, count = await temp_file_source.list("/", recursive=recursive, query="c")
+    result, count = temp_file_source.list("/", recursive=recursive, query="c")
     assert count == 1
     assert len(result) == 1
     assert result[0]["name"] == "c"
 
     # Searching for 'd' at root level should return the directory 'dir1' but not the file 'd'
     # as it is not a direct child of the root.
-    result, count = await temp_file_source.list("/", recursive=recursive, query="d")
+    result, count = temp_file_source.list("/", recursive=recursive, query="d")
     assert count == 1
     assert len(result) == 1
     assert result[0]["name"] == "dir1"
 
     # Searching for 'e' at root level should not return anything.
-    result, count = await temp_file_source.list("/", recursive=recursive, query="e")
+    result, count = temp_file_source.list("/", recursive=recursive, query="e")
     assert count == 0
     assert len(result) == 0
 
-    result, count = await temp_file_source.list("/dir1", recursive=recursive, query="e")
+    result, count = temp_file_source.list("/dir1", recursive=recursive, query="e")
     assert count == 1
     assert len(result) == 1
     assert result[0]["name"] == "e"
 
 
-@pytest.mark.asyncio
-async def test_query_with_empty_string(temp_file_source: TempFilesSource):
+def test_query_with_empty_string(temp_file_source: TempFilesSource):
     recursive = False
-    root_lvl_entries, count = await temp_file_source.list("/", recursive=recursive)
+    root_lvl_entries, count = temp_file_source.list("/", recursive=recursive)
     assert count == 4
     assert len(root_lvl_entries) == 4
 
-    result, count = await temp_file_source.list("/", recursive=recursive, query="")
+    result, count = temp_file_source.list("/", recursive=recursive, query="")
     assert count == 4
     assert len(result) == 4
     assert result == root_lvl_entries
 
 
-@pytest.mark.asyncio
-async def test_pagination_not_supported_raises(temp_file_source: TempFilesSource):
+def test_pagination_not_supported_raises(temp_file_source: TempFilesSource):
     TempFilesSource.supports_pagination = False
     recursive = False
     with pytest.raises(RequestParameterInvalidException) as exc_info:
-        await temp_file_source.list("/", recursive=recursive, limit=1, offset=0)
+        temp_file_source.list("/", recursive=recursive, limit=1, offset=0)
     assert "Pagination is not supported" in str(exc_info.value)
     TempFilesSource.supports_pagination = True
 
 
-@pytest.mark.asyncio
-async def test_pagination_parameters_non_negative(temp_file_source: TempFilesSource):
+def test_pagination_parameters_non_negative(temp_file_source: TempFilesSource):
     recursive = False
     with pytest.raises(RequestParameterInvalidException) as exc_info:
-        await temp_file_source.list("/", recursive=recursive, limit=-1, offset=0)
+        temp_file_source.list("/", recursive=recursive, limit=-1, offset=0)
     assert "Limit must be greater than 0" in str(exc_info.value)
 
     with pytest.raises(RequestParameterInvalidException) as exc_info:
-        await temp_file_source.list("/", recursive=recursive, limit=0, offset=0)
+        temp_file_source.list("/", recursive=recursive, limit=0, offset=0)
     assert "Limit must be greater than 0" in str(exc_info.value)
 
     with pytest.raises(RequestParameterInvalidException) as exc_info:
-        await temp_file_source.list("/", recursive=recursive, limit=1, offset=-1)
+        temp_file_source.list("/", recursive=recursive, limit=1, offset=-1)
     assert "Offset must be greater than or equal to 0" in str(exc_info.value)
 
 
-@pytest.mark.asyncio
-async def test_search_not_supported_raises(temp_file_source: TempFilesSource):
+def test_search_not_supported_raises(temp_file_source: TempFilesSource):
     TempFilesSource.supports_search = False
     recursive = False
     with pytest.raises(RequestParameterInvalidException) as exc_info:
-        await temp_file_source.list("/", recursive=recursive, query="a")
+        temp_file_source.list("/", recursive=recursive, query="a")
     assert "Server-side search is not supported by this file source" in str(exc_info.value)
     TempFilesSource.supports_search = True
 
 
-@pytest.mark.asyncio
-async def test_sorting_not_supported_raises(temp_file_source: TempFilesSource):
+def test_sorting_not_supported_raises(temp_file_source: TempFilesSource):
     recursive = False
     with pytest.raises(RequestParameterInvalidException) as exc_info:
-        await temp_file_source.list("/", recursive=recursive, sort_by="name")
+        temp_file_source.list("/", recursive=recursive, sort_by="name")
     assert "Server-side sorting is not supported by this file source" in str(exc_info.value)
 
 
@@ -209,9 +202,8 @@ def _upload_to(file_source: TempFilesSource, target_uri: str, content: str, user
         file_source.write_from(target_uri, f.name, user_context=user_context)
 
 
-@pytest.mark.asyncio
-async def assert_list_names(file_source: TempFilesSource, uri: str, recursive: bool, expected_names: List[str]):
-    result, count = await file_source.list(uri, recursive=recursive)
+def assert_list_names(file_source: TempFilesSource, uri: str, recursive: bool, expected_names: List[str]):
+    result, count = file_source.list(uri, recursive=recursive)
     assert count == len(expected_names)
     assert sorted([entry["name"] for entry in result]) == sorted(expected_names)
     return result

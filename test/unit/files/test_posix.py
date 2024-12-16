@@ -37,8 +37,7 @@ from ._util import (
 EMAIL = "alice@galaxyproject.org"
 
 
-@pytest.mark.asyncio
-async def test_posix():
+def test_posix():
     file_sources = _configured_file_sources()
     as_dict = file_sources.to_dict()
     assert len(as_dict["file_sources"]) == 1
@@ -47,7 +46,7 @@ async def test_posix():
 
     _download_and_check_file(file_sources)
 
-    res = await list_root(file_sources, "gxfiles://test1", recursive=False)
+    res = list_root(file_sources, "gxfiles://test1", recursive=False)
     file_a = find_file_a(res)
     assert file_a
     assert file_a["uri"] == "gxfiles://test1/a"
@@ -57,7 +56,7 @@ async def test_posix():
     assert subdir1["class"] == "Directory"
     assert subdir1["uri"] == "gxfiles://test1/subdir1"
 
-    res = await list_dir(file_sources, "gxfiles://test1/subdir1", recursive=False)
+    res = list_dir(file_sources, "gxfiles://test1/subdir1", recursive=False)
     subdir2 = find(res, name="subdir2")
     assert subdir2, res
     assert subdir2["uri"] == "gxfiles://test1/subdir1/subdir2"
@@ -66,7 +65,7 @@ async def test_posix():
     assert file_c, res
     assert file_c["uri"] == "gxfiles://test1/subdir1/c"
 
-    res = await list_root(file_sources, "gxfiles://test1", recursive=True)
+    res = list_root(file_sources, "gxfiles://test1", recursive=True)
     subdir1 = find(res, name="subdir1")
     subdir2 = find(res, name="subdir2")
     assert subdir1["class"] == "Directory"
@@ -121,28 +120,26 @@ def test_posix_nonexistent_parent_write():
     assert "Parent" in str(e)
 
 
-@pytest.mark.asyncio
-async def test_posix_per_user():
+def test_posix_per_user():
     file_sources = _configured_file_sources(per_user=True)
     user_context = user_context_fixture()
     assert_realizes_as(file_sources, "gxfiles://test1/a", "a\n", user_context=user_context)
 
-    res = await list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+    res = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
     assert find_file_a(res)
 
 
-@pytest.mark.asyncio
-async def test_posix_per_user_writable():
+def test_posix_per_user_writable():
     file_sources = _configured_file_sources(per_user=True, writable=True)
     user_context = user_context_fixture()
 
-    res = await list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+    res = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
     b = find(res, name="b")
     assert b is None
 
     write_from(file_sources, "gxfiles://test1/b", "my test content", user_context=user_context)
 
-    res = await list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+    res = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
     b = find(res, name="b")
     assert b is not None, b
 
@@ -272,8 +269,7 @@ def test_user_import_dir_implicit_config():
     assert_realizes_as(file_sources, "gxuserimport://a", "a\n", user_context=user_context)
 
 
-@pytest.mark.asyncio
-async def test_posix_user_access_requires_role():
+def test_posix_user_access_requires_role():
     allowed_role_name = "role1"
     plugin_extra_config = {
         "requires_roles": allowed_role_name,
@@ -281,13 +277,13 @@ async def test_posix_user_access_requires_role():
     file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
 
     user_context = user_context_fixture()
-    await _assert_user_access_prohibited(file_sources, user_context)
+    _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(role_names={allowed_role_name})
-    await _assert_user_access_granted(file_sources, user_context)
+    _assert_user_access_granted(file_sources, user_context)
 
 
-async def test_posix_user_access_requires_group():
+def test_posix_user_access_requires_group():
     allowed_group_name = "group1"
     plugin_extra_config = {
         "requires_groups": allowed_group_name,
@@ -295,14 +291,13 @@ async def test_posix_user_access_requires_group():
     file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
 
     user_context = user_context_fixture()
-    await _assert_user_access_prohibited(file_sources, user_context)
+    _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(group_names={allowed_group_name})
-    await _assert_user_access_granted(file_sources, user_context)
+    _assert_user_access_granted(file_sources, user_context)
 
 
-@pytest.mark.asyncio
-async def test_posix_admin_user_has_access():
+def test_posix_admin_user_has_access():
     plugin_extra_config = {
         "requires_roles": "role1",
         "requires_groups": "group1",
@@ -310,14 +305,13 @@ async def test_posix_admin_user_has_access():
     file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
 
     user_context = user_context_fixture()
-    await _assert_user_access_prohibited(file_sources, user_context)
+    _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(is_admin=True)
-    await _assert_user_access_granted(file_sources, user_context)
+    _assert_user_access_granted(file_sources, user_context)
 
 
-@pytest.mark.asyncio
-async def test_posix_user_access_requires_role_and_group():
+def test_posix_user_access_requires_role_and_group():
     allowed_group_name = "group1"
     allowed_role_name = "role1"
     plugin_extra_config = {
@@ -327,17 +321,16 @@ async def test_posix_user_access_requires_role_and_group():
     file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
 
     user_context = user_context_fixture(group_names={allowed_group_name})
-    await _assert_user_access_prohibited(file_sources, user_context)
+    _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(role_names={allowed_role_name})
-    await _assert_user_access_prohibited(file_sources, user_context)
+    _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(role_names={allowed_role_name}, group_names={allowed_group_name})
-    await _assert_user_access_granted(file_sources, user_context)
+    _assert_user_access_granted(file_sources, user_context)
 
 
-@pytest.mark.asyncio
-async def test_posix_user_access_using_boolean_rules():
+def test_posix_user_access_using_boolean_rules():
     plugin_extra_config = {
         "requires_roles": "role1 and (role2 or role3)",
         "requires_groups": "group1 and group2 and not group3",
@@ -345,19 +338,19 @@ async def test_posix_user_access_using_boolean_rules():
     file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
 
     user_context = user_context_fixture(role_names=set(), group_names=set())
-    await _assert_user_access_prohibited(file_sources, user_context)
+    _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(role_names={"role1"}, group_names={"group1", "group2"})
-    await _assert_user_access_prohibited(file_sources, user_context)
+    _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(role_names={"role1", "role3"}, group_names={"group1", "group2", "group3"})
-    await _assert_user_access_prohibited(file_sources, user_context)
+    _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(role_names={"role1", "role2"}, group_names={"group3", "group5"})
-    await _assert_user_access_prohibited(file_sources, user_context)
+    _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(role_names={"role1", "role3"}, group_names={"group1", "group2"})
-    await _assert_user_access_granted(file_sources, user_context)
+    _assert_user_access_granted(file_sources, user_context)
 
 
 def test_posix_file_url_only_mode_non_admin_cannot_retrieve():
@@ -454,10 +447,9 @@ def test_posix_file_url_disallowed_root():
             assert_realizes_as(file_sources, test_url, "some content\n")
 
 
-@pytest.mark.asyncio
-async def _assert_user_access_prohibited(file_sources, user_context):
+def _assert_user_access_prohibited(file_sources, user_context):
     with pytest.raises(ItemAccessibilityException):
-        await list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+        list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
 
     with pytest.raises(ItemAccessibilityException):
         write_from(file_sources, "gxfiles://test1/b", "my test content", user_context=user_context)
@@ -466,14 +458,13 @@ async def _assert_user_access_prohibited(file_sources, user_context):
         assert_realizes_as(file_sources, "gxfiles://test1/a", "a\n", user_context=user_context)
 
 
-@pytest.mark.asyncio
-async def _assert_user_access_granted(file_sources, user_context):
-    res = await list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+def _assert_user_access_granted(file_sources, user_context):
+    res = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
     assert res
 
     write_from(file_sources, "gxfiles://test1/b", "my test content", user_context=user_context)
 
-    res = await list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+    res = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
     b = find(res, name="b")
     assert b is not None, b
 

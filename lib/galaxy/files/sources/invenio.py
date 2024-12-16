@@ -146,7 +146,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
     def get_repository_interactor(self, repository_url: str) -> RDMRepositoryInteractor:
         return InvenioRepositoryInteractor(repository_url, self)
 
-    async def _list(
+    def _list(
         self,
         path="/",
         recursive=True,
