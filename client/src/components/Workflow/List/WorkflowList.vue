@@ -93,6 +93,10 @@ const validFilters = computed(() => workflowFilters.value.getValidFilters(rawFil
 const invalidFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).invalidFilters);
 const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
 const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
+const indeterminateSelected = computed(() => selectedWorkflowIds.value.length > 0 && !allSelected.value);
+const allSelected = computed(
+    () => selectedWorkflowIds.value.length !== 0 && selectedWorkflowIds.value.length === workflowsLoaded.value.length
+);
 
 function updateFilterValue(filterKey: string, newValue: any) {
     const currentFilterText = filterText.value;
@@ -196,6 +200,20 @@ function onSelectWorkflow(w: SelectedWorkflow) {
     }
 }
 
+function onSelectAllWorkflows() {
+    if (selectedWorkflowIds.value.length === workflowsLoaded.value.length) {
+        selectedWorkflowIds.value = [];
+    } else {
+        selectedWorkflowIds.value = workflowsLoaded.value.map((w: any) => {
+            return {
+                id: w.id,
+                name: w.name,
+                published: w.published,
+            };
+        });
+    }
+}
+
 
 watch([filterText, sortBy, sortDesc], async () => {
     offset.value = 0;
@@ -260,7 +278,14 @@ onMounted(() => {
                 </template>
             </FilterMenu>
 
-            <ListHeader ref="listHeader" show-view-toggle>
+            <ListHeader
+                ref="listHeader"
+                show-view-toggle
+                :show-select-all="!published && !sharedWithMe"
+                :select-all-disabled="loading || overlay || noItems || noResults"
+                :all-selected="allSelected"
+                :indeterminate-selected="indeterminateSelected"
+                @select-all="onSelectAllWorkflows">
                 <template v-slot:extra-filter>
                     <div v-if="activeList === 'my'">
                         Filter:
