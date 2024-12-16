@@ -88,7 +88,6 @@ class DataverseRDMFilesSource(RDMFilesSource):
     #     else:
     #         return 0
         
-    # TODO: Test this method (maybe we dont need it)
     def to_relative_path(self, url: str) -> str:
         legacy_uri_root = f"{DEFAULT_SCHEME}://{self.id}"
         if url.startswith(legacy_uri_root):
@@ -201,7 +200,6 @@ class DataverseRDMFilesSource(RDMFilesSource):
     def _is_zip_archive(self, file_name: str) -> bool:
         return file_name.endswith(".zip")
     
-    # TODO: Test this method
     def _write_from(
         self,
         target_path: str,
