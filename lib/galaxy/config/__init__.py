@@ -512,10 +512,10 @@ class BaseAppConfiguration(HasDynamicProperties):
             if not parent:  # base case: nothing else needs resolving
                 return path
             parent_path = resolve(parent)  # recursively resolve parent path
-            if path is not None:
+            if path:
                 path = os.path.join(parent_path, path)  # resolve path
             else:
-                path = parent_path  # or use parent path
+                log.warning("Trying to resolve path for the '%s' option but it's empty/None", key)
 
             setattr(self, key, path)  # update property
             _cache[key] = path  # cache it!
@@ -539,7 +539,7 @@ class BaseAppConfiguration(HasDynamicProperties):
             if self.is_set(key) and self.paths_to_check_against_root and key in self.paths_to_check_against_root:
                 self._check_against_root(key)
 
-    def _check_against_root(self, key):
+    def _check_against_root(self, key: str):
         def get_path(current_path, initial_path):
             # if path does not exist and was set as relative:
             if not self._path_exists(current_path) and not os.path.isabs(initial_path):
@@ -558,6 +558,8 @@ class BaseAppConfiguration(HasDynamicProperties):
             return current_path
 
         current_value = getattr(self, key)  # resolved path or list of resolved paths
+        if not current_value:
+            return
         if isinstance(current_value, list):
             initial_paths = listify(self._raw_config[key], do_strip=True)  # initial unresolved paths
             updated_paths = []
