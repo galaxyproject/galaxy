@@ -12133,6 +12133,21 @@ class CeleryUserRateLimit(Base):
         )
 
 
+class UserCredentialsGroupAssociation(Base):
+    """
+    Represents a many-to-many association between user credentials and user credentials groups.
+    """
+
+    __tablename__ = "user_credentials_group_association"
+
+    user_credentials_id: Mapped[int] = mapped_column(
+        ForeignKey("user_credentials.id", ondelete="CASCADE"), primary_key=True
+    )
+    user_credentials_group_id: Mapped[int] = mapped_column(
+        ForeignKey("user_credentials_group.id", ondelete="CASCADE"), primary_key=True
+    )
+
+
 class UserCredentials(Base):
     """
     Represents a credential associated with a user for a specific service.
@@ -12142,57 +12157,50 @@ class UserCredentials(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
-    service_reference: Mapped[str] = mapped_column(nullable=False)
+    reference: Mapped[str] = mapped_column(nullable=False)
+    source_type: Mapped[str] = mapped_column(nullable=False)
+    source_id: Mapped[str] = mapped_column(nullable=False)
+    current_group_id: Mapped[int] = mapped_column(ForeignKey("user_credentials_group.id"), index=True)
     create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+
+    current_group: Mapped["CredentialsGroup"] = relationship(foreign_keys=[current_group_id])
+    groups: Mapped[List["CredentialsGroup"]] = relationship(
+        back_populates="user_credentials_rel", secondary="user_credentials_group_association"
+    )
 
 
-class CredentialsSet(Base):
+class CredentialsGroup(Base):
     """
-    Represents a set of credentials associated with a user for a specific
-    service.
+    Represents a group of credentials associated with a user for a specific service.
     """
 
-    __tablename__ = "user_credentials_set"
+    __tablename__ = "user_credentials_group"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(nullable=False)
-    user_credentials_id: Mapped[int] = mapped_column(ForeignKey("user_credentials.id"), index=True, nullable=False)
     create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
     update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+
+    user_credentials_rel: Mapped["UserCredentials"] = relationship(
+        back_populates="groups", secondary="user_credentials_group_association"
+    )
 
 
 class Credential(Base):
     """
-    Represents a credential associated with a user for a specific
-    service.
+    Represents a credential associated with a user for a specific service.
     """
 
     __tablename__ = "credential"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_credential_set_id: Mapped[int] = mapped_column(
-        ForeignKey("user_credentials_set.id"), index=True, nullable=False
+    user_credential_group_id: Mapped[int] = mapped_column(
+        ForeignKey("user_credentials_group.id"), index=True, nullable=False
     )
     name: Mapped[str] = mapped_column(nullable=False)
     type: Mapped[str] = mapped_column(nullable=False)
     value: Mapped[str] = mapped_column(nullable=False)
-    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
-    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
-
-
-class UserToolCredentials(Base):
-    """
-    Represents a credential associated with a tool.
-    """
-
-    __tablename__ = "user_tool_credentials"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_credential_set_id: Mapped[int] = mapped_column(
-        ForeignKey("user_credentials_set.id"), index=True, nullable=False
-    )
-    tool_id: Mapped[str] = mapped_column(nullable=False)
-    tool_version: Mapped[str] = mapped_column(nullable=False)
     create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
     update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
 
