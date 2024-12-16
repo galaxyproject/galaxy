@@ -3,15 +3,10 @@ from typing import (
     Dict,
     List,
     Optional,
-    Sequence,
     Tuple,
 )
 
-from sqlalchemy import (
-    false,
-    select,
-    update,
-)
+from sqlalchemy import select
 from sqlalchemy.orm import aliased
 
 from galaxy import exceptions
@@ -21,14 +16,11 @@ from galaxy.model import (
     CredentialsGroup,
     UserCredentials,
 )
-from galaxy.model.base import transaction
-from galaxy.schema.credentials import (
+from galaxy.schema.credentials import (  # CredentialResponse,; UpdateCredentialsPayload,
     CredentialGroupResponse,
-    CredentialResponse,
     CredentialsPayload,
     SecretResponse,
     SOURCE_TYPE,
-    UpdateCredentialsPayload,
     UserCredentialCreateResponse,
     UserCredentialsListResponse,
     UserCredentialsResponse,
@@ -94,7 +86,6 @@ class CredentialsService:
     #             session.delete(credential)
     #     for user_credential in user_credentials:
     #         session.delete(user_credential)
-    #     with transaction(session):
     #         session.commit()
 
     # def delete_credentials(
@@ -109,8 +100,7 @@ class CredentialsService:
     #     session = trans.sa_session
     #     for credential in credentials:
     #         session.delete(credential)
-    #     with transaction(session):
-    #         session.commit()
+    #     session.commit()
 
     def _user_credentials(
         self,
@@ -155,7 +145,7 @@ class CredentialsService:
             stmt = stmt.where(UserCredentials.id == user_credentials_id)
 
         result = trans.sa_session.execute(stmt).all()
-        return [(uc, cg, c) for uc, cg, c in result]
+        return [(row[0], row[1], row[2]) for row in result]
 
     def _user_credentials_to_dict(
         self, db_user_credentials: List[Tuple[UserCredentials, CredentialsGroup, Credential]]
@@ -172,7 +162,7 @@ class CredentialsService:
                     source_id=user_credentials.source_id,
                     current_group_id=user_credentials.current_group_id,
                     current_group_name=credentials_group.name,
-                    groups=dict(),
+                    groups={},
                 ),
             )
 
@@ -278,8 +268,7 @@ class CredentialsService:
                 credential.value = credential_value
             provided_credentials_list.append(credential)
             session.add(credential)
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         variables = [
             VariableResponse(
@@ -345,7 +334,6 @@ class CredentialsService:
     #         elif existing_credential.type == "variable":
     #             existing_credential.value = credential.value
     #         session.add(existing_credential)
-    #     with transaction(session):
     #         session.commit()
     #     return CredentialsListResponse(
     #         user_credentials_id=user_credential_id,

@@ -5,21 +5,17 @@ API operations on credentials (credentials and variables).
 import logging
 from typing import Optional
 
-from fastapi import (
-    Query,
-    Response,
-    status,
-)
+from fastapi import Query  # Response,; status,
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.credentials import (
+from galaxy.schema.credentials import (  # UpdateCredentialsPayload,
     CredentialsPayload,
     SOURCE_TYPE,
-    UpdateCredentialsPayload,
     UserCredentialCreateResponse,
     UserCredentialsListResponse,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+
+# from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
