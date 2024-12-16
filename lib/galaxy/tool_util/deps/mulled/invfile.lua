@@ -42,7 +42,7 @@ end
 
 local conda_image = VAR.CONDA_IMAGE
 if conda_image == '' then
-    conda_image = 'quay.io/condaforge/mambaforge:latest'
+    conda_image = 'quay.io/condaforge/miniforge3:latest'
 end
 
 local conda_bin = VAR.CONDA_BIN
