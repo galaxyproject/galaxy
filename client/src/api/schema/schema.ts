@@ -5193,6 +5193,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{user_id}/credentials/{user_credentials_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Updates credentials for a specific secret/variable */
+        put: operations["update_credential_api_users__user_id__credentials__user_credentials_id__put"];
+        post?: never;
+        /** Deletes all credentials for a specific service */
+        delete: operations["delete_service_credentials_api_users__user_id__credentials__user_credentials_id__delete"];
+        options?: never;
+        head?: never;
+        /** Updates the current group ID for a specific service */
+        patch: operations["update_current_group_id_api_users__user_id__credentials__user_credentials_id__patch"];
+        trace?: never;
+    };
+    "/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Deletes a specific credential */
+        delete: operations["delete_credentials_api_users__user_id__credentials__user_credentials_id___group_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{user_id}/custom_builds": {
         parameters: {
             query?: never;
@@ -21483,6 +21519,28 @@ export interface components {
             /** Creator */
             creator?: unknown;
         };
+        /** UpdateCredentialPayload */
+        UpdateCredentialPayload: {
+            /**
+             * ID
+             * @description ID of the credential
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Value
+             * @description Value of the credential
+             */
+            value: string;
+        };
+        /** UpdateCredentialsPayload */
+        UpdateCredentialsPayload: {
+            /**
+             * Update Credentials
+             * @description List of credentials to update
+             */
+            credentials: components["schemas"]["UpdateCredentialPayload"][];
+        };
         /** UpdateDatasetPermissionsPayload */
         UpdateDatasetPermissionsPayload: {
             /** Access Ids[] */
@@ -21545,6 +21603,15 @@ export interface components {
              * @description A list of role encoded IDs defining roles that should have modify permission on the dataset.
              */
             modify_ids?: string[] | string | null;
+        };
+        /** UpdateGroupPayload */
+        UpdateGroupPayload: {
+            /**
+             * Group ID
+             * @description ID of the group
+             * @example 0123456789ABCDEF
+             */
+            current_group_id: string;
         };
         /**
          * UpdateHistoryContentsBatchPayload
@@ -40244,6 +40311,195 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserCredentialCreateResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_credential_api_users__user_id__credentials__user_credentials_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+                user_credentials_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCredentialsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_service_credentials_api_users__user_id__credentials__user_credentials_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+                user_credentials_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_current_group_id_api_users__user_id__credentials__user_credentials_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+                user_credentials_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGroupPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_credentials_api_users__user_id__credentials__user_credentials_id___group_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+                user_credentials_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Request Error */
