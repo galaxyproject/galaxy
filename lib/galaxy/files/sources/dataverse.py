@@ -305,8 +305,6 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                 data=payload, 
                 files=files, 
                 headers=headers)
-            print(response.json())
-            print(response.status_code)
             self._ensure_response_has_expected_status_code(response, 200)
 
     def download_file_from_container(
