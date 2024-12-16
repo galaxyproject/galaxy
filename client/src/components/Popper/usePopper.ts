@@ -49,39 +49,8 @@ export function usePopperjs(
 
     const referenceRef = ref<Element>();
     const popperRef = ref<HTMLElement>();
-    watch(
-        () => [isMounted.value, updatedFlag.value],
-        () => {
-            if (isMounted.value) {
-                if ((reference.value as any)?.$el) {
-                    referenceRef.value = (reference.value as any).$el;
-                } else {
-                    referenceRef.value = reference.value as Element;
-                }
-
-                if ((popper.value as any)?.$el) {
-                    popperRef.value = (popper.value as any).$el;
-                } else {
-                    popperRef.value = popper.value;
-                }
-            }
-        }
-    );
-
     const instance = ref<ReturnType<typeof createPopper>>();
-    watch(
-        () => [referenceRef.value, popperRef.value],
-        () => {
-            destroy();
-            if (!referenceRef.value) {
-                return;
-            }
-            if (!popperRef.value) {
-                return;
-            }
-            concrete();
-        }
-    );
+
     const concrete = () => {
         instance.value = createPopper(referenceRef.value!, popperRef.value!, {
             placement: options?.placement ?? "bottom",
@@ -90,6 +59,7 @@ export function usePopperjs(
             onFirstUpdate: options?.onFirstUpdate ?? undefined,
         });
     };
+
     const destroy = () => {
         instance.value?.destroy();
         instance.value = undefined;
@@ -98,16 +68,9 @@ export function usePopperjs(
     const visible = ref(false);
     const doOpen = () => (visible.value = true);
     const doClose = () => (visible.value = false);
-    watch(
-        () => [instance.value, options?.trigger],
-        () => {
-            if (instance.value) {
-                doOn();
-            }
-        }
-    );
 
     const timer = ref<any>();
+
     const doMouseover = () => {
         if (options?.delayOnMouseover === 0) {
             doOpen();
@@ -118,6 +81,7 @@ export function usePopperjs(
             }, options?.delayOnMouseover ?? 100);
         }
     };
+
     const doMouseout = () => {
         if (options?.delayOnMouseout === 0) {
             doClose();
@@ -155,6 +119,7 @@ export function usePopperjs(
             }
         }
     };
+
     const doOff = () => {
         off(referenceRef.value!, "click", doOpen);
         off(document as any, "click", doCloseForDocument);
@@ -163,6 +128,7 @@ export function usePopperjs(
         off(referenceRef.value!, "mouseout", doMouseout);
         off(referenceRef.value!, "mousedown", doMouseout);
     };
+
     const doCloseForDocument = (e: Event) => {
         if (referenceRef.value?.contains(e.target as Element)) {
             return;
@@ -172,6 +138,44 @@ export function usePopperjs(
         }
         doClose();
     };
+
+    watch(
+        () => [isMounted.value, updatedFlag.value],
+        () => {
+            if (isMounted.value) {
+                if ((reference.value as any)?.$el) {
+                    referenceRef.value = (reference.value as any).$el;
+                } else {
+                    referenceRef.value = reference.value as Element;
+                }
+
+                if ((popper.value as any)?.$el) {
+                    popperRef.value = (popper.value as any).$el;
+                } else {
+                    popperRef.value = popper.value;
+                }
+            }
+        }
+    );
+
+    watch(
+        () => [referenceRef.value, popperRef.value],
+        () => {
+            destroy();
+            if (referenceRef.value && popperRef.value) {
+                concrete();
+            }
+        }
+    );
+
+    watch(
+        () => [instance.value, options?.trigger],
+        () => {
+            if (instance.value) {
+                doOn();
+            }
+        }
+    );
 
     watch(
         () => [instance.value, visible.value],
