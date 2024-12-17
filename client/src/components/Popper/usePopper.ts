@@ -14,6 +14,15 @@ export function usePopperjs(
     }
 ) {
     const instance = ref<ReturnType<typeof createPopper>>();
+    const visible = ref(false);
+
+    const doOpen = () => (visible.value = true);
+    const doClose = () => (visible.value = false);
+    const doCloseForDocument = (e: Event) => {
+        if (!reference.value?.contains(e.target as Element) && !popper.value?.contains(e.target as Element)) {
+            visible.value = false;
+        }
+    };
 
     onMounted(() => {
         // create instance
@@ -61,16 +70,6 @@ export function usePopperjs(
             reference.value.removeEventListener("mouseover", doOpen, false);
         }
     });
-
-    const visible = ref(false);
-    const doOpen = () => (visible.value = true);
-    const doClose = () => (visible.value = false);
-
-    const doCloseForDocument = (e: Event) => {
-        if (!reference.value?.contains(e.target as Element) && !popper.value?.contains(e.target as Element)) {
-            visible.value = false;
-        }
-    };
 
     watch(
         () => [instance.value, visible.value],
