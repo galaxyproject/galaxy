@@ -26,25 +26,25 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import type { PropType, UnwrapRef } from "vue";
+import type { PropType } from "vue";
 import { ref, watch } from "vue";
-
-import { usePopperjs } from "./usePopper";
+import { type Placement } from "@popperjs/core";
+import { usePopperjs, type Trigger } from "./usePopper";
 
 library.add(faTimesCircle);
 
 const props = defineProps({
-    trigger: String as PropType<Exclude<UnwrapRef<Required<Parameters<typeof usePopperjs>>["2"]["trigger"]>, "manual">>,
+    arrow: { type: Boolean, default: true },
+    disabled: { type: Boolean, default: false },
     forceShow: Boolean,
-    placement: String as PropType<Required<Parameters<typeof usePopperjs>>["2"]["placement"]>,
+    mode: { type: String, default: "dark" },
+    placement: String as PropType<Placement>,
     popperIs: { type: String, default: "div" },
     popperProps: Object,
     referenceIs: { type: String, default: "span" },
     referenceProps: Object,
-    arrow: { type: Boolean, default: true },
-    disabled: { type: Boolean, default: false },
-    mode: { type: String, default: "dark" },
     title: String,
+    trigger: String as PropType<Trigger>,
 });
 
 const reference = ref();
