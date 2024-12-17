@@ -1,6 +1,6 @@
 <template>
     <span>
-        <span ref="reference">
+        <span v-if="!referenceEl" ref="reference">
             <slot name="reference" />
         </span>
         <div v-show="visible" ref="popper" class="popper-element mt-1" :class="`popper-element-${mode}`">
@@ -33,11 +33,12 @@ const props = defineProps({
     disabled: { type: Boolean, default: false },
     mode: { type: String, default: "dark" },
     placement: String as PropType<Placement>,
+    referenceEl: HTMLElement,
     title: String,
     trigger: String as PropType<Trigger>,
 });
 
-const reference = ref();
+const reference = props.referenceEl ? ref(props.referenceEl) : ref();
 const popper = ref();
 
 const { visible } = usePopper(reference, popper, {

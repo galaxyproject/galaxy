@@ -40,6 +40,8 @@ export function usePopper(
         } else if (trigger === "hover") {
             addEventListener(reference.value, "mouseover", doOpen);
             addEventListener(reference.value, "mouseout", doClose);
+            addEventListener(popper.value, "mouseover", doOpen);
+            addEventListener(popper.value, "mouseout", doClose);
         }
     });
 
