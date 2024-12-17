@@ -287,18 +287,9 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         headers = self._get_request_headers(user_context, auth_required=True)
 
         with open(file_path, "rb") as file:
-            files = {'file': (filename, file)}
-            # --------------------------------------------------
-            # Using a "jsonData" parameter, add optional description + file tags
-            # --------------------------------------------------
-            # params = dict(description='Blue skies!',
-            #   categories=['Lily', 'Rosemary', 'Jack of Hearts'])
-            # params_as_json_string = json.dumps(params)
-            payload = dict()
             add_files_url = self.add_files_to_dataset_url(dataset_id)
             response = requests.post(
                 add_files_url, 
-                data=payload, 
                 files=files, 
                 headers=headers)
             self._ensure_response_has_expected_status_code(response, 200)
