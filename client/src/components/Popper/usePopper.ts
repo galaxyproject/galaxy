@@ -51,14 +51,6 @@ export function usePopperjs(
                 addEventListener(reference.value, "mouseover", doOpen);
                 break;
             }
-
-            case "manual": {
-                break;
-            }
-
-            default: {
-                throw TypeError();
-            }
         }
     });
 
@@ -71,7 +63,6 @@ export function usePopperjs(
         listeners.forEach((l: any) => {
             l.target.removeEventListener(l.event, l.handler);
         });
-        listeners.length = 0;
     });
 
     watch(
