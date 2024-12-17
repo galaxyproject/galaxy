@@ -1,15 +1,9 @@
 <template>
     <span>
-        <component :is="referenceIs" v-bind="referenceProps" ref="reference">
+        <span ref="reference">
             <slot name="reference" />
-        </component>
-        <component
-            :is="popperIs"
-            v-show="visible"
-            v-bind="popperProps"
-            ref="popper"
-            class="popper-element mt-1"
-            :class="`popper-element-${mode}`">
+        </span>
+        <div v-show="visible" ref="popper" class="popper-element mt-1" :class="`popper-element-${mode}`">
             <div v-if="arrow" class="popper-arrow" data-popper-arrow />
             <div v-if="title" class="popper-header px-2 py-1 rounded-top d-flex justify-content-between">
                 <span class="px-1">{{ title }}</span>
@@ -18,120 +12,53 @@
                 </span>
             </div>
             <slot />
-        </component>
+        </div>
     </span>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import type { PropType, UnwrapRef } from "vue";
-import { defineComponent, ref, toRef, watch } from "vue";
+import { type Placement } from "@popperjs/core";
+import type { PropType } from "vue";
+import { ref, watch } from "vue";
 
-import { usePopperjs } from "./usePopper";
+import { type Trigger, usePopper } from "./usePopper";
 
 library.add(faTimesCircle);
 
-export default defineComponent({
-    components: { FontAwesomeIcon },
+const props = defineProps({
+    arrow: { type: Boolean, default: true },
+    disabled: { type: Boolean, default: false },
+    mode: { type: String, default: "dark" },
+    placement: String as PropType<Placement>,
+    title: String,
+    trigger: String as PropType<Trigger>,
+});
 
-    props: {
-        // hook options
-        delayOnMouseout: Number,
-        delayOnMouseover: Number,
-        trigger: String as PropType<
-            Exclude<UnwrapRef<Required<Parameters<typeof usePopperjs>>["2"]["trigger"]>, "manual">
-        >,
-        forceShow: Boolean,
-        modifiers: Array as PropType<Required<Parameters<typeof usePopperjs>>["2"]["modifiers"]>,
-        onFirstUpdate: Function as PropType<Required<Parameters<typeof usePopperjs>>["2"]["onFirstUpdate"]>,
-        placement: String as PropType<Required<Parameters<typeof usePopperjs>>["2"]["placement"]>,
-        strategy: String as PropType<Required<Parameters<typeof usePopperjs>>["2"]["strategy"]>,
+const reference = ref();
+const popper = ref();
 
-        // component props
-        popperIs: {
-            default: "div",
-            type: String,
-        },
-        popperProps: {
-            type: Object,
-        },
-        referenceIs: {
-            default: "span",
-            type: String,
-        },
-        referenceProps: {
-            type: Object,
-        },
-        arrow: {
-            type: Boolean,
-            default: true,
-        },
-        disabled: {
-            type: Boolean,
-            default: false,
-        },
-        mode: {
-            type: String,
-            default: "dark",
-        },
-        title: {
-            type: String,
-            default: null,
-        },
+const { visible } = usePopper(reference, popper, {
+    placement: props.placement,
+    trigger: props.trigger,
+});
+
+watch(
+    () => [visible.value, props.disabled],
+    () => {
+        if (props.disabled && visible.value) {
+            visible.value = false;
+        }
     },
+    { flush: "sync" }
+);
 
-    emits: [
-        "show",
-        "hide",
-        "before-enter",
-        "enter",
-        "after-enter",
-        "enter-cancelled",
-        "before-leave",
-        "leave",
-        "after-leave",
-        "leave-cancelled",
-    ],
-
-    setup(props, { emit }) {
-        const reference = ref();
-        const popper = ref();
-        const { visible } = usePopperjs(reference, popper, {
-            ...props,
-            trigger: toRef(props, "trigger"),
-            forceShow: toRef(props, "forceShow"),
-            disabled: toRef(props, "disabled"),
-            delayOnMouseover: toRef(props, "delayOnMouseover"),
-            delayOnMouseout: toRef(props, "delayOnMouseout"),
-            onShow: () => emit("show"),
-            onHide: () => emit("hide"),
-        });
-
-        watch(
-            () => [visible.value, props.disabled],
-            () => {
-                if (props.disabled && visible.value) {
-                    visible.value = false;
-                }
-            },
-            { flush: "sync" }
-        );
-
-        const handle =
-            (event: Parameters<typeof emit>[0]) =>
-            (...args: any[]) => {
-                return emit(event, ...args);
-            };
-
-        return {
-            visible,
-            reference,
-            popper,
-            handle,
-        };
-    },
+defineExpose({
+    visible,
+    reference,
+    popper,
 });
 </script>
 

@@ -65,7 +65,7 @@ const meta = computed(() => store.metaForId(props.id));
 </script>
 
 <template>
-    <Popper reference-is="span" popper-is="span" :placement="tooltipPlacement">
+    <Popper :placement="tooltipPlacement">
         <template v-slot:reference>
             <b-nav-item
                 :id="`activity-${id}`"
