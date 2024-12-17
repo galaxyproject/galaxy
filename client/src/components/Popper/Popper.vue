@@ -23,7 +23,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { PropType } from "vue";
 import { ref, watch } from "vue";
 import { type Placement } from "@popperjs/core";
-import { usePopperjs, type Trigger } from "./usePopper";
+import { usePopper, type Trigger } from "./usePopper";
 
 library.add(faTimesCircle);
 
@@ -39,7 +39,7 @@ const props = defineProps({
 const reference = ref();
 const popper = ref();
 
-const { visible } = usePopperjs(reference, popper, {
+const { visible } = usePopper(reference, popper, {
     placement: props.placement,
     trigger: props.trigger,
 });

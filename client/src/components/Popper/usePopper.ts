@@ -5,7 +5,7 @@ export type Trigger = "click" | "hover" | "none";
 
 const defaultTrigger: Trigger = "hover";
 
-export function usePopperjs(
+export function usePopper(
     reference: Ref<HTMLElement>,
     popper: Ref<HTMLElement>,
     options: { placement?: Placement; trigger?: Trigger }
