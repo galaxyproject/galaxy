@@ -1717,7 +1717,7 @@ mapping:
 
       helpsite_url:
         type: str
-        required: true
+        required: false
         default: https://help.galaxyproject.org/
         per_host: true
         desc: |
