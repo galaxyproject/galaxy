@@ -17,7 +17,7 @@ const props = defineProps<Props>();
 
 library.add(faChartBar);
 
-const label = computed(() => props.data.id);
+const label = computed(() => props.data.label);
 const viewDetailsIcon = computed(() => "chart-bar");
 
 const emit = defineEmits<{
