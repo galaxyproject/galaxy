@@ -20,7 +20,7 @@ from ..base.api import (
     skip_if_api_v2,
 )
 
-COLUMN_MAKER_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
+COLUMN_MAKER_PATH = resource_path(__name__, "../test_data/column_maker/column_maker.tar")
 
 
 # test_0000 tests commit_message  - find a way to test it here
