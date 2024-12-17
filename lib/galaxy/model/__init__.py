@@ -7616,7 +7616,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
         order_by=lambda: -Workflow.id,
         cascade_backrefs=False,
     )
-    latest_workflow = relationship(
+    latest_workflow: Mapped["Workflow"] = relationship(
         "Workflow",
         post_update=True,
         primaryjoin=(lambda: StoredWorkflow.latest_workflow_id == Workflow.id),
@@ -7722,7 +7722,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
         )
         return bool(sa_session.scalar(stmt))
 
-    def copy_tags_from(self, target_user, source_workflow):
+    def copy_tags_from(self, target_user, source_workflow: "StoredWorkflow"):
         # Override to only copy owner tags.
         for src_swta in source_workflow.owner_tags:
             new_swta = src_swta.copy()
@@ -8238,10 +8238,10 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
                 copied_step.subworkflow = subworkflow
                 copied_subworkflow = subworkflow
             else:
-                # Can this even happen, building a workflow with a subworkflow you don't own ?
-                copied_subworkflow = subworkflow.copy()
+                # Importing a shared workflow with a subworkflow step
+                copied_subworkflow = subworkflow.copy(user=user)
                 stored_workflow = StoredWorkflow(
-                    user, name=copied_subworkflow.name, workflow=copied_subworkflow, hidden=True
+                    user=user, name=copied_subworkflow.name, workflow=copied_subworkflow, hidden=True
                 )
                 copied_subworkflow.stored_workflow = stored_workflow
                 copied_step.subworkflow = copied_subworkflow
