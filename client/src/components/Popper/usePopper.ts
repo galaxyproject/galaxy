@@ -15,6 +15,7 @@ export function usePopperjs(
 ) {
     const instance = ref<ReturnType<typeof createPopper>>();
     const visible = ref(false);
+    const listeners : any = [];
 
     const doOpen = () => (visible.value = true);
     const doClose = () => (visible.value = false);
@@ -23,6 +24,11 @@ export function usePopperjs(
             visible.value = false;
         }
     };
+
+    function addEventListener(target: any, event: string, handler: any) {
+        target.addEventListener(event, handler);
+        listeners.push({ target, event, handler });
+    }
 
     onMounted(() => {
         // create instance
@@ -34,15 +40,15 @@ export function usePopperjs(
         // attach event handlers
         switch (options?.trigger ?? defaultTrigger) {
             case "click": {
-                reference.value.addEventListener("click", doOpen);
-                document.addEventListener("click", doCloseForDocument);
+                addEventListener(reference.value, "click", doOpen);
+                addEventListener(document, "click", doCloseForDocument);
                 break;
             }
 
             case "hover": {
-                reference.value.addEventListener("mousedown", doClose);
-                reference.value.addEventListener("mouseout", doClose);
-                reference.value.addEventListener("mouseover", doOpen);
+                addEventListener(reference.value, "mousedown", doClose);
+                addEventListener(reference.value, "mouseout", doClose);
+                addEventListener(reference.value, "mouseover", doOpen);
                 break;
             }
 
@@ -62,13 +68,10 @@ export function usePopperjs(
         instance.value = undefined;
 
         // remove event handlers
-        document.removeEventListener("click", doCloseForDocument, false);
-        if (reference.value) {
-            reference.value.removeEventListener("click", doOpen, false);
-            reference.value.removeEventListener("mousedown", doClose, false);
-            reference.value.removeEventListener("mouseout", doClose, false);
-            reference.value.removeEventListener("mouseover", doOpen, false);
-        }
+        listeners.forEach((l: any) => {
+            l.target.removeEventListener(l.event, l.handler);
+        });
+        listeners.length = 0;
     });
 
     watch(
