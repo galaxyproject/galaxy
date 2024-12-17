@@ -258,13 +258,12 @@ class ToolParameter(UsesDictVisibleKeys):
         elif isinstance(value, MutableMapping) and value.get("__class__") == "UnvalidatedValue":
             return value["value"]
         # Delegate to the 'to_python' method
-        if ignore_errors:
-            try:
-                return self.to_python(value, app)
-            except Exception:
-                return value
-        else:
+        try:
             return self.to_python(value, app)
+        except Exception:
+            if not ignore_errors:
+                raise
+            return value
 
     def value_to_display_text(self, value) -> str:
         if is_runtime_value(value):
