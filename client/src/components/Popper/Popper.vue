@@ -3,7 +3,7 @@
         <span v-if="!referenceEl" ref="reference">
             <slot name="reference" />
         </span>
-        <div v-show="visible" ref="popper" class="popper-element mt-1" :class="`popper-element-${mode}`">
+        <div v-show="visible" ref="popper" class="popper-element m-1" :class="`popper-element-${mode}`">
             <div v-if="arrow" class="popper-arrow" data-popper-arrow />
             <div v-if="title" class="popper-header px-2 py-1 rounded-top d-flex justify-content-between">
                 <span class="px-1">{{ title }}</span>
