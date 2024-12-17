@@ -74,14 +74,7 @@ export function usePopperjs(
     watch(
         () => [instance.value, visible.value],
         () => {
-            if (instance.value) {
-                if (visible.value) {
-                    popper.value?.classList.remove("vue-use-popperjs-none");
-                    instance.value?.update();
-                } else {
-                    popper.value?.classList.add("vue-use-popperjs-none");
-                }
-            }
+            instance.value?.update();
         }
     );
 
