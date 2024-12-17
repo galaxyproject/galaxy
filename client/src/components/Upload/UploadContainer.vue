@@ -125,8 +125,8 @@ function immediateUpload(files) {
     }
 }
 
-function toData(items, history_id, composite = false) {
-    return uploadPayload(items, history_id, composite);
+async function toData(items, history_id, composite = false) {
+    return await uploadPayload(items, history_id, composite);
 }
 
 async function loadExtensions() {

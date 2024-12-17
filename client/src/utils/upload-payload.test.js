@@ -1,13 +1,21 @@
 import { isUrl, uploadPayload } from "./upload-payload.js";
 
+// confirm dialog to ask user if they want to auto rename a potential Galaxy file
+jest.mock("@/composables/confirmDialog", () => ({
+    useConfirmDialog: jest.fn(() => ({
+        // we assume here the user always wants to auto rename the Galaxy file
+        confirm: jest.fn(() => Promise.resolve(true)),
+    })),
+}));
+
 describe("uploadPayload", () => {
-    test("basic validation", () => {
-        expect(() => uploadPayload([], "historyId")).toThrow("No valid items provided.");
-        expect(() => uploadPayload([{}], "historyId")).toThrow("Content not available.");
-        expect(() => uploadPayload([{ fileContent: "fileContent" }], "historyId")).toThrow(
+    test("basic validation", async () => {
+        await expect(uploadPayload([], "historyId")).rejects.toThrow("No valid items provided.");
+        await expect(uploadPayload([{}], "historyId")).rejects.toThrow("Content not available.");
+        await expect(uploadPayload([{ fileContent: "fileContent" }], "historyId")).rejects.toThrow(
             "Unknown file mode: undefined."
         );
-        expect(() =>
+        await expect(
             uploadPayload(
                 [
                     {
@@ -23,7 +31,7 @@ describe("uploadPayload", () => {
                 ],
                 "historyId"
             )
-        ).toThrow("Invalid url: xyz://test.me.1");
+        ).rejects.toThrow("Invalid url: xyz://test.me.1");
     });
 
     test("url detection", () => {
@@ -32,8 +40,8 @@ describe("uploadPayload", () => {
         expect(isUrl("http://")).toBeTruthy();
     });
 
-    test("regular payload", () => {
-        const p = uploadPayload(
+    test("regular payload", async () => {
+        const p = await uploadPayload(
             [
                 { fileContent: " fileContent ", fileMode: "new", fileName: "1" },
                 {
@@ -66,12 +74,22 @@ describe("uploadPayload", () => {
                     spaceToTab: false,
                     toPosixLines: false,
                 },
+                {
+                    dbKey: "dbKey5",
+                    deferred: true,
+                    extension: "extension5",
+                    fileData: { size: 1 },
+                    fileMode: "local",
+                    fileName: "Galaxy5-[PreviousGalaxyFile].bed",
+                    spaceToTab: true,
+                    toPosixLines: true,
+                },
             ],
             "historyId"
         );
         expect(p).toEqual({
             auto_decompress: true,
-            files: [{ size: 1 }],
+            files: [{ size: 1 }, { size: 1 }],
             history_id: "historyId",
             targets: [
                 {
@@ -126,14 +144,24 @@ describe("uploadPayload", () => {
                             to_posix_lines: false,
                             url: "http://test.me",
                         },
+                        // confirmDialog for auto renaming, assume user wants to auto rename
+                        {
+                            dbkey: "dbKey5",
+                            deferred: true,
+                            ext: "extension5",
+                            name: "PreviousGalaxyFile",
+                            space_to_tab: true,
+                            src: "files",
+                            to_posix_lines: true,
+                        },
                     ],
                 },
             ],
         });
     });
 
-    test("composite payload", () => {
-        const p = uploadPayload(
+    test("composite payload", async () => {
+        const p = await uploadPayload(
             [
                 { fileContent: "fileContent", fileMode: "new", fileName: "1" },
                 {
@@ -147,13 +175,24 @@ describe("uploadPayload", () => {
                     spaceToTab: true,
                     toPosixLines: true,
                 },
+                {
+                    dbKey: "dbKey2",
+                    deferred: true,
+                    extension: "extension2",
+                    fileContent: "fileContent",
+                    fileData: "fileData",
+                    fileMode: "local",
+                    fileName: "Galaxy2-[PreviousGalaxyFile].bed",
+                    spaceToTab: true,
+                    toPosixLines: true,
+                },
             ],
             "historyId",
             true
         );
         expect(p).toEqual({
             auto_decompress: true,
-            files: ["fileData"],
+            files: ["fileData", "fileData"],
             history_id: "historyId",
             targets: [
                 {
@@ -177,6 +216,16 @@ describe("uploadPayload", () => {
                                         deferred: true,
                                         ext: "extension",
                                         name: "2",
+                                        space_to_tab: true,
+                                        src: "files",
+                                        to_posix_lines: true,
+                                    },
+                                    // in composite mode, we do not have a confirmDialog for auto renaming
+                                    {
+                                        dbkey: "dbKey2",
+                                        deferred: true,
+                                        ext: "extension2",
+                                        name: "Galaxy2-[PreviousGalaxyFile].bed",
                                         space_to_tab: true,
                                         src: "files",
                                         to_posix_lines: true,
