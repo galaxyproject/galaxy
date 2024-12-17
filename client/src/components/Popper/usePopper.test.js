@@ -1,6 +1,7 @@
-import { mount } from "@vue/test-utils";
-import { ref, nextTick } from "vue";
 import { createPopper } from "@popperjs/core";
+import { mount } from "@vue/test-utils";
+import { nextTick, ref } from "vue";
+
 import { usePopper } from "./usePopper";
 
 jest.mock("@popperjs/core", () => ({

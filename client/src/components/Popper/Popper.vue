@@ -20,10 +20,11 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { type Placement } from "@popperjs/core";
 import type { PropType } from "vue";
 import { ref, watch } from "vue";
-import { type Placement } from "@popperjs/core";
-import { usePopper, type Trigger } from "./usePopper";
+
+import { type Trigger, usePopper } from "./usePopper";
 
 library.add(faTimesCircle);
 

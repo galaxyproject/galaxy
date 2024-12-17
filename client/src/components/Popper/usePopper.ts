@@ -17,8 +17,9 @@ export function usePopper(
     const doOpen = () => (visible.value = true);
     const doClose = () => (visible.value = false);
     const doCloseForDocument = (e: Event) => {
-        if (!reference.value?.contains(e.target as Node) && !popper.value?.contains(e.target as Node))
+        if (!reference.value?.contains(e.target as Node) && !popper.value?.contains(e.target as Node)) {
             visible.value = false;
+        }
     };
 
     const addEventListener = (target: EventTarget, event: string, handler: EventListener) => {
