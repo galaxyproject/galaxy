@@ -1,6 +1,22 @@
 <template>
     <div>
-        <div v-for="(input, index) in inputs" :key="index">
+        <div
+            v-for="(input, index) in inputs"
+            :key="index"
+            class="position-relative"
+            :class="{ 'bordered-input': syncWithGraph && activeNodeId === index }">
+            <b-button
+                v-if="syncWithGraph"
+                class="position-absolute text-decoration-none"
+                :style="{ 'z-index': 100, right: 0 }"
+                size="sm"
+                variant="link"
+                :title="activeNodeId === index ? 'Active' : 'View in Graph'"
+                :disabled="activeNodeId === index"
+                @click="$emit('update:active-node-id', index)">
+                <span class="fas fa-sitemap" />
+                <span class="fas fa-arrow-right" />
+            </b-button>
             <div v-if="input.type == 'conditional'" class="ui-portlet-section mt-3">
                 <div class="portlet-header">
                     <b>{{ input.test_param.label || input.test_param.name }}</b>
@@ -131,6 +147,24 @@ export default {
             type: Boolean,
             default: false,
         },
+        activeNodeId: {
+            type: Number,
+            default: null,
+        },
+        syncWithGraph: {
+            type: Boolean,
+            default: false,
+        },
+    },
+    watch: {
+        activeNodeId() {
+            // if (this.activeNodeId !== null) {
+            //     const formInput = this.$el.querySelector(".bordered-input");
+            //     formInput?.scrollIntoView({ behavior: "smooth" });
+            // }
+            // TODO: Uncomment the above code to make this work
+            //       Doesn't quite scroll well, will need to improve that
+        },
     },
     methods: {
         getPrefix(name, index) {
@@ -170,3 +204,10 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.bordered-input {
+    border: 1px solid blue;
+    border-radius: 0.25rem;
+}
+</style>
