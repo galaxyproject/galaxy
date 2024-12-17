@@ -424,10 +424,6 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             )
         return rval
 
-    # TODO: Implement this for Dataverse
-    # def _get_creator_from_public_name(self, public_name: Optional[str] = None) -> Creator:  
-        # pass
-
     def _get_response(
         self,
         user_context: OptionalUserContext,
