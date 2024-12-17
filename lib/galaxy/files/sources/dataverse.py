@@ -287,6 +287,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         headers = self._get_request_headers(user_context, auth_required=True)
 
         with open(file_path, "rb") as file:
+            files = {'file': (filename, file)}
             add_files_url = self.add_files_to_dataset_url(dataset_id)
             response = requests.post(
                 add_files_url, 
