@@ -25,6 +25,7 @@ from typing import (
 import yaml
 from typing_extensions import (
     Literal,
+    Protocol,
     TypedDict,
 )
 
@@ -130,11 +131,19 @@ def path_or_uri_to_uri(path_or_uri: str) -> str:
         return path_or_uri
 
 
+class CollectionCreateFunc(Protocol):
+
+    def __call__(
+        self, element_identifiers: List[Dict[str, Any]], collection_type: str, rows: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Create a collection from these identifiers."""
+
+
 def galactic_job_json(
     job: Dict[str, Any],
     test_data_directory: str,
     upload_func: Callable[["UploadTarget"], Dict[str, Any]],
-    collection_create_func: Callable[[List[Dict[str, Any]], str], Dict[str, Any]],
+    collection_create_func: CollectionCreateFunc,
     tool_or_workflow: Literal["tool", "workflow"] = "workflow",
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     """Adapt a CWL job object to the Galaxy API.
@@ -340,8 +349,10 @@ def galactic_job_json(
         assert "collection_type" in value
         collection_type = value["collection_type"]
         elements = to_elements(value, collection_type)
-
-        collection = collection_create_func(elements, collection_type)
+        kwds = {}
+        if collection_type == "sample_sheet":
+            kwds["rows"] = value["rows"]
+        collection = collection_create_func(elements, collection_type, **kwds)
         dataset_collections.append(collection)
         hdca_id = collection["id"]
         return {"src": "hdca", "id": hdca_id}

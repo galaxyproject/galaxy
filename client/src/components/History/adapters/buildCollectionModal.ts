@@ -14,7 +14,7 @@ import jQuery from "jquery";
 import type { HDASummary, HistoryItemSummary } from "@/api";
 import RULE_BASED_COLLECTION_CREATOR from "@/components/Collections/RuleBasedCollectionCreatorModal";
 
-export type CollectionType = "list" | "paired" | "list:paired" | "rules";
+export type CollectionType = "list" | "paired" | "list:paired" | "rules" | "sample_sheet";
 export type DatasetPair = {
     forward: HDASummary;
     reverse: HDASummary;
