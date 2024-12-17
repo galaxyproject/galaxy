@@ -161,15 +161,13 @@ class DataverseRDMFilesSource(RDMFilesSource):
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ) -> Entry:
-        # TODO: Implement this for Dataverse
-        # public_name = self.get_public_name(user_context)
-        # dataset = self.repository.create_draft_file_container(entry_data.name, public_name, user_context)
-        # return {
-        #     "uri": self.to_plugin_uri(dataset["global_id"]),
-        #     "name": dataset["name"],
-        #     "external_link": 'test', 
-        # }
-        pass
+        public_name = self.get_public_name(user_context) or "Anonymous Galaxy User"
+        dataset = self.repository.create_draft_file_container(entry_data["name"], public_name, user_context)
+        return {
+            "uri": self.repository.to_plugin_uri(dataset.get("persistentId")),
+            "name": dataset.get("name") or "No title",
+            "external_link": self.repository.public_dataset_url(dataset.get("persistentId")),
+        }
 
     def _realize_to(
         self,
@@ -209,7 +207,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         self.repository.upload_file_to_draft_container(dataset_id, file_id, native_path, user_context=user_context)
 
     def _get_dataset_id_from_path(self, path: str) -> str:
-        # /doi:10.70122/FK2/DIG2DG => doi:10.70122/FK2/DIG2DG
+        """e.g. /doi:10.70122/FK2/DIG2DG => doi:10.70122/FK2/DIG2DG"""
         return path.lstrip("/")
     
 class DataverseRepositoryInteractor(RDMRepositoryInteractor):
@@ -229,6 +227,15 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     
     def files_of_dataset_url(self, dataset_id: str, dataset_version: str = ':latest') -> str:
         return f"{self.api_base_url}/datasets/:persistentId/versions/{dataset_version}/files?persistentId={dataset_id}"
+    
+    def create_collection_url(self, parent_alias: str) -> str:
+        return f"{self.api_base_url}/dataverses/{parent_alias}"
+    
+    def create_dataset_url(self, parent_alias: str) -> str:
+        return f"{self.api_base_url}/dataverses/{parent_alias}/datasets"
+    
+    def public_dataset_url(self, dataset_id: str) -> str:
+        return f"{self.repository_url}/dataset.xhtml?persistentId={dataset_id}"
     
     def add_files_to_dataset_url(self, dataset_id: str) -> str:
         return f"{self.api_base_url}/datasets/:persistentId/add?persistentId={dataset_id}"
@@ -274,8 +281,34 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     def create_draft_file_container(
         self, title: str, public_name: Optional[str] = None, user_context: OptionalUserContext = None
     ) -> RemoteDirectory:
-        # TODO Implement for Dataverse, see invenio
-        pass
+        """Creates a draft Dataset in the repository. Dataverse Datasets are contained in Collections. Collections can be contained in Collections.
+        We create a Collection inside the root Collection and then a Dataset inside that Collection."""
+        collection_alias = self.create_valid_alias(public_name, title)
+        collection_payload = self._prepare_collection_data(title, collection_alias, user_context)
+        collection = self._create_collection(":root", collection_payload, user_context)
+        if collection and collection.get("data"):
+            collection_alias = collection.get("data").get("alias")
+        else:
+            raise Exception("Could not create collection in Dataverse or response has not expected format.")
+        dataset_payload = self._prepare_dataset_data(title, public_name, user_context)
+        dataset = self._create_dataset(collection_alias, dataset_payload, user_context)
+        if dataset and dataset.get("data"):
+            dataset["data"]["name"] = title
+            return dataset["data"]
+        else: 
+            raise Exception("Could not create dataset in Dataverse or response has not expected format.")
+    
+    def _create_collection(self, parent_alias: str, collection_payload: dict, user_context: OptionalUserContext = None) -> dict:
+        headers = self._get_request_headers(user_context, auth_required=True)
+        response = requests.post(self.create_collection_url(parent_alias), data=collection_payload, headers=headers)
+        self._ensure_response_has_expected_status_code(response, 201)
+        return response.json()
+
+    def _create_dataset(self, parent_alias: str, dataset_payload: dict, user_context: OptionalUserContext = None) -> dict:
+        headers = self._get_request_headers(user_context, auth_required=True)
+        response = requests.post(self.create_dataset_url(parent_alias), data=dataset_payload, headers=headers)
+        self._ensure_response_has_expected_status_code(response, 201)
+        return response.json()
 
     def upload_file_to_draft_container(
         self,
@@ -439,13 +472,11 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                 f"Request to {response.url} failed with status code {response.status_code}: {error_message}"
             )
 
-    # TODO: Test this method
     def _raise_auth_required(self):
         raise AuthenticationRequired(
             f"Please provide a personal access token in your user's preferences for '{self.plugin.label}'"
         )
 
-    # TODO: Test this method
     def _get_response_error_message(self, response):
         response_json = response.json()
         error_message = response_json.get("message") if response.status_code == 400 else response.text
@@ -453,6 +484,120 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         for error in errors:
             error_message += f"\n{json.dumps(error)}"
         return error_message
+    
+    def _get_user_email(self, user_context: OptionalUserContext = None) -> str:
+        return user_context.email if user_context and user_context.email else "enteryourmail@placeholder.com"
+    
+    def create_valid_alias(self, public_name: str, title: str) -> str:
+        return re.sub(r"[^a-zA-Z0-9-_]", "", public_name.lower().replace(" ", "-") + "_" + title.lower().replace(" ", "-"))
+    
+    def _prepare_collection_data(
+            self,
+            title: str,
+            collection_alias: Optional[str] = None,
+            user_context: OptionalUserContext = None,
+        ) -> str:
+        user_email = self._get_user_email(user_context)
+        return json.dumps({
+            "name": title,
+            "alias": collection_alias,
+            "dataverseContacts": [
+            {
+                "contactEmail": user_email
+            },
+            ],
+        })
+    
+    def _prepare_dataset_data(
+            self, 
+            title: str, 
+            public_name: str,
+            user_context: OptionalUserContext = None,
+            ) -> str:
+        """Prepares the dataset data with all required metadata fields."""
+        user_email = self._get_user_email(user_context)
+        author_name = public_name
+        dataset_data = {
+            "datasetVersion": {
+            "license": {
+                "name": "CC0 1.0",
+                "uri": "http://creativecommons.org/publicdomain/zero/1.0"
+            },
+            "metadataBlocks": {
+                "citation": {
+                "fields": [
+                    {
+                    "value": title,
+                    "typeClass": "primitive",
+                    "multiple": False,
+                    "typeName": "title"
+                    },
+                    {
+                    "value": [
+                        {
+                        "authorName": {
+                            "value": author_name,
+                            "typeClass": "primitive",
+                            "multiple": False,
+                            "typeName": "authorName"
+                        }
+                        }
+                    ],
+                    "typeClass": "compound",
+                    "multiple": True,
+                    "typeName": "author"
+                    },
+                    {
+                    "value": [
+                        {
+                        "datasetContactEmail": {
+                            "typeClass": "primitive",
+                            "multiple": False,
+                            "typeName": "datasetContactEmail",
+                            "value": user_email,
+                        },
+                        "datasetContactName": {
+                            "typeClass": "primitive",
+                            "multiple": False,
+                            "typeName": "datasetContactName",
+                            "value": author_name,
+                        }
+                        }
+                    ],
+                    "typeClass": "compound",
+                    "multiple": True,
+                    "typeName": "datasetContact"
+                    },
+                    {
+                    "value": [
+                        {
+                        "dsDescriptionValue": {
+                            "value": "Exported history from Galaxy",
+                            "multiple": False,
+                            "typeClass": "primitive",
+                            "typeName": "dsDescriptionValue"
+                        }
+                        }
+                    ],
+                    "typeClass": "compound",
+                    "multiple": True,
+                    "typeName": "dsDescription"
+                    },
+                    {
+                    "value": [
+                        "Medicine, Health and Life Sciences"
+                    ],
+                    "typeClass": "controlledVocabulary",
+                    "multiple": True,
+                    "typeName": "subject"
+                    }
+                ],
+                "displayName": "Citation Metadata"
+                }
+            }
+            }
+        }
+        return json.dumps(dataset_data)
 
 
 __all__ = ("DataverseRDMFilesSource",)
