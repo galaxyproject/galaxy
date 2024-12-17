@@ -222,7 +222,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         return f"{self.api_base_url}/search"
     
     def file_access_url(self, file_id: str) -> str:
-        encoded_file_id = quote(encoded_file_id, safe="")
+        encoded_file_id = quote(file_id, safe="")
         return f"{self.api_base_url}/access/datafile/:persistentId?persistentId={encoded_file_id}"
     
     def files_of_dataset_url(self, dataset_id: str, dataset_version: str = ':latest') -> str:
@@ -335,7 +335,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         file_path: str,
         user_context: OptionalUserContext = None,
     ):
-        download_file_content_url = self._get_download_file_url(container_id, file_identifier, user_context)
+        download_file_content_url = self.file_access_url(file_identifier)
         self._download_file(file_path, download_file_content_url, user_context)
 
     def _download_dataset_as_zip(
@@ -378,26 +378,10 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         This method is used to download files from both published and draft datasets that are accessible by the user.
         """
         download_file_content_url = self.file_access_url(file_id=file_id)
-
-        # file_details = self._get_response(user_context, file_details_url)
-        # TODO: This is a temporary workaround from invenio for the fact that the "content" API
-        # does not support downloading files from S3 or other remote storage classes.
-        # We might need something like this as well for dataverse
-        # if not self._can_download_from_api(file_details):
-            # More info: https://inveniordm.docs.cern.ch/reference/file_storage/#remote-files-r
-            # download_file_content_url = f"{file_details_url.replace('/api', '')}?download=1"
-
         return download_file_content_url
 
     def _is_api_url(self, url: str) -> bool:
         return "/api/" in url
-
-    def _can_download_from_api(self, file_details: dict) -> bool:
-        # TODO: Have a look at this problem
-
-        # Only files stored locally seems to be fully supported by the API for now
-        # More info: https://inveniordm.docs.cern.ch/reference/file_storage/
-        return file_details["storage_class"] == "L"
 
     def _get_datasets_from_response(self, response: dict) -> List[RemoteDirectory]:
         datasets = response["items"]
