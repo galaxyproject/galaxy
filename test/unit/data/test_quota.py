@@ -116,7 +116,7 @@ class TestCalculateUsage(BaseModelTestCase):
 
         self._add_dataset(10)
         # This dataset should not be counted towards the user's disk usage
-        self._add_dataset(30, object_store_id="user_objects://private/user/storage")
+        self._add_dataset(30, object_store_id="user_objects://user/provided/storage")
 
         object_store = MockObjectStore()
         assert u.calculate_disk_usage_default_source(object_store) == 10
