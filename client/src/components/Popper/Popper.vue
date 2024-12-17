@@ -1,15 +1,9 @@
 <template>
     <span>
-        <component :is="referenceIs" v-bind="referenceProps" ref="reference">
+        <span ref="reference">
             <slot name="reference" />
-        </component>
-        <component
-            :is="popperIs"
-            v-show="visible"
-            v-bind="popperProps"
-            ref="popper"
-            class="popper-element mt-1"
-            :class="`popper-element-${mode}`">
+        </span>
+        <div v-show="visible" ref="popper" class="popper-element mt-1" :class="`popper-element-${mode}`">
             <div v-if="arrow" class="popper-arrow" data-popper-arrow />
             <div v-if="title" class="popper-header px-2 py-1 rounded-top d-flex justify-content-between">
                 <span class="px-1">{{ title }}</span>
@@ -18,7 +12,7 @@
                 </span>
             </div>
             <slot />
-        </component>
+        </div>
     </span>
 </template>
 
@@ -36,19 +30,15 @@ library.add(faTimesCircle);
 const props = defineProps({
     arrow: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false },
-    forceShow: Boolean,
     mode: { type: String, default: "dark" },
     placement: String as PropType<Placement>,
-    popperIs: { type: String, default: "div" },
-    popperProps: Object,
-    referenceIs: { type: String, default: "span" },
-    referenceProps: Object,
     title: String,
     trigger: String as PropType<Trigger>,
 });
 
 const reference = ref();
 const popper = ref();
+
 const { visible } = usePopperjs(reference, popper, {
     placement: props.placement,
     trigger: props.trigger,
