@@ -16,6 +16,10 @@ const props = defineProps({
         type: Object as PropType<TerminalPosition | null>,
         default: null,
     },
+    ignoreErrors: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const ribbonMargin = 4;
@@ -84,7 +88,7 @@ const outputIsOptional = computed(() => {
 });
 
 const connectionIsValid = computed(() => {
-    return !connectionStore.invalidConnections[getConnectionId(props.connection)];
+    return props.ignoreErrors || !connectionStore.invalidConnections[getConnectionId(props.connection)];
 });
 
 const lineOffsets = computed(() => getLineOffsets(inputIsMappedOver.value, outputIsMappedOver.value));

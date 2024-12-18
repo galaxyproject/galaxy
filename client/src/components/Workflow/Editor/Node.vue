@@ -88,7 +88,7 @@
             </span>
         </div>
         <b-alert
-            v-if="!!errors"
+            v-if="!props.ignoreErrors && Boolean(errors)"
             variant="danger"
             show
             class="node-error m-0 rounded-0 rounded-bottom"
@@ -120,6 +120,7 @@
                 :scale="scale"
                 :parent-node="elHtml"
                 :readonly="readonly"
+                :ignore-errors="props.ignoreErrors"
                 @onChange="onChange" />
             <div v-if="!isInvocation && showRule" class="rule" />
             <NodeInvocationText v-if="isInvocation" :invocation-step="invocationStep" />
@@ -140,6 +141,7 @@
                 :datatypes-mapper="datatypesMapper"
                 :parent-node="elHtml"
                 :readonly="readonly"
+                :ignore-errors="props.ignoreErrors"
                 @onDragConnector="onDragConnector"
                 @stopDragging="onStopDragging"
                 @onChange="onChange" />
@@ -198,6 +200,7 @@ const props = defineProps({
     highlight: { type: Boolean, default: false },
     isInvocation: { type: Boolean, default: false },
     readonly: { type: Boolean, default: false },
+    ignoreErrors: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
