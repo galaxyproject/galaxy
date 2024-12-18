@@ -1,5 +1,9 @@
 <tool id="format_source_in_conditional" name="format source in conditional" version="0.1.0">
-    <command>cp '$input1' '$output1'</command>
+    <command><![CDATA[
+        cp '$input1' '$output1' &&
+        cp '$input1' '$output2' &&
+        cp '$input1' '$output3'
+    ]]></command>
     <inputs>
         <conditional name="cond">
             <param name="select" type="select">
@@ -15,14 +19,16 @@
                         <option value="value">the only option</option>
                     </param>
                     <when value="value">
-                        <param name="input1" type="data" format="txt"/>
+                        <param name="input1" type="data" format="tsv"/>
                     </when>
                 </conditional>
             </when>
         </conditional>
     </inputs>
     <outputs>
-        <data name="output1" format_source="cond|input1"/>
+        <data name="output1" format_source="cond|input1"/><!-- format_source should only work for "no_extra_nesting" -->
+        <data name="output2" format_source="cond|inner_cond|input1"/><!-- format_source should only work for "extra_nesting" -->
+        <data name="output3" format_source="input1"/><!-- format_source with legacy behavior -->
     </outputs>
     <tests>
         <test>
@@ -31,15 +37,19 @@
                 <param name="input1" value="1.tabular" ftype="tabular"/>
             </conditional>
             <output name="output1" value="1.tabular" ftype="tabular" lines_diff="2"/>
+            <output name="output2" value="1.tabular" ftype="data" lines_diff="2"/>
+            <output name="output3" value="1.tabular" ftype="tabular" lines_diff="2"/>
         </test>
         <test>
             <conditional name="cond">
                 <param name="select" value="extra_nesting"/>
                 <conditional name="inner_cond">
-                    <param name="input1" value="1.txt" ftype="txt"/>
+                    <param name="input1" value="1.tabular" ftype="tsv"/>
                 </conditional>
             </conditional>
-            <output name="output1" value="1.txt" ftype="txt"/>
+            <output name="output1" value="1.tabular" ftype="data" lines_diff="2"/>
+            <output name="output2" value="1.tabular" ftype="tsv" lines_diff="2"/>
+            <output name="output3" value="1.tabular" ftype="tsv" lines_diff="2"/>
         </test>
     </tests>
 </tool>
