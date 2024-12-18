@@ -369,14 +369,6 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                     f"Cannot download file from URL '{file_path}'. Please make sure the dataset and/or file exists and it is public."
                 )
 
-    def _get_download_file_url(self, container_id: str, file_id: str, user_context: OptionalUserContext = None):
-        """Get the URL to download a file from a dataset(=dataverse file container).
-
-        This method is used to download files from both published and draft datasets that are accessible by the user.
-        """
-        download_file_content_url = self.file_access_url(file_id=file_id)
-        return download_file_content_url
-
     def _is_api_url(self, url: str) -> bool:
         return "/api/" in url
 
