@@ -82,7 +82,7 @@ class RDMRepositoryInteractor:
         raise NotImplementedError()
 
     def get_files_in_container(
-        self, container_id: str, writeable: bool, user_context: OptionalUserContext = None
+        self, container_id: str, writeable: bool, user_context: OptionalUserContext = None, query: Optional[str] = None, 
     ) -> List[RemoteFile]:
         """Returns the list of files of a file container.
 
