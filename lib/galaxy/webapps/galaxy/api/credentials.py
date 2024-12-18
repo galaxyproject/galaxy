@@ -13,11 +13,8 @@ from fastapi import (
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.credentials import (
-    CredentialsPayload,
+    CreateSourceCredentialsPayload,
     SOURCE_TYPE,
-    UpdateCredentialsPayload,
-    UpdateGroupPayload,
-    UserCredentialCreateResponse,
     UserCredentialsListResponse,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -68,38 +65,10 @@ class FastAPICredentials:
     def provide_credential(
         self,
         user_id: UserIdPathParam,
-        payload: CredentialsPayload,
+        payload: CreateSourceCredentialsPayload,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> UserCredentialCreateResponse:
+    ) -> UserCredentialsListResponse:
         return self.service.provide_credential(trans, user_id, payload)
-
-    @router.put(
-        "/api/users/{user_id}/credentials/{user_credentials_id}",
-        summary="Updates credentials for a specific secret/variable",
-    )
-    def update_credential(
-        self,
-        user_id: UserIdPathParam,
-        user_credentials_id: DecodedDatabaseIdField,
-        payload: UpdateCredentialsPayload,
-        trans: ProvidesUserContext = DependsOnTrans,
-    ):
-        self.service.update_credential(trans, user_id, user_credentials_id, payload)
-        return Response(status_code=status.HTTP_200_OK)
-
-    @router.patch(
-        "/api/users/{user_id}/credentials/{user_credentials_id}",
-        summary="Updates the current group ID for a specific service",
-    )
-    def update_current_group_id(
-        self,
-        user_id: UserIdPathParam,
-        user_credentials_id: DecodedDatabaseIdField,
-        payload: UpdateGroupPayload,
-        trans: ProvidesUserContext = DependsOnTrans,
-    ):
-        self.service.update_current_group_id(trans, user_id, user_credentials_id, payload)
-        return Response(status_code=status.HTTP_200_OK)
 
     @router.delete(
         "/api/users/{user_id}/credentials/{user_credentials_id}",
