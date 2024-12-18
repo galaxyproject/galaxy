@@ -1,12 +1,65 @@
 
-:orphan:
-
 ===========================================================
-October 2024 Galaxy Release (v 24.2)
+24.2 Galaxy Release (January 2025)
 ===========================================================
 
+.. include:: _header.rst
 
-Schedule
+Highlights
 ===========================================================
- * Planned Freeze Date: 2024-10-07
- * Planned Release Date: 2024-10-28
+
+Feature1
+--------
+
+Feature description.
+
+Feature2
+--------
+
+Feature description.
+
+Feature3
+--------
+
+Feature description.
+
+Also check out the `24.2 user release notes <24.2_announce_user.html>`__.
+Are you an admin? Check out `some admin relevant PRs <https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A24.2+is%3Aclosed+is%3Apr>`__.
+
+Get Galaxy
+===========================================================
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_24.2 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_24.2 && git pull --ff-only origin release_24.2
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+
+Administration Notes
+===========================================================
+Add content or drop section.
+
+Configuration Changes
+===========================================================
+Add content or drop section.
+
+Deprecation Notices
+===========================================================
+Add content or drop section.
+
+Release Notes
+===========================================================
+
+.. include:: 24.2.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst
