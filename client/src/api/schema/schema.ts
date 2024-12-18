@@ -7477,7 +7477,7 @@ export interface components {
              * Credential Value
              * @description Value of the credential
              */
-            value: string;
+            value?: string | null;
         };
         /**
          * CredentialType
@@ -17140,7 +17140,7 @@ export interface components {
              * Value
              * @description Value of the credential
              */
-            value: string;
+            value?: string | null;
         };
         /** UpdateCredentialsPayload */
         UpdateCredentialsPayload: {
