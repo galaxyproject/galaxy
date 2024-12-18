@@ -61,14 +61,12 @@ class DataverseDataset(TypedDict):
     updatedAt: str
     publication_date: str
 
-AccessStatus = Literal["public", "restricted"]
 
 class DataverseRDMFilesSource(RDMFilesSource):
     """A files source for Dataverse turn-key research data management repository.
     
-    In Dataverse a "Dataset" represents what we refer to as container in the rdm base class
+    In Dataverse a "dataset" represents what we refer to as container in the rdm base class
     """
-
     plugin_type = "dataverse"
     supports_pagination = True
     supports_search = True
@@ -140,7 +138,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
     ) -> Tuple[List[AnyRemoteEntry], int]:
-        """This method lists the files in the Dataverse Dataset."""
+        """This method lists the datasets or files from dataverse."""
         writeable = opts and opts.writeable or False
         is_root_path = path == "/"
         if is_root_path:
@@ -158,8 +156,9 @@ class DataverseRDMFilesSource(RDMFilesSource):
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ) -> Entry:
+        """Creates a draft dataset in the repository."""
         public_name = self.get_public_name(user_context) or "Anonymous Galaxy User"
-        dataset = self.repository.create_draft_file_container(entry_data["name"], public_name, user_context)
+        dataset = self.repository.create_draft_file_container(entry_data.get("name"), public_name, user_context)
         return {
             "uri": self.repository.to_plugin_uri(dataset.get("persistentId")),
             "name": dataset.get("name") or "No title",
