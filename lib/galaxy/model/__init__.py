@@ -9420,7 +9420,7 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     )
     action: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
 
-    workflow_step = relationship("WorkflowStep")
+    workflow_step: Mapped[WorkflowStep] = relationship("WorkflowStep")
     job: Mapped[Optional["Job"]] = relationship(back_populates="workflow_invocation_step", uselist=False)
     implicit_collection_jobs = relationship("ImplicitCollectionJobs", uselist=False)
     output_dataset_collections = relationship(
