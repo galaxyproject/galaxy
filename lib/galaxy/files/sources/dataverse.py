@@ -275,12 +275,12 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         return self._get_files_from_response(dataset_id, response_data["data"])
 
     def create_draft_file_container(
-        self, title: str, public_name: Optional[str] = None, user_context: OptionalUserContext = None
+        self, title: str, public_name: str, user_context: OptionalUserContext = None
     ) -> RemoteDirectory:
-        """Creates a draft Dataset in the repository. Dataverse Datasets are contained in Collections. Collections can be contained in Collections.
-        We create a Collection inside the root Collection and then a Dataset inside that Collection."""
-        collection_alias = self.create_valid_alias(public_name, title)
-        collection_payload = self._prepare_collection_data(title, collection_alias, user_context)
+        """Creates a draft dataset in the repository. Dataverse datasets are contained in collections. Collections can be contained in collections.
+        We create a collection inside the root collection and then a dataset inside that collection.
+        """
+        collection_payload = self._prepare_collection_data(title, public_name, user_context)
         collection = self._create_collection(":root", collection_payload, user_context)
         if collection and collection.get("data"):
             collection_alias = collection.get("data").get("alias")
