@@ -7895,7 +7895,7 @@ class Workflow(Base, Dictifiable, RepresentById):
         """
         return self.top_level_workflow.stored_workflow
 
-    def copy(self, user=None):
+    def copy(self, user: User):
         """Copy a workflow for a new StoredWorkflow object.
 
         Pass user if user-specific information needed.
@@ -8206,7 +8206,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
                 break
         return target_output
 
-    def copy_to(self, copied_step, step_mapping, user=None):
+    def copy_to(self, copied_step: "WorkflowStep", step_mapping: Dict[int, "WorkflowStep"], user: User):
         copied_step.order_index = self.order_index
         copied_step.type = self.type
         copied_step.tool_id = self.tool_id
