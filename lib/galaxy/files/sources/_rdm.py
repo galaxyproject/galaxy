@@ -139,10 +139,10 @@ class RDMFilesSource(BaseFilesSource):
     by file sources that interact with RDM repositories.
 
     A RDM file source is similar to a regular file source, but instead of tree of
-    files and directories, it provides a (one level) list of containers (representing directories)
+    files and directories, it provides a (one level) list of containers
     that can contain only files (no subdirectories).
 
-    In addition, RDM file sources might need to create a new container (directory) in advance in the
+    In addition, RDM file sources might need to create a new container in advance in the
     repository, and then upload a file to it. This is done by calling the `_create_entry` method.
     """
 
