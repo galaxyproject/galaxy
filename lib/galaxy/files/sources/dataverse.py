@@ -382,16 +382,12 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             rval.append(
                 {
                     "class": "Directory",
-                    "name": name,
+                    "name": dataset.get("name") or "No title",
                     "uri": uri,
                     "path": path,
                 }
             )
         return rval
-
-    def _get_dataset_title(self, dataset: DataverseDataset) -> str:
-        title = dataset.get("name")
-        return title or "No title"
 
     def _get_files_from_response(self, dataset_id: str, response: dict) -> List[RemoteFile]:   
         rval: List[RemoteFile] = []
