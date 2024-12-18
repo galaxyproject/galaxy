@@ -266,6 +266,7 @@ class CredentialsService:
         credentials_group.user_credentials_id = user_credentials_id
         session.add(credentials_group)
 
+        user_vault = UserVaultWrapper(self._app.vault, trans.user)
         provided_credentials_list: List[Credential] = []
         for credential_payload in payload.credentials:
             credential_name, credential_type, credential_value = (
@@ -282,12 +283,11 @@ class CredentialsService:
             )
 
             if credential_type == "secret":
-                user_vault = UserVaultWrapper(self._app.vault, trans.user)
-                user_vault.write_secret(
-                    f"{source_type}|{source_id}|{reference}|{group_name}|{credential_name}", credential_value
-                )
+                vault_ref = f"{source_type}|{source_id}|{reference}|{group_name}|{credential_name}"
+                user_vault.write_secret(vault_ref, credential_value or "")
+                credential.value = "*" if credential_value else ""
             elif credential_type == "variable":
-                credential.value = credential_value
+                credential.value = credential_value or ""
             provided_credentials_list.append(credential)
             session.add(credential)
         session.commit()
@@ -306,7 +306,7 @@ class CredentialsService:
             SecretResponse(
                 id=credential.id,
                 name=credential.name,
-                already_set=True,
+                already_set=True if credential.value else False,
             )
             for credential in provided_credentials_list
             if credential.type == "secret"
@@ -342,6 +342,7 @@ class CredentialsService:
         if not existing_user_credentials:
             raise exceptions.ObjectNotFound("User credential not found.", type="error")
 
+        user_vault = UserVaultWrapper(self._app.vault, trans.user)
         session = trans.sa_session
         for provided_credential in payload.credentials:
             user_credentials, user_credentials_group, existing_credential = None, None, None
@@ -352,13 +353,20 @@ class CredentialsService:
             if not existing_credential or not user_credentials or not user_credentials_group:
                 raise exceptions.ObjectNotFound("Credential not found.", type="error")
 
+            source_type, source_id, reference, group_name, credential_name = (
+                user_credentials.source_type,
+                user_credentials.source_id,
+                user_credentials.reference,
+                user_credentials_group.name,
+                existing_credential.name,
+            )
+
             if existing_credential and existing_credential.type == "secret":
-                user_vault = UserVaultWrapper(self._app.vault, trans.user)
-                vault_ref = f"{user_credentials.source_type}|{user_credentials.source_id}|{user_credentials.reference}|{user_credentials_group.name}|{existing_credential.name}"
-                user_vault.write_secret(vault_ref, provided_credential.value)
-                existing_credential.value = ""
+                vault_ref = f"{source_type}|{source_id}|{reference}|{group_name}|{credential_name}"
+                user_vault.write_secret(vault_ref, provided_credential.value or "")
+                existing_credential.value = "*" if provided_credential.value else ""
             elif existing_credential and existing_credential.type == "variable":
-                existing_credential.value = provided_credential.value
+                existing_credential.value = provided_credential.value or ""
             session.add(existing_credential)
         session.commit()
 
