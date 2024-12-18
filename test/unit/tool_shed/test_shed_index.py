@@ -26,7 +26,9 @@ def whoosh_index_dir():
 @pytest.fixture(scope="module")
 def community_file_dir():
     extracted_archive_dir = tempfile.mkdtemp()
-    b = BytesIO(requests.get(URL).content)
+    response = requests.get(URL)
+    response.raise_for_status()
+    b = BytesIO(response.content)
     tarfile.open(fileobj=b, mode="r:gz").extractall(extracted_archive_dir)
     try:
         yield extracted_archive_dir

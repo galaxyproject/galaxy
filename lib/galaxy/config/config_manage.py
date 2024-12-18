@@ -57,7 +57,6 @@ DESCRIPTION = "Convert configuration files."
 APP_DESCRIPTION = """Application to target for operation (i.e. galaxy, tool_shed, or reports))"""
 DRY_RUN_DESCRIPTION = """If this action modifies files, just print what would be the result and continue."""
 UNKNOWN_OPTION_MESSAGE = "Option [%s] not found in schema - either it is invalid or the Galaxy team hasn't documented it. If invalid, you should manually remove it. If the option is valid but undocumented, please file an issue with the Galaxy team."
-USING_SAMPLE_MESSAGE = "Config file not found, using sample."
 NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults throughout."
 YAML_COMMENT_WRAPPER = TextWrapper(
     initial_indent="# ", subsequent_indent="# ", break_long_words=False, break_on_hyphens=False
@@ -306,9 +305,11 @@ def _find_config(args: Namespace, app_desc: App) -> str:
             if os.path.exists(possible_ini_config):
                 path = possible_ini_config
 
-    if not path:
-        _warn(USING_SAMPLE_MESSAGE)
+    if path:
+        print(f"Found config file {path}")
+    else:
         path = os.path.join(args.galaxy_root, app_desc.sample_destination)
+        _warn(f"Config file not found, using sample {path}")
 
     return path
 
@@ -354,8 +355,8 @@ def _validate(args: Namespace, app_desc: App) -> None:
     path = _find_config(args, app_desc)
     # Allow empty mapping (not allowed by pykwalify)
     raw_config = _order_load_path(path)
-    if raw_config.get(app_desc.app_name) is None:
-        raw_config[app_desc.app_name] = {}
+    # Drop top-level keys (e.g. "gravity") except for app_desc.app_name
+    raw_config = {app_desc.app_name: raw_config.get(app_desc.app_name) or {}}
     # Rewrite the file any way to merge any duplicate keys
     with tempfile.NamedTemporaryFile("w", delete=False, suffix=".yml") as config_p:
         ordered_dump(raw_config, config_p)
