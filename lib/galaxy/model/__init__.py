@@ -12145,7 +12145,7 @@ class UserCredentials(Base):
     reference: Mapped[str] = mapped_column(nullable=False)
     source_type: Mapped[str] = mapped_column(nullable=False)
     source_id: Mapped[str] = mapped_column(nullable=False)
-    current_group_id: Mapped[int] = mapped_column(ForeignKey("user_credentials_group.id"), index=True)
+    current_group_id: Mapped[int] = mapped_column(ForeignKey("user_credentials_group.id"), index=True, nullable=True)
     create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
     update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
 
@@ -12159,25 +12159,41 @@ class CredentialsGroup(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(nullable=False)
-    user_credentials_id: Mapped[int] = mapped_column(ForeignKey("user_credentials.id"), index=True, nullable=True)
+    user_credentials_id: Mapped[int] = mapped_column(ForeignKey("user_credentials.id"), index=True)
     create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
     update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
 
 
-class Credential(Base):
+class Variable(Base):
     """
-    Represents a credential associated with a user for a specific service.
+    Represents a variable associated with a user for a specific service.
     """
 
-    __tablename__ = "credential"
+    __tablename__ = "variable"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_credential_group_id: Mapped[int] = mapped_column(
         ForeignKey("user_credentials_group.id"), index=True, nullable=False
     )
     name: Mapped[str] = mapped_column(nullable=False)
-    type: Mapped[str] = mapped_column(nullable=False)
     value: Mapped[str] = mapped_column(nullable=False)
+    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+
+
+class Secret(Base):
+    """
+    Represents a secret associated with a user for a specific service.
+    """
+
+    __tablename__ = "secret"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_credential_group_id: Mapped[int] = mapped_column(
+        ForeignKey("user_credentials_group.id"), index=True, nullable=False
+    )
+    name: Mapped[str] = mapped_column(nullable=False)
+    already_set: Mapped[bool] = mapped_column(nullable=False, default=False)
     create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
     update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
 
