@@ -175,6 +175,17 @@ def visit_input_values(
         if input.name not in input_values:
             args["error"] = f"No value found for '{args.get('prefixed_label')}'."
         new_value = callback(**args)
+
+        # is this good enough ? feels very ugh
+        if new_value == [no_replacement_value]:
+            # Single unspecified value in multiple="true" input with a single null input, pretend it's a singular value
+            new_value = no_replacement_value
+        if isinstance(new_value, list):
+            # Maybe mixed input, I guess tool defaults don't really make sense here ?
+            # Would e.g. be default dataset in multiple="true" input, you wouldn't expect the default to be inserted
+            # if other inputs are connected and provided.
+            new_value = [item if not item == no_replacement_value else None for item in new_value]
+
         if no_replacement_value is REPLACE_ON_TRUTHY:
             replace = bool(new_value)
         else:
