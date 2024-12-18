@@ -4977,15 +4977,13 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Updates credentials for a specific secret/variable */
-        put: operations["update_credential_api_users__user_id__credentials__user_credentials_id__put"];
+        put?: never;
         post?: never;
         /** Deletes all credentials for a specific service */
         delete: operations["delete_service_credentials_api_users__user_id__credentials__user_credentials_id__delete"];
         options?: never;
         head?: never;
-        /** Updates the current group ID for a specific service */
-        patch: operations["update_current_group_id_api_users__user_id__credentials__user_credentials_id__patch"];
+        patch?: never;
         trace?: never;
     };
     "/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}": {
@@ -8037,6 +8035,19 @@ export interface components {
              */
             url: string;
         };
+        /** CreateSourceCredentialsPayload */
+        CreateSourceCredentialsPayload: {
+            /** Credentials */
+            credentials: components["schemas"]["ServiceCredentialPayload"][];
+            /** Source Id */
+            source_id: string;
+            /**
+             * Source Type
+             * @constant
+             * @enum {string}
+             */
+            source_type: "tool";
+        };
         /**
          * CreateType
          * @enum {string}
@@ -8137,33 +8148,20 @@ export interface components {
         /** CredentialGroupResponse */
         CredentialGroupResponse: {
             /**
-             * Group ID
-             * @description ID of the group
+             * Id
              * @example 0123456789ABCDEF
              */
             id: string;
-            /**
-             * Group Name
-             * @description Name of the group
-             */
+            /** Name */
             name: string;
-            /**
-             * Secrets
-             * @description List of secrets
-             */
+            /** Secrets */
             secrets: components["schemas"]["SecretResponse"][];
-            /**
-             * Variables
-             * @description List of variables
-             */
+            /** Variables */
             variables: components["schemas"]["VariableResponse"][];
         };
         /** CredentialPayload */
         CredentialPayload: {
-            /**
-             * Credential Name
-             * @description Name of the credential
-             */
+            /** Name */
             name: string;
             /**
              * Type
@@ -8208,6 +8206,7 @@ export interface components {
              * Source Type
              * @description Type of the source
              * @constant
+             * @enum {string}
              */
             source_type: "tool";
         };
@@ -18086,21 +18085,14 @@ export interface components {
         };
         /** SecretResponse */
         SecretResponse: {
-            /**
-             * Already Set
-             * @description Whether the secret is already set
-             */
+            /** Already Set */
             already_set: boolean;
             /**
-             * ID
-             * @description ID of the credential
+             * Id
              * @example 0123456789ABCDEF
              */
             id: string;
-            /**
-             * Credential Name
-             * @description Name of the credential
-             */
+            /** Name */
             name: string;
         };
         /** SectionParameterModel */
@@ -18415,6 +18407,27 @@ export interface components {
              * @description Version of the service being described. Semantic versioning is recommended, but other identifiers, such as dates or commit hashes, are also allowed. The version should be changed whenever the service is updated.
              */
             version: string;
+        };
+        /** ServiceCredentialPayload */
+        ServiceCredentialPayload: {
+            /**
+             * Current Group
+             * @default default
+             */
+            current_group: string | null;
+            /** Groups */
+            groups: components["schemas"]["ServiceGroupPayload"][];
+            /** Reference */
+            reference: string;
+        };
+        /** ServiceGroupPayload */
+        ServiceGroupPayload: {
+            /** Name */
+            name: string;
+            /** Secrets */
+            secrets: components["schemas"]["CredentialPayload"][];
+            /** Variables */
+            variables: components["schemas"]["CredentialPayload"][];
         };
         /** ServiceType */
         ServiceType: {
@@ -19858,28 +19871,6 @@ export interface components {
             /** Creator */
             creator?: unknown;
         };
-        /** UpdateCredentialPayload */
-        UpdateCredentialPayload: {
-            /**
-             * ID
-             * @description ID of the credential
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Value
-             * @description Value of the credential
-             */
-            value?: string | null;
-        };
-        /** UpdateCredentialsPayload */
-        UpdateCredentialsPayload: {
-            /**
-             * Update Credentials
-             * @description List of credentials to update
-             */
-            credentials: components["schemas"]["UpdateCredentialPayload"][];
-        };
         /** UpdateDatasetPermissionsPayload */
         UpdateDatasetPermissionsPayload: {
             /** Access Ids[] */
@@ -19942,15 +19933,6 @@ export interface components {
              * @description A list of role encoded IDs defining roles that should have modify permission on the dataset.
              */
             modify_ids?: string[] | string | null;
-        };
-        /** UpdateGroupPayload */
-        UpdateGroupPayload: {
-            /**
-             * Group ID
-             * @description ID of the group
-             * @example 0123456789ABCDEF
-             */
-            current_group_id: string;
         };
         /**
          * UpdateHistoryContentsBatchPayload
@@ -20461,6 +20443,7 @@ export interface components {
              * Source Type
              * @description Type of the source
              * @constant
+             * @enum {string}
              */
             source_type: "tool";
             /**
@@ -20477,43 +20460,28 @@ export interface components {
         UserCredentialsListResponse: components["schemas"]["UserCredentialsResponse"][];
         /** UserCredentialsResponse */
         UserCredentialsResponse: {
-            /**
-             * Current Group Name
-             * @description Name of the current group
-             */
+            /** Current Group Name */
             current_group_name: string;
-            /**
-             * Groups
-             * @description Groups of credentials
-             */
+            /** Groups */
             groups: {
                 [key: string]: components["schemas"]["CredentialGroupResponse"];
             };
             /**
-             * User Credentials ID
-             * @description ID of the user credentials
+             * Id
              * @example 0123456789ABCDEF
              */
             id: string;
-            /**
-             * Service Reference
-             * @description Reference to the service
-             */
+            /** Reference */
             reference: string;
-            /**
-             * Source ID
-             * @description ID of the source
-             */
+            /** Source Id */
             source_id: string;
             /**
              * Source Type
-             * @description Type of the source
              * @constant
              */
             source_type: "tool";
             /**
-             * User ID
-             * @description ID of the user
+             * User Id
              * @example 0123456789ABCDEF
              */
             user_id: string;
@@ -20965,21 +20933,14 @@ export interface components {
         /** VariableResponse */
         VariableResponse: {
             /**
-             * ID
-             * @description ID of the credential
+             * Id
              * @example 0123456789ABCDEF
              */
             id: string;
-            /**
-             * Credential Name
-             * @description Name of the credential
-             */
+            /** Name */
             name: string;
-            /**
-             * Value
-             * @description Value of the credential
-             */
-            value?: string | null;
+            /** Value */
+            value: string | null;
         };
         /** Visualization */
         Visualization: Record<string, never>;
@@ -37914,7 +37875,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CredentialsPayload"];
+                "application/json": components["schemas"]["CreateSourceCredentialsPayload"];
             };
         };
         responses: {
@@ -37924,56 +37885,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserCredentialCreateResponse"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    update_credential_api_users__user_id__credentials__user_credentials_id__put: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path: {
-                /** @description The ID of the user. */
-                user_id: string;
-                user_credentials_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateCredentialsPayload"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["UserCredentialsListResponse"];
                 };
             };
             /** @description Request Error */
@@ -38011,55 +37923,6 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    update_current_group_id_api_users__user_id__credentials__user_credentials_id__patch: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path: {
-                /** @description The ID of the user. */
-                user_id: string;
-                user_credentials_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateGroupPayload"];
-            };
-        };
         responses: {
             /** @description Successful Response */
             200: {
