@@ -466,16 +466,17 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     def _get_user_email(self, user_context: OptionalUserContext = None) -> str:
         return user_context.email if user_context and user_context.email else "enteryourmail@placeholder.com"
     
-    def create_valid_alias(self, public_name: str, title: str) -> str:
+    def _create_valid_alias(self, public_name: str, title: str) -> str:
         return re.sub(r"[^a-zA-Z0-9-_]", "", public_name.lower().replace(" ", "-") + "_" + title.lower().replace(" ", "-"))
     
     def _prepare_collection_data(
             self,
             title: str,
-            collection_alias: Optional[str] = None,
+            public_name: str,
             user_context: OptionalUserContext = None,
         ) -> str:
         user_email = self._get_user_email(user_context)
+        collection_alias = self._create_valid_alias(public_name, title)
         return json.dumps({
             "name": title,
             "alias": collection_alias,
