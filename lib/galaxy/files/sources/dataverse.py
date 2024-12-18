@@ -1,6 +1,8 @@
 import json
 import re
 import urllib.request
+from urllib.parse import quote
+
 from typing import (
     Any,
     cast,
@@ -9,7 +11,6 @@ from typing import (
     Optional,
     Tuple,
 )
-from urllib.parse import quote
 
 from typing_extensions import (
     Literal,
