@@ -254,18 +254,16 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     ) -> Tuple[List[RemoteDirectory], int]:
         """Lists the Dataverse datasets in the repository."""
         request_url = self.search_url
-        params: Dict[str, Any] = {}
-        params["type"] = "dataset"
+        params = {
+            "type": "dataset",
+            "per_page": limit or DEFAULT_PAGE_LIMIT,
+            "start": offset,
+            "q": f"title:{query}" if query else "*",
+            "sort": sort_by or "date",
+        }
         if writeable:
-            # Only draft datasets can be written to.
-            # This is not tested and assumes that drafts are never public, 
-            # i.e. we automatically only get the drafts from our user
             params["fq"] = "publicationStatus:Draft"
-        params["per_page"] = limit or DEFAULT_PAGE_LIMIT
-        params["start"] = offset
-        params["q"] = "title:"+query if query else "*"
-        params["sort"] = sort_by or "date" # can be either "name" or "date"
-        response_data = self._get_response(user_context, request_url, params=params)
+        response_data = self._get_response(user_context, request_url, params)
         total_hits = response_data["data"]["total_count"]
         return self._get_datasets_from_response(response_data["data"]), total_hits
 
