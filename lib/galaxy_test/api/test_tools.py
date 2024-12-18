@@ -2378,8 +2378,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
         for implicit_collection in implicit_collections:
             assert implicit_collection["populated_state"] == "ok"
 
-    def _cat1_outputs(self, history_id, inputs):
-        return self._run_outputs(self._run_cat1(history_id, inputs))
+    def _cat1_outputs(self, history_id, inputs, use_cached_job=False):
+        return self._run_outputs(self._run_cat1(history_id, inputs, use_cached_job=use_cached_job))
 
     def _run_and_get_outputs(self, tool_id, history_id, inputs=None, tool_version=None):
         if inputs is None:
@@ -2436,22 +2436,47 @@ class TestToolsApi(ApiTestCase, TestsTools):
         output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
         assert output_content.strip() == "123\n456\n456\n0ab"
 
-    @skip_without_tool("cat1")
-    def test_run_deferred_dataset(self, history_id):
+    def _run_deferred(self, history_id: str, use_cached_job=False, expect_cached_job=False, include_correct_hash=True):
+        hashes = (
+            [{"hash_function": "SHA-1", "hash_value": "2d7dcdb10964872752bd6d081725792b3f729ac9"}]
+            if include_correct_hash
+            else None
+        )
         details = self.dataset_populator.create_deferred_hda(
-            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed", ext="bed"
+            history_id,
+            "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+            ext="bed",
+            hashes=hashes,
         )
         inputs = {
             "input1": dataset_to_param(details),
         }
-        outputs = self._cat1_outputs(history_id, inputs=inputs)
-        output = outputs[0]
+        job_response = self._run_cat1(history_id, inputs, use_cached_job=use_cached_job)
+        job_response.raise_for_status()
+        job_data = job_response.json()
+        output = job_data["outputs"][0]
+        job_id = job_data["jobs"][0]["id"]
         details = self.dataset_populator.get_history_dataset_details(
             history_id, dataset=output, wait=True, assert_ok=True
         )
         assert details["state"] == "ok"
         output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
         assert output_content.startswith("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
+        if use_cached_job:
+            job = self.dataset_populator.get_job_details(job_id, full=True).json()
+            assert bool(job["copied_from_job_id"]) == expect_cached_job
+
+    @skip_without_tool("cat1")
+    def test_run_deferred_dataset(self, history_id):
+        self._run_deferred(history_id)
+
+    @skip_without_tool("cat1")
+    def test_run_deferred_dataset_with_cached_input(self, history_id):
+        self._run_deferred(history_id)
+        # Should just work because input is deferred
+        self._run_deferred(history_id, use_cached_job=True, expect_cached_job=True)
+        # Should fail because we don't have a hash
+        self._run_deferred(history_id, use_cached_job=True, expect_cached_job=False, include_correct_hash=False)
 
     @skip_without_tool("metadata_bam")
     def test_run_deferred_dataset_with_metadata_options_filter(self, history_id):

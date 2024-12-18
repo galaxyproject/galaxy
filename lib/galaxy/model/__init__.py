@@ -3200,8 +3200,8 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     active_datasets: Mapped[List["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(
             lambda: and_(
-                HistoryDatasetAssociation.history_id == History.id,  # type: ignore[arg-type]
-                not_(HistoryDatasetAssociation.deleted),  # type: ignore[has-type]
+                HistoryDatasetAssociation.history_id == History.id,
+                not_(HistoryDatasetAssociation.deleted),
             )
         ),
         order_by=lambda: asc(HistoryDatasetAssociation.hid),  # type: ignore[has-type]
@@ -3213,7 +3213,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             lambda: (
                 and_(
                     HistoryDatasetCollectionAssociation.history_id == History.id,
-                    not_(HistoryDatasetCollectionAssociation.deleted),  # type: ignore[arg-type]
+                    not_(HistoryDatasetCollectionAssociation.deleted),
                 )
             )
         ),
@@ -3223,8 +3223,8 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     visible_datasets: Mapped[List["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(
             lambda: and_(
-                HistoryDatasetAssociation.history_id == History.id,  # type: ignore[arg-type]
-                not_(HistoryDatasetAssociation.deleted),  # type: ignore[has-type]
+                HistoryDatasetAssociation.history_id == History.id,
+                not_(HistoryDatasetAssociation.deleted),
                 HistoryDatasetAssociation.visible,  # type: ignore[has-type]
             )
         ),
@@ -3235,7 +3235,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         primaryjoin=(
             lambda: and_(
                 HistoryDatasetCollectionAssociation.history_id == History.id,
-                not_(HistoryDatasetCollectionAssociation.deleted),  # type: ignore[arg-type]
+                not_(HistoryDatasetCollectionAssociation.deleted),
                 HistoryDatasetCollectionAssociation.visible,  # type: ignore[arg-type]
             )
         ),
@@ -4175,9 +4175,9 @@ class Dataset(Base, StorableObject, Serializable):
     active_history_associations: Mapped[List["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(
             lambda: and_(
-                Dataset.id == HistoryDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
-                HistoryDatasetAssociation.deleted == false(),  # type: ignore[has-type]
-                HistoryDatasetAssociation.purged == false(),  # type: ignore[arg-type]
+                Dataset.id == HistoryDatasetAssociation.dataset_id,
+                HistoryDatasetAssociation.deleted == false(),
+                HistoryDatasetAssociation.purged == false(),
             )
         ),
         viewonly=True,
@@ -4185,8 +4185,8 @@ class Dataset(Base, StorableObject, Serializable):
     purged_history_associations: Mapped[List["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(
             lambda: and_(
-                Dataset.id == HistoryDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
-                HistoryDatasetAssociation.purged == true(),  # type: ignore[arg-type]
+                Dataset.id == HistoryDatasetAssociation.dataset_id,
+                HistoryDatasetAssociation.purged == true(),
             )
         ),
         viewonly=True,
@@ -4194,8 +4194,8 @@ class Dataset(Base, StorableObject, Serializable):
     active_library_associations: Mapped[List["LibraryDatasetDatasetAssociation"]] = relationship(
         primaryjoin=(
             lambda: and_(
-                Dataset.id == LibraryDatasetDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
-                LibraryDatasetDatasetAssociation.deleted == false(),  # type: ignore[has-type]
+                Dataset.id == LibraryDatasetDatasetAssociation.dataset_id,
+                LibraryDatasetDatasetAssociation.deleted == false(),
             )
         ),
         viewonly=True,
@@ -4661,11 +4661,13 @@ def datatype_for_extension(extension, datatypes_registry=None) -> "Data":
 class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     """A base class for all 'dataset instances', HDAs, LDDAs, etc"""
 
+    purged: Mapped[Optional[bool]]
+    deleted: Mapped[bool]
+    dataset_id: Mapped[Optional[int]]
+    _state: Mapped[Optional[str]]
     states = Dataset.states
-    _state: Optional[str]
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
-    purged: bool
     creating_job_associations: List[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
     copied_from_history_dataset_association: Optional["HistoryDatasetAssociation"]
     copied_from_library_dataset_dataset_association: Optional["LibraryDatasetDatasetAssociation"]
@@ -5321,7 +5323,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     Resource class that creates a relation between a dataset and a user history.
     """
 
-    history_id: Optional[int]
+    history_id: Mapped[Optional[int]]
 
     def __init__(
         self,
@@ -7008,7 +7010,7 @@ class HistoryDatasetCollectionAssociation(
     name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
     hid: Mapped[Optional[int]]
     visible: Mapped[Optional[bool]]
-    deleted: Mapped[Optional[bool]] = mapped_column(default=False)
+    deleted: Mapped[bool] = mapped_column(default=False)
     copied_from_history_dataset_collection_association_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("history_dataset_collection_association.id")
     )
