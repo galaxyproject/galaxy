@@ -456,14 +456,12 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             public_name: str,
             user_context: OptionalUserContext = None,
         ) -> str:
-        user_email = self._get_user_email(user_context)
-        collection_alias = self._create_valid_alias(public_name, title)
         return json.dumps({
             "name": title,
-            "alias": collection_alias,
+            "alias": self._create_valid_alias(public_name, title),
             "dataverseContacts": [
             {
-                "contactEmail": user_email
+                "contactEmail": self._get_user_email(user_context)
             },
             ],
         })
