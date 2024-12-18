@@ -390,18 +390,15 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         rval: List[RemoteFile] = []
         for entry in response:
             dataFile = entry.get("dataFile")
-            filename = dataFile.get("filename")
-            persistendId = dataFile.get("persistentId")
-            uri = self.to_plugin_uri(dataset_id=dataset_id, file_identifier=persistendId)
-            path = self.plugin.to_relative_path(uri)
+            uri = self.to_plugin_uri(dataset_id, dataFile.get("persistentId"))
             rval.append(
                 {
                     "class": "File",
-                    "name": filename,
+                    "name": dataFile.get("filename"),
                     "size": dataFile.get("filesize"),
                     "ctime": dataFile.get("creationDate"),
                     "uri": uri,
-                    "path": path,
+                    "path": self.plugin.to_relative_path(uri),
                 }
             )
         return rval
