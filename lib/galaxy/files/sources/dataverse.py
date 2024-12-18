@@ -227,11 +227,14 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     def create_dataset_url(self, parent_alias: str) -> str:
         return f"{self.api_base_url}/dataverses/{parent_alias}/datasets"
     
-    def public_dataset_url(self, dataset_id: str) -> str:
-        return f"{self.repository_url}/dataset.xhtml?persistentId={dataset_id}"
+    def download_dataset_as_zip_url(self, dataset_id: str) -> str:
+        return f"{self.api_base_url}/access/dataset/:persistentId/?persistentId={dataset_id}"
     
     def add_files_to_dataset_url(self, dataset_id: str) -> str:
         return f"{self.api_base_url}/datasets/:persistentId/add?persistentId={dataset_id}"
+    
+    def public_dataset_url(self, dataset_id: str) -> str:
+        return f"{self.repository_url}/dataset.xhtml?persistentId={dataset_id}"
 
     def to_plugin_uri(self, dataset_id: str, file_identifier: Optional[str] = None) -> str:
         return f"{self.plugin.get_uri_root()}/{f'{file_identifier}' if file_identifier else f'{dataset_id}'}"
@@ -339,8 +342,8 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             file_path: str, 
             user_context: OptionalUserContext = None
         ):
-        download_file_content_url = f"{self.api_base_url}/access/dataset/:persistentId/?persistentId={dataset_id}"
-        self._download_file(file_path, download_file_content_url, user_context)
+        download_dataset_url = self.download_dataset_as_zip_url(dataset_id)
+        self._download_file(file_path, download_dataset_url, user_context)
 
     def _download_file(
             self, 
