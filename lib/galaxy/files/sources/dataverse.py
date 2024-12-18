@@ -172,6 +172,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ):
+        """Used when download files from dataverse."""
         # TODO: user_context is always None here when called from a data fetch. (same problem as in invenio.py)
         # This prevents downloading files that require authentication even if the user provided a token.
         
@@ -199,6 +200,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ):
+        """Used when uploading files to dataverse."""
         dataset_id, file_id = self.parse_path(target_path)
         self.repository.upload_file_to_draft_container(dataset_id, file_id, native_path, user_context=user_context)
     
