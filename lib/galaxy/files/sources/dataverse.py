@@ -97,9 +97,9 @@ class DataverseRDMFilesSource(RDMFilesSource):
         return DataverseRepositoryInteractor(repository_url, self)
 
     def parse_path(self, source_path: str, container_id_only: bool = False) -> ContainerAndFileIdentifier:
-        """Parses the given source path and returns the dataset_id and the file_id. 
+        """Parses the given source path and returns the dataset_id and/or the file_id. 
 
-        The source path must have the format '/<dataset_id>/<file_id>'.
+        The source path must either have the format '/<dataset_id>' or '/<file_id>' where <dataset_id> is a subset of <file_id>.
         If dataset_id_only is True, the source path must have the format '/<dataset_id>' and an empty file_id will be returned.
 
         Example dataset_id: 
@@ -108,24 +108,20 @@ class DataverseRDMFilesSource(RDMFilesSource):
         Example file_id:
         doi:10.70122/FK2/DIG2DG/AVNCLL
         """
-        def get_error_msg(details: str) -> str:
-            return f"Invalid source path: '{source_path}'. Expected format: '{expected_format}'. {details}"
-
-        expected_format = "/<dataset_id>"
         if not source_path.startswith("/"):
-            raise ValueError(get_error_msg("Must start with '/'."))
-        parts = source_path[1:].split("/", 4)
-        dataset_id = "/".join(parts[0:3])
+            raise ValueError(f"Invalid source path: '{source_path}'. Must start with '/'.")
+
+        parts = source_path[1:].split("/", 3)
+        dataset_id = "/".join(parts[:3])
+
         if container_id_only:
             if len(parts) != 3:
-                raise ValueError(get_error_msg("Please provide the dataset_id only."))
-            dataset_id = "/".join(parts[0:3])
-            return ContainerAndFileIdentifier(dataset_id=parts[0:3], file_identifier="")
-        expected_format = "/<dataset_id>/<file_id>"
-        if len(parts) < 4:
-            raise ValueError(get_error_msg("Please provide both the dataset_id and file_id."))
-        if len(parts) > 4:
-            raise ValueError(get_error_msg("Too many parts. Please provide the dataset_id and file_id only."))
+                raise ValueError(f"Invalid source path: '{source_path}'. Expected format: '/<dataset_id>'.")
+            return ContainerAndFileIdentifier(container_id=dataset_id, file_identifier="")
+
+        if len(parts) != 4:
+            raise ValueError(f"Invalid source path: '{source_path}'. Expected format: '/<file_id>'.")
+        
         file_id = dataset_id + "/" + parts[3]
         return ContainerAndFileIdentifier(container_id=dataset_id, file_identifier=file_id)
     
