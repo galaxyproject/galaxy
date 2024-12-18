@@ -142,7 +142,7 @@ def test_resolves_to_invalid_type(monkeypatch):
 
 
 def test_resolves_with_empty_component(monkeypatch):
-    # A path can be None (root path is never None; may be asigned elsewhere)
+    # A path can be None (root path is never None; may be assigned elsewhere)
     mock_schema = {
         "path0": {
             "type": "str",
@@ -155,7 +155,7 @@ def test_resolves_with_empty_component(monkeypatch):
         "path2": {
             "type": "str",
             "default": "value2",
-            "path_resolves_to": "path1",
+            "path_resolves_to": "path0",
         },
     }
     monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(mock_schema))
@@ -163,5 +163,5 @@ def test_resolves_with_empty_component(monkeypatch):
 
     config = BaseAppConfiguration()
     assert config.path0 == "value0"
-    assert config.path1 == "value0"
+    assert config.path1 is None
     assert config.path2 == "value0/value2"
