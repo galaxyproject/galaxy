@@ -1,4 +1,5 @@
 from collections import UserDict
+import logging
 from typing import (
     Any,
     Dict,
@@ -30,6 +31,7 @@ from galaxy.util.permutations import (
     split_flattened_repeat_key,
 )
 
+log = logging.getLogger(__name__)
 PARAMS_UNWRAPPED = object()
 
 
@@ -47,11 +49,13 @@ class LegacyUnprefixedDict(UserDict):
         self._legacy_mapping[old_key] = new_key
 
     def __getitem__(self, key):
+        # log.error(f"__getitem__ {key=} {self.data=} {self._legacy_mapping=}")
         if key not in self.data and key in self._legacy_mapping:
             return super().__getitem__(self._legacy_mapping[key])
         return super().__getitem__(key)
 
     def __contains__(self, key: object) -> bool:
+        log.error(f"__contains__ {key=} {self.data=} {self._legacy_mapping=}")
         if super().__contains__(key):
             return True
         return key in self._legacy_mapping
