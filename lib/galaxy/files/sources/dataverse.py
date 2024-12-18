@@ -263,7 +263,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             params["fq"] = "publicationStatus:Draft"
         params["per_page"] = limit or DEFAULT_PAGE_LIMIT
         params["start"] = offset
-        params["q"] = query or "*"
+        params["q"] = "title:"+query if query else "*"
         params["sort"] = sort_by or "date" # can be either "name" or "date"
         response_data = self._get_response(user_context, request_url, params=params)
         total_hits = response_data["data"]["total_count"]
