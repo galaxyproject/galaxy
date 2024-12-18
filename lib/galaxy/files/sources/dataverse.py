@@ -373,18 +373,15 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                 )
 
     def _get_datasets_from_response(self, response: dict) -> List[RemoteDirectory]:
-        datasets = response["items"]
         rval: List[RemoteDirectory] = []
-        for dataset in datasets:
+        for dataset in response["items"]:
             uri = self.to_plugin_uri(dataset_id=dataset["global_id"])
-            path = self.plugin.to_relative_path(uri)
-            name = self._get_dataset_title(dataset)
             rval.append(
                 {
                     "class": "Directory",
                     "name": dataset.get("name") or "No title",
                     "uri": uri,
-                    "path": path,
+                    "path": self.plugin.to_relative_path(uri),
                 }
             )
         return rval
