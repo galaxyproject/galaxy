@@ -145,8 +145,8 @@ class CredentialPayload(Model):
         title="Type",
         description="Type of the credential(secret/variable)",
     )
-    value: str = Field(
-        ...,
+    value: Optional[str] = Field(
+        None,
         title="Credential Value",
         description="Value of the credential",
     )
@@ -186,8 +186,8 @@ class UpdateCredentialPayload(Model):
         title="ID",
         description="ID of the credential",
     )
-    value: str = Field(
-        ...,
+    value: Optional[str] = Field(
+        None,
         title="Value",
         description="Value of the credential",
     )
