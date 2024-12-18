@@ -148,7 +148,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
                 writeable, user_context, limit=limit, offset=offset, query=query
             )
             return cast(List[AnyRemoteEntry], datasets), total_hits
-        dataset_id = self._get_dataset_id_from_path(path)
+        dataset_id = self.get_container_id_from_path(path)
         files = self.repository.get_files_in_container(dataset_id, writeable, user_context)
         return cast(List[AnyRemoteEntry], files), len(files)
 
@@ -202,10 +202,6 @@ class DataverseRDMFilesSource(RDMFilesSource):
     ):
         dataset_id, file_id = self.parse_path(target_path)
         self.repository.upload_file_to_draft_container(dataset_id, file_id, native_path, user_context=user_context)
-
-    def _get_dataset_id_from_path(self, path: str) -> str:
-        """e.g. /doi:10.70122/FK2/DIG2DG => doi:10.70122/FK2/DIG2DG"""
-        return path.lstrip("/")
     
 class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     """In Dataverse a "Dataset" represents what we refer to as container in the rdm base class"""
