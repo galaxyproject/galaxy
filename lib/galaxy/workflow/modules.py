@@ -463,7 +463,7 @@ class WorkflowModule:
 
         return state, step_errors
 
-    def encode_runtime_state(self, step, runtime_state):
+    def encode_runtime_state(self, step, runtime_state: DefaultToolState):
         """Takes the computed runtime state and serializes it during run request creation."""
         return runtime_state.encode(Bunch(inputs=self.get_runtime_inputs(step)), self.trans.app)
 
@@ -2274,6 +2274,7 @@ class ToolModule(WorkflowModule):
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
             raise exceptions.MessageException(message)
         tool_state = step.state
+        assert tool_state is not None
         tool_inputs = tool.inputs.copy()
         # Not strictly needed - but keep Tool state clean by stripping runtime
         # metadata parameters from it.
@@ -2402,7 +2403,7 @@ class ToolModule(WorkflowModule):
                 mapping_params=mapping_params,
                 history=invocation.history,
                 collection_info=collection_info,
-                workflow_invocation_uuid=invocation.uuid.hex,
+                workflow_invocation_uuid=invocation.uuid.hex if invocation.uuid else None,
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
                 validate_outputs=validate_outputs,

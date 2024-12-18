@@ -339,6 +339,7 @@ class WorkflowInvoker:
                 )
 
     def _invoke_step(self, invocation_step: WorkflowInvocationStep) -> Optional[bool]:
+        assert invocation_step.workflow_step.module
         incomplete_or_none = invocation_step.workflow_step.module.execute(
             self.trans,
             self.progress,
@@ -735,6 +736,7 @@ class WorkflowProgress:
         return raw_to_galaxy(self.module_injector.trans.app, self.module_injector.trans.history, value)
 
     def _recover_mapping(self, step_invocation: WorkflowInvocationStep) -> None:
+        assert step_invocation.workflow_step.module
         try:
             step_invocation.workflow_step.module.recover_mapping(step_invocation, self)
         except modules.DelayedWorkflowEvaluation as de:
