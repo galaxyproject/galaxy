@@ -8108,7 +8108,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
     tool_errors: Mapped[Optional[bytes]] = mapped_column(JSONType)
     position: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     config: Mapped[Optional[bytes]] = mapped_column(JSONType)
-    order_index: Mapped[Optional[int]]
+    order_index: Mapped[int]
     when_expression: Mapped[Optional[bytes]] = mapped_column(JSONType)
     uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType)
     label: Mapped[Optional[str]] = mapped_column(Unicode(255))

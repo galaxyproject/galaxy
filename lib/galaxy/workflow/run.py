@@ -1,5 +1,6 @@
 import logging
 import uuid
+from collections.abc import MutableMapping
 from typing import (
     Any,
     Dict,
@@ -37,6 +38,10 @@ from galaxy.schema.invocation import (
     WarningReason,
 )
 from galaxy.tools.parameters.basic import raw_to_galaxy
+from galaxy.tools.parameters.workflow_utils import (
+    NO_REPLACEMENT,
+    NoReplacement,
+)
 from galaxy.tools.parameters.wrapped import nested_key_to_path
 from galaxy.util import ExecutionTimer
 from galaxy.workflow import modules
@@ -432,11 +437,11 @@ class WorkflowProgress:
 
     def replacement_for_input(self, trans, step: "WorkflowStep", input_dict: Dict[str, Any]):
         replacement: Union[
-            modules.NoReplacement,
+            NoReplacement,
             model.DatasetCollectionInstance,
             List[model.DatasetCollectionInstance],
             HistoryItem,
-        ] = modules.NO_REPLACEMENT
+        ] = NO_REPLACEMENT
         prefixed_name = input_dict["name"]
         multiple = input_dict["multiple"]
         is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
@@ -494,6 +499,8 @@ class WorkflowProgress:
                     dependent_workflow_step_id=output_step_id,
                 )
             )
+        if isinstance(replacement, MutableMapping) and replacement.get("__class__") == "NoReplacement":
+            return NO_REPLACEMENT
         if isinstance(replacement, model.HistoryDatasetCollectionAssociation):
             if not replacement.collection.populated:
                 if not replacement.waiting_for_elements:
@@ -574,19 +581,8 @@ class WorkflowProgress:
         if self.inputs_by_step_id:
             step_id = step.id
             if step_id not in self.inputs_by_step_id and "output" not in outputs:
-                default_value = step.get_input_default_value(modules.NO_REPLACEMENT)
-                if default_value is not modules.NO_REPLACEMENT:
-                    outputs["output"] = default_value
-                else:
-                    log.error(f"{step.log_str()} not found in inputs_step_id {self.inputs_by_step_id}")
-                    raise modules.FailWorkflowEvaluation(
-                        why=InvocationFailureOutputNotFound(
-                            reason=FailureReason.output_not_found,
-                            workflow_step_id=invocation_step.workflow_step_id,
-                            output_name="output",
-                            dependent_workflow_step_id=invocation_step.workflow_step_id,
-                        )
-                    )
+                default_value = step.get_input_default_value(NO_REPLACEMENT)
+                outputs["output"] = default_value
             elif step_id in self.inputs_by_step_id:
                 if self.inputs_by_step_id[step_id] is not None or "output" not in outputs:
                     outputs["output"] = self.inputs_by_step_id[step_id]
@@ -620,7 +616,7 @@ class WorkflowProgress:
                     # Add this non-data, non workflow-output output to the workflow outputs.
                     # This is required for recovering the output in the next scheduling iteration,
                     # and should be replaced with a WorkflowInvocationStepOutputValue ASAP.
-                    if not workflow_outputs_by_name.get(output_name) and not output_object == modules.NO_REPLACEMENT:
+                    if not workflow_outputs_by_name.get(output_name) and output_object is not NO_REPLACEMENT:
                         workflow_output = model.WorkflowOutput(step, output_name=output_name)
                         step.workflow_outputs.append(workflow_output)
             for workflow_output in step.workflow_outputs:
@@ -645,6 +641,8 @@ class WorkflowProgress:
                 )
 
     def _record_workflow_output(self, step: "WorkflowStep", workflow_output: "WorkflowOutput", output: Any) -> None:
+        if output is NO_REPLACEMENT:
+            output = {"__class__": "NoReplacement"}
         self.workflow_invocation.add_output(workflow_output, step, output)
 
     def mark_step_outputs_delayed(self, step: "WorkflowStep", why: Optional[str] = None) -> None:

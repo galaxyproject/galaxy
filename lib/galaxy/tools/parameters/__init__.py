@@ -31,6 +31,7 @@ from .grouping import (
 )
 from .workflow_utils import (
     is_runtime_value,
+    NO_REPLACEMENT,
     runtime_to_json,
 )
 from .wrapped import flat_to_nested_state
@@ -180,8 +181,22 @@ def visit_input_values(
             replace = new_value != no_replacement_value
         if replace:
             input_values[input.name] = new_value
-        elif replace_optional_connections and is_runtime_value(value) and hasattr(input, "value"):
-            input_values[input.name] = input.value
+        elif replace_optional_connections:
+            # Only used in workflow context
+            has_default = hasattr(input, "value")
+            if new_value is value is NO_REPLACEMENT:
+                # NO_REPLACEMENT means value was connected but left unspecified
+                if has_default:
+                    # Use default if we have one
+                    input_values[input.name] = input.value
+                else:
+                    # Should fail if input is not optional and does not have default value
+                    # Effectively however depends on parameter implementation.
+                    # We might want to raise an exception here, instead of depending on a tool parameter value error.
+                    input_values[input.name] = None
+
+            elif is_runtime_value(value) and has_default:
+                input_values[input.name] = input.value
 
     def get_current_case(input, input_values):
         test_parameter = input.test_param
