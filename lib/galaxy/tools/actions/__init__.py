@@ -1180,6 +1180,7 @@ def determine_output_format(
                 pass
         ext = random_input_ext
     format_source = output.format_source
+    log.error(f"{format_source=} {input_datasets=} {format_source in input_datasets=}")
     if format_source is not None and format_source in input_datasets:
         try:
             input_dataset = input_datasets[output.format_source]
