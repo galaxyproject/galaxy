@@ -191,7 +191,7 @@ onMounted(() => {
                         position: absolute;
                         left: 1.6rem;
                         top: 1.6rem;
-                        font-size: 0.4rem;
+                        font-size: 0.6rem;
                         font-weight: bold;
                     }
                 }
