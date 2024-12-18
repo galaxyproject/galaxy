@@ -310,9 +310,11 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         file_path: str,
         user_context: OptionalUserContext = None,
     ):
+        """Uploads a file to a draft dataset in the repository."""
         headers = self._get_request_headers(user_context, auth_required=True)
 
         with open(file_path, "rb") as file:
+            # TODO: For some reason tar.gz files are not uploaded successfully to Dataverse.
             files = {'file': (filename, file)}
             add_files_url = self.add_files_to_dataset_url(dataset_id)
             response = requests.post(
