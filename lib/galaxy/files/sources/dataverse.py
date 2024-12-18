@@ -147,7 +147,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
             )
             return cast(List[AnyRemoteEntry], datasets), total_hits
         dataset_id = self.get_container_id_from_path(path)
-        files = self.repository.get_files_in_container(dataset_id, writeable, user_context)
+        files = self.repository.get_files_in_container(dataset_id, writeable, user_context, query)
         return cast(List[AnyRemoteEntry], files), len(files)
 
     def _create_entry(
@@ -268,13 +268,23 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         return self._get_datasets_from_response(response_data["data"]), total_hits
 
     def get_files_in_container(
-        self, dataset_id: str, writeable: bool, user_context: OptionalUserContext = None
+        self, 
+        dataset_id: str, 
+        writeable: bool, 
+        user_context: OptionalUserContext = None,
+        query: Optional[str] = None, 
     ) -> List[RemoteFile]:
         """This method lists the files in a dataverse dataset."""
         request_url = self.files_of_dataset_url(dataset_id=dataset_id)
         response_data = self._get_response(user_context, request_url)
-        total_hits = response_data["totalCount"]
-        return self._get_files_from_response(dataset_id, response_data["data"])
+        files = self._get_files_from_response(dataset_id, response_data["data"])
+        files = self._filter_files_by_name(files, query)
+        return files
+    
+    def _filter_files_by_name(self, files: List[RemoteFile], query: Optional[str] = None) -> List[RemoteFile]:
+        if not query:
+            return files
+        return [file for file in files if query in file["name"]]
 
     def create_draft_file_container(
         self, title: str, public_name: str, user_context: OptionalUserContext = None
