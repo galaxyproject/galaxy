@@ -290,17 +290,17 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         dataset = self._create_dataset(collection_alias, dataset_payload, user_context)
         if dataset and dataset.get("data"):
             dataset["data"]["name"] = title
-            return dataset["data"]
+            return dataset.get("data")
         else: 
             raise Exception("Could not create dataset in Dataverse or response has not expected format.")
     
-    def _create_collection(self, parent_alias: str, collection_payload: dict, user_context: OptionalUserContext = None) -> dict:
+    def _create_collection(self, parent_alias: str, collection_payload: str, user_context: OptionalUserContext = None) -> dict:
         headers = self._get_request_headers(user_context, auth_required=True)
         response = requests.post(self.create_collection_url(parent_alias), data=collection_payload, headers=headers)
         self._ensure_response_has_expected_status_code(response, 201)
         return response.json()
 
-    def _create_dataset(self, parent_alias: str, dataset_payload: dict, user_context: OptionalUserContext = None) -> dict:
+    def _create_dataset(self, parent_alias: str, dataset_payload: str, user_context: OptionalUserContext = None) -> dict:
         headers = self._get_request_headers(user_context, auth_required=True)
         response = requests.post(self.create_dataset_url(parent_alias), data=dataset_payload, headers=headers)
         self._ensure_response_has_expected_status_code(response, 201)
