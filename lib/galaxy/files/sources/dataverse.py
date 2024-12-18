@@ -237,6 +237,9 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
 
     def to_plugin_uri(self, dataset_id: str, file_identifier: Optional[str] = None) -> str:
         return f"{self.plugin.get_uri_root()}/{f'{file_identifier}' if file_identifier else f'{dataset_id}'}"
+    
+    def _is_api_url(self, url: str) -> bool:
+        return "/api/" in url
         
     def get_file_containers(
         self,
@@ -368,9 +371,6 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                 raise NotFoundException(
                     f"Cannot download file from URL '{file_path}'. Please make sure the dataset and/or file exists and it is public."
                 )
-
-    def _is_api_url(self, url: str) -> bool:
-        return "/api/" in url
 
     def _get_datasets_from_response(self, response: dict) -> List[RemoteDirectory]:
         datasets = response["items"]
