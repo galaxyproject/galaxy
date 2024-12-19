@@ -70,8 +70,8 @@ function executeActivity(activity: Activity) {
 </script>
 
 <template>
-    <div class="activity-settings rounded no-highlight">
-        <div v-if="foundActivities" class="activity-settings-content">
+    <div>
+        <div v-if="foundActivities">
             <button
                 v-for="activity in filteredActivities"
                 :key="activity.id"
@@ -122,7 +122,7 @@ function executeActivity(activity: Activity) {
                 </div>
             </button>
         </div>
-        <div v-else class="activity-settings-content">
+        <div v-else>
             <b-alert v-localize class="py-1 px-2" show> No matching activities found. </b-alert>
         </div>
     </div>
@@ -131,16 +131,6 @@ function executeActivity(activity: Activity) {
 <style lang="scss">
 @import "theme/blue.scss";
 
-.activity-settings {
-    overflow-y: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.activity-settings-content {
-    overflow-y: auto;
-}
-
 .activity-settings-item {
     background: none;
     border: none;
@@ -148,6 +138,7 @@ function executeActivity(activity: Activity) {
     transition: none;
     width: 100%;
 }
+
 .activity-settings-item:hover {
     background: $gray-200;
 }
