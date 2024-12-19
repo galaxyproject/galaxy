@@ -70,7 +70,7 @@ function executeActivity(activity: Activity) {
 </script>
 
 <template>
-    <div class="no-highlight">
+    <div>
         <div v-if="foundActivities">
             <button
                 v-for="activity in filteredActivities"
