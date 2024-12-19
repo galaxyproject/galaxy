@@ -8044,7 +8044,6 @@ export interface components {
             /**
              * Source Type
              * @constant
-             * @enum {string}
              */
             source_type: "tool";
         };
