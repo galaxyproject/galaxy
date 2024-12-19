@@ -13,6 +13,7 @@ import {
     BFormGroup,
     BFormInput,
     BFormText,
+    BModal,
 } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 
@@ -22,6 +23,7 @@ import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
+import PasswordStrength from "@/components/Login/PasswordStength.vue";
 
 interface Props {
     sessionCsrfToken: string;
@@ -43,7 +45,7 @@ const emit = defineEmits<{
 
 const email = ref(null);
 const confirm = ref(null);
-const password = ref(null);
+const password = ref<string | null>(null);
 const username = ref(null);
 const subscribe = ref(null);
 const messageText: Ref<string | null> = ref(null);
@@ -145,7 +147,10 @@ async function submit() {
                                         name="password"
                                         type="password"
                                         autocomplete="new-password"
-                                        required />
+                                        required 
+                                    />
+                                    <!-- Password Strength Component -->
+                                    <PasswordStrength :password="password" />
                                 </BFormGroup>
 
                                 <BFormGroup :label="labelConfirmPassword" label-for="register-form-confirm">
@@ -217,7 +222,10 @@ async function submit() {
         </div>
     </div>
 </template>
+
 <style scoped lang="scss">
+@import "theme/blue.scss";
+
 .embed-container {
     position: relative;
 
