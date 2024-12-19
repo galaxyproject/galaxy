@@ -134,6 +134,13 @@ def set_meta_with_tool_provided(
             dataset_instance.metadata.__extension__ = extension
         except Exception:
             log.exception("Problem sniffing datatype.")
+    elif extension == "data" and file_dict.get("format"):
+        format = file_dict["format"]
+        mapped_ext = datatypes_registry.get_datatype_ext_by_format_ontology(format)
+        if mapped_ext:
+            extension = mapped_ext
+            dataset_instance.metadata.__extension__ = extension
+            dataset_instance.extension = extension
 
     for metadata_name, metadata_value in file_dict.get("metadata", {}).items():
         setattr(dataset_instance.metadata, metadata_name, metadata_value)
