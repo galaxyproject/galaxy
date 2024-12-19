@@ -201,6 +201,9 @@ Enhancements
   `Pull Request 19096`_
 .. enhancement
 
+* Activity bar add new workflow button
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 19281`_
 * Guide users to collection builders
   (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
   `Pull Request 18857`_
@@ -602,6 +605,9 @@ Fixes
 
 .. bug
 
+* Fix activity-bar-id handling wrt activityStore
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 19316`_
 * Login redirect followup
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 19251`_
