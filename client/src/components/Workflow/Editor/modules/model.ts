@@ -48,9 +48,15 @@ export async function fromSimple(
     // If workflow being copied into another, wipe UUID and let
     // Galaxy assign new ones.
     if (options?.reassignIds ?? appendData) {
-        const stepIdOffset = stepStore.getStepIndex + 1;
+        const highestStepId = stepStore.getStepIndex;
 
-        Object.values(data.steps).forEach((step) => {
+        const stepArray = Object.values(data.steps);
+        const stepIds = Object.keys(data.steps).map((id) => parseInt(id));
+        const lowestStepId = Math.min(...stepIds);
+
+        const stepIdOffset = highestStepId - lowestStepId + 1;
+
+        stepArray.forEach((step) => {
             delete step.uuid;
             if (!step.position) {
                 // Should only happen for manually authored editor content,
