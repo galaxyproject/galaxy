@@ -1,0 +1,40 @@
+version=12.3.26_dev
+
+# code: adding empirical rules to MMFF94 calculation
+#
+# checkmm.spt;checkAllEnergies
+#
+# checking calculated energies for 761 models
+# 1 COMKAQ     E=   -7.3250003   Eref=  -7.6177    diff=  0.2926998
+# 2 DUVHUX10   E=   64.759995    Eref=  64.082855  diff=  0.6771393
+# 3 FORJIF     E=   35.978       Eref=  35.833878  diff=  0.14412308
+# 4 JADLIJ     E=   25.104       Eref=  24.7038    diff=  0.4001999
+# 5 PHOSLA10   E=   111.232994   Eref=  112.07078  diff=  0.8377838
+# 6 PHOSLB10   E=   -93.479004   Eref=  -92.64081  diff=  0.8381958
+#
+# for 761 atoms, 6 have energy differences outside the range -0.1 to 0.1 
+# with a standard deviation of 0.05309403
+#
+# a comment about empirical bond parameter calculation:
+#
+#    // Well, guess what? As far as I can tell, in Eqn 18 on page 625, 
+#    // the reduction term and delta are zero. 
+#   
+#    // -- at least in the program run that is at the validation site:
+#    //  OPTIMOL: Molecular and Macromolecular Optimization Package 17-Nov-98 16:01:23
+#    // SGI double-precision version ... Updated 5/6/98
+#    // 
+#    // This calculation is run only for the following three structures. In each case the
+#    // reported validation values and values from Jmol 12.3.26_dev are shown. Clearly 
+#    // the r0 calculated and final energies are very good. subtracting off 0.008 from 
+#    // r0 would certainly not give the reported values. Something is odd there.
+#    //
+#    //             bond      red*     r0(here/valid)  kb(here/valid)  Etotal(here/valid)
+#    //            ---------------------------------------------------------------------------------------
+#    // OHWM1       H1-O1     0.03      0.978/0.978       7.510/7.51   -21.727/-21.72690
+#    // ERULE_03    Si1-P1    0.0       2.223/2.224       1.614/1.609   -2.983/ -2.93518
+#    // ERULE_06    N1-F1     0.0       1.381/1.379       5.372/5.438    1.582/  1.58172
+#    //
+#    // *reduction and delta terms not used in Jmol's calculation
+#
+#
