@@ -8,7 +8,8 @@
       - that: has_text
         text: "1"
 - doc: |
-    Test that null is replaced with default value (follows https://www.commonwl.org/v1.2/Workflow.html#WorkflowInputParameter)
+    Test that explicit null is not replaced and fails
+  expect_failure: true
   job:
     required_int_with_default:
       type: raw

@@ -8108,7 +8108,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
     tool_errors: Mapped[Optional[bytes]] = mapped_column(JSONType)
     position: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     config: Mapped[Optional[bytes]] = mapped_column(JSONType)
-    order_index: Mapped[Optional[int]]
+    order_index: Mapped[int]
     when_expression: Mapped[Optional[bytes]] = mapped_column(JSONType)
     uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType)
     label: Mapped[Optional[str]] = mapped_column(Unicode(255))
@@ -8695,7 +8695,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     state: Mapped[Optional[str]] = mapped_column(TrimmedString(64), index=True)
     scheduler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType())
+    uuid: Mapped[Optional[Union[UUID]]] = mapped_column(UUIDType())
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
 
     history = relationship("History", back_populates="workflow_invocations")
@@ -9420,7 +9420,7 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     )
     action: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
 
-    workflow_step = relationship("WorkflowStep")
+    workflow_step: Mapped[WorkflowStep] = relationship("WorkflowStep")
     job: Mapped[Optional["Job"]] = relationship(back_populates="workflow_invocation_step", uselist=False)
     implicit_collection_jobs = relationship("ImplicitCollectionJobs", uselist=False)
     output_dataset_collections = relationship(
