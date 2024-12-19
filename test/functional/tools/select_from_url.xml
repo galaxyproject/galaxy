@@ -7,12 +7,11 @@ echo '$url_param_value_header_and_body' > '$param_value_header_and_body'
     ]]></command>
     <inputs>
         <param name="url_param_value" type="select">
-            <options from_url="https://usegalaxy.org/api/genomes">
-            </options>
+            <options from_url="https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/refs/heads/master/genomes.json"></options>
         </param>
         <param name="dynamic_param_filtered_with_validator" type="select">
             <!-- tested in test_build_module_filter_dynamic_select -->
-            <options from_url="https://usegalaxy.org/api/genomes">
+            <options from_url="https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/refs/heads/master/genomes.json">
                 <filter type="param_value" ref="url_param_value" column="1" />
             </options>
             <validator type="no_options" message="Need at least one option here" />
@@ -24,14 +23,14 @@ echo '$url_param_value_header_and_body' > '$param_value_header_and_body'
         </param>
         -->
         <param name="url_param_value_postprocessed" type="select">
-            <options from_url="https://usegalaxy.org/api/genomes/dm6">
+            <options from_url="https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/refs/heads/master/dm6.json">
                 <postprocess_expression type="ecma5.1"><![CDATA[
                     $( Object.values(inputs.chrom_info).map((v) => [v.chrom, v.len]) )
                 ]]></postprocess_expression>
             </options>
         </param>
         <param name="invalid_url_param_value_postprocessed" type="select">
-            <options from_url="https://usegalaxy.or/api/genomes/dm6">
+            <options from_url="https://usegalaxy.or">
                 <postprocess_expression type="ecma5.1"><![CDATA[${
                     if (inputs) {
                         return Object.values(inputs.chrom_info).map((v) => [v.chrom, v.len])
