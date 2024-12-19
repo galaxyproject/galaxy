@@ -89,7 +89,205 @@ DRAFT CONTENT
 
 Configuration Changes
 ===========================================================
-Add content or drop section.
+
+
+Added
+-----
+
+The following configuration options are new
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.file_source_listings_expiry_time
+-  mapping.galaxy.mapping.file_source_temp_dir
+-  mapping.galaxy.mapping.file_source_webdav_use_temp_files
+-  mapping.galaxy.mapping.interactivetoolsproxy_map
+-  mapping.galaxy.mapping.openai_api_key
+-  mapping.galaxy.mapping.openai_model
+-  mapping.galaxy.mapping.workflow_scheduling_separate_materialization_iteration
+
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/user_preferences_extra_conf.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  preferences.onedata.inputs has changed from
+
+   ::
+
+    {'name': 'onezone_domain', 'label': 'Domain of the Onezone service (e.g. datahub.egi.eu)', 'type': 'text', 'required': False}
+    {'name': 'access_token', 'label': 'Your access token, suitable for REST API access in a Oneprovider service', 'type': 'password', 'required': False}
+    {'name': 'disable_tls_certificate_validation', 'label': 'Allow connection to Onedata servers that do not present trusted SSL certificates. SHOULD NOT be used unless you really know what you are doing.', 'type': 'boolean', 'required': False, 'value': False}
+
+   to
+
+   ::
+
+    {'name': 'onezone_domain', 'label': 'Domain of the Onezone service (e.g. datahub.egi.eu). The minimal supported Onezone version is 21.02.4.', 'type': 'text', 'required': False}
+    {'name': 'access_token', 'label': 'Your access token, suitable for REST API access in a Oneprovider service', 'type': 'password', 'required': False}
+    {'name': 'disable_tls_certificate_validation', 'label': 'Allow connection to Onedata servers that do not present trusted SSL certificates. SHOULD NOT be used unless you really know what you are doing.', 'type': 'boolean', 'required': False, 'value': False}
+
+
+
+config/file_sources_conf.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   has changed from
+
+   ::
+
+    {'type': 'dropbox', 'id': 'dropbox1', 'label': 'Dropbox files (configure access in user preferences)', 'doc': 'Your Dropbox files - configure an access token via the user preferences', 'access_token': "${user.preferences['dropbox|access_token']}"}
+    {'type': 'webdav', 'id': 'owncloud1', 'label': 'OwnCloud', 'doc': 'External OwnCloud files (configure access in user preferences)', 'url': "${user.preferences['owncloud|url']}", 'root': "${user.preferences['owncloud|root']}", 'login': "${user.preferences['owncloud|username']}", 'password': "${user.preferences['owncloud|password']}", 'temp_path': '/your/temp/path', 'writable': False}
+    {'type': 'posix', 'root': '/data/5/galaxy_import/galaxy_user_data/covid-19/data/sequences/', 'id': 'covid19-raw-sequences', 'label': 'COVID-19 FASTQ', 'doc': 'COVID-19 RAW sequences in FASTQ format'}
+    {'type': 'posix', 'root': '/data/db/databases/pdb/pdb/', 'id': 'pdb-gzip', 'doc': 'Protein Data Bank (PDB)', 'label': 'PDB'}
+    {'type': 'ftp', 'id': 'ebi-ftp', 'label': 'EBI FTP server', 'doc': 'European Bioinformatic Institute FTP server', 'host': 'ftp.ebi.ac.uk', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ncbi-ftp', 'label': 'NCBI FTP server', 'doc': 'NCBI FTP server', 'host': 'ftp.ncbi.nlm.nih.gov', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ensembl-ftp', 'label': 'ENSEMBL FTP server', 'doc': 'ENSEMBL FTP server', 'host': 'ftp.ensemblgenomes.org/vol1/pub/', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ssh', 'id': 'writeable-ssh-dir', 'requires_roles': 'writeable-galaxy-role', 'writable': True, 'label': 'Push your files to me', 'doc': 'This is an example of a writeable SSH dir', 'host': 'coolhost', 'user': 'user', 'passwd': 'passwd', 'timeout': 10, 'path': '/home/cooluser/', 'config_path': '', 'port': 2222}
+    {'type': 's3fs', 'label': 'My MinIO storage', 'endpoint_url': 'https://minio.usegalaxy.eu', 'id': 'galaxy-minio-storage', 'doc': 'Galaxy MinIO S3 storage', 'anon': False, 'secret': 'UHAJ6asd6asdhasd', 'key': 'MCJU76agdt98GGFAROIP7'}
+    {'type': 's3fs', 'label': 'Genome Ark', 'id': 'genomeark', 'doc': 'Access to Genome Ark open data on AWS.', 'bucket': 'genomeark', 'anon': True}
+    {'type': 's3fs', 'label': '1000 Genomes', 'id': '1000genomes', 'doc': 'Access to the 1000 Genomes Project with human genetic variation, including SNPs, structural variants, and their haplotype context.', 'bucket': '1000genomes', 'anon': True}
+    {'type': 's3fs', 'label': 'The Cancer Genome Atlas', 'id': 'tcga-2-open', 'doc': 'Access to the Cancer Genome Atlas (TCGA)', 'bucket': 'tcga-2-open', 'anon': True}
+    {'type': 's3fs', 'label': 'COVID-19 Data Lake', 'id': 'covid19-lake', 'doc': 'A centralized repository of up-to-date and curated datasets on or related to the spread and characteristics of the novel corona virus (SARS-CoV-2) and its associated illness, COVID-19', 'bucket': 'covid19-lake', 'anon': True}
+    {'type': 's3fs', 'label': 'Encyclopedia of DNA Elements (ENCODE)', 'id': 'encode-public', 'doc': 'The Encyclopedia of DNA Elements (ENCODE) Consortium is an international collaboration of research groups funded by the National Human Genome Research Institute (NHGRI)', 'bucket': 'encode-public', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-3', 'id': 'meeo-s3-nrt', 'doc': 'European Commission’s Copernicus Earth Observation Programme. Sentinel-3 is a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s3/NRT/', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-5P Level 2', 'id': 'meeo-s5p-nrti', 'doc': 'Observations from the Sentinel-5 Precursor satellite of the Copernicus Earth Observation Programme. It contains a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s5p/RPRO/', 'anon': True}
+    {'type': 's3fs', 'label': 'Coupled Model Intercomparison Project 6', 'id': 'esgf-world', 'doc': 'The sixth phase of global coupled ocean-atmosphere general circulation model ensemble', 'bucket': 'esgf-world', 'anon': True}
+    {'type': 's3fs', 'label': 'CMIP6 GCMs downscaled using WRF', 'id': 'wrf-cmip6-noversioning', 'doc': 'High-resolution historical and future climate simulations from 1980-2100', 'bucket': 'wrf-cmip6-noversioning', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Global Forecast System (GFS)', 'id': 'noaa-gfs-bdp-pds', 'doc': 'The Global Forecast System (GFS) is a weather forecast model produced by the National Centers for Environmental Prediction (NCEP).', 'bucket': 'noaa-gfs-bdp-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Unified Forecast System Subseasonal to Seasonal Prototype 5', 'id': 'noaa-ufs-prototype5-pds', 'doc': 'The Unified Forecast System Subseasonal to Seasonal prototype 5 (UFS S2Sp5) dataset is reforecast data from the UFS atmosphere-ocean.', 'bucket': 'noaa-ufs-prototype5-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'Copernicus Digital Elevation Model (DEM)', 'id': 'copernicus-dem-30m', 'doc': 'The Copernicus DEM is a Digital Surface Model (DSM) which represents the surface of the Earth including buildings, infrastructure and vegetation.', 'bucket': 'copernicus-dem-30m', 'anon': True}
+    {'type': 'http', 'label': 'Custom http filesource', 'id': 'httpcustom', 'url_regex': '^https?://myprotectedsite.org/', 'http_headers': {'Authorization': '#import base64\nBasic ${base64.b64encode(str.encode(user.preferences[\'myprotectedsite|username\'] + ":" + user.preferences[\'myprotectedsite|password\'])).decode()}'}, 'doc': 'Only define this if you want custom control over http downloads. You should also define a stock http source (below) or only downloads from this site will be allowed.'}
+    {'type': 'http', 'label': 'Stock http filesource', 'id': 'httpstock', 'doc': 'Make sure to define this generic http file source if you have defined any other http file sources, or stock http download capability will be disabled.'}
+    {'type': 'drs', 'label': 'Custom DRS filesource', 'id': 'drscustom', 'url_regex': '^drs://mydrssite.org/', 'http_headers': {'Authorization': '#import base64\nBasic ${base64.b64encode(str.encode(user.preferences[\'mydrssite|username\'] + ":" + user.preferences[\'mydrssite|password\'])).decode()}'}, 'doc': 'Define this if you want custom control over drs downloads. You should also define a stock drs source (below) or only downloads from this drs server will be allowed.'}
+    {'type': 'drs', 'label': 'Stock DRS filesource', 'id': 'drsstock', 'doc': 'Make sure to define this generic drs file source if you have defined any other drs file sources, or stock drs download capability will be disabled.'}
+    {'type': 'inveniordm', 'id': 'invenio_sandbox', 'doc': 'This is the Sandbox instance of Invenio. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.', 'label': 'Invenio RDM Sandbox Repository (TESTING ONLY)', 'url': 'https://inveniordm.web.cern.ch/', 'token': "${user.user_vault.read_secret('preferences/invenio_sandbox/token')}", 'public_name': "${user.preferences['invenio_sandbox|public_name']}", 'writable': True}
+    {'type': 'zenodo', 'id': 'zenodo', 'doc': 'Zenodo is a general-purpose open-access repository developed under the European OpenAIRE program and operated by CERN. It allows researchers to deposit data sets, research software, reports, and any other research-related digital artifacts. For each submission, a persistent digital object identifier (DOI) is minted, which makes the stored items easily citeable.', 'label': 'Zenodo', 'url': 'https://zenodo.org', 'token': "${user.user_vault.read_secret('preferences/zenodo/token')}", 'public_name': "${user.preferences['zenodo|public_name']}", 'writable': True}
+    {'type': 'zenodo', 'id': 'zenodo_sandbox', 'doc': 'This is the Sandbox instance of Zenodo. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.', 'label': 'Zenodo Sandbox (TESTING ONLY)', 'url': 'https://sandbox.zenodo.org', 'token': "${user.user_vault.read_secret('preferences/zenodo_sandbox/token')}", 'public_name': "${user.preferences['zenodo_sandbox|public_name']}", 'writable': True}
+    {'type': 'onedata', 'id': 'onedata1', 'label': 'Onedata', 'doc': 'Your Onedata files - configure an access token via user preferences', 'accessToken': "${user.preferences['onedata|access_token']}", 'onezoneDomain': "${user.preferences['onedata|onezone_domain']}", 'disableTlsCertificateValidation': "${user.preferences['onedata|disable_tls_certificate_validation']}"}
+
+   to
+
+   ::
+
+    {'type': 'dropbox', 'id': 'dropbox1', 'label': 'Dropbox files (configure access in user preferences)', 'doc': 'Your Dropbox files - configure an access token via the user preferences', 'access_token': "${user.preferences['dropbox|access_token']}"}
+    {'type': 'webdav', 'id': 'owncloud1', 'label': 'OwnCloud', 'doc': 'External OwnCloud files (configure access in user preferences)', 'url': "${user.preferences['owncloud|url']}", 'root': "${user.preferences['owncloud|root']}", 'login': "${user.preferences['owncloud|username']}", 'password': "${user.preferences['owncloud|password']}", 'temp_path': '/your/temp/path', 'writable': False}
+    {'type': 'posix', 'root': '/data/5/galaxy_import/galaxy_user_data/covid-19/data/sequences/', 'id': 'covid19-raw-sequences', 'label': 'COVID-19 FASTQ', 'doc': 'COVID-19 RAW sequences in FASTQ format'}
+    {'type': 'posix', 'root': '/data/db/databases/pdb/pdb/', 'id': 'pdb-gzip', 'doc': 'Protein Data Bank (PDB)', 'label': 'PDB'}
+    {'type': 'ftp', 'id': 'ebi-ftp', 'label': 'EBI FTP server', 'doc': 'European Bioinformatic Institute FTP server', 'host': 'ftp.ebi.ac.uk', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ncbi-ftp', 'label': 'NCBI FTP server', 'doc': 'NCBI FTP server', 'host': 'ftp.ncbi.nlm.nih.gov', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ensembl-ftp', 'label': 'ENSEMBL FTP server', 'doc': 'ENSEMBL FTP server', 'host': 'ftp.ensemblgenomes.org/vol1/pub/', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ssh', 'id': 'writeable-ssh-dir', 'requires_roles': 'writeable-galaxy-role', 'writable': True, 'label': 'Push your files to me', 'doc': 'This is an example of a writeable SSH dir', 'host': 'coolhost', 'user': 'user', 'passwd': 'passwd', 'timeout': 10, 'path': '/home/cooluser/', 'config_path': '', 'port': 2222}
+    {'type': 's3fs', 'label': 'My MinIO storage', 'endpoint_url': 'https://minio.usegalaxy.eu', 'id': 'galaxy-minio-storage', 'doc': 'Galaxy MinIO S3 storage', 'anon': False, 'secret': 'UHAJ6asd6asdhasd', 'key': 'MCJU76agdt98GGFAROIP7'}
+    {'type': 's3fs', 'label': 'Genome Ark', 'id': 'genomeark', 'doc': 'Access to Genome Ark open data on AWS.', 'bucket': 'genomeark', 'anon': True}
+    {'type': 's3fs', 'label': '1000 Genomes', 'id': '1000genomes', 'doc': 'Access to the 1000 Genomes Project with human genetic variation, including SNPs, structural variants, and their haplotype context.', 'bucket': '1000genomes', 'anon': True}
+    {'type': 's3fs', 'label': 'The Cancer Genome Atlas', 'id': 'tcga-2-open', 'doc': 'Access to the Cancer Genome Atlas (TCGA)', 'bucket': 'tcga-2-open', 'anon': True}
+    {'type': 's3fs', 'label': 'COVID-19 Data Lake', 'id': 'covid19-lake', 'doc': 'A centralized repository of up-to-date and curated datasets on or related to the spread and characteristics of the novel corona virus (SARS-CoV-2) and its associated illness, COVID-19', 'bucket': 'covid19-lake', 'anon': True}
+    {'type': 's3fs', 'label': 'Encyclopedia of DNA Elements (ENCODE)', 'id': 'encode-public', 'doc': 'The Encyclopedia of DNA Elements (ENCODE) Consortium is an international collaboration of research groups funded by the National Human Genome Research Institute (NHGRI)', 'bucket': 'encode-public', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-3', 'id': 'meeo-s3-nrt', 'doc': 'European Commission’s Copernicus Earth Observation Programme. Sentinel-3 is a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s3/NRT/', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-5P Level 2', 'id': 'meeo-s5p-nrti', 'doc': 'Observations from the Sentinel-5 Precursor satellite of the Copernicus Earth Observation Programme. It contains a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s5p/RPRO/', 'anon': True}
+    {'type': 's3fs', 'label': 'Coupled Model Intercomparison Project 6', 'id': 'esgf-world', 'doc': 'The sixth phase of global coupled ocean-atmosphere general circulation model ensemble', 'bucket': 'esgf-world', 'anon': True}
+    {'type': 's3fs', 'label': 'CMIP6 GCMs downscaled using WRF', 'id': 'wrf-cmip6-noversioning', 'doc': 'High-resolution historical and future climate simulations from 1980-2100', 'bucket': 'wrf-cmip6-noversioning', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Global Forecast System (GFS)', 'id': 'noaa-gfs-bdp-pds', 'doc': 'The Global Forecast System (GFS) is a weather forecast model produced by the National Centers for Environmental Prediction (NCEP).', 'bucket': 'noaa-gfs-bdp-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Unified Forecast System Subseasonal to Seasonal Prototype 5', 'id': 'noaa-ufs-prototype5-pds', 'doc': 'The Unified Forecast System Subseasonal to Seasonal prototype 5 (UFS S2Sp5) dataset is reforecast data from the UFS atmosphere-ocean.', 'bucket': 'noaa-ufs-prototype5-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'Copernicus Digital Elevation Model (DEM)', 'id': 'copernicus-dem-30m', 'doc': 'The Copernicus DEM is a Digital Surface Model (DSM) which represents the surface of the Earth including buildings, infrastructure and vegetation.', 'bucket': 'copernicus-dem-30m', 'anon': True}
+    {'type': 'http', 'label': 'Custom http filesource', 'id': 'httpcustom', 'url_regex': '^https?://myprotectedsite.org/', 'http_headers': {'Authorization': '#import base64\nBasic ${base64.b64encode(str.encode(user.preferences[\'myprotectedsite|username\'] + ":" + user.preferences[\'myprotectedsite|password\'])).decode()}'}, 'doc': 'Only define this if you want custom control over http downloads. You should also define a stock http source (below) or only downloads from this site will be allowed.'}
+    {'type': 'http', 'label': 'Stock http filesource', 'id': 'httpstock', 'doc': 'Make sure to define this generic http file source if you have defined any other http file sources, or stock http download capability will be disabled.'}
+    {'type': 'drs', 'label': 'Custom DRS filesource', 'id': 'drscustom', 'url_regex': '^drs://mydrssite.org/', 'http_headers': {'Authorization': '#import base64\nBasic ${base64.b64encode(str.encode(user.preferences[\'mydrssite|username\'] + ":" + user.preferences[\'mydrssite|password\'])).decode()}'}, 'doc': 'Define this if you want custom control over drs downloads. You should also define a stock drs source (below) or only downloads from this drs server will be allowed.'}
+    {'type': 'drs', 'label': 'Stock DRS filesource', 'id': 'drsstock', 'doc': 'Make sure to define this generic drs file source if you have defined any other drs file sources, or stock drs download capability will be disabled.'}
+    {'type': 'inveniordm', 'id': 'invenio_sandbox', 'doc': 'This is the Sandbox instance of Invenio. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.', 'label': 'Invenio RDM Sandbox Repository (TESTING ONLY)', 'url': 'https://inveniordm.web.cern.ch/', 'token': "${user.user_vault.read_secret('preferences/invenio_sandbox/token')}", 'public_name': "${user.preferences['invenio_sandbox|public_name']}", 'writable': True}
+    {'type': 'zenodo', 'id': 'zenodo', 'doc': 'Zenodo is a general-purpose open-access repository developed under the European OpenAIRE program and operated by CERN. It allows researchers to deposit data sets, research software, reports, and any other research-related digital artifacts. For each submission, a persistent digital object identifier (DOI) is minted, which makes the stored items easily citeable.', 'label': 'Zenodo', 'url': 'https://zenodo.org', 'token': "${user.user_vault.read_secret('preferences/zenodo/token')}", 'public_name': "${user.preferences['zenodo|public_name']}", 'writable': True}
+    {'type': 'zenodo', 'id': 'zenodo_sandbox', 'doc': 'This is the Sandbox instance of Zenodo. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.', 'label': 'Zenodo Sandbox (TESTING ONLY)', 'url': 'https://sandbox.zenodo.org', 'token': "${user.user_vault.read_secret('preferences/zenodo_sandbox/token')}", 'public_name': "${user.preferences['zenodo_sandbox|public_name']}", 'writable': True}
+    {'type': 'onedata', 'id': 'onedata1', 'label': 'Onedata', 'doc': 'Your Onedata files - configure an access token via user preferences', 'access_token': "${user.preferences['onedata|access_token']}", 'onezone_domain': "${user.preferences['onedata|onezone_domain']}", 'disable_tls_certificate_validation': "${user.preferences['onedata|disable_tls_certificate_validation']}"}
+
+
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.conda_auto_init.desc has changed from
+
+   ::
+
+    Set to true to instruct Galaxy to install Conda from the web automatically
+    if it cannot find a local copy and conda_exec is not configured.
+
+   to
+
+   ::
+
+    Set to true to instruct Galaxy to install Conda from the web automatically
+    if it cannot find a local copy and conda_exec is not configured. The default is
+    true if running Galaxy from source, and false if running from installed packages.
+
+
+-  mapping.galaxy.mapping.geographical_server_location_code.desc has changed from
+
+   ::
+
+    The estimated geographical location of the server hosting your galaxy instance given as an ISO 3166 code.
+    This is used to make carbon emissions estimates more accurate as the location effects the
+    carbon intensity values used in the estimate calculation. This defaults to "GLOBAL" if not set or the
+    `geographical_server_location_code` value is invalid or unsupported. To see a full list of supported locations,
+    visit https://galaxyproject.org/admin/carbon_emissions
+
+   to
+
+   ::
+
+    The estimated geographical location of the server hosting your galaxy instance given as an ISO 3166 code.
+    This is used to make carbon emissions estimates more accurate as the location effects the
+    carbon intensity values used in the estimate calculation. This defaults to "GLOBAL" if not set or the
+    `geographical_server_location_code` value is invalid or unsupported. To see a full list of supported locations,
+    visit https://docs.galaxyproject.org/en/master/admin/carbon_emissions.html
+
+
+-  mapping.galaxy.mapping.interactivetools_map.desc has changed from
+
+   ::
+
+    Map for interactivetool proxy.
+
+   to
+
+   ::
+
+    Map for the interactivetool proxy. Mappings are stored in a SQLite database file
+    located on this path. As an alternative, you may also store them in any other RDBMS
+    supported by SQLAlchemy using the option ``interactivetoolsproxy_map``, which
+    overrides this one.
+
+
+-  mapping.galaxy.mapping.object_store_cache_size.desc has changed from
+
+   ::
+
+    Default cache size for caching object stores if cache not configured for
+    that object store entry.
+
+   to
+
+   ::
+
+    Default cache size, in GB, for caching object stores if the cache is not
+    configured for that object store entry.
+
+
+Removed
+-------
+
+The following configuration options have been completely removed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.conda_auto_init
+
 
 Deprecation Notices
 ===========================================================
