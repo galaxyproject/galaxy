@@ -230,7 +230,8 @@ class VisualizationsRegistry:
         for plugin in self.plugins.values():
             if embeddable and not plugin.config.get("embeddable"):
                 continue
-            result.append(plugin.to_dict())
+            if plugin.config.get("visible"):
+                result.append(plugin.to_dict())
         return sorted(result, key=lambda k: k.get("html"))
 
     # -- building links to visualizations from objects --

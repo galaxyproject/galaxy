@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Scatter plot (NVD3)">
+<visualization name="Scatter plot (NVD3)" visible="false">
     <macros>
         <import>../../nvd3_bar/config/nvd3_shared.xml</import>
     </macros>
