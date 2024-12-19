@@ -39,6 +39,7 @@ from galaxy.schema.invocation import (
 )
 from galaxy.tools.parameters.basic import raw_to_galaxy
 from galaxy.tools.parameters.workflow_utils import (
+    is_runtime_value,
     NO_REPLACEMENT,
     NoReplacement,
 )
@@ -462,15 +463,18 @@ class WorkflowProgress:
                     replacement = temp
             else:
                 replacement = self.replacement_for_connection(connection[0], is_data=is_data)
-        elif step.state and (state_input := get_path(step.state.inputs, nested_key_to_path(prefixed_name), None)):
+        elif (
+            step.state
+            and (state_input := get_path(step.state.inputs, nested_key_to_path(prefixed_name), None))
+            and not is_runtime_value(state_input)
+        ):
             # workflow submitted with step parameters populates state directly
             # via populate_module_and_state
             replacement = state_input
-        else:
-            for step_input in step.inputs:
-                if step_input.name == prefixed_name and step_input.default_value_set:
-                    if is_data:
-                        replacement = raw_to_galaxy(trans.app, trans.history, step_input.default_value)
+        elif (step_input := step.inputs_by_name.get(prefixed_name)) and step_input.default_value_set:
+            replacement = step_input.default_value
+            if is_data:
+                replacement = raw_to_galaxy(trans.app, trans.history, step_input.default_value)
         return replacement
 
     def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True):

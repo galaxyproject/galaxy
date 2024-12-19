@@ -8206,17 +8206,18 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         # Ensure input_connections has already been set.
 
         # Make connection information available on each step by input name.
-        inputs_by_name = {}
+        inputs_by_name: Dict[str, Any] = {}
         for step_input in self.inputs:
             input_name = step_input.name
             assert input_name not in inputs_by_name
             inputs_by_name[input_name] = step_input
         self._inputs_by_name = inputs_by_name
+        return inputs_by_name
 
     @property
     def inputs_by_name(self):
         if self._inputs_by_name is None:
-            self.setup_inputs_by_name()
+            return self.setup_inputs_by_name()
         return self._inputs_by_name
 
     def get_input(self, input_name):

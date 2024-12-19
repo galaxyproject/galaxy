@@ -195,7 +195,7 @@ def visit_input_values(
         elif replace_optional_connections:
             # Only used in workflow context
             has_default = hasattr(input, "value")
-            if new_value is value is NO_REPLACEMENT:
+            if new_value is value is NO_REPLACEMENT or is_runtime_value(value):
                 # NO_REPLACEMENT means value was connected but left unspecified
                 if has_default:
                     # Use default if we have one
@@ -205,9 +205,6 @@ def visit_input_values(
                     # Effectively however depends on parameter implementation.
                     # We might want to raise an exception here, instead of depending on a tool parameter value error.
                     input_values[input.name] = None
-
-            elif is_runtime_value(value) and has_default:
-                input_values[input.name] = input.value
 
     def get_current_case(input, input_values):
         test_parameter = input.test_param

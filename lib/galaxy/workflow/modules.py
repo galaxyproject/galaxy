@@ -410,13 +410,10 @@ class WorkflowModule:
         """
         return {}
 
-    def compute_runtime_state(self, trans, step=None, step_updates=None):
+    def compute_runtime_state(self, trans, step=None, step_updates=None, replace_default_values=False):
         """Determine the runtime state (potentially different from self.state
         which describes configuration state). This (again unlike self.state) is
         currently always a `DefaultToolState` object.
-
-        If `step` is not `None`, it will be used to search for default values
-        defined in workflow input steps.
 
         If `step_updates` is `None`, this is likely for rendering the run form
         for instance and no runtime properties are available and state must be
@@ -426,6 +423,8 @@ class WorkflowModule:
         supplied by the workflow runner.
         """
         state = self.get_runtime_state()
+        if replace_default_values and step:
+            state.inputs = step.state.inputs
         step_errors = {}
 
         if step is not None:
@@ -435,8 +434,11 @@ class WorkflowModule:
                 if step_input is None:
                     return NO_REPLACEMENT
 
-                if step_input.default_value_set:
-                    return step_input.default_value
+                if replace_default_values and step_input.default_value_set:
+                    input_value = step_input.default_value
+                    if isinstance(input, BaseDataToolParameter):
+                        input_value = raw_to_galaxy(trans.app, trans.history, input_value)
+                    return input_value
 
                 return NO_REPLACEMENT
 
@@ -2227,13 +2229,14 @@ class ToolModule(WorkflowModule):
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         return self.get_inputs()
 
-    def compute_runtime_state(self, trans, step=None, step_updates=None):
+    def compute_runtime_state(self, trans, step=None, step_updates=None, replace_default_values=False):
         # Warning: This method destructively modifies existing step state.
         if self.tool:
             step_errors = {}
             state = self.state
-            self.runtime_post_job_actions = {}
-            state, step_errors = super().compute_runtime_state(trans, step, step_updates)
+            state, step_errors = super().compute_runtime_state(
+                trans, step, step_updates, replace_default_values=replace_default_values
+            )
             if step_updates:
                 self.runtime_post_job_actions = step_updates.get(RUNTIME_POST_JOB_ACTIONS_KEY, {})
                 step_metadata_runtime_state = self.__step_meta_runtime_state()
@@ -2273,6 +2276,10 @@ class ToolModule(WorkflowModule):
             # TODO: why do we even create an invocation, seems like something we could check on submit?
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
             raise exceptions.MessageException(message)
+        self.state, _ = self.compute_runtime_state(
+            trans, step, step_updates=progress.param_map.get(step.id), replace_default_values=True
+        )
+        step.state = self.state
         tool_state = step.state
         assert tool_state is not None
         tool_inputs = tool.inputs.copy()
