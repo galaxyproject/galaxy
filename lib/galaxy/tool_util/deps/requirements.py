@@ -20,6 +20,7 @@ from typing_extensions import (
 
 from galaxy.util import (
     asbool,
+    string_as_bool,
     xml_text,
 )
 from galaxy.util.oset import OrderedSet
@@ -305,27 +306,133 @@ def resource_requirements_from_list(requirements: Iterable[Dict[str, Any]]) -> L
     return rr
 
 
+class BaseCredential:
+    def __init__(
+        self,
+        name: str,
+        inject_as_env: str,
+        label: str = "",
+        description: str = "",
+    ) -> None:
+        self.name = name
+        self.inject_as_env = inject_as_env
+        self.label = label
+        self.description = description
+        if not self.inject_as_env:
+            raise ValueError("Missing inject_as_env")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "inject_as_env": self.inject_as_env,
+            "label": self.label,
+            "description": self.description,
+        }
+
+
+class Secret(BaseCredential):
+    @classmethod
+    def from_element(cls, elem) -> "Secret":
+        return cls(
+            name=elem.get("name"),
+            inject_as_env=elem.get("inject_as_env"),
+            label=elem.get("label", ""),
+            description=elem.get("description", ""),
+        )
+
+
+class Variable(BaseCredential):
+    @classmethod
+    def from_element(cls, elem) -> "Variable":
+        return cls(
+            name=elem.get("name"),
+            inject_as_env=elem.get("inject_as_env"),
+            label=elem.get("label", ""),
+            description=elem.get("description", ""),
+        )
+
+
+class CredentialsRequirement:
+    def __init__(
+        self,
+        name: str,
+        reference: str,
+        optional: bool = True,
+        multiple: bool = False,
+        label: str = "",
+        description: str = "",
+        secrets: Optional[List[Secret]] = None,
+        variables: Optional[List[Variable]] = None,
+    ) -> None:
+        self.name = name
+        self.reference = reference
+        self.optional = optional
+        self.multiple = multiple
+        self.label = label
+        self.description = description
+        self.secrets = secrets if secrets is not None else []
+        self.variables = variables if variables is not None else []
+
+        if not self.reference:
+            raise ValueError("Missing reference")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "reference": self.reference,
+            "optional": self.optional,
+            "multiple": self.multiple,
+            "label": self.label,
+            "description": self.description,
+            "secrets": [s.to_dict() for s in self.secrets],
+            "variables": [v.to_dict() for v in self.variables],
+        }
+
+    @classmethod
+    def from_dict(cls, dict: Dict[str, Any]) -> "CredentialsRequirement":
+        name = dict["name"]
+        reference = dict["reference"]
+        optional = dict.get("optional", True)
+        multiple = dict.get("multiple", False)
+        label = dict.get("label", "")
+        description = dict.get("description", "")
+        secrets = [Secret.from_element(s) for s in dict.get("secrets", [])]
+        variables = [Variable.from_element(v) for v in dict.get("variables", [])]
+        return cls(
+            name=name,
+            reference=reference,
+            optional=optional,
+            multiple=multiple,
+            label=label,
+            description=description,
+            secrets=secrets,
+            variables=variables,
+        )
+
+
 def parse_requirements_from_lists(
     software_requirements: List[Union[ToolRequirement, Dict[str, Any]]],
     containers: Iterable[Dict[str, Any]],
     resource_requirements: Iterable[Dict[str, Any]],
-) -> Tuple[ToolRequirements, List[ContainerDescription], List[ResourceRequirement]]:
+    credentials: Iterable[Dict[str, Any]],
+) -> Tuple[ToolRequirements, List[ContainerDescription], List[ResourceRequirement], List[CredentialsRequirement]]:
     return (
         ToolRequirements.from_list(software_requirements),
         [ContainerDescription.from_dict(c) for c in containers],
         resource_requirements_from_list(resource_requirements),
+        [CredentialsRequirement.from_dict(s) for s in credentials],
     )
 
 
-def parse_requirements_from_xml(xml_root, parse_resources: bool = False):
+def parse_requirements_from_xml(xml_root, parse_resources_and_credentials: bool = False):
     """
     Parses requirements, containers and optionally resource requirements from Xml tree.
 
     >>> from galaxy.util import parse_xml_string
-    >>> def load_requirements(contents, parse_resources=False):
+    >>> def load_requirements(contents, parse_resources_and_credentials=False):
     ...     contents_document = '''<tool><requirements>%s</requirements></tool>'''
     ...     root = parse_xml_string(contents_document % contents)
-    ...     return parse_requirements_from_xml(root, parse_resources=parse_resources)
+    ...     return parse_requirements_from_xml(root, parse_resources_and_credentials=parse_resources_and_credentials)
     >>> reqs, containers = load_requirements('''<requirement>bwa</requirement>''')
     >>> reqs[0].name
     'bwa'
@@ -344,8 +451,10 @@ def parse_requirements_from_xml(xml_root, parse_resources: bool = False):
     requirements_elem = xml_root.find("requirements")
 
     requirement_elems = []
+    container_elems = []
     if requirements_elem is not None:
         requirement_elems = requirements_elem.findall("requirement")
+        container_elems = requirements_elem.findall("container")
 
     requirements = ToolRequirements()
     for requirement_elem in requirement_elems:
@@ -355,15 +464,13 @@ def parse_requirements_from_xml(xml_root, parse_resources: bool = False):
         requirement = ToolRequirement(name=name, type=type, version=version)
         requirements.append(requirement)
 
-    container_elems = []
-    if requirements_elem is not None:
-        container_elems = requirements_elem.findall("container")
-
     containers = [container_from_element(c) for c in container_elems]
-    if parse_resources:
+    if parse_resources_and_credentials:
         resource_elems = requirements_elem.findall("resource") if requirements_elem is not None else []
         resources = [resource_from_element(r) for r in resource_elems]
-        return requirements, containers, resources
+        credentials_elems = requirements_elem.findall("credentials") if requirements_elem is not None else []
+        credentials = [credentials_from_element(s) for s in credentials_elems]
+        return requirements, containers, resources, credentials
 
     return requirements, containers
 
@@ -386,3 +493,24 @@ def container_from_element(container_elem) -> ContainerDescription:
         shell=shell,
     )
     return container
+
+
+def credentials_from_element(credentials_elem) -> CredentialsRequirement:
+    name = credentials_elem.get("name")
+    reference = credentials_elem.get("reference")
+    optional = string_as_bool(credentials_elem.get("optional", "true"))
+    multiple = string_as_bool(credentials_elem.get("multiple", "false"))
+    label = credentials_elem.get("label", "")
+    description = credentials_elem.get("description", "")
+    secrets = [Secret.from_element(elem) for elem in credentials_elem.findall("secret")]
+    variables = [Variable.from_element(elem) for elem in credentials_elem.findall("variable")]
+    return CredentialsRequirement(
+        name=name,
+        reference=reference,
+        optional=optional,
+        multiple=multiple,
+        label=label,
+        description=description,
+        secrets=secrets,
+        variables=variables,
+    )
