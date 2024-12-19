@@ -7,11 +7,11 @@ echo '$url_param_value_header_and_body' > '$param_value_header_and_body'
     ]]></command>
     <inputs>
         <param name="url_param_value" type="select">
-            <options from_url="https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/refs/heads/url_select/genomes.json"></options>
+            <options from_url="https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/refs/heads/master/genomes.json"></options>
         </param>
         <param name="dynamic_param_filtered_with_validator" type="select">
             <!-- tested in test_build_module_filter_dynamic_select -->
-            <options from_url="https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/refs/heads/url_select/genomes.json">
+            <options from_url="https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/refs/heads/master/genomes.json">
                 <filter type="param_value" ref="url_param_value" column="1" />
             </options>
             <validator type="no_options" message="Need at least one option here" />
@@ -23,7 +23,7 @@ echo '$url_param_value_header_and_body' > '$param_value_header_and_body'
         </param>
         -->
         <param name="url_param_value_postprocessed" type="select">
-            <options from_url="https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/refs/heads/url_select/dm6.json">
+            <options from_url="https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/refs/heads/master/genomes.json">
                 <postprocess_expression type="ecma5.1"><![CDATA[
                     $( Object.values(inputs.chrom_info).map((v) => [v.chrom, v.len]) )
                 ]]></postprocess_expression>
