@@ -23,7 +23,7 @@ echo '$url_param_value_header_and_body' > '$param_value_header_and_body'
         </param>
         -->
         <param name="url_param_value_postprocessed" type="select">
-            <options from_url="https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/refs/heads/master/genomes.json">
+            <options from_url="https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/refs/heads/master/dm6.json">
                 <postprocess_expression type="ecma5.1"><![CDATA[
                     $( Object.values(inputs.chrom_info).map((v) => [v.chrom, v.len]) )
                 ]]></postprocess_expression>
