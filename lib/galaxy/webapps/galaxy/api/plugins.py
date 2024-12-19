@@ -36,12 +36,11 @@ class PluginsController(BaseGalaxyAPIController):
         GET /api/plugins:
         """
         registry = self._get_registry()
+        embeddable = asbool(kwargs.get("embeddable"))
+        target_object = None
         if (dataset_id := kwargs.get("dataset_id")) is not None:
-            hda = self.hda_manager.get_accessible(self.decode_id(dataset_id), trans.user)
-            return registry.get_visualizations(trans, hda)
-        else:
-            embeddable = asbool(kwargs.get("embeddable"))
-            return registry.get_plugins(embeddable=embeddable)
+            target_object = self.hda_manager.get_accessible(self.decode_id(dataset_id), trans.user)
+        return registry.get_visualizations(trans, target_object=target_object, embeddable=embeddable)
 
     @expose_api
     def show(self, trans, id, **kwargs):
