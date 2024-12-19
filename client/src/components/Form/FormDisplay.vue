@@ -139,10 +139,7 @@ export default {
     },
     created() {
         this.onCloneInputs();
-        // build flat formData that is ready to be submitted
-        this.formData = this.buildFormData();
-        // emit back to parent, so that parent has submittable data
-        this.$emit("onChange", this.formData);
+        this.onChange();
         // highlight initial warnings
         this.onWarnings();
         // highlight initial errors
