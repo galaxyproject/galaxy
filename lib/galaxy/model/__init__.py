@@ -11840,7 +11840,7 @@ class Variable(Base):
     Represents a variable associated with a user for a specific service.
     """
 
-    __tablename__ = "variable"
+    __tablename__ = "credential_variable"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_credential_group_id: Mapped[int] = mapped_column(
@@ -11857,7 +11857,7 @@ class Secret(Base):
     Represents a secret associated with a user for a specific service.
     """
 
-    __tablename__ = "secret"
+    __tablename__ = "credential_secret"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_credential_group_id: Mapped[int] = mapped_column(
