@@ -7372,7 +7372,6 @@ export interface components {
             /**
              * Source Type
              * @constant
-             * @enum {string}
              */
             source_type: "tool";
         };
@@ -17730,7 +17729,6 @@ export interface components {
             /**
              * Source Type
              * @constant
-             * @enum {string}
              */
             source_type: "tool";
             /**
