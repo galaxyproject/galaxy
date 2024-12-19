@@ -23,7 +23,7 @@ import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
-import PasswordStrength from "@/components/Login/PasswordStength.vue";
+import PasswordStrength from "@/components/Login/PasswordStrength.vue";
 
 interface Props {
     sessionCsrfToken: string;
