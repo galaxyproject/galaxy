@@ -50,6 +50,11 @@ TOOL_XML_1 = """
         <resource type="cuda_device_count_min">1</resource>
         <resource type="cuda_device_count_max">2</resource>
         <resource type="shm_size">67108864</resource>
+        <credentials name="Apollo" reference="gmod.org/apollo" optional="true" multiple="false" label="Apollo credential set" description="Please provide credentials for Apollo">
+            <variable name="server" inject_as_env="apollo_url" label="Your Apollo server" description="URL of your Apollo server" />
+            <secret name="username" inject_as_env="apollo_user" label="Your Apollo username" description="Username for Apollo" />
+            <secret name="password" inject_as_env="apollo_pass" label="Your Apollo password" description="Password for Apollo" />
+        </credentials>
     </requirements>
     <outputs>
         <data name="out1" format="bam" from_work_dir="out1.bam" />
@@ -347,7 +352,7 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements, _ = self._tool_source.parse_requirements_and_containers()
         assert requirements[0].type == "package"
         assert list(containers)[0].identifier == "mycool/bwa"
         assert resource_requirements[0].resource_type == "cores_min"
@@ -358,6 +363,14 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert resource_requirements[5].resource_type == "cuda_device_count_max"
         assert resource_requirements[6].resource_type == "shm_size"
         assert not resource_requirements[0].runtime_required
+
+    def test_credentials(self):
+        *_, credentials = self._tool_source.parse_requirements_and_containers()
+        assert credentials[0].name == "Apollo"
+        assert credentials[0].reference == "gmod.org/apollo"
+        assert credentials[0].optional
+        assert len(credentials[0].secrets) == 2
+        assert len(credentials[0].variables) == 1
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())
@@ -533,7 +546,9 @@ class TestYamlLoader(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        software_requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
+        software_requirements, containers, resource_requirements, _ = (
+            self._tool_source.parse_requirements_and_containers()
+        )
         assert software_requirements.to_dict() == [{"name": "bwa", "type": "package", "version": "1.0.1", "specs": []}]
         assert len(containers) == 1
         assert containers[0].to_dict() == {
