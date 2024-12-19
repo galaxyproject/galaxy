@@ -8414,6 +8414,18 @@ export interface components {
              */
             url: string;
         };
+        /** CreateSourceCredentialsPayload */
+        CreateSourceCredentialsPayload: {
+            /** Credentials */
+            credentials: components["schemas"]["ServiceCredentialPayload"][];
+            /** Source Id */
+            source_id: string;
+            /**
+             * Source Type
+             * @constant
+             */
+            source_type: "tool";
+        };
         /** CreateToolLandingRequestPayload */
         CreateToolLandingRequestPayload: {
             /** Client Secret */
@@ -8601,52 +8613,8 @@ export interface components {
         CredentialPayload: {
             /** Name */
             name: string;
-            /**
-             * Type
-             * @description Type of the credential(secret/variable)
-             */
-            type: components["schemas"]["CredentialType"];
-            /**
-             * Credential Value
-             * @description Value of the credential
-             */
-            value?: string | null;
-        };
-        /**
-         * CredentialType
-         * @enum {string}
-         */
-        CredentialType: "secret" | "variable";
-        /** CredentialsPayload */
-        CredentialsPayload: {
-            /**
-             * Credentials
-             * @description List of credentials
-             */
-            credentials: components["schemas"]["CredentialPayload"][];
-            /**
-             * Group Name
-             * @description Name of the group
-             * @default default
-             */
-            group_name: string | null;
-            /**
-             * Service Reference
-             * @description Reference to the service
-             */
-            reference: string;
-            /**
-             * Source ID
-             * @description ID of the source
-             */
-            source_id: string;
-            /**
-             * Source Type
-             * @description Type of the source
-             * @constant
-             * @enum {string}
-             */
-            source_type: "tool";
+            /** Value */
+            value: string | null;
         };
         /** CsvDialect */
         CsvDialect: {
@@ -22121,52 +22089,7 @@ export interface components {
              */
             username: string;
         };
-        /** UserCredentialCreateResponse */
-        UserCredentialCreateResponse: {
-            /**
-             * Current Group Name
-             * @description Name of the current group
-             */
-            current_group_name: string;
-            /**
-             * Group
-             * @description Group of credentials
-             */
-            group: components["schemas"]["CredentialGroupResponse"];
-            /**
-             * User Credentials ID
-             * @description ID of the user credentials
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Service Reference
-             * @description Reference to the service
-             */
-            reference: string;
-            /**
-             * Source ID
-             * @description ID of the source
-             */
-            source_id: string;
-            /**
-             * Source Type
-             * @description Type of the source
-             * @constant
-             * @enum {string}
-             */
-            source_type: "tool";
-            /**
-             * User ID
-             * @description ID of the user
-             * @example 0123456789ABCDEF
-             */
-            user_id: string;
-        };
-        /**
-         * UserCredentialsListResponse
-         * @description List of user credentials
-         */
+        /** UserCredentialsListResponse */
         UserCredentialsListResponse: components["schemas"]["UserCredentialsResponse"][];
         /** UserCredentialsResponse */
         UserCredentialsResponse: {
