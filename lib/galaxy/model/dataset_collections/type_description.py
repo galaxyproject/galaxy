@@ -16,33 +16,7 @@ class CollectionTypeDescriptionFactory:
 
 class CollectionTypeDescription:
     """Abstraction over dataset collection type that ties together string
-    reprentation in database/model with type registry.
-
-    >>> factory = CollectionTypeDescriptionFactory(None)
-    >>> nested_type_description = factory.for_collection_type("list:paired")
-    >>> paired_type_description = factory.for_collection_type("paired")
-    >>> nested_type_description.has_subcollections_of_type("list")
-    False
-    >>> nested_type_description.has_subcollections_of_type("list:paired")
-    False
-    >>> nested_type_description.has_subcollections_of_type("paired")
-    True
-    >>> nested_type_description.has_subcollections_of_type(paired_type_description)
-    True
-    >>> nested_type_description.has_subcollections()
-    True
-    >>> paired_type_description.has_subcollections()
-    False
-    >>> paired_type_description.rank_collection_type()
-    'paired'
-    >>> nested_type_description.rank_collection_type()
-    'list'
-    >>> nested_type_description.effective_collection_type(paired_type_description)
-    'list'
-    >>> nested_type_description.effective_collection_type_description(paired_type_description).collection_type
-    'list'
-    >>> nested_type_description.child_collection_type()
-    'paired'
+    representation in database/model with type registry.
     """
 
     collection_type: str
