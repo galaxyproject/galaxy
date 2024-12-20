@@ -13,6 +13,7 @@ import urllib.parse
 from collections.abc import MutableMapping
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
@@ -1081,7 +1082,7 @@ class SelectToolParameter(ToolParameter):
                         )
             if is_runtime_value(value):
                 return None
-            if value in legal_values:
+            if value in legal_values or str(value) in legal_values:
                 return value
             elif value in fallback_values:
                 return fallback_values[value]
@@ -2479,7 +2480,10 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             rval = value
         elif isinstance(value, MutableMapping) and "src" in value and "id" in value:
             if value["src"] == "hdca":
-                rval = session.get(HistoryDatasetCollectionAssociation, trans.security.decode_id(value["id"]))
+                rval = cast(
+                    HistoryDatasetCollectionAssociation,
+                    src_id_to_item(sa_session=trans.sa_session, value=value, security=trans.security),
+                )
         elif isinstance(value, list):
             if len(value) > 0:
                 value = value[0]
