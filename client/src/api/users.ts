@@ -1,4 +1,4 @@
-import { GalaxyApi } from "@/api";
+import { type components, GalaxyApi } from "@/api";
 import { toQuotaUsage } from "@/components/User/DiskUsage/Quota/model";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -36,36 +36,53 @@ export async function fetchCurrentUserQuotaSourceUsage(quotaSourceLabel?: string
     return toQuotaUsage(data);
 }
 
-// TODO: Temporarily using these interfaces until the new API is implemented
-export interface CredentialsDefinition {
-    name: string;
+export type CreateSourceCredentialsPayload = components["schemas"]["CreateSourceCredentialsPayload"];
+export type ServiceCredentialPayload = components["schemas"]["ServiceCredentialPayload"];
+export type ServiceGroupPayload = components["schemas"]["ServiceGroupPayload"];
+export type UserCredentials = components["schemas"]["UserCredentialsResponse"];
+
+// TODO: Change API to directly return the correct type to avoid this transformation and additional type definitions.
+export function transformToSourceCredentials(
+    toolId: string,
+    toolCredentialsDefinition: ServiceCredentialsDefinition[]
+): SourceCredentialsDefinition {
+    return {
+        sourceType: "tool",
+        sourceId: toolId,
+        services: new Map(toolCredentialsDefinition.map((service) => [service.reference, service])),
+    };
+}
+
+/**
+ * Represents the definition of credentials for a particular service.
+ */
+export interface ServiceCredentialsDefinition {
     reference: string;
+    name: string;
     optional: boolean;
     multiple: boolean;
     label?: string;
     description?: string;
-}
-export interface UserCredentials extends CredentialsDefinition {
-    variables: Variable[];
-    secrets: Secret[];
+    variables: ServiceVariableDefinition[];
+    secrets: ServiceVariableDefinition[];
 }
 
-export interface ToolCredentialsDefinition extends CredentialsDefinition {
-    variables: CredentialDetail[];
-    secrets: CredentialDetail[];
+/**
+ * Represents the definition of credentials for a particular source.
+ * A source can be a tool, a workflow, etc.Base interface for credentials definitions.
+ * A source may accept multiple services, each with its own credentials.
+ */
+export interface SourceCredentialsDefinition {
+    sourceType: string;
+    sourceId: string;
+    services: Map<string, ServiceCredentialsDefinition>;
 }
 
-export interface CredentialDetail {
+/**
+ * Base interface for credential details. It is used to define the structure of variables and secrets.
+ */
+export interface ServiceVariableDefinition {
     name: string;
     label?: string;
     description?: string;
-}
-
-export interface Secret extends CredentialDetail {
-    alreadySet: boolean;
-    value?: string;
-}
-
-export interface Variable extends CredentialDetail {
-    value?: string;
 }
