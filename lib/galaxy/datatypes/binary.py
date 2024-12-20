@@ -4747,3 +4747,8 @@ class Numpy(Binary):
             return dataset.peek
         except Exception:
             return f"Binary numpy file ({nice_size(dataset.get_size())})"
+
+class bcsp(Binary):
+    """Class for a *.bscp file"""
+
+    file_ext = "bcsp"
