@@ -358,6 +358,7 @@ class WorkflowRunCrateProfileBuilder:
 
     def _add_step_parameter_fp(self, step: WorkflowInvocationStep, crate: ROCrate):
         param_id = step.workflow_step.label
+        assert step.workflow_step.tool_inputs
         param_type = step.workflow_step.tool_inputs["parameter_type"]
         return crate.add(
             ContextEntity(
@@ -375,6 +376,7 @@ class WorkflowRunCrateProfileBuilder:
 
     def _add_step_tool_pv(self, step: WorkflowInvocationStep, tool_input: str, crate: ROCrate):
         param_id = tool_input
+        assert step.workflow_step.tool_inputs
         return crate.add(
             ContextEntity(
                 crate,

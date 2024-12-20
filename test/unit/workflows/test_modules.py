@@ -14,6 +14,7 @@ import pytest
 
 from galaxy import model
 from galaxy.managers.workflows import WorkflowContentsManager
+from galaxy.tools.parameters.workflow_utils import NO_REPLACEMENT
 from galaxy.util import bunch
 from galaxy.workflow import modules
 from .workflow_support import (
@@ -57,7 +58,7 @@ def test_data_input_compute_runtime_state_default():
     state, errors = module.compute_runtime_state(module.trans, module.test_step)
     assert not errors
     assert "input" in state.inputs
-    assert state.inputs["input"] is None
+    assert state.inputs["input"] is NO_REPLACEMENT
 
 
 def test_data_input_compute_runtime_state_args():

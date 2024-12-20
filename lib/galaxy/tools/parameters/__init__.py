@@ -31,6 +31,7 @@ from .grouping import (
 )
 from .workflow_utils import (
     is_runtime_value,
+    NO_REPLACEMENT,
     runtime_to_json,
 )
 from .wrapped import flat_to_nested_state
@@ -174,14 +175,36 @@ def visit_input_values(
         if input.name not in input_values:
             args["error"] = f"No value found for '{args.get('prefixed_label')}'."
         new_value = callback(**args)
+
+        # is this good enough ? feels very ugh
+        if new_value == [no_replacement_value]:
+            # Single unspecified value in multiple="true" input with a single null input, pretend it's a singular value
+            new_value = no_replacement_value
+        if isinstance(new_value, list):
+            # Maybe mixed input, I guess tool defaults don't really make sense here ?
+            # Would e.g. be default dataset in multiple="true" input, you wouldn't expect the default to be inserted
+            # if other inputs are connected and provided.
+            new_value = [item if not item == no_replacement_value else None for item in new_value]
+
         if no_replacement_value is REPLACE_ON_TRUTHY:
             replace = bool(new_value)
         else:
             replace = new_value != no_replacement_value
         if replace:
             input_values[input.name] = new_value
-        elif replace_optional_connections and is_runtime_value(value) and hasattr(input, "value"):
-            input_values[input.name] = input.value
+        elif replace_optional_connections:
+            # Only used in workflow context
+            has_default = hasattr(input, "value")
+            if new_value is value is NO_REPLACEMENT or is_runtime_value(value):
+                # NO_REPLACEMENT means value was connected but left unspecified
+                if has_default:
+                    # Use default if we have one
+                    input_values[input.name] = input.value
+                else:
+                    # Should fail if input is not optional and does not have default value
+                    # Effectively however depends on parameter implementation.
+                    # We might want to raise an exception here, instead of depending on a tool parameter value error.
+                    input_values[input.name] = None
 
     def get_current_case(input, input_values):
         test_parameter = input.test_param
