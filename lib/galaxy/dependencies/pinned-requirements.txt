@@ -87,7 +87,7 @@ h5py==3.12.1 ; python_full_version >= '3.9'
 humanfriendly==10.0
 idna==3.10
 importlib-metadata==8.5.0
-importlib-resources==6.4.5 ; python_full_version < '3.9'
+importlib-resources==6.4.5 ; python_full_version < '3.12'
 isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@3d989181058d2765a93cb0e7ca85d6955e0eb6ef
 isal==1.7.1
 isodate==0.6.1
