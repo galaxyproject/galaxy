@@ -25,17 +25,15 @@ Feature description.
 
 DRAFT CONTENT
 
+* Add wizard-like export view for workflow invocations
+* Workflow Editor Activity Bar + Undo stack UI
+* Masthead Revision
 * Guide users to collection builders
 * Workflow Invocation view improvements
-* Add wizard-like export view for workflow invocations
-* Workflow Editor Activity Bar
-* Undo stack UI
+* Libraries Modernisation: Directory Dataset Picker
 * Improvements to help terms & tool help.
 * Feature - stdout live reporting
-* Experimental galactic wizard
 * Allow OAuth 2.0 user defined file sources (w/Dropbox integration)
-* Masthead Revision
-* Libraries Modernisation: Directory Dataset Picker
 
 Also check out the `24.2 user release notes <24.2_announce_user.html>`__.
 Are you an admin? Check out `some admin relevant PRs <https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A24.2+is%3Aclosed+is%3Apr>`__.
