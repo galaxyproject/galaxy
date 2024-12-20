@@ -1007,6 +1007,7 @@
     <datatype extension="fits" type="galaxy.datatypes.binary:FITS" mimetype="application/octet-stream" display_in_upload="true" description="Flexible Image Transport System (FITS) used in Astronomy"/>
     <datatype extension="chain" type="galaxy.datatypes.chain:Chain" display_in_upload="true" description_url="https://genome.ucsc.edu/goldenPath/help/chain.html"/>
     <datatype extension="ucsc.net" type="galaxy.datatypes.chain:Net" display_in_upload="true" description_url="https://genome.ucsc.edu/goldenPath/help/net.html"/>
+    <datatype extension="bcsp" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true"/>
   </registration>
   <sniffers>
     <!--
