@@ -1,0 +1,225 @@
+// Bob Hanson hansonr@stolaf.edu
+
+// 1604 subGroups; 3767 settings
+
+// a bit of hardwiring:
+
+targetDir = "c:/temp/bilbao/subgroups/";
+
+// variables for the createJSONFiles call (below), after the functions
+
+itadelay = 0.1;
+itaFirst = 0;
+itaForceNew = false;
+htmlOnly = true;
+maxindex = 4;
+nsubs = 0;
+ntrm = 0;
+// only one function to run here:
+function createSubJSONFiles(n, forceNew) {
+
+	nsubs = 0;
+	ntrm = 0;
+
+	// creates ita_<i>.json, by space group
+
+	// n option to start at a given number (-30), or only a certain number (30), or all (0)
+	// forceNew option true to overwrite local files; false to use them if they are there.
+
+	var allTransforms = [["i", "cleg", "tr_type", "tr_subtype" "det", "index", "conj_class"]]
+	for (var i = 1; i <= 230; i++) {
+		if (n < 0 && i < -n || n > 0 && i != n) {
+			continue;
+		}
+		var adata = {"sg":i, "created":now("").trim()};
+		_getAllSubs(i, adata, allTransforms);
+		var thedata = adata.format("JSON");
+		var fname = targetDir + "json/sub_" + i + ".json";
+		write var thedata @fname;
+
+
+	}
+
+	if (n == 0 || n == -1) {
+
+		var thedata = allTransforms.join("\t",TRUE);
+		var fname = targetDir + "txt/cleg_subgroups.txt";
+		write var thedata @fname;
+
+		print "DONE " + nsubs + " subGroups; " + ntrm + " cleg";
+
+	}
+
+}
+
+function _getAllSubs(group, adata, allTransforms) {
+	var subs = [];
+	adata.subgroups = subs;
+	// split by buttons
+	var y = _getSubDataHTM(group, 0, "sub", "", forceNew).split('<a href="nph-lxi');
+	var groupHM = _fixName(y[1].split("Maximal subgroups of group ")[2].split("(No.")[1]);
+	adata.HM = groupHM;
+	var isub = 0;
+	var nt = 0;
+	for (var j = 1; j < y.length; j++) {
+		var gdata = y[j + 1];
+		var href = _getField(gdata, "href", 1000);
+		var sindex = _getField(href, "index");
+		if (0 + sindex > maxIndex) continue;
+		isub++;
+		var subgroup = _getField(href, "sub");
+		var stype = _getField(href, "type");
+		var subtype = stype[2][0];
+		stype = stype[1];
+		var hm = _fixName(gdata.split("<i>")[2].split("</td>")[1]);
+		var a = {"i":0+isub,
+			"subgroup":0+subgroup, 
+			"subgroupHM":hm, 
+			"trType":stype, 
+			"trSubtype": subtype,
+			"subgroupIndex":0+sindex};//, "url": "" + href};
+		// name="trm" value="%31%2F%32x%2B%31%2F%32y%2C%2D%31%2F%32x%2B%31%2F%32y%2Cz"
+		var sdata = _getSubDataHTM(group, isub, "sub", href, forcenew).split('"trm"');
+		var transforms = [];
+	
+		//<small> Conjugacy class a</small>
+		var s = sdata[1];
+		var sdet;
+		for (var t = 2; t <= sdata.length; t++) {
+			nt++;
+			var ac = s.split("> Conjugacy class ");
+			if (ac[2])
+				conjClass = ac[2].split("<")[1].trim();
+			s = sdata[t];
+			var xyz = _fixURI(_getField(s,"value"));
+			var tabc = _toTransform(xyz);
+			sdet = unitcell(tabc,true)%1%2;
+			var abc = conjClass + ":" + tabc;// + "=" + xyz;
+			transforms.push(abc);
+			allTransforms.push([ntrm + nt, "" + group + ">" + tabc + ">" + subgroup, stype, subtype, sdet, sindex, conjClass]); 
+		}
+		a["det"] = sdet;
+		a["trm"] = transforms;
+		subs.push(a);
+	}
+	adata.HM = groupHM;
+	adata.nSubgroups = subs.length;
+	adata.nSettings = nt;
+	nsubs += subs.length;
+	ntrm = += nt;
+}
+
+// all other functions are "private" to this script
+
+function _getSubDataHTM(i, j, what, url0, forceNew) {
+
+//https://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-lxi?submit=choose+it&gnum=90
+
+	var localFile = targetDir + "data/" + what + "_" + i + if(j;"_"+j+".html";".htm");
+	var url = if(url0;url0;"nph-lxi?submit=choose+it&gnum=" + i);
+	url = if(forceNew ; "https://www.cryst.ehu.es/cgi-bin/cryst/programs/" + url;  localFile);
+
+	print url;
+	delay @itadelay;
+	var gdata = load(url);
+	if (forceNew) {
+		write var gdata @localFile;
+	} else if (gdata.find("FileNotFound")) {
+		gdata = _getSubDataHTM(i, j, what, url0, true);
+	}
+	return gdata;
+}
+
+function _getField(gdata, field, max) {
+	
+	if (!max) max = 0;
+
+	// get a &... field form a URL
+
+	var ret;
+	var i = gdata.find(field + "=");
+	if (i == 0) return "";
+	gdata = gdata[i + field.length + 1][0];
+	if (gdata[1] == '"') {
+		return gdata.split('"')[2];	
+	} 
+	return (gdata[1][max] + "&").split("&")[1];
+}
+
+// utility methods
+
+function _fixName(s) {
+
+	// remove HTML markings
+
+	return (s.trim()
+		.replace("<i>","").replace("</i>","")
+		.replace("<b>","").replace("</b>","")
+		.replace("<sub>","").replace("</sub>","")
+		.replace("&#124;","|")).replace("  "," ");
+}
+
+
+function _fixURI(s) {
+	s = s.replace('%3A',':').replace('%3B',';').replace('%3','').replace('%2F','/').replace('%2B','+').replace('%2C',',')
+	return s.replace('%2D','-').replace('%2E','.').replace('%28','(').replace('%29',')').replace('%20',' ')
+}
+
+m40 = [[0 0 0 0][0 0 0 0][0 0 0 0][0 0 0 1]];
+
+function _toTransform(xyz){ 
+	// 1 0 -1 | 0
+	// 0 1  0 | 0
+	// 0 0  2 | 1/2
+	// 
+	// x-z,y,2z+1/2 to "a,b,-a+2c;0,0,1/2 (transposed)
+	// a,b,-a+2c+1/2 also to "a,b,-a+2c;0,0,1/2 (not transposed)
+
+	// the function unitcell() runs org.jmol.symmetry.UnitCell.getMatrixAndUnitCell()
+	// unitcell() removes any embedded translations and puts the rotation in xyz-row,abc column format
+	// we get any embedded translation using symop()
+
+	var m = -unitcell(xyz, true);
+	var abc = symop(m, "xyz").replace('x','a').replace('y','b').replace('z','c');
+
+	var t = symop(xyz, "matrix")%2;
+	if (t == 0) {
+		return abc;
+	}
+	return abc + ";" + symop(m40 + t, "xyz");
+}
+
+function _toXYZ(abc, asTrm){
+
+	// getGen needs the transposed matrix, in xyz format. 
+	// this does the trick, as -m4 is the transpose of m4, and symop(matrix, "xyz") 
+ 	// will accept a,b,c and return x,y,z
+	// check for translation and don't transpose that
+
+	var a = symop(abc, "matrix");
+	var t = a%2; // get translation vector
+	if (1.0 * t == 0) {
+		// transpose if no translation
+		a = -a;
+	} else {
+		// remove translation from 4x4, transpose it, then return translation
+		a = -(a + -t) + t;
+	}
+	return symop(a, "xyz");
+}
+
+
+createSubJSONFiles(itaFirst, itaForceNew);
+
+
+
+/**
+
+function test() {
+}
+
+test(subs)
+
+Lots missing, but no first setting at least.
+First one missing is #75 (tetragonols) and last is #167 (trigonals, :r option never implemented in Jmol). 
+
