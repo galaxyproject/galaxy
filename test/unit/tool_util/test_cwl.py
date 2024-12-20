@@ -292,6 +292,7 @@ def test_load_proxy_simple():
     }
     assert len(resource_requirements) == 1
     assert resource_requirements[0].to_dict() == {"resource_type": "ram_min", "value_or_expression": 8}
+    assert len(credentials) == 0
 
 
 def test_representation_id():

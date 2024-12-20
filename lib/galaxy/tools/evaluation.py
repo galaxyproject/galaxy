@@ -9,7 +9,6 @@ from datetime import datetime
 from typing import (
     Any,
     Callable,
-    cast,
     Literal,
     Optional,
     TYPE_CHECKING,
@@ -34,9 +33,9 @@ from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
     MinimalToolApp,
-    StructuredApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
+from galaxy.tool_util.deps.requirements import CredentialsRequirement
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util_models.tool_source import (
     FileSourceConfigFile,
@@ -217,34 +216,21 @@ class ToolEvaluator:
                 output_collections=out_collections,
             )
 
-        if self.tool.credentials:
-            app = cast(StructuredApp, self.app)
-            user_vault = UserVaultWrapper(app.vault, self._user)
-            for credentials in self.tool.credentials:
+        # TODO: provide all information needed (variable value, current group, etc) to this part...
+        if hasattr(self.tool, "credentials"):
+            user_vault = UserVaultWrapper(self.app.vault, self._user)
+            tool_credentials: List[CredentialsRequirement] = self.tool.credentials
+            for credentials in tool_credentials:
                 reference = credentials.reference
-                for secret in credentials.secret:
-                    vault_value = user_vault.read_secret(f"{reference}|{secret.name}") or ""
+                current_group = "default"
+                tool_id = self.tool.id
+                for secret in credentials.secrets:
+                    vault_ref = f"tool|{tool_id}|{reference}|{current_group}|{secret.name}"
+                    vault_value = user_vault.read_secret(vault_ref) or ""
                     self.environment_variables.append({"name": secret.inject_as_env, "value": vault_value})
-                for variable in credentials.variable:
-                    service_refrence = f"{reference}|{variable.name}"
-                    app_model = app.model
-                    query = (
-                        app_model.context.query(app_model.UserCredential)
-                        .filter_by(user_id=self._user.id, service_reference=service_refrence)
-                        .first()
-                    )
-                    if query:
-                        credential_id = query.id
-                        credential = (
-                            app_model.context.query(app_model.Credential)
-                            .filter_by(user_credential_id=credential_id, name=variable.name)
-                            .first()
-                        )
-                        if credential:
-                            variable_value = credential.value
-                            self.environment_variables.append({"name": variable.inject_as_env, "value": variable_value})
-                        else:
-                            log.warning(f"Variable {variable.name} not found in credentials")
+                for variable in credentials.variables:
+                    variable_value = "variable.value"
+                    self.environment_variables.append({"name": variable.inject_as_env, "value": variable_value})
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution

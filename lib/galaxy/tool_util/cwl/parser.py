@@ -93,6 +93,7 @@ SUPPORTED_TOOL_REQUIREMENTS = [
     "SubworkflowFeatureRequirement",
     "StepInputExpressionRequirement",
     "MultipleInputFeatureRequirement",
+    "CredentialsRequirement",
 ]
 
 
@@ -243,8 +244,8 @@ class ToolProxy(metaclass=ABCMeta):
     def resource_requirements(self) -> List:
         return self.hints_or_requirements_of_class("ResourceRequirement")
 
-    def credentials(self) -> List:
-        return self.hints_or_requirements_of_class("Credentials")
+    def credentials_requirements(self) -> List:
+        return self.hints_or_requirements_of_class("CredentialsRequirement")
 
 
 class CommandLineToolProxy(ToolProxy):

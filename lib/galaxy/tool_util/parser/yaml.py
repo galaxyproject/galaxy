@@ -133,7 +133,7 @@ class YamlToolSource(ToolSource):
     def parse_version_command_interpreter(self):
         return self.root_dict.get("runtime_version", {}).get("interpreter", None)
 
-    def parse_requirements_and_containers(self):
+    def parse_requirements(self):
         mixed_requirements = self.root_dict.get("requirements", [])
         container = self.root_dict.get("container")
         containers = self.root_dict.get("containers")

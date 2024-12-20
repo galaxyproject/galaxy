@@ -167,6 +167,24 @@ requirements:
 containers:
   - type: docker
     identifier: "awesome/bowtie"
+credentials:
+  - name: Apollo
+    reference: gmod.org/apollo
+    optional: true
+    secrets:
+      - name: username
+        label: Your Apollo username
+        description: Username for Apollo
+        inject_as_env: apollo_user
+      - name: password
+        label: Your Apollo password
+        description: Password for Apollo
+        inject_as_env: apollo_pass
+    variables:
+      - name: server
+        label: Your Apollo server
+        description: URL of your Apollo server
+        inject_as_env: apollo_url
 outputs:
   out1:
     format: bam
@@ -366,9 +384,6 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert resource_requirements[5].resource_type == "cuda_device_count_max"
         assert resource_requirements[6].resource_type == "shm_size"
         assert not resource_requirements[0].runtime_required
-
-    def test_credentials(self):
-        *_, credentials = self._tool_source.parse_requirements_and_containers()
         assert credentials[0].name == "Apollo"
         assert credentials[0].reference == "gmod.org/apollo"
         assert credentials[0].optional
@@ -580,6 +595,9 @@ class TestYamlLoader(BaseLoaderTestCase):
             "resource_type": "shm_size",
             "value_or_expression": 67108864,
         }
+        assert len(credentials) == 1
+        assert len(credentials[0].secrets) == 2
+        assert len(credentials[0].variables) == 1
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())
