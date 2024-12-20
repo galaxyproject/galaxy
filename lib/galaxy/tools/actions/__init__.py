@@ -22,6 +22,7 @@ from galaxy.exceptions import (
     AuthenticationRequired,
     ItemAccessibilityException,
     RequestParameterInvalidException,
+    ToolInputsNotReadyException,
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers.context import ProvidesHistoryContext
@@ -1156,8 +1157,14 @@ def get_ext_or_implicit_ext(hda):
         # objects, and their type is the target_ext, so this should be correct even if there
         # are multiple ImplicitlyConvertedDatasetAssociation objects (meaning 2 datasets had been converted
         # to produce a dataset with the required datatype)
-        return hda.implicitly_converted_parent_datasets[0].type
-    return hda.ext
+        ext = hda.implicitly_converted_parent_datasets[0].type
+    else:
+        ext = hda.ext
+    if ext == "expression.json" and hda.dataset.state not in model.Dataset.terminal_states:
+        raise ToolInputsNotReadyException(
+            "Tool uses expression tool output to determine extension, can only succeed once input is terminal."
+        )
+    return ext
 
 
 def determine_output_format(
@@ -1192,6 +1199,8 @@ def determine_output_format(
         try:
             input_dataset = input_datasets[output.format_source]
             ext = get_ext_or_implicit_ext(input_dataset)
+        except ToolInputsNotReadyException:
+            raise
         except Exception:
             pass
     elif format_source is not None:
@@ -1231,6 +1240,8 @@ def determine_output_format(
                                 break
                     input_dataset = input_element.element_object
                 ext = get_ext_or_implicit_ext(input_dataset)
+            except ToolInputsNotReadyException:
+                raise
             except Exception as e:
                 log.debug("Exception while trying to determine format_source: %s", e)
 
