@@ -98,7 +98,6 @@ class MinimalToolApp(Protocol):
     tool_data_tables: "ToolDataTableManager"
     file_sources: ConfiguredFileSources
     security: IdEncodingHelper
-    vault: Vault
 
 
 class MinimalApp(BasicSharedApp):

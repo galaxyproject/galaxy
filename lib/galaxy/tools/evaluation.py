@@ -28,7 +28,6 @@ from galaxy.model.deferred import (
 )
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
-from galaxy.security.vault import UserVaultWrapper
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
@@ -216,9 +215,8 @@ class ToolEvaluator:
                 output_collections=out_collections,
             )
 
-        # TODO: provide all information needed (variable value, current group, etc) to this part...
+        # TODO: provide all information needed (secret value, variable value, current group, etc) to this part...
         if hasattr(self.tool, "credentials"):
-            user_vault = UserVaultWrapper(self.app.vault, self._user)
             tool_credentials: List[CredentialsRequirement] = self.tool.credentials
             for credentials in tool_credentials:
                 reference = credentials.reference
@@ -226,7 +224,7 @@ class ToolEvaluator:
                 tool_id = self.tool.id
                 for secret in credentials.secrets:
                     vault_ref = f"tool|{tool_id}|{reference}|{current_group}|{secret.name}"
-                    vault_value = user_vault.read_secret(vault_ref) or ""
+                    vault_value = f"user_vault.read_secret({vault_ref})"
                     self.environment_variables.append({"name": secret.inject_as_env, "value": vault_value})
                 for variable in credentials.variables:
                     variable_value = "variable.value"
