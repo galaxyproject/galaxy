@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Pie chart (NVD3)">
+<visualization name="Pie chart (NVD3)" visible="false">
     <macros>
         <import>../../nvd3_bar/config/nvd3_shared.xml</import>
     </macros>

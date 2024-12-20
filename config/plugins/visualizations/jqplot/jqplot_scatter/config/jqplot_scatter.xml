@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Scatter plot (jqPlot)">
+<visualization name="Scatter plot (jqPlot)" visible="false">
     <macros>
         <import>../../jqplot_bar/config/jqplot_shared.xml</import>
     </macros>
