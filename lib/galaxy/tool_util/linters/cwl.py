@@ -65,7 +65,7 @@ class CWLVersionGood(Linter):
 class CWLDockerMissing(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        _, containers, *_ = tool_source.parse_requirements_and_containers()
+        _, containers, *_ = tool_source.parse_requirements()
         if len(containers) == 0:
             lint_ctx.warn("Tool does not specify a DockerPull source.", linter=cls.name())
 
@@ -73,7 +73,7 @@ class CWLDockerMissing(Linter):
 class CWLDockerGood(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        _, containers, *_ = tool_source.parse_requirements_and_containers()
+        _, containers, *_ = tool_source.parse_requirements()
         if len(containers) > 0:
             identifier = containers[0].identifier
             lint_ctx.info(f"Tool will run in Docker image [{identifier}].", linter=cls.name())
