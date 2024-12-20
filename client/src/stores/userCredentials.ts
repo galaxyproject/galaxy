@@ -1,76 +1,72 @@
-import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, set } from "vue";
 
-import { isRegisteredUser } from "@/api";
-import type { ToolCredentialsDefinition, UserCredentials } from "@/api/users";
-import { useUserStore } from "@/stores/userStore";
+import { GalaxyApi } from "@/api";
+import type { CreateSourceCredentialsPayload, UserCredentials } from "@/api/users";
 
-const SECRET_PLACEHOLDER = "************";
+import { defineScopedStore } from "./scopedStore";
 
-export const useUserCredentialsStore = defineStore("userCredentialsStore", () => {
+export const useUserCredentialsStore = defineScopedStore("userCredentialsStore", (currentUserId: string) => {
     const userCredentialsForTools = ref<Record<string, UserCredentials[]>>({});
 
-    const userStore = useUserStore();
+    function getKey(toolId: string): string {
+        const userId = ensureUserIsRegistered();
+        return `${userId}-${toolId}`;
+    }
 
     function getAllUserCredentialsForTool(toolId: string): UserCredentials[] | undefined {
         ensureUserIsRegistered();
         return userCredentialsForTools.value[toolId];
     }
 
-    async function fetchAllUserCredentialsForTool(
-        toolId: string,
-        toolCredentialsDefinitions: ToolCredentialsDefinition[]
-    ): Promise<UserCredentials[]> {
-        ensureUserIsRegistered();
+    async function fetchAllUserCredentialsForTool(toolId: string): Promise<UserCredentials[]> {
+        const userId = ensureUserIsRegistered();
 
-        //TODO: Implement this. Simulate for now
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        const simulatedUserCredentials = [];
-        for (const credentials of toolCredentialsDefinitions) {
-            const fetchedCredentials = {
-                ...credentials,
-                secrets: credentials.secrets.map((secret) => ({
-                    ...secret,
-                    alreadySet: false,
-                    value: SECRET_PLACEHOLDER, //This value is never set for real
-                })),
-                variables: credentials.variables.map((variable) => ({ ...variable })),
-            };
-            simulatedUserCredentials.push(fetchedCredentials);
+        const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/credentials", {
+            params: {
+                path: { user_id: userId },
+                query: {
+                    source_type: "tool",
+                    source_id: toolId,
+                },
+            },
+        });
+
+        if (error) {
+            throw Error(`Failed to fetch user credentials for tool ${toolId}: ${error.err_msg}`);
         }
-        userCredentialsForTools.value[toolId] = simulatedUserCredentials;
-        return simulatedUserCredentials;
+
+        const key = getKey(toolId);
+        set(userCredentialsForTools.value, key, data);
+        return data;
     }
 
     async function saveUserCredentialsForTool(
-        toolId: string,
-        userCredentials: UserCredentials[]
+        providedCredentials: CreateSourceCredentialsPayload
     ): Promise<UserCredentials[]> {
-        ensureUserIsRegistered();
-        //TODO: Implement this. Simulate for now
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const userId = ensureUserIsRegistered();
+        const toolId = providedCredentials.source_id;
 
-        const savedUserCredentials: UserCredentials[] = [];
-        for (const credentials of userCredentials) {
-            const savedCredentials = {
-                ...credentials,
-                secrets: credentials.secrets.map((secret) => ({
-                    ...secret,
-                    alreadySet: !!secret.value && secret.value !== SECRET_PLACEHOLDER,
-                    value: SECRET_PLACEHOLDER,
-                })),
-                variables: credentials.variables.map((variable) => ({ ...variable })),
-            };
-            savedUserCredentials.push(savedCredentials);
+        const { data, error } = await GalaxyApi().POST("/api/users/{user_id}/credentials", {
+            params: {
+                path: { user_id: userId },
+            },
+            body: providedCredentials,
+        });
+
+        if (error) {
+            throw Error(`Failed to save user credentials for tool ${toolId}: ${error.err_msg}`);
         }
-        userCredentialsForTools.value[toolId] = savedUserCredentials;
-        return savedUserCredentials;
+
+        const key = getKey(toolId);
+        set(userCredentialsForTools.value, key, data);
+        return data;
     }
 
-    function ensureUserIsRegistered() {
-        if (!isRegisteredUser(userStore.currentUser)) {
+    function ensureUserIsRegistered(): string {
+        if (currentUserId === "anonymous") {
             throw new Error("Only registered users can have tool credentials");
         }
+        return currentUserId;
     }
 
     return {
