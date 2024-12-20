@@ -85,7 +85,7 @@ class CredentialsService:
     def _user_credentials(
         self,
         trans: ProvidesUserContext,
-        user_id: UserIdPathParam,
+        user_id: UserIdPathParam,  # TODO: use FlexibleUserIdType to support also "current"
         source_type: Optional[SOURCE_TYPE] = None,
         source_id: Optional[str] = None,
         reference: Optional[str] = None,
@@ -93,10 +93,10 @@ class CredentialsService:
         user_credentials_id: Optional[DecodedDatabaseIdField] = None,
         group_id: Optional[DecodedDatabaseIdField] = None,
     ) -> List[Tuple[UserCredentials, CredentialsGroup, Variable, Secret]]:
-        if not trans.user_is_admin and (not trans.user or trans.user != user_id):
-            raise exceptions.ItemOwnershipException(
-                "Only admins and the user can manage their own credentials.", type="error"
-            )
+        if trans.anonymous:
+            raise exceptions.AuthenticationRequired("You need to be logged in to access your credentials.")
+        if trans.user and trans.user.id != user_id:
+            raise exceptions.ItemOwnershipException("You can only access your own credentials.")
         group_alias = aliased(CredentialsGroup)
         var_alias = aliased(Variable)
         sec_alias = aliased(Secret)
