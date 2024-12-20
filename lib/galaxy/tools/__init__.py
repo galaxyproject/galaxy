@@ -1467,7 +1467,7 @@ class Tool(UsesDictVisibleKeys):
 
         # Requirements (dependencies)
         requirements, containers, resource_requirements, javasscript_requirements, credentials = (
-            tool_source.parse_requirements_and_containers()
+            tool_source.parse_requirements()
         )
         self.requirements = requirements
         self.containers = containers
