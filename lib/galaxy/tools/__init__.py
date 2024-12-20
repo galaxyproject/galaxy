@@ -1219,7 +1219,7 @@ class Tool(UsesDictVisibleKeys):
                     raise Exception(message)
 
         # Requirements (dependencies)
-        requirements, containers, resource_requirements, credentials = tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements, credentials = tool_source.parse_requirements()
         self.requirements = requirements
         self.containers = containers
         self.resource_requirements = resource_requirements

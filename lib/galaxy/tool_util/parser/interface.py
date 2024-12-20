@@ -312,7 +312,7 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_requirements_and_containers(
+    def parse_requirements(
         self,
     ) -> Tuple[
         "ToolRequirements", List["ContainerDescription"], List["ResourceRequirement"], List["CredentialsRequirement"]
