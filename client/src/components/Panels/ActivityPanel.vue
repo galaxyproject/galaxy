@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue";
+import { BButton, BButtonGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
 interface Props {
@@ -26,7 +26,9 @@ const hasGoToAll = computed(() => props.goToAllTitle && props.href);
             <nav unselectable="on" class="activity-panel-header-top">
                 <h2 id="activity-panel-heading" v-localize class="activity-panel-heading h-sm">{{ props.title }}</h2>
 
-                <slot name="header-buttons" />
+                <BButtonGroup>
+                    <slot name="header-buttons" />
+                </BButtonGroup>
             </nav>
 
             <slot name="header" class="activity-panel-header-description" />

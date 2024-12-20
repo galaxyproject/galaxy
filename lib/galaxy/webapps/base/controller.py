@@ -973,7 +973,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             except exceptions.ToolMissingException:
                 pass
 
-    def _import_shared_workflow(self, trans, stored):
+    def _import_shared_workflow(self, trans, stored: model.StoredWorkflow):
         """Imports a shared workflow"""
         # Copy workflow.
         imported_stored = model.StoredWorkflow()
