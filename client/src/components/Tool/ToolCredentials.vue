@@ -2,7 +2,14 @@
 import { BAlert, BButton, BModal } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import type { ToolCredentialsDefinition, UserCredentials } from "@/api/users";
+import { isRegisteredUser } from "@/api";
+import {
+    type CreateSourceCredentialsPayload,
+    type ServiceCredentialsDefinition,
+    type SourceCredentialsDefinition,
+    transformToSourceCredentials,
+    type UserCredentials,
+} from "@/api/users";
 import { useUserCredentialsStore } from "@/stores/userCredentials";
 import { useUserStore } from "@/stores/userStore";
 
@@ -12,38 +19,55 @@ import ManageToolCredentials from "@/components/User/Credentials/ManageToolCrede
 interface Props {
     toolId: string;
     toolVersion: string;
-    toolCredentialsDefinition: ToolCredentialsDefinition[];
+    toolCredentialsDefinition: ServiceCredentialsDefinition[];
 }
 
 const props = defineProps<Props>();
 
 const userStore = useUserStore();
-const userCredentialsStore = useUserCredentialsStore();
+const userCredentialsStore = useUserCredentialsStore(
+    isRegisteredUser(userStore.currentUser) ? userStore.currentUser.id : "anonymous"
+);
 
 const isBusy = ref(true);
 const busyMessage = ref<string>("");
 const userCredentials = ref<UserCredentials[] | undefined>(undefined);
 
+const credentialsDefinition = computed<SourceCredentialsDefinition>(() => {
+    return transformToSourceCredentials(props.toolId, props.toolCredentialsDefinition);
+});
+
 const hasUserProvidedRequiredCredentials = computed<boolean>(() => {
-    if (!userCredentials.value) {
+    if (!userCredentials.value || userCredentials.value.length === 0) {
         return false;
     }
-    return userCredentials.value.every((credentials) => credentials.optional || areSetByUser(credentials));
+
+    return userCredentials.value.every((credentials) => areOptional(credentials) || areSetByUser(credentials));
 });
 
 const hasUserProvidedAllCredentials = computed<boolean>(() => {
-    if (!userCredentials.value) {
+    if (!userCredentials.value || userCredentials.value.length === 0) {
         return false;
     }
     return userCredentials.value.every(areSetByUser);
 });
 
 const hasSomeOptionalCredentials = computed<boolean>(() => {
-    return props.toolCredentialsDefinition.some((credentials) => credentials.optional);
+    for (const credentials of credentialsDefinition.value.services.values()) {
+        if (credentials.optional) {
+            return true;
+        }
+    }
+    return false;
 });
 
 const hasSomeRequiredCredentials = computed<boolean>(() => {
-    return props.toolCredentialsDefinition.some((credentials) => !credentials.optional);
+    for (const credentials of credentialsDefinition.value.services.values()) {
+        if (!credentials.optional) {
+            return true;
+        }
+    }
+    return false;
 });
 
 const provideCredentialsButtonTitle = computed(() => {
@@ -75,10 +99,7 @@ async function checkUserCredentials(providedCredentials?: UserCredentials[]) {
         if (!providedCredentials) {
             providedCredentials =
                 userCredentialsStore.getAllUserCredentialsForTool(props.toolId) ??
-                (await userCredentialsStore.fetchAllUserCredentialsForTool(
-                    props.toolId,
-                    props.toolCredentialsDefinition
-                ));
+                (await userCredentialsStore.fetchAllUserCredentialsForTool(props.toolId));
         }
 
         userCredentials.value = providedCredentials;
@@ -91,25 +112,29 @@ async function checkUserCredentials(providedCredentials?: UserCredentials[]) {
 }
 
 function areSetByUser(credentials: UserCredentials): boolean {
-    return (
-        credentials.variables.every((variable) => variable.value) &&
-        credentials.secrets.every((secret) => secret.alreadySet)
-    );
+    return Object.values(credentials.groups).every((set) => {
+        return set.variables.every((variable) => variable.value) && set.secrets.every((secret) => secret.already_set);
+    });
+}
+
+function areOptional(credentials: UserCredentials): boolean {
+    const matchingDefinition = credentialsDefinition.value.services.get(credentials.reference);
+    if (!matchingDefinition) {
+        return false;
+    }
+    return matchingDefinition.optional;
 }
 
 function provideCredentials() {
     showModal.value = true;
 }
 
-async function onSavedCredentials(providedCredentials: UserCredentials[]) {
+async function onSavedCredentials(providedCredentials: CreateSourceCredentialsPayload) {
     showModal.value = false;
     busyMessage.value = "Saving your credentials...";
     try {
         isBusy.value = true;
-        userCredentials.value = await userCredentialsStore.saveUserCredentialsForTool(
-            props.toolId,
-            providedCredentials
-        );
+        userCredentials.value = await userCredentialsStore.saveUserCredentialsForTool(providedCredentials);
     } catch (error) {
         // TODO: Implement error handling.
         console.error("Error saving user credentials", error);
@@ -170,7 +195,8 @@ checkUserCredentials();
             <ManageToolCredentials
                 :tool-id="props.toolId"
                 :tool-version="props.toolVersion"
-                :credentials="userCredentials"
+                :tool-credentials-definition="credentialsDefinition"
+                :user-tool-credentials="userCredentials"
                 @save-credentials="onSavedCredentials" />
         </BModal>
     </div>
