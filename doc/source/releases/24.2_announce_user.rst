@@ -1,0 +1,149 @@
+
+===========================================================
+24.2 Galaxy Release (January 2025)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+Feature1
+--------
+
+Feature description.
+
+Feature2
+--------
+
+Feature description.
+
+Feature3
+--------
+
+Feature description.
+
+
+Visualizations
+===========================================================
+
+.. visualizations
+* Fix MSA viz, new dependency specification options
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 18760`_
+* Parse stored config details to script-based visualizations
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18651`_
+* Install npm-package viz to the package prefix explicitly
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 18950`_
+* Migrate NGL viewer to npm package
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18946`_
+* Support deferred datasets in visualizations
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19097`_
+* Openlayer update to npm package
+  (thanks to `@hujambo-dunia <https://github.com/hujambo-dunia>`__).
+  `Pull Request 19134`_
+* Replace static Cytoscape plugin with npm package
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 19127`_
+* Update tiff viewer to use script entry_point
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19151`_
+* Migrate Venn Diagram to Script-Tag
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19153`_
+* FITS file table graph visualization plugin
+  (thanks to `@francoismg <https://github.com/francoismg>`__).
+  `Pull Request 19003`_
+* Restore access to saved visualizations
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19136`_
+* Remove OpenLayers legacy files and add SVG logo
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 19135`_
+
+Datatypes
+===========================================================
+
+.. datatypes
+* Add pod5 datatype
+  (thanks to `@TomHarrop <https://github.com/TomHarrop>`__).
+  `Pull Request 18419`_
+* Handle compressed content in dataset preview for all sequence classes
+  (thanks to `@PlushZ <https://github.com/PlushZ>`__).
+  `Pull Request 18776`_
+* Type annotations and fixes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18911`_
+* Improve usability of Directory datatype
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 17614`_
+* Add some Zarr-based datatypes
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 19040`_
+* Add XML based `vtk` datatype
+  (thanks to `@tStehling <https://github.com/tStehling>`__).
+  `Pull Request 19104`_
+* Add gtf to auto_compressed_types
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 19175`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Drop "Send to cloud" tool and associated cloudauthz code
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18196`_
+* Update GPU JupyterLab tool
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 18220`_
+* Improvements to Tool Test Parsing
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18560`_
+* Add Tool-Centric APIs to the Tool Shed 2.0
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18524`_
+* Add BlobToolkit to the list of interactive tools
+  (thanks to `@Delphine-L <https://github.com/Delphine-L>`__).
+  `Pull Request 18630`_
+* Enable ``ignore-without-code`` mypy error code
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18898`_
+* Remove some unused dynamic drill down options
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18892`_
+* Fix commas that shouldn't be in biotools_mappings.tsv
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18919`_
+* Add filter null collection operation tool
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18928`_
+* Remove outdated fimo wrapper and galaxy-sequence-utils dependency
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18937`_
+* Jupyter Interactive Tool 1.0.1/24.07
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 18861`_
+* Add Interactive Tool Ilastik
+  (thanks to `@lldelisle <https://github.com/lldelisle>`__).
+  `Pull Request 16837`_
+
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+<team members go here>
+
+Release Notes
+===========================================================
+
+Please see the :doc:`full release notes <24.2_announce>` for more details.
+
+.. include:: 24.2_prs.rst
+
+.. include:: _thanks.rst
