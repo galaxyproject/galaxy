@@ -2014,7 +2014,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         dict of tool parameter values.
         """
         param_dict = self.raw_param_dict()
-        tool = app.toolbox.get_tool(self.tool_id, tool_version=self.tool_version)
+        tool = app.toolbox.get_tool(
+            self.tool_id,
+            tool_version=self.tool_version,
+            tool_uuid=self.dynamic_tool and self.dynamic_tool.uuid,
+            user=self.user,
+        )
         param_dict = tool.params_from_strings(param_dict, app, ignore_errors=ignore_errors)
         return param_dict
 
