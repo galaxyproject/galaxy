@@ -100,14 +100,15 @@ function eventReset() {
 }
 
 /** Start upload process */
-function eventStart() {
+async function eventStart() {
     uploadValues.value.forEach((model) => {
         model.dbKey = dbKey.value;
         model.extension = extension.value;
     });
     try {
+        const data = await uploadPayload(uploadValues.value, props.historyId, true);
         uploadSubmit({
-            data: uploadPayload(uploadValues.value, props.historyId, true),
+            data,
             error: eventError,
             progress: eventProgress,
             success: eventSuccess,

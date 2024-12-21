@@ -1,3 +1,5 @@
+import flushPromises from "flush-promises";
+
 import { sendPayload } from "@/utils/upload-submit.js";
 
 import { UploadQueue } from "./upload-queue.js";
@@ -66,7 +68,7 @@ describe("UploadQueue", () => {
         expect(q.encountedErrors).toBeFalsy();
     });
 
-    test("calling start processes all files in queue", () => {
+    test("calling start processes all files in queue", async () => {
         const fileEntries = {};
         const q = instrumentedUploadQueue({
             get: (index) => fileEntries[index],
@@ -85,6 +87,7 @@ describe("UploadQueue", () => {
         q._processSubmit = mockedSubmit;
         q.add([StubFile("a"), StubFile("b")]);
         q.start();
+        await flushPromises();
         expect(q.size).toEqual(0);
         expect(q.encountedErrors).toBeFalsy();
         expect(spy.mock.calls.length).toEqual(3); // called for 2, 1, 0 files.
@@ -181,7 +184,7 @@ describe("UploadQueue", () => {
         expect(q.encountedErrors).toBeFalsy();
     });
 
-    test("remote file batch", () => {
+    test("remote file batch", async () => {
         const fileEntries = {};
         const q = instrumentedUploadQueue({
             historyId: "historyId",
@@ -203,6 +206,7 @@ describe("UploadQueue", () => {
         q.add([StubFile("a"), StubFile("b"), StubFile("c")]);
         expect(q.size).toEqual(3);
         q.start();
+        await flushPromises();
         expect(sendPayload.mock.calls[0][0]).toEqual({
             auto_decompress: true,
             files: [],

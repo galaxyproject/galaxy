@@ -1,3 +1,5 @@
+import { useConfirmDialog } from "@/composables/confirmDialog";
+
 export const DEFAULT_FILE_NAME = "New File";
 export const URI_PREFIXES = [
     "http://",
@@ -18,16 +20,53 @@ export function isUrl(content) {
     return URI_PREFIXES.some((prefix) => content.startsWith(prefix));
 }
 
-export function uploadPayload(items, historyId, composite = false) {
+export function isGalaxyFile(content) {
+    if (content === undefined || content === null) {
+        return false;
+    }
+    const galaxyRegexPattern = /Galaxy\d+-\[(.*?)\](\..+)/;
+    const match = content.match(galaxyRegexPattern);
+    if (match) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+export async function uploadPayload(items, historyId, composite = false) {
     const files = [];
-    const elements = items
-        .map((item) => {
+    const elements = await Promise.all(
+        items.map(async (item) => {
             if (!item.optional || item.fileSize > 0) {
                 // avoid submitting default file name, server will set file name
                 let fileName = item.fileName;
                 if (fileName === DEFAULT_FILE_NAME) {
                     fileName = null;
                 }
+
+                if (!composite && isGalaxyFile(item.fileName)) {
+                    const modifiedFileName = item.fileName.replace(/Galaxy\d+-\[(.*?)\](\..+)/, "$1");
+
+                    const { confirm: confirmFromDialog } = useConfirmDialog();
+                    const keepModifiedName = await confirmFromDialog(
+                        `This looks like a previous Galaxy file. We have renamed it.<br /><br />
+                        <b>Original Name:</b> <i>${item.fileName}</i><br />
+                        <b>Modified Name:</b> <i>${modifiedFileName}</i><br /><br />
+                        Do you want to keep the modified name?`,
+                        {
+                            title: "Rename potential Galaxy file",
+                            okTitle: "Rename",
+                            okVariant: "primary",
+                            cancelTitle: "Keep Original",
+                            html: true,
+                        }
+                    );
+                    if (keepModifiedName) {
+                        item.fileName = modifiedFileName;
+                        fileName = modifiedFileName;
+                    }
+                }
+
                 // consolidate exclusive file content attributes
                 const urlContent = (item.fileUri || item.filePath || item.fileContent || "").trim();
                 const hasFileData = item.fileData && item.fileData.size > 0;
@@ -91,21 +130,23 @@ export function uploadPayload(items, historyId, composite = false) {
                 }
             }
         })
-        .filter((item) => item)
-        .flat();
-    if (elements.length === 0) {
+    );
+
+    const flattenedElements = elements.filter((item) => item).flat();
+    if (flattenedElements.length === 0) {
         throw new Error("No valid items provided.");
     }
+
     const target = {
         destination: { type: "hdas" },
-        elements: elements,
+        elements: flattenedElements,
     };
     if (composite) {
         const compositeItems = [
             {
                 src: "composite",
-                dbkey: elements[0].dbkey,
-                ext: elements[0].ext,
+                dbkey: flattenedElements[0].dbkey,
+                ext: flattenedElements[0].ext,
                 composite: {
                     items: target.elements,
                 },

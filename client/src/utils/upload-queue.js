@@ -67,11 +67,11 @@ export class UploadQueue {
     }
 
     // Initiate upload process
-    start() {
+    async start() {
         if (!this.isRunning) {
             this.isRunning = true;
-            this._processUrls();
-            this._process();
+            await this._processUrls();
+            await this._process();
         }
     }
 
@@ -81,7 +81,7 @@ export class UploadQueue {
     }
 
     // Process an upload, recursive
-    _process() {
+    async _process() {
         if (this.size === 0 || this.isPaused) {
             this.isRunning = false;
             this.isPaused = false;
@@ -100,19 +100,19 @@ export class UploadQueue {
             if (!item.targetHistoryId) {
                 throw new Error(`Missing target history for upload item [${index}] ${item.fileName}`);
             }
-            const data = uploadPayload([item], item.targetHistoryId);
+            const data = await uploadPayload([item], item.targetHistoryId);
             // Initiate upload request
             this._processSubmit(index, data);
         } catch (e) {
             // Parse error message for failed upload item
             this.opts.error(index, String(e));
             // Continue queue
-            this._process();
+            await this._process();
         }
     }
 
     // Submit remote files as single batch request per target history
-    _processUrls() {
+    async _processUrls() {
         const batchByHistory = {};
         for (const index of this.queue.keys()) {
             const model = this.opts.get(index);
@@ -131,7 +131,7 @@ export class UploadQueue {
         for (const historyId in batchByHistory) {
             const list = batchByHistory[historyId];
             try {
-                const data = uploadPayload(list, historyId);
+                const data = await uploadPayload(list, historyId);
                 sendPayload(data, {
                     success: (message) => {
                         list.forEach((model) => {
