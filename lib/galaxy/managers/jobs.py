@@ -1041,7 +1041,7 @@ def summarize_destination_params(trans, job):
     return destination_params
 
 
-def summarize_job_parameters(trans, job: Job):
+def summarize_job_parameters(trans: ProvidesUserContext, job: Job):
     """Produce a dict-ified version of job parameters ready for tabular rendering.
 
     Precondition: the caller has verified the job is accessible to the user
@@ -1164,7 +1164,9 @@ def summarize_job_parameters(trans, job: Job):
     # Load the tool
     app = trans.app
     toolbox = app.toolbox
-    tool = toolbox.get_tool(job.tool_id, job.tool_version)
+    tool = toolbox.get_tool(
+        job.tool_id, job.tool_version, tool_uuid=job.dynamic_tool and job.dynamic_tool.uuid, user=trans.user
+    )
 
     params_objects = None
     parameters = []
