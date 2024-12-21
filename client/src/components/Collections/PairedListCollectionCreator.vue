@@ -23,6 +23,15 @@ import localize from "@/utils/localization";
 import { naturalSort } from "@/utils/naturalSort";
 
 import type { DatasetPair } from "../History/adapters/buildCollectionModal";
+import {
+    COMMON_FILTERS,
+    type CommonFiltersType,
+    createPair,
+    DEFAULT_FILTER,
+    guessInitialFilterType,
+    guessNameForPair,
+    naiveStartingAndEndingLCS,
+} from "./pairing";
 
 import Heading from "../Common/Heading.vue";
 import PairedElementView from "./PairedElementView.vue";
@@ -32,12 +41,6 @@ import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
 const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
-const COMMON_FILTERS = {
-    illumina: ["_1", "_2"],
-    Rs: ["_R1", "_R2"],
-    dot12s: [".1.fastq", ".2.fastq"],
-};
-const DEFAULT_FILTER: keyof typeof COMMON_FILTERS = "illumina";
 const MATCH_PERCENTAGE = 0.99;
 
 // Titles and help text
@@ -238,31 +241,12 @@ function _elementsSetUp() {
 }
 
 function initialFiltersSet() {
-    let illumina = 0;
-    let dot12s = 0;
-    let Rs = 0;
-    //should we limit the forEach? What if there are 1000s of elements?
-    props.initialElements.forEach((element) => {
-        if (element.name?.includes(".1.fastq") || element.name?.includes(".2.fastq")) {
-            dot12s++;
-        } else if (element.name?.includes("_R1") || element.name?.includes("_R2")) {
-            Rs++;
-        } else if (element.name?.includes("_1") || element.name?.includes("_2")) {
-            illumina++;
-        }
-    });
-    // if we cannot filter don't set an initial filter and hide all the data
-    if (illumina == 0 && dot12s == 0 && Rs == 0) {
+    const filterType = guessInitialFilterType(props.initialElements);
+    if (filterType == null) {
         forwardFilter.value = "";
         reverseFilter.value = "";
-    } else if (illumina > dot12s && illumina > Rs) {
-        changeFilters("illumina");
-    } else if (dot12s > illumina && dot12s > Rs) {
-        changeFilters("dot12s");
-    } else if (Rs > illumina && Rs > dot12s) {
-        changeFilters("Rs");
     } else {
-        changeFilters("illumina");
+        changeFilters(filterType);
     }
 }
 
@@ -382,45 +366,13 @@ function removePairFromUnpaired(fwd: HDASummary, rev: HDASummary) {
  * (will guess if not given)
  */
 function _createPair(fwd: HDASummary, rev: HDASummary, name?: string) {
-    // ensure existance and don't pair something with itself
-    if (!(fwd && rev) || fwd === rev) {
-        throw new Error(`Bad pairing: ${[JSON.stringify(fwd), JSON.stringify(rev)]}`);
-    }
     name = name || _guessNameForPair(fwd, rev);
-    return { forward: fwd, name: name, reverse: rev };
+    return createPair(fwd, rev, name);
 }
 
-/** Try to find a good pair name for the given fwd and rev datasets */
 function _guessNameForPair(fwd: HDASummary, rev: HDASummary, willRemoveExtensions?: boolean) {
     willRemoveExtensions = willRemoveExtensions ? willRemoveExtensions : removeExtensions.value;
-    let fwdName = fwd.name;
-    let revName = rev.name;
-    const fwdNameFilter = fwdName?.replace(new RegExp(forwardFilter.value || ""), "");
-    const revNameFilter = revName?.replace(new RegExp(reverseFilter.value || ""), "");
-    if (!fwdNameFilter || !revNameFilter || !fwdName || !revName) {
-        return `${fwdName} & ${revName}`;
-    }
-    let lcs = _naiveStartingAndEndingLCS(fwdNameFilter, revNameFilter);
-    // remove url prefix if files were uploaded by url
-    const lastSlashIndex = lcs.lastIndexOf("/");
-    if (lastSlashIndex > 0) {
-        const urlprefix = lcs.slice(0, lastSlashIndex + 1);
-        lcs = lcs.replace(urlprefix, "");
-    }
-
-    if (willRemoveExtensions) {
-        const lastDotIndex = lcs.lastIndexOf(".");
-        if (lastDotIndex > 0) {
-            const extension = lcs.slice(lastDotIndex, lcs.length);
-            lcs = lcs.replace(extension, "");
-            fwdName = fwdName.replace(extension, "");
-            revName = revName.replace(extension, "");
-        }
-    }
-    if (lcs.endsWith(".") || lcs.endsWith("_")) {
-        lcs = lcs.substring(0, lcs.length - 1);
-    }
-    return lcs || `${fwdName} & ${revName}`;
+    return guessNameForPair(fwd, rev, forwardFilter.value, reverseFilter.value, willRemoveExtensions);
 }
 
 function clickAutopair() {
@@ -500,7 +452,7 @@ function autoPairLCS(params: { listA: HDASummary[]; listB: HDASummary[] }) {
     return autoPairFnBuilder({
         match: (params) => {
             params = params || {};
-            const match = _naiveStartingAndEndingLCS(params.matchTo, params.possible).length;
+            const match = naiveStartingAndEndingLCS(params.matchTo, params.possible).length;
             const score = match / Math.max(params.matchTo.length, params.possible.length);
             if (score > params.bestMatch.score) {
                 return {
@@ -724,7 +676,7 @@ function autoPairFnBuilder(options: {
     };
 }
 
-function changeFilters(filter: keyof typeof COMMON_FILTERS) {
+function changeFilters(filter: CommonFiltersType) {
     forwardFilter.value = COMMON_FILTERS[filter][0] as string;
     reverseFilter.value = COMMON_FILTERS[filter][1] as string;
 }
@@ -782,39 +734,6 @@ function checkForDuplicates() {
 // function stripExtension(name: string) {
 //     return name.includes(".") ? name.substring(0, name.lastIndexOf(".")) : name;
 // }
-
-/** Return the concat'd longest common prefix and suffix from two strings */
-function _naiveStartingAndEndingLCS(s1: string, s2: string) {
-    var fwdLCS = "";
-    var revLCS = "";
-    var i = 0;
-    var j = 0;
-    while (i < s1.length && i < s2.length) {
-        if (s1[i] !== s2[i]) {
-            break;
-        }
-        fwdLCS += s1[i];
-        i += 1;
-    }
-    if (i === s1.length) {
-        return s1;
-    }
-    if (i === s2.length) {
-        return s2;
-    }
-
-    i = s1.length - 1;
-    j = s2.length - 1;
-    while (i >= 0 && j >= 0) {
-        if (s1[i] !== s2[j]) {
-            break;
-        }
-        revLCS = [s1[i], revLCS].join("");
-        i -= 1;
-        j -= 1;
-    }
-    return fwdLCS + revLCS;
-}
 </script>
 
 <template>
