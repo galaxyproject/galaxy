@@ -30,7 +30,10 @@ import {
     DEFAULT_FILTER,
     guessInitialFilterType,
     guessNameForPair,
-    naiveStartingAndEndingLCS,
+    type MatchingFunction,
+    matchOnlyIfExact,
+    matchOnPercentOfStartingAndEndingLCS,
+    statelessAutoPairFnBuilder,
 } from "./pairing";
 
 import Heading from "../Common/Heading.vue";
@@ -413,16 +416,7 @@ function splitByFilter() {
 /** Autopair by exact match */
 function autoPairSimple(params: { listA: HDASummary[]; listB: HDASummary[] }) {
     return autoPairFnBuilder({
-        match: (params) => {
-            params = params || {};
-            if (params.matchTo === params.possible) {
-                return {
-                    index: params.index,
-                    score: 1.0,
-                };
-            }
-            return params.bestMatch;
-        },
+        match: matchOnlyIfExact, // will only issue 1.0 scores if exact
         scoreThreshold: 0.6,
     })(params);
 }
@@ -450,18 +444,7 @@ function autoPairSimple(params: { listA: HDASummary[]; listB: HDASummary[] }) {
 /** Autopair by longest common substrings scoring */
 function autoPairLCS(params: { listA: HDASummary[]; listB: HDASummary[] }) {
     return autoPairFnBuilder({
-        match: (params) => {
-            params = params || {};
-            const match = naiveStartingAndEndingLCS(params.matchTo, params.possible).length;
-            const score = match / Math.max(params.matchTo.length, params.possible.length);
-            if (score > params.bestMatch.score) {
-                return {
-                    index: params.index,
-                    score: score,
-                };
-            }
-            return params.bestMatch;
-        },
+        match: matchOnPercentOfStartingAndEndingLCS,
         scoreThreshold: MATCH_PERCENTAGE,
     })(params);
 }
@@ -555,123 +538,20 @@ function unpairAll() {
 // ===========================================================================
 
 /** Returns an autopair function that uses the provided options.match function */
-function autoPairFnBuilder(options: {
-    match: (params: {
-        matchTo: string;
-        possible: string;
-        index: number;
-        bestMatch: { score: number; index: number };
-    }) => { score: number; index: number };
-    createPair?: (params: {
-        listA: HDASummary[];
-        indexA: number;
-        listB: HDASummary[];
-        indexB: number;
-    }) => DatasetPair | undefined;
-    preprocessMatch?: (params: {
-        matchTo: HDASummary;
-        possible: HDASummary;
-        index: number;
-        bestMatch: { score: number; index: number };
-    }) => { matchTo: string; possible: string; index: number; bestMatch: { score: number; index: number } };
-    scoreThreshold?: number;
-}) {
-    options = options || {};
-    options.createPair =
-        options.createPair ||
-        function _defaultCreatePair(params) {
-            params = params || {};
-            const a = params.listA.splice(params.indexA, 1)[0];
-            const b = params.listB.splice(params.indexB, 1)[0];
-            if (!a || !b) {
-                return undefined;
-            }
-            const aInBIndex = params.listB.indexOf(a);
-            const bInAIndex = params.listA.indexOf(b);
-            if (aInBIndex !== -1) {
-                params.listB.splice(aInBIndex, 1);
-            }
-            if (bInAIndex !== -1) {
-                params.listA.splice(bInAIndex, 1);
-            }
-            // return _pair(a, b, { silent: true });
-            return _pair(a, b);
-        };
-    // compile these here outside of the loop
-    let _regexps: RegExp[] = [];
-    function getRegExps() {
-        if (!_regexps.length) {
-            _regexps = [new RegExp(forwardFilter.value), new RegExp(reverseFilter.value)];
-        }
-        return _regexps;
-    }
-    // mangle params as needed
-    options.preprocessMatch =
-        options.preprocessMatch ||
-        function _defaultPreprocessMatch(params) {
-            const regexps = getRegExps();
-            return Object.assign(params, {
-                matchTo: params.matchTo.name?.replace(regexps[0] || "", ""),
-                possible: params.possible.name?.replace(regexps[1] || "", ""),
-                index: params.index,
-                bestMatch: params.bestMatch,
-            });
-        };
-
+function autoPairFnBuilder(options: { match: MatchingFunction; scoreThreshold?: number }) {
     return function _strategy(params: { listA: HDASummary[]; listB: HDASummary[] }) {
-        params = params || {};
-        const listA = params.listA;
-        const listB = params.listB;
-        let indexA = 0;
-        let indexB;
-
-        let bestMatch = {
-            score: 0.0,
-            index: -1,
-        };
-
-        const paired = [];
-        while (indexA < listA.length) {
-            const matchTo = listA[indexA];
-            bestMatch.score = 0.0;
-
-            if (!matchTo) {
-                continue;
-            }
-            for (indexB = 0; indexB < listB.length; indexB++) {
-                const possible = listB[indexB] as HDASummary;
-                if (listA[indexA] !== listB[indexB]) {
-                    bestMatch = options.match(
-                        options.preprocessMatch!({
-                            matchTo: matchTo,
-                            possible: possible,
-                            index: indexB,
-                            bestMatch: bestMatch,
-                        })
-                    );
-                    if (bestMatch.score === 1.0) {
-                        break;
-                    }
-                }
-            }
-            const scoreThreshold = options.scoreThreshold ? options.scoreThreshold : MATCH_PERCENTAGE;
-            if (bestMatch.score >= scoreThreshold) {
-                const createdPair = options.createPair!({
-                    listA: listA,
-                    indexA: indexA,
-                    listB: listB,
-                    indexB: bestMatch.index,
-                });
-                if (createdPair) {
-                    paired.push(createdPair);
-                }
-            } else {
-                indexA += 1;
-            }
-            if (!listA.length || !listB.length) {
-                return paired;
-            }
-        }
+        const scoreThreshold = options.scoreThreshold ? options.scoreThreshold : MATCH_PERCENTAGE;
+        const pairs = statelessAutoPairFnBuilder<HDASummary>(
+            options.match,
+            scoreThreshold,
+            forwardFilter.value,
+            reverseFilter.value,
+            removeExtensions.value
+        )(params);
+        const paired: DatasetPair[] = [];
+        pairs.forEach((pair: { forward: HDASummary; reverse: HDASummary; name: string }) => {
+            paired.push(_pair(pair.forward, pair.reverse, { name: pair.name }));
+        });
         return paired;
     };
 }
