@@ -564,12 +564,6 @@ function autoPairFnBuilder(options: {
         listB: HDASummary[];
         indexB: number;
     }) => DatasetPair | undefined;
-    preprocessMatch?: (params: {
-        matchTo: HDASummary;
-        possible: HDASummary;
-        index: number;
-        bestMatch: { score: number; index: number };
-    }) => { matchTo: string; possible: string; index: number; bestMatch: { score: number; index: number } };
     scoreThreshold?: number;
 }) {
     options = options || {};
@@ -601,18 +595,21 @@ function autoPairFnBuilder(options: {
         }
         return _regexps;
     }
-    // mangle params as needed
-    options.preprocessMatch =
-        options.preprocessMatch ||
-        function _defaultPreprocessMatch(params) {
-            const regexps = getRegExps();
-            return Object.assign(params, {
-                matchTo: params.matchTo.name?.replace(regexps[0] || "", ""),
-                possible: params.possible.name?.replace(regexps[1] || "", ""),
-                index: params.index,
-                bestMatch: params.bestMatch,
-            });
-        };
+
+    function _preprocessMatch(params: {
+        matchTo: HDASummary;
+        possible: HDASummary;
+        index: number;
+        bestMatch: { score: number; index: number };
+    }) {
+        const regexps = getRegExps();
+        return Object.assign(params, {
+            matchTo: params.matchTo.name?.replace(regexps[0] || "", ""),
+            possible: params.possible.name?.replace(regexps[1] || "", ""),
+            index: params.index,
+            bestMatch: params.bestMatch,
+        });
+    }
 
     return function _strategy(params: { listA: HDASummary[]; listB: HDASummary[] }) {
         params = params || {};
@@ -638,7 +635,7 @@ function autoPairFnBuilder(options: {
                 const possible = listB[indexB] as HDASummary;
                 if (listA[indexA] !== listB[indexB]) {
                     bestMatch = options.match(
-                        options.preprocessMatch!({
+                        _preprocessMatch!({
                             matchTo: matchTo,
                             possible: possible,
                             index: indexB,
