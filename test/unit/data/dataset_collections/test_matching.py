@@ -142,6 +142,19 @@ def pair_element(element_identifier):
     return collection_element(element_identifier, pair_instance().collection)
 
 
+def list_element(element_identifier, list_collection=None):
+    return collection_element(element_identifier, list_collection or list_instance().collection)
+
+
+def list_of_lists_instance():
+    return list_instance(
+        elements=[
+            list_element("outer1"),
+            list_element("outer2"),
+        ]
+    )
+
+
 def pair_instance():
     paired_collection_instance = collection_instance(
         collection_type="paired",
@@ -151,6 +164,17 @@ def pair_instance():
         ],
     )
     return paired_collection_instance
+
+
+def list_paired_instance():
+    return list_instance(
+        elements=[
+            pair_element("data1"),
+            pair_element("data2"),
+            pair_element("data3"),
+        ],
+        collection_type="list:paired",
+    )
 
 
 def list_instance(collection_type="list", elements=None, ids=None):
