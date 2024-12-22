@@ -28,6 +28,7 @@ interface Props {
     defaultHideSourceItems?: boolean;
     fromSelection?: boolean;
     extensions?: string[];
+    showButtons?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -398,6 +399,7 @@ function renameElement(element: any, name: string) {
                 collection-type="list"
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
                 :show-upload="!fromSelection"
+                :show-buttons="showButtons"
                 @add-uploaded-files="addUploadedFiles"
                 @on-update-datatype-toggle="changeDatatypeFilter"
                 @onUpdateHideSourceItems="onUpdateHideSourceItems"

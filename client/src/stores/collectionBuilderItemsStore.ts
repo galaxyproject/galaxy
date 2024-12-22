@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, set } from "vue";
 
-import { GalaxyApi, type HDASummary } from "@/api";
+import { GalaxyApi, type HDASummary, type HistoryItemSummary } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { filtersToQueryValues } from "@/components/History/model/queries";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -75,4 +75,17 @@ export const useCollectionBuilderItemsStore = defineStore("collectionBuilderItem
         isFetching,
         fetchDatasetsForFiltertext,
     };
+});
+
+/**
+ * Stores the history items selected for collection building.
+ */
+export const useCollectionBuilderItemSelection = defineStore("collectionBuilderItemSelection", () => {
+    const selectedItems = ref<HistoryItemSummary[]>([]);
+
+    function setSelectedItems(newSelectedItems: HistoryItemSummary[]) {
+        selectedItems.value = newSelectedItems;
+    }
+
+    return { selectedItems, setSelectedItems };
 });
