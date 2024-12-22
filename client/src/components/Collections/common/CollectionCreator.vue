@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faChevronDown, faChevronUp, faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormCheckbox, BFormGroup, BLink, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BButton, BLink, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -13,6 +13,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
+import CollectionCreatorSourceOptions from "./CollectionCreatorSourceOptions.vue";
 import CollectionNameInput from "./CollectionNameInput.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import DefaultBox from "@/components/Upload/DefaultBox.vue";
@@ -132,6 +133,10 @@ function cancelCreate() {
     props.oncancel();
 }
 
+function removeExtensionsToggle() {
+    emit("remove-extensions-toggle");
+}
+
 async function loadExtensions() {
     listExtensions.value = await getUploadDatatypes(false, AUTO_EXTENSION);
     extensionsSet.value = true;
@@ -210,24 +215,11 @@ watch(
                         </div>
 
                         <div class="d-flex align-items-center justify-content-between">
-                            <BFormGroup class="inputs-form-group">
-                                <BFormCheckbox
-                                    v-if="renderExtensionsToggle"
-                                    name="remove-extensions"
-                                    switch
-                                    :checked="extensionsToggle"
-                                    @input="emit('remove-extensions-toggle')">
-                                    {{ localize("Remove file extensions?") }}
-                                </BFormCheckbox>
-
-                                <div data-description="hide original elements">
-                                    <BFormCheckbox v-model="localHideSourceItems" name="hide-originals" switch>
-                                        <HelpText
-                                            uri="galaxy.collections.collectionBuilder.hideOriginalElements"
-                                            :text="localize('Hide original elements')" />
-                                    </BFormCheckbox>
-                                </div>
-                            </BFormGroup>
+                            <CollectionCreatorSourceOptions
+                                v-model="localHideSourceItems"
+                                :render-extensions-toggle="renderExtensionsToggle"
+                                :extensions-toggle="extensionsToggle"
+                                @remove-extensions-toggle="removeExtensionsToggle" />
                             <CollectionNameInput
                                 v-model="collectionName"
                                 :short-what-is-being-created="shortWhatIsBeingCreated" />
