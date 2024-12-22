@@ -14,6 +14,7 @@ import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
 import CollectionCreatorHelpHeader from "./CollectionCreatorHelpHeader.vue";
+import CollectionCreatorShowExtensions from "./CollectionCreatorShowExtensions.vue";
 import CollectionCreatorSourceOptions from "./CollectionCreatorSourceOptions.vue";
 import CollectionNameInput from "./CollectionNameInput.vue";
 import HelpText from "@/components/Help/HelpText.vue";
@@ -170,14 +171,7 @@ watch(
 
                 <div class="footer flex-row">
                     <div class="vertically-spaced">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <BAlert v-if="extensions?.length" class="w-100 py-0" variant="secondary" show>
-                                <HelpText
-                                    uri="galaxy.collections.collectionBuilder.filteredExtensions"
-                                    :text="localize('Filtered extensions: ')" />
-                                <strong>{{ orList(extensions) }}</strong>
-                            </BAlert>
-                        </div>
+                        <CollectionCreatorShowExtensions :extensions="extensions" />
 
                         <div class="d-flex align-items-center justify-content-between">
                             <CollectionCreatorSourceOptions
