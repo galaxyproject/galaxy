@@ -881,6 +881,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                 :extensions="extensions"
                 collection-type="list:paired"
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
+                :show-upload="!fromSelection"
                 @add-uploaded-files="addUploadedFiles"
                 @onUpdateHideSourceItems="hideSourceItems = $event"
                 @clicked-create="clickedCreate"
