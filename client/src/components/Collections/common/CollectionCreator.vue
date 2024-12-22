@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faChevronDown, faChevronUp, faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormCheckbox, BFormGroup, BFormInput, BLink, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BButton, BFormCheckbox, BFormGroup, BLink, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -13,6 +13,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
+import CollectionNameInput from "./CollectionNameInput.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import DefaultBox from "@/components/Upload/DefaultBox.vue";
 
@@ -227,20 +228,9 @@ watch(
                                     </BFormCheckbox>
                                 </div>
                             </BFormGroup>
-
-                            <BFormGroup
-                                class="flex-gapx-1 d-flex align-items-center w-50 inputs-form-group"
-                                :label="localize('Name:')"
-                                label-for="collection-name">
-                                <BFormInput
-                                    id="collection-name"
-                                    v-model="collectionName"
-                                    class="collection-name"
-                                    :placeholder="localize('Enter a name for your new ' + shortWhatIsBeingCreated)"
-                                    size="sm"
-                                    required
-                                    :state="!collectionName ? false : null" />
-                            </BFormGroup>
+                            <CollectionNameInput
+                                v-model="collectionName"
+                                :short-what-is-being-created="shortWhatIsBeingCreated" />
                         </div>
                     </div>
 
