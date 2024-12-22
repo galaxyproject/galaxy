@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BLink, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -15,6 +15,7 @@ import { orList } from "@/utils/strings";
 
 import CollectionCreatorFooterButtons from "./CollectionCreatorFooterButtons.vue";
 import CollectionCreatorHelpHeader from "./CollectionCreatorHelpHeader.vue";
+import CollectionCreatorNoItemsMessage from "./CollectionCreatorNoItemsMessage.vue";
 import CollectionCreatorShowExtensions from "./CollectionCreatorShowExtensions.vue";
 import CollectionCreatorSourceOptions from "./CollectionCreatorSourceOptions.vue";
 import CollectionNameInput from "./CollectionNameInput.vue";
@@ -153,13 +154,7 @@ watch(
     <BTabs v-model="currentTab" fill justified>
         <BTab class="collection-creator" :title="localize('Create Collection')">
             <div v-if="props.noItems">
-                <BAlert variant="info" show>
-                    {{ localize("No items available to create a collection.") }}
-                    {{ localize("Exit and change your current history, or") }}
-                    <BLink class="text-decoration-none" @click.stop.prevent="currentTab = Tabs.upload">
-                        {{ localize("Upload some datasets.") }}
-                    </BLink>
-                </BAlert>
+                <CollectionCreatorNoItemsMessage @click-upload="currentTab = Tabs.upload" />
             </div>
             <div v-else>
                 <CollectionCreatorHelpHeader>
