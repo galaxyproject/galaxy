@@ -17,7 +17,6 @@ import type { ComponentColor } from "@/components/BaseComponents/componentVarian
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
-// import levenshteinDistance from '@/utils/levenshtein';
 import localize from "@/utils/localization";
 import { naturalSort } from "@/utils/naturalSort";
 
@@ -248,17 +247,6 @@ function initialFiltersSet() {
     }
 }
 
-// TODO: Don't know if this is really necessary
-// function _ensureElementIds() {
-//     workingElements.value.forEach((element) => {
-//         if (!Object.prototype.hasOwnProperty.call(element, "id")) {
-//             console.warn("Element missing id", element);
-//         }
-//     });
-
-//     return workingElements.value;
-// }
-
 function _validateElements() {
     workingElements.value = workingElements.value.filter((element) => {
         var problem = _isElementInvalid(element);
@@ -411,26 +399,6 @@ function autoPairSimple(params: { listA: HDASummary[]; listB: HDASummary[] }) {
         scoreThreshold: 0.6,
     })(params);
 }
-
-// TODO: Currently unused?
-/** Autopair by levenstein distance */
-// function autoPairLevenshtein(params: { listA: HDASummary[]; listB: HDASummary[] }) {
-//     return autoPairFnBuilder({
-//         match: (params) => {
-//             params = params || {};
-//             const distance = levenshteinDistance(params.matchTo, params.possible);
-//             const score = 1.0 - distance / Math.max(params.matchTo.length, params.possible.length);
-//             if (score > params.bestMatch.score) {
-//                 return {
-//                     index: params.index,
-//                     score: score,
-//                 };
-//             }
-//             return params.bestMatch;
-//         },
-//         scoreThreshold: MATCH_PERCENTAGE,
-//     })(params);
-// }
 
 /** Autopair by longest common substrings scoring */
 function autoPairLCS(params: { listA: HDASummary[]; listB: HDASummary[] }) {
@@ -600,11 +568,6 @@ function checkForDuplicates() {
     });
     state.value = valid ? "build" : "duplicates";
 }
-
-// TODO: Where is this being used?
-// function stripExtension(name: string) {
-//     return name.includes(".") ? name.substring(0, name.lastIndexOf(".")) : name;
-// }
 </script>
 
 <template>
