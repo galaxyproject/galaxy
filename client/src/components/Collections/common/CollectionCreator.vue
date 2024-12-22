@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faChevronDown, faChevronUp, faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BLink, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -13,6 +13,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
+import CollectionCreatorHelpHeader from "./CollectionCreatorHelpHeader.vue";
 import CollectionCreatorSourceOptions from "./CollectionCreatorSourceOptions.vue";
 import CollectionNameInput from "./CollectionNameInput.vue";
 import HelpText from "@/components/Help/HelpText.vue";
@@ -58,7 +59,6 @@ const emit = defineEmits<{
     (e: "add-uploaded-files", value: HDASummary[]): void;
 }>();
 
-const isExpanded = ref(false);
 const currentTab = ref(Tabs.create);
 const collectionName = ref(props.suggestedName);
 const localHideSourceItems = ref(props.hideSourceItems);
@@ -124,11 +124,6 @@ function addUploadedFiles(value: HDASummary[]) {
     emit("add-uploaded-files", value);
 }
 
-function clickForHelp() {
-    isExpanded.value = !isExpanded.value;
-    return isExpanded.value;
-}
-
 function cancelCreate() {
     props.oncancel();
 }
@@ -165,39 +160,9 @@ watch(
                 </BAlert>
             </div>
             <div v-else>
-                <div class="header flex-row no-flex">
-                    <div class="main-help well clear" :class="{ expanded: isExpanded }">
-                        <a
-                            class="more-help"
-                            href="javascript:void(0);"
-                            role="button"
-                            :title="localize('Expand or Close Help')"
-                            @click="clickForHelp">
-                            <div v-if="!isExpanded">
-                                <FontAwesomeIcon :icon="faChevronDown" />
-                                <span class="sr-only">{{ localize("Expand Help") }}</span>
-                            </div>
-                            <div v-else>
-                                <FontAwesomeIcon :icon="faChevronUp" />
-                                <span class="sr-only">{{ localize("Close Help") }}</span>
-                            </div>
-                        </a>
-
-                        <div class="help-content">
-                            <!-- each collection that extends this will add their own help content -->
-                            <slot name="help-content"></slot>
-
-                            <a
-                                class="more-help"
-                                href="javascript:void(0);"
-                                role="button"
-                                :title="localize('Expand or Close Help')"
-                                @click="clickForHelp">
-                                <span class="sr-only">{{ localize("Expand Help") }}</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <CollectionCreatorHelpHeader>
+                    <slot name="help-content"></slot>
+                </CollectionCreatorHelpHeader>
 
                 <div class="middle flex-row flex-row-container">
                     <slot name="middle-content"></slot>
