@@ -46,12 +46,14 @@ interface Props {
     extensionsToggle?: boolean;
     noItems?: boolean;
     collectionType?: string;
+    showUpload: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     suggestedName: "",
     extensions: undefined,
     extensionsToggle: false,
+    showUpload: true,
 });
 
 const emit = defineEmits<{
@@ -151,8 +153,8 @@ watch(
 </script>
 
 <template>
-    <BTabs v-model="currentTab" fill justified>
-        <BTab class="collection-creator" :title="localize('Create Collection')">
+    <span>
+        <span v-if="!showUpload" class="collection-creator">
             <div v-if="props.noItems">
                 <CollectionCreatorNoItemsMessage @click-upload="currentTab = Tabs.upload" />
             </div>
@@ -188,45 +190,83 @@ watch(
                         @clicked-create="emit('clicked-create', collectionName)" />
                 </div>
             </div>
-        </BTab>
-        <BTab>
-            <template v-slot:title>
-                <FontAwesomeIcon :icon="faUpload" fixed-width />
-                <span>{{ localize("Upload Files to Add to Collection") }}</span>
-            </template>
-            <!-- TODO: This is incomplete; need to return uploadValues to parent -->
-            <DefaultBox
-                v-if="configOptions && extensionsSet"
-                :chunk-upload-size="configOptions.chunkUploadSize"
-                :default-db-key="configOptions.defaultDbKey"
-                :default-extension="defaultExtension"
-                :effective-extensions="props.extensions?.length ? validExtensions : listExtensions"
-                :file-sources-configured="configOptions.fileSourcesConfigured"
-                :ftp-upload-site="ftpUploadSite"
-                :has-callback="false"
-                :history-id="historyId"
-                :list-db-keys="[]"
-                disable-footer
-                emit-uploaded
-                @uploaded="addUploadedFiles"
-                @dismiss="currentTab = Tabs.create">
-                <template v-slot:footer>
-                    <div class="d-flex align-items-center justify-content-between mt-2">
-                        <BAlert v-if="extensions?.length" class="w-100 py-0" variant="secondary" show>
-                            <HelpText
-                                uri="galaxy.collections.collectionBuilder.requiredUploadExtensions"
-                                :text="localize('Required extensions: ')" />
-                            <strong>{{ orList(extensions) }}</strong>
-                        </BAlert>
+        </span>
+        <BTabs v-else v-model="currentTab" fill justified>
+            <BTab class="collection-creator" :title="localize('Create Collection')">
+                <div v-if="props.noItems">
+                    <CollectionCreatorNoItemsMessage @click-upload="currentTab = Tabs.upload" />
+                </div>
+                <div v-else>
+                    <CollectionCreatorHelpHeader>
+                        <slot name="help-content"></slot>
+                    </CollectionCreatorHelpHeader>
+
+                    <div class="middle flex-row flex-row-container">
+                        <slot name="middle-content"></slot>
                     </div>
+
+                    <div class="footer flex-row">
+                        <div class="vertically-spaced">
+                            <CollectionCreatorShowExtensions :extensions="extensions" />
+
+                            <div class="d-flex align-items-center justify-content-between">
+                                <CollectionCreatorSourceOptions
+                                    v-model="localHideSourceItems"
+                                    :render-extensions-toggle="renderExtensionsToggle"
+                                    :extensions-toggle="extensionsToggle" />
+                                <CollectionNameInput
+                                    v-model="collectionName"
+                                    :short-what-is-being-created="shortWhatIsBeingCreated" />
+                            </div>
+                        </div>
+
+                        <CollectionCreatorFooterButtons
+                            :short-what-is-being-created="shortWhatIsBeingCreated"
+                            :valid-input="validInput"
+                            @clicked-cancel="cancelCreate"
+                            @clicked-create="emit('clicked-create', collectionName)" />
+                    </div>
+                </div>
+            </BTab>
+            <BTab>
+                <template v-slot:title>
+                    <FontAwesomeIcon :icon="faUpload" fixed-width />
+                    <span>{{ localize("Upload Files to Add to Collection") }}</span>
                 </template>
-                <template v-slot:emit-btn-txt>
-                    <FontAwesomeIcon :icon="faPlus" fixed-width />
-                    {{ localize("Add Uploaded") }}
-                </template>
-            </DefaultBox>
-        </BTab>
-    </BTabs>
+                <!-- TODO: This is incomplete; need to return uploadValues to parent -->
+                <DefaultBox
+                    v-if="configOptions && extensionsSet"
+                    :chunk-upload-size="configOptions.chunkUploadSize"
+                    :default-db-key="configOptions.defaultDbKey"
+                    :default-extension="defaultExtension"
+                    :effective-extensions="props.extensions?.length ? validExtensions : listExtensions"
+                    :file-sources-configured="configOptions.fileSourcesConfigured"
+                    :ftp-upload-site="ftpUploadSite"
+                    :has-callback="false"
+                    :history-id="historyId"
+                    :list-db-keys="[]"
+                    disable-footer
+                    emit-uploaded
+                    @uploaded="addUploadedFiles"
+                    @dismiss="currentTab = Tabs.create">
+                    <template v-slot:footer>
+                        <div class="d-flex align-items-center justify-content-between mt-2">
+                            <BAlert v-if="extensions?.length" class="w-100 py-0" variant="secondary" show>
+                                <HelpText
+                                    uri="galaxy.collections.collectionBuilder.requiredUploadExtensions"
+                                    :text="localize('Required extensions: ')" />
+                                <strong>{{ orList(extensions) }}</strong>
+                            </BAlert>
+                        </div>
+                    </template>
+                    <template v-slot:emit-btn-txt>
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
+                        {{ localize("Add Uploaded") }}
+                    </template>
+                </DefaultBox>
+            </BTab>
+        </BTabs>
+    </span>
 </template>
 
 <style lang="scss">
