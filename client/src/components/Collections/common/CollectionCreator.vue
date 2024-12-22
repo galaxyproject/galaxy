@@ -37,6 +37,7 @@ interface Props {
     noItems?: boolean;
     collectionType?: string;
     showUpload: boolean;
+    showButtons?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -44,6 +45,7 @@ const props = withDefaults(defineProps<Props>(), {
     extensions: undefined,
     extensionsToggle: false,
     showUpload: true,
+    showButtons: true,
 });
 
 const emit = defineEmits<{
@@ -169,6 +171,7 @@ watch(
                     </div>
 
                     <CollectionCreatorFooterButtons
+                        v-if="showButtons"
                         :short-what-is-being-created="shortWhatIsBeingCreated"
                         :valid-input="validInput"
                         @clicked-cancel="cancelCreate"
@@ -206,6 +209,7 @@ watch(
                         </div>
 
                         <CollectionCreatorFooterButtons
+                            v-if="showButtons"
                             :short-what-is-being-created="shortWhatIsBeingCreated"
                             :valid-input="validInput"
                             @clicked-cancel="cancelCreate"
@@ -260,6 +264,17 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
 @import "~@fortawesome/fontawesome-free/scss/solid";
 @import "~@fortawesome/fontawesome-free/scss/fontawesome";
 @import "~@fortawesome/fontawesome-free/scss/brands";
+
+// Outside the modal - we need to set a max width on the help so ellipses display
+// doesn't cause it to grow without bound. Would greater appreciate a better workaround.
+.collection-creator-bounded-help {
+    .header {
+        .main-help {
+            max-width: 600px;
+        }
+    }
+}
+
 .collection-creator {
     height: 100%;
     overflow: hidden;

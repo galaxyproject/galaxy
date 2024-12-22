@@ -1,4 +1,17 @@
-import { guessInitialFilterType, guessNameForPair } from "./pairing";
+import { autoDetectPairs, autoPairWithCommonFilters, guessInitialFilterType, guessNameForPair } from "./pairing";
+
+function mockDataset(name: string) {
+    return { name };
+}
+
+const M1 = mockDataset("moo_1.fastq");
+const M2 = mockDataset("moo_2.fastq");
+
+const F1 = mockDataset("foo_1.fastq");
+const F2 = mockDataset("foo_2.fastq");
+
+const B1 = mockDataset("bar_1.fastq");
+const B2 = mockDataset("bar_2.fastq");
 
 describe("guessInitialFilterType", () => {
     test("should return 'illumina' when illumina matches are most common", () => {
@@ -16,10 +29,6 @@ describe("guessInitialFilterType", () => {
         expect(guessInitialFilterType(elements)).toBe(null);
     });
 });
-
-function mockDataset(name: string) {
-    return { name };
-}
 
 describe("guessNameForPair", () => {
     test("it should use the LCS and work with _1/_2 filters", () => {
@@ -43,7 +52,7 @@ describe("guessNameForPair", () => {
                 ".2.fastq",
                 true
             )
-        ).toEqual("moo_endssame");
+        ).toEqual("moo__endssame");
     });
 
     /* The way the filters and extension stripping are handled is less than ideal, this should work IMO for instance. -jmchilton
@@ -51,4 +60,39 @@ describe("guessNameForPair", () => {
         expect(guessNameForPair(mockDataset("moo.middledifferent.endssame.1.fastq"), mockDataset("moo.yuck.endssame.2.fastq"), ".1.fastq", ".2.fastq", true)).toEqual("moo.endssame");
     });
     */
+});
+
+describe("autoDetectPairs", () => {
+    test("is should be able to match exact matches after filter...", () => {
+        const paired = autoDetectPairs([M1], [M2], "_1", "_2", true);
+        expect(paired).toHaveLength(1);
+        const pair = paired[0];
+        expect(pair?.name).toBe("moo");
+    });
+
+    test("is should be able to match exact matches after filter out of order...", () => {
+        const paired = autoDetectPairs([B1, M1, F1], [F2, B2, M2], "_1", "_2", true);
+        expect(paired).toHaveLength(3);
+        const pairedNames = paired.map((p) => p.name);
+        expect(pairedNames).toContain("bar");
+        expect(pairedNames).toContain("moo");
+        expect(pairedNames).toContain("bar");
+    });
+});
+
+describe("autoPairWithCommonFilters", () => {
+    test("it should return an indication of the filter type used", () => {
+        const summary = autoPairWithCommonFilters([B1, M1, F1, F2, B2, M2], true);
+        expect(summary.filterType).toEqual("illumina");
+        expect(summary.pairs).toHaveLength(3);
+        expect(summary.unpaired).toHaveLength(0);
+    });
+
+    test("it should return unpaired datasets if some are not matched off", () => {
+        const summary = autoPairWithCommonFilters([B1, M1, F1, F2, B2], true);
+        expect(summary.filterType).toEqual("illumina");
+        expect(summary.pairs).toHaveLength(2);
+        expect(summary.unpaired).toHaveLength(1);
+        expect(summary.unpaired[0]?.name).toEqual("moo_1.fastq");
+    });
 });

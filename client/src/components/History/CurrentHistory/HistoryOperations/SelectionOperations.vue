@@ -34,18 +34,6 @@
                 <span v-localize>Delete (permanently)</span>
             </b-dropdown-item>
             <b-dropdown-divider v-if="showBuildOptions" />
-            <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
-                <span v-localize>Build Dataset List</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="showBuildOptions" data-description="build list of pairs" @click="buildListOfPairs">
-                <span v-localize>Build List of Dataset Pairs</span>
-            </b-dropdown-item>
-            <b-dropdown-item
-                v-if="showBuildOptions"
-                data-description="build collection from rules"
-                @click="buildCollectionFromRules">
-                <span v-localize>Build Collection from Rules</span>
-            </b-dropdown-item>
             <b-dropdown-divider v-if="showBuildOptionForAll" />
             <b-dropdown-item
                 v-if="showBuildOptionForAll"
@@ -69,6 +57,24 @@
             <b-dropdown-item v-b-modal:remove-tags-from-selected-content data-description="remove tags">
                 <span v-localize>Remove tags</span>
             </b-dropdown-item>
+            <b-dropdown-divider v-if="showBuildOptions" />
+            <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="listWizard">
+                <span v-localize>Build a List</span>
+            </b-dropdown-item>
+            <b-dropdown-group header-classes="subtle-header" header="Advanced">
+                <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
+                    <span v-localize>Build Dataset List</span>
+                </b-dropdown-item>
+                <b-dropdown-item v-if="showBuildOptions" data-description="build list of pairs" @click="buildListOfPairs">
+                    <span v-localize>Build List of Dataset Pairs</span>
+                </b-dropdown-item>
+                <b-dropdown-item
+                    v-if="showBuildOptions"
+                    data-description="build collection from rules"
+                    @click="buildCollectionFromRules">
+                    <span v-localize>Build Collection from Rules</span>
+                </b-dropdown-item>
+            </b-dropdown-group>
         </b-dropdown>
 
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
@@ -170,6 +176,7 @@ import { StatelessTags } from "components/Tags";
 
 import { createDatasetCollection } from "@/components/History/model/queries";
 import { useConfig } from "@/composables/config";
+import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
 
 import { buildRuleCollectionModal } from "../../adapters/buildCollectionModal";
 
@@ -305,6 +312,12 @@ export default {
         },
     },
     methods: {
+        listWizard() {
+            const { setSelectedItems } = useCollectionBuilderItemSelection();
+            const selection = Array.from(this.contentSelection.values());
+            setSelectedItems(selection);
+            this.$router.push({ path: "/collection/new_list" });
+        },
         // Selected content manipulation, hide/show/delete/purge
         hideSelected() {
             this.runOnSelection(hideSelectedContent);
@@ -412,5 +425,11 @@ export default {
 .modal-with-selector {
     overflow: initial;
     min-height: 300px; /* To make room for the selector */
+}
+
+.subtle-header {
+    font-size: 0.74375rem;
+    color: #404862;
+    font-weight: normal;
 }
 </style>

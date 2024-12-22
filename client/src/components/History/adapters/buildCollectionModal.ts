@@ -15,11 +15,18 @@ import type { HDASummary, HistoryItemSummary } from "@/api";
 import RULE_BASED_COLLECTION_CREATOR from "@/components/Collections/RuleBasedCollectionCreatorModal";
 
 export type CollectionType = "list" | "paired" | "list:paired" | "rules";
-export type DatasetPair = {
-    forward: HDASummary;
-    reverse: HDASummary;
+
+interface HasName {
+    name: string | null;
+}
+
+export type GenericPair<T extends HasName> = {
+    forward: T;
+    reverse: T;
     name: string;
 };
+
+export type DatasetPair = GenericPair<HDASummary>;
 
 // stand-in for buildCollection from history-view-edit.js
 export async function buildRuleCollectionModal(
