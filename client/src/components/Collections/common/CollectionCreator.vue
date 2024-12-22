@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BLink, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BLink, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -13,6 +13,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
+import CollectionCreatorFooterButtons from "./CollectionCreatorFooterButtons.vue";
 import CollectionCreatorHelpHeader from "./CollectionCreatorHelpHeader.vue";
 import CollectionCreatorShowExtensions from "./CollectionCreatorShowExtensions.vue";
 import CollectionCreatorSourceOptions from "./CollectionCreatorSourceOptions.vue";
@@ -185,19 +186,11 @@ watch(
                         </div>
                     </div>
 
-                    <div class="actions vertically-spaced d-flex justify-content-between">
-                        <BButton tabindex="-1" @click="cancelCreate">
-                            {{ localize("Cancel") }}
-                        </BButton>
-
-                        <BButton
-                            class="create-collection"
-                            variant="primary"
-                            :disabled="!validInput"
-                            @click="emit('clicked-create', collectionName)">
-                            {{ localize("Create " + shortWhatIsBeingCreated) }}
-                        </BButton>
-                    </div>
+                    <CollectionCreatorFooterButtons
+                        :short-what-is-being-created="shortWhatIsBeingCreated"
+                        :valid-input="validInput"
+                        @clicked-cancel="cancelCreate"
+                        @clicked-create="emit('clicked-create', collectionName)" />
                 </div>
             </div>
         </BTab>
