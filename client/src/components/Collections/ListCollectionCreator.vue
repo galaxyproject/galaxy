@@ -12,8 +12,9 @@ import type { HDASummary, HistoryItemSummary } from "@/api";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import STATES from "@/mvc/dataset/states";
-import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import localize from "@/utils/localization";
+
+import { useExtensionFiltering } from "./common/useExtensionFilter";
 
 import FormSelectMany from "../Form/Elements/FormSelectMany/FormSelectMany.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
@@ -72,12 +73,7 @@ const allElementsAreInvalid = computed(() => {
 /** If not `fromSelection`, the list of elements that will become the collection */
 const inListElements = ref<HDASummary[]>([]);
 
-// variables for datatype mapping and then filtering
-const datatypesMapperStore = useDatatypesMapperStore();
-const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
-
-/** Are we filtering by datatype? */
-const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
+const { hasInvalidExtension } = useExtensionFiltering(props);
 
 // ----------------------------------------------------------------------- process raw list
 /** set up main data */
@@ -163,11 +159,7 @@ function _isElementInvalid(element: HistoryItemSummary): string | null {
     }
 
     // is the element's extension not a subtype of any of the required extensions?
-    if (
-        filterExtensions.value &&
-        element.extension &&
-        !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
-    ) {
+    if (hasInvalidExtension(element)) {
         return localize(`has an invalid extension: ${element.extension}`);
     }
     return null;
@@ -300,16 +292,6 @@ watch(
     () => {
         // for any new/removed elements, add them to working elements
         _elementsSetUp();
-    },
-    { immediate: true }
-);
-
-watch(
-    () => datatypesMapper.value,
-    async (mapper) => {
-        if (props.extensions?.length && !mapper) {
-            await datatypesMapperStore.createMapper();
-        }
     },
     { immediate: true }
 );
