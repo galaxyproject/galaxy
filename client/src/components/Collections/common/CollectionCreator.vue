@@ -377,11 +377,13 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
                     list-style: circle;
                     margin-left: 16px;
                 }
+                /* This is not referenced anywhere I think.
                 .scss-help {
                     display: inline-block;
                     width: 100%;
                     text-align: right;
                 }
+                */
             }
             .more-help {
                 //display: inline-block;
