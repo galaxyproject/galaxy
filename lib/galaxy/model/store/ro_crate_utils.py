@@ -311,6 +311,7 @@ class WorkflowRunCrateProfileBuilder:
                             "position": position[0],
                             "name": step.tool_id,
                             "description": step_description,
+                            "workExample": f"#{step.tool_id}"
                         },
                     )
                 )
@@ -359,13 +360,12 @@ class WorkflowRunCrateProfileBuilder:
                     tool_entity = crate.add(
                         ContextEntity(
                             crate,
-                            tool_id,
+                            f"#{tool_id}",  # Prepend # to tool_id
                             properties={
                                 "@type": "SoftwareApplication",
                                 "name": tool_name,
                                 "version": tool_version,
                                 "description": tool_description,
-                                "url": "https://toolshed.g2.bx.psu.edu",  # URL if relevant
                             },
                         )
                     )
@@ -375,7 +375,7 @@ class WorkflowRunCrateProfileBuilder:
 
                 # Append the tool entity to the workflow (instrument) and store it in the list
                 tool_entities.append(tool_entity)
-                crate.mainEntity.append_to("instrument", tool_entity)
+                crate.mainEntity.append_to("hasPart", tool_entity)
 
             # Handle subworkflows recursively
             elif step.type == "subworkflow":

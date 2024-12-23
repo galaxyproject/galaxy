@@ -516,7 +516,7 @@ def validate_tools(ro_crate: ROCrate):
     """
     Validate that tools (SoftwareApplication) are correctly added.
     """
-    tools = ro_crate.mainEntity.get("instrument")
+    tools = ro_crate.mainEntity.get("hasPart")
     assert tools, "No tools found in the RO-Crate"
 
     tool_ids = set()
@@ -524,7 +524,6 @@ def validate_tools(ro_crate: ROCrate):
         assert tool["@type"] == "SoftwareApplication"
         assert "name" in tool
         assert "version" in tool
-        assert "url" in tool
         assert "description" in tool or tool["description"] is None
         assert tool.id not in tool_ids, "Duplicate tool found"
         tool_ids.add(tool.id)
