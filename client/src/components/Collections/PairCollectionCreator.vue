@@ -6,11 +6,10 @@ import { computed, ref, watch } from "vue";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
 import { Toast } from "@/composables/toast";
-import STATES from "@/mvc/dataset/states";
 import localize from "@/utils/localization";
 
 import type { DatasetPair } from "../History/adapters/buildCollectionModal";
-import { useExtensionFiltering } from "./common/useExtensionFilter";
+import { useCollectionCreator } from "./common/useCollectionCreator";
 import { guessNameForPair } from "./pairing";
 
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
@@ -39,7 +38,6 @@ const emit = defineEmits<{
 }>();
 
 const state = ref("build");
-const removeExtensions = ref(true);
 const initialSuggestedName = ref("");
 const invalidElements = ref<string[]>([]);
 const workingElements = ref<HDASummary[]>([]);
@@ -56,7 +54,6 @@ const noElementsSelected = computed(() => {
 const exactlyTwoValidElements = computed(() => {
     return pairElements.value.forward && pairElements.value.reverse;
 });
-const hideSourceItems = ref(props.defaultHideSourceItems || false);
 const pairElements = computed<SelectedDatasetPair>(() => {
     if (props.fromSelection) {
         return {
@@ -68,7 +65,7 @@ const pairElements = computed<SelectedDatasetPair>(() => {
     }
 });
 
-const { hasInvalidExtension } = useExtensionFiltering(props);
+const { removeExtensions, hideSourceItems, onUpdateHideSourceItems, isElementInvalid } = useCollectionCreator(props);
 
 watch(
     () => props.initialElements,
@@ -114,7 +111,7 @@ function _elementsSetUp() {
         const element = workingElements.value.find(
             (e) => e.id === inListElementsPrev[key as keyof SelectedDatasetPair]?.id
         );
-        const problem = _isElementInvalid(prevElem);
+        const problem = isElementInvalid(prevElem);
         if (element) {
             inListElements.value[key as keyof SelectedDatasetPair] = element;
         } else if (problem) {
@@ -149,7 +146,7 @@ function _ensureElementIds() {
 // /** separate working list into valid and invalid elements for this collection */
 function _validateElements() {
     workingElements.value = workingElements.value.filter((element) => {
-        var problem = _isElementInvalid(element);
+        var problem = isElementInvalid(element);
 
         if (problem) {
             invalidElements.value.push(element.name + "  " + problem);
@@ -159,29 +156,6 @@ function _validateElements() {
     });
 
     return workingElements.value;
-}
-
-/** describe what is wrong with a particular element if anything */
-function _isElementInvalid(element: HistoryItemSummary) {
-    if (element.history_content_type === "dataset_collection") {
-        return localize("is a collection, this is not allowed");
-    }
-
-    var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state as string);
-
-    if (!validState) {
-        return localize("has errored, is paused, or is not accessible");
-    }
-
-    if (element.deleted || element.purged) {
-        return localize("has been deleted or purged");
-    }
-
-    // is the element's extension not a subtype of any of the required extensions?
-    if (hasInvalidExtension(element)) {
-        return localize(`has an invalid extension: ${element.extension}`);
-    }
-    return null;
 }
 
 function getPairElement(key: string) {
@@ -224,7 +198,7 @@ function addUploadedFiles(files: HDASummary[]) {
 
     // Check for validity of uploads
     files.forEach((file) => {
-        const problem = _isElementInvalid(file);
+        const problem = isElementInvalid(file);
         if (problem) {
             const invalidMsg = `${file.hid}: ${file.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
             invalidElements.value.push(invalidMsg);
@@ -257,10 +231,6 @@ function removeExtensionsToggle() {
 function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: boolean) {
     removeExtensions = removeExtensions ? removeExtensions : removeExtensions;
     return guessNameForPair(fwd, rev, "", "", removeExtensions);
-}
-
-function onUpdateHideSourceItems(newHideSourceItems: boolean) {
-    hideSourceItems.value = newHideSourceItems;
 }
 </script>
 
