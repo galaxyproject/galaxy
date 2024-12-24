@@ -292,7 +292,7 @@ function resetModal() {
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
-            @clicked-create="createListCollection"
+            @on-create="createListCollection"
             @on-cancel="hideModal" />
         <PairedListCollectionCreator
             v-else-if="props.collectionType === 'list:paired'"
@@ -301,7 +301,7 @@ function resetModal() {
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
-            @clicked-create="createListPairedCollection"
+            @on-create="createListPairedCollection"
             @on-cancel="hideModal" />
         <PairCollectionCreator
             v-else-if="props.collectionType === 'paired'"
