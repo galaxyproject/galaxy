@@ -33,6 +33,13 @@ watch(elementName, () => {
 function clickDiscard() {
     emit("element-is-discarded", props.element);
 }
+
+watch(
+    () => props.element.name,
+    () => {
+        elementName.value = props.element.name || "...";
+    }
+);
 </script>
 
 <template>
