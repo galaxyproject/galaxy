@@ -421,8 +421,8 @@ function renameElement(element: any, name: string) {
 
                     <ul>
                         <li v-if="!fromSelection">
-                            Move datasets from the "Unselected" column to the "Selected" column below to compose the list
-                            in the intended order and with the intended datasets.
+                            Move datasets from the "Unselected" column to the "Selected" column below to compose the
+                            list in the intended order and with the intended datasets.
                         </li>
                         <li v-if="!fromSelection">
                             The filter textbox can be used to rapidly find the datasets of interest by name.
