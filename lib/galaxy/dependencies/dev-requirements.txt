@@ -58,7 +58,7 @@ jaraco-classes==3.4.0 ; platform_machine != 'ppc64le' and platform_machine != 's
 jaraco-context==6.0.1 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
 jaraco-functools==4.1.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
 jeepney==0.8.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x' and sys_platform == 'linux'
-jinja2==3.1.4
+jinja2==3.1.5
 jmespath==1.0.1
 jsonschema==4.23.0 ; python_full_version >= '3.9'
 jsonschema-specifications==2023.12.1 ; python_full_version >= '3.9'
