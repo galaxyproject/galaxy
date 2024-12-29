@@ -1,0 +1,145 @@
+- doc: |
+    # Collection Semantics
+
+    This document describes the semantics around working with Galaxy Dataset Collections.
+    In particular it describes how they operate within Galaxy tools and workflows.
+
+    If a tool consumes a simple dataset parameter and produces a simple dataset parameter,
+    then any collection type may be "mapped over" the data input to that tool. The result of
+    that is the tool being applied to each element of the collection and "implicit collections"
+    being created from the outputs that are produced from those operations. Those implicit
+    collections have the same element identifiers in the same order as the input collection that is
+    mapped over. Each element of the implicit collections correspond to their own job and
+    Galaxy very naturally and intuitively parallelizes jobs without extra work from the user
+    and without any knowledge of the tool.
+
+- example:
+    label: BASIC_MAPPING_PAIRED
+    assumptions:
+    - "f, r are datasets"
+    - "tool = (i: dataset) => {o: dataset}"
+    - "C = CollectionInstance<paired,{forward=f, reverse=r}>"
+    then:
+    - "tool(i=map_over(C)) ~> {o: collection<paired,{forward=tool(i=f)[o], reverse=tool(i=r)[o]}>}"
+    tests:
+    - tool_runtime: "test_tool_execute.py::test_map_over_collection"
+
+- example:
+    label: BASIC_MAPPING_LIST
+    assumptions:
+    - "d1,...,dn are 'dataset's"
+    - "tool = (i: dataset) => {o: dataset}"
+    - "C = CollectionInstance<list,{i1=d1, ..., in=dn}>"
+    then:
+    - "tool(i=map_over(C)) ~> {o: collection<list,[i1=tool(i=d1)[o],...,in=tool(i=dn)[o]]]}"
+    tests:
+    - tool_runtime: "test_tool_execute::test_map_over_list_collection"
+    - wf_editor: "accepts collection data -> data connection"
+
+- doc: |
+    The above description of mapping over inputs works naturally and as expected for
+    nested collections.
+
+- example:
+    label: NESTED_LIST_MAPPING
+    tests:
+    - tool_runtime: test_map_over_nested_collections
+    - wf_editor: "accepts list:list data -> data connection"
+
+- doc: |
+
+    For tools with multiple data inputs, the tool can be executed with individual
+    datasets for the non-mapped over input and each tool execution will just be executed
+    with that dataset. The dataset not mapped over serves as the input for each execution.
+
+- example:
+    label: BASIC_MAPPING_INCLUDING_SINGLE_DATASET
+    assumptions:
+    - "d1,...,dn are 'dataset's"
+    - "dother is a dataset"
+    - "tool = (i: dataset, i2: dataset) => {o: dataset}"
+    - "C = CollectionInstance<list,{i1=d1, ..., in=dn}>"
+    then:
+    - "tool(i=map_over(C),i2=dother) ~> {o: collection<list,{i1=tool(i=d1, i2=dother)[o],...,in=tool(i=dn, i2=dother)[o]]}>}"
+
+- doc: |
+    If a tool consumes two input datasets and produces one output dataset, you can map two
+    collections with identical structure (same element identifiers in the same order) over
+    the respective inputs and the result is an implicit collection with the same structure
+    as the inputs and where each output in the implicit collection corresponds to the tool
+    being executed with the two inputs corresponding to that position in the input
+    collections.
+
+    The default behavior here is the collections are linked and the act of mapping over
+    inputs to the tool are sort of a flat map or a dot product. No extra dimensionality
+    in the resulting collections.
+
+    From a user perspective this means if you start with a collection and apply a bunch
+    of map over operations on tools - the results will all continue to match and work together
+    very naturally - again without extra work by the user and without extra knowledge
+    by the tool author.
+
+
+- example:
+    label: BASIC_MAPPING_TWO_INPUTS_WITH_IDENTICAL_STRUCTURE
+    assumptions:
+    - "d11,...,d1n are 'dataset's"
+    - "d22,...,d2n are 'dataset's"
+    - "tool = (i: dataset, i2: dataset) => {o: dataset}"
+    - "C1 = CollectionInstance<list,[{i1=d1, ..., in=dn}]>"
+    - "C2 = CollectionInstance<list,[{i1=d1, ..., in=dn}]>"
+    then:
+    - "tool(i=map_over(C1), i2=map_over(C2)) ~> {o: collection<list,[i1=tool(i=d11, i2=d21)[o],...,in=tool(i=d1n, i2=d2n)[o]]]}"
+    tests:
+    - tool_runtime: test_tools.py::test_map_over_two_collections
+
+- doc: |
+    Not all tool executions result in implicit collections and mapping
+    over inputs. Tool inputs of ``type`` ``data_collection`` can consume
+    collections directly and do not necessarily result in mapping over.
+
+    Tools that consume collections and output datasets effectively
+    reduce the dimension of the Galaxy data structure. When used at runtime
+    this is often referred to a "reduction" in the code.
+
+- example:
+    label: COLLECTION_INPUT_PAIRED
+    assumptions:
+    - "r, f are datasets"
+    - "tool = (i: collection<paired>) => {o: dataset}"
+    - "C = CollectionInstance<paired,[{forward=f, reverse=r}]>"
+    then:
+    - "tool(i=C) -> {o: dataset}"
+    tests:
+    -  tool_runtime: framework tests for collection_paired_test.xml
+
+- doc: |
+    In addition to explicit collection inputs, tool inputs of ``type`` ``data``
+    where ``multiple="true"`` can consume lists directly. This is likewise a
+    "reduction".
+
+- example:
+    label: LIST_REDUCTION
+    assumptions:
+    - "d1,...,dn are 'dataset's"
+    - "tool = (i: dataset<multiple=true>) => {o: dataset}"
+    - "C = CollectionInstance<list,[{i1=d1, ..., in=dn}]>"
+    then:
+    - "tool(i=C) == tool(i=[d1,...,dn])"
+    tests:
+    - tool_runtime: test_tools.py::test_reduce_collections
+    - wf_editor: "treats multi data input as list input"
+
+- doc: |
+    Paired collections can not be reduced this way. ``paired`` is not meant
+    to represent a list/array/vector data structure it is more like a tuple.
+
+- example:
+    assumptions:
+    - "r, f are datasets"
+    - "tool = (i: dataset<multiple=true>) => {o: dataset}"
+    - "C = CollectionInstance<paired,[{forward=f, reverse=r}]>"
+    then:
+    - "tool(i=C) is invalid"
+    tests:
+    - wf_editor: "rejects paired input on multi-data input"
