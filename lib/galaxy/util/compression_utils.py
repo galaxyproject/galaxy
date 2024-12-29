@@ -182,7 +182,7 @@ class CompressedFile:
     def can_decompress(file_path: StrPath) -> bool:
         return tarfile.is_tarfile(file_path) or zipfile.is_zipfile(file_path)
 
-    def __init__(self, file_path: StrPath, mode: str = "r") -> None:
+    def __init__(self, file_path: StrPath, mode: Literal["a", "r", "w", "x"] = "r") -> None:
         file_path_str = str(file_path)
         if tarfile.is_tarfile(file_path):
             self.file_type = "tar"
@@ -336,11 +336,10 @@ class CompressedFile:
             return True
         return False
 
-    def open_tar(self, filepath: StrPath, mode: str) -> tarfile.TarFile:
+    def open_tar(self, filepath: StrPath, mode: Literal["a", "r", "w", "x"]) -> tarfile.TarFile:
         return tarfile.open(filepath, mode, errorlevel=0)
 
-    def open_zip(self, filepath: StrPath, mode: str) -> zipfile.ZipFile:
-        mode = cast(Literal["a", "r", "w", "x"], mode)
+    def open_zip(self, filepath: StrPath, mode: Literal["a", "r", "w", "x"]) -> zipfile.ZipFile:
         return zipfile.ZipFile(filepath, mode)
 
     def zipfile_ok(self, path_to_archive: StrPath) -> bool:

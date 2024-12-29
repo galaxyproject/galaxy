@@ -4687,7 +4687,6 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         extension=None,
         dbkey=None,
         metadata=None,
-        history=None,
         dataset=None,
         deleted=False,
         designation=None,

@@ -3,7 +3,6 @@ import tempfile
 from typing import (
     Any,
     Dict,
-    Tuple,
 )
 
 import pytest
@@ -98,6 +97,7 @@ def test_posix_link_security_allowlist():
 def test_posix_link_security_allowlist_write():
     file_sources = _configured_file_sources(include_allowlist=True, writable=True)
     write_from(file_sources, "gxfiles://test1/unsafe_dir/foo", "my test content")
+    assert file_sources.test_root
     with open(os.path.join(file_sources.test_root, "subdir1", "foo")) as f:
         assert f.read() == "my test content"
 
@@ -438,7 +438,7 @@ def test_posix_file_url_allowed_root():
 
 
 def test_posix_file_url_disallowed_root():
-    file_sources, root = _configured_file_sources_with_root(plugin_extra_config={"enforce_symlink_security": False})
+    file_sources, _ = _configured_file_sources_with_root(plugin_extra_config={"enforce_symlink_security": False})
     with tempfile.NamedTemporaryFile(mode="w") as tf:
         tf.write("some content")
         tf.flush()
@@ -478,7 +478,7 @@ def _configured_file_sources_with_root(
     writable=None,
     allow_subdir_creation=True,
     empty_root=False,
-) -> Tuple[TestConfiguredFileSources, str]:
+):
     if empty_root:
         tmp, root = "/", None
     else:

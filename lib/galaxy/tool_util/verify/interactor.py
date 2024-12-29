@@ -1028,7 +1028,7 @@ def prepare_request_params(
                 new_items[key] = dumps(val)
         data.update(new_items)
 
-    kwd = {
+    kwd: Dict[str, Any] = {
         "files": files,
     }
     if headers:

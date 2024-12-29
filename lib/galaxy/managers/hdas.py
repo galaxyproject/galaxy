@@ -230,24 +230,25 @@ class HDAManager(
         else:
             self._purge(item, flush=flush)
 
-    def _purge(self, hda, flush=True):
+    def _purge(self, hda: HistoryDatasetAssociation, flush: bool = True):
         """
         Purge this HDA and the dataset underlying it.
         """
         user = hda.history.user or None
-        quota_amount_reduction = 0
         if user:
+            # Need to calculate this before purging
             quota_amount_reduction = hda.quota_amount(user)
         super().purge(hda, flush=flush)
         # decrease the user's space used
-        quota_source_info = hda.dataset.quota_source_info
-        if quota_amount_reduction and quota_source_info.use:
-            user.adjust_total_disk_usage(-quota_amount_reduction, quota_source_info.label)
-            # TODO: don't flush above if we're going to re-flush here
-            session = object_session(user)
-            assert session
-            with transaction(session):
-                session.commit()
+        if user:
+            quota_source_info = hda.dataset.quota_source_info
+            if quota_amount_reduction and quota_source_info.use:
+                user.adjust_total_disk_usage(-quota_amount_reduction, quota_source_info.label)
+                # TODO: don't flush above if we're going to re-flush here
+                session = object_session(user)
+                assert session
+                with transaction(session):
+                    session.commit()
 
     # .... states
     def error_if_uploading(self, hda):
