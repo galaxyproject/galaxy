@@ -175,6 +175,21 @@ describe("canAccept", () => {
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
         expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
     });
+    it("accepts paired data -> data connection", () => {
+        const collectionOut = terminals["paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["simple data"]!["input"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "paired", isCollection: true, rank: 1 });
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(collectionOut).reason).toBe(
+            "Input already filled with another connection, delete it before connecting another output."
+        );
+        dataIn.disconnect(collectionOut);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
     it("accepts mapped over data output on mapped over data input", () => {
         const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
         const dataIn = terminals["multiple simple data"]!["input1"] as InputTerminal;
