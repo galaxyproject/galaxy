@@ -166,6 +166,7 @@
             v-if="collectionModalType"
             :history-id="history.id"
             :collection-type="collectionModalType"
+            :file-sources-configured="config.file_sources_configured"
             :filter-text="filterText"
             :selected-items="collectionSelection"
             :use-beta-components="useBetaComponents"
