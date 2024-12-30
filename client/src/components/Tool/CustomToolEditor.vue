@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { loader, useMonaco, VueMonacoEditor } from "@guolao/vue-monaco-editor";
 import * as monaco from "monaco-editor";
-import { configureMonacoYaml } from "monaco-yaml";
 import { onUnmounted, ref } from "vue";
 import { parse, stringify } from "yaml";
+import { setupEditor, setupMonaco } from "./YamlJs";
 
 import {
     type DynamicUnprivilegedToolCreatePayload,
@@ -12,32 +12,17 @@ import {
     type UnprivilegedToolResponse,
 } from "@/api";
 
-import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 
 import Heading from "@/components/Common/Heading.vue";
 
 // loaded monaco-editor from `node_modules`
 loader.config({ monaco });
-const { unload } = useMonaco();
+const { unload, monacoRef } = useMonaco();
 
 const disposeConfig = ref<() => void>();
+const dispose = setupMonaco(monaco)
+disposeConfig.value = dispose
 
-function setupMonaco(monaco: any) {
-    const { dispose } = configureMonacoYaml(monaco, {
-        enableSchemaRequest: false,
-        schemas: [
-            {
-                // If YAML file is opened matching this glob
-                fileMatch: ["tool.yml"],
-                // The following schema will be applied
-                schema: TOOL_SOURCE_SCHEMA,
-                // And the URI will be linked to as the source.
-                uri: "https://schema.galaxyproject.org/customTool.json",
-            },
-        ],
-    });
-    disposeConfig.value = dispose;
-}
 
 onUnmounted(() => {
     disposeConfig.value!();
@@ -96,6 +81,13 @@ async function saveTool() {
         persistedTool.value = data;
     }
 }
+
+async function setupEditorWrapper() {
+    if (monacoRef.value) {
+        setupEditor(monacoRef.value.editor)
+    }
+}
+
 </script>
 
 <template>
@@ -106,7 +98,7 @@ async function saveTool() {
         </div>
         <VueMonacoEditor
             v-model="yamlRepresentation"
-            language="yaml"
+            language="yaml-with-js"
             default-path="tool.yml"
             :options="{
                 quickSuggestions: {
@@ -115,6 +107,9 @@ async function saveTool() {
                     strings: true,
                 },
             }"
-            @beforeMount="setupMonaco"></VueMonacoEditor>
+            @beforeMount="setupMonaco"
+            @mount="setupEditorWrapper"
+            >
+        </VueMonacoEditor>
     </div>
 </template>
