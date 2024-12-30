@@ -3,6 +3,7 @@ import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 import { configureMonacoYaml } from "monaco-yaml";
 import { useMonaco } from "@guolao/vue-monaco-editor";
 
+
 const embeddedModelUri = monaco.Uri.parse("file://embedded-model.js");
 
 export function setupMonaco(monaco) {
@@ -22,12 +23,7 @@ export function setupMonaco(monaco) {
                 ],
                 // Inline JavaScript: Key followed by code on the same line
                 [/(script|code|javascript):\s*/, { token: "key", nextEmbedded: "javascript", next: "@inlineJs" }],
-                // YAML strings
-                [/".*?"/, "string"],
-                // Comments
-                [/#.*/, "comment"],
-                // Whitespace
-                [/\s+/, "white"],
+                [/.*/, { token: "@rematch", nextEmbedded: "yaml", next: "@yamlRest" }],
             ],
             // Inline JavaScript ends at the end of the line
             inlineJs: [
@@ -49,6 +45,11 @@ export function setupMonaco(monaco) {
                         next: "@pop",
                     },
                 ], // Key or blank line (end condition)
+            ],
+            // Delegate to YAML tokenizer for the rest
+            yamlRest: [
+                // Include YAML language tokenizer here
+                [/$/, { token: "@rematch", nextEmbedded: "@pop", next: "@pop" }],
             ],
         },
     });
@@ -109,7 +110,6 @@ export async function setupEditor(editor) {
     setupContentSync(yamlModel, embeddedModel);
     monaco.languages.registerHoverProvider("yaml-with-js", { provideHover });
     monaco.languages.registerCompletionItemProvider("yaml-with-js", { provideCompletionItems });
-
     attachDiagnosticsProvider(yamlModel, embeddedModel);
 }
 
