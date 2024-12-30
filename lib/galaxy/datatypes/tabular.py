@@ -807,7 +807,7 @@ class Sam(Tabular, _BamOrSam):
         >>> set_datatypes_registry(example_datatype_registry_for_sample())
         >>> fname = get_test_fname( 'sam_with_header.sam' )
         >>> samds = Dataset(external_filename=fname)
-        >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='sam', create_dataset=True, sa_session=sa_session, dataset=samds))
+        >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='sam', sa_session=sa_session, dataset=samds))
         >>> Sam().set_meta(hda)
         >>> hda.metadata.comment_lines
         2
