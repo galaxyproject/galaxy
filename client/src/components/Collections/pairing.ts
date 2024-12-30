@@ -8,7 +8,7 @@ export const COMMON_FILTERS = {
 export type CommonFiltersType = keyof typeof COMMON_FILTERS;
 export const DEFAULT_FILTER: CommonFiltersType = "illumina";
 
-interface HasName {
+export interface HasName {
     name: string | null;
 }
 
@@ -348,12 +348,22 @@ export function autoDetectPairs<T extends HasName>(
     return paired;
 }
 
+export type AutoPairingResult<T extends HasName> = {
+    pairs: GenericPair<T>[];
+    unpaired: T[];
+    forwardFilter: string;
+    reverseFilter: string;
+};
+
 export function splitIntoPairedAndUnpaired<T extends HasName>(
     elements: T[],
     forwardFilter: string,
     reverseFilter: string,
     willRemoveExtensions: boolean
-) {
+): AutoPairingResult<T> {
+    if (forwardFilter === "" || reverseFilter === "") {
+        return { pairs: [], unpaired: elements.slice(), forwardFilter, reverseFilter };
+    }
     const [forwardEls, reverseEls] = splitElementsByFilter(elements, forwardFilter, reverseFilter);
     const pairs = autoDetectPairs(forwardEls, reverseEls, forwardFilter, reverseFilter, willRemoveExtensions);
     const unpaired = elements.slice();
@@ -367,7 +377,7 @@ export function splitIntoPairedAndUnpaired<T extends HasName>(
             unpaired.splice(indexR, 1);
         }
     }
-    return { pairs: pairs, unpaired: unpaired };
+    return { pairs: pairs, unpaired: unpaired, forwardFilter, reverseFilter };
 }
 
 export function autoPairWithCommonFilters<T extends HasName>(elements: T[], willRemoveExtensions: boolean) {

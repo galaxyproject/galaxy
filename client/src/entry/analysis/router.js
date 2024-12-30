@@ -217,6 +217,9 @@ export function getRouter(Galaxy) {
                     {
                         path: "collection/new_list",
                         component: ListWizard,
+                        props: (route) => ({
+                            initialAdvanced: parseBool(route.query.advanced),
+                        }),
                     },
                     {
                         path: "collection/:collectionId/edit",

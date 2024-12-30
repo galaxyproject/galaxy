@@ -14,7 +14,14 @@ import jQuery from "jquery";
 import type { HDASummary, HistoryItemSummary } from "@/api";
 import RULE_BASED_COLLECTION_CREATOR from "@/components/Collections/RuleBasedCollectionCreatorModal";
 
-export type CollectionType = "list" | "paired" | "list:paired" | "rules";
+export type CollectionType =
+    | "list"
+    | "paired"
+    | "list:paired"
+    | "rules"
+    | "list:paired_or_unpaired"
+    | "list:list"
+    | "list:list:paired";
 
 interface HasName {
     name: string | null;
