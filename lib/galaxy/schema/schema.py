@@ -33,6 +33,8 @@ from pydantic_core import core_schema
 from typing_extensions import (
     Annotated,
     Literal,
+    NotRequired,
+    TypedDict,
 )
 
 from galaxy.schema import partial_model

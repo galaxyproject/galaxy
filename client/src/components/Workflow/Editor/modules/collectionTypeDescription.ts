@@ -85,19 +85,44 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
         return new CollectionTypeDescription(`${this.collectionType}:${other.collectionType}`);
     }
     canMatch(other: CollectionTypeDescriptor) {
+        const otherCollectionType = other.collectionType;
         if (other === NULL_COLLECTION_TYPE_DESCRIPTION) {
             return false;
         }
         if (other === ANY_COLLECTION_TYPE_DESCRIPTION) {
             return true;
         }
-        return other.collectionType == this.collectionType;
+        if (otherCollectionType === "paired" && this.collectionType == "paired_or_unpaired") {
+            return true;
+        }
+        if (otherCollectionType === "paired_or_unpaired" && this.collectionType == "paired") {
+            return true;
+        }
+        if (this.collectionType.endsWith(":paired_or_unpaired")) {
+            const asPlainList = this.collectionType.slice(0, -":paired_or_unpaired".length);
+            if (otherCollectionType === asPlainList) {
+                return true;
+            }
+            const asPairedList = `${asPlainList}:paired`;
+            if (otherCollectionType === asPairedList) {
+                return true;
+            }
+        }
+        return otherCollectionType == this.collectionType;
     }
     canMapOver(other: CollectionTypeDescriptor) {
         if (!other.collectionType || other.collectionType === "any") {
             return false;
         }
         if (this.rank <= other.rank) {
+            if (other.collectionType == "paired_or_unpaired") {
+                // this can be thought of as a subcollection of anything except a pair
+                // since it would match a pair exactly
+                return this.collectionType != "paired";
+            }
+            if (this.rank == other.rank) {
+                console.log("skipping over this because may be equal rank...");
+            }
             // Cannot map over self...
             return false;
         }
@@ -105,11 +130,17 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
         return this._endsWith(this.collectionType, requiredSuffix);
     }
     effectiveMapOver(other: CollectionTypeDescriptor): CollectionTypeDescriptor {
+        const thisCollectionType = this.collectionType;
         if (other.collectionType && this.canMapOver(other)) {
             const otherCollectionType = other.collectionType;
-            const effectiveCollectionType = this.collectionType.substring(
+            if (otherCollectionType == "paired_or_unpaired") {
+                if (thisCollectionType == "list") {
+                    return new CollectionTypeDescription("list");
+                }
+            }
+            const effectiveCollectionType = thisCollectionType.substring(
                 0,
-                this.collectionType.length - otherCollectionType.length - 1
+                thisCollectionType.length - otherCollectionType.length - 1
             );
             return new CollectionTypeDescription(effectiveCollectionType);
         }

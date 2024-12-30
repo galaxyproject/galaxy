@@ -30,6 +30,7 @@ interface Props {
     oncancel: () => void;
     historyId: string;
     hideSourceItems: boolean;
+    name?: string;
     suggestedName?: string;
     renderExtensionsToggle?: boolean;
     extensions?: string[];
@@ -38,6 +39,7 @@ interface Props {
     collectionType?: string;
     showUpload: boolean;
     showButtons?: boolean;
+    collectionName: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -49,6 +51,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
+    (e: "on-update-collection-name", name: string): void;
     (e: "remove-extensions-toggle"): void;
     (e: "clicked-create", value: string): void;
     (e: "onUpdateHideSourceItems", value: boolean): void;
@@ -57,13 +60,13 @@ const emit = defineEmits<{
 }>();
 
 const currentTab = ref(Tabs.create);
-const collectionName = ref(props.suggestedName);
 const localHideSourceItems = ref(props.hideSourceItems);
+const name = ref(props.collectionName);
 
 const { listExtensions, extensionsSet, loadExtensions } = useUploadDatatypes();
 
 const validInput = computed(() => {
-    return collectionName.value.length > 0;
+    return props.collectionName.length > 0;
 });
 
 // If there are props.extensions, filter the list of extensions to only include those
@@ -131,10 +134,22 @@ function removeExtensionsToggle() {
 
 loadExtensions();
 
+function updateName(newName: string) {
+    name.value = newName;
+    emit("on-update-collection-name", newName);
+}
+
 watch(
     () => localHideSourceItems.value,
     () => {
         emit("onUpdateHideSourceItems", localHideSourceItems.value);
+    }
+);
+
+watch(
+    () => props.collectionName,
+    () => {
+        name.value = props.collectionName;
     }
 );
 </script>
@@ -165,8 +180,9 @@ watch(
                                 :extensions-toggle="extensionsToggle"
                                 @remove-extensions-toggle="removeExtensionsToggle" />
                             <CollectionNameInput
-                                v-model="collectionName"
-                                :short-what-is-being-created="shortWhatIsBeingCreated" />
+                                :value="name"
+                                :short-what-is-being-created="shortWhatIsBeingCreated"
+                                @input="updateName" />
                         </div>
                     </div>
 
@@ -203,8 +219,9 @@ watch(
                                     :render-extensions-toggle="renderExtensionsToggle"
                                     :extensions-toggle="extensionsToggle" />
                                 <CollectionNameInput
-                                    v-model="collectionName"
-                                    :short-what-is-being-created="shortWhatIsBeingCreated" />
+                                    :value="collectionName"
+                                    :short-what-is-being-created="shortWhatIsBeingCreated"
+                                    @input="updateName" />
                             </div>
                         </div>
 

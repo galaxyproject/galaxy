@@ -89,3 +89,27 @@ export const useCollectionBuilderItemSelection = defineStore("collectionBuilderI
 
     return { selectedItems, setSelectedItems };
 });
+
+export const usePairingDatasetTargetsStore = defineStore("pairingDatasetTargets", {
+    state: () => ({
+        // Currently dragged node (null if no drag in progress)
+        draggedNodeId: null as string | null,
+        // Current drop target node (null if no target)
+        dropTargetId: null as string | null,
+    }),
+    actions: {
+        // Start dragging a node by its ID
+        startDrag(nodeId: string) {
+            this.draggedNodeId = nodeId;
+        },
+        // Set the current drop target by its ID
+        setDropTarget(nodeId: string | null) {
+            this.dropTargetId = nodeId;
+        },
+        // Clear drag state
+        endDrag() {
+            this.draggedNodeId = null;
+            this.dropTargetId = null;
+        },
+    },
+});

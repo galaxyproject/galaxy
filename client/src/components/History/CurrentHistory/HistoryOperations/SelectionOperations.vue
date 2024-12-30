@@ -58,15 +58,33 @@
                 <span v-localize>Remove tags</span>
             </b-dropdown-item>
             <b-dropdown-divider v-if="showBuildOptions" />
-            <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="listWizard">
-                <span v-localize>Build a List</span>
+            <b-dropdown-item v-if="showBuildOptions" data-description="auto build list" @click="listWizard(false)">
+                <span v-localize>Auto Build List</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-if="showBuildOptions" data-description="advanced build list" @click="listWizard(true)">
+                <span v-localize>Advanced Build List</span>
             </b-dropdown-item>
             <b-dropdown-group header-classes="subtle-header" header="Advanced">
                 <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
                     <span v-localize>Build Dataset List</span>
                 </b-dropdown-item>
-                <b-dropdown-item v-if="showBuildOptions" data-description="build list of pairs" @click="buildListOfPairs">
+                <b-dropdown-item
+                    v-if="showBuildOptions"
+                    data-description="build list of pairs"
+                    @click="buildListOfPairs">
                     <span v-localize>Build List of Dataset Pairs</span>
+                </b-dropdown-item>
+                <b-dropdown-item
+                    v-if="showBuildOptions"
+                    data-description="build list of paires 2"
+                    @click="buildListOfPairsV2">
+                    <span v-localize>Build List of Dataset Pairs (v2)</span>
+                </b-dropdown-item>
+                <b-dropdown-item
+                    v-if="showBuildOptions"
+                    data-description="build list of paired_or_unpaired"
+                    @click="buildListOfMixedPaired">
+                    <span v-localize>Build List with Optional Pairing</span>
                 </b-dropdown-item>
                 <b-dropdown-item
                     v-if="showBuildOptions"
@@ -150,6 +168,7 @@
             :collection-type="collectionModalType"
             :filter-text="filterText"
             :selected-items="collectionSelection"
+            :use-beta-components="useBetaComponents"
             :show-modal.sync="collectionModalShow"
             hide-modal-on-create
             default-hide-source-items
@@ -211,6 +230,7 @@ export default {
             selectedDbKey: { id: "?", text: "unspecified (?)" },
             selectedDatatype: { id: "auto", text: "Auto-detect" },
             selectedTags: [],
+            useBetaComponents: false,
         };
     },
     computed: {
@@ -312,11 +332,11 @@ export default {
         },
     },
     methods: {
-        listWizard() {
+        listWizard(advanced) {
             const { setSelectedItems } = useCollectionBuilderItemSelection();
             const selection = Array.from(this.contentSelection.values());
             setSelectedItems(selection);
-            this.$router.push({ path: "/collection/new_list" });
+            this.$router.push({ path: `/collection/new_list?advanced=${advanced}` });
         },
         // Selected content manipulation, hide/show/delete/purge
         hideSelected() {
@@ -401,6 +421,18 @@ export default {
         },
         buildListOfPairs() {
             this.collectionModalType = "list:paired";
+            this.collectionSelection = Array.from(this.contentSelection.values());
+            this.useBetaComponents = false;
+            this.collectionModalShow = true;
+        },
+        buildListOfPairsV2() {
+            this.collectionModalType = "list:paired";
+            this.collectionSelection = Array.from(this.contentSelection.values());
+            this.useBetaComponents = true;
+            this.collectionModalShow = true;
+        },
+        buildListOfMixedPaired() {
+            this.collectionModalType = "list:paired_or_unpaired";
             this.collectionSelection = Array.from(this.contentSelection.values());
             this.collectionModalShow = true;
         },

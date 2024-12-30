@@ -25,6 +25,30 @@
     - tool_runtime: "test_tool_execute.py::test_map_over_collection"
 
 - example:
+    label: BASIC_MAPPING_PAIRED_OR_UNPAIRED_PAIRED
+    assumptions:
+    - "f, r are datasets"
+    - "tool = (i: dataset) => {o: dataset}"
+    - "C = CollectionInstance<paired_or_unpaired,[{forward=f, reverse=r}]>"
+    then:
+    - "tool(i=map_over(C)) ~> {o: collection<paired_or_unpaired,[forward=tool(i=f)[o], reverse=tool(i=r)[o]]}"
+    tests:
+    - tool_runtime: test_map_over_data_with_paired_or_unpaired_unpaired
+    - wf_editor: "accepts paired_or_unpaired data -> data connection"
+
+- example:
+    label: BASIC_MAPPING_PAIRED_OR_UNPAIRED_UNPAIRED
+    assumptions:
+    - "u is a dataset"
+    - "tool = (i: dataset) => {o: dataset}"
+    - "C = CollectionInstance<paired_or_unpaired,[{unpaired=u}]>"
+    then:
+    - "tool(i=map_over(C)) ~> {o: collection<paired_or_unpaired,[unpaired=tool(i=u)[o]]}"
+    tests:
+    - tool_runtime: test_map_over_data_with_paired_or_unpaired_paired
+    - wf_editor: "accepts paired_or_unpaired data -> data connection"
+
+- example:
     label: BASIC_MAPPING_LIST
     assumptions:
     - "d1,...,dn are 'dataset's"
@@ -143,3 +167,50 @@
     - "tool(i=C) is invalid"
     tests:
     - wf_editor: "rejects paired input on multi-data input"
+
+PAIRED_OR_UNPAIRED_2:
+
+tool(i: collection<list:paired_or_unpaired>) => {o: collection<list:paired_or_unpaired>}
+
+- toolruntime: test_map_over_data_with_list_paired_or_unpaired
+- wfeditor:   it("accepts list:paired_or_unpaired data -> data connection", () => {
+
+
+PAIRED_OR_UNPAIRED_2, IDENTITY_1
+
+If tool(i: collection<paired_or_unpaired>) => {o: data}
+tool(i: collection<paired_or_unpaired>) => {o: data}
+
+- toolruntime: collection_paired_or_unpaired tool framework tests
+- wfeditor: accepts paired_or_unpaired data -> paired_or_unpaired connection
+
+PAIRED_OR_UNPAIRED_3, IDENTITY_2
+
+If tool(i: collection<list:paired_or_unpaired>) => {o: data}
+tool(i: collection<list:paired_or_unpaired>) => {o: data}
+
+- toolruntime: collection_list_paired_or_unpaired tool framework tests
+- wfeditor: accepts list:paired_or_unpaired data -> data connection
+
+PAIRED_OR_UNPAIRED_4
+
+If tool(i: collection<paired_or_unpaired>) => {o: data}
+tool(map_over(i, list, "single_datasets")) => {o: collection<list>}
+
+- toolruntime: test_map_over_paired_or_unpaired_with_list
+- wfeditor: "accepts list:paired_or_unpaired -> data connection"
+
+PAIRED_OR_UNPAIRED_5
+
+If tool(i: collection<paired_or_unpaired>) => {o: data}
+tool(map_over(i, list, "single_datasets")) => {o: collection<list>}
+
+- test_map_over_paired_or_unpaired_with_list
+- wfeditor: "accepts list -> paired_or_unpaired connection"
+
+PAIRED_OR_UNPAIRED_6
+If tool(i: collection<paired_or_unpaired>) => {o: data}
+tool(i: collection<paired>) => {o: data}
+
+- toolruntime: collection_paired_or_unpaired tool framework test (third)
+- wfeditor: "accepts paired -> paired_or_unpaired connection"

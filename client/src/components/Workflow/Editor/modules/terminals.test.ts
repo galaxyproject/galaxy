@@ -209,6 +209,72 @@ describe("canAccept", () => {
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
         expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
     });
+    it("accepts paired_or_unpaired data -> data connection", () => {
+        const collectionOut = terminals["paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["simple data"]!["input"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "paired_or_unpaired", isCollection: true, rank: 1 });
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        dataIn.disconnect(collectionOut);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts list:paired_or_unpaired data -> data connection", () => {
+        const collectionOut = terminals["list:paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["simple data"]!["input"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "list:paired_or_unpaired", isCollection: true, rank: 2 });
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        dataIn.disconnect(collectionOut);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts paired_or_unpaired data -> paired_or_unpaired connection", () => {
+        const collectionOut = terminals["paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        dataIn.disconnect(collectionOut);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts list -> paired_or_unpaired connection", () => {
+        const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(collectionOut).reason).toBe(
+            "Input already filled with another connection, delete it before connecting another output."
+        );
+        dataIn.disconnect(collectionOut);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts paired -> paired_or_unpaired connection", () => {
+        const collectionOut = terminals["paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(collectionOut).reason).toBe(
+            "Input already filled with another connection, delete it before connecting another output."
+        );
+        dataIn.disconnect(collectionOut);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
     it("treats multi data input as list input", () => {
         const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
         const multiDataIn = terminals["multi data"]!["f1"] as InputTerminal;

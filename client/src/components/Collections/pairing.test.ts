@@ -1,4 +1,10 @@
-import { autoDetectPairs, autoPairWithCommonFilters, guessInitialFilterType, guessNameForPair } from "./pairing";
+import {
+    autoDetectPairs,
+    autoPairWithCommonFilters,
+    guessInitialFilterType,
+    guessNameForPair,
+    splitIntoPairedAndUnpaired,
+} from "./pairing";
 
 function mockDataset(name: string) {
     return { name };
@@ -12,6 +18,13 @@ const F2 = mockDataset("foo_2.fastq");
 
 const B1 = mockDataset("bar_1.fastq");
 const B2 = mockDataset("bar_2.fastq");
+
+const L1 = mockDataset("thisisalongmatchforpercentbasedtests_thisisthened.fastq");
+const L2 = mockDataset("thisisalongmatchforpercentbasedtests_1thisisthened.fastq");
+
+// These two matched on empty filters in playing around with the GUI and that confused me. -John
+const E1 = mockDataset("cool11_fastq_2.fq");
+const E2 = mockDataset("cool11_fastq_1.fq");
 
 describe("guessInitialFilterType", () => {
     test("should return 'illumina' when illumina matches are most common", () => {
@@ -94,5 +107,13 @@ describe("autoPairWithCommonFilters", () => {
         expect(summary.pairs).toHaveLength(2);
         expect(summary.unpaired).toHaveLength(1);
         expect(summary.unpaired[0]?.name).toEqual("moo_1.fastq");
+    });
+});
+
+describe("splitIntoPairedAndUnpaired", () => {
+    test("if filters are empty, there should be not matching", () => {
+        // we cannot deduce forward from reverse
+        const summary = splitIntoPairedAndUnpaired([B1, M1, F1, F2, B2, L1, L2, E1, E2], "", "", true);
+        expect(summary.pairs).toHaveLength(0);
     });
 });

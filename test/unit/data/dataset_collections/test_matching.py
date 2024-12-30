@@ -48,6 +48,12 @@ def test_valid_collection_subcollection_matching():
     assert_can_match((nested_list, "paired"), flat_list)
 
 
+def test_paired_can_act_as_paired_or_unpaired():
+    paired = pair_instance()
+    optional_paired = paired_or_unpaired_pair_instance()
+    assert_can_match(paired, optional_paired)
+
+
 def assert_can_match(*items):
     to_match = build_collections_to_match(*items)
     matching.MatchingCollections.for_collections(to_match, TYPE_DESCRIPTION_FACTORY)
@@ -112,6 +118,44 @@ def list_paired_instance():
         ],
         collection_type="list:paired",
     )
+
+
+def list_of_paired_and_unpaired_instance():
+    return collection_instance(
+        collection_type="list:paired_or_unpaired",
+        elements=[
+            collection_element(
+                "el1",
+                collection(
+                    "paired_or_unpaired",
+                    [
+                        hda_element("forward"),
+                        hda_element("reverse"),
+                    ],
+                ),
+            ),
+            collection_element(
+                "el2",
+                collection(
+                    "paired_or_unpaired",
+                    [
+                        hda_element("unpaired"),
+                    ],
+                ),
+            ),
+        ],
+    )
+
+
+def paired_or_unpaired_pair_instance():
+    paired_collection_instance = collection_instance(
+        collection_type="paired_or_unpaired",
+        elements=[
+            hda_element("forward"),
+            hda_element("reverse"),
+        ],
+    )
+    return paired_collection_instance
 
 
 def list_instance(collection_type="list", elements=None, ids=None):
