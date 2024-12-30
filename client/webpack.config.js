@@ -248,7 +248,7 @@ module.exports = (env = {}, argv = {}) => {
                 }),
             }),
             new MonacoWebpackPlugin({
-                languages: ["yaml"],
+                languages: ["yaml", "javascript"],
                 customLanguages: [
                     {
                         label: "yaml",
@@ -256,6 +256,14 @@ module.exports = (env = {}, argv = {}) => {
                         worker: {
                             id: "monaco-yaml/yamlWorker",
                             entry: "monaco-yaml/yaml.worker",
+                        },
+                    },
+                    {
+                        label: "typescript",
+                        entry: "vs/language/typescript/ts.worker", // TypeScript worker
+                        worker: {
+                            id: "vs/language/typescript/ts.worker",
+                            entry: "vs/language/typescript/ts.worker",
                         },
                     },
                 ],
