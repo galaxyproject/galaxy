@@ -30,6 +30,11 @@ from galaxy.schema.tools import (
     DynamicUnprivilegedToolCreatePayload,
 )
 from galaxy.tool_util.cwl import tool_proxy
+from galaxy.tool_util.parser.yaml import YamlToolSource
+from galaxy.tools import (
+    create_tool_from_source,
+    Tool,
+)
 from .base import (
     ModelManager,
     raise_filter_err,
@@ -41,6 +46,12 @@ log = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from galaxy.managers.base import OrmFilterParsersType
     from galaxy.managers.context import ProvidesUserContext
+
+
+def tool_payload_to_tool(app, tool_dict: Dict[str, Any]) -> Optional[Tool]:
+    tool_source = YamlToolSource(tool_dict)
+    tool = create_tool_from_source(app, tool_source=tool_source, tool_dir=None)
+    return tool
 
 
 class DynamicToolManager(ModelManager[model.DynamicTool]):

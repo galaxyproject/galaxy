@@ -903,6 +903,23 @@ class BaseDatasetPopulator(BasePopulator):
             assert response.status_code == 200, response.text
         return response.json()
 
+    def build_unprivileged_tool(
+        self,
+        representation: UserToolSource,
+        history_id: str,
+        active=True,
+        hidden=False,
+        uuid=None,
+        assert_ok=True,
+    ):
+        data = DynamicUnprivilegedToolCreatePayload(
+            active=active, hidden=hidden, uuid=uuid, src="representation", representation=representation
+        ).model_dump(by_alias=True, exclude_unset=True)
+        response = self._post(f"unprivileged_tools/build?history_id={history_id}", data=data, json=True)
+        if assert_ok:
+            assert response.status_code == 200, response.text
+        return response.json()
+
     def get_unprivileged_tools(self, active=True, assert_ok=True):
         response = self._get("unprivileged_tools", data={"active": active})
         if assert_ok:
