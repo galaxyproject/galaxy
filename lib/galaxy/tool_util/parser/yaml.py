@@ -123,9 +123,17 @@ class YamlToolSource(ToolSource):
 
     def parse_requirements_and_containers(self):
         mixed_requirements = self.root_dict.get("requirements", [])
+        if container := self.root_dict.get("container"):
+            if isinstance(container, str):
+                container = {"identifier": container, "type": "docker", "explicit": True}
+            containers = [container]
+        elif containers := self.root_dict.get("containers"):
+            containers = containers
+        else:
+            containers = []
         return requirements.parse_requirements_from_lists(
             software_requirements=[r for r in mixed_requirements if r.get("type") != "resource"],
-            containers=self.root_dict.get("containers", []),
+            containers=containers,
             resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
         )
 
