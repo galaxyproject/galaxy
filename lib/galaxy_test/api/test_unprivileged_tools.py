@@ -34,6 +34,14 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
         show_response = self.dataset_populator.show_unprivileged_tool(dynamic_tool["uuid"])
         assert show_response["representation"]["name"]
 
+    def test_build(self):
+        with self.dataset_populator.test_history() as history_id:
+            response = self.dataset_populator.build_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND), history_id=history_id
+            )
+        assert response
+        raise Exception(response)
+
     def test_run(self):
         dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
         # Run tool.
