@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 from uuid import UUID
 
 from markupsafe import escape
+from typing_extensions import Literal
 
 from galaxy.exceptions import (
     ConfigurationError,
