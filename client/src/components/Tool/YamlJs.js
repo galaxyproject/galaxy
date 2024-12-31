@@ -1,19 +1,21 @@
 import * as monaco from "monaco-editor";
-import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 import { configureMonacoYaml } from "monaco-yaml";
-import { useMonaco } from "@guolao/vue-monaco-editor";
 
+import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
+import { buildProviderFunctions } from "./yaml";
+
+const LANG = "yaml-with-js";
 
 const embeddedModelUri = monaco.Uri.parse("file://embedded-model.js");
 
 export function setupMonaco(monaco) {
     // Define the custom YAML language with embedded JavaScript
-    monaco.languages.register({ id: "yaml-with-js" });
+    monaco.languages.register({ id: LANG });
     monaco.languages.register({ id: "typescript" });
     monaco.languages.register({ id: "javascript" });
     monaco.languages.register({ id: "yaml" });
 
-    monaco.languages.setMonarchTokensProvider("yaml-with-js", {
+    monaco.languages.setMonarchTokensProvider(LANG, {
         tokenizer: {
             root: [
                 // Multiline JavaScript block
@@ -53,7 +55,7 @@ export function setupMonaco(monaco) {
             ],
         },
     });
-    monaco.languages.setLanguageConfiguration("yaml-with-js", {
+    monaco.languages.setLanguageConfiguration(LANG, {
         comments: { lineComment: "#" },
         brackets: [
             ["{", "}"],
@@ -99,18 +101,40 @@ export function setupMonaco(monaco) {
             },
         ],
     });
-    return dispose;
+    const providerFunctions = buildProviderFunctions(monaco, {
+        enableSchemaRequest: false,
+        schemas: [
+            {
+                // If YAML file is opened matching this glob
+                fileMatch: ["tool.yml"],
+                // The following schema will be applied
+                schema: TOOL_SOURCE_SCHEMA,
+                // And the URI will be linked to as the source.
+                uri: "https://schema.galaxyproject.org/customTool.json",
+            },
+        ],
+    });
+    return { dispose, providerFunctions };
 }
 
-export async function setupEditor(editor) {
-    console.log(editor.getModel("tool.yml"));
+export async function setupEditor(editor, providerFunctions) {
     // Virtual model for JavaScript
-    const yamlModel = editor.getModels().find((item) => item.getLanguageId() == "yaml-with-js");
+    const yamlModel = editor.getModels().find((item) => item.getLanguageId() == LANG);
     const embeddedModel = editor.getModel(embeddedModelUri) || editor.createModel("", "typescript", embeddedModelUri);
     setupContentSync(yamlModel, embeddedModel);
-    monaco.languages.registerHoverProvider("yaml-with-js", { provideHover });
-    monaco.languages.registerCompletionItemProvider("yaml-with-js", { provideCompletionItems });
-    attachDiagnosticsProvider(yamlModel, embeddedModel);
+    mixJsYamlProviders(providerFunctions);
+    monaco.languages.registerHoverProvider(LANG, providerFunctions);
+    monaco.languages.registerCompletionItemProvider(LANG, providerFunctions);
+    monaco.languages.registerDefinitionProvider(LANG, providerFunctions);
+    monaco.languages.registerDocumentSymbolProvider(LANG, providerFunctions);
+    monaco.languages.registerDocumentFormattingEditProvider(LANG, providerFunctions);
+    monaco.languages.registerLinkProvider(LANG, providerFunctions);
+    monaco.languages.registerCodeActionProvider(LANG, providerFunctions);
+    monaco.languages.registerFoldingRangeProvider(LANG, providerFunctions);
+    monaco.languages.registerOnTypeFormattingEditProvider(LANG, providerFunctions);
+    monaco.languages.registerSelectionRangeProvider(LANG, providerFunctions);
+
+    attachDiagnosticsProvider(yamlModel, embeddedModel, providerFunctions.provideMarkerData);
 }
 
 function extractEmbeddedJavaScript(yamlContent) {
@@ -135,16 +159,34 @@ export function setupContentSync(yamlModel, embeddedModel) {
     });
 }
 
-// Add IntelliSense for the embedded JavaScript
+async function mixJsYamlProviders(yamlProviderFunctions) {
+    // Complete and hover consume position and return null if not in focus,
+    // so execute JS provider, then yaml as fallback
+    const yamlProvideCompletionItems = yamlProviderFunctions.provideCompletionItems;
+    const yamlProvideHover = yamlProviderFunctions.provideHover;
+    yamlProviderFunctions.provideCompletionItems = async (model, position) => {
+        const jsCompletions = await provideCompletionItems(model, position);
+        if (jsCompletions?.suggestions?.length > 0) {
+            return jsCompletions;
+        } else {
+            return await yamlProvideCompletionItems(model, position);
+        }
+    };
+    yamlProviderFunctions.provideHover = async (model, position) =>
+        (await provideHover(model, position)) || (await yamlProvideHover(model, position));
+}
 
-export async function provideCompletionItems(model, position) {
+// Add IntelliSense for the embedded JavaScript
+async function provideCompletionItems(model, position) {
     const yamlContent = model.getValue();
     const embeddedContent = extractEmbeddedJavaScript(yamlContent);
 
     if (embeddedContent) {
         const embeddedModel = monaco.editor.getModel(embeddedModelUri);
         const embeddedPosition = translateYamlPositionToEmbedded(model, position, embeddedModel, yamlContent);
-        if (!embeddedPosition) return null;
+        if (!embeddedPosition) {
+            return null;
+        }
         const worker = await monaco.languages.typescript.getTypeScriptWorker();
         const languageService = await worker(embeddedModelUri);
 
@@ -176,12 +218,14 @@ export async function provideCompletionItems(model, position) {
     return { suggestions: [] };
 }
 
-function attachDiagnosticsProvider(yamlModel, embeddedModel) {
+function attachDiagnosticsProvider(yamlModel, embeddedModel, provideMarkerData) {
     monaco.editor.setModelMarkers(yamlModel, "owner", []); // Clear existing markers.
 
     yamlModel.onDidChangeContent(async () => {
         const yamlContent = yamlModel.getValue();
         const embeddedJavaScript = extractEmbeddedJavaScript(yamlContent);
+        const yamlMarkers = await provideMarkerData(yamlModel);
+        let jsMarkers = [];
 
         if (embeddedJavaScript) {
             const worker = await monaco.languages.typescript.getTypeScriptWorker();
@@ -189,7 +233,7 @@ function attachDiagnosticsProvider(yamlModel, embeddedModel) {
 
             const diagnostics = await languageService.getSemanticDiagnostics(embeddedModelUri.toString());
 
-            const markers = diagnostics.map((diagnostic) => {
+            jsMarkers = diagnostics.map((diagnostic) => {
                 const startPosition = translateEmbeddedPositionToYaml(
                     embeddedModel,
                     diagnostic.start,
@@ -212,13 +256,12 @@ function attachDiagnosticsProvider(yamlModel, embeddedModel) {
                     endColumn: endPosition.column,
                 };
             });
-
-            monaco.editor.setModelMarkers(yamlModel, "owner", markers);
         }
+        monaco.editor.setModelMarkers(yamlModel, "owner", [...yamlMarkers, ...jsMarkers]);
     });
 }
 
-export async function provideHover(model, position) {
+async function provideHover(model, position) {
     const yamlContent = model.getValue();
     const embeddedModel = monaco.editor.getModel(embeddedModelUri);
     const embeddedContent = extractEmbeddedJavaScript(yamlContent);
@@ -226,7 +269,9 @@ export async function provideHover(model, position) {
     if (embeddedContent) {
         const embeddedPosition = translateYamlPositionToEmbedded(model, position, embeddedModel, yamlContent);
 
-        if (!embeddedPosition) return null;
+        if (!embeddedPosition) {
+            return null;
+        }
 
         const worker = await monaco.languages.typescript.getTypeScriptWorker(); // Get JS worker
         const languageService = await worker(embeddedModelUri);
@@ -258,7 +303,9 @@ function translateEmbeddedPositionToYaml(embeddedModel, embeddedOffset, yamlMode
     const scriptRegex = /(script|code|javascript):\s*(?:\|([\s\S]*?)(?=\n\s*\w+:|\n\s*$)|(.+))/; // No g flag
     const scriptMatch = yamlContent.match(scriptRegex);
 
-    if (!scriptMatch) return null;
+    if (!scriptMatch) {
+        return null;
+    }
 
     let scriptStartIndex;
     if (scriptMatch[2]) {
@@ -279,7 +326,9 @@ function translateYamlPositionToEmbedded(yamlModel, yamlPosition, embeddedModel,
     const scriptRegex = /(script|code|javascript):\s*(?:\|([\s\S]*?)(?=\n\s*\w+:|\n\s*$)|(.+))/; // No g flag
     const scriptMatch = yamlContent.match(scriptRegex);
 
-    if (!scriptMatch) return null;
+    if (!scriptMatch) {
+        return null;
+    }
 
     let scriptStartIndex;
     let scriptEndIndex;

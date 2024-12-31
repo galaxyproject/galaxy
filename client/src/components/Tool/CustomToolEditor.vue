@@ -3,7 +3,6 @@ import { loader, useMonaco, VueMonacoEditor } from "@guolao/vue-monaco-editor";
 import * as monaco from "monaco-editor";
 import { onUnmounted, ref } from "vue";
 import { parse, stringify } from "yaml";
-import { setupEditor, setupMonaco } from "./YamlJs";
 
 import {
     type DynamicUnprivilegedToolCreatePayload,
@@ -12,6 +11,7 @@ import {
     type UnprivilegedToolResponse,
 } from "@/api";
 
+import { setupEditor, setupMonaco } from "./YamlJs";
 
 import Heading from "@/components/Common/Heading.vue";
 
@@ -20,9 +20,8 @@ loader.config({ monaco });
 const { unload, monacoRef } = useMonaco();
 
 const disposeConfig = ref<() => void>();
-const dispose = setupMonaco(monaco)
-disposeConfig.value = dispose
-
+const { dispose, providerFunctions } = setupMonaco(monaco);
+disposeConfig.value = dispose;
 
 onUnmounted(() => {
     disposeConfig.value!();
@@ -66,7 +65,6 @@ async function saveTool() {
         console.error("No yaml to parse");
         return;
     }
-    console.log("lof");
     const payload: DynamicUnprivilegedToolCreatePayload = {
         active: true,
         hidden: false,
@@ -84,10 +82,9 @@ async function saveTool() {
 
 async function setupEditorWrapper() {
     if (monacoRef.value) {
-        setupEditor(monacoRef.value.editor)
+        setupEditor(monacoRef.value.editor, providerFunctions);
     }
 }
-
 </script>
 
 <template>
@@ -108,8 +105,7 @@ async function setupEditorWrapper() {
                 },
             }"
             @beforeMount="setupMonaco"
-            @mount="setupEditorWrapper"
-            >
+            @mount="setupEditorWrapper">
         </VueMonacoEditor>
     </div>
 </template>
