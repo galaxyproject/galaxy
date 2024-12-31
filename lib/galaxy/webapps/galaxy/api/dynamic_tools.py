@@ -5,8 +5,14 @@ from typing import (
 )
 
 from galaxy.exceptions import ObjectNotFound
-from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.tools import DynamicToolManager
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
+from galaxy.managers.tools import (
+    DynamicToolManager,
+    tool_payload_to_tool,
+)
 from galaxy.model import User
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.tools import (
@@ -56,6 +62,18 @@ class UnprivilegedToolsApi:
             payload,
         )
         return UnprivilegedToolResponse(**dynamic_tool.to_dict())
+
+    @router.post("/api/unprivileged_tools/build")
+    def build(
+        self,
+        payload: DynamicUnprivilegedToolCreatePayload,
+        history_id: DecodedDatabaseIdField,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ):
+        history = trans.app.history_manager.get_owned(history_id, trans.user)
+        tool = tool_payload_to_tool(trans.app, payload.representation.model_dump(by_alias=True))
+        if tool:
+            return tool.to_json(trans=trans, history=history or trans.history)
 
     @router.delete("/api/dynamic_tools/{tool_id}")
     def delete(self, tool_id: str, user: User = DependsOnUser):
