@@ -3,6 +3,8 @@ import { editor } from "monaco-editor";
 import { type IPosition, type MonacoEditor } from "monaco-types";
 import { configureMonacoYaml } from "monaco-yaml";
 
+import es5Lib from "@/libs/es5.txt";
+
 import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 import { buildProviderFunctions } from "./yaml";
 
@@ -78,14 +80,19 @@ export function setupMonaco(monaco: MonacoEditor) {
     });
 
     // Set TypeScript/JavaScript configuration
-    monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
         target: monaco.languages.typescript.ScriptTarget.ES2017,
         allowNonTsExtensions: true,
         strict: true,
         moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
         checkJs: true,
         noEmit: true,
+        lib: ["ES5"],
     });
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(es5Lib);
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(
+        `const runtime = {inputs: {input1: {class: "File", basename: "basename", location: "location", path: "path}}}`
+    );
 
     const { dispose } = configureMonacoYaml(monaco, {
         enableSchemaRequest: false,
