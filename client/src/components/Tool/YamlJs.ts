@@ -78,14 +78,18 @@ export function setupMonaco(monaco: MonacoEditor) {
     });
 
     // Set TypeScript/JavaScript configuration
-    monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
         target: monaco.languages.typescript.ScriptTarget.ES2017,
         allowNonTsExtensions: true,
         strict: true,
         moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
         checkJs: true,
         noEmit: true,
+        lib: ["es2017"],
     });
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(
+        `const runtime = {inputs: {input1: {class: "File", basename: "basename", location: "location", path: "path}}}`
+    );
 
     const { dispose } = configureMonacoYaml(monaco, {
         enableSchemaRequest: false,
