@@ -82,7 +82,7 @@ async function saveTool() {
 
 async function setupEditorWrapper() {
     if (monacoRef.value) {
-        setupEditor(monacoRef.value.editor, providerFunctions);
+        setupEditor(providerFunctions);
     }
 }
 </script>
@@ -104,7 +104,6 @@ async function setupEditorWrapper() {
                     strings: true,
                 },
             }"
-            @beforeMount="setupMonaco"
             @mount="setupEditorWrapper">
         </VueMonacoEditor>
     </div>
