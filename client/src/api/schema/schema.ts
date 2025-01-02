@@ -37823,8 +37823,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
-                /** @description The ID of the user. */
-                user_id: string;
+                user_id: string | "current";
             };
             cookie?: never;
         };
@@ -37867,8 +37866,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
-                /** @description The ID of the user. */
-                user_id: string;
+                user_id: string | "current";
             };
             cookie?: never;
         };
@@ -37915,8 +37913,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
-                /** @description The ID of the user. */
-                user_id: string;
+                user_id: string | "current";
                 user_credentials_id: string;
             };
             cookie?: never;
@@ -37960,8 +37957,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
-                /** @description The ID of the user. */
-                user_id: string;
+                user_id: string | "current";
                 user_credentials_id: string;
                 group_id: string;
             };
