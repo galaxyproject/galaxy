@@ -18,12 +18,12 @@ from galaxy.schema.credentials import (
     UserCredentialsListResponse,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.schema import FlexibleUserIdType
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     Router,
 )
-from galaxy.webapps.galaxy.api.common import UserIdPathParam
 from galaxy.webapps.galaxy.services.credentials import CredentialsService
 
 log = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class FastAPICredentials:
     )
     def list_user_credentials(
         self,
-        user_id: UserIdPathParam,
+        user_id: FlexibleUserIdType,
         trans: ProvidesUserContext = DependsOnTrans,
         source_type: Optional[SOURCE_TYPE] = Query(
             None,
@@ -64,7 +64,7 @@ class FastAPICredentials:
     )
     def provide_credential(
         self,
-        user_id: UserIdPathParam,
+        user_id: FlexibleUserIdType,
         payload: CreateSourceCredentialsPayload,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> UserCredentialsListResponse:
@@ -76,7 +76,7 @@ class FastAPICredentials:
     )
     def delete_service_credentials(
         self,
-        user_id: UserIdPathParam,
+        user_id: FlexibleUserIdType,
         user_credentials_id: DecodedDatabaseIdField,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
@@ -89,7 +89,7 @@ class FastAPICredentials:
     )
     def delete_credentials(
         self,
-        user_id: UserIdPathParam,
+        user_id: FlexibleUserIdType,
         user_credentials_id: DecodedDatabaseIdField,
         group_id: DecodedDatabaseIdField,
         trans: ProvidesUserContext = DependsOnTrans,
