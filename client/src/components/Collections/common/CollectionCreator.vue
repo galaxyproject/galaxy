@@ -6,8 +6,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import type { HDASummary } from "@/api";
-import type { CompositeFileInfo } from "@/api/datatypes";
-import { AUTO_EXTENSION, getUploadDatatypes } from "@/components/Upload/utils";
+import { useUploadDatatypes } from "@/components/Upload/useUploadDatatypes";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -23,15 +22,6 @@ import DefaultBox from "@/components/Upload/DefaultBox.vue";
 const Tabs = {
     create: 0,
     upload: 1,
-};
-
-type ExtensionDetails = {
-    id: string;
-    text: string;
-    description: string | null;
-    description_url: string | null;
-    composite_files?: CompositeFileInfo[] | null;
-    upload_warning?: string | null;
 };
 
 interface Props {
@@ -66,8 +56,8 @@ const emit = defineEmits<{
 const currentTab = ref(Tabs.create);
 const collectionName = ref(props.suggestedName);
 const localHideSourceItems = ref(props.hideSourceItems);
-const listExtensions = ref<ExtensionDetails[]>([]);
-const extensionsSet = ref(false);
+
+const { listExtensions, extensionsSet, loadExtensions } = useUploadDatatypes();
 
 const validInput = computed(() => {
     return collectionName.value.length > 0;
@@ -134,11 +124,6 @@ function cancelCreate() {
 
 function removeExtensionsToggle() {
     emit("remove-extensions-toggle");
-}
-
-async function loadExtensions() {
-    listExtensions.value = await getUploadDatatypes(false, AUTO_EXTENSION);
-    extensionsSet.value = true;
 }
 
 loadExtensions();
