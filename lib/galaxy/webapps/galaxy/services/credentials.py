@@ -25,9 +25,9 @@ from galaxy.schema.credentials import (
     UserCredentialsResponse,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.schema import FlexibleUserIdType
 from galaxy.security.vault import UserVaultWrapper
 from galaxy.structured_app import StructuredApp
-from galaxy.webapps.galaxy.api.common import UserIdPathParam
 
 
 class CredentialsService:
@@ -39,7 +39,7 @@ class CredentialsService:
     def list_user_credentials(
         self,
         trans: ProvidesUserContext,
-        user_id: UserIdPathParam,
+        user_id: FlexibleUserIdType,
         source_type: Optional[SOURCE_TYPE] = None,
         source_id: Optional[str] = None,
         group_name: Optional[str] = None,
@@ -54,7 +54,7 @@ class CredentialsService:
     def provide_credential(
         self,
         trans: ProvidesUserContext,
-        user_id: UserIdPathParam,
+        user_id: FlexibleUserIdType,
         payload: CreateSourceCredentialsPayload,
     ) -> UserCredentialsListResponse:
         """Allows users to provide credentials for a group of secrets and variables."""
@@ -63,7 +63,7 @@ class CredentialsService:
     def delete_service_credentials(
         self,
         trans: ProvidesUserContext,
-        user_id: UserIdPathParam,
+        user_id: FlexibleUserIdType,
         user_credentials_id: DecodedDatabaseIdField,
     ):
         """Deletes all credentials for a specific service."""
@@ -74,7 +74,7 @@ class CredentialsService:
     def delete_credentials(
         self,
         trans: ProvidesUserContext,
-        user_id: UserIdPathParam,
+        user_id: FlexibleUserIdType,
         group_id: DecodedDatabaseIdField,
     ):
         """Deletes a specific credential group."""
@@ -85,7 +85,7 @@ class CredentialsService:
     def _user_credentials(
         self,
         trans: ProvidesUserContext,
-        user_id: UserIdPathParam,  # TODO: use FlexibleUserIdType to support also "current"
+        user_id: FlexibleUserIdType,
         source_type: Optional[SOURCE_TYPE] = None,
         source_id: Optional[str] = None,
         reference: Optional[str] = None,
@@ -95,6 +95,8 @@ class CredentialsService:
     ) -> List[Tuple[UserCredentials, CredentialsGroup, Variable, Secret]]:
         if trans.anonymous:
             raise exceptions.AuthenticationRequired("You need to be logged in to access your credentials.")
+        if user_id == "current":
+            user_id = trans.user.id
         if trans.user and trans.user.id != user_id:
             raise exceptions.ItemOwnershipException("You can only access your own credentials.")
         group_alias = aliased(CredentialsGroup)
@@ -174,7 +176,7 @@ class CredentialsService:
     def _create_user_credential(
         self,
         trans: ProvidesUserContext,
-        user_id: UserIdPathParam,
+        user_id: FlexibleUserIdType,
         payload: CreateSourceCredentialsPayload,
     ) -> UserCredentialsListResponse:
         session = trans.sa_session
@@ -200,6 +202,8 @@ class CredentialsService:
 
             user_credentials = next((cred[0] for cred in db_user_credentials if cred[0].reference == reference), None)
             if not user_credentials:
+                if user_id == "current":
+                    user_id = trans.user.id
                 user_credentials = UserCredentials(
                     user_id=user_id,
                     reference=reference,
