@@ -279,7 +279,13 @@ class CredentialsService:
             session.add(user_credentials)
         session.commit()
 
-        credentials_dict = self._user_credentials_to_dict(db_user_credentials).values()
+        new_user_credentials = db_user_credentials or self._user_credentials(
+            trans,
+            user_id=user_id,
+            source_type=source_type,
+            source_id=source_id,
+        )
+        credentials_dict = self._user_credentials_to_dict(new_user_credentials).values()
         return UserCredentialsListResponse(root=[UserCredentialsResponse(**cred) for cred in credentials_dict])
 
     def _delete_credentials(self, sa_session: galaxy_scoped_session, rows_to_be_deleted: set):
