@@ -125,6 +125,15 @@ const stepsGridColumnsTemplate = computed(() => {
             .join(" ") + " max-content"
     );
 });
+
+const bodyStyle = computed(() => {
+    const width = props.use.current.value.width;
+    if (width) {
+        return { width: width };
+    } else {
+        return {};
+    }
+});
 </script>
 
 <template>
@@ -158,7 +167,7 @@ const stepsGridColumnsTemplate = computed(() => {
             <div class="step-content">
                 <span class="h-md step-instructions" v-text="props.use.current.value.instructions" />
 
-                <div class="step-body">
+                <div class="step-body" :style="bodyStyle">
                     <slot>
                         <p>
                             Missing body for step <b>{{ props.use.current.value.label }}</b>
