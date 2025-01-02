@@ -1,10 +1,13 @@
-import { computed, ref, watch } from "vue";
+import { computed, type Ref, ref, unref, watch } from "vue";
 
 import { type HistoryItemSummary } from "@/api";
 import { type CollectionElementIdentifiers, type CreateNewCollectionPayload } from "@/api/datasetCollections";
+import type RuleCollectionBuilder from "@/components/RuleCollectionBuilder.vue";
 import STATES from "@/mvc/dataset/states";
 import localize from "@/utils/localization";
 
+import type ListCollectionCreator from "./ListCollectionCreator.vue";
+import type PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
 import { useCollectionCreation } from "./useCollectionCreation";
 import { useExtensionFiltering } from "./useExtensionFilter";
 
@@ -27,6 +30,23 @@ export type SupportedPairedOrPairedBuilderCollectionTypes =
     | "list:paired_or_unpaired"
     | "list:list"
     | "list:list:paired";
+
+export type CollectionCreatorComponent =
+    | InstanceType<typeof ListCollectionCreator>
+    | InstanceType<typeof PairedOrUnpairedListCollectionCreator>
+    | InstanceType<typeof RuleCollectionBuilder>;
+
+export async function attemptCreate(creator: CollectionCreatorComponent | Ref<CollectionCreatorComponent | undefined>) {
+    const creatorValue: CollectionCreatorComponent | undefined = unref(creator);
+    // fight typing to workaround https://github.com/vuejs/core/issues/10077
+    interface HasAttemptCreate {
+        attemptCreate: () => Promise<void>;
+    }
+
+    if (creatorValue) {
+        (creatorValue as unknown as HasAttemptCreate).attemptCreate();
+    }
+}
 
 export function useCollectionCreator(props: CommonCollectionBuilderProps, emit?: EmitsName) {
     const removeExtensions = ref(true);
