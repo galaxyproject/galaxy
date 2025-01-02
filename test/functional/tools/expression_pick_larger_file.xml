@@ -20,7 +20,7 @@
         <param name="input2" type="data" optional="true" label="Second file" />
     </inputs>
     <outputs>
-        <output name="larger_file" type="data" from="output" />
+        <output name="larger_file" type="data" from="output" format_source="input1" />
     </outputs>
     <tests>
         <test>
