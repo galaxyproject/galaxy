@@ -1030,13 +1030,18 @@ def _test_collection_def_dict(elem: Element) -> XmlTestCollectionDefDict:
         else:
             element_definition = __parse_param_elem(element)
         elements.append({"element_identifier": element_identifier, "element_definition": element_definition})
-
+    fields_json = "null"
+    fields_el = elem.find("fields")
+    if fields_el is not None:
+        fields_json = fields_el.text
+    fields = json.loads(fields_json)
     return XmlTestCollectionDefDict(
         model_class="TestCollectionDef",
         attributes=attrib,
         collection_type=collection_type,
         elements=elements,
         name=name,
+        fields=fields,
     )
 
 

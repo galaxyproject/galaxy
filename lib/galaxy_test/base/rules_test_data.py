@@ -287,3 +287,54 @@ EXAMPLE_6 = {
     "check": check_example_6,
     "output_hid": 8,
 }
+
+
+def check_example_sample_sheet_simple_to_nested_list(hdca, dataset_populator):
+    assert hdca["collection_type"] == "list:list"
+    assert hdca["element_count"] == 2
+    treat1_el = hdca["elements"][0]
+    assert "object" in treat1_el, hdca
+    assert "element_identifier" in treat1_el
+    assert treat1_el["element_identifier"] == "treat1", hdca
+
+    treat2_el = hdca["elements"][1]
+    assert "object" in treat2_el, hdca
+    assert "element_identifier" in treat2_el
+    assert treat2_el["element_identifier"] == "treat2", hdca
+
+
+EXAMPLE_SAMPLE_SHEET_SIMPLE_TO_NESTED_LIST = {
+    "rules": {
+        "rules": [
+            {
+                "type": "add_sample_sheet_column_by_index",
+                "value": 0,
+            },
+            {
+                "type": "add_column_metadata",
+                "value": "identifier0",
+            },
+        ],
+        "mapping": [
+            {
+                "type": "list_identifiers",
+                "columns": [0, 1],
+            },
+        ],
+    },
+    "test_data": {
+        "type": "sample_sheet",
+        "elements": [
+            {"identifier": "i1", "contents": "0", "class": "File"},
+            {"identifier": "i2", "contents": "1", "class": "File"},
+            {"identifier": "i3", "contents": "2", "class": "File"},
+        ],
+        "rows": {
+            "i1": ["treat1"],
+            "i2": ["treat2"],
+            "i3": ["treat1"],
+        },
+    },
+    "check": check_example_sample_sheet_simple_to_nested_list,
+    "output_hid": 8,
+}

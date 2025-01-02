@@ -67,6 +67,8 @@ import { parseBool } from "@/utils/utils";
 import { patchRouterPush } from "./router-push";
 
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
+import BuildFileSetWizard from "@/components/Collections/BuildFileSetWizard.vue";
+import ListWizard from "@/components/Collections/ListWizard.vue";
 import EditFileSourceInstance from "@/components/FileSources/Instances/EditInstance.vue";
 import ManageFileSourceIndex from "@/components/FileSources/Instances/ManageIndex.vue";
 import UpgradeFileSourceInstance from "@/components/FileSources/Instances/UpgradeInstance.vue";
@@ -212,6 +214,13 @@ export function getRouter(Galaxy) {
                         path: "custom_builds",
                         component: CustomBuilds,
                         redirect: redirectAnon(),
+                    },
+                    {
+                        path: "collection/new_list",
+                        component: ListWizard,
+                        props: (route) => ({
+                            initialAdvanced: parseBool(route.query.advanced),
+                        }),
                     },
                     {
                         path: "collection/:collectionId/edit",
@@ -495,6 +504,15 @@ export function getRouter(Galaxy) {
                         path: "tours/:tourId",
                         component: TourRunner,
                         props: true,
+                    },
+                    {
+                        path: "rules",
+                        component: BuildFileSetWizard,
+                        props: (route) => {
+                            return {
+                                ...route.query,
+                            };
+                        },
                     },
                     {
                         path: "tools/list",

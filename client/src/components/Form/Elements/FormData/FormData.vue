@@ -33,6 +33,7 @@ const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
     list: "list",
     "list:paired": "list of dataset pairs",
     paired: "dataset pair",
+    sample_sheet: "sample sheet derived",
 };
 
 type SelectOption = {
@@ -88,7 +89,7 @@ const dragTarget: Ref<EventTarget | null> = ref(null);
 
 // Collection creator modal settings
 const collectionModalShow = ref(false);
-const collectionModalType = ref<"list" | "list:paired" | "paired">("list");
+const collectionModalType = ref<"list" | "list:paired" | "paired" | "sample_sheet">("list");
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 const restrictsExtensions = computed(() => {
     const extensions = props.extensions;
@@ -497,16 +498,18 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
+const collectionTypesWithBuilders = ["list", "list:paired", "paired", "list:paired_or_unpaired", "sample_sheet"];
+
 /** Allowed collection types for collection creation */
 const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) =>
-    ["list", "list:paired", "paired"].includes(collectionType)
+    collectionTypesWithBuilders.includes(collectionType)
 );
 
 function buildNewCollection(collectionType: string) {
-    if (!["list", "list:paired", "paired"].includes(collectionType)) {
+    if (!collectionTypesWithBuilders.includes(collectionType)) {
         throw Error(`Unknown collection type: ${collectionType}`);
     }
-    collectionModalType.value = collectionType as "list" | "list:paired" | "paired";
+    collectionModalType.value = collectionType as "list" | "list:paired" | "paired" | "sample_sheet";
     collectionModalShow.value = true;
 }
 

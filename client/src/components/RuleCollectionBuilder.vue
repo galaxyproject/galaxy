@@ -452,12 +452,20 @@
                 <!--  style="width: 70%;" -->
                 <div v-if="initialElements !== null" class="table-column" :class="orientation" style="width: 100%">
                     <HotTable
+                        v-if="gridImplementation == 'hot'"
                         id="hot-table"
                         ref="hotTable"
                         :data="hotData.data"
                         :col-headers="colHeadersDisplay"
                         :read-only="true"
                         stretch-h="all"></HotTable>
+                    <RuleGrid
+                        v-else
+                        id="hot-table"
+                        ref="hotTable"
+                        :data="hotData.data"
+                        :col-headers="colHeadersDisplay"
+                        stretch-h="all"></RuleGrid>
                 </div>
             </div>
         </RuleModalMiddle>
@@ -504,7 +512,7 @@
                     </div>
                 </div>
             </template>
-            <b-row class="mx-auto">
+            <b-row v-if="mode == 'modal'" class="mx-auto">
                 <b-button
                     :help="titleCancel"
                     class="creator-cancel-btn rule-btn-cancel"
@@ -576,6 +584,7 @@ import RegularExpressionInput from "components/RuleBuilder/RegularExpressionInpu
 import RuleDefs from "components/RuleBuilder/rule-definitions";
 import RuleComponent from "components/RuleBuilder/RuleComponent";
 import RuleDisplay from "components/RuleBuilder/RuleDisplay";
+import RuleGrid from "components/RuleBuilder/RuleGrid";
 import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
 import RuleModalHeader from "components/RuleBuilder/RuleModalHeader";
 import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
@@ -612,6 +621,7 @@ export default {
     components: {
         TooltipOnHover,
         HotTable,
+        RuleGrid,
         RuleComponent,
         RuleTargetComponent,
         SavedRulesSelector,
@@ -674,6 +684,16 @@ export default {
             type: String,
             required: false,
             default: null,
+        },
+        gridImplementation: {
+            type: String,
+            required: false,
+            default: "aggrid",
+        },
+        mode: {
+            type: String,
+            required: false,
+            default: "modal", // set to wizard to use embedded formatting
         },
     },
     data: function () {
@@ -1157,6 +1177,10 @@ export default {
                 }
             }
         },
+        validInput: function (newState) {
+            console.log("watching validInput....");
+            this.$emit("validInput", newState);
+        },
     },
     created() {
         if (this.elementsType !== "collection_contents") {
@@ -1206,9 +1230,11 @@ export default {
     mounted() {
         // something bizarre is up with the rendering of hands-on-table, needs a click to render.
         // Vue.nextTick() didn't work here.
-        setTimeout(() => {
-            this.$refs.hotTable.$el.click();
-        }, 200);
+        if (this.gridImplementation == "hot") {
+            setTimeout(() => {
+                this.$refs.hotTable.$el.click();
+            }, 200);
+        }
     },
     methods: {
         restoreRules(event) {
@@ -1398,6 +1424,9 @@ export default {
                 });
             }
         },
+        attemptCreate() {
+            this.createCollection();
+        },
         createCollection() {
             const asJson = {
                 rules: this.rules,
@@ -1415,15 +1444,27 @@ export default {
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 const elements = this.creationElementsFromDatasets();
                 if (this.state !== "error") {
-                    const deferreds = Object.entries(elements).map(([name, els]) => {
-                        // This looks like a promise but it is not one because creationFn and
-                        // oncreate are references to function from the backbone models which means
-                        // they are expecting their arguments in a different order. So, looks like,
-                        // jQuery.Deferred and therefore jQuery are still dependencies
-                        return this.creationFn(els, collectionType, name, hideSourceItems).then(this.oncreate);
-                    });
-                    const promises = deferreds.map(deferredToPromise);
-                    return Promise.all(promises).catch((err) => this.renderFetchError(err));
+                    if (this.creationFn) {
+                        const deferreds = Object.entries(elements).map(([name, els]) => {
+                            // This looks like a promise but it is not one because creationFn and
+                            // oncreate are references to function from the backbone models which means
+                            // they are expecting their arguments in a different order. So, looks like,
+                            // jQuery.Deferred and therefore jQuery are still dependencies
+                            return this.creationFn(els, collectionType, name, hideSourceItems).then(this.oncreate);
+                        });
+                        const promises = deferreds.map(deferredToPromise);
+                        return Promise.all(promises).catch((err) => this.renderFetchError(err));
+                    } else {
+                        const request = Object.entries(elements).map(([name, els]) => {
+                            return {
+                                name,
+                                elementIdentifiers: els,
+                                collectionType: collectionType,
+                                hideSourceItems,
+                            };
+                        });
+                        this.$emit("onAttemptCreate", request);
+                    }
                 }
             } else if (this.elementsType == "collection_contents") {
                 this.resetSource();

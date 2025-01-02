@@ -90,6 +90,7 @@ from typing_extensions import (
 from galaxy.schema.schema import (
     CreateToolLandingRequestPayload,
     CreateWorkflowLandingRequestPayload,
+    SampleSheetColumnDefinitions,
     ToolLandingRequest,
     WorkflowLandingRequest,
 )
@@ -418,8 +419,11 @@ class BasePopulator(metaclass=ABCMeta):
         """Perform a _get and store the result in a tempfile."""
         get_response = self._get(route, **kwd)
         get_response.raise_for_status()
+        return self._get_response_to_tempfile(get_response)
+
+    def _get_response_to_tempfile(self, response, suffix=None) -> str:
         temp_file = tempfile.NamedTemporaryFile("wb", delete=False, suffix=suffix)
-        temp_file.write(get_response.content)
+        temp_file.write(response.content)
         temp_file.flush()
         return temp_file.name
 
@@ -2972,6 +2976,17 @@ class BaseDatasetCollectionPopulator:
             history_id=history_id, collection=pairs, collection_type="list:paired", name=name
         )
 
+    def download_workbook(self, column_definitions: SampleSheetColumnDefinitions) -> str:
+        url = "sample_sheet_workbook/generate"
+        column_definitions_bytes = json.dumps(column_definitions).encode("utf-8")
+        column_definitions_b64 = base64.b64encode(column_definitions_bytes).decode("utf-8")
+        query_params = {
+            "column_definitions": column_definitions_b64,
+            "filename": "workbook.xlsx",
+        }
+        download_response = self.dataset_populator._get(url, query_params)
+        return self.dataset_populator._get_response_to_tempfile(download_response)
+
     def nested_collection_identifiers(self, history_id: str, collection_type):
         rank_types = list(reversed(collection_type.split(":")))
         assert len(rank_types) > 0
@@ -3076,6 +3091,37 @@ class BaseDatasetCollectionPopulator:
             )
             list = response.json()
         return response
+
+    def create_unpaired_in_history(self, history_id: str, wait: bool = False, **kwds):
+        contents = [("unpaired", "123")]
+        payload = self.__create_payload(history_id, contents=contents, collection_type="paired_or_unpaired", **kwds)
+        return self.__create(payload, wait=wait)
+
+    def create_paired_or_unpaired_pair_in_history(self, history_id: str, wait: bool = False, **kwds):
+        contents = [("forward", "123"), ("reverse", "456")]
+        payload = self.__create_payload(history_id, contents=contents, collection_type="paired_or_unpaired", **kwds)
+        return self.__create(payload, wait=wait)
+
+    def create_list_of_paired_and_unpaired_in_history(self, history_id: str, wait: bool = False, **kwds):
+        contents = [
+            {
+                "name": "paired_el",
+                "elements": [
+                    {"src": "pasted", "paste_content": "paired1", "name": "forward"},
+                    {"src": "pasted", "paste_content": "paired2", "name": "reverse"},
+                ],
+            },
+            {
+                "name": "unpaired_el",
+                "elements": [
+                    {"src": "pasted", "paste_content": "unpaired", "name": "unpaired"},
+                ],
+            },
+        ]
+        payload = self.__create_payload(
+            history_id, contents=contents, collection_type="list:paired_or_unpaired", **kwds
+        )
+        return self.__create(payload, wait=wait)
 
     def create_pair_in_history(self, history_id: str, wait: bool = False, **kwds):
         payload = self.create_pair_payload(history_id, instance_type="history", **kwds)
@@ -3584,6 +3630,9 @@ class DescribeToolExecutionOutputCollection:
     def assert_has_dataset_element(self, index: Union[str, int]) -> "DescribeToolExecutionOutput":
         return self.with_dataset_element(index)
 
+    def assert_collection_type_is(self, collection_type: str):
+        assert self.details["collection_type"] == collection_type
+
 
 class DescribeJob:
 
@@ -3934,6 +3983,23 @@ class TargetHistory:
         )
         return HasSrcDict("hda", new_dataset)
 
+    def with_unpaired(self) -> "HasSrcDict":
+        return self._fetch_response(
+            self._dataset_collection_populator.create_unpaired_in_history(self._history_id, wait=True)
+        )
+
+    def with_paired_or_unpaired_pair(self) -> "HasSrcDict":
+        return self._fetch_response(
+            self._dataset_collection_populator.create_paired_or_unpaired_pair_in_history(self._history_id, wait=True)
+        )
+
+    def with_list_of_paired_and_unpaired(self) -> "HasSrcDict":
+        return self._fetch_response(
+            self._dataset_collection_populator.create_list_of_paired_and_unpaired_in_history(
+                self._history_id, wait=True
+            )
+        )
+
     def with_pair(self, contents: Optional[List[str]] = None) -> "HasSrcDict":
         return self._fetch_response(
             self._dataset_collection_populator.create_pair_in_history(
@@ -3950,6 +4016,12 @@ class TargetHistory:
 
     def with_example_list_of_pairs(self) -> "HasSrcDict":
         return HasSrcDict("hdca", self._dataset_collection_populator.example_list_of_pairs(self._history_id))
+
+    def with_example_list_of_lists(self) -> "HasSrcDict":
+        return HasSrcDict(
+            "hdca",
+            self._dataset_collection_populator.create_list_of_list_in_history(self._history_id, wait=True).json()["id"],
+        )
 
     @classmethod
     def _fetch_response(clz, response: Response) -> "HasSrcDict":
