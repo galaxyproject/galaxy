@@ -67,6 +67,7 @@ import { parseBool } from "@/utils/utils";
 import { patchRouterPush } from "./router-push";
 
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
+import BuildFileSetWizard from "@/components/Collections/BuildFileSetWizard.vue";
 import ListWizard from "@/components/Collections/ListWizard.vue";
 import EditFileSourceInstance from "@/components/FileSources/Instances/EditInstance.vue";
 import ManageFileSourceIndex from "@/components/FileSources/Instances/ManageIndex.vue";
@@ -500,6 +501,15 @@ export function getRouter(Galaxy) {
                         path: "tours/:tourId",
                         component: TourRunner,
                         props: true,
+                    },
+                    {
+                        path: "rules",
+                        component: BuildFileSetWizard,
+                        props: (route) => {
+                            return {
+                                ...route.query,
+                            };
+                        },
                     },
                     {
                         path: "tools/list",
