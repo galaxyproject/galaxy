@@ -342,9 +342,7 @@ async function onBulkTagsAdd(tags: string[]) {
 watch([filterText, sortBy, sortDesc], async () => {
     offset.value = 0;
 
-    if (showDeleted.value) {
-        selectedWorkflowIds.value = [];
-    }
+    selectedWorkflowIds.value = [];
 
     await load(true);
 });
@@ -547,7 +545,8 @@ onMounted(() => {
                 :value="currentPage"
                 :total-rows="totalWorkflows"
                 :per-page="limit"
-                align="center"
+                align="right"
+                size="sm"
                 first-number
                 last-number
                 @change="onPageChange" />
@@ -585,6 +584,7 @@ onMounted(() => {
     }
 
     .cards-list {
+        height: 100%;
         scroll-behavior: smooth;
         min-height: 150px;
         display: flex;
@@ -596,6 +596,7 @@ onMounted(() => {
 
     .workflow-list-footer {
         display: flex;
+        align-items: center;
         margin-top: 0.5rem;
 
         .workflow-list-footer-bulk-actions {
