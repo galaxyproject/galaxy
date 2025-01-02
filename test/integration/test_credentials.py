@@ -40,7 +40,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
                 }
             ],
         }
-        response = self._post(f"/api/users/current/credentials", data=payload, json=True)
+        response = self._post("/api/users/current/credentials", data=payload, json=True)
         self._assert_status_code_is(response, 400)
 
     def test_delete_not_existing_service_credentials(self):
@@ -69,11 +69,11 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
                 }
             ],
         }
-        response = self._post(f"/api/users/current/credentials", data=payload, json=True)
+        response = self._post("/api/users/current/credentials", data=payload, json=True)
         self._assert_status_code_is(response, 200)
         return response.json()
 
     def _list_user_credentials(self):
-        response = self._get(f"/api/users/current/credentials")
+        response = self._get("/api/users/current/credentials")
         self._assert_status_code_is(response, 200)
         return response.json()
