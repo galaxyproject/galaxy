@@ -69,9 +69,6 @@ class CredentialsService:
         """Deletes all credentials for a specific service."""
         user_credentials = self._user_credentials(trans, user_id=user_id, user_credentials_id=user_credentials_id)
         rows_to_be_deleted = [item for uc in user_credentials for item in uc]
-        rows_to_be_deleted.sort(
-            key=lambda item: (isinstance(item, UserCredentials), isinstance(item, CredentialsGroup))
-        )
         self._delete_credentials(trans.sa_session, rows_to_be_deleted)
 
     def delete_credentials(
@@ -83,7 +80,6 @@ class CredentialsService:
         """Deletes a specific credential group."""
         user_credentials = self._user_credentials(trans, user_id=user_id, group_id=group_id)
         rows_to_be_deleted = [item for uc in user_credentials for item in uc if not isinstance(item, UserCredentials)]
-        rows_to_be_deleted.sort(key=lambda item: isinstance(item, CredentialsGroup))
         self._delete_credentials(trans.sa_session, rows_to_be_deleted)
 
     def _user_credentials(
