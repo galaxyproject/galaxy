@@ -376,6 +376,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                 :extensions-toggle="removeExtensions"
                 collection-type="paired"
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
+                :show-upload="!fromSelection"
                 @add-uploaded-files="addUploadedFiles"
                 @onUpdateHideSourceItems="onUpdateHideSourceItems"
                 @clicked-create="clickedCreate"
