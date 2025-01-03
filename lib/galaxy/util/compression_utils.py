@@ -214,15 +214,16 @@ class CompressedFile:
             common_prefix = os.path.commonprefix([self.getname(item) for item in contents])
             # If the common_prefix does not end with a slash, check that is a
             # directory and all other files are contained in it
-            common_prefix_member = self.getmember(common_prefix)
-            if (
-                len(common_prefix) >= 1
-                and not common_prefix.endswith(os.sep)
-                and common_prefix_member
-                and self.isdir(common_prefix_member)
-                and all(self.getname(item).startswith(common_prefix + os.sep) for item in contents if self.isfile(item))
-            ):
-                common_prefix += os.sep
+            if len(common_prefix) >= 1 and not common_prefix.endswith(os.sep):
+                common_prefix_member = self.getmember(common_prefix)
+                if (
+                    common_prefix_member is not None
+                    and self.isdir(common_prefix_member)
+                    and all(
+                        self.getname(item).startswith(common_prefix + os.sep) for item in contents if self.isfile(item)
+                    )
+                ):
+                    common_prefix += os.sep
             if not common_prefix.endswith(os.sep):
                 common_prefix = ""
         return common_prefix
