@@ -12,12 +12,14 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         assert created_user_credentials[0]["current_group_name"] == "default"
 
     def test_list_user_credentials(self):
-        list_user_credentials = self._list_user_credentials()
+        response = self._get("/api/users/current/credentials")
+        self._assert_status_code_is(response, 200)
+        list_user_credentials = response.json()
         assert len(list_user_credentials) > 0
 
     def test_delete_service_credentials(self):
-        list_user_credentials = self._list_user_credentials()
-        user_credentials_id = list_user_credentials[0]["id"]
+        created_user_credentials = self._populate_user_credentials()
+        user_credentials_id = created_user_credentials[0]["id"]
         response = self._delete(f"/api/users/current/credentials/{user_credentials_id}")
         self._assert_status_code_is(response, 204)
 
@@ -70,10 +72,5 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
             ],
         }
         response = self._post("/api/users/current/credentials", data=payload, json=True)
-        self._assert_status_code_is(response, 200)
-        return response.json()
-
-    def _list_user_credentials(self):
-        response = self._get("/api/users/current/credentials")
         self._assert_status_code_is(response, 200)
         return response.json()
