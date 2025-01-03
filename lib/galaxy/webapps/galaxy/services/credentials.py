@@ -68,7 +68,10 @@ class CredentialsService:
     ):
         """Deletes all credentials for a specific service."""
         user_credentials = self._user_credentials(trans, user_id=user_id, user_credentials_id=user_credentials_id)
-        rows_to_be_deleted = {item for uc in user_credentials for item in uc}
+        rows_to_be_deleted = [item for uc in user_credentials for item in uc]
+        rows_to_be_deleted.sort(
+            key=lambda item: (isinstance(item, UserCredentials), isinstance(item, CredentialsGroup))
+        )
         self._delete_credentials(trans.sa_session, rows_to_be_deleted)
 
     def delete_credentials(
@@ -79,7 +82,8 @@ class CredentialsService:
     ):
         """Deletes a specific credential group."""
         user_credentials = self._user_credentials(trans, user_id=user_id, group_id=group_id)
-        rows_to_be_deleted = {item for uc in user_credentials for item in uc if not isinstance(item, UserCredentials)}
+        rows_to_be_deleted = [item for uc in user_credentials for item in uc if not isinstance(item, UserCredentials)]
+        rows_to_be_deleted.sort(key=lambda item: isinstance(item, CredentialsGroup))
         self._delete_credentials(trans.sa_session, rows_to_be_deleted)
 
     def _user_credentials(
@@ -288,7 +292,7 @@ class CredentialsService:
         credentials_dict = self._user_credentials_to_dict(new_user_credentials).values()
         return UserCredentialsListResponse(root=[UserCredentialsResponse(**cred) for cred in credentials_dict])
 
-    def _delete_credentials(self, sa_session: galaxy_scoped_session, rows_to_be_deleted: set):
+    def _delete_credentials(self, sa_session: galaxy_scoped_session, rows_to_be_deleted: List):
         for row in rows_to_be_deleted:
             sa_session.delete(row)
         sa_session.commit()
