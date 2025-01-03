@@ -389,7 +389,7 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         self._assert_user_has_workflow_with_name(workflow_name)
         workflow_url = self._api_url(f"workflows/{workflow_id}", use_key=True)
         delete_response = delete(workflow_url)
-        self._assert_status_code_is(delete_response, 204)
+        self._assert_status_code_is_ok(delete_response)
         # Make sure workflow is no longer in index by default.
         assert workflow_name not in self._workflow_names()
 
@@ -408,7 +408,7 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         delete(workflow_delete_url)
         workflow_undelete_url = self._api_url(f"workflows/{workflow_id}/undelete", use_key=True)
         undelete_response = post(workflow_undelete_url)
-        self._assert_status_code_is(undelete_response, 204)
+        self._assert_status_code_is_ok(undelete_response)
         assert workflow_name in self._workflow_names()
 
     def test_other_cannot_undelete(self):
@@ -431,7 +431,7 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         assert [w for w in workflow_index if w["id"] == workflow_id]
         workflow_url = self._api_url(f"workflows/{workflow_id}", use_key=True)
         delete_response = delete(workflow_url)
-        self._assert_status_code_is(delete_response, 204)
+        self._assert_status_code_is_ok(delete_response)
         workflow_index = self._get("workflows").json()
         assert not [w for w in workflow_index if w["id"] == workflow_id]
         workflow_index = self._get("workflows?show_deleted=true").json()

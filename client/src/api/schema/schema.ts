@@ -8390,30 +8390,6 @@ export interface components {
              */
             stop_job: boolean;
         };
-        /**
-         * DeleteHistoryContentResult
-         * @description Contains minimum information about the deletion state of a history item.
-         *
-         *     Can also contain any other properties of the item.
-         */
-        DeleteHistoryContentResult: {
-            /**
-             * Deleted
-             * @description True if the item was successfully deleted.
-             */
-            deleted: boolean;
-            /**
-             * ID
-             * @description The encoded ID of the history item.
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Purged
-             * @description True if the item was successfully removed from disk.
-             */
-            purged?: boolean | null;
-        };
         /** DeleteHistoryPayload */
         DeleteHistoryPayload: {
             /**
@@ -19674,10 +19650,6 @@ export interface operations {
                  * @description Whether to stop the creating job if all outputs of the job have been deleted.
                  */
                 stop_job?: boolean | null;
-                /** @description View to be passed to the serializer */
-                view?: string | null;
-                /** @description Comma-separated list of keys to be passed to the serializer */
-                keys?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -19695,13 +19667,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Request has been executed. */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                    "application/json": unknown;
                 };
             };
             /** @description Request accepted, processing will finish later. */
@@ -19709,9 +19681,14 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                content?: never;
+            };
+            /** @description Request has been executed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
                 };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
@@ -25273,10 +25250,6 @@ export interface operations {
                  * @description Whether to stop the creating job if all outputs of the job have been deleted.
                  */
                 stop_job?: boolean | null;
-                /** @description View to be passed to the serializer */
-                view?: string | null;
-                /** @description Comma-separated list of keys to be passed to the serializer */
-                keys?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -25296,13 +25269,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Request has been executed. */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                    "application/json": unknown;
                 };
             };
             /** @description Request accepted, processing will finish later. */
@@ -25310,9 +25283,14 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                content?: never;
+            };
+            /** @description Request has been executed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
                 };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
@@ -25688,10 +25666,6 @@ export interface operations {
                  * @description Whether to stop the creating job if all outputs of the job have been deleted.
                  */
                 stop_job?: boolean | null;
-                /** @description View to be passed to the serializer */
-                view?: string | null;
-                /** @description Comma-separated list of keys to be passed to the serializer */
-                keys?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -25713,13 +25687,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Request has been executed. */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                    "application/json": unknown;
                 };
             };
             /** @description Request accepted, processing will finish later. */
@@ -25727,9 +25701,14 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                content?: never;
+            };
+            /** @description Request has been executed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
                 };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
