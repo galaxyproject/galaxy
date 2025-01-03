@@ -12145,7 +12145,9 @@ class UserCredentials(Base):
     reference: Mapped[str] = mapped_column(nullable=False)
     source_type: Mapped[str] = mapped_column(nullable=False)
     source_id: Mapped[str] = mapped_column(nullable=False)
-    current_group_id: Mapped[int] = mapped_column(ForeignKey("user_credentials_group.id"), index=True, nullable=True)
+    current_group_id: Mapped[int] = mapped_column(
+        ForeignKey("user_credentials_group.id", ondelete="CASCADE"), index=True, nullable=True
+    )
     create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
     update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
 
@@ -12159,7 +12161,7 @@ class CredentialsGroup(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(nullable=False)
-    user_credentials_id: Mapped[int] = mapped_column(ForeignKey("user_credentials.id"), index=True)
+    user_credentials_id: Mapped[int] = mapped_column(ForeignKey("user_credentials.id", ondelete="CASCADE"), index=True)
     create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
     update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
 
