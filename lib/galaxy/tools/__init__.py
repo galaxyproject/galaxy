@@ -1216,10 +1216,18 @@ class Tool(UsesDictVisibleKeys):
                     raise Exception(message)
 
         # Requirements (dependencies)
-        requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements, credentials = tool_source.parse_requirements()
         self.requirements = requirements
         self.containers = containers
         self.resource_requirements = resource_requirements
+        self.credentials = credentials
+        # for credential in self.credentials:
+        #     pass
+        #     preferences = self.app.config.user_preferences_extra["preferences"]
+        #     main_key, input_key = credential.user_preferences_key.split("/")
+        #     preferences_input = preferences.get(main_key, {}).get("inputs", [])
+        #     if not any(input_item.get("name") == input_key for input_item in preferences_input):
+        #         raise exceptions.ConfigurationError(f"User preferences key {credential.user_preferences_key} not found")
 
         required_files = tool_source.parse_required_files()
         if required_files is None:
@@ -2659,6 +2667,27 @@ class Tool(UsesDictVisibleKeys):
 
         state_inputs_json: ToolStateDumpedToJsonT = params_to_json(self.inputs, state_inputs, self.app)
 
+        credentials = []
+        for credential in self.credentials:
+            credential_dict = credential.to_dict()
+            credential_dict["variables"] = [
+                {
+                    "name": variable.name,
+                    "label": variable.label,
+                    "description": variable.description,
+                }
+                for variable in credential.variables
+            ]
+            credential_dict["secrets"] = [
+                {
+                    "name": secret.name,
+                    "label": secret.label,
+                    "description": secret.description,
+                }
+                for secret in credential.secrets
+            ]
+            credentials.append(credential_dict)
+
         # update tool model
         tool_model.update(
             {
@@ -2671,6 +2700,7 @@ class Tool(UsesDictVisibleKeys):
                 "warnings": tool_warnings,
                 "versions": self.tool_versions,
                 "requirements": [{"name": r.name, "version": r.version} for r in self.requirements],
+                "credentials": credentials,
                 "errors": state_errors,
                 "tool_errors": self.tool_errors,
                 "state_inputs": state_inputs_json,

@@ -11606,6 +11606,73 @@ class CeleryUserRateLimit(Base):
         )
 
 
+class UserCredentials(Base):
+    """
+    Represents a credential associated with a user for a specific service.
+    """
+
+    __tablename__ = "user_credentials"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
+    reference: Mapped[str] = mapped_column(nullable=False)
+    source_type: Mapped[str] = mapped_column(nullable=False)
+    source_id: Mapped[str] = mapped_column(nullable=False)
+    current_group_id: Mapped[int] = mapped_column(
+        ForeignKey("user_credentials_group.id", ondelete="CASCADE"), index=True, nullable=True
+    )
+    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+
+
+class CredentialsGroup(Base):
+    """
+    Represents a group of credentials associated with a user for a specific service.
+    """
+
+    __tablename__ = "user_credentials_group"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(nullable=False)
+    user_credentials_id: Mapped[int] = mapped_column(ForeignKey("user_credentials.id", ondelete="CASCADE"), index=True)
+    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+
+
+class Variable(Base):
+    """
+    Represents a variable associated with a user for a specific service.
+    """
+
+    __tablename__ = "credential_variable"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_credential_group_id: Mapped[int] = mapped_column(
+        ForeignKey("user_credentials_group.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    name: Mapped[str] = mapped_column(nullable=False)
+    value: Mapped[str] = mapped_column(nullable=False)
+    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+
+
+class Secret(Base):
+    """
+    Represents a secret associated with a user for a specific service.
+    """
+
+    __tablename__ = "credential_secret"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_credential_group_id: Mapped[int] = mapped_column(
+        ForeignKey("user_credentials_group.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    name: Mapped[str] = mapped_column(nullable=False)
+    already_set: Mapped[bool] = mapped_column(nullable=False, default=False)
+    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+
+
 # The following models (HDA, LDDA) are mapped imperatively (for details see discussion in PR #12064)
 # TLDR: there are issues ('metadata' property, Galaxy object wrapping) that need to be addressed separately
 # before these models can be mapped declaratively. Keeping them in the mapping module breaks the auth package
