@@ -11637,7 +11637,7 @@ class Variable(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_credential_group_id: Mapped[int] = mapped_column(
-        ForeignKey("user_credentials_group.id"), index=True, nullable=False
+        ForeignKey("user_credentials_group.id", ondelete="CASCADE"), index=True, nullable=False
     )
     name: Mapped[str] = mapped_column(nullable=False)
     value: Mapped[str] = mapped_column(nullable=False)
@@ -11654,7 +11654,7 @@ class Secret(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_credential_group_id: Mapped[int] = mapped_column(
-        ForeignKey("user_credentials_group.id"), index=True, nullable=False
+        ForeignKey("user_credentials_group.id", ondelete="CASCADE"), index=True, nullable=False
     )
     name: Mapped[str] = mapped_column(nullable=False)
     already_set: Mapped[bool] = mapped_column(nullable=False, default=False)
