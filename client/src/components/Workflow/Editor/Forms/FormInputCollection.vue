@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, toRef } from "vue";
 
+import { type FieldDict } from "@/api";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { Step } from "@/stores/workflowStepStore";
 
@@ -9,12 +10,14 @@ import { useToolState } from "../composables/useToolState";
 import FormElement from "@/components/Form/FormElement.vue";
 import FormCollectionType from "@/components/Workflow/Editor/Forms/FormCollectionType.vue";
 import FormDatatype from "@/components/Workflow/Editor/Forms/FormDatatype.vue";
+import FormRecordFieldDefinitions from "@/components/Workflow/Editor/Forms/FormRecordFieldDefinitions.vue";
 
 interface ToolState {
     collection_type: string | null;
     optional: boolean;
     format: string | null;
     tag: string | null;
+    fields: FieldDict[] | null;
 }
 
 const props = defineProps<{
@@ -22,18 +25,23 @@ const props = defineProps<{
     datatypes: DatatypesMapperModel["datatypes"];
 }>();
 
+function asToolState(toolState: unknown) {
+    return toolState as ToolState;
+}
+
 const stepRef = toRef(props, "step");
 const { toolState } = useToolState(stepRef);
 
 function cleanToolState(): ToolState {
     if (toolState.value) {
-        return { ...toolState.value } as unknown as ToolState;
+        return asToolState({ ...toolState.value });
     } else {
         return {
             collection_type: null,
             optional: false,
             tag: null,
             format: null,
+            fields: null,
         };
     }
 }
@@ -64,6 +72,17 @@ function onCollectionType(newCollectionType: string | null) {
     emit("onChange", state);
 }
 
+function onRecordFieldDefinitions(newRecordFieldDefinitions: FieldDict[]) {
+    const state = cleanToolState();
+    state.fields = newRecordFieldDefinitions;
+    emit("onChange", state);
+}
+
+const isRecordType = computed(() => {
+    const collectionType = asToolState(toolState.value).collection_type;
+    return collectionType == "record" || collectionType == "list:record";
+});
+
 const formatsAsList = computed(() => {
     const formatStr = toolState.value?.format as string | string[] | null;
     if (formatStr && typeof formatStr === "string") {
@@ -82,7 +101,10 @@ emit("onChange", cleanToolState());
 
 <template>
     <div>
-        <FormCollectionType :value="toolState?.collection_type" :optional="true" @onChange="onCollectionType" />
+        <FormCollectionType
+            :value="asToolState(toolState).collection_type || ''"
+            :optional="true"
+            @onChange="onCollectionType" />
         <FormElement id="optional" :value="toolState?.optional" title="Optional" type="boolean" @input="onOptional" />
         <FormDatatype
             id="format"
@@ -100,5 +122,9 @@ emit("onChange", cleanToolState());
             type="text"
             help="Tags to automatically filter inputs"
             @input="onTags" />
+        <FormRecordFieldDefinitions
+            v-if="isRecordType"
+            :value="asToolState(toolState).fields || []"
+            @onChange="onRecordFieldDefinitions" />
     </div>
 </template>
