@@ -20,6 +20,9 @@ from galaxy.schema.tools import (
     DynamicUnprivilegedToolCreatePayload,
     UnprivilegedToolResponse,
 )
+from galaxy.tool_util.parameters import input_models_for_tool_source
+from galaxy.tool_util.parameters.convert import cwl_runtime_model
+from galaxy.tool_util.parser.yaml import YamlToolSource
 from . import (
     depends,
     DependsOnTrans,
@@ -74,6 +77,17 @@ class UnprivilegedToolsApi:
         tool = tool_payload_to_tool(trans.app, payload.representation.model_dump(by_alias=True))
         if tool:
             return tool.to_json(trans=trans, history=history or trans.history)
+
+    @router.post("/api/unprivileged_tools/runtime_model")
+    def runtime_model(
+        self,
+        payload: DynamicUnprivilegedToolCreatePayload,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ):
+        represention = payload.representation.model_dump(by_alias=True)
+        tool_source = YamlToolSource(root_dict=represention)
+        input_bundle = input_models_for_tool_source(tool_source)
+        return cwl_runtime_model(input_bundle)
 
     @router.delete("/api/dynamic_tools/{tool_id}")
     def delete(self, tool_id: str, user: User = DependsOnUser):
