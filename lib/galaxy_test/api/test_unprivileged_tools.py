@@ -40,7 +40,12 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
                 UserToolSource(**TOOL_WITH_SHELL_COMMAND), history_id=history_id
             )
         assert response
-        raise Exception(response)
+
+    def test_build_runtime_model(self):
+        response = self.dataset_populator.build_runtime_model_for_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
+        assert response
+        assert response["openapi"] == "3.1.0"
+        assert response["components"]["schemas"]["inputs"]
 
     def test_run(self):
         dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
