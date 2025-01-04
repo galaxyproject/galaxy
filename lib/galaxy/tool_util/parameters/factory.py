@@ -197,6 +197,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             default_value = input_source.parse_default()
             return DataCollectionParameterModel(
                 type="data_collection",
+                collection_type=input_source.get("collection_type"),
                 name=input_source.parse_name(),
                 optional=optional,
                 value=default_value,
