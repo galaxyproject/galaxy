@@ -129,7 +129,7 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
     }
 }
 
-const collectionTypeRegex = /^(list|paired)(:(list|paired))*$/;
+const collectionTypeRegex = /^(list|paired|record)(:(list|paired|record))*$/;
 
 export function isValidCollectionTypeStr(collectionType: string | undefined) {
     if (collectionType) {
