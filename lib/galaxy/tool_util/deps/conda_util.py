@@ -48,7 +48,7 @@ IS_OS_X = sys.platform == "darwin"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_PACKAGE_SPECS = ("conda>=23.7.0", "conda-libmamba-solver", "'pyopenssl>=22.1.0'")
+CONDA_PACKAGE_SPECS = ("conda>=23.7.0", "conda-libmamba-solver", "pyopenssl>=22.1.0")
 CONDA_BUILD_SPECS = ("conda-build>=3.22.0",)
 USE_LOCAL_DEFAULT = False
 
