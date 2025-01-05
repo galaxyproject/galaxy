@@ -72,6 +72,9 @@ module.exports = (env = {}, argv = {}) => {
                 querystring: require.resolve("querystring-es3"),
                 util: require.resolve("util/"),
                 assert: require.resolve("assert/"),
+                url: false,
+                perf_hooks: false,
+                buffer: require.resolve("buffer/"),
             },
             alias: {
                 vue$: path.resolve(__dirname, "node_modules/vue/dist/vue.esm.js"),
@@ -242,6 +245,11 @@ module.exports = (env = {}, argv = {}) => {
                 __targetEnv__: JSON.stringify(targetEnv),
                 __buildTimestamp__: JSON.stringify(buildDate.toISOString()),
                 __license__: JSON.stringify(require("./package.json").license),
+            }),
+            new webpack.DefinePlugin({
+                // Define empty stubs for required modules
+                "node:stream": JSON.stringify({}),
+                "node:url": JSON.stringify({}),
             }),
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({
