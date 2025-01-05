@@ -5,6 +5,7 @@ import { configureMonacoYaml } from "monaco-yaml";
 
 import es5Lib from "@/libs/es5.txt";
 
+import { fetchAndConvertSchemaToInterface } from "./runTimeModel";
 import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 import { buildProviderFunctions } from "./yaml";
 
@@ -89,10 +90,7 @@ export function setupMonaco(monaco: MonacoEditor) {
         noEmit: true,
         lib: ["ES5"],
     });
-    monaco.languages.typescript.typescriptDefaults.addExtraLib(es5Lib);
-    monaco.languages.typescript.typescriptDefaults.addExtraLib(
-        `const runtime = {inputs: {input1: {class: "File", basename: "basename", location: "location", path: "path}}}`
-    );
+    addExtraLibs();
 
     const { dispose } = configureMonacoYaml(monaco, {
         enableSchemaRequest: false,
@@ -156,10 +154,36 @@ function extractEmbeddedJavaScript(yamlContent: string) {
     return "";
 }
 
+const fragment = `
+interface Runtime {
+    inputs: components["schemas"]["inputs"]
+}
+
+declare global {
+    const runtime: Runtime
+}
+`;
+
+async function addExtraLibs(yamlContent?: string) {
+    monaco.languages.typescript.typescriptDefaults.setExtraLibs([{ content: es5Lib }]);
+    if (yamlContent) {
+        const schemaInterface = await fetchAndConvertSchemaToInterface(yamlContent);
+        console.log(`${schemaInterface}\n${fragment}`);
+        monaco.languages.typescript.typescriptDefaults.addExtraLib(
+            `${schemaInterface}\n${fragment}`,
+            "file:///globalTypes.d.ts"
+        );
+    }
+}
+
 export function setupContentSync(yamlModel: editor.ITextModel, embeddedModel: editor.ITextModel) {
     // Keep the embedded JavaScript model in sync with the YAML editor
     yamlModel.onDidChangeContent(() => {
+        console.log("yamlModelContentSync");
         const yamlContent = yamlModel.getValue();
+        if (yamlContent) {
+            addExtraLibs(yamlContent);
+        }
         const scriptContent = extractEmbeddedJavaScript(yamlContent);
         embeddedModel.setValue(scriptContent);
     });
