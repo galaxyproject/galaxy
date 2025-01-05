@@ -82,7 +82,7 @@ def cwl_runtime_model(input_models: ToolParameterBundle):
         "components": {},
     }
     schemas = model.model_json_schema(mode="serialization", ref_template=OPENAPI_REF_TEMPLATE)
-    openapi_schema["components"]["schemas"] = schemas.pop("$defs")
+    openapi_schema["components"]["schemas"] = schemas.pop("$defs", {})
     openapi_schema["components"]["schemas"]["inputs"] = schemas
     return openapi_schema
 
