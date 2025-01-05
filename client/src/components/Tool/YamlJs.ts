@@ -10,6 +10,7 @@ import { buildProviderFunctions } from "./yaml";
 const LANG = "yaml-with-js";
 
 const embeddedModelUri = monaco.Uri.parse("file://embedded-model.js");
+const defModelUri = monaco.Uri.parse("file://runtime-defs.ts");
 
 export function setupMonaco(monaco: MonacoEditor) {
     // Define the custom YAML language with embedded JavaScript
@@ -88,6 +89,7 @@ export function setupMonaco(monaco: MonacoEditor) {
         noEmit: true,
         lib: ["es2017"],
     });
+    monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
     addExtraLibs();
 
     const { dispose } = configureMonacoYaml(monaco, {
@@ -123,7 +125,6 @@ export async function setupEditor(providerFunctions: any) {
     // Virtual model for JavaScript
     const yamlModel = editor.getModels().find((item) => item.getLanguageId() == LANG)!;
     const embeddedModel = editor.getModel(embeddedModelUri) || editor.createModel("", "typescript", embeddedModelUri);
-    setupContentSync(yamlModel, embeddedModel);
     mixJsYamlProviders(providerFunctions);
     monaco.languages.registerHoverProvider(LANG, providerFunctions);
     monaco.languages.registerCompletionItemProvider(LANG, providerFunctions);
@@ -154,7 +155,7 @@ function extractEmbeddedJavaScript(yamlContent: string) {
 
 const fragment = `
 interface Runtime {
-    inputs: components["schemas"]["inputs"]
+    readonly inputs: components["schemas"]["inputs"]
 }
 
 declare global {
@@ -166,25 +167,20 @@ async function addExtraLibs(yamlContent?: string) {
     monaco.languages.typescript.typescriptDefaults.setExtraLibs([{ content: es5Lib }]);
     if (yamlContent) {
         const schemaInterface = await fetchAndConvertSchemaToInterface(yamlContent);
-        console.log(`${schemaInterface}\n${fragment}`);
-        monaco.languages.typescript.typescriptDefaults.addExtraLib(
-            `${schemaInterface}\n${fragment}`,
-            "file:///globalTypes.d.ts"
-        );
+        const runtimeFragment = `${schemaInterface}\n${fragment}`;
+        const runtimeModel = editor.getModel(defModelUri) || editor.createModel("", "typescript", defModelUri);
+        if (runtimeModel.getValue() != runtimeFragment) {
+            runtimeModel.setValue(runtimeFragment);
+        }
     }
 }
 
-export function setupContentSync(yamlModel: editor.ITextModel, embeddedModel: editor.ITextModel) {
+export async function contentSync(yamlContent: string, scriptContent: string, embeddedModel: editor.ITextModel) {
     // Keep the embedded JavaScript model in sync with the YAML editor
-    yamlModel.onDidChangeContent(() => {
-        console.log("yamlModelContentSync");
-        const yamlContent = yamlModel.getValue();
-        if (yamlContent) {
-            addExtraLibs(yamlContent);
-        }
-        const scriptContent = extractEmbeddedJavaScript(yamlContent);
-        embeddedModel.setValue(scriptContent);
-    });
+    if (yamlContent) {
+        await addExtraLibs(yamlContent);
+    }
+    embeddedModel.setValue(scriptContent);
 }
 
 async function mixJsYamlProviders(yamlProviderFunctions: any) {
@@ -255,6 +251,9 @@ function attachDiagnosticsProvider(
     yamlModel.onDidChangeContent(async () => {
         const yamlContent = yamlModel.getValue();
         const embeddedJavaScript = extractEmbeddedJavaScript(yamlContent);
+        // contentSync makes API call, we could consider updating the marker
+        // only when fetch complete, but doesn't seem to be a problem ...
+        await contentSync(yamlContent, embeddedJavaScript, embeddedModel);
         const yamlMarkers = await provideMarkerData(yamlModel);
         let jsMarkers: editor.IMarkerData[] = [];
 
