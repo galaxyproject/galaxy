@@ -309,7 +309,7 @@ Release testing:
 * `John Chilton <https://github.com/jmchilton>`__
 * `Jennifer Hillman-Jackson <https://github.com/jennaj>`__
 * `Aysam Guerler <https://github.com/guerler>`__
-* `Srividya Ramakrishnan <https://github.com/>`__
+* `Srividya Ramakrishnan <https://github.com/Srividya22>`__
 
 Communications:
 
