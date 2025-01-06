@@ -64,35 +64,6 @@
             <b-dropdown-item v-if="showBuildOptions" data-description="advanced build list" @click="listWizard(true)">
                 <span v-localize>Advanced Build List</span>
             </b-dropdown-item>
-            <b-dropdown-group header-classes="subtle-header" header="Advanced">
-                <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
-                    <span v-localize>Build Dataset List</span>
-                </b-dropdown-item>
-                <b-dropdown-item
-                    v-if="showBuildOptions"
-                    data-description="build list of pairs"
-                    @click="buildListOfPairs">
-                    <span v-localize>Build List of Dataset Pairs</span>
-                </b-dropdown-item>
-                <b-dropdown-item
-                    v-if="showBuildOptions"
-                    data-description="build list of paires 2"
-                    @click="buildListOfPairsV2">
-                    <span v-localize>Build List of Dataset Pairs (v2)</span>
-                </b-dropdown-item>
-                <b-dropdown-item
-                    v-if="showBuildOptions"
-                    data-description="build list of paired_or_unpaired"
-                    @click="buildListOfMixedPaired">
-                    <span v-localize>Build List with Optional Pairing</span>
-                </b-dropdown-item>
-                <b-dropdown-item
-                    v-if="showBuildOptions"
-                    data-description="build collection from rules"
-                    @click="buildCollectionFromRules">
-                    <span v-localize>Build Collection from Rules</span>
-                </b-dropdown-item>
-            </b-dropdown-group>
         </b-dropdown>
 
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
@@ -170,7 +141,6 @@
             :selected-items="collectionSelection"
             :show.sync="collectionModalShow"
             hide-on-create
-            :use-beta-components="useBetaComponents"
             default-hide-source-items
             @created-collection="createdCollection" />
     </section>
@@ -193,11 +163,8 @@ import { DatatypesProvider, DbKeyProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 
-import { createDatasetCollection } from "@/components/History/model/queries";
 import { useConfig } from "@/composables/config";
 import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
-
-import { buildRuleCollectionModal } from "../../adapters/buildCollectionModal";
 
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 
@@ -230,7 +197,6 @@ export default {
             selectedDbKey: { id: "?", text: "unspecified (?)" },
             selectedDatatype: { id: "auto", text: "Auto-detect" },
             selectedTags: [],
-            useBetaComponents: false,
         };
     },
     computed: {
@@ -407,47 +373,10 @@ export default {
         onSelectedDatatype(datatype) {
             this.selectedDatatype = datatype;
         },
-
-        // collection creation, fires up a modal
-        buildDatasetList() {
-            this.collectionModalType = "list";
-            this.collectionSelection = Array.from(this.contentSelection.values());
-            this.collectionModalShow = true;
-        },
         buildDatasetListAll() {
             this.collectionModalType = "list";
             this.collectionSelection = undefined;
             this.collectionModalShow = true;
-        },
-        buildListOfPairs() {
-            this.collectionModalType = "list:paired";
-            this.collectionSelection = Array.from(this.contentSelection.values());
-            this.useBetaComponents = false;
-            this.collectionModalShow = true;
-        },
-        buildListOfPairsV2() {
-            this.collectionModalType = "list:paired";
-            this.collectionSelection = Array.from(this.contentSelection.values());
-            this.useBetaComponents = true;
-            this.collectionModalShow = true;
-        },
-        buildListOfMixedPaired() {
-            this.collectionModalType = "list:paired_or_unpaired";
-            this.collectionSelection = Array.from(this.contentSelection.values());
-            this.collectionModalShow = true;
-        },
-        createdCollection(collection) {
-            this.$emit("reset-selection");
-        },
-        async buildCollectionFromRules() {
-            const modalResult = await buildRuleCollectionModal(this.contentSelection, this.history.id);
-            await createDatasetCollection(this.history, modalResult);
-
-            // have to hide the source items if that was requested
-            if (modalResult.hide_source_items) {
-                this.$emit("hide-selection", this.contentSelection);
-            }
-            this.$emit("reset-selection");
         },
     },
 };
