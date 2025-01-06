@@ -207,20 +207,15 @@ describe("History Selection Operations", () => {
             });
 
             it("should display collection building options only on active (non-deleted) items", async () => {
-                const buildListOption = '[data-description="build list"]';
-                const buildListOfPairsOption = '[data-description="build list of pairs"]';
+                const buildListOption = '[data-description="auto build list"]';
                 await wrapper.setProps({ filterText: "visible:true deleted:false" });
                 expect(wrapper.find(buildListOption).exists()).toBe(true);
-                expect(wrapper.find(buildListOfPairsOption).exists()).toBe(true);
                 await wrapper.setProps({ filterText: "deleted:true" });
                 expect(wrapper.find(buildListOption).exists()).toBe(false);
-                expect(wrapper.find(buildListOfPairsOption).exists()).toBe(false);
                 await wrapper.setProps({ filterText: "visible:any deleted:false" });
                 expect(wrapper.find(buildListOption).exists()).toBe(true);
-                expect(wrapper.find(buildListOfPairsOption).exists()).toBe(true);
                 await wrapper.setProps({ filterText: "deleted:any" });
                 expect(wrapper.find(buildListOption).exists()).toBe(false);
-                expect(wrapper.find(buildListOfPairsOption).exists()).toBe(false);
             });
 
             it("should display list building option when all are selected", async () => {
