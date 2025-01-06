@@ -34,6 +34,7 @@ const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
     list: "list",
     "list:paired": "list of dataset pairs",
     paired: "dataset pair",
+    sample_sheet: "sample sheet derived",
 };
 
 type SelectOption = {
@@ -505,6 +506,7 @@ const collectionTypesWithBuilders = [
     "list:list",
     "list:list:paired",
     "list:paired_or_unpaired",
+    "sample_sheet",
 ];
 
 /** Allowed collection types for collection creation */

@@ -209,7 +209,7 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
     }
 }
 
-const collectionTypeRegex = /^(list|paired|record)(:(list|paired|record))*$/;
+const collectionTypeRegex = /^((list|paired|record)(:(list|paired|record))*|sample_sheet)$/;
 
 export function isValidCollectionTypeStr(collectionType: string | undefined) {
     if (collectionType) {

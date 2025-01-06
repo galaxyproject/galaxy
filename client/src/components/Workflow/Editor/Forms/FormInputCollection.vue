@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, toRef } from "vue";
 
-import { type FieldDict } from "@/api";
+import { type FieldDict, type SampleSheetColumnDefinitions } from "@/api";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { Step } from "@/stores/workflowStepStore";
 
@@ -9,6 +9,7 @@ import { useToolState } from "../composables/useToolState";
 
 import FormElement from "@/components/Form/FormElement.vue";
 import FormCollectionType from "@/components/Workflow/Editor/Forms/FormCollectionType.vue";
+import FormColumnDefinitions from "@/components/Workflow/Editor/Forms/FormColumnDefinitions.vue";
 import FormDatatype from "@/components/Workflow/Editor/Forms/FormDatatype.vue";
 import FormRecordFieldDefinitions from "@/components/Workflow/Editor/Forms/FormRecordFieldDefinitions.vue";
 
@@ -18,6 +19,7 @@ interface ToolState {
     format: string | null;
     tag: string | null;
     fields: FieldDict[] | null;
+    column_definitions: SampleSheetColumnDefinitions;
 }
 
 const props = defineProps<{
@@ -42,6 +44,7 @@ function cleanToolState(): ToolState {
             tag: null,
             format: null,
             fields: null,
+            column_definitions: null,
         };
     }
 }
@@ -82,6 +85,13 @@ const isRecordType = computed(() => {
     const collectionType = asToolState(toolState.value).collection_type;
     return collectionType == "record" || collectionType == "list:record";
 });
+
+function onColumnDefinitions(newColumnDefinitions: SampleSheetColumnDefinitions) {
+    const state = cleanToolState();
+    console.log(newColumnDefinitions);
+    state.column_definitions = newColumnDefinitions;
+    emit("onChange", state);
+}
 
 const formatsAsList = computed(() => {
     const formatStr = toolState.value?.format as string | string[] | null;
@@ -126,5 +136,9 @@ emit("onChange", cleanToolState());
             v-if="isRecordType"
             :value="asToolState(toolState).fields || []"
             @onChange="onRecordFieldDefinitions" />
+        <FormColumnDefinitions
+            v-if="toolState?.collection_type == 'sample_sheet'"
+            :value="asToolState(toolState).column_definitions"
+            @onChange="onColumnDefinitions" />
     </div>
 </template>

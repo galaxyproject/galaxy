@@ -21,7 +21,8 @@ export type CollectionType =
     | "rules"
     | "list:paired_or_unpaired"
     | "list:list"
-    | "list:list:paired";
+    | "list:list:paired"
+    | "sample_sheet";
 
 interface HasName {
     name: string | null;

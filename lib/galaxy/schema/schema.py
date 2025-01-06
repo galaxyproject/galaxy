@@ -348,6 +348,29 @@ class LimitedUserModel(Model):
 
 MaybeLimitedUserModel = Union[UserModel, LimitedUserModel]
 
+# named in compatiblity with CWL - trying to keep CWL fields in mind with
+# this implementation. https://www.commonwl.org/user_guide/topics/inputs.html#inputs
+SampleSheetColumnType = Literal[
+    "string", "int", "float", "boolean"
+]  # excluding "long" and "double" and composite types from CWL for now - we don't think at this level of abstraction in Galaxy generally
+SampleSheetColumnValueT = Union[str, int, float, bool]
+
+
+class SampleSheetColumnDefinition(TypedDict):
+    name: str
+    description: NotRequired[Optional[str]] = None
+    type: SampleSheetColumnType
+    # Optional semantic - this column is optional iff default value is None
+    default_value: Optional[SampleSheetColumnValueT] = None
+    validators: NotRequired[Optional[List[Dict[str, Any]]]] = None
+    restrictions: NotRequired[Optional[List[str]]] = None
+    suggestions: NotRequired[Optional[List[str]]] = None
+
+
+SampleSheetColumnDefinitions = List[SampleSheetColumnDefinition]
+SampleSheetRow = List[SampleSheetColumnValueT]
+SampleSheetRows = Dict[str, SampleSheetRow]
+
 
 class DiskUsageUserModel(Model):
     total_disk_usage: float = TotalDiskUsageField
@@ -999,6 +1022,11 @@ class DCESummary(Model, WithModelClass):
         title="Object",
         description="The element's specific data depending on the value of `element_type`.",
     )
+    columns: Optional[SampleSheetRow] = Field(
+        None,
+        title="Columns",
+        description="A row (or list of columns) of data associated with this element",
+    )
 
 
 DCObject.model_rebuild()
@@ -1142,6 +1170,10 @@ class HDCADetailed(HDCASummary):
     implicit_collection_jobs_id: Optional[EncodedDatabaseIdField] = Field(
         None,
         description="Encoded ID for the ICJ object describing the collection of jobs corresponding to this collection",
+    )
+    column_definitions: Optional[SampleSheetColumnDefinitions] = Field(
+        None,
+        description="Column data associated with each element of this collection.",
     )
 
 
@@ -1667,6 +1699,16 @@ class CreateNewCollectionPayload(Model):
         default=None,
         title="Element Identifiers",
         description="List of elements that should be in the new collection.",
+    )
+    column_definitions: Optional[SampleSheetColumnDefinitions] = Field(
+        default=None,
+        title="Column Definitions",
+        description="Specify definitions for row data if collection_type if sample_sheet",
+    )
+    rows: Optional[SampleSheetRows] = Field(
+        default=None,
+        title="Row data",
+        description="Specify rows of metadata data corresponding to an indentifier if collection_type is sample_sheet",
     )
     name: Optional[str] = Field(
         default=None,
