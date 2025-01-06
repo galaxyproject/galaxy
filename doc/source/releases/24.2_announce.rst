@@ -299,16 +299,21 @@ Release Notes
 Release Team
 ===========================================================
 
-Release manager:  `[NAME] <https://github.com/[GITHUB-USERNAME]>`__
+Release manager:  `John Davis <https://github.com/jdavcs>`__, `Ahmed Awan <https://github.com/ahmedhamidawan>`__
 
 Release testing:
 
-* `[NAME] <https://github.com/[GITHUB-USERNAME]>`__
-* ...
+* `Patrik Smeds <https://github.com/Smeds>`__
+* `Junhao Qiu <https://github.com/qchiujunhao>`__
+* `Mina Hojat Ansari <https://github.com/Minamehr>`__
+* `John Chilton <https://github.com/jmchilton>`__
+* `Jennifer Hillman-Jackson <https://github.com/jennaj>`__
+* `Aysam Guerler <https://github.com/guerler>`__
+* `Srividya Ramakrishnan <https://github.com/>`__
 
 Communications:
 
-* `[NAME] <https://github.com/[GITHUB-USERNAME]>`__
+* `Natalie Whitaker-Allen <https://github.com/natwhitaker>`__
 
 A special thank you goes to everyone who helped test the new release after its deployment on usegalaxy.org.
 
