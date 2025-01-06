@@ -35,8 +35,7 @@ DRAFT CONTENT
 * Feature - stdout live reporting
 * Allow OAuth 2.0 user defined file sources (w/Dropbox integration)
 
-Also check out the `24.2 user release notes <24.2_announce_user.html>`__.
-Are you an admin? Check out `some admin relevant PRs <https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A24.2+is%3Aclosed+is%3Apr>`__.
+Please see the `24.2 user release notes <24.2_announce_user.html>`__ for a summary of new user features.
 
 Get Galaxy
 ===========================================================
@@ -56,7 +55,7 @@ To update an existing Galaxy repository run:
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
 
 
-Administration Notes
+Admin Notes
 ===========================================================
 
 DRAFT CONTENT
@@ -68,22 +67,6 @@ DRAFT CONTENT
 * Decouple user email from role name
 * Add unique constraints to the email and username fields in the galaxy_user table
 * Run installed Galaxy with no config and a simplified entry point
-
-Developer Notes
-===========================================================
-
-DRAFT CONTENT
-
-* Replace poetry with uv
-* Improvements to help terms & tool help.
-* A variety of improvements around tool parameter modeling (second try)
-* Allow recovering a normalized version of workflow request state from API
-* Implement Declarative Testing for Workflow Behaviors
-* More concise, readable tool execution testing.
-* More data access tests, some refactoring and cleanup
-* Parameter Model Improvements
-* Upgrade ``openapi-typescript`` to 7.0.2 + swap to ``openapi-fetch``
-* Workflow Landing Requests
 
 Configuration Changes
 ===========================================================
@@ -291,10 +274,44 @@ Deprecation Notices
 ===========================================================
 Add content or drop section.
 
+Developer Notes
+===========================================================
+
+DRAFT CONTENT
+
+* Replace poetry with uv
+* Improvements to help terms & tool help.
+* A variety of improvements around tool parameter modeling (second try)
+* Allow recovering a normalized version of workflow request state from API
+* Implement Declarative Testing for Workflow Behaviors
+* More concise, readable tool execution testing.
+* More data access tests, some refactoring and cleanup
+* Parameter Model Improvements
+* Upgrade ``openapi-typescript`` to 7.0.2 + swap to ``openapi-fetch``
+* Workflow Landing Requests
+
 Release Notes
 ===========================================================
 
 .. include:: 24.2.rst
    :start-after: announce_start
+
+Release Team
+===========================================================
+
+Release manager:  `[NAME] <https://github.com/[GITHUB-USERNAME]>`__
+
+Release testing:
+
+* `[NAME] <https://github.com/[GITHUB-USERNAME]>`__
+* ...
+
+Communications:
+
+* `[NAME] <https://github.com/[GITHUB-USERNAME]>`__
+
+A special thank you goes to everyone who helped test the new release after its deployment on usegalaxy.org.
+
+----
 
 .. include:: _thanks.rst

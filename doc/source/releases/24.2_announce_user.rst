@@ -5,24 +5,55 @@
 
 .. include:: _header.rst
 
+Please see the full :doc:`24.2 release notes <24.2_announce>` for more details.
+
 Highlights
 ===========================================================
 
-Feature1
---------
+Add wizard-like export view for workflow invocations
+-----------------------------------------------------------
 
-Feature description.
+[DRAFT] Feature description.
 
-Feature2
---------
+Workflow Editor Activity Bar + Undo stack UI
+-----------------------------------------------------------
 
-Feature description.
+[DRAFT] Feature description.
 
-Feature3
---------
+Masthead Revision
+-----------------------------------------------------------
 
-Feature description.
+[DRAFT] Feature description.
 
+Guide users to collection builders
+-----------------------------------------------------------
+
+[DRAFT] Feature description.
+
+Workflow Invocation view improvements
+-----------------------------------------------------------
+
+[DRAFT] Feature description.
+
+Libraries Modernisation: Directory Dataset Picker
+-----------------------------------------------------------
+
+[DRAFT] Feature description.
+
+Improvements to help terms & tool help.
+-----------------------------------------------------------
+
+[DRAFT] Feature description.
+
+Feature - stdout live reporting
+-----------------------------------------------------------
+
+[DRAFT] Feature description.
+
+Allow OAuth 2.0 user defined file sources (w/Dropbox integration)
+-----------------------------------------------------------
+
+[DRAFT] Feature description.
 
 Visualizations
 ===========================================================
@@ -132,18 +163,10 @@ Builtin Tool Updates
   (thanks to `@lldelisle <https://github.com/lldelisle>`__).
   `Pull Request 16837`_
 
-Release Testing Team
-===========================================================
-
-A special thanks to the release testing team for testing many of the new features and reporting many bugs:
-
-<team members go here>
-
-Release Notes
-===========================================================
-
-Please see the :doc:`full release notes <24.2_announce>` for more details.
+Please see the full :doc:`24.2 release notes <24.2_announce>` for more details.
 
 .. include:: 24.2_prs.rst
+
+----
 
 .. include:: _thanks.rst
