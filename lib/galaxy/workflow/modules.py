@@ -96,6 +96,8 @@ from galaxy.tools.parameters.populate_model import populate_model
 from galaxy.tools.parameters.workflow_utils import (
     ConnectedValue,
     is_runtime_value,
+    NO_REPLACEMENT,
+    NoReplacement,
     runtime_to_json,
     workflow_building_modes,
 )
@@ -127,14 +129,6 @@ RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
 
 INPUT_PARAMETER_TYPES = Literal["text", "integer", "float", "boolean", "color", "directory_uri"]
 POSSIBLE_PARAMETER_TYPES: Tuple[INPUT_PARAMETER_TYPES] = get_args(INPUT_PARAMETER_TYPES)
-
-
-class NoReplacement:
-    def __str__(self):
-        return "NO_REPLACEMENT singleton"
-
-
-NO_REPLACEMENT = NoReplacement()
 
 
 class ConditionalStepWhen(BooleanToolParameter):
@@ -416,13 +410,10 @@ class WorkflowModule:
         """
         return {}
 
-    def compute_runtime_state(self, trans, step=None, step_updates=None):
+    def compute_runtime_state(self, trans, step=None, step_updates=None, replace_default_values=False):
         """Determine the runtime state (potentially different from self.state
         which describes configuration state). This (again unlike self.state) is
         currently always a `DefaultToolState` object.
-
-        If `step` is not `None`, it will be used to search for default values
-        defined in workflow input steps.
 
         If `step_updates` is `None`, this is likely for rendering the run form
         for instance and no runtime properties are available and state must be
@@ -432,6 +423,8 @@ class WorkflowModule:
         supplied by the workflow runner.
         """
         state = self.get_runtime_state()
+        if replace_default_values and step:
+            state.inputs = step.state.inputs
         step_errors = {}
 
         if step is not None:
@@ -441,8 +434,11 @@ class WorkflowModule:
                 if step_input is None:
                     return NO_REPLACEMENT
 
-                if step_input.default_value_set:
-                    return step_input.default_value
+                if replace_default_values and step_input.default_value_set:
+                    input_value = step_input.default_value
+                    if isinstance(input, BaseDataToolParameter):
+                        input_value = raw_to_galaxy(trans.app, trans.history, input_value)
+                    return input_value
 
                 return NO_REPLACEMENT
 
@@ -469,7 +465,7 @@ class WorkflowModule:
 
         return state, step_errors
 
-    def encode_runtime_state(self, step, runtime_state):
+    def encode_runtime_state(self, step, runtime_state: DefaultToolState):
         """Takes the computed runtime state and serializes it during run request creation."""
         return runtime_state.encode(Bunch(inputs=self.get_runtime_inputs(step)), self.trans.app)
 
@@ -954,7 +950,7 @@ class InputModule(WorkflowModule):
 
     def get_runtime_state(self):
         state = DefaultToolState()
-        state.inputs = dict(input=None)
+        state.inputs = dict(input=NO_REPLACEMENT)
         return state
 
     def get_all_inputs(self, data_only=False, connectable_only=False):
@@ -966,7 +962,7 @@ class InputModule(WorkflowModule):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
         input_value = step.state.inputs["input"]
-        if input_value is None:
+        if input_value is NO_REPLACEMENT:
             default_value = step.get_input_default_value(NO_REPLACEMENT)
             if default_value is not NO_REPLACEMENT:
                 input_value = raw_to_galaxy(trans.app, trans.history, default_value)
@@ -993,7 +989,7 @@ class InputModule(WorkflowModule):
         # everything should come in from the API and this can be eliminated.
         if not invocation.has_input_for_step(step.id):
             content = next(iter(step_outputs.values()))
-            if content:
+            if content and content is not NO_REPLACEMENT:
                 invocation.add_input(content, step.id)
         progress.set_outputs_for_input(invocation_step, step_outputs)
         return None
@@ -1582,7 +1578,7 @@ class InputParameterModule(WorkflowModule):
 
     def get_runtime_state(self):
         state = DefaultToolState()
-        state.inputs = dict(input=None)
+        state.inputs = dict(input=NO_REPLACEMENT)
         return state
 
     def get_all_outputs(self, data_only=False):
@@ -1609,7 +1605,7 @@ class InputParameterModule(WorkflowModule):
             input_value = progress.inputs_by_step_id[step.id]
         else:
             input_value = step.state.inputs["input"]
-        if input_value is None:
+        if input_value is NO_REPLACEMENT:
             default_value = step.get_input_default_value(NO_REPLACEMENT)
             # TODO: look at parameter type and infer if value should be a dictionary
             # instead. Guessing only field parameter types in CWL branch would have
@@ -2233,13 +2229,14 @@ class ToolModule(WorkflowModule):
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         return self.get_inputs()
 
-    def compute_runtime_state(self, trans, step=None, step_updates=None):
+    def compute_runtime_state(self, trans, step=None, step_updates=None, replace_default_values=False):
         # Warning: This method destructively modifies existing step state.
         if self.tool:
             step_errors = {}
             state = self.state
-            self.runtime_post_job_actions = {}
-            state, step_errors = super().compute_runtime_state(trans, step, step_updates)
+            state, step_errors = super().compute_runtime_state(
+                trans, step, step_updates, replace_default_values=replace_default_values
+            )
             if step_updates:
                 self.runtime_post_job_actions = step_updates.get(RUNTIME_POST_JOB_ACTIONS_KEY, {})
                 step_metadata_runtime_state = self.__step_meta_runtime_state()
@@ -2266,7 +2263,11 @@ class ToolModule(WorkflowModule):
             )
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self,
+        trans,
+        progress: "WorkflowProgress",
+        invocation_step: "WorkflowInvocationStep",
+        use_cached_job: bool = False,
     ) -> Optional[bool]:
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
@@ -2275,7 +2276,12 @@ class ToolModule(WorkflowModule):
             # TODO: why do we even create an invocation, seems like something we could check on submit?
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
             raise exceptions.MessageException(message)
+        self.state, _ = self.compute_runtime_state(
+            trans, step, step_updates=progress.param_map.get(step.id), replace_default_values=True
+        )
+        step.state = self.state
         tool_state = step.state
+        assert tool_state is not None
         tool_inputs = tool.inputs.copy()
         # Not strictly needed - but keep Tool state clean by stripping runtime
         # metadata parameters from it.
@@ -2404,7 +2410,7 @@ class ToolModule(WorkflowModule):
                 mapping_params=mapping_params,
                 history=invocation.history,
                 collection_info=collection_info,
-                workflow_invocation_uuid=invocation.uuid.hex,
+                workflow_invocation_uuid=invocation.uuid.hex if invocation.uuid else None,
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
                 validate_outputs=validate_outputs,

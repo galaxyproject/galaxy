@@ -9,6 +9,7 @@ from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import contains_workflow_parameter
 from galaxy.tools.parameters.workflow_utils import (
     ConnectedValue,
+    NO_REPLACEMENT,
     runtime_to_json,
 )
 from .schema import (
@@ -41,10 +42,7 @@ from .schema import (
     UpgradeSubworkflowAction,
     UpgradeToolAction,
 )
-from ..modules import (
-    InputParameterModule,
-    NO_REPLACEMENT,
-)
+from ..modules import InputParameterModule
 
 log = logging.getLogger(__name__)
 
