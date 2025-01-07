@@ -219,6 +219,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 if static_validator.type == "no_options":
                     select_validators.append(cast(NoOptionsParameterValidatorModel, static_validator))
             return SelectParameterModel(
+                type="select",
                 name=input_source.parse_name(),
                 optional=optional,
                 options=options,
@@ -304,6 +305,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 )
             )
         return ConditionalParameterModel(
+            type="conditional",
             name=input_source.parse_name(),
             test_parameter=test_parameter,
             whens=whens,
