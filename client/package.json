@@ -103,6 +103,7 @@
     "rxjs": "^7.8.1",
     "rxjs-spy": "^8.0.2",
     "rxjs-spy-devtools-plugin": "^0.0.4",
+    "schema-to-ts": "^0.0.2",
     "simplify-js": "^1.2.4",
     "slugify": "^1.6.6",
     "stream-browserify": "^3.0.0",
