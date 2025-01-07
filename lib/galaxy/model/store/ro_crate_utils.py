@@ -239,7 +239,7 @@ class WorkflowRunCrateProfileBuilder:
                                 properties={
                                     "@type": "Person",
                                     "name": creator_data.get("name", ""),  # Default to empty string if name is missing
-                                    "orcid": creator_data.get(
+                                    "identifier": creator_data.get(
                                         "identifier", ""
                                     ),  # Assuming identifier is ORCID, or adjust as needed
                                     "url": creator_data.get("url", ""),  # Add URL if available, otherwise empty string
