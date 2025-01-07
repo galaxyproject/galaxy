@@ -40,20 +40,17 @@ Libraries Modernisation: Directory Dataset Picker
 
 [DRAFT] Feature description.
 
-Improvements to help terms & tool help.
+Live Reporting of Job Console Outputs
 -----------------------------------------------------------
 
-[DRAFT] Feature description.
-
-Feature - stdout live reporting
------------------------------------------------------------
-
-[DRAFT] Feature description.
-
-Allow OAuth 2.0 user defined file sources (w/Dropbox integration)
------------------------------------------------------------
-
-[DRAFT] Feature description.
+If enabled by the Galaxy administrators, it will now be possible to view live console output
+for running jobs. The job output will be available on the Job Information page where these
+logs have always been available for completed jobs. The job information view has also been
+updated with scrollable code blocks, a more intuitive expand/collapse feature,
+and an auto-scroll function for seamless log viewing. This should allow you to debug issues with
+running jobs faster and track the progress of running jobs in realtime in a way that has never
+been an option in Galaxy. A huge thanks to Gregory Cage at Oak Ridge National Laboratory for
+this valuable contribution!
 
 Visualizations
 ===========================================================
