@@ -127,7 +127,10 @@ export async function setupEditor(providerFunctions: any) {
     const embeddedModel = editor.getModel(embeddedModelUri) || editor.createModel("", "typescript", embeddedModelUri);
     mixJsYamlProviders(providerFunctions);
     monaco.languages.registerHoverProvider(LANG, providerFunctions);
-    monaco.languages.registerCompletionItemProvider(LANG, providerFunctions);
+    monaco.languages.registerCompletionItemProvider(LANG, {
+        triggerCharacters: ["."],
+        provideCompletionItems: providerFunctions.provideCompletionItems,
+    });
     monaco.languages.registerDefinitionProvider(LANG, providerFunctions);
     monaco.languages.registerDocumentSymbolProvider(LANG, providerFunctions);
     monaco.languages.registerDocumentFormattingEditProvider(LANG, providerFunctions);
@@ -207,6 +210,7 @@ async function provideCompletionItems(model: editor.ITextModel, position: IPosit
 
     if (embeddedContent) {
         const embeddedModel = monaco.editor.getModel(embeddedModelUri)!;
+        embeddedModel.setValue(embeddedContent);
         const embeddedPosition = translateYamlPositionToEmbedded(model, position, embeddedModel, yamlContent);
         if (!embeddedPosition) {
             return null;
@@ -225,7 +229,7 @@ async function provideCompletionItems(model: editor.ITextModel, position: IPosit
             return {
                 suggestions: completionInfo.entries.map((entry: any) => ({
                     label: entry.name,
-                    kind: monaco.languages.CompletionItemKind[entry.kind],
+                    kind: monaco.languages.CompletionItemKind[entry.kind[0].toUpperCase() + entry.kind.slice(1)],
                     insertText: entry.name,
                     range: {
                         startLineNumber: position.lineNumber,
