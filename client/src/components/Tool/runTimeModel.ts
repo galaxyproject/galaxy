@@ -1,4 +1,4 @@
-import { schemaToInterface } from "openapi-to-ts-interface/dist/openapi-to-ts-interface.es";
+import { schemaToInterface } from "schema-to-ts";
 import { parse } from "yaml";
 
 import { GalaxyApi } from "@/api";
