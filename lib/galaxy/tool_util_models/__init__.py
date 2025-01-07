@@ -28,11 +28,10 @@ from typing_extensions import (
     TypedDict,
 )
 
+from galaxy.tool_util_models.parameters import GalaxyToolParameterModel
+
 from .assertions import assertions
-from .parameters import (
-    GalaxyParameterT,
-    ToolParameterT,
-)
+from .parameters import ToolParameterT
 from .tool_outputs import (
     ToolOutput,
 )
@@ -63,7 +62,7 @@ class ToolSourceBase(BaseModel):
     profile: Optional[float] = None
     description: Optional[str] = None
     container: Optional[str] = None
-    inputs: List[GalaxyParameterT] = []
+    inputs: List[GalaxyToolParameterModel] = []
     outputs: List[IncomingToolOutput] = []
     citations: Optional[List[Citation]] = None
     license: Optional[str] = None
@@ -84,12 +83,12 @@ class ToolSourceBase(BaseModel):
 class UserToolSource(BaseModel):
     class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
     id: Optional[str]
-    version: Optional[str] = "1.0"
+    version: Optional[str]
     name: str
     description: Optional[str] = None
     container: str
     shell_command: str
-    inputs: List[GalaxyParameterT] = []
+    inputs: List[GalaxyToolParameterModel] = []
     outputs: List[IncomingToolOutput] = []
     citations: Optional[List[Citation]] = None
     license: Optional[str] = None

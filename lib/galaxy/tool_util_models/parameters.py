@@ -818,6 +818,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 class HiddenParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_hidden"] = "gx_hidden"
+    type: Literal["hidden"]
     value: Optional[str]
     validators: List[TextCompatiableValidators] = []
 
@@ -939,6 +940,7 @@ class BooleanParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 class DirectoryUriParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_directory_uri"] = "gx_directory_uri"
+    type: Literal["directory"]
     validators: List[TextCompatiableValidators] = []
 
     @property
@@ -972,6 +974,7 @@ class RulesModel(StrictModel):
 
 class RulesParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_rules"] = "gx_rules"
+    type: Literal["rules"]
 
     @property
     def py_type(self) -> Type:
@@ -990,6 +993,7 @@ SelectCompatiableValidators = Union[NoOptionsParameterValidatorModel,]
 
 class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_select"] = "gx_select"
+    type: Literal["select"]
     options: Optional[List[LabelValue]] = None
     multiple: bool
     validators: List[SelectCompatiableValidators]
@@ -1085,6 +1089,7 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 class GenomeBuildParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_genomebuild"] = "gx_genomebuild"
+    type: Literal["genomebuild"]
     multiple: bool
 
     @property
@@ -1136,6 +1141,7 @@ def drill_down_possible_values(
 
 class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_drill_down"] = "gx_drill_down"
+    type: Literal["drill_down"]
     options: Optional[List[DrillDownOptionsDict]] = None
     multiple: bool
     hierarchy: DrillDownHierarchyT
@@ -1226,6 +1232,7 @@ def selected_drill_down_options(options: List[DrillDownOptionsDict]) -> List[str
 
 class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_data_column"] = "gx_data_column"
+    type: Literal["data_column"]
     multiple: bool
     value: Optional[Union[int, List[int]]] = None
 
@@ -1270,6 +1277,7 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 class GroupTagParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_group_tag"] = "gx_group_tag"
+    type: Literal["group_tag"]
     multiple: bool
 
     @property
@@ -1292,6 +1300,7 @@ class GroupTagParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 class BaseUrlParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_baseurl"] = "gx_baseurl"
+    type: Literal["baseurl"]
 
     @property
     def py_type(self) -> Type:
@@ -1329,6 +1338,7 @@ class ConditionalWhen(StrictModel):
 
 class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_conditional"] = "gx_conditional"
+    type: Literal["conditional"]
     test_parameter: Union[BooleanParameterModel, SelectParameterModel]
     whens: List[ConditionalWhen]
 
@@ -1434,6 +1444,7 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 class RepeatParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_repeat"] = "gx_repeat"
+    type: Literal["repeat"]
     parameters: List["ToolParameterT"]
     min: Optional[int] = None
     max: Optional[int] = None
@@ -1481,6 +1492,7 @@ class RepeatParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 class SectionParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_section"] = "gx_section"
+    type: Literal["section"]
     parameters: List["ToolParameterT"]
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
@@ -1702,6 +1714,10 @@ ToolParameterT = Union[
 
 class ToolParameterModel(RootModel):
     root: ToolParameterT = Field(..., discriminator="parameter_type")
+
+
+class GalaxyToolParameterModel(RootModel):
+    root: GalaxyParameterT = Field(..., discriminator="type")
 
 
 ConditionalWhen.model_rebuild()
