@@ -28,12 +28,30 @@ Masthead Revision
 Guide users to collection builders
 -----------------------------------------------------------
 
-[DRAFT] Feature description.
+To guide users towards creating collections of the correct type, Galaxy now provides
+better navigation via buttons directly on data collection parameters. Users can create a
+collection with the required structure for the input, with pre-filtered items from their
+current history, also ensuring compatibility with required file extensions. Additionally, users
+can upload datasets directly to the collection builder. These updates will improve the user
+experience of opening a workflow run form, creating appropriate collection(s) for its inputs
+and running the workflow in one seamless iteration.
+[`#18857 <https://github.com/galaxyproject/galaxy/pull/18857>`__]
 
-Workflow Invocation view improvements
+Enhanced Workflow Invocation View
 -----------------------------------------------------------
 
-[DRAFT] Feature description.
+The Workflow Invocation View, introduced in the `previous release <24.1_announce_user.html>`__
+has been significantly refined to improve the usability and visualization of workflow runs.
+[`#18615 <https://github.com/galaxyproject/galaxy/pull/18615>`__]
+
+Updates include:
+
+- Workflow steps have been moved to a separate tab, allocating maximum space for the graph.
+- Progress bars have also been relocated to the header for a cleaner layout.
+- Workflow inputs displayed directly on the graph, eliminating the need for clicking
+  and investigating each input.
+- The Invocations panel also toggles out on mouse leave, providing an uncluttered view when
+  exploring runs.
 
 Libraries Modernisation: Directory Dataset Picker
 -----------------------------------------------------------
@@ -51,6 +69,7 @@ and an auto-scroll function for seamless log viewing. This should allow you to d
 running jobs faster and track the progress of running jobs in realtime in a way that has never
 been an option in Galaxy. A huge thanks to Gregory Cage at Oak Ridge National Laboratory for
 this valuable contribution!
+[`#16975 <https://github.com/galaxyproject/galaxy/pull/16975>`__]
 
 Visualizations
 ===========================================================
