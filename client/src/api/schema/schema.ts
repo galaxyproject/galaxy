@@ -953,29 +953,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/dynamic_tools/{tool_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete
-         * @description DELETE /api/dynamic_tools/{encoded_dynamic_tool_id|tool_uuid}
-         *
-         *     Deactivate the specified dynamic tool. Deactivated tools will not
-         *     be loaded into the toolbox.
-         */
-        delete: operations["delete_api_dynamic_tools__tool_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/file_source_instances": {
         parameters: {
             query?: never;
@@ -4624,6 +4601,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/unprivileged_tools/build": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Build */
+        post: operations["build_api_unprivileged_tools_build_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/unprivileged_tools/runtime_model": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Runtime Model */
+        post: operations["runtime_model_api_unprivileged_tools_runtime_model_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/unprivileged_tools/{uuid}": {
         parameters: {
             query?: never;
@@ -4635,7 +4646,14 @@ export interface paths {
         get: operations["show_api_unprivileged_tools__uuid__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete
+         * @description DELETE /api/unprivileged_tools/{encoded_dynamic_tool_id|tool_uuid}
+         *
+         *     Deactivate the specified dynamic tool. Deactivated tools will not
+         *     be loaded into the toolbox.
+         */
+        delete: operations["delete_api_unprivileged_tools__uuid__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6517,7 +6535,6 @@ export interface components {
              * Parameter Type
              * @default gx_baseurl
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_baseurl";
             /**
@@ -6672,7 +6689,6 @@ export interface components {
              * Parameter Type
              * @default gx_boolean
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_boolean";
             /** Truevalue */
@@ -7033,7 +7049,6 @@ export interface components {
              * Parameter Type
              * @default gx_color
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_color";
             /**
@@ -7226,7 +7241,6 @@ export interface components {
              * Parameter Type
              * @default gx_conditional
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_conditional";
             /** Test Parameter */
@@ -7270,7 +7284,6 @@ export interface components {
              * Parameter Type
              * @default gx_conditional
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_conditional";
             /** Test Parameter */
@@ -7389,7 +7402,6 @@ export interface components {
             /**
              * Type
              * @constant
-             * @enum {string}
              */
             type: "container";
         };
@@ -8310,7 +8322,6 @@ export interface components {
              * Parameter Type
              * @default cwl_boolean
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_boolean";
         };
@@ -8343,7 +8354,6 @@ export interface components {
              * Parameter Type
              * @default cwl_directory
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_directory";
         };
@@ -8376,7 +8386,6 @@ export interface components {
              * Parameter Type
              * @default cwl_file
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_file";
         };
@@ -8388,7 +8397,6 @@ export interface components {
              * Parameter Type
              * @default cwl_float
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_float";
         };
@@ -8400,7 +8408,6 @@ export interface components {
              * Parameter Type
              * @default cwl_integer
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_integer";
         };
@@ -8412,7 +8419,6 @@ export interface components {
              * Parameter Type
              * @default cwl_null
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_null";
         };
@@ -8424,7 +8430,6 @@ export interface components {
              * Parameter Type
              * @default cwl_string
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_string";
         };
@@ -8436,7 +8441,6 @@ export interface components {
              * Parameter Type
              * @default cwl_union
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_union";
             /** Parameters */
@@ -8459,7 +8463,6 @@ export interface components {
              * Parameter Type
              * @default cwl_union
              * @constant
-             * @enum {string}
              */
             parameter_type: "cwl_union";
             /** Parameters */
@@ -8599,7 +8602,6 @@ export interface components {
              * Parameter Type
              * @default gx_data_collection
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_data_collection";
             /**
@@ -8608,7 +8610,9 @@ export interface components {
              */
             type: "data_collection";
             /** Value */
-            value: Record<string, never> | null;
+            value: {
+                [key: string]: unknown;
+            } | null;
         };
         /** DataColumnParameterModel */
         DataColumnParameterModel: {
@@ -8641,7 +8645,6 @@ export interface components {
              * Parameter Type
              * @default gx_data_column
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_data_column";
             /**
@@ -8751,7 +8754,6 @@ export interface components {
              * Parameter Type
              * @default gx_data
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_data";
             /**
@@ -9445,7 +9447,6 @@ export interface components {
              * Parameter Type
              * @default gx_directory_uri
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_directory_uri";
             /**
@@ -9567,7 +9568,6 @@ export interface components {
              * Parameter Type
              * @default gx_drill_down
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_drill_down";
             /**
@@ -9614,7 +9614,6 @@ export interface components {
              * Parameter Type
              * @default gx_drill_down
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_drill_down";
             /**
@@ -9733,7 +9732,6 @@ export interface components {
              * Src
              * @default representation
              * @constant
-             * @enum {string}
              */
             src: "representation";
             /** Uuid */
@@ -9761,7 +9759,6 @@ export interface components {
              * Src
              * @default representation
              * @constant
-             * @enum {string}
              */
             src: "representation";
             /** Uuid */
@@ -9790,7 +9787,6 @@ export interface components {
              * Type
              * @default empty_field
              * @constant
-             * @enum {string}
              */
             type: "empty_field";
         };
@@ -10134,7 +10130,6 @@ export interface components {
              * Type
              * @default expression
              * @constant
-             * @enum {string}
              */
             type: "expression";
         };
@@ -10379,7 +10374,6 @@ export interface components {
             /**
              * Discover Via
              * @constant
-             * @enum {string}
              */
             discover_via: "pattern";
             /** Format */
@@ -10580,7 +10574,6 @@ export interface components {
              * Parameter Type
              * @default gx_float
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_float";
             /**
@@ -10797,7 +10790,6 @@ export interface components {
              * Parameter Type
              * @default gx_genomebuild
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_genomebuild";
             /**
@@ -10944,7 +10936,6 @@ export interface components {
              * Parameter Type
              * @default gx_group_tag
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_group_tag";
             /**
@@ -12576,7 +12567,6 @@ export interface components {
              * Parameter Type
              * @default gx_hidden
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_hidden";
             /**
@@ -13039,7 +13029,6 @@ export interface components {
              * Type
              * @default in_range
              * @constant
-             * @enum {string}
              */
             type: "in_range";
         };
@@ -13315,7 +13304,6 @@ export interface components {
              * Parameter Type
              * @default gx_integer
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_integer";
             /**
@@ -14204,7 +14192,6 @@ export interface components {
             /**
              * Type
              * @constant
-             * @enum {string}
              */
             type: "javascript";
         };
@@ -14797,7 +14784,6 @@ export interface components {
              * Type
              * @default length
              * @constant
-             * @enum {string}
              */
             type: "length";
         };
@@ -15959,7 +15945,6 @@ export interface components {
              * Type
              * @default no_options
              * @constant
-             * @enum {string}
              */
             type: "no_options";
         };
@@ -16617,7 +16602,6 @@ export interface components {
             /**
              * Src
              * @constant
-             * @enum {string}
              */
             src: "from_path";
             /** Tool Directory */
@@ -17162,7 +17146,6 @@ export interface components {
              * Type
              * @default regex
              * @constant
-             * @enum {string}
              */
             type: "regex";
         };
@@ -17290,7 +17273,6 @@ export interface components {
              * Parameter Type
              * @default gx_repeat
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_repeat";
             /** Parameters */
@@ -17362,7 +17344,6 @@ export interface components {
              * Parameter Type
              * @default gx_repeat
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_repeat";
             /** Parameters */
@@ -17474,7 +17455,6 @@ export interface components {
             /**
              * Type
              * @constant
-             * @enum {string}
              */
             type: "resource";
         };
@@ -17569,7 +17549,6 @@ export interface components {
              * Parameter Type
              * @default gx_rules
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_rules";
             /**
@@ -17629,7 +17608,6 @@ export interface components {
              * Parameter Type
              * @default gx_section
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_section";
             /** Parameters */
@@ -17697,7 +17675,6 @@ export interface components {
              * Parameter Type
              * @default gx_section
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_section";
             /** Parameters */
@@ -17769,7 +17746,6 @@ export interface components {
              * Parameter Type
              * @default gx_select
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_select";
             /**
@@ -18859,7 +18835,6 @@ export interface components {
              * Parameter Type
              * @default gx_text
              * @constant
-             * @enum {string}
              */
             parameter_type: "gx_text";
             /**
@@ -18966,7 +18941,10 @@ export interface components {
             hidden: unknown;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
             name: unknown;
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -18980,7 +18958,10 @@ export interface components {
             hidden?: boolean | null;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
             name?: string | null;
             structure: components["schemas"]["ToolOutputCollectionStructure"];
             /**
@@ -18995,7 +18976,10 @@ export interface components {
             hidden?: boolean | null;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
             name?: string | null;
             structure: components["schemas"]["ToolOutputCollectionStructure"];
             /**
@@ -19031,7 +19015,10 @@ export interface components {
                       | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
                   )[]
                 | null;
-            /** Format */
+            /**
+             * Format
+             * @description The short name for the output datatype.
+             */
             format?: string | null;
             /** Format Source */
             format_source?: string | null;
@@ -19043,7 +19030,10 @@ export interface components {
             label?: string | null;
             /** Metadata Source */
             metadata_source?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
             name?: string | null;
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -19057,7 +19047,10 @@ export interface components {
             hidden: unknown;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
             name: unknown;
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -19071,7 +19064,10 @@ export interface components {
             hidden: unknown;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
             name: unknown;
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -19085,7 +19081,10 @@ export interface components {
             hidden: unknown;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows.
+             */
             name: unknown;
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -19102,7 +19101,6 @@ export interface components {
             /**
              * Discover Via
              * @constant
-             * @enum {string}
              */
             discover_via: "tool_provided_metadata";
             /** Format */
@@ -20194,7 +20192,10 @@ export interface components {
                       | components["schemas"]["ContainerRequirement"]
                   )[]
                 | null;
-            /** Shell Command */
+            /**
+             * shell_command
+             * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             */
             shell_command: string;
             /** Version */
             version: string | null;
@@ -20208,7 +20209,6 @@ export interface components {
             /**
              * Class
              * @constant
-             * @enum {string}
              */
             class: "GalaxyUserTool";
             /** Container */
@@ -20254,7 +20254,10 @@ export interface components {
                       | components["schemas"]["ContainerRequirement"]
                   )[]
                 | null;
-            /** Shell Command */
+            /**
+             * shell_command
+             * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             */
             shell_command: string;
             /** Version */
             version: string | null;
@@ -23678,49 +23681,6 @@ export interface operations {
             };
             path: {
                 dynamic_tool_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    delete_api_dynamic_tools__tool_id__delete: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path: {
-                tool_id: string;
             };
             cookie?: never;
         };
@@ -35973,6 +35933,98 @@ export interface operations {
             };
         };
     };
+    build_api_unprivileged_tools_build_post: {
+        parameters: {
+            query: {
+                history_id: string;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DynamicUnprivilegedToolCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    runtime_model_api_unprivileged_tools_runtime_model_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DynamicUnprivilegedToolCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     show_api_unprivileged_tools__uuid__get: {
         parameters: {
             query?: never;
@@ -35994,6 +36046,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UnprivilegedToolResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_api_unprivileged_tools__uuid__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Request Error */
