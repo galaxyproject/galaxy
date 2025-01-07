@@ -39,11 +39,15 @@ const stderr_position = computed(() => stderr_text.value.length);
 const runTime = computed(() => getJobDuration(job.value));
 
 function jobStateIsTerminal(jobState) {
-    return jobState && !NON_TERMINAL_STATES.includes(job.value.state);
+    return jobState && !NON_TERMINAL_STATES.includes(jobState);
+}
+
+function jobStateIsRunning(jobState) {
+    return jobState == "running";
 }
 
 const jobIsTerminal = computed(() => jobStateIsTerminal(job?.value?.state));
-
+const jobIsRunning = computed(() => jobStateIsRunning(job?.value?.state));
 const routeToInvocation = computed(() => `/workflows/invocations/${invocationId.value}`);
 
 const metadataDetail = ref({
@@ -127,6 +131,7 @@ watch(
     <div>
         <JobDetailsProvider auto-refresh :job-id="props.job_id" @update:result="updateJob" />
         <JobConsoleOutputProvider
+            v-if="jobIsRunning"
             auto-refresh
             :job-id="props.job_id"
             :stdout_position="stdout_position"
