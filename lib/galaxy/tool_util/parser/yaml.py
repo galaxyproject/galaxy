@@ -386,27 +386,18 @@ class YamlInputSource(InputSource):
         return YamlPageSource(self.input_dict["blocks"])
 
     def parse_test_input_source(self):
-        test_dict = self.input_dict.get("test", None)
-        assert test_dict is not None, "conditional must contain a `test` definition"
+        test_dict = self.input_dict.get("test_parameter", None)
+        assert test_dict is not None, "conditional must contain a `test_parameter` definition"
         return YamlInputSource(test_dict)
 
     def parse_when_input_sources(self):
         input_dict = self.input_dict
 
         sources = []
-        for value, block in input_dict.get("when", {}).items():
-            if value is True:
-                value = "true"
-            elif value is False:
-                value = "false"
-            else:
-                value = str(value)
-
-            # str here to lose type information like XML, needed?
-            if not isinstance(block, list):
-                block = [block]
-            case_page_source = YamlPageSource(block)
-            sources.append((value, case_page_source))
+        for value in input_dict.get("whens", []):
+            discriminator = value.get("discriminator")
+            case_page_source = YamlPageSource(value["parameters"])
+            sources.append((discriminator, case_page_source))
         return sources
 
     def parse_validators(self) -> List[AnyValidatorModel]:
