@@ -38,6 +38,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const showPassword = ref(false);
 
 const emit = defineEmits<{
     (e: "toggle-login"): void;
@@ -62,6 +63,10 @@ const custosPreferred = computed(() => {
 
 function toggleLogin() {
     emit("toggle-login");
+}
+
+function togglePasswordVisibility() {
+    showPassword.value = !showPassword.value;
 }
 
 async function submit() {
@@ -145,10 +150,20 @@ async function submit() {
                                         id="register-form-password"
                                         v-model="password"
                                         name="password"
-                                        type="password"
+                                        :type="showPassword ? 'text' : 'password'"
                                         autocomplete="new-password"
-                                        required 
+                                        required
                                     />
+                                    <!-- Eye Icon to show Password -->
+                                    <button
+                                        type="button"
+                                        class="password-toggle-icon"
+                                        @click="togglePasswordVisibility"
+                                        aria-label="Toggle password visibility"
+                                    >
+                                        <i :class="showPassword ? 'fa fa-eye-slash' : 'fa fa-eye'"></i>
+                                    </button>
+                                    
                                     <!-- Password Strength Component -->
                                     <PasswordStrength :password="password" />
                                 </BFormGroup>
@@ -245,6 +260,21 @@ async function submit() {
         border: 1px solid #ccc;
         padding: 2px 5px;
         border-radius: 4px;
-    }
+    } 
 }
+
+.password-toggle-icon {
+    position: absolute;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: $gray-600;
+    font-size: 1rem;
+}
+
+.password-toggle-icon:hover {
+    color: $gray-900;
+}
+
 </style>
