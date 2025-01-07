@@ -49,7 +49,10 @@ from galaxy.tool_util.parser.util import (
     ParameterParseException,
     text_input_is_optional,
 )
-from galaxy.tools.parameters.workflow_utils import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import (
+    NO_REPLACEMENT,
+    workflow_building_modes,
+)
 from galaxy.util import (
     sanitize_param,
     string_as_bool,
@@ -247,6 +250,8 @@ class ToolParameter(UsesDictVisibleKeys):
     def value_to_basic(self, value, app, use_security=False):
         if is_runtime_value(value):
             return runtime_to_json(value)
+        elif value == NO_REPLACEMENT:
+            return {"__class__": "NoReplacement"}
         return self.to_json(value, app, use_security)
 
     def value_from_basic(self, value, app, ignore_errors=False):
@@ -255,8 +260,11 @@ class ToolParameter(UsesDictVisibleKeys):
             if isinstance(self, HiddenToolParameter):
                 raise ParameterValueError(message_suffix="Runtime Parameter not valid", parameter_name=self.name)
             return runtime_to_object(value)
-        elif isinstance(value, MutableMapping) and value.get("__class__") == "UnvalidatedValue":
-            return value["value"]
+        elif isinstance(value, MutableMapping):
+            if value.get("__class__") == "UnvalidatedValue":
+                return value["value"]
+            elif value.get("__class__") == "NoReplacement":
+                return NO_REPLACEMENT
         # Delegate to the 'to_python' method
         try:
             return self.to_python(value, app)
