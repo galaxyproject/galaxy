@@ -43,20 +43,20 @@ class UnprivilegedToolsApi:
     # and is scoped to to individual user and never adds to global toolbox
     dynamic_tools_manager: DynamicToolManager = depends(DynamicToolManager)
 
-    @router.get("/api/unprivileged_tools")
+    @router.get("/api/unprivileged_tools", response_model_exclude_defaults=True)
     def index(self, active: bool = True, trans: ProvidesUserContext = DependsOnTrans) -> List[UnprivilegedToolResponse]:
         if not trans.user:
             return []
         return [t.to_dict() for t in self.dynamic_tools_manager.list_unprivileged_tools(trans.user, active=active)]
 
-    @router.get("/api/unprivileged_tools/{uuid}")
+    @router.get("/api/unprivileged_tools/{uuid}", response_model_exclude_defaults=True)
     def show(self, uuid: str, user: User = DependsOnUser) -> UnprivilegedToolResponse:
         dynamic_tool = self.dynamic_tools_manager.get_unprivileged_tool_by_uuid(user, uuid)
         if dynamic_tool is None:
             raise ObjectNotFound()
         return UnprivilegedToolResponse(**dynamic_tool.to_dict())
 
-    @router.post("/api/unprivileged_tools")
+    @router.post("/api/unprivileged_tools", response_model_exclude_defaults=True)
     def create(
         self, payload: DynamicUnprivilegedToolCreatePayload, user: User = DependsOnUser
     ) -> UnprivilegedToolResponse:
@@ -89,7 +89,7 @@ class UnprivilegedToolsApi:
         input_bundle = input_models_for_tool_source(tool_source)
         return cwl_runtime_model(input_bundle)
 
-    @router.delete("/api/dynamic_tools/{tool_id}")
+    @router.delete("/api/dynamic_tools/{tool_id}", response_model_exclude_defaults=True)
     def delete(self, tool_id: str, user: User = DependsOnUser):
         """
         DELETE /api/dynamic_tools/{encoded_dynamic_tool_id|tool_uuid}
