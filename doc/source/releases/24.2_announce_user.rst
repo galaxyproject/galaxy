@@ -18,7 +18,20 @@ Add wizard-like export view for workflow invocations
 Workflow Editor Activity Bar + Undo stack UI
 -----------------------------------------------------------
 
-[DRAFT] Feature description.
+The Activity Bar is now present in the Workflow Editor along side multiple interface
+improvements.
+
+- **No more double side bars**. Inspecting a step now has it's own floating window,
+  which can be easily expanded and remembers it's size. All other features were moved to the
+  left side-bar.
+- **Undo redo UI**. A new interactive way of viewing recent changes. Click a change to scroll
+  backwards and forwards in time.
+- **Layout anything with ease**. The auto-layout feature was moved to the Editor Tool Bar. It
+  now aligns to the grid, untangles connections, and sorts Workflow Comments along with steps.
+- **Find your workflows**. Workflows now have their own dedicated interface, from which you can
+  find, copy into, and inserts Sub-Workflows into your Workflow.
+- **Inputs** are not tools, and are now no longer treated as such. Find inputs in their own
+  interface, and easily add input sub-types directly.
 
 Masthead Revision
 -----------------------------------------------------------
