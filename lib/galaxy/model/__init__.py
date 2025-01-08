@@ -803,14 +803,14 @@ class User(Base, Dictifiable, RepresentById):
     activation_token: Mapped[Optional[str]] = mapped_column(TrimmedString(64), index=True)
 
     addresses: Mapped[List["UserAddress"]] = relationship(
-        back_populates="user", order_by=lambda: desc(UserAddress.update_time), cascade_backrefs=False
+        back_populates="user", order_by=lambda: desc(UserAddress.update_time)
     )
     custos_auth: Mapped[List["CustosAuthnzToken"]] = relationship(back_populates="user")
     chat_exchanges: Mapped[List["ChatExchange"]] = relationship(back_populates="user")
     default_permissions: Mapped[List["DefaultUserPermissions"]] = relationship(back_populates="user")
     groups: Mapped[List["UserGroupAssociation"]] = relationship(back_populates="user")
     histories: Mapped[List["History"]] = relationship(
-        back_populates="user", order_by=lambda: desc(History.update_time), cascade_backrefs=False  # type: ignore[has-type]
+        back_populates="user", order_by=lambda: desc(History.update_time)  # type: ignore[has-type]
     )
     active_histories: Mapped[List["History"]] = relationship(
         primaryjoin=(lambda: (History.user_id == User.id) & (not_(History.deleted)) & (not_(History.archived))),
@@ -818,7 +818,7 @@ class User(Base, Dictifiable, RepresentById):
         order_by=lambda: desc(History.update_time),  # type: ignore[has-type]
     )
     galaxy_sessions: Mapped[List["GalaxySession"]] = relationship(
-        back_populates="user", order_by=lambda: desc(GalaxySession.update_time), cascade_backrefs=False
+        back_populates="user", order_by=lambda: desc(GalaxySession.update_time)
     )
     object_stores: Mapped[List["UserObjectStore"]] = relationship(back_populates="user")
     file_sources: Mapped[List["UserFileSource"]] = relationship(back_populates="user")
@@ -853,11 +853,8 @@ class User(Base, Dictifiable, RepresentById):
     stored_workflows: Mapped[List["StoredWorkflow"]] = relationship(
         back_populates="user",
         primaryjoin=(lambda: User.id == StoredWorkflow.user_id),
-        cascade_backrefs=False,
     )
-    all_notifications: Mapped[List["UserNotificationAssociation"]] = relationship(
-        back_populates="user", cascade_backrefs=False
-    )
+    all_notifications: Mapped[List["UserNotificationAssociation"]] = relationship(back_populates="user")
 
     preferences: AssociationProxy[Any]
 
@@ -1507,9 +1504,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     output_dataset_collections: Mapped[List["JobToImplicitOutputDatasetCollectionAssociation"]] = relationship(
         back_populates="job"
     )
-    post_job_actions: Mapped[List["PostJobActionAssociation"]] = relationship(
-        back_populates="job", cascade_backrefs=False
-    )
+    post_job_actions: Mapped[List["PostJobActionAssociation"]] = relationship(back_populates="job")
     input_library_datasets: Mapped[List["JobToInputLibraryDatasetAssociation"]] = relationship(back_populates="job")
     output_library_datasets: Mapped[List["JobToOutputLibraryDatasetAssociation"]] = relationship(back_populates="job")
     external_output_metadata: Mapped[List["JobExternalOutputMetadata"]] = relationship(back_populates="job")
@@ -1522,17 +1517,17 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         back_populates="job", uselist=True
     )
     implicit_collection_jobs_association: Mapped[List["ImplicitCollectionJobsJobAssociation"]] = relationship(
-        back_populates="job", uselist=False, cascade_backrefs=False
+        back_populates="job", uselist=False
     )
     container: Mapped[Optional["JobContainerAssociation"]] = relationship(back_populates="job", uselist=False)
     data_manager_association: Mapped[Optional["DataManagerJobAssociation"]] = relationship(
-        back_populates="job", uselist=False, cascade_backrefs=False
+        back_populates="job", uselist=False
     )
     history_dataset_collection_associations: Mapped[List["HistoryDatasetCollectionAssociation"]] = relationship(
         back_populates="job"
     )
     workflow_invocation_step: Mapped[Optional["WorkflowInvocationStep"]] = relationship(
-        back_populates="job", uselist=False, cascade_backrefs=False
+        back_populates="job", uselist=False
     )
 
     any_output_dataset_collection_instances_deleted = None
@@ -2607,9 +2602,7 @@ class ImplicitCollectionJobs(Base, Serializable):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     populated_state: Mapped[str] = mapped_column(TrimmedString(64), default="new")
-    jobs: Mapped[List["ImplicitCollectionJobsJobAssociation"]] = relationship(
-        back_populates="implicit_collection_jobs", cascade_backrefs=False
-    )
+    jobs: Mapped[List["ImplicitCollectionJobsJobAssociation"]] = relationship(back_populates="implicit_collection_jobs")
 
     class populated_states(str, Enum):
         NEW = "new"  # New implicit jobs object, unpopulated job associations
@@ -3029,7 +3022,7 @@ class Group(Base, Dictifiable, RepresentById):
     name: Mapped[Optional[str]] = mapped_column(String(255), index=True, unique=True)
     deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     quotas: Mapped[List["GroupQuotaAssociation"]] = relationship(back_populates="group")
-    roles: Mapped[List["GroupRoleAssociation"]] = relationship(back_populates="group", cascade_backrefs=False)
+    roles: Mapped[List["GroupRoleAssociation"]] = relationship(back_populates="group")
     users: Mapped[List["UserGroupAssociation"]] = relationship("UserGroupAssociation", back_populates="group")
 
     dict_collection_visible_keys = ["id", "name"]
@@ -3190,7 +3183,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     archive_export_id: Mapped[Optional[int]] = mapped_column(ForeignKey("store_export_association.id"), default=None)
 
     datasets: Mapped[List["HistoryDatasetAssociation"]] = relationship(
-        back_populates="history", cascade_backrefs=False, order_by=lambda: asc(HistoryDatasetAssociation.hid)  # type: ignore[has-type]
+        back_populates="history", order_by=lambda: asc(HistoryDatasetAssociation.hid)  # type: ignore[has-type]
     )
     exports: Mapped[List["JobExportHistoryArchive"]] = relationship(
         back_populates="history",
@@ -3255,11 +3248,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     default_permissions: Mapped[List["DefaultHistoryPermissions"]] = relationship(back_populates="history")
     users_shared_with: Mapped[List["HistoryUserShareAssociation"]] = relationship(back_populates="history")
     galaxy_sessions = relationship("GalaxySessionToHistoryAssociation", back_populates="history")
-    workflow_invocations: Mapped[List["WorkflowInvocation"]] = relationship(
-        back_populates="history", cascade_backrefs=False
-    )
+    workflow_invocations: Mapped[List["WorkflowInvocation"]] = relationship(back_populates="history")
     user: Mapped[Optional["User"]] = relationship(back_populates="histories")
-    jobs: Mapped[List["Job"]] = relationship(back_populates="history", cascade_backrefs=False)
+    jobs: Mapped[List["Job"]] = relationship(back_populates="history")
     tool_requests: Mapped[List["ToolRequest"]] = relationship(back_populates="history")
 
     update_time = column_property(
@@ -3916,9 +3907,7 @@ class Quota(Base, Dictifiable, RepresentById):
     operation: Mapped[Optional[str]] = mapped_column(String(8))
     deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     quota_source_label: Mapped[Optional[str]] = mapped_column(String(32), default=None)
-    default: Mapped[List["DefaultQuotaAssociation"]] = relationship(
-        "DefaultQuotaAssociation", back_populates="quota", cascade_backrefs=False
-    )
+    default: Mapped[List["DefaultQuotaAssociation"]] = relationship("DefaultQuotaAssociation", back_populates="quota")
     groups: Mapped[List["GroupQuotaAssociation"]] = relationship(back_populates="quota")
     users: Mapped[List["UserQuotaAssociation"]] = relationship(back_populates="quota")
 
@@ -4200,15 +4189,12 @@ class Dataset(Base, StorableObject, Serializable):
         ),
         viewonly=True,
     )
-    hashes: Mapped[List["DatasetHash"]] = relationship(back_populates="dataset", cascade_backrefs=False)
+    hashes: Mapped[List["DatasetHash"]] = relationship(back_populates="dataset")
     sources: Mapped[List["DatasetSource"]] = relationship(back_populates="dataset")
-    history_associations: Mapped[List["HistoryDatasetAssociation"]] = relationship(
-        back_populates="dataset", cascade_backrefs=False
-    )
+    history_associations: Mapped[List["HistoryDatasetAssociation"]] = relationship(back_populates="dataset")
     library_associations: Mapped[List["LibraryDatasetDatasetAssociation"]] = relationship(
         primaryjoin=(lambda: LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.id),
         back_populates="dataset",
-        cascade_backrefs=False,
     )
 
     # failed_metadata is only valid as DatasetInstance state currently
@@ -5779,7 +5765,7 @@ class Library(Base, Dictifiable, HasName, Serializable):
     description: Mapped[Optional[str]] = mapped_column(TEXT)
     synopsis: Mapped[Optional[str]] = mapped_column(TEXT)
     root_folder = relationship("LibraryFolder", back_populates="library_root")
-    actions: Mapped[List["LibraryPermissions"]] = relationship(back_populates="library", cascade_backrefs=False)
+    actions: Mapped[List["LibraryPermissions"]] = relationship(back_populates="library")
 
     permitted_actions = get_permitted_actions(filter="LIBRARY")
     dict_collection_visible_keys = ["id", "name"]
@@ -5894,7 +5880,7 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
     )
 
     library_root = relationship("Library", back_populates="root_folder")
-    actions: Mapped[List["LibraryFolderPermissions"]] = relationship(back_populates="folder", cascade_backrefs=False)
+    actions: Mapped[List["LibraryFolderPermissions"]] = relationship(back_populates="folder")
 
     dict_element_visible_keys = [
         "id",
@@ -6016,9 +6002,7 @@ class LibraryDataset(Base, Serializable):
         viewonly=True,
         uselist=True,
     )
-    actions: Mapped[List["LibraryDatasetPermissions"]] = relationship(
-        back_populates="library_dataset", cascade_backrefs=False
-    )
+    actions: Mapped[List["LibraryDatasetPermissions"]] = relationship(back_populates="library_dataset")
 
     # This class acts as a proxy to the currently selected LDDA
     upload_options = [
@@ -7651,7 +7635,7 @@ class GalaxySession(Base, RepresentById):
     last_action: Mapped[Optional[datetime]]
     current_history: Mapped[Optional["History"]] = relationship()
     histories: Mapped[List["GalaxySessionToHistoryAssociation"]] = relationship(
-        back_populates="galaxy_session", cascade_backrefs=False
+        back_populates="galaxy_session",
     )
     user: Mapped[Optional["User"]] = relationship(back_populates="galaxy_sessions")
 
@@ -7729,7 +7713,6 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
         cascade="all, delete-orphan",
         primaryjoin=(lambda: StoredWorkflow.id == Workflow.stored_workflow_id),
         order_by=lambda: -Workflow.id,
-        cascade_backrefs=False,
     )
     latest_workflow: Mapped["Workflow"] = relationship(
         "Workflow",
@@ -7922,7 +7905,6 @@ class Workflow(Base, Dictifiable, RepresentById):
         "WorkflowStep",
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),
         back_populates="subworkflow",
-        cascade_backrefs=False,
     )
     stored_workflow = relationship(
         "StoredWorkflow",
@@ -8129,18 +8111,15 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         order_by=lambda: WorkflowStepAnnotationAssociation.id,
         back_populates="workflow_step",
     )
-    post_job_actions = relationship("PostJobAction", back_populates="workflow_step", cascade_backrefs=False)
+    post_job_actions = relationship("PostJobAction", back_populates="workflow_step")
     inputs = relationship("WorkflowStepInput", back_populates="workflow_step")
-    workflow_outputs: Mapped[List["WorkflowOutput"]] = relationship(
-        back_populates="workflow_step", cascade_backrefs=False
-    )
+    workflow_outputs: Mapped[List["WorkflowOutput"]] = relationship(back_populates="workflow_step")
     output_connections: Mapped[List["WorkflowStepConnection"]] = relationship(
         primaryjoin=(lambda: WorkflowStepConnection.output_step_id == WorkflowStep.id)
     )
     workflow: Mapped["Workflow"] = relationship(
         primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id),
         back_populates="steps",
-        cascade_backrefs=False,
     )
 
     STEP_TYPE_TO_INPUT_TYPE = {
@@ -8444,7 +8423,6 @@ class WorkflowStepInput(Base, RepresentById):
     connections: Mapped[List["WorkflowStepConnection"]] = relationship(
         back_populates="input_step_input",
         primaryjoin=(lambda: WorkflowStepConnection.input_step_input_id == WorkflowStepInput.id),
-        cascade_backrefs=False,
     )
 
     def __init__(self, workflow_step):
@@ -8694,20 +8672,13 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
 
     history = relationship("History", back_populates="workflow_invocations")
-    input_parameters = relationship(
-        "WorkflowRequestInputParameter", back_populates="workflow_invocation", cascade_backrefs=False
-    )
-    step_states = relationship("WorkflowRequestStepState", back_populates="workflow_invocation", cascade_backrefs=False)
-    input_step_parameters = relationship(
-        "WorkflowRequestInputStepParameter", back_populates="workflow_invocation", cascade_backrefs=False
-    )
-    input_datasets = relationship(
-        "WorkflowRequestToInputDatasetAssociation", back_populates="workflow_invocation", cascade_backrefs=False
-    )
+    input_parameters = relationship("WorkflowRequestInputParameter", back_populates="workflow_invocation")
+    step_states = relationship("WorkflowRequestStepState", back_populates="workflow_invocation")
+    input_step_parameters = relationship("WorkflowRequestInputStepParameter", back_populates="workflow_invocation")
+    input_datasets = relationship("WorkflowRequestToInputDatasetAssociation", back_populates="workflow_invocation")
     input_dataset_collections = relationship(
         "WorkflowRequestToInputDatasetCollectionAssociation",
         back_populates="workflow_invocation",
-        cascade_backrefs=False,
     )
     subworkflow_invocations = relationship(
         "WorkflowInvocationToSubworkflowInvocationAssociation",
@@ -8721,20 +8692,14 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         "WorkflowInvocationStep",
         back_populates="workflow_invocation",
         order_by=lambda: WorkflowInvocationStep.order_index,
-        cascade_backrefs=False,
     )
     workflow = relationship("Workflow")
     output_dataset_collections = relationship(
         "WorkflowInvocationOutputDatasetCollectionAssociation",
         back_populates="workflow_invocation",
-        cascade_backrefs=False,
     )
-    output_datasets = relationship(
-        "WorkflowInvocationOutputDatasetAssociation", back_populates="workflow_invocation", cascade_backrefs=False
-    )
-    output_values = relationship(
-        "WorkflowInvocationOutputValue", back_populates="workflow_invocation", cascade_backrefs=False
-    )
+    output_datasets = relationship("WorkflowInvocationOutputDatasetAssociation", back_populates="workflow_invocation")
+    output_values = relationship("WorkflowInvocationOutputValue", back_populates="workflow_invocation")
     messages = relationship("WorkflowInvocationMessage", back_populates="workflow_invocation")
 
     dict_collection_visible_keys = [
@@ -9421,12 +9386,10 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     output_dataset_collections = relationship(
         "WorkflowInvocationStepOutputDatasetCollectionAssociation",
         back_populates="workflow_invocation_step",
-        cascade_backrefs=False,
     )
     output_datasets = relationship(
         "WorkflowInvocationStepOutputDatasetAssociation",
         back_populates="workflow_invocation_step",
-        cascade_backrefs=False,
     )
     workflow_invocation: Mapped["WorkflowInvocation"] = relationship(back_populates="steps")
     output_value = relationship(
@@ -10616,7 +10579,6 @@ class Visualization(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpda
         back_populates="visualization",
         cascade="all, delete-orphan",
         primaryjoin=(lambda: Visualization.id == VisualizationRevision.visualization_id),
-        cascade_backrefs=False,
     )
     latest_revision: Mapped[Optional["VisualizationRevision"]] = relationship(
         post_update=True,
@@ -11775,7 +11737,7 @@ mapper_registry.map_imperatively(
         _metadata=deferred(HistoryDatasetAssociation.table.c._metadata),
         dependent_jobs=relationship(JobToInputDatasetAssociation, back_populates="dataset"),
         creating_job_associations=relationship(JobToOutputDatasetAssociation, back_populates="dataset"),
-        history=relationship(History, back_populates="datasets", cascade_backrefs=False),
+        history=relationship(History, back_populates="datasets"),
         implicitly_converted_datasets=relationship(
             ImplicitlyConvertedDatasetAssociation,
             primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_parent_id == HistoryDatasetAssociation.id),
