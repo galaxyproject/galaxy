@@ -52,7 +52,7 @@ def transaction(session: Union[scoped_session, Session, "SessionlessContext"]):
         yield
         return  # exit: can't use as a Session
 
-    yield  # TODO once we can verify this does not break SQLAlchemy transactions, remmove this helper completely (561 instances)
+    yield  # TODO once we can verify this does not break SQLAlchemy transactions, remove this helper completely (561 instances)
     # if not session.in_transaction():  # type:ignore[union-attr]
     #    with session.begin():  # type:ignore[union-attr]
     #        yield
