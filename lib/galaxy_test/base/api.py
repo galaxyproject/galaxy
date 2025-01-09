@@ -58,8 +58,9 @@ class UsesCeleryTasks:
             if os.environ.get("GALAXY_TEST_EXTERNAL") is None:
                 from galaxy.celery import celery_app
 
-                celery_app.fork_pool.stop()
-                celery_app.fork_pool.join(timeout=5)
+                if hasattr(celery_app, "fork_pool"):
+                    celery_app.fork_pool.stop()
+                    celery_app.fork_pool.join(timeout=5)
 
     @pytest.fixture(autouse=True, scope="session")
     def _request_celery_worker(self, celery_session_worker, celery_config, celery_worker_parameters):
