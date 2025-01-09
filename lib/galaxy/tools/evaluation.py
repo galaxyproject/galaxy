@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import (
     Any,
     Callable,
+    cast,
     Literal,
     Optional,
     TYPE_CHECKING,
@@ -16,6 +17,8 @@ from typing import (
 )
 
 from packaging.version import Version
+from sqlalchemy import select
+from sqlalchemy.orm import aliased
 
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
@@ -28,10 +31,12 @@ from galaxy.model.deferred import (
 )
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
+from galaxy.security.vault import UserVaultWrapper
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
     MinimalToolApp,
+    StructuredApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tool_util.deps.requirements import CredentialsRequirement
@@ -129,6 +134,46 @@ def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool
         ) from e
 
 
+class UserCredentialsConfigurator:
+    def __init__(self, app: MinimalToolApp, job: model.Job, environment_variables: List[Dict[str, str]]):
+        self.app = cast(StructuredApp, app)
+        self.job = job
+        self.environment_variables = environment_variables
+
+    def set_environment_variables(self, source_type: str, source_id: str, credentials: List[CredentialsRequirement]):
+        for credential in credentials:
+            reference = credential.reference
+            user_id = self.job.user_id
+            user_cred_alias = aliased(model.UserCredentials)
+            group_alias = aliased(model.CredentialsGroup)
+            var_alias = aliased(model.Variable)
+            stmt = (
+                select(user_cred_alias, group_alias, var_alias)
+                .join(group_alias, group_alias.user_credentials_id == user_cred_alias.id)
+                .outerjoin(var_alias, var_alias.user_credential_group_id == group_alias.id)
+                .where(user_cred_alias.current_group_id == group_alias.id)
+                .where(user_cred_alias.user_id == user_id)
+                .where(user_cred_alias.source_type == source_type)
+                .where(user_cred_alias.source_id == source_id)
+                .where(user_cred_alias.reference == reference)
+            )
+            sa_session = self.app.model.context
+            if sa_session:
+                result = sa_session.execute(stmt).one()
+            else:
+                raise ValueError("Session is not available.")
+            _, group, var = result
+            current_group = group.name
+            user_vault = UserVaultWrapper(self.app.vault, self.job.user)
+            for secret in credential.secrets:
+                vault_ref = f"{source_type}|{source_id}|{reference}|{current_group}|{secret.name}"
+                vault_value = user_vault.read_secret(vault_ref) or ""
+                self.environment_variables.append({"name": secret.inject_as_env, "value": vault_value})
+            for variable in credential.variables:
+                variable_value = var.value if var else ""
+                self.environment_variables.append({"name": variable.inject_as_env, "value": variable_value})
+
+
 class ToolEvaluator:
     """An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
@@ -215,20 +260,11 @@ class ToolEvaluator:
                 output_collections=out_collections,
             )
 
-        # TODO: provide all information needed (secret value, variable value, current group, etc) to this part...
         if hasattr(self.tool, "credentials"):
+            tool_id = self.tool.id
             tool_credentials: List[CredentialsRequirement] = self.tool.credentials
-            for credentials in tool_credentials:
-                reference = credentials.reference
-                current_group = "default"
-                tool_id = self.tool.id
-                for secret in credentials.secrets:
-                    vault_ref = f"tool|{tool_id}|{reference}|{current_group}|{secret.name}"
-                    vault_value = f"user_vault.read_secret({vault_ref})"
-                    self.environment_variables.append({"name": secret.inject_as_env, "value": vault_value})
-                for variable in credentials.variables:
-                    variable_value = "variable.value"
-                    self.environment_variables.append({"name": variable.inject_as_env, "value": variable_value})
+            user_credentials_configurator = UserCredentialsConfigurator(self.app, self.job, self.environment_variables)
+            user_credentials_configurator.set_environment_variables("tool", tool_id, tool_credentials)
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution
