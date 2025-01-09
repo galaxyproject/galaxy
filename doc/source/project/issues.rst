@@ -217,6 +217,20 @@ special purpose.
   bug affects the actual current Galaxy development branch and isn't a usage
   issue, a previously fixed issue, etc..
 
+- ``highlight`` is a tag that indicates at least one contributor thinks this
+   pull request should be highlighted in some way in the relevant release's
+   release notes. The person assembling release notes has final say about
+   which pull requests are actually highlighted.
+
+- ``highlight/user`` is a tag that indicates assigner of the tag thinks this
+   pull request should be highlighted prominently in the relevant release's
+   user facing release notes. The assigner of this tag is giving a strong
+   endorsement of this highlight and is willing to do the work of writing
+   the blurb for the release notes. If selected, the blurb should be written
+   with target audience in mind - researchers using the Galaxy user interface.
+   The person assembling the user release notes has final say about which
+   pull requests are actually highlighted.
+
 The Roadmap
 ===========
 
