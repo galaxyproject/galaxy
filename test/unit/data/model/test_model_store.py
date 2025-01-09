@@ -383,7 +383,7 @@ def test_import_library_require_permissions():
     assert error_caught
 
 
-def test_import_export_library():
+def test_import_export_library(tmp_path):
     """Test basics of library, library folder, and library dataset import/export."""
     app = _mock_app()
     sa_session = app.model.context
@@ -412,12 +412,11 @@ def test_import_export_library():
     assert len(root_folder.datasets) == 1
     assert len(root_folder.folders) == 1
 
-    temp_directory = mkdtemp()
-    with store.DirectoryModelExportStore(temp_directory, app=app) as export_store:
+    with store.DirectoryModelExportStore(tmp_path, app=app) as export_store:
         export_store.export_library(library)
 
     import_model_store = store.get_import_model_store_for_directory(
-        temp_directory, app=app, user=u, import_options=store.ImportOptions(allow_library_creation=True)
+        tmp_path, app=app, user=u, import_options=store.ImportOptions(allow_library_creation=True)
     )
     import_model_store.perform_import()
 
@@ -593,7 +592,7 @@ def validate_invocation_collection_crate_directory(crate_directory):
         assert dataset in root["hasPart"]
 
 
-def test_export_history_with_missing_hid():
+def test_export_history_with_missing_hid(tmp_path):
     # The dataset's hid was used to compose the file name during the export but it
     # can be missing sometimes. We now use the dataset's encoded id instead.
     app = _mock_app()
@@ -603,8 +602,7 @@ def test_export_history_with_missing_hid():
     d1.hid = None
     app.commit()
 
-    temp_directory = mkdtemp()
-    with store.DirectoryModelExportStore(temp_directory, app=app, export_files="copy") as export_store:
+    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
         export_store.export_history(history)
 
 
@@ -612,37 +610,33 @@ def test_export_history_to_ro_crate(tmp_path):
     app = _mock_app()
     u, history, d1, d2, j = _setup_simple_cat_job(app)
 
-    crate_directory = tmp_path / "crate"
-    with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
+    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
         export_store.export_history(history)
-    validate_history_crate_directory(crate_directory)
+    validate_history_crate_directory(tmp_path)
 
 
 def test_export_invocation_to_ro_crate(tmp_path):
     app = _mock_app()
     workflow_invocation = _setup_invocation(app)
-    crate_directory = tmp_path / "crate"
-    with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
+    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
-    validate_invocation_crate_directory(crate_directory)
+    validate_invocation_crate_directory(tmp_path)
 
 
 def test_export_simple_invocation_to_ro_crate(tmp_path):
     app = _mock_app()
     workflow_invocation = _setup_simple_invocation(app)
-    crate_directory = tmp_path / "crate"
-    with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
+    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
-    validate_invocation_crate_directory(crate_directory)
+    validate_invocation_crate_directory(tmp_path)
 
 
 def test_export_collection_invocation_to_ro_crate(tmp_path):
     app = _mock_app()
     workflow_invocation = _setup_collection_invocation(app)
-    crate_directory = tmp_path / "crate"
-    with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
+    with store.ROCrateModelExportStore(tmp_path, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
-    validate_invocation_collection_crate_directory(crate_directory)
+    validate_invocation_collection_crate_directory(tmp_path)
 
 
 def test_export_invocation_to_ro_crate_archive(tmp_path):
@@ -727,7 +721,7 @@ def test_import_export_edit_datasets():
     assert d1.dataset.object_store_id == "foo1", d1.dataset.object_store_id
 
 
-def test_import_export_edit_collection():
+def test_import_export_edit_collection(tmp_path):
     """Test modifying existing collections with imports."""
     app = _mock_app()
     sa_session = app.model.context
@@ -743,13 +737,12 @@ def test_import_export_edit_collection():
     import_history = model.History(name="Test History for Import", user=u)
     app.add_and_commit(import_history)
 
-    temp_directory = mkdtemp()
-    with store.DirectoryModelExportStore(temp_directory, app=app, for_edit=True) as export_store:
+    with store.DirectoryModelExportStore(tmp_path, app=app, for_edit=True) as export_store:
         export_store.add_dataset_collection(hc1)
 
     # Fabric editing metadata for collection...
-    collections_metadata_path = os.path.join(temp_directory, store.ATTRS_FILENAME_COLLECTIONS)
-    datasets_metadata_path = os.path.join(temp_directory, store.ATTRS_FILENAME_DATASETS)
+    collections_metadata_path = os.path.join(tmp_path, store.ATTRS_FILENAME_COLLECTIONS)
+    datasets_metadata_path = os.path.join(tmp_path, store.ATTRS_FILENAME_DATASETS)
     with open(collections_metadata_path) as f:
         hdcas_metadata = json.load(f)
 
@@ -798,14 +791,14 @@ def test_import_export_edit_collection():
     with open(collections_metadata_path, "w") as collections_f:
         json.dump(hdcas_metadata, collections_f)
 
-    _perform_import_from_directory(temp_directory, app, u, import_history, store.ImportOptions(allow_edit=True))
+    _perform_import_from_directory(tmp_path, app, u, import_history, store.ImportOptions(allow_edit=True))
 
     sa_session.refresh(c1)
     assert c1.populated_state == model.DatasetCollection.populated_states.OK, c1.populated_state
     assert len(c1.elements) == 2
 
 
-def test_import_export_composite_datasets():
+def test_import_export_composite_datasets(tmp_path):
     app = _mock_app()
     sa_session = app.model.context
 
@@ -819,13 +812,12 @@ def test_import_export_composite_datasets():
     app.write_primary_file(d1, "cool primary file")
     app.write_composite_file(d1, "cool composite file", "child_file")
 
-    temp_directory = mkdtemp()
-    with store.DirectoryModelExportStore(temp_directory, app=app, export_files="copy") as export_store:
+    with store.DirectoryModelExportStore(tmp_path, app=app, export_files="copy") as export_store:
         export_store.add_dataset(d1)
 
     import_history = model.History(name="Test History for Import", user=u)
     app.add_and_commit(import_history)
-    _perform_import_from_directory(temp_directory, app, u, import_history)
+    _perform_import_from_directory(tmp_path, app, u, import_history)
     assert len(import_history.datasets) == 1
     import_dataset = import_history.datasets[0]
     _assert_extra_files_has_parent_directory_with_single_file_containing(
@@ -848,7 +840,7 @@ def _assert_extra_files_has_parent_directory_with_single_file_containing(
         assert contents == expected_contents
 
 
-def test_edit_metadata_files():
+def test_edit_metadata_files(tmp_path):
     app = _mock_app(store_by="uuid")
     sa_session = app.model.context
 
@@ -864,15 +856,12 @@ def test_edit_metadata_files():
     assert d1.metadata.bam_index
     assert isinstance(d1.metadata.bam_index, model.MetadataFile)
 
-    temp_directory = mkdtemp()
-    with store.DirectoryModelExportStore(
-        temp_directory, app=app, for_edit=True, strip_metadata_files=False
-    ) as export_store:
+    with store.DirectoryModelExportStore(tmp_path, app=app, for_edit=True, strip_metadata_files=False) as export_store:
         export_store.add_dataset(d1)
 
     import_history = model.History(name="Test History for Import", user=u)
     app.add_and_commit(import_history)
-    _perform_import_from_directory(temp_directory, app, u, import_history, store.ImportOptions(allow_edit=True))
+    _perform_import_from_directory(tmp_path, app, u, import_history, store.ImportOptions(allow_edit=True))
 
 
 def test_sessionless_import_edit_datasets():
