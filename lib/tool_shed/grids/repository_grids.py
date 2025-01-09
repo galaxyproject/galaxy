@@ -515,6 +515,9 @@ class RepositoriesInCategoryGrid(RepositoryGrid):
             key="User.username",
         ),
         # Columns that are valid for filtering but are not visible.
+        RepositoryGrid.RepositoryCategoryColumn(
+            "Category", model_class=model.Category, key="Category.name", visible=False
+        ),
         RepositoryGrid.EmailColumn("Email", model_class=model.User, key="email", visible=False),
     ]
     columns.append(
