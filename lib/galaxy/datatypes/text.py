@@ -1394,18 +1394,22 @@ class FormattedDensity(Text):
         >>> fname = get_test_fname('YbCuAs2.den_fmt')
         >>> FormattedDensity().sniff(fname)
         True
+        >>> fname = get_test_fname('Fe.den_fmt')
+        >>> FormattedDensity().sniff(fname)
+        True
         >>> fname = get_test_fname('Si.param')
         >>> FormattedDensity().sniff(fname)
         False
         """
         begin_header = "BEGIN header"
-        end_header = 'END header: data is "<a b c> charge" in units of electrons/grid_point * number'
-        grid_points = "of grid_points"
-        end_header_spin = 'END header: data is "<a b c> charge spin" in units of electrons/grid_point * nu'
-        grid_points_spin = "mber of grid_points"
+        end_header = 'END header: data is "<a b c> charge'
+        end_header_units = '" in units of electrons/grid_point * number of grid_points'
+        end_headers = (
+            f"{end_header}{end_header_units}".replace(" ", ""),
+            f"{end_header} spin{end_header_units}".replace(" ", ""),
+        )
         handle = file_prefix.string_io()
         lines = handle.readlines()
-        return lines[0].strip() == begin_header and (
-            (lines[9].strip() == end_header and lines[10].strip() == grid_points)
-            or (lines[9].strip() == end_header_spin and lines[10].strip() == grid_points_spin)
-        )
+        begin_line = lines[0].strip()
+        end_line = lines[9].strip() + lines[10].strip()
+        return begin_line == begin_header and end_line.replace(" ", "") in end_headers
