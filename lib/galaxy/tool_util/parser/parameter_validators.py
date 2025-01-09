@@ -668,9 +668,9 @@ def raise_error_if_valiation_fails(
         raise AssertionError("Validator logic problem - computed validation value must be boolean")
     if message is None:
         message = validator.message
-    if message is None:
+    if not message:
         message = DEFAULT_VALIDATOR_MESSAGE
-    assert message
+    assert message is not None
     if value_to_show and "%s" in message:
         message = message % value_to_show
     negate = validator.negate
