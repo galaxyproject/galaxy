@@ -168,7 +168,7 @@ RUN set -xe; \
 
 # Create Galaxy user, group, directory; chown
 RUN set -xe; \
-      adduser --system --group --uid 101 $GALAXY_USER \
+      adduser --system --group --uid 10001 $GALAXY_USER \
       && mkdir -p $SERVER_DIR \
       && chown $GALAXY_USER:$GALAXY_USER $ROOT_DIR -R
 
