@@ -69,8 +69,8 @@ describe("JobInformation/JobInformation.vue", () => {
         // table should exist
         expect(jobInfoTable).toBeTruthy();
         const rows = jobInfoTable.findAll("tr");
-        // should contain 9 rows
-        expect(rows.length).toBe(9);
+        // should contain 10 rows
+        expect(rows.length).toBe(10);
     });
 
     it("stdout and stderr should be rendered", async () => {
@@ -98,5 +98,6 @@ describe("JobInformation/JobInformation.vue", () => {
             { id: "encoded-copied-from-job-id", backend_key: "copied_from_job_id" },
         ];
         verifyValues(rendered_entries, jobInfoTable, jobResponse);
+        expect(wrapper.find('td[data-description="galaxy-job-state"]').exists()).toBe(true);
     });
 });

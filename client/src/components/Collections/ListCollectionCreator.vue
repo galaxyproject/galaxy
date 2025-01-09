@@ -414,6 +414,7 @@ function renameElement(element: any, name: string) {
                 :extensions="extensions"
                 collection-type="list"
                 :no-items="props.initialElements.length == 0 && !props.fromSelection"
+                :show-upload="!fromSelection"
                 @add-uploaded-files="addUploadedFiles"
                 @on-update-datatype-toggle="changeDatatypeFilter"
                 @onUpdateHideSourceItems="onUpdateHideSourceItems"

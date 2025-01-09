@@ -1688,7 +1688,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
 
     if not error_in_test_definition:
         processed_test_dict = cast(ValidToolTestDict, processed_dict)
-        maxseconds = _get_maxseconds(processed_test_dict)
+        maxseconds = processed_test_dict.get("maxseconds")
         output_collections = processed_test_dict.get("output_collections", [])
         if "num_outputs" in processed_test_dict and processed_test_dict["num_outputs"]:
             num_outputs = int(processed_test_dict["num_outputs"])
@@ -1748,10 +1748,6 @@ def _get_test_index(test_dict: Union[ToolTestDict, ToolTestDescriptionDict]) -> 
 def _get_test_name(test_dict: Union[ToolTestDict, ToolTestDescriptionDict], test_index: int) -> str:
     name = cast(str, test_dict.get("name", f"Test-{test_index + 1}"))
     return name
-
-
-def _get_maxseconds(test_dict: Union[ToolTestDict, ToolTestDescriptionDict]) -> int:
-    return int(cast(Union[str, int], test_dict.get("maxseconds") or DEFAULT_TOOL_TEST_WAIT or 86400))
 
 
 def expanded_inputs_from_json(expanded_inputs_json: ExpandedToolInputsJsonified) -> ExpandedToolInputs:
@@ -1829,7 +1825,7 @@ class ToolTestDescription:
         self.inputs = expanded_inputs_from_json(json_dict.get("inputs", {}))
         self.tool_id = json_dict["tool_id"]
         self.tool_version = json_dict.get("tool_version")
-        self.maxseconds = _get_maxseconds(json_dict)
+        self.maxseconds = json_dict.get("maxseconds")
 
     def test_data(self):
         """
@@ -1839,31 +1835,31 @@ class ToolTestDescription:
 
     def to_dict(self) -> ToolTestDescriptionDict:
         inputs = expanded_inputs_to_json(self.inputs)
-        return ToolTestDescriptionDict(
-            {
-                "inputs": inputs,
-                "outputs": self.outputs,
-                "output_collections": [_.to_dict() for _ in self.output_collections],
-                "num_outputs": self.num_outputs,
-                "command_line": self.command_line,
-                "command_version": self.command_version,
-                "stdout": self.stdout,
-                "stderr": self.stderr,
-                "expect_exit_code": self.expect_exit_code,
-                "expect_failure": self.expect_failure,
-                "expect_test_failure": self.expect_test_failure,
-                "name": self.name,
-                "test_index": self.test_index,
-                "tool_id": self.tool_id,
-                "tool_version": self.tool_version,
-                "required_files": self.required_files,
-                "required_data_tables": self.required_data_tables,
-                "required_loc_files": self.required_loc_files,
-                "error": self.error,
-                "exception": self.exception,
-                "maxseconds": self.maxseconds,
-            }
-        )
+        test_description_def: ToolTestDescriptionDict = {
+            "inputs": inputs,
+            "outputs": self.outputs,
+            "output_collections": [_.to_dict() for _ in self.output_collections],
+            "num_outputs": self.num_outputs,
+            "command_line": self.command_line,
+            "command_version": self.command_version,
+            "stdout": self.stdout,
+            "stderr": self.stderr,
+            "expect_exit_code": self.expect_exit_code,
+            "expect_failure": self.expect_failure,
+            "expect_test_failure": self.expect_test_failure,
+            "name": self.name,
+            "test_index": self.test_index,
+            "tool_id": self.tool_id,
+            "tool_version": self.tool_version,
+            "required_files": self.required_files,
+            "required_data_tables": self.required_data_tables,
+            "required_loc_files": self.required_loc_files,
+            "error": self.error,
+            "exception": self.exception,
+        }
+        if self.maxseconds is not None:
+            test_description_def["maxseconds"] = self.maxseconds
+        return ToolTestDescriptionDict(**test_description_def)
 
 
 def test_data_iter(required_files):
