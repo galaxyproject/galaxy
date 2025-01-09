@@ -148,7 +148,7 @@ def required_tool(dataset_populator: DatasetPopulator, history_id: str, required
     return tool
 
 
-@pytest.fixture(params=["legacy", "21.01"])
+@pytest.fixture(params=["legacy", "21.01", "request"])
 def tool_input_format(request) -> Iterator[DescribeToolInputs]:
     yield DescribeToolInputs(request.param)
 

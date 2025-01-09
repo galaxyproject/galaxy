@@ -118,6 +118,7 @@ def allow_batching(job_template: DynamicModelInformation, batch_type: Optional[T
     class BatchRequest(StrictModel):
         meta_class: Literal["Batch"] = Field(..., alias="__class__")
         values: List[batch_type]  # type: ignore[valid-type]
+        linked: Optional[bool] = None  # maybe True instead?
 
     request_type = union_type([job_py_type, BatchRequest])
 

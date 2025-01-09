@@ -5,8 +5,13 @@ from typing import (
 )
 
 from galaxy.schema.schema import (
+    CreateToolLandingRequestPayload,
     CreateWorkflowLandingRequestPayload,
     WorkflowLandingRequest,
+)
+from galaxy_test.base.api_asserts import (
+    assert_error_code_is,
+    assert_status_code_is,
 )
 from galaxy_test.base.populators import (
     DatasetPopulator,
@@ -24,6 +29,32 @@ class TestLandingApi(ApiTestCase):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+
+    @skip_without_tool("cat")
+    def test_tool_landing(self):
+        request = CreateToolLandingRequestPayload(
+            tool_id="create_2",
+            tool_version=None,
+            request_state={"sleep_time": 0},
+        )
+        response = self.dataset_populator.create_tool_landing(request)
+        assert response.tool_id == "create_2"
+        assert response.state == "unclaimed"
+        response = self.dataset_populator.claim_tool_landing(response.uuid)
+        assert response.tool_id == "create_2"
+        assert response.state == "claimed"
+
+    @skip_without_tool("gx_int")
+    def test_tool_landing_invalid(self):
+        request = CreateToolLandingRequestPayload(
+            tool_id="gx_int",
+            tool_version=None,
+            request_state={"parameter": "foobar"},
+        )
+        response = self.dataset_populator.create_tool_landing_raw(request)
+        assert_status_code_is(response, 400)
+        assert_error_code_is(response, 400008)
+        assert "Input should be a valid integer" in response.text
 
     @skip_without_tool("cat1")
     def test_create_public_workflow_landing_authenticated_user(self):
