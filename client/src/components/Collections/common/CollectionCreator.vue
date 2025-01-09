@@ -233,7 +233,6 @@ watch(
                     <FontAwesomeIcon :icon="faUpload" fixed-width />
                     <span>{{ localize("Upload Files to Add to Collection") }}</span>
                 </template>
-                <!-- TODO: This is incomplete; need to return uploadValues to parent -->
                 <DefaultBox
                     v-if="configOptions && extensionsSet"
                     :chunk-upload-size="configOptions.chunkUploadSize"
