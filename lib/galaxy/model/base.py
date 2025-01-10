@@ -44,6 +44,7 @@ REQUEST_ID: ContextVar[Union[Dict[str, str], None]] = ContextVar("request_id", d
 @contextlib.contextmanager
 def transaction(session: Union[scoped_session, Session, "SessionlessContext"]):
     """Start a new transaction only if one is not present."""
+    # TODO The `session.begin` code has been removed. Once we can verify this does not break SQLAlchemy transactions, remove this helper + all references (561)
     # temporary hack; need to fix access to scoped_session callable, not proxy
     if isinstance(session, scoped_session):
         session = session()
@@ -52,11 +53,7 @@ def transaction(session: Union[scoped_session, Session, "SessionlessContext"]):
         yield
         return  # exit: can't use as a Session
 
-    if not session.in_transaction():  # type:ignore[union-attr]
-        with session.begin():  # type:ignore[union-attr]
-            yield
-    else:
-        yield
+    yield
 
 
 def check_database_connection(session):
