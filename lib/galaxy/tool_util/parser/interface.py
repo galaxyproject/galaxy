@@ -337,7 +337,9 @@ class ToolSource(metaclass=ABCMeta):
         return "galaxy.json"
 
     @abstractmethod
-    def parse_outputs(self, tool: "Tool") -> Tuple[Dict[str, "ToolOutput"], Dict[str, "ToolOutputCollection"]]:
+    def parse_outputs(
+        self, tool: Optional["Tool"]
+    ) -> Tuple[Dict[str, "ToolOutput"], Dict[str, "ToolOutputCollection"]]:
         """Return a pair of output and output collections ordered
         dictionaries for use by Tool.
         """

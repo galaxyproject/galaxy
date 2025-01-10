@@ -281,7 +281,7 @@ class ToolOutputCollection(ToolOutputBase):
         self.collection = True
         self.default_format = default_format
         self.structure = structure
-        self.outputs: Dict[str, str] = {}
+        self.outputs: Dict[str, ToolOutput] = {}
 
         self.inherit_format = inherit_format
         self.inherit_metadata = inherit_metadata

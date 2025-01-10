@@ -374,6 +374,7 @@ def _deferred_element_count(dataset_collection: DatasetCollection) -> int:
     count = 0
     for element in dataset_collection.elements:
         if element.is_collection:
+            assert element.child_collection
             count += _deferred_element_count(element.child_collection)
         else:
             dataset_instance = element.dataset_instance

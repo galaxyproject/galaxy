@@ -6845,9 +6845,10 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     def first_dataset_element(self) -> Optional["DatasetCollectionElement"]:
         for element in self.elements:
             if element.is_collection:
-                first_element = element.child_collection.first_dataset_element
-                if first_element:
-                    return first_element
+                if element.child_collection:
+                    first_element = element.child_collection.first_dataset_element
+                    if first_element:
+                        return first_element
             else:
                 return element
         return None
@@ -7437,18 +7438,18 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
     element_index: Mapped[Optional[int]]
     element_identifier: Mapped[Optional[str]] = mapped_column(Unicode(255))
 
-    hda = relationship(
+    hda: Mapped[Optional["HistoryDatasetAssociation"]] = relationship(
         "HistoryDatasetAssociation",
         primaryjoin=(lambda: DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id),
     )
-    ldda = relationship(
+    ldda: Mapped[Optional["LibraryDatasetDatasetAssociation"]] = relationship(
         "LibraryDatasetDatasetAssociation",
         primaryjoin=(lambda: DatasetCollectionElement.ldda_id == LibraryDatasetDatasetAssociation.id),
     )
-    child_collection = relationship(
+    child_collection: Mapped[Optional["DatasetCollection"]] = relationship(
         "DatasetCollection", primaryjoin=(lambda: DatasetCollectionElement.child_collection_id == DatasetCollection.id)
     )
-    collection = relationship(
+    collection: Mapped[DatasetCollection] = relationship(
         "DatasetCollection",
         primaryjoin=(lambda: DatasetCollection.id == DatasetCollectionElement.dataset_collection_id),
         back_populates="elements",
