@@ -7019,7 +7019,7 @@ class HistoryDatasetCollectionAssociation(
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True, nullable=True)
 
-    collection = relationship("DatasetCollection")
+    collection: Mapped["DatasetCollection"] = relationship("DatasetCollection")
     history: Mapped[Optional["History"]] = relationship(back_populates="dataset_collections")
 
     copied_from_history_dataset_collection_association = relationship(
