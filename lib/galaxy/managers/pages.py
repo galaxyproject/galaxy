@@ -18,6 +18,7 @@ from typing import (
 
 import sqlalchemy
 from sqlalchemy import (
+    and_,
     desc,
     false,
     func,
@@ -157,6 +158,10 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(message)
 
         stmt = select(self.model_class)
+
+        # Do not include pages authored by deleted users
+        if show_published:
+            stmt = stmt.join(Page.user).where(and_(User.deleted == false(), User.purged == false()))
 
         filters = []
         if show_own or (not show_published and not show_shared and not is_admin):
