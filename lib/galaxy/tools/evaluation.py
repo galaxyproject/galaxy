@@ -159,17 +159,17 @@ class UserCredentialsConfigurator:
             )
             sa_session = self.app.model.context
             if sa_session:
-                result = sa_session.execute(stmt).one()
+                result = sa_session.execute(stmt).all()
             else:
                 raise ValueError("Session is not available.")
-            _, group, var = result
-            current_group = group.name
+            current_group = result[0][1].name
             user_vault = UserVaultWrapper(self.app.vault, self.job.user)
             for secret in credential.secrets:
                 vault_ref = f"{source_type}|{source_id}|{reference}|{current_group}|{secret.name}"
                 vault_value = user_vault.read_secret(vault_ref) or ""
                 self.environment_variables.append({"name": secret.inject_as_env, "value": vault_value})
             for variable in credential.variables:
+                var = next((x[2] for x in result if x[2].name == variable.name), None)
                 variable_value = var.value if var else ""
                 self.environment_variables.append({"name": variable.inject_as_env, "value": variable_value})
 
