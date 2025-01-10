@@ -3,13 +3,13 @@ import logging
 import os
 import re
 from abc import abstractmethod
-from collections import UserDict
 from json import dumps
 from typing import (
     Any,
     cast,
     Dict,
     List,
+    MutableMapping,
     Optional,
     Set,
     Tuple,
@@ -1157,7 +1157,7 @@ def determine_output_format(
     output: "ToolOutput",
     parameter_context,
     input_datasets,
-    input_dataset_collections: UserDict[str, model.HistoryDatasetCollectionAssociation],
+    input_dataset_collections: MutableMapping[str, model.HistoryDatasetCollectionAssociation],
     random_input_ext,
     python_template_version="3",
     execution_cache=None,
