@@ -331,5 +331,5 @@ export function buildProviderFunctions(monaco: MonacoEditor, options?: MonacoYam
             return selectionRanges?.map(toSelectionRanges);
         },
     };
-    return providerFunctions;
+    return { dispose: workerManager, providerFunctions };
 }
