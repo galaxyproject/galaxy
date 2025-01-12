@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { loader, useMonaco, VueMonacoEditor } from "@guolao/vue-monaco-editor";
 import * as monaco from "monaco-editor";
-import { onUnmounted, ref } from "vue";
+import { nextTick, onUnmounted, ref, watch } from "vue";
 import { parse, stringify } from "yaml";
 
 import {
@@ -11,7 +11,7 @@ import {
     type UnprivilegedToolResponse,
 } from "@/api";
 
-import { setupEditor, setupMonaco } from "./YamlJs";
+import { setupMonaco } from "./YamlJs";
 
 import Heading from "@/components/Common/Heading.vue";
 
@@ -20,8 +20,19 @@ loader.config({ monaco });
 const { unload, monacoRef } = useMonaco();
 
 const disposeConfig = ref<() => void>();
-const { dispose, providerFunctions } = setupMonaco(monaco);
-disposeConfig.value = dispose;
+watch(
+    monacoRef,
+    () => {
+        if (monacoRef.value) {
+            nextTick().then(() => {
+                setupMonaco(monaco).then((dispose) => {
+                    disposeConfig.value = dispose;
+                });
+            });
+        }
+    },
+    { immediate: true }
+);
 
 onUnmounted(() => {
     disposeConfig.value!();
@@ -79,12 +90,6 @@ async function saveTool() {
         persistedTool.value = data;
     }
 }
-
-async function setupEditorWrapper() {
-    if (monacoRef.value) {
-        setupEditor(providerFunctions);
-    }
-}
 </script>
 
 <template>
@@ -103,8 +108,7 @@ async function setupEditorWrapper() {
                     comments: false,
                     strings: true,
                 },
-            }"
-            @mount="setupEditorWrapper">
+            }">
         </VueMonacoEditor>
     </div>
 </template>
