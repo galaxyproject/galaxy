@@ -12,72 +12,77 @@ const LANG = "yaml-with-js";
 const embeddedModelUri = monaco.Uri.parse("file://embedded-model.js");
 const defModelUri = monaco.Uri.parse("file://runtime-defs.ts");
 
-export function setupMonaco(monaco: MonacoEditor) {
+export async function setupMonaco(monaco: MonacoEditor) {
     // Define the custom YAML language with embedded JavaScript
     monaco.languages.register({ id: LANG });
     monaco.languages.register({ id: "typescript" });
     monaco.languages.register({ id: "javascript" });
     monaco.languages.register({ id: "yaml" });
+    const disposables: monaco.IDisposable[] = [];
 
-    monaco.languages.setMonarchTokensProvider(LANG, {
-        tokenizer: {
-            root: [
-                // Multiline JavaScript block
-                [/(expressionLib):\s*\|/, { token: "key", nextEmbedded: "javascript", next: "@jsBlockMultiline" }],
-                // Inline JavaScript: Key followed by code on the same line
-                [/(expressionLib):\s*/, { token: "key", nextEmbedded: "javascript", next: "@inlineJs" }],
-                [/.*/, { token: "@rematch", nextEmbedded: "yaml", next: "@yamlRest" }],
-            ],
-            // Inline JavaScript ends at the end of the line
-            inlineJs: [
-                [
-                    /$/,
-                    {
-                        token: "@rematch",
-                        nextEmbedded: "@pop",
-                        next: "@pop",
-                    },
+    disposables.push(
+        monaco.languages.setMonarchTokensProvider(LANG, {
+            tokenizer: {
+                root: [
+                    // Multiline JavaScript block
+                    [/(expressionLib):\s*\|/, { token: "key", nextEmbedded: "javascript", next: "@jsBlockMultiline" }],
+                    // Inline JavaScript: Key followed by code on the same line
+                    [/(expressionLib):\s*/, { token: "key", nextEmbedded: "javascript", next: "@inlineJs" }],
+                    [/.*/, { token: "@rematch", nextEmbedded: "yaml", next: "@yamlRest", log: "Match rest" }],
                 ],
+                // Inline JavaScript ends at the end of the line
+                inlineJs: [
+                    [
+                        /$/,
+                        {
+                            token: "@rematch",
+                            nextEmbedded: "@pop",
+                            next: "@pop",
+                        },
+                    ],
+                ],
+                jsBlockMultiline: [
+                    [
+                        /^\s*\w+:|^\s*$/,
+                        {
+                            token: "@rematch",
+                            nextEmbedded: "@pop",
+                            next: "@pop",
+                        },
+                    ], // Key or blank line (end condition)
+                ],
+                // Delegate to YAML tokenizer for the rest
+                yamlRest: [
+                    // Include YAML language tokenizer here
+                    [/$/, { token: "@rematch", nextEmbedded: "@pop", next: "@pop" }],
+                ],
+            },
+        })
+    );
+    disposables.push(
+        monaco.languages.setLanguageConfiguration(LANG, {
+            comments: { lineComment: "#" },
+            brackets: [
+                ["{", "}"],
+                ["[", "]"],
+                ["(", ")"],
             ],
-            jsBlockMultiline: [
-                [
-                    /^\s*\w+:|^\s*$/,
-                    {
-                        token: "@rematch",
-                        nextEmbedded: "@pop",
-                        next: "@pop",
-                    },
-                ], // Key or blank line (end condition)
+            autoClosingPairs: [
+                { open: "{", close: "}" },
+                { open: "[", close: "]" },
+                { open: "(", close: ")" },
+                { open: '"', close: '"' },
+                { open: "'", close: "'" },
             ],
-            // Delegate to YAML tokenizer for the rest
-            yamlRest: [
-                // Include YAML language tokenizer here
-                [/$/, { token: "@rematch", nextEmbedded: "@pop", next: "@pop" }],
+            surroundingPairs: [
+                { open: "{", close: "}" },
+                { open: "[", close: "]" },
+                { open: "(", close: ")" },
+                { open: '"', close: '"' },
+                { open: "'", close: "'" },
             ],
-        },
-    });
-    monaco.languages.setLanguageConfiguration(LANG, {
-        comments: { lineComment: "#" },
-        brackets: [
-            ["{", "}"],
-            ["[", "]"],
-            ["(", ")"],
-        ],
-        autoClosingPairs: [
-            { open: "{", close: "}" },
-            { open: "[", close: "]" },
-            { open: "(", close: ")" },
-            { open: '"', close: '"' },
-            { open: "'", close: "'" },
-        ],
-        surroundingPairs: [
-            { open: "{", close: "}" },
-            { open: "[", close: "]" },
-            { open: "(", close: ")" },
-            { open: '"', close: '"' },
-            { open: "'", close: "'" },
-        ],
-    });
+        })
+    );
 
     // Set TypeScript/JavaScript configuration
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
@@ -105,7 +110,7 @@ export function setupMonaco(monaco: MonacoEditor) {
             },
         ],
     });
-    const providerFunctions = buildProviderFunctions(monaco, {
+    const { dispose: disposeWorker, providerFunctions } = buildProviderFunctions(monaco, {
         enableSchemaRequest: false,
         schemas: [
             {
@@ -118,29 +123,39 @@ export function setupMonaco(monaco: MonacoEditor) {
             },
         ],
     });
-    return { dispose, providerFunctions };
+    disposables.push(disposeWorker);
+    const moreDisposeables = await setupEditor(providerFunctions);
+    function disposeEditor() {
+        dispose();
+        [...disposables, ...moreDisposeables].map((disposable) => disposable.dispose());
+    }
+    return disposeEditor;
 }
 
 export async function setupEditor(providerFunctions: any) {
+    const disposables = [];
     // Virtual model for JavaScript
     const yamlModel = editor.getModels().find((item) => item.getLanguageId() == LANG)!;
     const embeddedModel = editor.getModel(embeddedModelUri) || editor.createModel("", "typescript", embeddedModelUri);
     mixJsYamlProviders(providerFunctions);
-    monaco.languages.registerHoverProvider(LANG, providerFunctions);
-    monaco.languages.registerCompletionItemProvider(LANG, {
-        triggerCharacters: ["."],
-        provideCompletionItems: providerFunctions.provideCompletionItems,
-    });
-    monaco.languages.registerDefinitionProvider(LANG, providerFunctions);
-    monaco.languages.registerDocumentSymbolProvider(LANG, providerFunctions);
-    monaco.languages.registerDocumentFormattingEditProvider(LANG, providerFunctions);
-    monaco.languages.registerLinkProvider(LANG, providerFunctions);
-    monaco.languages.registerCodeActionProvider(LANG, providerFunctions);
-    monaco.languages.registerFoldingRangeProvider(LANG, providerFunctions);
-    monaco.languages.registerOnTypeFormattingEditProvider(LANG, providerFunctions);
-    monaco.languages.registerSelectionRangeProvider(LANG, providerFunctions);
+    disposables.push(monaco.languages.registerHoverProvider(LANG, providerFunctions));
+    disposables.push(
+        monaco.languages.registerCompletionItemProvider(LANG, {
+            triggerCharacters: ["."],
+            provideCompletionItems: providerFunctions.provideCompletionItems,
+        })
+    );
+    disposables.push(monaco.languages.registerDefinitionProvider(LANG, providerFunctions));
+    disposables.push(monaco.languages.registerDocumentSymbolProvider(LANG, providerFunctions));
+    disposables.push(monaco.languages.registerDocumentFormattingEditProvider(LANG, providerFunctions));
+    disposables.push(monaco.languages.registerLinkProvider(LANG, providerFunctions));
+    disposables.push(monaco.languages.registerCodeActionProvider(LANG, providerFunctions));
+    disposables.push(monaco.languages.registerFoldingRangeProvider(LANG, providerFunctions));
+    disposables.push(monaco.languages.registerOnTypeFormattingEditProvider(LANG, providerFunctions));
+    disposables.push(monaco.languages.registerSelectionRangeProvider(LANG, providerFunctions));
 
     attachDiagnosticsProvider(yamlModel, embeddedModel, providerFunctions.provideMarkerData);
+    return disposables;
 }
 
 function extractEmbeddedJavaScript(yamlContent: string) {
