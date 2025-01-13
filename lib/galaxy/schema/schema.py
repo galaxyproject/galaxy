@@ -1833,7 +1833,34 @@ class ExportObjectRequestMetadata(Model):
 
 class ExportObjectResultMetadata(Model):
     success: bool
+    uri: Optional[str] = None
     error: Optional[str] = None
+
+    @model_validator(mode="after")
+    @classmethod
+    def validate_success(cls, model):
+        """
+        Ensure successful exports do not have error text.
+        """
+        if model.success and model.error is not None:
+            raise ValueError("successful exports cannot have error text")
+
+        return model
+
+    @model_validator(mode="after")
+    @classmethod
+    def validate_uri(cls, model):
+        """
+        Ensure unsuccessful exports do not have a URI.
+        """
+        # short therm exports need not have a URI
+        # if model.success and not model.uri:
+        #     raise ValueError("successful exports must have a URI")
+
+        if not model.success and model.uri:
+            raise ValueError("unsuccessful exports cannot have a URI")
+
+        return model
 
 
 class ExportObjectMetadata(Model):
