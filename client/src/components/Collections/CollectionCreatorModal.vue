@@ -4,18 +4,20 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BLink, BModal } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import type { HDASummary, HistoryItemSummary, HistorySummary } from "@/api";
-import { createDatasetCollection } from "@/components/History/model/queries";
+import type { HistoryItemSummary } from "@/api";
+import { createHistoryDatasetCollectionInstanceFull, type CreateNewCollectionPayload } from "@/api/datasetCollections";
 import { useCollectionBuilderItemsStore } from "@/stores/collectionBuilderItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
-import type { CollectionType, DatasetPair } from "../History/adapters/buildCollectionModal";
+import type { CollectionType } from "../History/adapters/buildCollectionModal";
+import { type SupportedPairedOrPairedBuilderCollectionTypes } from "./common/useCollectionCreator";
 
 import ListCollectionCreator from "./ListCollectionCreator.vue";
 import PairCollectionCreator from "./PairCollectionCreator.vue";
-import PairedListCollectionCreator from "./PairedListCollectionCreator.vue";
+import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
+import SampleSheetCollectionCreator from "./SampleSheetCollectionCreator.vue";
 import Heading from "@/components/Common/Heading.vue";
 import GenericItem from "@/components/History/Content/GenericItem.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -30,6 +32,8 @@ interface Props {
     fromRulesInput?: boolean;
     hideModalOnCreate?: boolean;
     filterText?: string;
+    useBetaComponents?: boolean;
+    fileSourcesConfigured: boolean;
 }
 const props = defineProps<Props>();
 
@@ -65,6 +69,15 @@ const historyDatasets = computed(() => {
         return collectionItemsStore.cachedDatasetsForFilterText[localFilterText.value] || [];
     } else {
         return [];
+    }
+});
+const pairedOrUnpairedSupportedCollectionType = computed<SupportedPairedOrPairedBuilderCollectionTypes | null>(() => {
+    if (
+        ["list:paired", "list:list", "list:paired_or_unpaired", "list:list:paired"].indexOf(props.collectionType) !== -1
+    ) {
+        return props.collectionType as SupportedPairedOrPairedBuilderCollectionTypes;
+    } else {
+        return null;
     }
 });
 
@@ -141,63 +154,11 @@ const modalTitle = computed(() => {
 });
 
 // Methods
-function createListCollection(elements: HDASummary[], name: string, hideSourceItems: boolean) {
-    const returnedElems = elements.map((element) => ({
-        id: element.id,
-        name: element.name,
-        //TODO: this allows for list:list even if the implementation does not - reconcile
-        src: "src" in element ? element.src : element.history_content_type == "dataset" ? "hda" : "hdca",
-    }));
-    return createHDCA(returnedElems, "list", name, hideSourceItems);
-}
 
-function createListPairedCollection(elements: DatasetPair[], name: string, hideSourceItems: boolean) {
-    const returnedElems = elements.map((pair) => ({
-        collection_type: "paired",
-        src: "new_collection",
-        name: pair.name,
-        element_identifiers: [
-            {
-                name: "forward",
-                id: pair.forward.id,
-                src: "src" in pair.forward ? pair.forward.src : "hda",
-            },
-            {
-                name: "reverse",
-                id: pair.reverse.id,
-                src: "src" in pair.reverse ? pair.reverse.src : "hda",
-            },
-        ],
-    }));
-    return createHDCA(returnedElems, "list:paired", name, hideSourceItems);
-}
-
-function createPairedCollection(elements: DatasetPair, name: string, hideSourceItems: boolean) {
-    const { forward, reverse } = elements;
-    const returnedElems = [
-        { name: "forward", src: "src" in forward ? forward.src : "hda", id: forward.id },
-        { name: "reverse", src: "src" in reverse ? reverse.src : "hda", id: reverse.id },
-    ];
-    return createHDCA(returnedElems, "paired", name, hideSourceItems);
-}
-
-async function createHDCA(
-    element_identifiers: any[],
-    collection_type: CollectionType,
-    name: string,
-    hide_source_items: boolean,
-    options = {}
-) {
+async function createHDCA(payload: CreateNewCollectionPayload) {
     try {
         creatingCollection.value = true;
-        const collection = await createDatasetCollection(history.value as HistorySummary, {
-            collection_type,
-            name,
-            hide_source_items,
-            element_identifiers,
-            options,
-        });
-
+        const collection = await createHistoryDatasetCollectionInstanceFull(payload);
         emit("created-collection", collection);
         createdCollection.value = collection;
 
@@ -293,16 +254,19 @@ function resetModal() {
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
-            @clicked-create="createListCollection"
+            mode="modal"
+            @on-create="createHDCA"
             @on-cancel="hideModal" />
-        <PairedListCollectionCreator
-            v-else-if="props.collectionType === 'list:paired'"
+        <PairedOrUnpairedListCollectionCreator
+            v-else-if="pairedOrUnpairedSupportedCollectionType"
             :history-id="props.historyId"
             :initial-elements="creatorItems || []"
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
-            @clicked-create="createListPairedCollection"
+            :collection-type="pairedOrUnpairedSupportedCollectionType"
+            mode="modal"
+            @on-create="createHDCA"
             @on-cancel="hideModal" />
         <PairCollectionCreator
             v-else-if="props.collectionType === 'paired'"
@@ -311,7 +275,18 @@ function resetModal() {
             :default-hide-source-items="props.defaultHideSourceItems"
             :from-selection="fromSelection"
             :extensions="props.extensions"
-            @clicked-create="createPairedCollection"
+            mode="modal"
+            @on-create="createHDCA"
+            @on-cancel="hideModal" />
+        <SampleSheetCollectionCreator
+            v-else-if="props.collectionType === 'sample_sheet'"
+            :history-id="props.historyId"
+            :initial-elements="creatorItems || []"
+            :default-hide-source-items="props.defaultHideSourceItems"
+            :file-sources-configured="fileSourcesConfigured"
+            :from-selection="fromSelection"
+            :extensions="props.extensions"
+            @on-create="createHDCA"
             @on-cancel="hideModal" />
     </BModal>
 </template>

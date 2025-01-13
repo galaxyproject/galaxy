@@ -547,7 +547,7 @@ class WorkflowModule:
         for input_dict in all_inputs:
             name = input_dict["name"]
             data = progress.replacement_for_input(self.trans, step, input_dict)
-            can_map_over = hasattr(data, "collection")  # and data.collection.allow_implicit_mapping
+            can_map_over = hasattr(data, "collection") and data.collection.allow_implicit_mapping
 
             if not can_map_over:
                 continue
@@ -1110,34 +1110,8 @@ class InputDataCollectionModule(InputModule):
     collection_type = default_collection_type
 
     def get_inputs(self):
-        parameter_def = self._parse_state_into_dict()
-        collection_type = parameter_def["collection_type"]
-        tag = parameter_def["tag"]
-        optional = parameter_def["optional"]
-        collection_type_source = dict(
-            name="collection_type", label="Collection type", type="text", value=collection_type
-        )
-        collection_type_source["options"] = [
-            {"value": "list", "label": "List of Datasets"},
-            {"value": "paired", "label": "Dataset Pair"},
-            {"value": "list:paired", "label": "List of Dataset Pairs"},
-        ]
-        input_collection_type = TextToolParameter(None, collection_type_source)
-        tag_source = dict(
-            name="tag",
-            label="Tag filter",
-            type="text",
-            optional="true",
-            value=tag,
-            help="Tags to automatically filter inputs",
-        )
-        input_tag = TextToolParameter(None, tag_source)
-        inputs = {}
-        inputs["collection_type"] = input_collection_type
-        inputs["optional"] = optional_param(optional)
-        inputs["format"] = format_param(self.trans, parameter_def.get("format"))
-        inputs["tag"] = input_tag
-        return inputs
+        # migrated to frontend
+        return {}
 
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         parameter_def = self._parse_state_into_dict()
@@ -1181,7 +1155,17 @@ class InputDataCollectionModule(InputModule):
             collection_type = inputs["collection_type"]
         else:
             collection_type = self.default_collection_type
+        if "column_definitions" in inputs:
+            column_definitions = inputs["column_definitions"]
+        else:
+            column_definitions = None
+        if "fields" in inputs:
+            fields = inputs["fields"]
+        else:
+            fields = None
         state_as_dict["collection_type"] = collection_type
+        state_as_dict["fields"] = fields
+        state_as_dict["column_definitions"] = column_definitions
         return state_as_dict
 
 
