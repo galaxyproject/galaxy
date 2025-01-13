@@ -49,6 +49,14 @@ const INSTALL_PLUGIN_BUILD_IDS = [
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
 
+const args = process.argv.slice(2);
+const limitIndex = args.indexOf("--limit");
+const pluginFilter = limitIndex !== -1 && args[limitIndex + 1] ? args[limitIndex + 1] : "";
+
+const applyPluginFilter = (plugin) => {
+    return !pluginFilter || plugin.includes(pluginFilter);
+};
+
 const failOnError =
     process.env.GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR && process.env.GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR !== "0"
         ? true
@@ -80,7 +88,9 @@ PATHS.pluginDirs = [
 ];
 
 PATHS.pluginBuildModules = [
-    path.join(PATHS.pluginBaseDir, `{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`),
+    ...PLUGIN_BUILD_IDS.filter(applyPluginFilter).map((plugin) =>
+        path.join(PATHS.pluginBaseDir, `visualizations/${plugin}/package.json`)
+    ),
 ];
 
 function stageLibs(callback) {
@@ -216,7 +226,7 @@ function buildPlugins(callback, forceRebuild) {
 
 async function installPlugins(callback) {
     // iterate through install_plugin_build_ids, identify xml files and install dependencies
-    for (const plugin_name of INSTALL_PLUGIN_BUILD_IDS) {
+    for (const plugin_name of INSTALL_PLUGIN_BUILD_IDS.filter(applyPluginFilter)) {
         const pluginDir = path.join(PATHS.pluginBaseDir, `visualizations/${plugin_name}`);
         const xmlPath = path.join(pluginDir, `config/${plugin_name}.xml`);
         // Check if the file exists
