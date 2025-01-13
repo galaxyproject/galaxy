@@ -700,7 +700,7 @@ OUTPUTS_FILTER_EXPRESSION = """
     <outputs>
         <data name="another_valid_name" format="fasta" label="a label">
             <filter>an invalid condition</filter>
-            <filter>an and condition</filter>
+            <filter> an and condition </filter>
         </data>
         <collection name="yet_another_valid_name" type="list" format="fasta" label="another label">
             <filter>another invalid condition</filter>

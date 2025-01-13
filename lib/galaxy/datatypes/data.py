@@ -849,7 +849,11 @@ class Data(metaclass=DataMeta):
         job, converted_datasets, *_ = converter.execute(
             trans, incoming=params, set_output_hid=visible, history=history, flush_job=False
         )
+        # We should only have a single converted output, but let's be defensive here
+        n_converted_datasets = len(converted_datasets)
         for converted_dataset in converted_datasets.values():
+            if converted_dataset.extension == "auto" and n_converted_datasets == 1:
+                converted_dataset.extension = target_type
             original_dataset.attach_implicitly_converted_dataset(trans.sa_session, converted_dataset, target_type)
         trans.app.job_manager.enqueue(job, tool=converter)
         if len(params) > 0:
