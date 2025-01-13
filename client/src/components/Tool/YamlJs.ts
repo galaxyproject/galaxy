@@ -121,7 +121,7 @@ export async function setupEditor(providerFunctions: any) {
     return disposables;
 }
 
-function extractEmbeddedJavaScript(yamlContent: string) {
+function extractExpressionLibJavaScript(yamlContent: string) {
     const scriptRegex = /(expressionLib):\s*(?:\|([\s\S]*?)(?=\n\s*\w+:|\n\s*$)|(.+))/g;
     const match = scriptRegex.exec(yamlContent);
     if (match) {
@@ -184,7 +184,7 @@ async function mixJsYamlProviders(yamlProviderFunctions: any) {
 // Add IntelliSense for the embedded JavaScript
 async function provideCompletionItems(model: editor.ITextModel, position: IPosition) {
     const yamlContent = model.getValue();
-    const embeddedContent = extractEmbeddedJavaScript(yamlContent);
+    const embeddedContent = extractExpressionLibJavaScript(yamlContent);
 
     if (embeddedContent) {
         const embeddedModel = monaco.editor.getModel(embeddedModelUri)!;
@@ -232,7 +232,7 @@ function attachDiagnosticsProvider(
 
     yamlModel.onDidChangeContent(async () => {
         const yamlContent = yamlModel.getValue();
-        const embeddedJavaScript = extractEmbeddedJavaScript(yamlContent);
+        const embeddedJavaScript = extractExpressionLibJavaScript(yamlContent);
         // contentSync makes API call, we could consider updating the marker
         // only when fetch complete, but doesn't seem to be a problem ...
         await contentSync(yamlContent, embeddedJavaScript, embeddedModel);
@@ -279,7 +279,7 @@ function attachDiagnosticsProvider(
 async function provideHover(model: editor.ITextModel, position: IPosition) {
     const yamlContent = model.getValue();
     const embeddedModel = monaco.editor.getModel(embeddedModelUri)!;
-    const embeddedContent = extractEmbeddedJavaScript(yamlContent);
+    const embeddedContent = extractExpressionLibJavaScript(yamlContent);
 
     if (embeddedContent) {
         const embeddedPosition = translateYamlPositionToEmbedded(model, position, embeddedModel, yamlContent);
