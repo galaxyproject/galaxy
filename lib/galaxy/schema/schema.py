@@ -3788,6 +3788,11 @@ class PageSummary(PageSummaryBase, WithModelClass):
         title="Encoded email",
         description="The encoded email of the user.",
     )
+    author_deleted_or_purged: bool = Field(
+        ...,  # Required
+        title="Author deleted or purged",
+        description="Whether the author of this Page has been deleted or purged.",
+    )
     published: bool = Field(
         ...,  # Required
         title="Published",

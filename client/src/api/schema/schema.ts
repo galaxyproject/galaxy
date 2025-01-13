@@ -14718,6 +14718,11 @@ export interface components {
         /** PageDetails */
         PageDetails: {
             /**
+             * Author deleted or purged
+             * @description Whether the author of this Page has been deleted or purged.
+             */
+            author_deleted_or_purged: boolean;
+            /**
              * Content
              * @description Raw text contents of the last page revision (type dependent on content_format).
              * @default
@@ -14815,6 +14820,11 @@ export interface components {
         };
         /** PageSummary */
         PageSummary: {
+            /**
+             * Author deleted or purged
+             * @description Whether the author of this Page has been deleted or purged.
+             */
+            author_deleted_or_purged: boolean;
             /**
              * Create Time
              * Format: date-time

@@ -10491,6 +10491,7 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
         "deleted",
         "username",
         "email_hash",
+        "author_deleted_or_purged",
         "create_time",
         "update_time",
     ]
@@ -10516,6 +10517,11 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     @property
     def email_hash(self):
         return md5_hash_str(self.user.email)
+
+    # needed to determine how to display page details
+    @property
+    def author_deleted_or_purged(self):
+        return self.user.deleted or self.user.purged
 
 
 class PageRevision(Base, Dictifiable, RepresentById):
