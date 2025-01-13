@@ -54,6 +54,7 @@ const props = withDefaults(defineProps<Props>(), {
     extensions: undefined,
     extensionsToggle: false,
     showUpload: true,
+    collectionType: undefined,
 });
 
 const emit = defineEmits<{
