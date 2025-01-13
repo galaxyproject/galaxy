@@ -832,7 +832,11 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     "type": "text",
                     "label": "Email address",
                     "value": email,
-                    "help": "If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.",
+                    "help": (
+                        "If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it."
+                        if trans.app.config.user_activation_on
+                        else ""
+                    ),
                 }
             )
         if is_galaxy_app:
