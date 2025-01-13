@@ -14,7 +14,7 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.2" package="@galaxyproject/cytoscape"/>
+        <requirement type="npm" version="0.0.3" package="@galaxyproject/cytoscape"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>

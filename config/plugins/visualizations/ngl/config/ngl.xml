@@ -13,7 +13,7 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <requirements>
-        <requirement type="npm" version="0.0.8" package="@galaxyproject/ngl"/>
+        <requirement type="npm" version="0.0.11" package="@galaxyproject/ngl"/>
     </requirements>
     <entry_point entry_point_type="script" src="dist/index.js" css="dist/index.css" />
     <settings>
