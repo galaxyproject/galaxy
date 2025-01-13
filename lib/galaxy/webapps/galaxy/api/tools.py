@@ -106,6 +106,10 @@ class FetchTools:
     ):
         return self.service.create_fetch(trans, payload, files)
 
+    @router.get("/api/tools/{id}/icon", summary="Get tool icon")
+    def get_icon(self, id: str, trans: ProvidesHistoryContext = DependsOnTrans):
+        return self.service.get_tool_icon(trans=trans, tool_id=id)
+
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     """

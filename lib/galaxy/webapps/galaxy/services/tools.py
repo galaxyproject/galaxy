@@ -1,4 +1,5 @@
 import logging
+import os
 import shutil
 import tempfile
 from json import dumps
@@ -10,6 +11,7 @@ from typing import (
     Union,
 )
 
+from fastapi.responses import FileResponse
 from starlette.datastructures import UploadFile
 
 from galaxy import (
@@ -325,3 +327,15 @@ class ToolsService(ServiceBase):
                 if tool and tool.allow_user_access(trans.user):
                     detected_versions.append(tool.version)
         return detected_versions
+
+    def get_tool_icon(self, trans, tool_id, tool_version=None):
+        tool = self._get_tool(trans, tool_id, tool_version)
+        if tool and tool.icon:
+            icon_src = tool.icon.get("src")
+            if icon_src and tool.tool_dir:
+                file_path = os.path.join(tool.tool_dir, icon_src)
+                if not os.path.exists(file_path):
+                    raise exceptions.ObjectNotFound(f"Could not find icon for tool '{tool_id}'.")
+                return FileResponse(file_path)
+        # TODO: return default icon?
+        return None
