@@ -2,8 +2,6 @@
 Functionality for dealing with tool errors.
 """
 
-import string
-
 import markupsafe
 
 from galaxy import (
@@ -12,123 +10,10 @@ from galaxy import (
 )
 from galaxy.security.validate_user_input import validate_email_str
 from galaxy.util import unicodify
+from galaxy.config import templates
 
-error_report_template = """
-GALAXY TOOL ERROR REPORT
-------------------------
-
-This error report was sent from the Galaxy instance hosted on the server
-"${host}"
------------------------------------------------------------------------------
-This is in reference to dataset id ${dataset_id} (${dataset_id_encoded}) from history id ${history_id} (${history_id_encoded})
------------------------------------------------------------------------------
-You should be able to view the history containing the related history item (${hda_id_encoded})
-
-${hid}: ${history_item_name}
-
-by logging in as a Galaxy admin user to the Galaxy instance referenced above
-and pointing your browser to the following link.
-
-${history_view_link}
------------------------------------------------------------------------------
-The user ${email_str} provided the following information:
-
-${message}
------------------------------------------------------------------------------
-info url: ${hda_show_params_link}
-job id: ${job_id} (${job_id_encoded})
-tool id: ${job_tool_id}
-tool version: ${tool_version}
-job pid or drm id: ${job_runner_external_id}
-job tool version: ${job_tool_version}
------------------------------------------------------------------------------
-job command line:
-${job_command_line}
------------------------------------------------------------------------------
-job stderr:
-${job_stderr}
------------------------------------------------------------------------------
-job stdout:
-${job_stdout}
------------------------------------------------------------------------------
-job info:
-${job_info}
------------------------------------------------------------------------------
-job traceback:
-${job_traceback}
------------------------------------------------------------------------------
-(This is an automated message).
-"""
-
-error_report_template_html = """
-<html>
-    <body>
-<h1>Galaxy Tool Error Report</h1>
-<span class="sub"><i>from</i> <span style="font-family: monospace;"><a href="${host}">${host}</a></span>
-
-<h3>Error Localization</h3>
-<table style="margin:1em">
-    <tbody>
-        <tr><td>Dataset</td><td><a href="${hda_show_params_link}">${dataset_id} (${dataset_id_encoded})</a></td></tr>
-        <tr style="background-color: #f2f2f2"><td>History</td><td><a href="${history_view_link}">${history_id} (${history_id_encoded})</a></td></tr>
-        <tr><td>Failed Job</td><td>${hid}: ${history_item_name} (${hda_id_encoded})</td></tr>
-    </tbody>
-</table>
-
-<h3>User Provided Information</h3>
-
-The user <span style="font-family: monospace;">${email_str}</span> provided the following information:
-
-<pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">
-${message}
-</pre>
-
-
-<h3>Detailed Job Information</h3>
-
-Job environment and execution information is available at the job <a href="${hda_show_params_link}">info page</a>.
-
-<table style="margin:1em">
-    <tbody>
-        <tr><td>Job ID</td><td>${job_id} (${job_id_encoded})</td></tr>
-        <tr style="background-color: #f2f2f2"><td>Tool ID</td><td>${job_tool_id}</td></tr>
-        <tr><td>Tool Version</td><td>${tool_version}</td></tr>
-        <tr style="background-color: #f2f2f2"><td>Job PID or DRM id</td><td>${job_runner_external_id}</td></tr>
-        <tr><td>Job Tool Version</td><td>${job_tool_version}</td></tr>
-    </tbody>
-</table>
-
-<h3>Job Execution and Failure Information</h3>
-
-<h4>Command Line</h4>
-<pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">
-${job_command_line}
-</pre>
-
-<h4>stderr</h4>
-<pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">
-${job_stderr}
-</pre>
-
-<h4>stdout</h4>
-<pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">
-${job_stdout}
-</pre>
-
-<h4>Job Information</h4>
-<pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">
-${job_info}
-</pre>
-
-<h4>Job Traceback</h4>
-<pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">
-${job_traceback}
-</pre>
-
-This is an automated message. Do not reply to this address.
-</body></html>
-"""
-
+error_report_template = "mail/error-report-dataset.txt"
+error_report_template_html = "mail/error-report-dataset.html"
 
 class ErrorReporter:
     def __init__(self, hda, app):
@@ -217,15 +102,14 @@ class ErrorReporter:
             email_str=email_str,
             message=util.unicodify(message),
         )
-
-        self.report = string.Template(error_report_template).safe_substitute(report_variables)
-
+        self.report = templates.render(error_report_template, report_variables, self.app.config.templates_dir)
+        
         # Escape all of the content  for use in the HTML report
         for parameter in report_variables.keys():
             if report_variables[parameter] is not None:
                 report_variables[parameter] = markupsafe.escape(unicodify(report_variables[parameter]))
 
-        self.html_report = string.Template(error_report_template_html).safe_substitute(report_variables)
+        self.html_report = templates.render(error_report_template_html, report_variables, self.app.config.templates_dir)
 
     def _send_report(self, user, email=None, message=None, **kwd):
         return self.report
