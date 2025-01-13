@@ -18,6 +18,7 @@ import {
     useSpecialWorkflowActivities,
     workflowEditorActivities,
 } from "@/components/Workflow/Editor/modules/activities";
+import type { WorkflowInput } from "@/components/Workflow/Editor/modules/inputs";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { getUntypedWorkflowParameters, type UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { getModule, getVersions, loadWorkflow, saveWorkflow } from "@/components/Workflow/Editor/modules/services";
@@ -338,19 +339,18 @@ function onInsertTool(toolId: string, toolName: string) {
     insertStep(toolId, toolName, "tool");
 }
 
-function onInsertModule(moduleId: Step["type"], moduleName: string) {
-    insertStep(moduleName, moduleName, moduleId);
+function onInsertModule(moduleId: Step["type"], moduleName: string, state: WorkflowInput["stateOverwrites"]) {
+    insertStep(moduleName, moduleName, moduleId, state);
 }
 
 async function onInsertWorkflow(workflowId: string, workflowName: string, state: any) {
     insertStep(workflowId, workflowName, "subworkflow", state);
 }
 
-function copyIntoWorkflow(workflowId: string) {
-    // Load workflow definition
-    setModalMessage("Importing workflow", "progress");
+async function copyIntoWorkflow(workflowId: string) {
+    try {
+        const data = await loadWorkflow({ id: workflowId });
 
-    loadWorkflow({ id: workflowId }).then((data) => {
         const action = new CopyIntoWorkflowAction(
             workflowId,
             data,
@@ -364,7 +364,9 @@ function copyIntoWorkflow(workflowId: string) {
         const insertedStateMessages = getStateUpgradeMessages(data);
 
         onInsertedStateMessages(insertedStateMessages);
-    });
+    } catch (e) {
+        setModalMessage("Importing workflow failed", errorMessageAsString(e));
+    }
 }
 
 function onDownload() {
@@ -623,6 +625,7 @@ async function onClone(stepId: string) {
     if (sourceStep) {
         const newStep = {
             ...sourceStep,
+            uuid: undefined,
             position: defaultPosition(graphOffset.value, transform.value),
         };
 
