@@ -79,6 +79,12 @@ const datatypesMapper = computed(() => datatypesMapperStore.datatypesMapper);
 /** Are we filtering by datatype? */
 const filterExtensions = computed(() => !!datatypesMapper.value && !!props.extensions?.length);
 
+/** Does `inListElements` have elements with different extensions? */
+const listHasMixedExtensions = computed(() => {
+    const extensions = new Set(inListElements.value.map((e) => e.extension));
+    return extensions.size > 1;
+});
+
 // ----------------------------------------------------------------------- process raw list
 /** set up main data */
 function _elementsSetUp() {
@@ -171,6 +177,21 @@ function _isElementInvalid(element: HistoryItemSummary): string | null {
         return localize(`has an invalid extension: ${element.extension}`);
     }
     return null;
+}
+
+/** Show the element's extension next to its name:
+ *  1. If there are no required extensions, so users can avoid creating mixed extension lists.
+ *  2. If the extension is not in the list of required extensions but is a subtype of one of them,
+ *     so users can see that those elements were still included as they are implicitly convertible.
+ */
+function showElementExtension(element: HDASummary) {
+    return (
+        !props.extensions?.length ||
+        (filterExtensions.value &&
+            element.extension &&
+            !props.extensions?.includes(element.extension) &&
+            datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!))
+    );
 }
 
 // /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
@@ -523,6 +544,10 @@ function renameElement(element: any, name: string) {
                 </template>
 
                 <template v-slot:middle-content>
+                    <BAlert v-if="listHasMixedExtensions" show variant="warning">
+                        {{ localize("The selected datasets have mixed extensions.") }}
+                        {{ localize("You can still create the list but its elements will have different extensions.") }}
+                    </BAlert>
                     <div v-if="noInitialElements">
                         <BAlert show variant="warning" dismissible>
                             {{ localize("No datasets were selected") }}
@@ -660,6 +685,7 @@ function renameElement(element: any, name: string) {
                             <DatasetCollectionElementView
                                 class="w-100"
                                 :element="value"
+                                :hide-extension="!showElementExtension(value)"
                                 @onRename="(name) => renameElement(value, name)" />
                         </template>
                     </FormSelectMany>

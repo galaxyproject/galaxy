@@ -66,6 +66,13 @@ const pairElements = computed<SelectedDatasetPair>(() => {
         return inListElements.value;
     }
 });
+const pairHasMixedExtensions = computed(() => {
+    return (
+        pairElements.value.forward?.extension &&
+        pairElements.value.reverse?.extension &&
+        pairElements.value.forward.extension !== pairElements.value.reverse.extension
+    );
+});
 
 // variables for datatype mapping and then filtering
 const datatypesMapperStore = useDatatypesMapperStore();
@@ -355,7 +362,7 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                     </ul>
                 </BAlert>
             </div>
-            <div v-if="!exactlyTwoValidElements">
+            <div v-else-if="!exactlyTwoValidElements">
                 <BAlert show variant="warning" dismissible>
                     {{ localize("Exactly two elements are needed for the pair.") }}
                     <span v-if="fromSelection">
@@ -364,6 +371,18 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         </a>
                         {{ localize("and reselect new elements.") }}
                     </span>
+                </BAlert>
+            </div>
+            <div v-else-if="pairHasMixedExtensions">
+                <BAlert show variant="warning">
+                    {{ localize("The selected datasets have mixed extensions.") }}
+                    {{ localize("You can still create the pair but its elements will have different extensions.") }}
+                </BAlert>
+            </div>
+            <div v-else>
+                <BAlert v-if="!fromSelection" show variant="success">
+                    {{ localize("The Dataset Pair is ready to be created.") }}
+                    {{ localize("Provide a name and click the button below to create the pair.") }}
                 </BAlert>
             </div>
 
