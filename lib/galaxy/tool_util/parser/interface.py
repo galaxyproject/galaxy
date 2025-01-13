@@ -191,6 +191,10 @@ class ToolSource(metaclass=ABCMeta):
         We parse this out as "" if it isn't explicitly declared.
         """
 
+    @abstractmethod
+    def parse_icon(self) -> Optional["ToolIcon"]:
+        """Return icon for tool."""
+
     def parse_edam_operations(self) -> List[str]:
         """Parse list of edam operation codes."""
         return []
@@ -916,3 +920,8 @@ class DrillDownOptionsDict(TypedDict):
     value: str
     options: List["DrillDownOptionsDict"]
     selected: bool
+
+
+class ToolIcon(TypedDict):
+    src: str
+    alt: str
