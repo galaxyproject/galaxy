@@ -24,7 +24,6 @@ from galaxy import (
     util,
     web,
 )
-from galaxy.model.base import transaction
 from galaxy.model.db.user import get_user_by_username
 from galaxy.tool_shed.util import dependency_display
 from galaxy.tools.repositories import ValidationContext
@@ -779,8 +778,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         mark_deprecated = util.string_as_bool(kwd.get("mark_deprecated", False))
         repository.deprecated = mark_deprecated
         trans.sa_session.add(repository)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         if mark_deprecated:
             # Update the repository registry.
             trans.app.repository_registry.remove_entry(repository)
@@ -898,8 +896,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         file_type_str = basic_util.get_file_type_str(changeset_revision, file_type)
         repository.times_downloaded += 1
         trans.sa_session.add(repository)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         tool_shed_url = web.url_for("/", qualified=True)
         pathspec = ["repos", str(repository.user.username), str(repository.name), "archive", file_type_str]
         download_url = util.build_url(tool_shed_url, pathspec=pathspec)
@@ -1592,8 +1589,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         if kwd.get("new_repo_alert_button", False):
             user.new_repo_alert = new_repo_alert_checked
             trans.sa_session.add(user)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             if new_repo_alert_checked:
                 message = "You will receive email alerts for all new valid tool shed repositories."
             else:
@@ -1664,16 +1660,14 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             # Delete all currently existing categories.
             for rca in repository.categories:
                 trans.sa_session.delete(rca)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             if category_ids:
                 # Create category associations
                 for category_id in category_ids:
                     category = trans.sa_session.get(Category, trans.security.decode_id(category_id))
                     rca = RepositoryCategoryAssociation(repository, category)
                     trans.sa_session.add(rca)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
+                    trans.sa_session.commit()
             message = "The repository information has been updated."
         elif kwd.get("user_access_button", False):
             if allow_push not in ["none"]:
@@ -1703,8 +1697,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add(repository)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             message = "The repository information has been updated."
         if error:
             status = "error"
@@ -2159,8 +2152,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     flush_needed = True
                     total_alerts_added += 1
             if flush_needed:
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             message = f"Total alerts added: {total_alerts_added}, total alerts removed: {total_alerts_removed}"
             kwd["message"] = message
             kwd["status"] = "done"
@@ -2176,8 +2168,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             malicious_checked = CheckboxField.is_checked(malicious)
             repository_metadata.malicious = malicious_checked
             trans.sa_session.add(repository_metadata)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             if malicious_checked:
                 message = "The repository tip has been defined as malicious."
             else:
@@ -2481,8 +2472,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add(repository)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
         checked = alerts_checked or (user and user.email in email_alerts)
         alerts_check_box = CheckboxField("alerts", value=checked)
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field(
