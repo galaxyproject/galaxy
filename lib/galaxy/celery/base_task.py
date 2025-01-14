@@ -13,7 +13,6 @@ from sqlalchemy.dialects.postgresql import insert as ps_insert
 from sqlalchemy.exc import IntegrityError
 
 from galaxy.model import CeleryUserRateLimit
-from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 
 
@@ -83,25 +82,24 @@ class GalaxyTaskBeforeStartUserRateLimitPostgres(GalaxyTaskBeforeStartUserRateLi
     def calculate_task_start_time(
         self, user_id: int, sa_session: galaxy_scoped_session, task_interval_secs: float, now: datetime.datetime
     ) -> datetime.datetime:
-        with transaction(sa_session):
-            update_stmt = (
-                update(CeleryUserRateLimit)
-                .where(CeleryUserRateLimit.user_id == user_id)
-                .values(last_scheduled_time=text("greatest(last_scheduled_time + ':interval second', :now)"))
+        update_stmt = (
+            update(CeleryUserRateLimit)
+            .where(CeleryUserRateLimit.user_id == user_id)
+            .values(last_scheduled_time=text("greatest(last_scheduled_time + ':interval second', :now)"))
+            .returning(CeleryUserRateLimit.last_scheduled_time)
+        )
+        result = sa_session.execute(update_stmt, {"interval": task_interval_secs, "now": now}).all()
+        if not result:
+            sched_time = now + datetime.timedelta(seconds=task_interval_secs)
+            upsert_stmt = (
+                ps_insert(CeleryUserRateLimit)  # type:ignore[attr-defined]
+                .values(user_id=user_id, last_scheduled_time=now)
                 .returning(CeleryUserRateLimit.last_scheduled_time)
+                .on_conflict_do_update(index_elements=["user_id"], set_=dict(last_scheduled_time=sched_time))
             )
-            result = sa_session.execute(update_stmt, {"interval": task_interval_secs, "now": now}).all()
-            if not result:
-                sched_time = now + datetime.timedelta(seconds=task_interval_secs)
-                upsert_stmt = (
-                    ps_insert(CeleryUserRateLimit)  # type:ignore[attr-defined]
-                    .values(user_id=user_id, last_scheduled_time=now)
-                    .returning(CeleryUserRateLimit.last_scheduled_time)
-                    .on_conflict_do_update(index_elements=["user_id"], set_=dict(last_scheduled_time=sched_time))
-                )
-                result = sa_session.execute(upsert_stmt).all()
-            sa_session.commit()
-            return result[0][0]
+            result = sa_session.execute(upsert_stmt).all()
+        sa_session.commit()
+        return result[0][0]
 
 
 class GalaxyTaskBeforeStartUserRateLimitStandard(GalaxyTaskBeforeStartUserRateLimit):
@@ -130,26 +128,23 @@ class GalaxyTaskBeforeStartUserRateLimitStandard(GalaxyTaskBeforeStartUserRateLi
         self, user_id: int, sa_session: galaxy_scoped_session, task_interval_secs: float, now: datetime.datetime
     ) -> datetime.datetime:
         last_scheduled_time = None
-        with transaction(sa_session):
-            last_scheduled_time = sa_session.scalars(self._select_stmt, {"userid": user_id}).first()
-            if last_scheduled_time:
-                sched_time = last_scheduled_time + datetime.timedelta(seconds=task_interval_secs)
-                if sched_time < now:
-                    sched_time = now
-                sa_session.execute(self._update_stmt, {"userid": user_id, "sched_time": sched_time})
-            sa_session.commit()
+        last_scheduled_time = sa_session.scalars(self._select_stmt, {"userid": user_id}).first()
+        if last_scheduled_time:
+            sched_time = last_scheduled_time + datetime.timedelta(seconds=task_interval_secs)
+            if sched_time < now:
+                sched_time = now
+            sa_session.execute(self._update_stmt, {"userid": user_id, "sched_time": sched_time})
+        sa_session.commit()
         if not last_scheduled_time:
             try:
-                with transaction(sa_session):
-                    sched_time = now
-                    sa_session.execute(self._insert_stmt, {"userid": user_id, "sched_time": sched_time})
-                    sa_session.commit()
+                sched_time = now
+                sa_session.execute(self._insert_stmt, {"userid": user_id, "sched_time": sched_time})
+                sa_session.commit()
             except IntegrityError:
                 #  Row was inserted by another thread since we tried the update above.
-                with transaction(sa_session):
-                    sched_time = now + datetime.timedelta(seconds=task_interval_secs)
-                    result = sa_session.execute(self._update_stmt, {"userid": user_id, "sched_time": sched_time})
-                    if result.rowcount == 0:
-                        raise Exception(f"Failed to update a celery_user_rate_limit row for user id {user_id}")
-                    sa_session.commit()
+                sched_time = now + datetime.timedelta(seconds=task_interval_secs)
+                result = sa_session.execute(self._update_stmt, {"userid": user_id, "sched_time": sched_time})
+                if result.rowcount == 0:
+                    raise Exception(f"Failed to update a celery_user_rate_limit row for user id {user_id}")
+                sa_session.commit()
         return sched_time
