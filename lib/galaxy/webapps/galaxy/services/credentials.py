@@ -262,22 +262,25 @@ class CredentialsService:
                 user_vault = UserVaultWrapper(self._app.vault, trans.user)
                 for variable_payload in group.variables:
                     variable_name, variable_value = variable_payload.name, variable_payload.value
+                    if variable_value is None:
+                        continue
                     variable = next(
                         (var for var in variables if var.name == variable_name),
                         None,
                     )
                     if variable:
-                        variable.value = variable_value or ""
+                        variable.value = variable_value
                     else:
                         variable = Variable(
                             user_credential_group_id=user_credential_group_id,
                             name=variable_name,
-                            value=variable_value or "",
+                            value=variable_value,
                         )
                     session.add(variable)
                 for secret_payload in group.secrets:
                     secret_name, secret_value = secret_payload.name, secret_payload.value
-
+                    if secret_value is None:
+                        continue
                     secret = next(
                         (sec for sec in secrets if sec.name == secret_name),
                         None,
@@ -292,7 +295,7 @@ class CredentialsService:
                         )
                     session.add(secret)
                     vault_ref = f"{source_type}|{source_id}|{reference}|{group_name}|{secret_name}"
-                    user_vault.write_secret(vault_ref, secret_value or "")
+                    user_vault.write_secret(vault_ref, secret_value)
             if not current_group_id:
                 raise exceptions.RequestParameterInvalidException(
                     "No group was selected as the current group.", type="error"
