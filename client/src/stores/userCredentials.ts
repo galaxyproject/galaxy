@@ -5,6 +5,8 @@ import type { CreateSourceCredentialsPayload, UserCredentials } from "@/api/user
 
 import { defineScopedStore } from "./scopedStore";
 
+export const SECRET_PLACEHOLDER = "********";
+
 export const useUserCredentialsStore = defineScopedStore("userCredentialsStore", (currentUserId: string) => {
     const userCredentialsForTools = ref<Record<string, UserCredentials[]>>({});
 
@@ -46,6 +48,8 @@ export const useUserCredentialsStore = defineScopedStore("userCredentialsStore",
         const userId = ensureUserIsRegistered();
         const toolId = providedCredentials.source_id;
 
+        removeSecretPlaceholders(providedCredentials);
+
         const { data, error } = await GalaxyApi().POST("/api/users/{user_id}/credentials", {
             params: {
                 path: { user_id: userId },
@@ -67,6 +71,18 @@ export const useUserCredentialsStore = defineScopedStore("userCredentialsStore",
             throw new Error("Only registered users can have tool credentials");
         }
         return currentUserId;
+    }
+
+    function removeSecretPlaceholders(providedCredentials: CreateSourceCredentialsPayload) {
+        providedCredentials.credentials.forEach((credential) => {
+            credential.groups.forEach((group) => {
+                group.secrets.forEach((secret) => {
+                    if (secret.value === SECRET_PLACEHOLDER) {
+                        secret.value = null;
+                    }
+                });
+            });
+        });
     }
 
     return {
