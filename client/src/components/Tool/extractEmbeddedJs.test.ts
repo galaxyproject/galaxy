@@ -1,4 +1,4 @@
-import { extractEmbeddedJs } from "./extractEmbeddedJs"; // Adjust the path as needed
+import { extractEmbeddedJs } from "./extractEmbeddedJs";
 
 describe("extractEmbeddedJs", () => {
     it("should extract single JavaScript fragment", () => {
@@ -41,5 +41,19 @@ describe("extractEmbeddedJs", () => {
         const input = "Some text $(incomplete";
         const result = extractEmbeddedJs(input);
         expect(result).toEqual([]);
+    });
+
+    it("should skip shell_command prefix", () => {
+        const input = "shell_command: $(first)";
+        const regex = /shell_command:\w+/;
+        const result = extractEmbeddedJs(input, regex);
+        expect(result).toEqual([{ fragment: "$(first)", start: 15 }]);
+    });
+
+    it("should skip shell_command prefix and stop at next line", () => {
+        const input = "shell_command: $(first)\n$(second)";
+        const regex = /shell_command:(.*)$/m;
+        const result = extractEmbeddedJs(input, regex);
+        expect(result).toEqual([{ fragment: "$(first)", start: 15 }]);
     });
 });

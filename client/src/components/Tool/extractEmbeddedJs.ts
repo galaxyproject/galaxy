@@ -1,14 +1,22 @@
-export function extractEmbeddedJs(inputString: string): { fragment: string; start: number }[] {
-    const matches: { fragment: string; start: number }[] = [];
+export function extractEmbeddedJs(inputString: string, fieldRegex?: RegExp): { fragment: string; start: number }[] {
     let i = 0;
+    let end = inputString.length;
+    if (fieldRegex) {
+        const fieldMatch = fieldRegex.exec(inputString);
+        if (fieldMatch && fieldMatch.length) {
+            i = fieldMatch.index;
+            end = i + fieldMatch[0].length;
+        }
+    }
+    const matches: { fragment: string; start: number }[] = [];
 
-    while (i < inputString.length) {
+    while (i < end) {
         if (inputString[i] === "$" && inputString[i + 1] === "(") {
             let depth = 0;
             const startIndex = i;
             i += 2; // Skip past "$("
 
-            while (i < inputString.length) {
+            while (i < end) {
                 if (inputString[i] === "(") {
                     depth++;
                 } else if (inputString[i] === ")") {
