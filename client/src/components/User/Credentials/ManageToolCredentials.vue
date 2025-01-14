@@ -67,14 +67,14 @@ function buildGroupsFromUserCredentials(
         for (const group of existingGroups) {
             const newGroup: ServiceGroupPayload = {
                 name: group.name,
-                variables: group.variables.map((variable) => ({
+                variables: definition.variables.map((variable) => ({
                     name: variable.name,
-                    value: variable.value,
+                    value: group.variables.find((v) => v.name === variable.name)?.value ?? null,
                 })),
-                secrets: group.secrets.map((secret) => ({
+                secrets: definition.secrets.map((secret) => ({
                     name: secret.name,
-                    value: secret.already_set ? SECRET_PLACEHOLDER : null,
-                    alreadySet: secret.already_set,
+                    value: group.secrets.find((s) => s.name === secret.name)?.already_set ? SECRET_PLACEHOLDER : null,
+                    alreadySet: group.secrets.find((s) => s.name === secret.name)?.already_set ?? false,
                 })),
             };
             groups.push(newGroup);
@@ -133,7 +133,7 @@ function getServiceCredentialsDefinition(reference: string): ServiceCredentialsD
             :credential-payload="credential"
             @new-credentials-set="onNewCredentialsSet"
             @update-current-set="onCurrentSetChange" />
-        <button @click="saveCredentials">Save Credentials</button>
+        <button class="btn-primary" @click="saveCredentials">Save Credentials</button>
     </div>
 </template>
 
