@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, type Ref, watch, type PropType } from "vue";
+import { watch, type PropType, type Ref, ref } from "vue";
 import zxcvbn from "zxcvbn";
 
 const props = defineProps({
-  password: {
-    type: String as PropType<string | null>,
-    required: true,
-  },
+    password: {
+        type: String as PropType<string | null>,
+        required: true,
+    },
 });
 
 const passwordStrength = ref<string>("empty");
@@ -21,22 +21,22 @@ const passwordRules = ref({
 });
 
 function evaluatePasswordStrength(newPassword: string) {
-  if (newPassword.length === 0) {
-    passwordStrength.value = "empty";
-    strengthScore.value = 0;
-    return;
-  }
+    if (newPassword.length === 0) {
+        passwordStrength.value = "empty";
+        strengthScore.value = 0;
+        return;
+    }
 
-  const result = zxcvbn(newPassword);
-  strengthScore.value = result.score; 
+    const result = zxcvbn(newPassword);
+    strengthScore.value = result.score;
 
-  if (strengthScore.value === 0 || strengthScore.value === 1) {
-    passwordStrength.value = "weak";
-  } else if (strengthScore.value === 2 || strengthScore.value === 3) {
-    passwordStrength.value = "medium";
-  } else {
-    passwordStrength.value = "strong";
-  }
+    if (strengthScore.value === 0 || strengthScore.value === 1) {
+        passwordStrength.value = "weak";
+    } else if (strengthScore.value === 2 || strengthScore.value === 3) {
+        passwordStrength.value = "medium";
+    } else {
+        passwordStrength.value = "strong";
+    }
 }
 
 // Function to validate password rules
@@ -47,19 +47,20 @@ function validatePasswordRules(password: string) {
     passwordRules.value.hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 }
 
-watch(() => props.password, (newPassword) => {
-  if (typeof newPassword === "string") {
-    evaluatePasswordStrength(newPassword);
-    validatePasswordRules(newPassword || "");
-  }
-});
+watch(
+    () => props.password,
+    (newPassword) => {
+        if (typeof newPassword === "string") {
+            evaluatePasswordStrength(newPassword);
+            validatePasswordRules(newPassword || "");
+        }
+    }
+);
 </script>
 
 <template>
     <div>
-        <BButton variant="info" class="mt-3" @click="showPasswordGuidelines = true">
-            Password Guidelines
-        </BButton>
+        <BButton variant="info" class="mt-3" @click="showPasswordGuidelines = true"> Password Guidelines </BButton>
 
         <div>
             <BModal v-model="showPasswordGuidelines" title="Tips for a secure Password">
@@ -71,20 +72,25 @@ watch(() => props.password, (newPassword) => {
                     <li>Avoid common passwords like <code>123456</code> or <code>password</code>.</li>
                     <li>No repeated patterns like <code>aaaa</code> or <code>123123</code>.</li>
                 </ul>
-                <p>Learn more about:
-                    <a href="https://www.cisa.gov/secure-our-world/use-strong-passwords target=" target="_blank" rel="noopener noreferrer">strong passwords</a>.
+                <p>
+                    Learn more about:
+                    <a
+                        href="https://www.cisa.gov/secure-our-world/use-strong-passwords target="
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >strong passwords</a
+                    >.
                 </p>
                 <template v-slot:modal-footer>
                     <BButton variant="secondary" @click="showPasswordGuidelines = false">Schließen</BButton>
                 </template>
             </BModal>
-            </div>
+        </div>
         <div class="password-strength-bar-container mt-2">
             <div
                 class="password-strength-bar"
                 :class="passwordStrength"
-                :style="{ width: `${(strengthScore / 4) * 100}%` }"
-            ></div>
+                :style="{ width: `${(strengthScore / 4) * 100}%` }"></div>
         </div>
 
         <div :class="['password-strength', passwordStrength]" class="mt-2">
@@ -92,7 +98,6 @@ watch(() => props.password, (newPassword) => {
             <span v-else-if="passwordStrength === 'weak'">Weak Password</span>
             <span v-else-if="passwordStrength === 'medium'">Medium Password</span>
             <span v-else>Strong Password</span>
-
         </div>
 
         <div class="password-help">
@@ -178,5 +183,4 @@ watch(() => props.password, (newPassword) => {
 .password-help li .fa {
     margin-right: 0.5rem;
 }
-
 </style>

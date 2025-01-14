@@ -13,7 +13,6 @@ import {
     BFormGroup,
     BFormInput,
     BFormText,
-    BModal,
 } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 
@@ -152,18 +151,16 @@ async function submit() {
                                         name="password"
                                         :type="showPassword ? 'text' : 'password'"
                                         autocomplete="new-password"
-                                        required
-                                    />
+                                        required />
                                     <!-- Eye Icon to show Password -->
                                     <button
                                         type="button"
                                         class="password-toggle-icon"
-                                        @click="togglePasswordVisibility"
                                         aria-label="Toggle password visibility"
-                                    >
+                                        @click="togglePasswordVisibility">
                                         <i :class="showPassword ? 'fa fa-eye-slash' : 'fa fa-eye'"></i>
                                     </button>
-                                    
+
                                     <!-- Password Strength Component -->
                                     <PasswordStrength :password="password" />
                                 </BFormGroup>
@@ -260,7 +257,7 @@ async function submit() {
         border: 1px solid #ccc;
         padding: 2px 5px;
         border-radius: 4px;
-    } 
+    }
 }
 
 .password-toggle-icon {
@@ -276,5 +273,4 @@ async function submit() {
 .password-toggle-icon:hover {
     color: $gray-900;
 }
-
 </style>

@@ -1,4 +1,4 @@
-declare module 'zxcvbn' {
+declare module "zxcvbn" {
     interface ZxcvbnFeedback {
         warning: string;
         suggestions: string[];
