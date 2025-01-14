@@ -1,6 +1,7 @@
 <script setup lang="ts">
-const VegaWrapper = () => import("@/components/Common/VegaWrapper.vue");
 import { computed } from "vue";
+
+const VegaWrapper = () => import("@/components/Common/VegaWrapper.vue");
 
 const props = defineProps<{
     content: string;

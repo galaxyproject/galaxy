@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+
 import VisualizationWrapper from "@/components/Visualizations/VisualizationWrapper.vue";
 
 const props = defineProps<{
@@ -15,6 +16,6 @@ const dataIncoming = computed(() => ({
 
 <template>
     <div>
-        <visualization-wrapper name="vitessce" :data-incoming="dataIncoming" height="500px" />
+        <VisualizationWrapper name="vitessce" :data-incoming="dataIncoming" height="500px" />
     </div>
 </template>

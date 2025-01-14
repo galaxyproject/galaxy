@@ -1,20 +1,19 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
-
-import { useWorkflowStore } from "@/stores/workflowStore";
-import { parseMarkdown } from "./parse";
-
-import MarkdownGalaxy from "./Sections/MarkdownGalaxy.vue";
-import MarkdownDefault from "./Sections/MarkdownDefault.vue";
-import MarkdownVega from "./Sections/MarkdownVega.vue";
-import MarkdownVitessce from "./Sections/MarkdownVitessce.vue";
-
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import StsDownloadButton from "@/components/StsDownloadButton.vue";
-
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed, onMounted, ref, watch } from "vue";
+
+import { useWorkflowStore } from "@/stores/workflowStore";
+
+import { parseMarkdown } from "./parse";
+
+import MarkdownDefault from "./Sections/MarkdownDefault.vue";
+import MarkdownGalaxy from "./Sections/MarkdownGalaxy.vue";
+import MarkdownVega from "./Sections/MarkdownVega.vue";
+import MarkdownVitessce from "./Sections/MarkdownVitessce.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import StsDownloadButton from "@/components/StsDownloadButton.vue";
 
 library.add(faDownload, faEdit);
 
@@ -65,7 +64,7 @@ const effectiveExportLink = computed(() => (props.enable_beta_markdown_export ? 
 const time = computed(() => {
     const generateTime = props.markdownConfig.generate_time;
     if (generateTime) {
-        let formattedTime = generateTime.endsWith("Z") ? generateTime : `${generateTime}Z`;
+        const formattedTime = generateTime.endsWith("Z") ? generateTime : `${generateTime}Z`;
         const date = new Date(formattedTime);
         return date.toLocaleString("default", {
             day: "numeric",

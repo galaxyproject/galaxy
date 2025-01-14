@@ -1,33 +1,26 @@
 <template>
-    <div id="columns" class="d-flex">
-        <TextEditor :title="title" :markdown-text="markdownText" :steps="steps" :mode="mode" />
-    </div>
+    <TextEditor :title="title" :markdown-text="markdownText" :steps="steps" :mode="mode" />
 </template>
 
-<script>
+<script setup lang="ts">
 import TextEditor from "./Editor/TextEditor.vue";
 
-export default {
-    components: {
-        TextEditor,
+defineProps({
+    markdownText: {
+        type: String,
+        default: null,
     },
-    props: {
-        markdownText: {
-            type: String,
-            default: null,
-        },
-        steps: {
-            type: Object,
-            default: null,
-        },
-        title: {
-            type: String,
-            default: null,
-        },
-        mode: {
-            type: String,
-            default: "report",
-        },
+    steps: {
+        type: Object,
+        default: null,
     },
-};
+    title: {
+        type: String,
+        default: null,
+    },
+    mode: {
+        type: String,
+        default: "report",
+    },
+});
 </script>

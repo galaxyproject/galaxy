@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import MarkdownIt from "markdown-it";
 //@ts-ignore
 import markdownItRegexp from "markdown-it-regexp";
+import { computed } from "vue";
 
 const mdNewline = markdownItRegexp(/<br>/, () => {
     return "<div style='clear:both;'/><br>";
