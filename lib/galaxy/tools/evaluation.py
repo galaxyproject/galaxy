@@ -237,10 +237,8 @@ class ToolEvaluator:
         self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
 
         if hasattr(self.tool, "credentials"):
-            tool_id = self.tool.id
-            tool_credentials: List[CredentialsRequirement] = self.tool.credentials
             user_credentials_configurator = UserCredentialsConfigurator(self.app, self.job, self.environment_variables)
-            user_credentials_configurator.set_environment_variables("tool", tool_id, tool_credentials)
+            user_credentials_configurator.set_environment_variables("tool", self.tool.id, self.tool.credentials)
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution
