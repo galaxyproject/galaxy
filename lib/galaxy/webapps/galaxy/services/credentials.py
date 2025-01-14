@@ -4,6 +4,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Union,
 )
 
 from sqlalchemy import select
@@ -48,8 +49,13 @@ class CredentialsService:
         db_user_credentials = self._user_credentials(
             trans, user_id=user_id, source_type=source_type, source_id=source_id, group_name=group_name
         )
-        credentials_dict = self._user_credentials_to_dict(db_user_credentials).values()
-        return UserCredentialsListResponse(root=[UserCredentialsResponse(**cred) for cred in credentials_dict])
+        credentials_dict = self._user_credentials_to_dict(db_user_credentials)
+        for user_credentials, credentials_group in db_user_credentials:
+            variables, secrets = self._credentials(trans, group_id=credentials_group.id)
+            group = credentials_dict.get(user_credentials.id, {}).get("groups", {}).get(credentials_group.name, {})
+            self._add_credential_to_group(group, variables, secrets)
+
+        return UserCredentialsListResponse(root=[UserCredentialsResponse(**cred) for cred in credentials_dict.values()])
 
     def provide_credential(
         self,
@@ -67,8 +73,11 @@ class CredentialsService:
         user_credentials_id: DecodedDatabaseIdField,
     ):
         """Deletes all credentials for a specific service."""
-        user_credentials = self._user_credentials(trans, user_id=user_id, user_credentials_id=user_credentials_id)
-        rows_to_be_deleted = [item for uc in user_credentials for item in uc]
+        db_user_credentials = self._user_credentials(trans, user_id=user_id, user_credentials_id=user_credentials_id)
+        rows_to_be_deleted: List[Union[UserCredentials, CredentialsGroup, Variable, Secret]] = []
+        for uc, credentials_group in db_user_credentials:
+            variables, secrets = self._credentials(trans, group_id=credentials_group.id)
+            rows_to_be_deleted.extend([uc, credentials_group, *variables, *secrets])
         self._delete_credentials(trans.sa_session, rows_to_be_deleted)
 
     def delete_credentials(
@@ -79,7 +88,10 @@ class CredentialsService:
     ):
         """Deletes a specific credential group."""
         user_credentials = self._user_credentials(trans, user_id=user_id, group_id=group_id)
-        rows_to_be_deleted = [item for uc in user_credentials for item in uc if not isinstance(item, UserCredentials)]
+        rows_to_be_deleted: List[Union[CredentialsGroup, Variable, Secret]] = []
+        for _, credentials_group in user_credentials:
+            variables, secrets = self._credentials(trans, group_id=credentials_group.id)
+            rows_to_be_deleted.extend([credentials_group, *variables, *secrets])
         self._delete_credentials(trans.sa_session, rows_to_be_deleted)
 
     def _user_credentials(
@@ -92,31 +104,28 @@ class CredentialsService:
         group_name: Optional[str] = None,
         user_credentials_id: Optional[DecodedDatabaseIdField] = None,
         group_id: Optional[DecodedDatabaseIdField] = None,
-    ) -> List[Tuple[UserCredentials, CredentialsGroup, Variable, Secret]]:
+    ) -> List[Tuple[UserCredentials, CredentialsGroup]]:
         if trans.anonymous:
             raise exceptions.AuthenticationRequired("You need to be logged in to access your credentials.")
         if user_id == "current":
             user_id = trans.user.id
         if trans.user and trans.user.id != user_id:
             raise exceptions.ItemOwnershipException("You can only access your own credentials.")
+        user_cred_alias = aliased(UserCredentials)
         group_alias = aliased(CredentialsGroup)
-        var_alias = aliased(Variable)
-        sec_alias = aliased(Secret)
         stmt = (
-            select(UserCredentials, group_alias, var_alias, sec_alias)
-            .join(group_alias, group_alias.user_credentials_id == UserCredentials.id)
-            .outerjoin(var_alias, var_alias.user_credential_group_id == group_alias.id)
-            .outerjoin(sec_alias, sec_alias.user_credential_group_id == group_alias.id)
-            .where(UserCredentials.user_id == user_id)
+            select(user_cred_alias, group_alias)
+            .join(group_alias, group_alias.user_credentials_id == user_cred_alias.id)
+            .where(user_cred_alias.user_id == user_id)
         )
         if source_type:
-            stmt = stmt.where(UserCredentials.source_type == source_type)
+            stmt = stmt.where(user_cred_alias.source_type == source_type)
         if source_id:
             if not source_type:
                 raise exceptions.RequestParameterInvalidException(
                     "Source type is required when source ID is provided.", type="error"
                 )
-            stmt = stmt.where(UserCredentials.source_id == source_id)
+            stmt = stmt.where(user_cred_alias.source_id == source_id)
         if group_name:
             if not source_type or not source_id:
                 raise exceptions.RequestParameterInvalidException(
@@ -125,24 +134,37 @@ class CredentialsService:
             stmt = stmt.where(group_alias.name == group_name)
 
         if reference:
-            stmt = stmt.where(UserCredentials.reference == reference)
+            stmt = stmt.where(user_cred_alias.reference == reference)
 
         if user_credentials_id:
-            stmt = stmt.where(UserCredentials.id == user_credentials_id)
+            stmt = stmt.where(user_cred_alias.id == user_credentials_id)
 
         if group_id:
             stmt = stmt.where(group_alias.id == group_id)
 
         result = trans.sa_session.execute(stmt).all()
-        return [(row[0], row[1], row[2], row[3]) for row in result]
+        return [(row[0], row[1]) for row in result]
+
+    def _credentials(
+        self,
+        trans: ProvidesUserContext,
+        group_id: DecodedDatabaseIdField,
+    ) -> Tuple[List[Variable], List[Secret]]:
+        variables_stmt = select(Variable).where(Variable.user_credential_group_id == group_id)
+        secrets_stmt = select(Secret).where(Secret.user_credential_group_id == group_id)
+
+        variables_result = list(trans.sa_session.execute(variables_stmt).scalars().all())
+        secrets_result = list(trans.sa_session.execute(secrets_stmt).scalars().all())
+
+        return variables_result, secrets_result
 
     def _user_credentials_to_dict(
         self,
-        db_user_credentials: List[Tuple[UserCredentials, CredentialsGroup, Variable, Secret]],
+        db_user_credentials: List[Tuple[UserCredentials, CredentialsGroup]],
     ) -> Dict[int, Dict[str, Any]]:
         grouped_data: Dict[int, Dict[str, Any]] = {}
-        group_name = {group.id: group.name for _, group, _, _ in db_user_credentials}
-        for user_credentials, credentials_group, variable, secret in db_user_credentials:
+        group_name = {group.id: group.name for _, group in db_user_credentials}
+        for user_credentials, credentials_group in db_user_credentials:
             grouped_data.setdefault(
                 user_credentials.id,
                 dict(
@@ -167,11 +189,18 @@ class CredentialsService:
                 ),
             )
 
-            group = grouped_data[user_credentials.id]["groups"][credentials_group.name]
-            group["secrets"].append({"id": secret.id, "name": secret.name, "already_set": True})
-            group["variables"].append({"id": variable.id, "name": variable.name, "value": variable.value})
-
         return grouped_data
+
+    def _add_credential_to_group(
+        self,
+        group: Dict[str, Any],
+        variables: List[Variable],
+        secrets: List[Secret],
+    ) -> None:
+        for variable in variables:
+            group["variables"].append({"id": variable.id, "name": variable.name, "value": variable.value})
+        for secret in secrets:
+            group["secrets"].append({"id": secret.id, "name": secret.name, "already_set": secret.already_set})
 
     def _create_user_credential(
         self,
@@ -189,10 +218,10 @@ class CredentialsService:
             source_type=source_type,
             source_id=source_id,
         )
-        credentials_dict = self._user_credentials_to_dict(db_user_credentials).values()
+        credentials_dict = self._user_credentials_to_dict(db_user_credentials)
         existing_groups = {
             cred["reference"]: {group["name"]: group["id"] for group in cred["groups"].values()}
-            for cred in credentials_dict
+            for cred in credentials_dict.values()
         }
 
         for service_payload in payload.credentials:
@@ -200,7 +229,7 @@ class CredentialsService:
             current_group_name = service_payload.current_group
             current_group_id = existing_groups.get(reference, {}).get(current_group_name)
 
-            user_credentials = next((cred[0] for cred in db_user_credentials if cred[0].reference == reference), None)
+            user_credentials = next((uc[0] for uc in db_user_credentials if uc[0].reference == reference), None)
             if not user_credentials:
                 if user_id == "current":
                     user_id = trans.user.id
@@ -216,9 +245,9 @@ class CredentialsService:
 
             for group in service_payload.groups:
                 group_name = group.name
-
                 credentials_group = next(
-                    (group[1] for group in db_user_credentials if group[1].name == group_name), None
+                    (uc[1] for uc in db_user_credentials if uc[1].name == group_name and uc[0].reference == reference),
+                    None,
                 )
                 if not credentials_group:
                     credentials_group = CredentialsGroup(name=group_name, user_credentials_id=user_credentials_id)
@@ -229,15 +258,12 @@ class CredentialsService:
                 if current_group_name == group_name:
                     current_group_id = user_credential_group_id
 
+                variables, secrets = self._credentials(trans, group_id=user_credential_group_id)
                 user_vault = UserVaultWrapper(self._app.vault, trans.user)
                 for variable_payload in group.variables:
                     variable_name, variable_value = variable_payload.name, variable_payload.value
                     variable = next(
-                        (
-                            var[2]
-                            for var in db_user_credentials
-                            if var[1].name == group_name and var[2].name == variable_name
-                        ),
+                        (var for var in variables if var.name == variable_name),
                         None,
                     )
                     if variable:
@@ -253,11 +279,7 @@ class CredentialsService:
                     secret_name, secret_value = secret_payload.name, secret_payload.value
 
                     secret = next(
-                        (
-                            sec[3]
-                            for sec in db_user_credentials
-                            if sec[1].name == group_name and sec[3].name == secret_name
-                        ),
+                        (sec for sec in secrets if sec.name == secret_name),
                         None,
                     )
                     if secret:
@@ -285,8 +307,16 @@ class CredentialsService:
             source_type=source_type,
             source_id=source_id,
         )
-        credentials_dict = self._user_credentials_to_dict(new_user_credentials).values()
-        return UserCredentialsListResponse(root=[UserCredentialsResponse(**cred) for cred in credentials_dict])
+        credentials_dict = self._user_credentials_to_dict(new_user_credentials)
+        for new_user_credentials_list, new_credentials_group in new_user_credentials:
+            variables, secrets = self._credentials(trans, group_id=new_credentials_group.id)
+            db_group = (
+                credentials_dict.get(new_user_credentials_list.id, {})
+                .get("groups", {})
+                .get(new_credentials_group.name, {})
+            )
+            self._add_credential_to_group(db_group, variables, secrets)
+        return UserCredentialsListResponse(root=[UserCredentialsResponse(**cred) for cred in credentials_dict.values()])
 
     def _delete_credentials(self, sa_session: galaxy_scoped_session, rows_to_be_deleted: List):
         for row in rows_to_be_deleted:
