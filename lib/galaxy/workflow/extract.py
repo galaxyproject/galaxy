@@ -9,10 +9,7 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
+from galaxy.model.base import ensure_object_added_to_session
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
@@ -76,8 +73,7 @@ def extract_workflow(
     stored.latest_workflow = workflow
     trans.sa_session.add(stored)
     ensure_object_added_to_session(workflow, session=trans.sa_session)
-    with transaction(trans.sa_session):
-        trans.sa_session.commit()
+    trans.sa_session.commit()
     return stored
 
 
