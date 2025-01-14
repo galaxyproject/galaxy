@@ -124,7 +124,7 @@ function getVariableDescription(name: string, type: CredentialType): string | un
                 <!-- TODO Use new component here? -->
                 <FormElement
                     :id="variable.name"
-                    v-model="variable.name"
+                    v-model="variable.value"
                     type="text"
                     :title="getVariableTitle(variable.name, 'variable')"
                     :optional="credentialDefinition.optional"
@@ -134,7 +134,7 @@ function getVariableDescription(name: string, type: CredentialType): string | un
                 <!-- TODO Use VaultSecret component here or similar? -->
                 <FormElement
                     :id="secret.name"
-                    v-model="secret.name"
+                    v-model="secret.value"
                     type="password"
                     :title="getVariableTitle(secret.name, 'secret')"
                     :optional="credentialDefinition.optional"
