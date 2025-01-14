@@ -352,7 +352,7 @@ async function copyIntoWorkflow(workflowId: string) {
         const data = await loadWorkflow({ id: workflowId });
 
         const action = new CopyIntoWorkflowAction(
-            workflowId,
+            id.value,
             data,
             defaultPosition(graphOffset.value, transform.value)
         );
