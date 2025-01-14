@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, type PropType } from "vue";
-import zxcvbn from "zxcvbn"; // Import the zxcvbn library
+import { ref, type Ref, watch, type PropType } from "vue";
+import zxcvbn from "zxcvbn";
 
-// Props to receive the password input
 const props = defineProps({
   password: {
     type: String as PropType<string | null>,
@@ -12,6 +11,7 @@ const props = defineProps({
 
 const passwordStrength = ref<string>("empty");
 const strengthScore = ref<number>(0);
+const showPasswordGuidelines: Ref<boolean> = ref(false);
 
 const passwordRules = ref({
     minLength: false,
@@ -20,7 +20,6 @@ const passwordRules = ref({
     hasSpecialChar: false,
 });
 
-// Evaluate password strength using zxcvbn
 function evaluatePasswordStrength(newPassword: string) {
   if (newPassword.length === 0) {
     passwordStrength.value = "empty";
@@ -28,10 +27,9 @@ function evaluatePasswordStrength(newPassword: string) {
     return;
   }
 
-  const result = zxcvbn(newPassword); // Analyze the password with zxcvbn
-  strengthScore.value = result.score; // zxcvbn returns a score from 0 to 4
+  const result = zxcvbn(newPassword);
+  strengthScore.value = result.score; 
 
-  // Map zxcvbn scores to strength labels
   if (strengthScore.value === 0 || strengthScore.value === 1) {
     passwordStrength.value = "weak";
   } else if (strengthScore.value === 2 || strengthScore.value === 3) {
@@ -49,7 +47,6 @@ function validatePasswordRules(password: string) {
     passwordRules.value.hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 }
 
-// Watch for changes in the password prop
 watch(() => props.password, (newPassword) => {
   if (typeof newPassword === "string") {
     evaluatePasswordStrength(newPassword);
@@ -60,12 +57,28 @@ watch(() => props.password, (newPassword) => {
 
 <template>
     <div>
-        <!-- Password Guidelines Button -->
-        <BButton variant="info" class="mt-3" href="https://www.cisa.gov/secure-our-world/use-strong-passwords" target="_blank" rel="noopener noreferrer">
+        <BButton variant="info" class="mt-3" @click="showPasswordGuidelines = true">
             Password Guidelines
         </BButton>
 
-        <!-- Password Strength Bar -->
+        <div>
+            <BModal v-model="showPasswordGuidelines" title="Tips for a secure Password">
+                <p>A good password should meet the following criteria:</p>
+                <ul>
+                    <li>At least 12 characters long.</li>
+                    <li>Use uppercase and lowercase letters.</li>
+                    <li>At least one number and one special character.</li>
+                    <li>Avoid common passwords like <code>123456</code> or <code>password</code>.</li>
+                    <li>No repeated patterns like <code>aaaa</code> or <code>123123</code>.</li>
+                </ul>
+                <p>Learn more about:
+                    <a href="https://www.cisa.gov/secure-our-world/use-strong-passwords target=" target="_blank" rel="noopener noreferrer">strong passwords</a>.
+                </p>
+                <template v-slot:modal-footer>
+                    <BButton variant="secondary" @click="showPasswordGuidelines = false">Schließen</BButton>
+                </template>
+            </BModal>
+            </div>
         <div class="password-strength-bar-container mt-2">
             <div
                 class="password-strength-bar"
@@ -74,7 +87,6 @@ watch(() => props.password, (newPassword) => {
             ></div>
         </div>
 
-        <!-- Password Strength Text -->
         <div :class="['password-strength', passwordStrength]" class="mt-2">
             <span v-if="passwordStrength === 'empty'"></span>
             <span v-else-if="passwordStrength === 'weak'">Weak Password</span>
@@ -83,7 +95,6 @@ watch(() => props.password, (newPassword) => {
 
         </div>
 
-        <!-- Password Guidelines with check marker-->
         <div class="password-help">
             <ul>
                 <li :class="{ 'rule-met': passwordRules.minLength }">
