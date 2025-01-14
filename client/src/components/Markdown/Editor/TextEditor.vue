@@ -1,18 +1,14 @@
 <template>
-    <div id="columns" class="d-flex">
+    <div class="d-flex h-100 w-100">
         <FlexPanel side="left">
             <MarkdownToolBox :steps="steps" @insert="insertMarkdown" />
         </FlexPanel>
-        <div id="center" class="overflow-auto w-100">
-            <div class="markdown-editor h-100">
-                <textarea
-                    id="workflow-report-editor"
-                    ref="textArea"
-                    v-model="content"
-                    class="markdown-textarea"
-                    @input="onUpdate" />
-            </div>
-        </div>
+        <textarea
+            id="workflow-report-editor"
+            ref="textArea"
+            v-model="content"
+            class="markdown-textarea w-100 p-4"
+            @input="onUpdate" />
     </div>
 </template>
 
@@ -72,3 +68,12 @@ const onUpdate = debounce((e: Event) => {
     emit("update", content.value || "");
 }, 300);
 </script>
+
+<style scoped>
+.markdown-textarea {
+    border: none;
+    resize: none;
+    outline: none;
+    font: 16px/1.7 Menlo, Consolas, Monaco, "Andale Mono", monospace;
+}
+</style>
