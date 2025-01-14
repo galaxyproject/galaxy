@@ -26,7 +26,6 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 import galaxy.config
 from galaxy.datatypes.registry import Registry
 from galaxy.exceptions import ObjectNotFound
-from galaxy.model.base import transaction
 from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import unicodify
@@ -222,12 +221,13 @@ def delete_userless_histories(app, cutoff_time, info_only=False, force_retry=Fal
     # Nothing is removed from disk yet.
     history_count = 0
     start = time.time()
+    session = app.sa_session()
     if force_retry:
-        histories = app.sa_session.query(app.model.History).filter(
+        histories = session.query(app.model.History).filter(
             and_(app.model.History.__table__.c.user_id == null(), app.model.History.update_time < cutoff_time)
         )
     else:
-        histories = app.sa_session.query(app.model.History).filter(
+        histories = session.query(app.model.History).filter(
             and_(
                 app.model.History.__table__.c.user_id == null(),
                 app.model.History.__table__.c.deleted == false(),
@@ -238,10 +238,8 @@ def delete_userless_histories(app, cutoff_time, info_only=False, force_retry=Fal
         if not info_only:
             log.info("Deleting history id %d", history.id)
             history.deleted = True
-            app.sa_session.add(history)
-            session = app.sa_session()
-            with transaction(session):
-                session.commit()
+            session.add(history)
+            session.commit()
         history_count += 1
     stop = time.time()
     log.info("Deleted %d histories", history_count)
@@ -257,15 +255,16 @@ def purge_histories(app, cutoff_time, remove_from_disk, info_only=False, force_r
     # i.e. all associated datasets are marked as deleted
     history_count = 0
     start = time.time()
+    session = app.sa_session()
     if force_retry:
         histories = (
-            app.sa_session.query(app.model.History)
+            session.query(app.model.History)
             .filter(and_(app.model.History.__table__.c.deleted == true(), app.model.History.update_time < cutoff_time))
             .options(joinedload(app.model.History.datasets))
         )
     else:
         histories = (
-            app.sa_session.query(app.model.History)
+            session.query(app.model.History)
             .filter(
                 and_(
                     app.model.History.__table__.c.deleted == true(),
@@ -289,10 +288,8 @@ def purge_histories(app, cutoff_time, remove_from_disk, info_only=False, force_r
             #     dhp.delete()
             log.info("Purging history id %d", history.id)
             history.purged = True
-            app.sa_session.add(history)
-            session = app.sa_session()
-            with transaction(session):
-                session.commit()
+            session.add(history)
+            session.commit()
         else:
             log.info("History id %d will be purged (without 'info_only' mode)", history.id)
         history_count += 1
@@ -310,14 +307,15 @@ def purge_libraries(app, cutoff_time, remove_from_disk, info_only=False, force_r
     # i.e. all associated LibraryDatasets/folders are marked as deleted
     library_count = 0
     start = time.time()
+    session = app.sa_session()
     if force_retry:
-        libraries = app.sa_session.query(app.model.Library).filter(
+        libraries = session.query(app.model.Library).filter(
             and_(
                 app.model.Library.__table__.c.deleted == true(), app.model.Library.__table__.c.update_time < cutoff_time
             )
         )
     else:
-        libraries = app.sa_session.query(app.model.Library).filter(
+        libraries = session.query(app.model.Library).filter(
             and_(
                 app.model.Library.__table__.c.deleted == true(),
                 app.model.Library.__table__.c.purged == false(),
@@ -329,10 +327,8 @@ def purge_libraries(app, cutoff_time, remove_from_disk, info_only=False, force_r
         if not info_only:
             log.info("Purging library id %d", library.id)
             library.purged = True
-            app.sa_session.add(library)
-            session = app.sa_session()
-            with transaction(session):
-                session.commit()
+            session.add(library)
+            session.commit()
         library_count += 1
     stop = time.time()
     log.info("# Purged %d libraries .", library_count)
@@ -413,6 +409,7 @@ def delete_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_r
     deleted_dataset_count = 0
     deleted_instance_count = 0
     skip = []
+    session = app.sa_session()
     # Handle library datasets.  This is a bit tricky, so here's some clarification.  We have a list of all
     # LibraryDatasets that were marked deleted before our cutoff_time, but have not yet been marked purged.
     # A LibraryDataset object is marked purged when all of its LibraryDatasetDatasetAssociations have been
@@ -421,37 +418,35 @@ def delete_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_r
     # and add it to our accrued list of Datasets for later processing.  We mark  as deleted all of its
     # LibraryDatasetDatasetAssociations.  Then we mark the LibraryDataset as purged.  We then process our
     # list of Datasets.
-    library_dataset_ids = [row.id for row in app.sa_session.execute(library_dataset_ids_query)]
+    library_dataset_ids = [row.id for row in session.execute(library_dataset_ids_query)]
     dataset_ids = []
     for library_dataset_id in library_dataset_ids:
         log.info("######### Processing LibraryDataset id: %d", library_dataset_id)
         # Get the LibraryDataset and the current LibraryDatasetDatasetAssociation objects
-        ld = app.sa_session.query(app.model.LibraryDataset).get(library_dataset_id)
+        ld = session.query(app.model.LibraryDataset).get(library_dataset_id)
         ldda = ld.library_dataset_dataset_association
         # Append the associated Dataset object's id to our list of dataset_ids
         dataset_ids.append(ldda.dataset_id)
         # Mark all of the LibraryDataset's associated LibraryDatasetDatasetAssociation objects' as deleted
         if not ldda.deleted:
             ldda.deleted = True
-            app.sa_session.add(ldda)
+            session.add(ldda)
             log.info("Marked associated LibraryDatasetDatasetAssociation id %d as deleted", ldda.id)
         for expired_ldda in ld.expired_datasets:
             if not expired_ldda.deleted:
                 expired_ldda.deleted = True
-                app.sa_session.add(expired_ldda)
+                session.add(expired_ldda)
                 log.info("Marked associated expired LibraryDatasetDatasetAssociation id %d as deleted", ldda.id)
         # Mark the LibraryDataset as purged
         ld.purged = True
-        app.sa_session.add(ld)
+        session.add(ld)
         log.info("Marked LibraryDataset id %d as purged", ld.id)
-        session = app.sa_session()
-        with transaction(session):
-            session.commit()
+        session.commit()
     # Add all datasets associated with Histories to our list
-    dataset_ids.extend([row.id for row in app.sa_session.execute(history_dataset_ids_query)])
+    dataset_ids.extend([row.id for row in session.execute(history_dataset_ids_query)])
     # Process each of the Dataset objects
     for dataset_id in dataset_ids:
-        dataset = app.sa_session.query(app.model.Dataset).get(dataset_id)
+        dataset = session.query(app.model.Dataset).get(dataset_id)
         if dataset.id in skip:
             continue
         skip.append(dataset.id)
@@ -528,10 +523,9 @@ def _purge_dataset_instance(dataset_instance, app, remove_from_disk, info_only=F
         )
         dataset_instance.mark_deleted()
         dataset_instance.clear_associated_files()
-        app.sa_session.add(dataset_instance)
         session = app.sa_session()
-        with transaction(session):
-            session.commit()
+        session.add(dataset_instance)
+        session.commit()
         app.sa_session.refresh(dataset_instance.dataset)
     else:
         log.info(
@@ -572,12 +566,12 @@ def _delete_dataset(dataset, app, remove_from_disk, info_only=False, is_deletabl
         metadata_files = []
         # lets create a list of metadata files, then perform actions on them
         for hda in dataset.history_associations:
-            for metadata_file in app.sa_session.query(app.model.MetadataFile).filter(
+            for metadata_file in session.query(app.model.MetadataFile).filter(
                 app.model.MetadataFile.__table__.c.hda_id == hda.id
             ):
                 metadata_files.append(metadata_file)
         for ldda in dataset.library_associations:
-            for metadata_file in app.sa_session.query(app.model.MetadataFile).filter(
+            for metadata_file in session.query(app.model.MetadataFile).filter(
                 app.model.MetadataFile.__table__.c.lda_id == ldda.id
             ):
                 metadata_files.append(metadata_file)
@@ -608,20 +602,17 @@ def _delete_dataset(dataset, app, remove_from_disk, info_only=False, is_deletabl
                             metadata_file.get_file_name(),
                         )
                     metadata_file.purged = True
-                    app.sa_session.add(metadata_file)
-                    with transaction(session):
-                        session.commit()
-                metadata_file.deleted = True
-                app.sa_session.add(metadata_file)
-                with transaction(session):
+                    session.add(metadata_file)
                     session.commit()
+                metadata_file.deleted = True
+                session.add(metadata_file)
+                session.commit()
             log.info(metadata_file.get_file_name())
         if not info_only:
             log.info("Deleting dataset id %d", dataset.id)
             dataset.deleted = True
-            app.sa_session.add(dataset)
-            with transaction(session):
-                session.commit()
+            session.add(dataset)
+            session.commit()
         else:
             log.info("Dataset %d will be deleted (without 'info_only' mode)", dataset.id)
 
@@ -650,12 +641,11 @@ def _purge_dataset(app, dataset, remove_from_disk, info_only=False):
                                     usage_users.append(hda.history.user)
                         for user in usage_users:
                             user.adjust_total_disk_usage(-dataset.get_total_size())
-                            app.sa_session.add(user)
+                            session.add(user)
                     log.info("Purging dataset id %d", dataset.id)
                     dataset.purged = True
-                    app.sa_session.add(dataset)
-                    with transaction(session):
-                        session.commit()
+                    session.add(dataset)
+                    session.commit()
                 else:
                     log.info("Dataset %d will be purged (without 'info_only' mode)", dataset.id)
             else:
@@ -668,9 +658,8 @@ def _purge_dataset(app, dataset, remove_from_disk, info_only=False):
             log.error("Error, dataset file has already been removed: %s", unicodify(exc))
             log.error("Purging dataset id %d", dataset.id)
             dataset.purged = True
-            app.sa_session.add(dataset)
-            with transaction(session):
-                session.commit()
+            session.add(dataset)
+            session.commit()
         except ObjectNotFound:
             log.error("Dataset %d cannot be found in the object store", dataset.id)
         except Exception as exc:
@@ -694,10 +683,9 @@ def _purge_folder(folder, app, remove_from_disk, info_only=False):
         # TODO: should the folder permissions be deleted here?
         log.info("Purging folder id %s", folder.id)
         folder.purged = True
-        app.sa_session.add(folder)
         session = app.sa_session()
-        with transaction(session):
-            session.commit()
+        session.add(folder)
+        session.commit()
 
 
 class CleanupDatasetsApplication:
