@@ -1,33 +1,26 @@
 <template>
-    <div id="columns" class="d-flex">
-        <div id="center" class="overflow-auto w-100">
-            <div class="markdown-editor h-100">
-                <div class="unified-panel-header" unselectable="on">
-                    <div class="unified-panel-header-inner">
-                        <div class="panel-header-buttons">
-                            <slot name="buttons" />
-                            <b-button
-                                v-b-tooltip.hover.bottom
-                                title="Help"
-                                variant="link"
-                                role="button"
-                                @click="onHelp">
-                                <FontAwesomeIcon icon="question" />
-                            </b-button>
-                        </div>
-                        <div class="my-1">
-                            {{ title }}
-                        </div>
+    <div id="columns">
+        <div id="center" class="d-flex flex-column h-100 w-100">
+            <div class="unified-panel-header" unselectable="on">
+                <div class="unified-panel-header-inner">
+                    <div class="panel-header-buttons">
+                        <slot name="buttons" />
+                        <b-button v-b-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
+                            <FontAwesomeIcon icon="question" />
+                        </b-button>
+                    </div>
+                    <div class="my-1">
+                        {{ title }}
                     </div>
                 </div>
-                <div class="unified-panel-body d-flex">
-                    <TextEditor
-                        :title="title"
-                        :markdown-text="markdownText"
-                        :steps="steps"
-                        :mode="mode"
-                        @update="$emit('update', $event)" />
-                </div>
+            </div>
+            <div class="unified-panel-body">
+                <TextEditor
+                    :title="title"
+                    :markdown-text="markdownText"
+                    :steps="steps"
+                    :mode="mode"
+                    @update="$emit('update', $event)" />
             </div>
         </div>
         <b-modal v-model="showHelpModal" hide-footer>
