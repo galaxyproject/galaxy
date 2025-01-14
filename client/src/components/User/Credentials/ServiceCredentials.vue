@@ -41,6 +41,7 @@ function onCreateNewSet() {
     };
     emit("new-credentials-set", props.credentialPayload, newSet);
     selectedSet.value = newSet;
+    onCurrentSetChange(newSet);
 }
 
 function onCurrentSetChange(selectedSet: ServiceGroupPayload) {
