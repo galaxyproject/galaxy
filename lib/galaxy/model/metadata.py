@@ -25,7 +25,6 @@ from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import flag_modified
 
 import galaxy.model
-from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.object_wrapper import sanitize_lists_to_string
 from galaxy.util import (
@@ -614,8 +613,7 @@ class FileParameter(MetadataParameter):
                 # If we've simultaneously copied the  dataset and we've changed the datatype on the
                 # copy we may not have committed the MetadataFile yet, so we need to commit the session.
                 # TODO: It would be great if we can avoid the commit in the future.
-                with transaction(session):
-                    session.commit()
+                session.commit()
             return session.execute(select(galaxy.model.MetadataFile).filter_by(uuid=value)).scalar_one_or_none()
 
     def make_copy(self, value, target_context: MetadataCollection, source_context):
@@ -636,8 +634,7 @@ class FileParameter(MetadataParameter):
                 new_value.update_from_file(value.get_file_name())
             except AssertionError:
                 tmp_session = session(target_context.parent)
-                with transaction(tmp_session):
-                    tmp_session.commit()
+                tmp_session.commit()
                 new_value.update_from_file(value.get_file_name())
             return self.unwrap(new_value)
         return None
