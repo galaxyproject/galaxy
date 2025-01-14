@@ -3,19 +3,33 @@
         <div id="center" class="d-flex flex-column h-100 w-100">
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
-                    <div class="panel-header-buttons">
+                    <div class="my-1">
+                        {{ title }}
+                    </div>
+                    <div>
                         <slot name="buttons" />
                         <b-button v-b-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
                             <FontAwesomeIcon icon="question" />
                         </b-button>
-                    </div>
-                    <div class="my-1">
-                        {{ title }}
+                        <b-form-radio-group
+                            v-model="editor"
+                            size="sm"
+                            button-variant="outline-primary"
+                            :options="editorOptions"
+                            buttons />
                     </div>
                 </div>
             </div>
             <div class="unified-panel-body">
                 <TextEditor
+                    v-if="editor === 'text'"
+                    :title="title"
+                    :markdown-text="markdownText"
+                    :steps="steps"
+                    :mode="mode"
+                    @update="$emit('update', $event)" />
+                <CellEditor
+                    v-else
                     :title="title"
                     :markdown-text="markdownText"
                     :steps="steps"
@@ -39,6 +53,7 @@ import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
+import CellEditor from "./Editor/CellEditor.vue";
 import TextEditor from "./Editor/TextEditor.vue";
 import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
 
@@ -52,6 +67,13 @@ defineProps<{
 }>();
 
 const showHelpModal = ref<boolean>(false);
+
+const editorOptions = ref([
+    { text: "Text", value: "text" },
+    { text: "Cells", value: "cells" },
+]);
+
+const editor = ref("text");
 
 function onHelp() {
     showHelpModal.value = true;
