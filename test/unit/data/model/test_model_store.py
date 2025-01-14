@@ -22,7 +22,6 @@ from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy import model
 from galaxy.model import store
-from galaxy.model.base import transaction
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.orm.now import now
 from galaxy.model.unittest_utils import GalaxyDataTestApp
@@ -1161,8 +1160,7 @@ class TestApp(GalaxyDataTestApp):
 
     def commit(self):
         session = self.model.session
-        with transaction(session):
-            session.commit()
+        session.commit()
 
     def write_primary_file(self, dataset_instance, contents):
         primary = NamedTemporaryFile("w")
