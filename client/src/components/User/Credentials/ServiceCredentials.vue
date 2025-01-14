@@ -136,6 +136,7 @@ function getVariableDescription(name: string, type: CredentialType): string | un
                     :id="secret.name"
                     v-model="secret.value"
                     type="password"
+                    autocomplete="off"
                     :title="getVariableTitle(secret.name, 'secret')"
                     :optional="credentialDefinition.optional"
                     :help="getVariableDescription(secret.name, 'secret')" />
