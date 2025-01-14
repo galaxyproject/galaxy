@@ -7,16 +7,18 @@
                         {{ title }}
                     </div>
                     <div>
+                        <b-form-radio-group
+                            v-model="editor"
+                            v-b-tooltip.hover.bottom
+                            button-variant="outline-primary"
+                            buttons
+                            size="sm"
+                            title="Editor"
+                            :options="editorOptions" />
                         <slot name="buttons" />
                         <b-button v-b-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
                             <FontAwesomeIcon icon="question" />
                         </b-button>
-                        <b-form-radio-group
-                            v-model="editor"
-                            size="sm"
-                            button-variant="outline-primary"
-                            :options="editorOptions"
-                            buttons />
                     </div>
                 </div>
             </div>
