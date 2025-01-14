@@ -74,6 +74,6 @@ const onUpdate = debounce((e: Event) => {
     border: none;
     resize: none;
     outline: none;
-    font: 16px/1.7 Menlo, Consolas, Monaco, "Andale Mono", monospace;
+    font: 14px/1.7 Menlo, Consolas, Monaco, "Andale Mono", monospace;
 }
 </style>
