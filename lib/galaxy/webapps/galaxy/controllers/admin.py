@@ -18,7 +18,6 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.managers.quotas import QuotaManager
-from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
@@ -726,8 +725,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     num_in_groups = len(in_groups) + 1
                 else:
                     num_in_groups = len(in_groups)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
                 message = f"Role '{role.name}' has been created with {len(in_users)} associated users and {num_in_groups} associated groups."
                 if auto_create_checked:
                     message += (
@@ -767,8 +765,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                         role.name = new_name
                         role.description = new_description
                         trans.sa_session.add(role)
-                        with transaction(trans.sa_session):
-                            trans.sa_session.commit()
+                        trans.sa_session.commit()
             return {"message": f"Role '{old_name}' has been renamed to '{new_name}'."}
 
     @web.legacy_expose_api
@@ -853,8 +850,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     if not (group.name == new_name):
                         group.name = new_name
                         trans.sa_session.add(group)
-                        with transaction(trans.sa_session):
-                            trans.sa_session.commit()
+                        trans.sa_session.commit()
             return {"message": f"Group '{old_name}' has been renamed to '{new_name}'."}
 
     @web.legacy_expose_api
@@ -988,8 +984,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     num_in_roles = len(in_roles) + 1
                 else:
                     num_in_roles = len(in_roles)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
                 message = f"Group '{group.name}' has been created with {len(in_users)} associated users and {num_in_roles} associated roles."
                 if auto_create_checked:
                     message += (
@@ -1025,8 +1020,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                 for user in users.values():
                     user.set_password_cleartext(password)
                     trans.sa_session.add(user)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
+                    trans.sa_session.commit()
                 return {"message": f"Passwords reset for {len(users)} user(s)."}
         else:
             return self.message_exception(trans, "Please specify user ids.")

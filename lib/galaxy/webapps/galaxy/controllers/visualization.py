@@ -14,7 +14,6 @@ from galaxy import (
 from galaxy.exceptions import MessageException
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.sharable import SlugBuilder
-from galaxy.model.base import transaction
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -70,8 +69,7 @@ class VisualizationController(
         # Persist
         session = trans.sa_session
         session.add(copied_viz)
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         # Display the management page
         trans.set_message(f'Created new visualization with name "{copied_viz.title}"')
@@ -110,8 +108,7 @@ class VisualizationController(
             # Persist
             session = trans.sa_session
             session.add(imported_visualization)
-            with transaction(session):
-                session.commit()
+            session.commit()
 
             # Redirect to load galaxy frames.
             return trans.show_ok_message(
@@ -232,8 +229,7 @@ class VisualizationController(
                     v_annotation = sanitize_html(v_annotation)
                     self.add_item_annotation(trans.sa_session, trans_user, v, v_annotation)
                 trans.sa_session.add(v)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             return {"message": f"Attributes of '{v.title}' successfully saved.", "status": "success"}
 
     # ------------------------- registry.

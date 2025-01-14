@@ -11,7 +11,6 @@ from galaxy import (
 from galaxy.managers import histories
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.model import Role
-from galaxy.model.base import transaction
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -219,8 +218,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 hda.purged = True
                 trans.sa_session.add(hda)
                 trans.log_event(f"HDA id {hda.id} has been purged")
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
                 if hda.dataset.user_can_purge:
                     try:
                         hda.dataset.full_delete()
@@ -284,8 +282,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 elif new_name != cur_name:
                     h.name = new_name
                     trans.sa_session.add(h)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
+                    trans.sa_session.commit()
                     trans.log_event(f"History renamed: id: {str(h.id)}, renamed to: {new_name}")
                     messages.append(f"History '{cur_name}' renamed to '{new_name}'.")
             message = sanitize_text(" ".join(messages)) if messages else "History names remain unchanged."
