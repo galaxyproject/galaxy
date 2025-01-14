@@ -16375,6 +16375,11 @@ export interface components {
                 | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
                 | null;
             /**
+             * Creator deleted or purged
+             * @description Whether the creator of this Workflow has been deleted or purged.
+             */
+            creator_deleted_or_purged: boolean;
+            /**
              * Deleted
              * @description Whether this item is marked as deleted.
              */

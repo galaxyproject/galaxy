@@ -7859,6 +7859,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
         rval["latest_workflow_uuid"] = (lambda uuid: str(uuid) if self.latest_workflow.uuid else None)(
             self.latest_workflow.uuid
         )
+        rval["creator_deleted_or_purged"] = self.user.deleted or self.user.purged
         return rval
 
 
