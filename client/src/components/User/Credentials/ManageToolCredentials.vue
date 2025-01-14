@@ -9,6 +9,7 @@ import type {
     SourceCredentialsDefinition,
     UserCredentials,
 } from "@/api/users";
+import { SECRET_PLACEHOLDER } from "@/stores/userCredentials";
 
 import ServiceCredentials from "@/components/User/Credentials/ServiceCredentials.vue";
 
@@ -66,10 +67,14 @@ function buildGroupsFromUserCredentials(
         for (const group of existingGroups) {
             const newGroup: ServiceGroupPayload = {
                 name: group.name,
-                variables: group.variables,
+                variables: group.variables.map((variable) => ({
+                    name: variable.name,
+                    value: variable.value,
+                })),
                 secrets: group.secrets.map((secret) => ({
                     name: secret.name,
-                    value: null,
+                    value: secret.already_set ? SECRET_PLACEHOLDER : null,
+                    alreadySet: secret.already_set,
                 })),
             };
             groups.push(newGroup);
