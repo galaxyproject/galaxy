@@ -11,7 +11,6 @@ from galaxy.forms.forms import form_factory
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.forms import FormManager
 from galaxy.model import FormDefinition
-from galaxy.model.base import transaction
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.util import XML
 from galaxy.webapps.base.controller import url_for
@@ -105,8 +104,7 @@ class FormDefinitionAPIController(BaseGalaxyAPIController):
             # enhance to allow creating from more than just xml
         form_definition = form_factory.from_elem(XML(xml_text))
         trans.sa_session.add(form_definition)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         encoded_id = trans.security.encode_id(form_definition.id)
         item = form_definition.to_dict(
             view="element",
