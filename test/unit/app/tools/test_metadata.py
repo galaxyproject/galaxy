@@ -5,7 +5,6 @@ from galaxy import model
 from galaxy.app_unittest_utils import tools_support
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
-from galaxy.model.base import transaction
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.util import (
     galaxy_directory,
@@ -24,8 +23,7 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         sa_session.add(job)
         history = model.History()
         job.history = history
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         self.job = job
         self.history = history
         self.job_working_directory = os.path.join(self.test_directory, "job_working")
@@ -52,8 +50,7 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             extension="fasta",
         )
         sa_session = self.app.model.session
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         output_datasets = {
             "out_file1": output_dataset,
         }
@@ -85,8 +82,7 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             extension="auto",
         )
         sa_session = self.app.model.session
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         output_datasets = {
             "out_file1": output_dataset,
         }
@@ -124,8 +120,7 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             extension="auto",
         )
         sa_session = self.app.model.session
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         output_datasets = {
             "out_file1": output_dataset,
         }
@@ -169,10 +164,9 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         output_dataset_collection = model.HistoryDatasetCollectionAssociation(**kwd)
         self.history.add_dataset_collection(output_dataset_collection)
         assert output_dataset_collection.collection
-        self.app.model.session.add(output_dataset_collection)
         session = self.app.model.session
-        with transaction(session):
-            session.commit()
+        session.add(output_dataset_collection)
+        session.commit()
         return output_dataset_collection
 
     def _create_output_dataset(self, **kwd):
