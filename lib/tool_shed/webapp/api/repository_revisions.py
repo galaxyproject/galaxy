@@ -10,7 +10,6 @@ from galaxy import (
     util,
     web,
 )
-from galaxy.model.base import transaction
 from galaxy.webapps.base.controller import HTTPBadRequest
 from tool_shed.util import (
     metadata_util,
@@ -195,8 +194,7 @@ class RepositoryRevisionsController(BaseShedAPIController):
                 repository_metadata.changeset_revision,
             )
             trans.sa_session.add(repository_metadata)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             trans.sa_session.refresh(repository_metadata)
         repository_metadata_dict = repository_metadata.to_dict(
             view="element", value_mapper=self.__get_value_mapper(trans)
