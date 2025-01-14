@@ -17,7 +17,6 @@ from urllib.request import (
     urlopen,
 )
 
-from galaxy.model.base import transaction
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_shed.util import repository_util
 from galaxy.tool_shed.util.container_util import get_components_from_key
@@ -141,8 +140,7 @@ class RepositoryDependencyInstallManager:
                                     )
                                     session = install_model.context
                                     session.add(repository_dependency)
-                                    with transaction(session):
-                                        session.commit()
+                                    session.commit()
 
                                 # Build the relationship between the d_repository and the required_repository.
                                 rrda = install_model.RepositoryRepositoryDependencyAssociation(
@@ -151,8 +149,7 @@ class RepositoryDependencyInstallManager:
                                 )
                                 session = install_model.context
                                 session.add(rrda)
-                                with transaction(session):
-                                    session.commit()
+                                session.commit()
 
     def create_repository_dependency_objects(
         self,
@@ -586,8 +583,7 @@ class RepositoryDependencyInstallManager:
 
         session = self.app.install_model.context
         session.add(repository)
-        with transaction(session):
-            session.commit()
+        session.commit()
 
 
 def _urlopen(url, data=None):
