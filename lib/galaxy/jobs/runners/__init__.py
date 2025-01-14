@@ -41,10 +41,7 @@ from galaxy.jobs.runners.util.job_script import (
     job_script,
     write_script,
 )
-from galaxy.model.base import (
-    check_database_connection,
-    transaction,
-)
+from galaxy.model.base import check_database_connection
 from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo,
@@ -669,8 +666,7 @@ class BaseJobRunner:
 
             # Flush with streams...
             self.sa_session.add(job)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
             if not job_ok:
                 job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR
