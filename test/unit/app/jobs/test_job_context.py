@@ -6,7 +6,6 @@ from galaxy.job_execution.output_collect import (
     dataset_collector,
     JobContext,
 )
-from galaxy.model.base import transaction
 from galaxy.model.dataset_collections import builder
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
 from galaxy.tool_util.provided_metadata import NullToolProvidedMetadata
@@ -54,8 +53,7 @@ def test_job_context_discover_outputs_flushes_once(mocker):
     job = model.Job()
     job.history = h
     sa_session.add(job)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
     job_working_directory = tempfile.mkdtemp()
     setup_data(job_working_directory)
     permission_provider = PermissionProvider()
@@ -94,7 +92,6 @@ def test_job_context_discover_outputs_flushes_once(mocker):
     )
     collection_builder.populate()
     assert spy.call_count == 0
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
     assert len(collection.dataset_instances) == 10
     assert collection.dataset_instances[0].dataset.file_size == 1
