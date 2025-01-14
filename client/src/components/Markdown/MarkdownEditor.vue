@@ -24,7 +24,12 @@
                     </div>
                 </div>
                 <div class="unified-panel-body d-flex">
-                    <code-editor :content="content" />
+                    <textarea
+                        id="workflow-report-editor"
+                        ref="text-area"
+                        v-model="content"
+                        class="markdown-textarea"
+                        @input="onUpdate" />
                 </div>
             </div>
         </div>
@@ -41,7 +46,6 @@ import FlexPanel from "components/Panels/FlexPanel";
 import _ from "underscore";
 import Vue from "vue";
 
-import CodeEditor from "./Editor/CodeEditor";
 import MarkdownHelpModal from "./MarkdownHelpModal";
 import MarkdownToolBox from "./MarkdownToolBox";
 
@@ -53,7 +57,6 @@ const FENCE = "```";
 
 export default {
     components: {
-        CodeEditor,
         FlexPanel,
         FontAwesomeIcon,
         MarkdownHelpModal,
