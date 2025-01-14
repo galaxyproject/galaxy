@@ -9,7 +9,10 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
 
     def test_provide_credential(self):
         created_user_credentials = self._populate_user_credentials()
+        assert len(created_user_credentials) == 1
         assert created_user_credentials[0]["current_group_name"] == "default"
+        assert len(created_user_credentials[0]["groups"]["default"]["variables"]) == 1
+        assert len(created_user_credentials[0]["groups"]["default"]["secrets"]) == 3
 
     def test_list_user_credentials(self):
         response = self._get("/api/users/current/credentials")
@@ -64,11 +67,15 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
                     "groups": [
                         {
                             "name": "default",
-                            "variables": [{"name": "username", "value": "user"}],
-                            "secrets": [{"name": "password", "value": "pass"}],
+                            "variables": [{"name": "server", "value": "http://localhost:8080"}],
+                            "secrets": [
+                                {"name": "username", "value": "user"},
+                                {"name": "password", "value": "pass"},
+                                {"name": "token", "value": "key"},
+                            ],
                         }
                     ],
-                }
+                },
             ],
         }
         response = self._post("/api/users/current/credentials", data=payload, json=True)
