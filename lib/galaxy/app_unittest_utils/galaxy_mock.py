@@ -36,7 +36,6 @@ from galaxy.model import (
 from galaxy.model.base import (
     ModelMapping,
     SharedModelMapping,
-    transaction,
 )
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -357,8 +356,7 @@ class MockTrans:
         if self.galaxy_session:
             self.galaxy_session.user = user
             self.sa_session.add(self.galaxy_session)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
         self.__user = user
 
     user = property(get_user, set_user)
