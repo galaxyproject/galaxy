@@ -1,0 +1,98 @@
+- id: irods
+  name: iRODS Storage
+  version: 0
+  description: |
+    If you have an account on an iRODS server, you can use such an object store as
+    a storage location for your Galaxy datasets; they will be stored in
+    the iRODS of your choice.
+  variables:
+    host:
+      label: iRODS host
+      type: string
+      help: Host url to connect to.
+    zone:
+      label: iRODS zone
+      type: string
+      help: |
+        An iRODS Zone is an independent iRODS system consisting of a Catalog Service 
+        Provider
+    username:
+      label: Username
+      type: string
+      help: |
+        Your irods username
+    username:
+      label: Username
+      type: string
+      help: |
+        Your irods username
+    username:
+      label: Username
+      type: string
+      help: |
+        Your irods username
+    username:
+      label: Username
+      type: string
+      help: |
+        Your irods username
+    username:
+      label: Username
+      type: string
+      help: |
+        Your irods username
+    username:
+      label: Username
+      type: string
+      help: |
+        Your irods username
+  secrets:
+      label: Password
+      help: |
+        Your irods password
+  configuration:
+    type: onedata
+    auth:
+      access_token: '{{ secrets.access_token }}'
+    connection:
+      onezone_domain: "{{ variables.onezone_domain }}"
+      disable_tls_certificate_validation: "{{ variables.disable_tls_certificate_validation }}"
+    space:
+      name: "{{ variables.space_name }}"
+      galaxy_root_dir: "{{ variables.galaxy_root_dir }}"
+    type: irods
+    auth:
+      username: rods
+      password: rods
+    resource:
+      name: demoResc
+    zone:
+      name: tempZone
+    connection:
+      host: localhost
+      port: 1247
+      timeout: 30
+      refresh_time: 300
+      connection_pool_monitor_interval: 3600
+    # ssl section is optional
+    ssl:
+      client_server_negotiation: request_server_negotiation
+      client_server_policy: CS_NEG_REQUIRE
+      encryption_algorithm: AES-256-CBC
+      encryption_key_size: 32
+      encryption_num_hash_rounds: 16
+      encryption_salt_size: 8
+      ssl_verify_server: cert
+      ssl_ca_certificate_file: /etc/irods/ssl/irods.crt
+    # The logical section is optional and is meant for defining the remote path
+    # if not defined the default path is: /zone_name/home/username
+    logical:
+      path: /tempZone/home/rods
+    cache:
+      path: database/object_store_cache_irods
+      size: 1000
+      cache_updated_data: true
+    extra_dirs:
+      - type: job_work
+        path: database/job_working_directory_irods
+
