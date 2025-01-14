@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+
 import { getAppRoot } from "@/onload/loadConfig";
 
 interface Props {
@@ -54,7 +55,12 @@ onMounted(() => {
 </script>
 
 <template>
-    <iframe ref="iframeRef" class="visualization-wrapper" :style="{ height: props.height || '100%' }"> </iframe>
+    <iframe
+        ref="iframeRef"
+        title="visualization"
+        class="visualization-wrapper"
+        :style="{ height: props.height || '100%' }">
+    </iframe>
 </template>
 
 <style>

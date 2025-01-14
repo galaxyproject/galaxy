@@ -1,8 +1,8 @@
 <script setup>
 import { computed, ref } from "vue";
 
-import { useConfig } from "@/composables/config";
 import { getArgs } from "@/components/Markdown/parse";
+import { useConfig } from "@/composables/config";
 
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
