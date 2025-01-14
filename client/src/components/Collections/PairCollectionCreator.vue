@@ -14,6 +14,7 @@ import localize from "@/utils/localization";
 
 import type { DatasetPair } from "../History/adapters/buildCollectionModal";
 
+import DelayedInput from "../Common/DelayedInput.vue";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
@@ -44,6 +45,13 @@ const removeExtensions = ref(true);
 const initialSuggestedName = ref("");
 const invalidElements = ref<string[]>([]);
 const workingElements = ref<HDASummary[]>([]);
+const filterText = ref("");
+
+const filteredElements = computed(() => {
+    return workingElements.value.filter((element) => {
+        return `${element.hid}: ${element.name}`.toLowerCase().includes(filterText.value.toLowerCase());
+    });
+});
 
 /** If not `fromSelection`, the manually added elements that will become the pair */
 const inListElements = ref<SelectedDatasetPair>({ forward: undefined, reverse: undefined });
@@ -539,17 +547,19 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                         </div>
 
                         <div v-if="!fromSelection">
+                            <DelayedInput v-model="filterText" placeholder="search datasets" :delay="800" />
                             <strong>
                                 {{
                                     localize("Manually select a forward and reverse dataset to create a dataset pair:")
                                 }}
                             </strong>
                             <div
+                                v-if="filteredElements.length"
                                 class="scroll-list-container"
                                 :class="{ 'scrolled-top': scrolledTop, 'scrolled-bottom': scrolledBottom }">
                                 <div ref="scrollableDiv" class="collection-elements">
                                     <DatasetCollectionElementView
-                                        v-for="element in workingElements"
+                                        v-for="element in filteredElements"
                                         :key="element.id"
                                         :class="{
                                             selected: [pairElements.forward, pairElements.reverse].includes(element),
@@ -561,6 +571,9 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                         @onRename="(name) => (element.name = name)" />
                                 </div>
                             </div>
+                            <BAlert v-else show variant="info">
+                                {{ localize(`No datasets found${filterText ? " matching '" + filterText + "'" : ""}`) }}
+                            </BAlert>
                         </div>
                     </div>
                 </template>
