@@ -26,12 +26,27 @@ const selectedSet = ref<ServiceGroupPayload | undefined>(
 );
 const availableSets = computed<ServiceGroupPayload[]>(() => Object.values(props.credentialPayload.groups));
 const newSetName = ref<string>("");
-const canCreateNewSet = computed<boolean>(() => newSetName.value.trim() !== "");
+const canCreateNewSet = computed<boolean>(
+    () => newSetName.value.trim() !== "" && !availableSets.value.some((set) => set.name === newSetName.value)
+);
+const canShowSetSelector = computed<boolean>(
+    () => props.credentialDefinition.multiple && availableSets.value.length > 1
+);
+const isAddingNewSet = ref(false);
 
 const emit = defineEmits<{
     (e: "new-credentials-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
     (e: "update-current-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
 }>();
+
+function onAddingNewSet() {
+    isAddingNewSet.value = true;
+}
+
+function onCancelAddingNewSet() {
+    isAddingNewSet.value = false;
+    newSetName.value = "";
+}
 
 function onCreateNewSet() {
     const newSet: ServiceGroupPayload = {
@@ -42,6 +57,8 @@ function onCreateNewSet() {
     emit("new-credentials-set", props.credentialPayload, newSet);
     selectedSet.value = newSet;
     onCurrentSetChange(newSet);
+    isAddingNewSet.value = false;
+    newSetName.value = "";
 }
 
 function onCurrentSetChange(selectedSet: ServiceGroupPayload) {
@@ -99,14 +116,14 @@ function getVariableDescription(name: string, type: CredentialType): string | un
             <BBadge
                 v-if="credentialDefinition.multiple"
                 variant="info"
-                title="You can provide multiple sets of credentials for this tool.">
+                title="You can provide multiple sets of credentials for this tool. But only one set can be active at a time.">
                 Multiple
             </BBadge>
         </h3>
         <p>{{ credentialDefinition.description }}</p>
         <div v-if="selectedSet">
-            <h4 v-if="credentialDefinition.multiple">
-                Select a set of credentials:
+            <div v-if="canShowSetSelector">
+                <b>Using set:</b>
                 <Multiselect
                     v-model="selectedSet"
                     :options="availableSets"
@@ -115,11 +132,7 @@ function getVariableDescription(name: string, type: CredentialType): string | un
                     track-by="name"
                     label="name"
                     @select="onCurrentSetChange" />
-
-                <label for="newSetName">Or create new set:</label>
-                <input id="newSetName" v-model="newSetName" type="text" placeholder="New set name" />
-                <button :disabled="!canCreateNewSet" @click="onCreateNewSet">Create</button>
-            </h4>
+            </div>
 
             <div v-for="variable in selectedSet.variables" :key="variable.name">
                 <!-- TODO Use new component here? -->
@@ -142,6 +155,25 @@ function getVariableDescription(name: string, type: CredentialType): string | un
                     :optional="credentialDefinition.optional"
                     :help="getVariableDescription(secret.name, 'secret')" />
             </div>
+
+            <div v-if="credentialDefinition.multiple" class="set-management-bar">
+                <button v-if="!isAddingNewSet" title="Create new set" @click="onAddingNewSet">Create +</button>
+                <div v-else class="set-management-bar">
+                    <FormElement
+                        v-if="isAddingNewSet"
+                        v-model="newSetName"
+                        type="text"
+                        placeholder="Enter new set name" />
+                    <button
+                        v-if="isAddingNewSet"
+                        :disabled="!canCreateNewSet"
+                        class="btn-primary"
+                        @click="onCreateNewSet">
+                        Done
+                    </button>
+                    <button v-if="isAddingNewSet" @click="onCancelAddingNewSet">Cancel</button>
+                </div>
+            </div>
         </div>
     </BCard>
 </template>
@@ -154,5 +186,10 @@ function getVariableDescription(name: string, type: CredentialType): string | un
 .tick-icon {
     color: green;
     margin-left: 0.5em;
+}
+.set-management-bar {
+    display: flex;
+    gap: 1em;
+    align-items: center;
 }
 </style>
