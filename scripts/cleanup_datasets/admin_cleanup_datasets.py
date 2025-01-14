@@ -260,7 +260,7 @@ def administrative_delete_datasets(
                     hda.deleted = True
                     app.sa_session.add(hda)
                     print(f"Marked HistoryDatasetAssociation id {hda.id} as deleted")
-                app.session().commit()
+                app.sa_session().commit()
 
     emailtemplate = Template(filename=template_file)
     for email, dataset_list in user_notifications.items():
