@@ -62,10 +62,7 @@ from galaxy.model import (
     Role,
     User,
 )
-from galaxy.model.base import (
-    ModelMapping,
-    transaction,
-)
+from galaxy.model.base import ModelMapping
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.tags import GalaxyTagHandlerSession
 from galaxy.schema.tasks import RequestUser
@@ -124,8 +121,7 @@ class ProvidesAppContext:
             except Exception:
                 action.session_id = None
             self.sa_session.add(action)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     def log_event(self, message, tool_id=None, **kwargs):
         """
@@ -156,8 +152,7 @@ class ProvidesAppContext:
             except Exception:
                 event.session_id = None
             self.sa_session.add(event)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
     @property
     def sa_session(self) -> galaxy_scoped_session:

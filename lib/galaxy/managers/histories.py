@@ -56,7 +56,6 @@ from galaxy.model import (
     HistoryUserShareAssociation,
     Job,
 )
-from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     append_user_filter,
     raw_text_column_filter,
@@ -506,8 +505,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         history.archived = True
         history.archive_export_id = archive_export_id
-        with transaction(self.session()):
-            self.session().commit()
+        self.session().commit()
 
         return history
 
@@ -529,8 +527,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             )
 
         history.archived = False
-        with transaction(self.session()):
-            self.session().commit()
+        self.session().commit()
 
         return history
 
@@ -641,8 +638,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
 
         if success_item_count:
             session = self.history_manager.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
 
         return StorageItemsCleanupResult(
             total_item_count=len(item_ids),

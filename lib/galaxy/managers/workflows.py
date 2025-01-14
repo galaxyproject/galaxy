@@ -81,10 +81,7 @@ from galaxy.model import (
     WorkflowInvocationStep,
     WorkflowInvocationToSubworkflowInvocationAssociation,
 )
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
+from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.index_filter_util import (
     append_user_filter,
     raw_text_column_filter,
@@ -340,8 +337,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                 user=trans.user, name=workflow.name, workflow=workflow, hidden=True
             )
             trans.sa_session.add(stored_workflow)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             return stored_workflow
 
     def get_owned_workflow(self, trans, encoded_workflow_id):
@@ -464,8 +460,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             workflow_invocation.add_message(InvocationCancellationUserRequest(reason="user_request"))
             trans.sa_session.add(workflow_invocation)
 
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         return workflow_invocation
 
@@ -502,8 +497,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         performed_action = module.do_invocation_step_action(step, action)
         workflow_invocation_step.action = performed_action
         trans.sa_session.add(workflow_invocation_step)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return workflow_invocation_step
 
     def build_invocations_query(
@@ -719,8 +713,7 @@ class WorkflowContentsManager(UsesAnnotations):
             menuEntry.stored_workflow = stored
             trans.user.stored_workflow_menu_entries.append(menuEntry)
 
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         return CreatedWorkflow(stored_workflow=stored, workflow=workflow, missing_tools=missing_tool_tups)
 
@@ -782,8 +775,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         # Persist
         if not dry_run:
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
             if stored_workflow.from_path:
                 self._sync_stored_workflow(trans, stored_workflow)
         # Return something informative

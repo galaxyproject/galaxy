@@ -25,7 +25,6 @@ from galaxy.exceptions import (
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import Role
-from galaxy.model.base import transaction
 from galaxy.schema.schema import RoleDefinitionModel
 from galaxy.util import unicodify
 
@@ -107,15 +106,13 @@ class RoleManager(base.ModelManager[model.Role]):
         for group in groups:
             trans.app.security_agent.associate_group_role(group, role)
 
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return role
 
     def delete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
         role.deleted = True
         trans.sa_session.add(role)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return role
 
     def purge(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
@@ -151,8 +148,7 @@ class RoleManager(base.ModelManager[model.Role]):
             sa_session.delete(dp)
         # Delete the role
         sa_session.delete(role)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         return role
 
     def undelete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
@@ -162,6 +158,5 @@ class RoleManager(base.ModelManager[model.Role]):
             )
         role.deleted = False
         trans.sa_session.add(role)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return role

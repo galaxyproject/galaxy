@@ -34,7 +34,6 @@ from galaxy.model import (
     DatasetInstance,
     HistoryDatasetAssociation,
 )
-from galaxy.model.base import transaction
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     PurgeDatasetsTaskRequest,
@@ -82,8 +81,7 @@ class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin,
         self.session().add(item)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return item
 
     def purge_datasets(self, request: PurgeDatasetsTaskRequest):
@@ -154,10 +152,9 @@ class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin,
             if old_label != new_label:
                 self.quota_agent.relabel_quota_for_dataset(dataset, old_label, new_label)
         sa_session = self.session()
-        with transaction(sa_session):
-            dataset.object_store_id = new_object_store_id
-            sa_session.add(dataset)
-            sa_session.commit()
+        dataset.object_store_id = new_object_store_id
+        sa_session.add(dataset)
+        sa_session.commit()
 
     def compute_hash(self, request: ComputeDatasetHashTaskRequest):
         dataset = self.by_id(request.dataset_id)
@@ -185,8 +182,7 @@ class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin,
         hash = get_dataset_hash(sa_session, dataset.id, hash_function, extra_files_path)
         if hash is None:
             sa_session.add(dataset_hash)
-            with transaction(sa_session):
-                sa_session.commit()
+            sa_session.commit()
         else:
             old_hash_value = hash.hash_value
             if old_hash_value != calculated_hash_value:
@@ -425,8 +421,7 @@ class DatasetAssociationManager(
                         self.app.job_manager.stop(job)
                     if flush:
                         session = self.session()
-                        with transaction(session):
-                            session.commit()
+                        session.commit()
                     return True
         return False
 
@@ -537,8 +532,7 @@ class DatasetAssociationManager(
         path = dataset_assoc.dataset.get_file_name()
         datatype = sniff.guess_ext(path, self.app.datatypes_registry.sniff_order)
         self.app.datatypes_registry.change_datatype(dataset_assoc, datatype)
-        with transaction(session):
-            session.commit()
+        session.commit()
         self.set_metadata(trans, dataset_assoc)
 
     def set_metadata(self, trans, dataset_assoc: U, overwrite: bool = False, validate: bool = True) -> None:
@@ -594,8 +588,7 @@ class DatasetAssociationManager(
                     self.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role
                 )
                 trans.sa_session.add(dp)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             if not self.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 # Check again and inform the user if dataset is not private.
                 raise exceptions.InternalServerError("An error occurred and the dataset is NOT private.")
@@ -877,8 +870,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
             )
         item.change_datatype(val)
         sa_session = self.app.model.context
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         trans = context.get("trans")
         assert (
             trans

@@ -65,7 +65,6 @@ from galaxy.model import (
     WorkflowStep,
     YIELD_PER_ROWS,
 )
-from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
@@ -348,8 +347,7 @@ class JobManager:
         if not job.finished:
             job.mark_deleted(self.app.config.track_jobs_in_database)
             session = self.app.model.session
-            with transaction(session):
-                session.commit()
+            session.commit()
             self.app.job_manager.stop(job, message=message)
             return True
         else:
