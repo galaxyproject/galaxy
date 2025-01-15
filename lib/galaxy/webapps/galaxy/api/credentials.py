@@ -80,7 +80,7 @@ class FastAPICredentials:
         user_credentials_id: DecodedDatabaseIdField,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
-        self.service.delete_service_credentials(trans, user_id, user_credentials_id)
+        self.service.delete_credentials(trans, user_id, user_credentials_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
