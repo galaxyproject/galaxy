@@ -51,12 +51,8 @@ class FastAPICredentials:
             None,
             description="The ID of the source to filter by.",
         ),
-        group_name: Optional[str] = Query(
-            None,
-            description="The name of the group to filter by.",
-        ),
     ) -> UserCredentialsListResponse:
-        return self.service.list_user_credentials(trans, user_id, source_type, source_id, group_name)
+        return self.service.list_user_credentials(trans, user_id, source_type, source_id)
 
     @router.post(
         "/api/users/{user_id}/credentials",

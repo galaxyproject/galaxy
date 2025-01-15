@@ -45,7 +45,6 @@ class CredentialsManager:
         user_id: FlexibleUserIdType,
         source_type: Optional[SOURCE_TYPE] = None,
         source_id: Optional[str] = None,
-        group_name: Optional[str] = None,
         user_credentials_id: Optional[DecodedDatabaseIdField] = None,
         group_id: Optional[DecodedDatabaseIdField] = None,
     ) -> List[Tuple[UserCredentials, CredentialsGroup]]:
@@ -67,8 +66,6 @@ class CredentialsManager:
             if not source_type:
                 raise RequestParameterInvalidException("Source type is required when source ID is provided.")
             stmt = stmt.where(user_cred_alias.source_id == source_id)
-        if group_name:
-            stmt = stmt.where(group_alias.name == group_name)
         if user_credentials_id:
             stmt = stmt.where(user_cred_alias.id == user_credentials_id)
         if group_id:
