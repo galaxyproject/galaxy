@@ -300,25 +300,13 @@ function attachDiagnosticsProvider(
 }
 
 async function provideHover(model: editor.ITextModel, position: IPosition) {
-    const yamlContent = model.getValue();
-    const embeddedModel = monaco.editor.getModel(embeddedModelUri)!;
-    const embeddedContent = extractExpressionLibJavaScript(yamlContent);
-
-    if (embeddedContent) {
-        const embeddedPosition = translateYamlPositionToEmbedded(model, position, embeddedModel, yamlContent);
-
-        if (!embeddedPosition) {
-            return null;
-        }
-
-        const worker = await monaco.languages.typescript.getTypeScriptWorker(); // Get JS worker
-        const languageService = await worker(embeddedModelUri);
-
+    const currentData = await modelForCurrentPosition(model, position)
+    if (currentData) {
+        const languageService = await languageServiceForModel(currentData.model)
         const quickInfo = await languageService.getQuickInfoAtPosition(
-            embeddedModelUri.toString(),
-            embeddedModel.getOffsetAt(embeddedPosition)
+            currentData.model.uri.toString(),
+            currentData.offset
         );
-
         if (quickInfo) {
             return {
                 range: {
@@ -363,40 +351,4 @@ function translateEmbeddedPositionToYaml(
 
     const yamlOffset = scriptStartIndex + embeddedOffset;
     return yamlModel.getPositionAt(yamlOffset);
-}
-
-function translateYamlPositionToEmbedded(
-    yamlModel: editor.ITextModel,
-    yamlPosition: IPosition,
-    embeddedModel: editor.ITextModel,
-    yamlContent: string
-) {
-    const scriptRegex = /(expressionLib):\s*(?:\|([\s\S]*?)(?=\n\s*\w+:|\n\s*$)|(.+))/; // No g flag
-    const scriptMatch = yamlContent.match(scriptRegex);
-
-    if (!scriptMatch) {
-        return null;
-    }
-
-    let scriptStartIndex;
-    let scriptEndIndex;
-    if (scriptMatch[2]) {
-        // Multiline
-        scriptStartIndex = scriptMatch.index! + scriptMatch[0].indexOf("|") + 1;
-        scriptEndIndex = scriptMatch.index! + scriptMatch[0].length; // End of the matched block
-    } else if (scriptMatch[3]) {
-        // Inline
-        scriptStartIndex = scriptMatch.index! + scriptMatch[0].indexOf(scriptMatch[3]);
-        scriptEndIndex = scriptStartIndex + scriptMatch[3].length;
-    } else {
-        return null;
-    }
-
-    const yamlOffset = yamlModel.getOffsetAt(yamlPosition);
-
-    if (yamlOffset >= scriptStartIndex && yamlOffset <= scriptEndIndex) {
-        const embeddedOffset = yamlOffset - scriptStartIndex;
-        return embeddedModel.getPositionAt(embeddedOffset);
-    }
-    return null;
 }
