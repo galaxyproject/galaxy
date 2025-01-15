@@ -24,11 +24,11 @@ export const monarchConfig: languages.IMonarchLanguage = {
                 {
                     cases: {
                         "@eos": {
-                            token: "@rematch",
+                            token: "source.js",
                             next: "@pop",
                         },
                         default: {
-                            token: "string",
+                            token: "source.js",
                         },
                     },
                 },
