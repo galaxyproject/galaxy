@@ -1,24 +1,21 @@
 <template>
     <div class="h-100 w-100">
         <div v-for="(cell, cellIndex) of cells" :key="cellIndex">
-            <CellButton>
-                <FontAwesomeIcon :icon="faPlusSquare" />
-            </CellButton>
+            <CellButtonAdd :cell-index="cellIndex" @click="onClick" />
             <div class="border rounded mx-2 p-2">
                 {{ cell }}
             </div>
         </div>
+        <CellButtonAdd :cell-index="cells.length" @click="onClick" />
     </div>
 </template>
 
 <script setup lang="ts">
-import { faPlusSquare } from "@fortawesome/free-regular-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
 import { parseMarkdown } from "@/components/Markdown/parse";
 
-import CellButton from "./CellButton.vue";
+import CellButtonAdd from "./CellButtonAdd.vue";
 
 const props = defineProps<{
     markdownText: string;
@@ -30,4 +27,8 @@ interface CellType {
 }
 
 const cells = ref<Array<CellType>>(parseMarkdown(props.markdownText));
+
+function onClick(cellIndex: number, cellType: string) {
+    console.log([cellIndex, cellType]);
+}
 </script>
