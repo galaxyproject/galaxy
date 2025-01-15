@@ -7,7 +7,10 @@ from typing import (
     Union,
 )
 
-from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import (
+    ObjectNotFound,
+    RequestParameterInvalidException,
+)
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.credentials import CredentialsManager
 from galaxy.model import (
@@ -55,8 +58,7 @@ class CredentialsService:
         """Allows users to provide credentials for a group of secrets and variables."""
         source_type, source_id = payload.source_type, payload.source_id
         db_user_credentials = self._credentials_manager.get_user_credentials(trans, user_id, source_type, source_id)
-        credentials_dict = self._map_user_credentials(db_user_credentials)
-        self._credentials_manager.create_or_update_credentials(trans, payload, db_user_credentials, credentials_dict)
+        self._credentials_manager.create_or_update_credentials(trans, payload, db_user_credentials)
         return self._list_user_credentials(trans, user_id, source_type, source_id)
 
     def delete_credentials(
@@ -76,6 +78,11 @@ class CredentialsService:
         for uc, credentials_group in db_user_credentials:
             if not group_id:
                 rows_to_delete.append(uc)
+            else:
+                if credentials_group.name == "default":
+                    raise RequestParameterInvalidException("Cannot delete the default group.")
+                if credentials_group.id == uc.current_group_id:
+                    self._credentials_manager.update_current_group(trans, uc.id, "default")
             variables, secrets = self._credentials_manager.fetch_credentials(trans.sa_session, credentials_group.id)
             rows_to_delete.extend([credentials_group, *variables, *secrets])
         self._credentials_manager.delete_rows(trans.sa_session, rows_to_delete)
