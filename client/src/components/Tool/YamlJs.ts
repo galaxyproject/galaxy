@@ -302,25 +302,13 @@ function attachDiagnosticsProvider(
 }
 
 async function provideHover(model: editor.ITextModel, position: IPosition) {
-    const yamlContent = model.getValue();
-    const embeddedModel = monaco.editor.getModel(embeddedModelUri)!;
-    const embeddedContent = extractExpressionLibJavaScript(yamlContent);
-
-    if (embeddedContent) {
-        const embeddedPosition = translateYamlPositionToEmbedded(model, position, embeddedModel, yamlContent);
-
-        if (!embeddedPosition) {
-            return null;
-        }
-
-        const worker = await monaco.languages.typescript.getTypeScriptWorker(); // Get JS worker
-        const languageService = await worker(embeddedModelUri);
-
+    const currentData = await modelForCurrentPosition(model, position)
+    if (currentData) {
+        const languageService = await languageServiceForModel(currentData.model)
         const quickInfo = await languageService.getQuickInfoAtPosition(
-            embeddedModelUri.toString(),
-            embeddedModel.getOffsetAt(embeddedPosition)
+            currentData.model.uri.toString(),
+            currentData.offset
         );
-
         if (quickInfo) {
             return {
                 range: {
