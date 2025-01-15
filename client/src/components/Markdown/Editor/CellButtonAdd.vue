@@ -1,5 +1,5 @@
 <template>
-    <Popper trigger="click" placement="right" mode="light" :arrow="false">
+    <Popper trigger="click" placement="right" mode="light">
         <template v-slot:reference>
             <div v-b-tooltip.right class="d-inline text-muted ml-2 cursor-pointer" title="Insert new Cell">
                 <FontAwesomeIcon :icon="faPlusSquare" />
