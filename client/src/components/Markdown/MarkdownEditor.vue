@@ -63,19 +63,18 @@ library.add(faQuestion);
 
 defineProps<{
     markdownText: string;
-    steps: Record<string, any>;
+    steps?: Record<string, any>;
     title: string;
     mode: "report" | "page";
 }>();
 
 const showHelpModal = ref<boolean>(false);
 
+const editor = ref("cells");
 const editorOptions = ref([
     { text: "Text", value: "text" },
     { text: "Cells", value: "cells" },
 ]);
-
-const editor = ref("text");
 
 function onHelp() {
     showHelpModal.value = true;
