@@ -40112,8 +40112,6 @@ export interface operations {
                 source_type?: "tool" | null;
                 /** @description The ID of the source to filter by. */
                 source_id?: string | null;
-                /** @description The name of the group to filter by. */
-                group_name?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
