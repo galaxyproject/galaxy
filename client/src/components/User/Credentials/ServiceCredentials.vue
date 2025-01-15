@@ -96,85 +96,91 @@ function getVariableDescription(name: string, type: CredentialType): string | un
 
 <template>
     <BCard>
-        <h3>
-            {{ credentialDefinition.label || credentialDefinition.name }}
-            <BBadge
-                v-if="credentialDefinition.optional"
-                variant="secondary"
-                class="optional-credentials"
-                title="These credentials are optional. If you do not provide them, the tool will use default values or
+        <form autocomplete="off">
+            <h3>
+                {{ credentialDefinition.label || credentialDefinition.name }}
+                <BBadge
+                    v-if="credentialDefinition.optional"
+                    variant="secondary"
+                    class="optional-credentials"
+                    title="These credentials are optional. If you do not provide them, the tool will use default values or
                     anonymous access.">
-                Optional
-            </BBadge>
-            <BBadge
-                v-else
-                variant="danger"
-                class="required-credentials"
-                title="These credentials are required. You must provide them to use the tool.">
-                Required
-            </BBadge>
-            <BBadge
-                v-if="credentialDefinition.multiple"
-                variant="info"
-                title="You can provide multiple sets of credentials for this tool. But only one set can be active at a time.">
-                Multiple
-            </BBadge>
-        </h3>
-        <p>{{ credentialDefinition.description }}</p>
-        <div v-if="selectedSet">
-            <div v-if="canShowSetSelector">
-                <b>Using set:</b>
-                <Multiselect
-                    v-model="selectedSet"
-                    :options="availableSets"
-                    :allow-empty="false"
-                    :show-labels="false"
-                    track-by="name"
-                    label="name"
-                    @select="onCurrentSetChange" />
-            </div>
+                    Optional
+                </BBadge>
+                <BBadge
+                    v-else
+                    variant="danger"
+                    class="required-credentials"
+                    title="These credentials are required. You must provide them to use the tool.">
+                    Required
+                </BBadge>
+                <BBadge
+                    v-if="credentialDefinition.multiple"
+                    variant="info"
+                    title="You can provide multiple sets of credentials for this tool. But only one set can be active at a time.">
+                    Multiple
+                </BBadge>
+            </h3>
+            <p>{{ credentialDefinition.description }}</p>
+            <div v-if="selectedSet">
+                <div v-if="canShowSetSelector">
+                    <b>Using set:</b>
+                    <Multiselect
+                        v-model="selectedSet"
+                        :options="availableSets"
+                        :allow-empty="false"
+                        :show-labels="false"
+                        :searchable="false"
+                        track-by="name"
+                        label="name"
+                        @select="onCurrentSetChange" />
+                </div>
 
-            <div v-for="variable in selectedSet.variables" :key="variable.name">
-                <!-- TODO Use new component here? -->
-                <FormElement
-                    :id="variable.name"
-                    v-model="variable.value"
-                    type="text"
-                    :title="getVariableTitle(variable.name, 'variable')"
-                    :optional="credentialDefinition.optional"
-                    :help="getVariableDescription(variable.name, 'variable')" />
-            </div>
-            <div v-for="secret in selectedSet.secrets" :key="secret.name" class="secret-input">
-                <!-- TODO Use VaultSecret component here or similar? -->
-                <FormElement
-                    :id="secret.name"
-                    v-model="secret.value"
-                    type="password"
-                    autocomplete="off"
-                    :title="getVariableTitle(secret.name, 'secret')"
-                    :optional="credentialDefinition.optional"
-                    :help="getVariableDescription(secret.name, 'secret')" />
-            </div>
-
-            <div v-if="credentialDefinition.multiple" class="set-management-bar">
-                <button v-if="!isAddingNewSet" title="Create new set" @click="onAddingNewSet">Create +</button>
-                <div v-else class="set-management-bar">
+                <div v-for="variable in selectedSet.variables" :key="variable.name">
                     <FormElement
-                        v-if="isAddingNewSet"
-                        v-model="newSetName"
+                        :id="`${selectedSet.name}-${variable.name}-variable`"
+                        v-model="variable.value"
                         type="text"
-                        placeholder="Enter new set name" />
+                        :title="getVariableTitle(variable.name, 'variable')"
+                        :optional="credentialDefinition.optional"
+                        :help="getVariableDescription(variable.name, 'variable')" />
+                </div>
+                <div v-for="secret in selectedSet.secrets" :key="secret.name" class="secret-input">
+                    <FormElement
+                        :id="`${selectedSet.name}-${secret.name}-secret`"
+                        v-model="secret.value"
+                        type="password"
+                        :autocomplete="`${selectedSet.name}-${secret.name}-secret`"
+                        :title="getVariableTitle(secret.name, 'secret')"
+                        :optional="credentialDefinition.optional"
+                        :help="getVariableDescription(secret.name, 'secret')" />
+                </div>
+
+                <div v-if="credentialDefinition.multiple" class="set-management-bar">
                     <button
-                        v-if="isAddingNewSet"
-                        :disabled="!canCreateNewSet"
-                        class="btn-primary"
-                        @click="onCreateNewSet">
-                        Done
+                        v-if="!isAddingNewSet"
+                        title="Create a new set for these credentials so you can choose between them."
+                        @click="onAddingNewSet">
+                        Create new set
                     </button>
-                    <button v-if="isAddingNewSet" @click="onCancelAddingNewSet">Cancel</button>
+                    <div v-else class="set-management-bar">
+                        <FormElement
+                            v-if="isAddingNewSet"
+                            v-model="newSetName"
+                            type="text"
+                            placeholder="Enter new set name" />
+                        <button
+                            v-if="isAddingNewSet"
+                            :disabled="!canCreateNewSet"
+                            class="btn-primary"
+                            @click="onCreateNewSet">
+                            Confirm
+                        </button>
+                        <button v-if="isAddingNewSet" @click="onCancelAddingNewSet">Cancel</button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </form>
     </BCard>
 </template>
 

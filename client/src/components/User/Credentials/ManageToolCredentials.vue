@@ -124,13 +124,14 @@ function getServiceCredentialsDefinition(reference: string): ServiceCredentialsD
         <p>
             Here you can manage your credentials for the tool <strong>{{ toolId }}</strong> version
             <strong> {{ toolVersion }}</strong
-            >.
+            >. After you make any changes, don't forget to use the <i>Save Credentials</i> button to save them.
         </p>
         <ServiceCredentials
             v-for="credential in providedCredentials.credentials"
             :key="credential.reference"
             :credential-definition="getServiceCredentialsDefinition(credential.reference)"
             :credential-payload="credential"
+            class="mb-2"
             @new-credentials-set="onNewCredentialsSet"
             @update-current-set="onCurrentSetChange" />
         <button class="btn-primary" @click="saveCredentials">Save Credentials</button>
