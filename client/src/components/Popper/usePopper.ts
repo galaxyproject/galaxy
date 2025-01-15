@@ -31,6 +31,14 @@ export function usePopper(
         instance.value = createPopper(reference.value, popper.value, {
             placement: options.placement ?? "bottom",
             strategy: "absolute",
+            modifiers: [
+                {
+                    name: "offset",
+                    options: {
+                        offset: [0, 5],
+                    },
+                },
+            ],
         });
 
         const trigger = options.trigger ?? defaultTrigger;
