@@ -7,6 +7,7 @@ import { monarchConfig } from "./MonarchYamlJs";
 import { fetchAndConvertSchemaToInterface } from "./runTimeModel";
 import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 import { buildProviderFunctions } from "./yaml";
+import { extractEmbeddedJs } from "./extractEmbeddedJs";
 
 const LANG = "yaml-with-js";
 
@@ -181,27 +182,49 @@ async function mixJsYamlProviders(yamlProviderFunctions: any) {
         (await provideHover(model, position)) || (await yamlProvideHover(model, position));
 }
 
-// Add IntelliSense for the embedded JavaScript
-async function provideCompletionItems(model: editor.ITextModel, position: IPosition) {
-    const yamlContent = model.getValue();
-    const embeddedContent = extractExpressionLibJavaScript(yamlContent);
+async function languageServiceForModel(model: editor.ITextModel) {
+    const worker = await monaco.languages.typescript.getTypeScriptWorker();
+    const languageService = await worker(model.uri);
+    return languageService;
+}
 
+async function modelForCurrentPosition(model: editor.ITextModel, position: IPosition) {
+    const yamlContent = model.getValue();
+    const embeddedContents = extractEmbeddedJs(yamlContent);
+    const offsetForPosition = model.getOffsetAt(position);
+    const fragment = embeddedContents.find(
+        (content) => content.start <= offsetForPosition && content.start + content.fragment.length >= offsetForPosition
+    );
+    if (fragment) {
+        const offsetWithinFragment = offsetForPosition - fragment.start;
+        const fragmentModel = monaco.editor.createModel(fragment.fragment, "typescript");
+        const dispose = () => fragmentModel.dispose
+        return { offset: offsetWithinFragment, model: fragmentModel, dispose };
+    }
+    const embeddedContent = extractExpressionLibJavaScript(yamlContent);
     if (embeddedContent) {
+        const offsetWithinFragment = offsetForPosition - yamlContent.indexOf(embeddedContent);
+        if (offsetWithinFragment < 0 || offsetWithinFragment > embeddedContent.length) {
+            return undefined;
+        }
         const embeddedModel = monaco.editor.getModel(embeddedModelUri)!;
         embeddedModel.setValue(embeddedContent);
-        const embeddedPosition = translateYamlPositionToEmbedded(model, position, embeddedModel, yamlContent);
-        if (!embeddedPosition) {
-            return null;
-        }
-        const worker = await monaco.languages.typescript.getTypeScriptWorker();
-        const languageService = await worker(embeddedModelUri);
+        return { offset: offsetWithinFragment, model: embeddedModel, dispose: () => undefined };
+    }
+    return undefined;
+}
 
-        const completionInfo = await languageService.getCompletionsAtPosition(
-            embeddedModelUri.toString(),
-            embeddedModel.getOffsetAt(embeddedPosition)
-        );
+// Add IntelliSense for the embedded JavaScript
+async function provideCompletionItems(model: editor.ITextModel, position: IPosition) {
+    let completionInfo: any;
+    const currentData = await modelForCurrentPosition(model, position);
+    if (currentData) {
+        const { offset, model: currentModel, dispose } = currentData;
+        const languageService = await languageServiceForModel(currentModel);
+        completionInfo = await languageService.getCompletionsAtPosition(currentModel.uri.toString(), offset);
+        dispose()
 
-        if (completionInfo && completionInfo.entries) {
+        if (completionInfo.entries) {
             const wordInfo = model.getWordUntilPosition(position);
 
             return {
