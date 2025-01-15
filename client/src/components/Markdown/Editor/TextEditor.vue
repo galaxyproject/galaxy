@@ -22,7 +22,7 @@ import FlexPanel from "@/components/Panels/FlexPanel.vue";
 const props = defineProps<{
     markdownText: string;
     mode: "report" | "page";
-    steps: Record<string, any>;
+    steps?: Record<string, any>;
     title: string;
 }>();
 
