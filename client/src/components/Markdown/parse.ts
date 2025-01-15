@@ -5,13 +5,20 @@ const FUNCTION_CALL_LINE = `\\s*(\\w+)\\s*\\(\\s*(?:(${FUNCTION_ARGUMENT_REGEX})
 const FUNCTION_CALL_LINE_TEMPLATE = new RegExp(FUNCTION_CALL_LINE, "m");
 
 type DefaultSection = { name: "default"; content: string };
-type GalaxyDirectiveSection = { name: string; content: string; args: { [key: string]: string } };
-type Section = DefaultSection | GalaxyDirectiveSection;
+type GalaxySection = { name: string; content: string; args: { [key: string]: string } };
+type Section = DefaultSection | GalaxySection;
 
 type WorkflowLabelKind = "input" | "output" | "step";
 
 const SINGLE_QUOTE = "'";
 const DOUBLE_QUOTE = '"';
+
+function parseResult(result: { name: string; content: string }[], name: string, content: string[]) {
+    const trimmedContent = content.join("\n").trim();
+    if (trimmedContent.length > 0) {
+        result.push({ name: name, content: trimmedContent });
+    }
+}
 
 export function parseMarkdown(input: string): { name: string; content: string }[] {
     const result: { name: string; content: string }[] = [];
@@ -21,18 +28,14 @@ export function parseMarkdown(input: string): { name: string; content: string }[
     lines.forEach((line) => {
         const sectionMatch = line.match(/^```(.*)$/);
         if (sectionMatch) {
-            if (currentContent.length > 0) {
-                result.push({ name: currentName, content: currentContent.join("\n").trim() });
-            }
+            parseResult(result, currentName, currentContent);
             currentName = sectionMatch[1] || "default";
             currentContent = [];
         } else {
             currentContent.push(line);
         }
     });
-    if (currentContent.length > 0) {
-        result.push({ name: currentName, content: currentContent.join("\n").trim() });
-    }
+    parseResult(result, currentName, currentContent);
     return result;
 }
 
@@ -92,7 +95,7 @@ export function replaceLabel(
 
     function rewriteSection(section: Section) {
         if ("args" in section) {
-            const directiveSection = section as GalaxyDirectiveSection;
+            const directiveSection = section as GalaxySection;
             const args = directiveSection.args;
             if (!(labelType in args)) {
                 return section;
@@ -144,7 +147,7 @@ function getQuoteChar(argMatch: string): string {
     return quoteChar;
 }
 
-export function getArgs(content: string): GalaxyDirectiveSection {
+export function getArgs(content: string): GalaxySection {
     const galaxy_function = FUNCTION_CALL_LINE_TEMPLATE.exec(content);
     if (galaxy_function == null) {
         throw Error("Failed to parse galaxy directive");
