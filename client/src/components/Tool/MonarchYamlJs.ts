@@ -1,6 +1,16 @@
 import { type languages } from "monaco-editor/esm/vs/editor/editor.api";
 
+// The actual IMonarchLanguageBracket shape doesn't work at runtime ...
+const brackets = [
+    ["{", "}", "delimiter.curly"],
+    ["$(", ")", "delimiter.parenthesis"],
+    ["[", "]", "delimiter.square"],
+    ["(", ")", "delimiter.parenthesis"],
+    ["<", ">", "delimiter.angle"],
+] as any as languages.IMonarchLanguageBracket[];
+
 export const monarchConfig: languages.IMonarchLanguage = {
+    brackets: brackets,
     tokenizer: {
         root: [
             // Multiline JavaScript block
