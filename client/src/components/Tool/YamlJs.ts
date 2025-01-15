@@ -93,6 +93,7 @@ export async function setupMonaco(monaco: MonacoEditor) {
     const moreDisposeables = await setupEditor(providerFunctions);
     function disposeEditor() {
         dispose();
+        monaco.editor.getModels().map((model) => model.dispose());
         [...disposables, ...moreDisposeables].map((disposable) => disposable.dispose());
     }
     return disposeEditor;
@@ -148,7 +149,6 @@ declare global {
 `;
 
 async function addExtraLibs(yamlContent?: string) {
-    monaco.languages.typescript.typescriptDefaults.setExtraLibs([{ content: es5Lib }]);
     if (yamlContent) {
         const schemaInterface = await fetchAndConvertSchemaToInterface(yamlContent);
         const runtimeFragment = `${schemaInterface}\n${fragment}`;
@@ -194,31 +194,37 @@ async function allModels(model: editor.ITextModel) {
     const yamlContent = model.getValue();
     const embeddedModel = monaco.editor.getModel(embeddedModelUri)!;
     const embeddedStart = yamlContent.indexOf(embeddedModel.getValue());
-    const models = [{ start: embeddedStart, model: embeddedModel, dispose: () => undefined }];
+    const models = [{ start: embeddedStart, model: embeddedModel }];
     const embeddedContents = extractEmbeddedJs(yamlContent);
-    const fragmentModels = embeddedContents.map((fragment) => {
-        const model = monaco.editor.createModel(fragment.fragment, "typescript");
+    const fragmentModels = embeddedContents.map((fragment, index) => {
+        const fragmentModel = getOrCreateFragmentModel(index, fragment.fragment);
         return {
             start: fragment.start,
-            model: model,
-            dispose: model.dispose,
+            model: fragmentModel,
         };
     });
     return [...models, ...fragmentModels];
+}
+
+function getOrCreateFragmentModel(index: number, value: string) {
+    const modelUri = monaco.Uri.parse(`file://temp-fragment-${index}`);
+    const fragmentModel = monaco.editor.getModel(modelUri) || monaco.editor.createModel(value, "typescript", modelUri);
+    fragmentModel.setValue(value);
+    return fragmentModel;
 }
 
 async function modelForCurrentPosition(model: editor.ITextModel, position: IPosition) {
     const yamlContent = model.getValue();
     const embeddedContents = extractEmbeddedJs(yamlContent);
     const offsetForPosition = model.getOffsetAt(position);
-    const fragment = embeddedContents.find(
+    const fragmentIndex = embeddedContents.findIndex(
         (content) => content.start <= offsetForPosition && content.start + content.fragment.length >= offsetForPosition
     );
-    if (fragment) {
+    if (fragmentIndex >= 0) {
+        const fragment = embeddedContents[fragmentIndex]!;
         const offsetWithinFragment = offsetForPosition - fragment.start;
-        const fragmentModel = monaco.editor.createModel(fragment.fragment, "typescript");
-        const dispose = () => fragmentModel.dispose;
-        return { offset: offsetWithinFragment, model: fragmentModel, dispose };
+        const fragmentModel = getOrCreateFragmentModel(fragmentIndex, fragment.fragment);
+        return { offset: offsetWithinFragment, model: fragmentModel };
     }
     const embeddedContent = extractExpressionLibJavaScript(yamlContent);
     if (embeddedContent) {
@@ -228,7 +234,7 @@ async function modelForCurrentPosition(model: editor.ITextModel, position: IPosi
         }
         const embeddedModel = monaco.editor.getModel(embeddedModelUri)!;
         embeddedModel.setValue(embeddedContent);
-        return { offset: offsetWithinFragment, model: embeddedModel, dispose: () => undefined };
+        return { offset: offsetWithinFragment, model: embeddedModel };
     }
     return undefined;
 }
@@ -238,10 +244,9 @@ async function provideCompletionItems(model: editor.ITextModel, position: IPosit
     let completionInfo: any;
     const currentData = await modelForCurrentPosition(model, position);
     if (currentData) {
-        const { offset, model: currentModel, dispose } = currentData;
+        const { offset, model: currentModel } = currentData;
         const languageService = await languageServiceForModel(currentModel);
         completionInfo = await languageService.getCompletionsAtPosition(currentModel.uri.toString(), offset);
-        dispose();
 
         if (completionInfo && completionInfo.entries) {
             const wordInfo = model.getWordUntilPosition(position);
@@ -285,7 +290,7 @@ function attachDiagnosticsProvider(
         const promises = models.map(async (modelData) => {
             const languageService = await worker(modelData.model.uri);
             const diagnostics = await languageService.getSemanticDiagnostics(modelData.model.uri.toString());
-            return diagnostics.map((diagnostic) => {
+            diagnostics.forEach((diagnostic) => {
                 const startPosition = yamlModel.getPositionAt(modelData.start + diagnostic.start!);
                 const endPosition = yamlModel.getPositionAt(modelData.start + diagnostic.start! + diagnostic.length!);
                 markers.push({
