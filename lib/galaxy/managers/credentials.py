@@ -1,6 +1,4 @@
 from typing import (
-    Any,
-    Dict,
     List,
     Optional,
     Tuple,
@@ -94,18 +92,13 @@ class CredentialsManager:
         trans: ProvidesUserContext,
         payload: CreateSourceCredentialsPayload,
         db_user_credentials: List[Tuple[UserCredentials, CredentialsGroup]],
-        credentials_dict: Dict[int, Dict[str, Any]],
     ) -> None:
         session = trans.sa_session
-        existing_groups = {
-            cred["reference"]: {group["name"]: group["id"] for group in cred["groups"].values()}
-            for cred in credentials_dict.values()
-        }
         for service_payload in payload.credentials:
             reference = service_payload.reference
             current_group_name = service_payload.current_group
-            current_group_id = existing_groups.get(reference, {}).get(current_group_name)
-
+            if not current_group_name:
+                current_group_name = "default"
             user_credentials = next((uc[0] for uc in db_user_credentials if uc[0].reference == reference), None)
             if not user_credentials:
                 user_credentials = UserCredentials(
@@ -129,8 +122,6 @@ class CredentialsManager:
                     session.add(credentials_group)
                     session.flush()
                 user_credential_group_id = credentials_group.id
-                if current_group_name == group_name:
-                    current_group_id = user_credential_group_id
                 variables, secrets = self.fetch_credentials(trans.sa_session, user_credential_group_id)
                 user_vault = UserVaultWrapper(self._app.vault, trans.user)
                 for variable_payload in group.variables:
@@ -169,13 +160,24 @@ class CredentialsManager:
                     session.add(secret)
                     vault_ref = f"{payload.source_type}|{payload.source_id}|{reference}|{group_name}|{secret_name}"
                     user_vault.write_secret(vault_ref, secret_value)
-            if not current_group_id:
-                raise RequestParameterInvalidException("No current group selected.")
-            user_credentials.current_group_id = current_group_id
-            session.add(user_credentials)
-
+            self.update_current_group(trans, user_credentials_id, current_group_name)
         with transaction(session):
             session.commit()
+
+    def update_current_group(
+        self,
+        trans: ProvidesUserContext,
+        user_credentials_id: DecodedDatabaseIdField,
+        group_name: str,
+    ) -> None:
+        db_user_credentials = self.get_user_credentials(trans, trans.user.id, user_credentials_id=user_credentials_id)
+        for user_credentials, credentials_group in db_user_credentials:
+            if credentials_group.name == group_name:
+                user_credentials.current_group_id = credentials_group.id
+                trans.sa_session.add(user_credentials)
+                break
+        else:
+            raise RequestParameterInvalidException("Group not found to set as current.")
 
     def delete_rows(
         self,
