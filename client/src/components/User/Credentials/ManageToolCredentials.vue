@@ -28,6 +28,7 @@ const providedCredentials = ref<CreateSourceCredentialsPayload>(initializeCreden
 
 const emit = defineEmits<{
     (e: "save-credentials", credentials: CreateSourceCredentialsPayload): void;
+    (e: "delete-credentials-group", reference: string, groupName: string): void;
 }>();
 
 function saveCredentials() {
@@ -103,6 +104,14 @@ function onNewCredentialsSet(credential: ServiceCredentialPayload, newSet: Servi
     }
 }
 
+function onDeleteCredentialsGroup(reference: string, groupName: string) {
+    const credentialFound = providedCredentials.value.credentials.find((c) => c.reference === reference);
+    if (credentialFound) {
+        credentialFound.groups = credentialFound.groups.filter((g) => g.name !== groupName);
+        emit("delete-credentials-group", reference, groupName);
+    }
+}
+
 function onCurrentSetChange(credential: ServiceCredentialPayload, newSet: ServiceGroupPayload) {
     const credentialFound = providedCredentials.value.credentials.find((c) => c.reference === credential.reference);
     if (credentialFound) {
@@ -133,6 +142,7 @@ function getServiceCredentialsDefinition(reference: string): ServiceCredentialsD
             :credential-payload="credential"
             class="mb-2"
             @new-credentials-set="onNewCredentialsSet"
+            @delete-credentials-group="onDeleteCredentialsGroup"
             @update-current-set="onCurrentSetChange" />
         <button class="btn-primary" @click="saveCredentials">Save Credentials</button>
     </div>
