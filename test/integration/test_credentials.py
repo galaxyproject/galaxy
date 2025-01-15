@@ -56,6 +56,46 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         response = self._delete("/api/users/current/credentials/f2db41e1fa331b3e/f2db41e1fa331b3e")
         self._assert_status_code_is(response, 400)
 
+    def test_add_group_to_credentials(self):
+        self._populate_user_credentials()
+        new_group_name = "new_group"
+        payload = {
+            "source_type": "tool",
+            "source_id": "test_tool",
+            "credentials": [
+                {
+                    "reference": "test_service",
+                    "current_group": new_group_name,
+                    "groups": [
+                        {
+                            "name": "default",
+                            "variables": [{"name": "server", "value": "http://localhost:8080"}],
+                            "secrets": [
+                                {"name": "username", "value": "user"},
+                                {"name": "password", "value": "pass"},
+                                {"name": "token", "value": "key"},
+                            ],
+                        },
+                        {
+                            "name": new_group_name,
+                            "variables": [{"name": "server", "value": "http://localhost:8080/new"}],
+                            "secrets": [
+                                {"name": "username", "value": "user_new"},
+                                {"name": "password", "value": "pass_new"},
+                                {"name": "token", "value": "key_new"},
+                            ],
+                        },
+                    ],
+                },
+            ],
+        }
+        response = self._post("/api/users/current/credentials", data=payload, json=True)
+        self._assert_status_code_is(response, 200)
+        updated_user_credentials = response.json()
+        assert len(updated_user_credentials) == 1
+        assert updated_user_credentials[0]["current_group_name"] == new_group_name
+        assert len(updated_user_credentials[0]["groups"]) == 2
+
     def _populate_user_credentials(self):
         payload = {
             "source_type": "tool",
