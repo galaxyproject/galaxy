@@ -63,6 +63,7 @@ export async function setupMonaco(monaco: MonacoEditor) {
         lib: ["ES5"],
     });
     monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+    monaco.languages.typescript.typescriptDefaults.setExtraLibs([{ content: es5Lib }]);
     addExtraLibs();
 
     const { dispose } = configureMonacoYaml(monaco, {
@@ -150,7 +151,6 @@ declare global {
 `;
 
 async function addExtraLibs(yamlContent?: string) {
-    monaco.languages.typescript.typescriptDefaults.setExtraLibs([{ content: es5Lib }]);
     if (yamlContent) {
         const schemaInterface = await fetchAndConvertSchemaToInterface(yamlContent);
         const runtimeFragment = `${schemaInterface}\n${fragment}`;
@@ -287,7 +287,7 @@ function attachDiagnosticsProvider(
         const promises = models.map(async (modelData) => {
             const languageService = await worker(modelData.model.uri);
             const diagnostics = await languageService.getSemanticDiagnostics(modelData.model.uri.toString());
-            return diagnostics.map((diagnostic) => {
+            diagnostics.forEach((diagnostic) => {
                 const startPosition = yamlModel.getPositionAt(modelData.start + diagnostic.start!);
                 const endPosition = yamlModel.getPositionAt(modelData.start + diagnostic.start! + diagnostic.length!);
                 markers.push({
@@ -302,6 +302,14 @@ function attachDiagnosticsProvider(
                     endColumn: endPosition.column,
                 });
             });
+            try {
+                modelData.dispose();
+            } catch (err) {
+                // we might be destroying a model that is asynchronously destroyed in another callback, I guess that's fine?
+                if (!(err instanceof TypeError)) {
+                    throw err
+                }
+            }
         });
         await Promise.all(promises);
         monaco.editor.setModelMarkers(yamlModel, "owner", markers);
