@@ -8,7 +8,7 @@ export const monarchConfig: languages.IMonarchLanguage = {
             // Inline JavaScript: Key followed by code on the same line
             [/(expressionLib):\s*/, { token: "key", nextEmbedded: "javascript", next: "@inlineJs" }],
             [/(shell_command):\s*/, { token: "key", next: "@shellCommand" }],
-            [/.*/, { token: "@rematch", nextEmbedded: "yaml", next: "@yamlRest", log: "Match rest" }],
+            [/.*/, { token: "@rematch", nextEmbedded: "yaml", next: "@yamlRest" }],
         ],
         shellCommand: [
             [
