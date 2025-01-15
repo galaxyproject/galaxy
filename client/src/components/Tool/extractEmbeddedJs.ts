@@ -13,7 +13,7 @@ export function extractEmbeddedJs(inputString: string, fieldRegex?: RegExp): { f
     while (i < end) {
         if (inputString[i] === "$" && inputString[i + 1] === "(") {
             let depth = 0;
-            const startIndex = i;
+            const startIndex = i + 2;
             i += 2; // Skip past "$("
 
             while (i < end) {

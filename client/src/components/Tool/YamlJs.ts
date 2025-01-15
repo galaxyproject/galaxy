@@ -3,11 +3,11 @@ import { editor } from "monaco-editor";
 import { type IPosition, type MonacoEditor } from "monaco-types";
 import { configureMonacoYaml } from "monaco-yaml";
 
+import { extractEmbeddedJs } from "./extractEmbeddedJs";
 import { monarchConfig } from "./MonarchYamlJs";
 import { fetchAndConvertSchemaToInterface } from "./runTimeModel";
 import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 import { buildProviderFunctions } from "./yaml";
-import { extractEmbeddedJs } from "./extractEmbeddedJs";
 
 const LANG = "yaml-with-js";
 
@@ -188,6 +188,23 @@ async function languageServiceForModel(model: editor.ITextModel) {
     return languageService;
 }
 
+async function allModels(model: editor.ITextModel) {
+    const yamlContent = model.getValue();
+    const embeddedModel = monaco.editor.getModel(embeddedModelUri)!;
+    const embeddedStart = yamlContent.indexOf(embeddedModel.getValue());
+    const models = [{ start: embeddedStart, model: embeddedModel, dispose: () => undefined }];
+    const embeddedContents = extractEmbeddedJs(yamlContent);
+    const fragmentModels = embeddedContents.map((fragment) => {
+        const model = monaco.editor.createModel(fragment.fragment, "typescript");
+        return {
+            start: fragment.start,
+            model: model,
+            dispose: model.dispose,
+        };
+    });
+    return [...models, ...fragmentModels];
+}
+
 async function modelForCurrentPosition(model: editor.ITextModel, position: IPosition) {
     const yamlContent = model.getValue();
     const embeddedContents = extractEmbeddedJs(yamlContent);
@@ -198,7 +215,7 @@ async function modelForCurrentPosition(model: editor.ITextModel, position: IPosi
     if (fragment) {
         const offsetWithinFragment = offsetForPosition - fragment.start;
         const fragmentModel = monaco.editor.createModel(fragment.fragment, "typescript");
-        const dispose = () => fragmentModel.dispose
+        const dispose = () => fragmentModel.dispose;
         return { offset: offsetWithinFragment, model: fragmentModel, dispose };
     }
     const embeddedContent = extractExpressionLibJavaScript(yamlContent);
@@ -222,9 +239,9 @@ async function provideCompletionItems(model: editor.ITextModel, position: IPosit
         const { offset, model: currentModel, dispose } = currentData;
         const languageService = await languageServiceForModel(currentModel);
         completionInfo = await languageService.getCompletionsAtPosition(currentModel.uri.toString(), offset);
-        dispose()
+        dispose();
 
-        if (completionInfo.entries) {
+        if (completionInfo && completionInfo.entries) {
             const wordInfo = model.getWordUntilPosition(position);
 
             return {
@@ -260,29 +277,16 @@ function attachDiagnosticsProvider(
         // only when fetch complete, but doesn't seem to be a problem ...
         await contentSync(yamlContent, embeddedJavaScript, embeddedModel);
         const yamlMarkers = await provideMarkerData(yamlModel);
-        let jsMarkers: editor.IMarkerData[] = [];
-
-        if (embeddedJavaScript) {
-            const worker = await monaco.languages.typescript.getTypeScriptWorker();
-            const languageService = await worker(embeddedModelUri);
-
-            const diagnostics = await languageService.getSemanticDiagnostics(embeddedModelUri.toString());
-
-            jsMarkers = diagnostics.map((diagnostic) => {
-                const startPosition = translateEmbeddedPositionToYaml(
-                    embeddedModel,
-                    diagnostic.start!,
-                    yamlModel,
-                    yamlContent
-                )!;
-                const endPosition = translateEmbeddedPositionToYaml(
-                    embeddedModel,
-                    diagnostic.start! + diagnostic.length!,
-                    yamlModel,
-                    yamlContent
-                )!;
-
-                return {
+        const models = await allModels(yamlModel);
+        const worker = await monaco.languages.typescript.getTypeScriptWorker();
+        const markers = [yamlMarkers];
+        const promises = models.map(async (modelData) => {
+            const languageService = await worker(modelData.model.uri);
+            const diagnostics = await languageService.getSemanticDiagnostics(modelData.model.uri.toString());
+            return diagnostics.map((diagnostic) => {
+                const startPosition = yamlModel.getPositionAt(modelData.start + diagnostic.start!);
+                const endPosition = yamlModel.getPositionAt(modelData.start + diagnostic.start! + diagnostic.length!);
+                markers.push({
                     severity: monaco.MarkerSeverity.Error, // Severity: Error, Warning, or Info
                     message:
                         typeof diagnostic.messageText === "string"
@@ -292,17 +296,18 @@ function attachDiagnosticsProvider(
                     startColumn: startPosition.column,
                     endLineNumber: endPosition.lineNumber,
                     endColumn: endPosition.column,
-                };
+                });
             });
-        }
-        monaco.editor.setModelMarkers(yamlModel, "owner", [...yamlMarkers, ...jsMarkers]);
+        });
+        await Promise.all(promises);
+        monaco.editor.setModelMarkers(yamlModel, "owner", markers);
     });
 }
 
 async function provideHover(model: editor.ITextModel, position: IPosition) {
-    const currentData = await modelForCurrentPosition(model, position)
+    const currentData = await modelForCurrentPosition(model, position);
     if (currentData) {
-        const languageService = await languageServiceForModel(currentData.model)
+        const languageService = await languageServiceForModel(currentData.model);
         const quickInfo = await languageService.getQuickInfoAtPosition(
             currentData.model.uri.toString(),
             currentData.offset
@@ -323,32 +328,4 @@ async function provideHover(model: editor.ITextModel, position: IPosition) {
         }
     }
     return null;
-}
-
-function translateEmbeddedPositionToYaml(
-    embeddedModel: editor.ITextModel,
-    embeddedOffset: number,
-    yamlModel: editor.ITextModel,
-    yamlContent: string
-) {
-    const scriptRegex = /(expressionLib):\s*(?:\|([\s\S]*?)(?=\n\s*\w+:|\n\s*$)|(.+))/; // No g flag
-    const scriptMatch = yamlContent.match(scriptRegex);
-
-    if (!scriptMatch) {
-        return null;
-    }
-
-    let scriptStartIndex;
-    if (scriptMatch[2]) {
-        // Multiline
-        scriptStartIndex = scriptMatch.index! + scriptMatch[0].indexOf("|") + 1;
-    } else if (scriptMatch[3]) {
-        // Inline
-        scriptStartIndex = scriptMatch.index! + scriptMatch[0].indexOf(scriptMatch[3]); // Start of the inline code
-    } else {
-        return null; // Should not happen, but good to have
-    }
-
-    const yamlOffset = scriptStartIndex + embeddedOffset;
-    return yamlModel.getPositionAt(yamlOffset);
 }
