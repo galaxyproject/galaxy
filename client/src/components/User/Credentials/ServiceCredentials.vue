@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BCard } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import Multiselect from "vue-multiselect";
@@ -24,19 +26,27 @@ const props = defineProps<Props>();
 const selectedSet = ref<ServiceGroupPayload | undefined>(
     props.credentialPayload.groups.find((group) => group.name === props.credentialPayload.current_group)
 );
-const availableSets = computed<ServiceGroupPayload[]>(() => Object.values(props.credentialPayload.groups));
+
+const isAddingNewSet = ref(false);
+
 const newSetName = ref<string>("");
+
+const availableSets = computed<ServiceGroupPayload[]>(() => Object.values(props.credentialPayload.groups));
+
 const canCreateNewSet = computed<boolean>(
     () => newSetName.value.trim() !== "" && !availableSets.value.some((set) => set.name === newSetName.value)
 );
+
 const canShowSetSelector = computed<boolean>(
     () => props.credentialDefinition.multiple && availableSets.value.length > 1
 );
-const isAddingNewSet = ref(false);
+
+const canDeleteSet = computed<boolean>(() => selectedSet.value?.name !== "default");
 
 const emit = defineEmits<{
     (e: "new-credentials-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
     (e: "update-current-set", credential: ServiceCredentialPayload, newSet: ServiceGroupPayload): void;
+    (e: "delete-credentials-group", reference: string, groupName: string): void;
 }>();
 
 function onAddingNewSet() {
@@ -92,6 +102,19 @@ function getVariableTitle(name: string, type: CredentialType): string {
 function getVariableDescription(name: string, type: CredentialType): string | undefined {
     return getVariableDefinition(name, type).description;
 }
+
+function onDeleteGroup() {
+    if (selectedSet.value) {
+        //TODO: Implement confirmation dialog.
+        const groupNameToDelete = selectedSet.value.name;
+        const defaultSet = availableSets.value.find((set) => set.name === "default");
+        if (defaultSet) {
+            selectedSet.value = defaultSet;
+            onCurrentSetChange(defaultSet);
+        }
+        emit("delete-credentials-group", props.credentialPayload.reference, groupNameToDelete);
+    }
+}
 </script>
 
 <template>
@@ -123,7 +146,7 @@ function getVariableDescription(name: string, type: CredentialType): string | un
             </h3>
             <p>{{ credentialDefinition.description }}</p>
             <div v-if="selectedSet">
-                <div v-if="canShowSetSelector">
+                <div v-if="canShowSetSelector" class="set-selection-bar">
                     <b>Using set:</b>
                     <Multiselect
                         v-model="selectedSet"
@@ -134,6 +157,14 @@ function getVariableDescription(name: string, type: CredentialType): string | un
                         track-by="name"
                         label="name"
                         @select="onCurrentSetChange" />
+                    <button
+                        v-if="canDeleteSet"
+                        size="sm"
+                        class="mx-2"
+                        title="Delete this set of credentials."
+                        @click="onDeleteGroup">
+                        <FontAwesomeIcon :icon="faTrash" />
+                    </button>
                 </div>
 
                 <div v-for="variable in selectedSet.variables" :key="variable.name">
@@ -197,5 +228,11 @@ function getVariableDescription(name: string, type: CredentialType): string | un
     display: flex;
     gap: 1em;
     align-items: center;
+}
+.set-selection-bar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1em;
 }
 </style>
