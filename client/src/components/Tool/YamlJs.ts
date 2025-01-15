@@ -219,7 +219,7 @@ async function modelForCurrentPosition(model: editor.ITextModel, position: IPosi
     if (fragment) {
         const offsetWithinFragment = offsetForPosition - fragment.start;
         const fragmentModel = monaco.editor.createModel(fragment.fragment, "typescript");
-        const dispose = () => fragmentModel.dispose;
+        const dispose = () => fragmentModel.dispose();
         return { offset: offsetWithinFragment, model: fragmentModel, dispose };
     }
     const embeddedContent = extractExpressionLibJavaScript(yamlContent);
