@@ -42,10 +42,9 @@ class CredentialsService:
         user_id: FlexibleUserIdType,
         source_type: Optional[SOURCE_TYPE] = None,
         source_id: Optional[str] = None,
-        group_name: Optional[str] = None,
     ) -> UserCredentialsListResponse:
         """Lists all credentials the user has provided (credentials themselves are not included)."""
-        return self._list_user_credentials(trans, user_id, source_type, source_id, group_name)
+        return self._list_user_credentials(trans, user_id, source_type, source_id)
 
     def provide_credential(
         self,
@@ -64,12 +63,12 @@ class CredentialsService:
         self,
         trans: ProvidesUserContext,
         user_id: FlexibleUserIdType,
-        group_id: Optional[DecodedDatabaseIdField] = None,
         user_credentials_id: Optional[DecodedDatabaseIdField] = None,
+        group_id: Optional[DecodedDatabaseIdField] = None,
     ) -> None:
         """Deletes a specific credential group or all credentials for a specific service."""
         db_user_credentials = self._credentials_manager.get_user_credentials(
-            trans, user_id, group_id=group_id, user_credentials_id=user_credentials_id
+            trans, user_id, user_credentials_id=user_credentials_id, group_id=group_id
         )
         if not db_user_credentials:
             raise ObjectNotFound("No credentials found.")
@@ -87,11 +86,8 @@ class CredentialsService:
         user_id: FlexibleUserIdType,
         source_type: Optional[SOURCE_TYPE] = None,
         source_id: Optional[str] = None,
-        group_name: Optional[str] = None,
     ) -> UserCredentialsListResponse:
-        db_user_credentials = self._credentials_manager.get_user_credentials(
-            trans, user_id, source_type, source_id, group_name
-        )
+        db_user_credentials = self._credentials_manager.get_user_credentials(trans, user_id, source_type, source_id)
         credentials_dict = self._map_user_credentials(db_user_credentials)
         for user_credentials, credentials_group in db_user_credentials:
             variables, secrets = self._credentials_manager.fetch_credentials(trans.sa_session, credentials_group.id)
