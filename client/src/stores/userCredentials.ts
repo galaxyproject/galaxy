@@ -66,6 +66,43 @@ export const useUserCredentialsStore = defineScopedStore("userCredentialsStore",
         return data;
     }
 
+    async function deleteCredentialsGroupForTool(toolId: string, reference: string, groupName: string): Promise<void> {
+        const userId = ensureUserIsRegistered();
+        const key = getKey(toolId);
+        const credentials = userCredentialsForTools.value[key];
+
+        if (credentials) {
+            const serviceCredentials = credentials.find((credential) => credential.reference === reference);
+            if (!serviceCredentials) {
+                throw new Error(`No credentials found for reference ${reference}`);
+            }
+            const group = serviceCredentials.groups[groupName];
+            if (!group) {
+                throw new Error(`No group found for name ${groupName}`);
+            }
+            const { error } = await GalaxyApi().DELETE(
+                "/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}",
+                {
+                    params: {
+                        path: { user_id: userId, user_credentials_id: serviceCredentials.id, group_id: group.id },
+                    },
+                }
+            );
+
+            if (error) {
+                throw Error(`Failed to delete user credentials group for tool ${toolId}: ${error.err_msg}`);
+            }
+            // Remove the group from the credentials
+            const updatedCredentials = credentials.map((credential) => {
+                if (credential.id === reference) {
+                    delete credential.groups[groupName];
+                }
+                return credential;
+            });
+            set(userCredentialsForTools.value, key, updatedCredentials);
+        }
+    }
+
     function ensureUserIsRegistered(): string {
         if (currentUserId === "anonymous") {
             throw new Error("Only registered users can have tool credentials");
@@ -89,5 +126,6 @@ export const useUserCredentialsStore = defineScopedStore("userCredentialsStore",
         getAllUserCredentialsForTool,
         fetchAllUserCredentialsForTool,
         saveUserCredentialsForTool,
+        deleteCredentialsGroupForTool,
     };
 });

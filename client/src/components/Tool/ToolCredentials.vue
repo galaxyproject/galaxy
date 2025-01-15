@@ -143,6 +143,19 @@ async function onSavedCredentials(providedCredentials: CreateSourceCredentialsPa
     }
 }
 
+async function onDeleteCredentialsGroup(reference: string, groupName: string) {
+    busyMessage.value = "Updating your credentials...";
+    isBusy.value = true;
+    try {
+        userCredentialsStore.deleteCredentialsGroupForTool(props.toolId, reference, groupName);
+    } catch (error) {
+        // TODO: Implement error handling.
+        console.error("Error deleting user credentials group", error);
+    } finally {
+        isBusy.value = false;
+    }
+}
+
 checkUserCredentials();
 </script>
 
@@ -197,6 +210,7 @@ checkUserCredentials();
                 :tool-version="props.toolVersion"
                 :tool-credentials-definition="credentialsDefinition"
                 :user-tool-credentials="userCredentials"
+                @delete-credentials-group="onDeleteCredentialsGroup"
                 @save-credentials="onSavedCredentials" />
         </BModal>
     </div>
