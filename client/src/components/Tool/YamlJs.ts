@@ -32,6 +32,7 @@ export async function setupMonaco(monaco: MonacoEditor) {
                 ["{", "}"],
                 ["[", "]"],
                 ["(", ")"],
+                ["$(", ")"],
             ],
             autoClosingPairs: [
                 { open: "{", close: "}" },
@@ -39,6 +40,7 @@ export async function setupMonaco(monaco: MonacoEditor) {
                 { open: "(", close: ")" },
                 { open: '"', close: '"' },
                 { open: "'", close: "'" },
+                { open: "$(", close: ")" },
             ],
             surroundingPairs: [
                 { open: "{", close: "}" },
