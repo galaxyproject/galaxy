@@ -304,7 +304,7 @@ class CredentialsService:
             session.add(user_credentials)
         session.commit()
 
-        new_user_credentials = db_user_credentials or self._user_credentials(
+        new_user_credentials = self._user_credentials(
             trans,
             user_id=user_id,
             source_type=source_type,
