@@ -1,9 +1,14 @@
 <template>
     <Popper trigger="click" placement="right" mode="light">
         <template v-slot:reference>
-            <div v-b-tooltip.right class="d-inline text-muted ml-2 cursor-pointer" title="Insert new Cell">
-                <FontAwesomeIcon :icon="faPlusSquare" />
-            </div>
+            <span
+                v-b-tooltip.right
+                role="button"
+                tabindex="0"
+                class="d-inline text-muted ml-3 cursor-pointer"
+                title="Insert new Cell">
+                <FontAwesomeIcon class="text-primary" :icon="faPlusSquare" />
+            </span>
         </template>
         <div class="cursor-pointer">
             <CellOption
@@ -11,7 +16,17 @@
                 description="Markdown text element"
                 :icon="faPlusSquare"
                 @click="onClick('markdown')" />
-            <CellOption title="Vega" description="Vega Graphics" @click="onClick('vega')" />
+            <CellOption
+                title="Galaxy Element"
+                description="Galaxy element"
+                :icon="faPlusSquare"
+                @click="onClick('galaxy')" />
+            <CellOption title="Vega" description="Vega Graphics" :icon="faPlusSquare" @click="onClick('vega')" />
+            <CellOption
+                title="Vitessce"
+                description="Vitessce Graphics"
+                :icon="faPlusSquare"
+                @click="onClick('vitessce')" />
         </div>
     </Popper>
 </template>
