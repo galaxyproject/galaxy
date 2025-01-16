@@ -317,22 +317,6 @@ class OnedataObjectStoreConfiguration(StrictModel):
 # iRODS
 
 
-class AwsS3ObjectStoreTemplateConfiguration(StrictModel):
-    type: Literal["aws_s3"]
-    auth: S3AuthTemplate
-    bucket: S3BucketTemplate
-    badges: BadgeList = None
-    template_start: Optional[str] = None
-    template_end: Optional[str] = None
-
-
-class AwsS3ObjectStoreConfiguration(StrictModel):
-    type: Literal["aws_s3"]
-    auth: S3Auth
-    bucket: S3Bucket
-    badges: BadgeList = None
-
-
 class IrodsAuthTemplate(StrictModel):
     username: Union[str, TemplateExpansion]
     password: Union[str, TemplateExpansion]
@@ -353,7 +337,7 @@ class IrodsConnectionTemplate(StrictModel):
 
 class IrodsConnection(StrictModel):
     host: str
-    port: str
+    port: Optional[int] = 1247
     timeout: Optional[int] = 30
     refresh_time: Optional[int] = 300
     connection_pool_monitor_interval: Optional[int] = 3600
