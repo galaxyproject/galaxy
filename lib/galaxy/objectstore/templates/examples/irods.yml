@@ -116,15 +116,6 @@
       help: |
         Your irods password
   configuration:
-    # type: onedata
-    # auth:
-    #   access_token: '{{ secrets.access_token }}'
-    # connection:
-    #   onezone_domain: "{{ variables.onezone_domain }}"
-    #   disable_tls_certificate_validation: "{{ variables.disable_tls_certificate_validation }}"
-    # space:
-    #   name: "{{ variables.space_name }}"
-    #   galaxy_root_dir: "{{ variables.galaxy_root_dir }}"
     type: irods
     auth:
       username: "{{ variables.username }}"
@@ -153,11 +144,4 @@
     # if not defined the default path is: /zone_name/home/username
     logical:
       path: "{{ variables.logical_path }}"
-    # cache:
-    #   path: "{{ variables.onezone_domain }}"
-    #   size: "{{ variables.onezone_domain }}"
-    #   cache_updated_data: "{{ variables.onezone_domain }}"
-    # extra_dirs:
-    #   - type: "{{ variables.onezone_domain }}"
-    #     path: "{{ variables.onezone_domain }}"
 
