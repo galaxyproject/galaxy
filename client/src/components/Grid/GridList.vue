@@ -174,7 +174,7 @@ async function getGridData() {
             return;
         }
         try {
-            const offset = props.limit * (currentPage.value - 1);
+            const offset = props.limit * (currentPage.value ? currentPage.value - 1 : 0);
             const [responseData, responseTotal] = await props.gridConfig.getData(
                 offset,
                 props.limit,

@@ -318,7 +318,7 @@ async function provideItems(ctx: ItemsProviderContext, url?: string): Promise<Se
             return [];
         }
         const limit = ctx.perPage;
-        const offset = (ctx.currentPage - 1) * ctx.perPage;
+        const offset = (ctx.currentPage ? ctx.currentPage - 1 : 0) * ctx.perPage;
         const query = ctx.filter;
         const response = await browseRemoteFiles(url, false, props.requireWritable, limit, offset, query);
         const result = response.entries.map(entryToRecord);
