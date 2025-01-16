@@ -225,10 +225,10 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         title="Creator",
         description=("Additional information about the creator (or multiple creators) of this workflow."),
     )
-    creator_deleted_or_purged: bool = Field(
+    creator_deleted: bool = Field(
         ...,
-        title="Creator deleted or purged",
-        description="Whether the creator of this Workflow has been deleted or purged.",
+        title="Creator deleted",
+        description="Whether the creator of this Workflow has been deleted.",
     )
     steps: Dict[
         int,

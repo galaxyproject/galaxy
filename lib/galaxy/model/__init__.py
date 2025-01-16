@@ -7859,7 +7859,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
         rval["latest_workflow_uuid"] = (lambda uuid: str(uuid) if self.latest_workflow.uuid else None)(
             self.latest_workflow.uuid
         )
-        rval["creator_deleted_or_purged"] = self.user.deleted or self.user.purged
+        rval["creator_deleted"] = self.user.deleted
         return rval
 
 
@@ -10492,7 +10492,7 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
         "deleted",
         "username",
         "email_hash",
-        "author_deleted_or_purged",
+        "author_deleted",
         "create_time",
         "update_time",
     ]
@@ -10521,8 +10521,8 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
 
     # needed to determine how to display page details
     @property
-    def author_deleted_or_purged(self):
-        return self.user.deleted or self.user.purged
+    def author_deleted(self):
+        return self.user.deleted
 
 
 class PageRevision(Base, Dictifiable, RepresentById):

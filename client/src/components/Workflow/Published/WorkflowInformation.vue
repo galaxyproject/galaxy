@@ -45,7 +45,7 @@ const userOwned = computed(() => {
 });
 
 const owner = computed(() => {
-    if (props.workflowInfo?.creator_deleted_or_purged) {
+    if (props.workflowInfo?.creator_deleted) {
         return "Archived author";
     }
     return props.workflowInfo.owner;
@@ -71,7 +71,7 @@ const owner = computed(() => {
             <img alt="User Avatar" :src="gravatarSource" class="mb-2" />
 
             <RouterLink
-                v-if="!props.workflowInfo?.creator_deleted_or_purged"
+                v-if="!props.workflowInfo?.creator_deleted"
                 :to="publishedByUser"
                 :target="props.embedded ? '_blank' : ''">
                 All published Workflows by {{ workflowInfo.owner }}

@@ -12,7 +12,7 @@ interface Item {
     owner?: string;
     username?: string;
     email_hash?: string;
-    author_deleted_or_purged?: boolean;
+    author_deleted?: boolean;
     tags?: string[];
     title?: string;
 }
@@ -39,7 +39,7 @@ const plural = computed(() => {
 });
 
 const owner = computed(() => {
-    if (props.item?.author_deleted_or_purged) {
+    if (props.item?.author_deleted) {
         return "Archived author";
     }
     return props.item?.owner ?? props.item?.username ?? "Unavailable";
@@ -83,7 +83,7 @@ const urlAll = computed(() => `/${pluralPath.value}/list_published`);
                     <router-link :to="urlAll">All published {{ plural }}</router-link>
                 </div>
 
-                <div v-if="!props.item?.author_deleted_or_purged">
+                <div v-if="!props.item?.author_deleted">
                     <router-link :to="publishedByUser"> Published {{ plural }} by {{ owner }}</router-link>
                 </div>
             </div>
