@@ -118,8 +118,13 @@ class OIDCAuthnzBase(IdentityProvider):
         if custos_authnz_token is None:
             raise exceptions.AuthenticationFailed("cannot find authorized user while refreshing token")
         id_token_decoded = self._decode_token_no_signature(custos_authnz_token.id_token)
-        # do not refresh tokens if they didn't reach their half lifetime
+        # do not refresh tokens if the id_token didn't reach its half-life
         if int(id_token_decoded["iat"]) + int(id_token_decoded["exp"]) > 2 * int(time.time()):
+            return False
+        refresh_token_decoded = self._decode_token_no_signature(custos_authnz_token.refresh_token)
+        # do not attempt to use refresh token that is already expired
+        if int(refresh_token_decoded["exp"]) > int(time.time()):
+            # in the future we might want to log out the user here
             return False
         log.info(custos_authnz_token.access_token)
         oauth2_session = self._create_oauth2_session()
