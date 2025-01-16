@@ -377,7 +377,7 @@ class IrodsConnectionTemplate(StrictModel):
 
 class IrodsConnection(StrictModel):
     host: str
-    port: str
+    port: Optional[int] = 1247
     timeout: Optional[int] = 30
     refresh_time: Optional[int] = 300
     connection_pool_monitor_interval: Optional[int] = 3600

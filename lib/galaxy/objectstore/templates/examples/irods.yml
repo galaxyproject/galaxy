@@ -12,7 +12,7 @@
       help: Host url to connect to.
     port:
       label: iRODS host port
-      type: int
+      type: integer
       help: Host port to connect to.
       default: 1247
     username:
@@ -31,17 +31,17 @@
   environment:
     timeout:
       label: Connection timeout
-      type: int
+      type: integer
       help: Connection timeout in seconds.
       default: 30
     refresh_time:
       label: iRODS host
-      type: int
+      type: integer
       help: Connection refresh time in seconds.
       default: 300
     connection_pool_monitor_interval:
       label: Connection pool monitor interval
-      type: int
+      type: integer
       help: Interval for monitoring the connection pool in seconds.
       default: 3600
     zone:
@@ -76,19 +76,19 @@
       default: "AES-256-CBC"
     encryption_key_size:
       label: Encryption key size
-      type: string
+      type: integer
       help: |
         Key size for parallel transfer encryption
       default: 32
     encryption_num_hash_rounds:
       label: Number of hash rounds for encryption
-      type: string
+      type: integer
       help: |
         Number of hash rounds for parallel transfer encryption
       default: 16
     encryption_salt_size:
       label: Salt size
-      type: string
+      type: integer
       help: |
         Salt size for parallel transfer encryption
       default: 8
@@ -112,6 +112,7 @@
         trusted certificates
       default: "/etc/irods/ssl/irods.crt"
   secrets:
+    password:
       label: Password
       help: |
         Your irods password
