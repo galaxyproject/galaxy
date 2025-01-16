@@ -370,25 +370,25 @@ class IrodsAuth(StrictModel):
 class IrodsConnectionTemplate(StrictModel):
     host: Union[str, TemplateExpansion]
     port: Union[str, TemplateExpansion]
-    timeout: Optional[Union[int, TemplateExpansion]] = 30
-    refresh_time: Optional[Union[int, TemplateExpansion]] = 300
-    connection_pool_monitor_interval: Optional[Union[int, TemplateExpansion]] = 3600
+    timeout: Optional[Union[int, TemplateExpansion]]
+    refresh_time: Optional[Union[int, TemplateExpansion]]
+    connection_pool_monitor_interval: Optional[Union[int, TemplateExpansion]]
 
 
 class IrodsConnection(StrictModel):
     host: str
-    port: Optional[int] = 1247
-    timeout: Optional[int] = 30
-    refresh_time: Optional[int] = 300
-    connection_pool_monitor_interval: Optional[int] = 3600
+    port: Optional[int]
+    timeout: Optional[int]
+    refresh_time: Optional[int]
+    connection_pool_monitor_interval: Optional[int]
 
 
 class IrodsPathTemplate(StrictModel):
-    logical_path: Optional[Union[str, TemplateExpansion]] = "/tempZone/home/rods"
+    logical_path: Optional[Union[str, TemplateExpansion]] = ""
 
 
 class IrodsPath(StrictModel):
-    logical_path: Optional[str] = "/tempZone/home/rods"
+    logical_path: Optional[str] = ""
 
 
 class IrodsResourceTemplate(StrictModel):
@@ -408,25 +408,25 @@ class IrodsZone(StrictModel):
 
 
 class IrodsSslTemplate(StrictModel):
-    client_server_negotiation: Optional[Union[str, TemplateExpansion]] = None
-    client_server_policy: Optional[Union[str, TemplateExpansion]] = None
-    encryption_algorithm: Optional[Union[str, TemplateExpansion]] = None
+    client_server_negotiation: Optional[Union[str, TemplateExpansion]] = ""
+    client_server_policy: Optional[Union[str, TemplateExpansion]] = ""
+    encryption_algorithm: Optional[Union[str, TemplateExpansion]] = ""
     encryption_key_size: Optional[Union[int, TemplateExpansion]] = None
     encryption_num_hash_rounds: Optional[Union[int, TemplateExpansion]] = None
     encryption_salt_size: Optional[Union[int, TemplateExpansion]] = None
-    ssl_verify_server: Optional[Union[str, TemplateExpansion]] = None
-    ssl_ca_certificate_file: Optional[Union[str, TemplateExpansion]] = None
+    ssl_verify_server: Optional[Union[str, TemplateExpansion]] = ""
+    ssl_ca_certificate_file: Optional[Union[str, TemplateExpansion]] = ""
 
 
 class IrodsSsl(StrictModel):
-    client_server_negotiation: Optional[str] = None
-    client_server_policy: Optional[str] = None
-    encryption_algorithm: Optional[str] = None
+    client_server_negotiation: Optional[str] = ""
+    client_server_policy: Optional[str] = ""
+    encryption_algorithm: Optional[str] = ""
     encryption_key_size: Optional[int] = None
     encryption_num_hash_rounds: Optional[int] = None
     encryption_salt_size: Optional[int] = None
-    ssl_verify_server: Optional[str] = None
-    ssl_ca_certificate_file: Optional[str] = None
+    ssl_verify_server: Optional[str] = ""
+    ssl_ca_certificate_file: Optional[str] = ""
 
 
 class IrodsObjectStoreTemplateConfiguration(StrictModel):
