@@ -1,5 +1,9 @@
 <template>
-    <div class="cell-option d-flex justify-content-between rounded m-1" @click="$emit('click')">
+    <span
+        role="button"
+        tabindex="0"
+        class="cell-option d-flex justify-content-between rounded m-1"
+        @click="$emit('click')">
         <div class="m-2">
             <div class="font-weight-bold">{{ title }}</div>
             <small>{{ description }}</small>
@@ -7,7 +11,7 @@
         <div v-if="icon" class="m-2 align-self-center">
             <FontAwesomeIcon :icon="icon" />
         </div>
-    </div>
+    </span>
 </template>
 
 <script setup lang="ts">
