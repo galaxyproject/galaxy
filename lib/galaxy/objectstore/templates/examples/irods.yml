@@ -27,7 +27,7 @@
         All Data Objects stored in an iRODS system are stored in some Collection, 
         which is a logical name for that set of Data Objects.
         All Galaxy output will be stored in this collection
-      default: "/tempZone/home/rods"
+      default: ""
   environment:
     timeout:
       label: Connection timeout
