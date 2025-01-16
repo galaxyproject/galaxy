@@ -10,89 +10,154 @@
       label: iRODS host
       type: string
       help: Host url to connect to.
+    port:
+      label: iRODS host port
+      type: int
+      help: Host port to connect to.
+      default: 1247
+    username:
+      label: Username
+      type: string
+      help: |
+        Your iRODS username
+    logical_path:
+      label: Logical path
+      type: string
+      help: |
+        All Data Objects stored in an iRODS system are stored in some Collection, 
+        which is a logical name for that set of Data Objects.
+        All Galaxy output will be stored in this collection
+      default: "/tempZone/home/rods"
+  environment:
+    timeout:
+      label: Connection timeout
+      type: int
+      help: Connection timeout in seconds.
+      default: 30
+    refresh_time:
+      label: iRODS host
+      type: int
+      help: Connection refresh time in seconds.
+      default: 300
+    connection_pool_monitor_interval:
+      label: Connection pool monitor interval
+      type: int
+      help: Interval for monitoring the connection pool in seconds.
+      default: 3600
     zone:
       label: iRODS zone
       type: string
       help: |
         An iRODS Zone is an independent iRODS system consisting of a Catalog Service 
         Provider
-    username:
+    resource:
+      label: Resource
+      type: string
+      help: |
+        The iRODS resource to use
+  ssl:
+    client_server_negotiation:
+      label: Server negotiation
+      type: string
+      help: |
+        Server negotiation
+      default: "request_server_negotiation"
+    client_server_policy:
+      label: Server policy
+      type: string
+      help: |
+        Server policy
+      default: "CS_NEG_REQUIRE"
+    encryption_algorithm:
+      label: Encryption algorithm
+      type: string
+      help: |
+        EVP-supplied encryption algorithm for parallel transfer encryption
+      default: "AES-256-CBC"
+    encryption_key_size:
+      label: Encryption key size
+      type: string
+      help: |
+        Key size for parallel transfer encryption
+      default: 32
+    encryption_num_hash_rounds:
+      label: Number of hash rounds for encryption
+      type: string
+      help: |
+        Number of hash rounds for parallel transfer encryption
+      default: 16
+    encryption_salt_size:
+      label: Salt size
+      type: string
+      help: |
+        Salt size for parallel transfer encryption
+      default: 8
+    ssl_verify_server:
       label: Username
       type: string
       help: |
-        Your irods username
-    username:
+        What level of server certificate based authentication to perform. 
+        'none' means not to perform any authentication at all. 
+        'cert' means to verify the certificate validity (i.e. that it was signed by a trusted CA). 
+        'hostname' means to validate the certificate and to verify that the irods_host's 
+        FQDN matches either the common name or one of the subjectAltNames of the certificate. 
+        'hostname' is the default setting.
+      default: "hostname"
+    ssl_ca_certificate_file:
       label: Username
       type: string
       help: |
-        Your irods username
-    username:
-      label: Username
-      type: string
-      help: |
-        Your irods username
-    username:
-      label: Username
-      type: string
-      help: |
-        Your irods username
-    username:
-      label: Username
-      type: string
-      help: |
-        Your irods username
-    username:
-      label: Username
-      type: string
-      help: |
-        Your irods username
+        Location of a file of trusted CA certificates in PEM format. 
+        Note that the certificates in this file are used in conjunction with the system default 
+        trusted certificates
+      default: "/etc/irods/ssl/irods.crt"
   secrets:
       label: Password
       help: |
         Your irods password
   configuration:
-    type: onedata
-    auth:
-      access_token: '{{ secrets.access_token }}'
-    connection:
-      onezone_domain: "{{ variables.onezone_domain }}"
-      disable_tls_certificate_validation: "{{ variables.disable_tls_certificate_validation }}"
-    space:
-      name: "{{ variables.space_name }}"
-      galaxy_root_dir: "{{ variables.galaxy_root_dir }}"
+    # type: onedata
+    # auth:
+    #   access_token: '{{ secrets.access_token }}'
+    # connection:
+    #   onezone_domain: "{{ variables.onezone_domain }}"
+    #   disable_tls_certificate_validation: "{{ variables.disable_tls_certificate_validation }}"
+    # space:
+    #   name: "{{ variables.space_name }}"
+    #   galaxy_root_dir: "{{ variables.galaxy_root_dir }}"
     type: irods
     auth:
-      username: rods
-      password: rods
+      username: "{{ variables.username }}"
+      password: "{{ secrets.password }}"
     resource:
-      name: demoResc
+      name: "{{ environment.resource }}"
     zone:
-      name: tempZone
+      name: "{{ environment.zone }}"
     connection:
-      host: localhost
-      port: 1247
-      timeout: 30
-      refresh_time: 300
-      connection_pool_monitor_interval: 3600
+      host: "{{ variables.host }}"
+      port: "{{ variables.port }}"
+      timeout: "{{ environment.timeout }}"
+      refresh_time: "{{ environment.refresh_time }}"
+      connection_pool_monitor_interval: "{{ environment.connection_pool_monitor_interval }}"
     # ssl section is optional
     ssl:
-      client_server_negotiation: request_server_negotiation
-      client_server_policy: CS_NEG_REQUIRE
-      encryption_algorithm: AES-256-CBC
-      encryption_key_size: 32
-      encryption_num_hash_rounds: 16
-      encryption_salt_size: 8
-      ssl_verify_server: cert
-      ssl_ca_certificate_file: /etc/irods/ssl/irods.crt
+      client_server_negotiation: "{{ ssl.client_server_negotiation }}"
+      client_server_policy: "{{ ssl.client_server_policy }}"
+      encryption_algorithm: "{{ ssl.encryption_algorithm }}"
+      encryption_key_size: "{{ ssl.encryption_key_size }}"
+      encryption_num_hash_rounds: "{{ ssl.encryption_num_hash_rounds }}"
+      encryption_salt_size: "{{ ssl.encryption_salt_size }}"
+      ssl_verify_server: "{{ ssl.ssl_verify_server }}"
+      ssl_ca_certificate_file: "{{ ssl.ssl_ca_certificate_file }}"
     # The logical section is optional and is meant for defining the remote path
     # if not defined the default path is: /zone_name/home/username
     logical:
-      path: /tempZone/home/rods
-    cache:
-      path: database/object_store_cache_irods
-      size: 1000
-      cache_updated_data: true
-    extra_dirs:
-      - type: job_work
-        path: database/job_working_directory_irods
+      path: "{{ variables.logical_path }}"
+    # cache:
+    #   path: "{{ variables.onezone_domain }}"
+    #   size: "{{ variables.onezone_domain }}"
+    #   cache_updated_data: "{{ variables.onezone_domain }}"
+    # extra_dirs:
+    #   - type: "{{ variables.onezone_domain }}"
+    #     path: "{{ variables.onezone_domain }}"
 
