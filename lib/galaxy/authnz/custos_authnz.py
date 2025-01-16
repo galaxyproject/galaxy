@@ -121,6 +121,8 @@ class OIDCAuthnzBase(IdentityProvider):
         # do not refresh tokens if the id_token didn't reach its half-life
         if int(id_token_decoded["iat"]) + int(id_token_decoded["exp"]) > 2 * int(time.time()):
             return False
+        if not custos_authnz_token.refresh_token:
+            return False
         refresh_token_decoded = self._decode_token_no_signature(custos_authnz_token.refresh_token)
         # do not attempt to use refresh token that is already expired
         if int(refresh_token_decoded["exp"]) > int(time.time()):
