@@ -329,7 +329,7 @@ class Base(DeclarativeBase, _HasTable):
 
 
 class RepresentById:
-    id: Mapped[int]
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     def __repr__(self):
         try:
@@ -785,7 +785,6 @@ class User(Base, Dictifiable, RepresentById):
 
     __tablename__ = "galaxy_user"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     email: Mapped[str] = mapped_column(TrimmedString(255), index=True, unique=True)
@@ -1334,7 +1333,6 @@ class PasswordResetToken(Base):
 class ToolSource(Base, Dictifiable, RepresentById):
     __tablename__ = "tool_source"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     hash: Mapped[Optional[str]] = mapped_column(Unicode(255))
     source: Mapped[dict] = mapped_column(JSONType)
 
@@ -1344,7 +1342,6 @@ class ToolRequest(Base, Dictifiable, RepresentById):
 
     states: TypeAlias = ToolRequestState
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     tool_source_id: Mapped[int] = mapped_column(ForeignKey("tool_source.id"), index=True)
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
     request: Mapped[dict] = mapped_column(JSONType)
@@ -1358,7 +1355,6 @@ class ToolRequest(Base, Dictifiable, RepresentById):
 class DynamicTool(Base, Dictifiable, RepresentById):
     __tablename__ = "dynamic_tool"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType())
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
@@ -1395,7 +1391,6 @@ class BaseJobMetric(Base):
 class JobMetricText(BaseJobMetric, RepresentById):
     __tablename__ = "job_metric_text"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
     plugin: Mapped[Optional[str]] = mapped_column(Unicode(255))
     metric_name: Mapped[Optional[str]] = mapped_column(Unicode(255))
@@ -1405,7 +1400,6 @@ class JobMetricText(BaseJobMetric, RepresentById):
 class JobMetricNumeric(BaseJobMetric, RepresentById):
     __tablename__ = "job_metric_numeric"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
     plugin: Mapped[Optional[str]] = mapped_column(Unicode(255))
     metric_name: Mapped[Optional[str]] = mapped_column(Unicode(255))
@@ -1415,7 +1409,6 @@ class JobMetricNumeric(BaseJobMetric, RepresentById):
 class TaskMetricText(BaseJobMetric, RepresentById):
     __tablename__ = "task_metric_text"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     task_id: Mapped[Optional[int]] = mapped_column(ForeignKey("task.id"), index=True)
     plugin: Mapped[Optional[str]] = mapped_column(Unicode(255))
     metric_name: Mapped[Optional[str]] = mapped_column(Unicode(255))
@@ -1425,7 +1418,6 @@ class TaskMetricText(BaseJobMetric, RepresentById):
 class TaskMetricNumeric(BaseJobMetric, RepresentById):
     __tablename__ = "task_metric_numeric"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     task_id: Mapped[Optional[int]] = mapped_column(ForeignKey("task.id"), index=True)
     plugin: Mapped[Optional[str]] = mapped_column(Unicode(255))
     metric_name: Mapped[Optional[str]] = mapped_column(Unicode(255))
@@ -2220,7 +2212,6 @@ class Task(Base, JobLike, RepresentById):
 
     __tablename__ = "task"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     execution_time: Mapped[Optional[datetime]]
     update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
@@ -2392,7 +2383,6 @@ class Task(Base, JobLike, RepresentById):
 class JobParameter(Base, RepresentById):
     __tablename__ = "job_parameter"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
     name: Mapped[Optional[str]] = mapped_column(String(255))
     value: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -2408,7 +2398,6 @@ class JobParameter(Base, RepresentById):
 class JobToInputDatasetAssociation(Base, RepresentById):
     __tablename__ = "job_to_input_dataset"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
     dataset_id: Mapped[int] = mapped_column(ForeignKey("history_dataset_association.id"), index=True, nullable=True)
     dataset_version: Mapped[Optional[int]]
@@ -2426,7 +2415,6 @@ class JobToInputDatasetAssociation(Base, RepresentById):
 class JobToOutputDatasetAssociation(Base, RepresentById):
     __tablename__ = "job_to_output_dataset"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
     dataset_id: Mapped[int] = mapped_column(ForeignKey("history_dataset_association.id"), index=True, nullable=True)
     name: Mapped[str] = mapped_column(String(255), nullable=True)
@@ -2448,7 +2436,6 @@ class JobToOutputDatasetAssociation(Base, RepresentById):
 class JobToInputDatasetCollectionAssociation(Base, RepresentById):
     __tablename__ = "job_to_input_dataset_collection"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
     dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
@@ -2465,7 +2452,6 @@ class JobToInputDatasetCollectionAssociation(Base, RepresentById):
 class JobToInputDatasetCollectionElementAssociation(Base, RepresentById):
     __tablename__ = "job_to_input_dataset_collection_element"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
     dataset_collection_element_id: Mapped[int] = mapped_column(
         ForeignKey("dataset_collection_element.id"), index=True, nullable=True
@@ -2484,7 +2470,6 @@ class JobToInputDatasetCollectionElementAssociation(Base, RepresentById):
 class JobToOutputDatasetCollectionAssociation(Base, RepresentById):
     __tablename__ = "job_to_output_dataset_collection"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
     dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
@@ -2508,7 +2493,6 @@ class JobToOutputDatasetCollectionAssociation(Base, RepresentById):
 class JobToImplicitOutputDatasetCollectionAssociation(Base, RepresentById):
     __tablename__ = "job_to_implicit_output_dataset_collection"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
     dataset_collection_id: Mapped[int] = mapped_column(ForeignKey("dataset_collection.id"), index=True, nullable=True)
     name: Mapped[str] = mapped_column(Unicode(255), nullable=True)
@@ -2523,7 +2507,6 @@ class JobToImplicitOutputDatasetCollectionAssociation(Base, RepresentById):
 class JobToInputLibraryDatasetAssociation(Base, RepresentById):
     __tablename__ = "job_to_input_library_dataset"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
     ldda_id: Mapped[int] = mapped_column(
         ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True
@@ -2541,7 +2524,6 @@ class JobToInputLibraryDatasetAssociation(Base, RepresentById):
 class JobToOutputLibraryDatasetAssociation(Base, RepresentById):
     __tablename__ = "job_to_output_library_dataset"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
     ldda_id: Mapped[int] = mapped_column(
         ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True
@@ -2561,7 +2543,6 @@ class JobToOutputLibraryDatasetAssociation(Base, RepresentById):
 class JobStateHistory(Base, RepresentById):
     __tablename__ = "job_state_history"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
     state: Mapped[Optional[str]] = mapped_column(String(64), index=True)
@@ -2576,7 +2557,6 @@ class JobStateHistory(Base, RepresentById):
 class ImplicitlyCreatedDatasetCollectionInput(Base, RepresentById):
     __tablename__ = "implicitly_created_dataset_collection_inputs"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     dataset_collection_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("history_dataset_collection_association.id"), index=True
     )
@@ -2629,7 +2609,6 @@ class ImplicitCollectionJobs(Base, Serializable):
 class ImplicitCollectionJobsJobAssociation(Base, RepresentById):
     __tablename__ = "implicit_collection_jobs_job_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     implicit_collection_jobs_id: Mapped[int] = mapped_column(
         ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True
     )
@@ -2644,7 +2623,6 @@ class ImplicitCollectionJobsJobAssociation(Base, RepresentById):
 class PostJobAction(Base, RepresentById):
     __tablename__ = "post_job_action"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
     action_type: Mapped[str] = mapped_column(String(255))
     output_name: Mapped[Optional[str]] = mapped_column(String(255))
@@ -2677,7 +2655,6 @@ class PostJobAction(Base, RepresentById):
 class PostJobActionAssociation(Base, RepresentById):
     __tablename__ = "post_job_action_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True)
     post_job_action_id: Mapped[int] = mapped_column(ForeignKey("post_job_action.id"), index=True)
     post_job_action: Mapped["PostJobAction"] = relationship()
@@ -2697,7 +2674,6 @@ class PostJobActionAssociation(Base, RepresentById):
 class JobExternalOutputMetadata(Base, RepresentById):
     __tablename__ = "job_external_output_metadata"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
     history_dataset_association_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True
@@ -2758,7 +2734,6 @@ class FakeDatasetAssociation:
 class JobExportHistoryArchive(Base, RepresentById):
     __tablename__ = "job_export_history_archive"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset.id"), index=True)
@@ -2846,7 +2821,6 @@ class JobExportHistoryArchive(Base, RepresentById):
 class JobImportHistoryArchive(Base, RepresentById):
     __tablename__ = "job_import_history_archive"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
     archive_dir: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -2858,7 +2832,6 @@ class StoreExportAssociation(Base, RepresentById):
     __tablename__ = "store_export_association"
     __table_args__ = (Index("ix_store_export_object", "object_id", "object_type"),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     task_uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType(), index=True, unique=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     object_type: Mapped[Optional[str]] = mapped_column(TrimmedString(32))
@@ -2869,7 +2842,6 @@ class StoreExportAssociation(Base, RepresentById):
 class JobContainerAssociation(Base, RepresentById):
     __tablename__ = "job_container_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
     container_type: Mapped[Optional[str]] = mapped_column(TEXT)
     container_name: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -2888,7 +2860,6 @@ class JobContainerAssociation(Base, RepresentById):
 class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
     __tablename__ = "interactivetool_entry_point"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
     name: Mapped[Optional[str]] = mapped_column(TEXT)
     token: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -2963,7 +2934,6 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
 class GenomeIndexToolData(Base, RepresentById):  # TODO: params arg is lost
     __tablename__ = "genome_index_tool_data"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset.id"), index=True)
     fasta_path: Mapped[Optional[str]] = mapped_column(String(255))
@@ -2980,7 +2950,6 @@ class ChatExchange(Base, RepresentById):
 
     __tablename__ = "chat_exchange"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
 
@@ -3001,7 +2970,6 @@ class ChatExchange(Base, RepresentById):
 class ChatExchangeMessage(Base, RepresentById):
     __tablename__ = "chat_exchange_message"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     chat_exchange_id: Mapped[int] = mapped_column(ForeignKey("chat_exchange.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now)
     message: Mapped[str] = mapped_column(Text)
@@ -3016,7 +2984,6 @@ class ChatExchangeMessage(Base, RepresentById):
 class Group(Base, Dictifiable, RepresentById):
     __tablename__ = "galaxy_group"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     name: Mapped[Optional[str]] = mapped_column(String(255), index=True, unique=True)
@@ -3037,7 +3004,6 @@ class UserGroupAssociation(Base, RepresentById):
     __tablename__ = "user_group_association"
     __table_args__ = (UniqueConstraint("user_id", "group_id"),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
@@ -3054,7 +3020,6 @@ class UserGroupAssociation(Base, RepresentById):
 class Notification(Base, Dictifiable, RepresentById):
     __tablename__ = "notification"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     publication_time: Mapped[Optional[datetime]] = mapped_column(
@@ -3096,7 +3061,6 @@ class Notification(Base, Dictifiable, RepresentById):
 class UserNotificationAssociation(Base, RepresentById):
     __tablename__ = "user_notification_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
     notification_id: Mapped[int] = mapped_column(ForeignKey("notification.id"), index=True, nullable=True)
     seen_time: Mapped[Optional[datetime]]
@@ -3749,7 +3713,6 @@ class UserShareAssociation(RepresentById):
 class HistoryUserShareAssociation(Base, UserShareAssociation):
     __tablename__ = "history_user_share_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
     user: Mapped["User"] = relationship()
@@ -3760,7 +3723,6 @@ class UserRoleAssociation(Base, RepresentById):
     __tablename__ = "user_role_association"
     __table_args__ = (UniqueConstraint("user_id", "role_id"),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
@@ -3779,7 +3741,6 @@ class GroupRoleAssociation(Base, RepresentById):
     __tablename__ = "group_role_association"
     __table_args__ = (UniqueConstraint("group_id", "role_id"),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True)
     role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
@@ -3796,7 +3757,6 @@ class GroupRoleAssociation(Base, RepresentById):
 class Role(Base, Dictifiable, RepresentById):
     __tablename__ = "role"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     _name: Mapped[str] = mapped_column("name", String(255), index=True)
@@ -3848,7 +3808,6 @@ class UserQuotaSourceUsage(Base, Dictifiable, RepresentById):
 
     dict_element_visible_keys = ["disk_usage", "quota_source_label"]
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     quota_source_label: Mapped[Optional[str]] = mapped_column(String(32), index=True)
     # user had an index on disk_usage - does that make any sense? -John
@@ -3859,7 +3818,6 @@ class UserQuotaSourceUsage(Base, Dictifiable, RepresentById):
 class UserQuotaAssociation(Base, Dictifiable, RepresentById):
     __tablename__ = "user_quota_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
     quota_id: Mapped[int] = mapped_column(ForeignKey("quota.id"), index=True, nullable=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
@@ -3878,7 +3836,6 @@ class UserQuotaAssociation(Base, Dictifiable, RepresentById):
 class GroupQuotaAssociation(Base, Dictifiable, RepresentById):
     __tablename__ = "group_quota_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True, nullable=True)
     quota_id: Mapped[int] = mapped_column(ForeignKey("quota.id"), index=True, nullable=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
@@ -3898,7 +3855,6 @@ class Quota(Base, Dictifiable, RepresentById):
     __tablename__ = "quota"
     __table_args__ = (Index("ix_quota_quota_source_label", "quota_source_label"),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     name: Mapped[Optional[str]] = mapped_column(String(255), index=True, unique=True)
@@ -3960,7 +3916,6 @@ class Quota(Base, Dictifiable, RepresentById):
 class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
     __tablename__ = "default_quota_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     type: Mapped[Optional[str]] = mapped_column(String(32))
@@ -3983,7 +3938,6 @@ class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
 class DatasetPermissions(Base, RepresentById):
     __tablename__ = "dataset_permissions"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     action: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -4005,7 +3959,6 @@ class DatasetPermissions(Base, RepresentById):
 class LibraryPermissions(Base, RepresentById):
     __tablename__ = "library_permissions"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     action: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -4027,7 +3980,6 @@ class LibraryPermissions(Base, RepresentById):
 class LibraryFolderPermissions(Base, RepresentById):
     __tablename__ = "library_folder_permissions"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     action: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -4049,7 +4001,6 @@ class LibraryFolderPermissions(Base, RepresentById):
 class LibraryDatasetPermissions(Base, RepresentById):
     __tablename__ = "library_dataset_permissions"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     action: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -4071,7 +4022,6 @@ class LibraryDatasetPermissions(Base, RepresentById):
 class LibraryDatasetDatasetAssociationPermissions(Base, RepresentById):
     __tablename__ = "library_dataset_dataset_association_permissions"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     action: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -4097,7 +4047,6 @@ class LibraryDatasetDatasetAssociationPermissions(Base, RepresentById):
 class DefaultUserPermissions(Base, RepresentById):
     __tablename__ = "default_user_permissions"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     action: Mapped[Optional[str]] = mapped_column(TEXT)
     role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("role.id"), index=True)
@@ -4114,7 +4063,6 @@ class DefaultUserPermissions(Base, RepresentById):
 class DefaultHistoryPermissions(Base, RepresentById):
     __tablename__ = "default_history_permissions"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
     action: Mapped[Optional[str]] = mapped_column(TEXT)
     role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("role.id"), index=True)
@@ -5705,7 +5653,6 @@ class HistoryDatasetAssociationHistory(Base):
 class HistoryDatasetAssociationDisplayAtAuthorization(Base, RepresentById):
     __tablename__ = "history_dataset_association_display_at_authorization"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
     history_dataset_association_id: Mapped[Optional[int]] = mapped_column(
@@ -5725,7 +5672,6 @@ class HistoryDatasetAssociationDisplayAtAuthorization(Base, RepresentById):
 class HistoryDatasetAssociationSubset(Base, RepresentById):
     __tablename__ = "history_dataset_association_subset"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     history_dataset_association_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True
     )
@@ -6273,7 +6219,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
 class ExtendedMetadata(Base, RepresentById):
     __tablename__ = "extended_metadata"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     data: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     children: Mapped[List["ExtendedMetadataIndex"]] = relationship(back_populates="extended_metadata")
 
@@ -6284,7 +6229,6 @@ class ExtendedMetadata(Base, RepresentById):
 class ExtendedMetadataIndex(Base, RepresentById):
     __tablename__ = "extended_metadata_index"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     extended_metadata_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("extended_metadata.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
@@ -6301,7 +6245,6 @@ class ExtendedMetadataIndex(Base, RepresentById):
 class LibraryInfoAssociation(Base, RepresentById):
     __tablename__ = "library_info_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     library_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library.id"), index=True)
     form_definition_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_definition.id"), index=True)
     form_values_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_values.id"), index=True)
@@ -6333,7 +6276,6 @@ class LibraryInfoAssociation(Base, RepresentById):
 class LibraryFolderInfoAssociation(Base, RepresentById):
     __tablename__ = "library_folder_info_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     library_folder_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_folder.id"), index=True)
     form_definition_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_definition.id"), index=True)
     form_values_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_values.id"), index=True)
@@ -6363,7 +6305,6 @@ class LibraryFolderInfoAssociation(Base, RepresentById):
 class LibraryDatasetDatasetInfoAssociation(Base, RepresentById):
     __tablename__ = "library_dataset_dataset_info_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     library_dataset_dataset_association_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("library_dataset_dataset_association.id"), index=True
     )
@@ -7369,7 +7310,6 @@ class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, Repre
 
     __tablename__ = "library_dataset_collection_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     collection_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
     folder_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_folder.id"), index=True)
     name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
@@ -7601,7 +7541,6 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
 class Event(Base, RepresentById):
     __tablename__ = "event"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
@@ -7618,7 +7557,6 @@ class Event(Base, RepresentById):
 class GalaxySession(Base, RepresentById):
     __tablename__ = "galaxy_session"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
@@ -7664,7 +7602,6 @@ class GalaxySession(Base, RepresentById):
 class GalaxySessionToHistoryAssociation(Base, RepresentById):
     __tablename__ = "galaxy_session_to_history"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id"), index=True)
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
@@ -7690,7 +7627,6 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
     __tablename__ = "stored_workflow"
     __table_args__ = (Index("ix_stored_workflow_slug", "slug", mysql_length=200),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True, nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
@@ -7872,7 +7808,6 @@ class Workflow(Base, Dictifiable, RepresentById):
 
     __tablename__ = "workflow"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     # workflows will belong to either a stored workflow or a parent/nesting workflow.
@@ -8072,7 +8007,6 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
 
     __tablename__ = "workflow_step"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     workflow_id: Mapped[int] = mapped_column(ForeignKey("workflow.id"), index=True)
@@ -8405,7 +8339,6 @@ class WorkflowStepInput(Base, RepresentById):
         ),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
     name: Mapped[Optional[str]] = mapped_column(TEXT)
     merge_type: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -8446,7 +8379,6 @@ class WorkflowStepInput(Base, RepresentById):
 class WorkflowStepConnection(Base, RepresentById):
     __tablename__ = "workflow_step_connection"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     output_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
     input_step_input_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step_input.id"), index=True)
     output_name: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -8542,7 +8474,6 @@ class WorkflowComment(Base, RepresentById):
 
     __tablename__ = "workflow_comment"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     order_index: Mapped[Optional[int]]
     workflow_id: Mapped[int] = mapped_column(ForeignKey("workflow.id"), index=True)
     position: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
@@ -8631,7 +8562,6 @@ class StoredWorkflowUserShareAssociation(Base, UserShareAssociation):
 class StoredWorkflowMenuEntry(Base, RepresentById):
     __tablename__ = "stored_workflow_menu_entry"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     stored_workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("stored_workflow.id"), index=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     order_index: Mapped[Optional[int]]
@@ -9262,7 +9192,6 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
 class WorkflowInvocationToSubworkflowInvocationAssociation(Base, Dictifiable, RepresentById):
     __tablename__ = "workflow_invocation_to_subworkflow_invocation_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("workflow_invocation.id", name="fk_wfi_swi_wfi"), index=True
     )
@@ -9815,7 +9744,6 @@ class WorkflowInvocationStepOutputDatasetAssociation(Base, Dictifiable, Represen
 
     __tablename__ = "workflow_invocation_step_output_dataset_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_invocation_step_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("workflow_invocation_step.id"), index=True
     )
@@ -9834,7 +9762,6 @@ class WorkflowInvocationStepOutputDatasetCollectionAssociation(Base, Dictifiable
 
     __tablename__ = "workflow_invocation_step_output_dataset_collection_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_invocation_step_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("workflow_invocation_step.id", name="fk_wisodca_wisi"), index=True
     )
@@ -9941,7 +9868,6 @@ class MetadataFile(Base, StorableObject, Serializable):
 class FormDefinition(Base, Dictifiable, RepresentById):
     __tablename__ = "form_definition"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
     update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
     name: Mapped[str] = mapped_column(TrimmedString(255))
@@ -10012,7 +9938,6 @@ class FormDefinition(Base, Dictifiable, RepresentById):
 class FormDefinitionCurrent(Base, RepresentById):
     __tablename__ = "form_definition_current"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     latest_form_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_definition.id"), index=True)
@@ -10034,7 +9959,6 @@ class FormDefinitionCurrent(Base, RepresentById):
 class FormValues(Base, RepresentById):
     __tablename__ = "form_values"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     form_definition_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_definition.id"), index=True)
@@ -10051,7 +9975,6 @@ class FormValues(Base, RepresentById):
 class UserAddress(Base, RepresentById):
     __tablename__ = "user_address"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
@@ -10088,7 +10011,6 @@ class UserAddress(Base, RepresentById):
 class PSAAssociation(Base, AssociationMixin, RepresentById):
     __tablename__ = "psa_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))
     handle: Mapped[Optional[str]] = mapped_column(VARCHAR(255))
     secret: Mapped[Optional[str]] = mapped_column(VARCHAR(255))
@@ -10152,7 +10074,6 @@ class PSACode(Base, CodeMixin, RepresentById):
     __tablename__ = "psa_code"
     __table_args__ = (UniqueConstraint("code", "email"),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[Optional[str]] = mapped_column(VARCHAR(200))
     code: Mapped[Optional[str]] = mapped_column(VARCHAR(32))
 
@@ -10180,7 +10101,6 @@ class PSACode(Base, CodeMixin, RepresentById):
 class PSANonce(Base, NonceMixin, RepresentById):
     __tablename__ = "psa_nonce"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))
     timestamp: Mapped[Optional[int]]
     salt: Mapped[Optional[str]] = mapped_column(VARCHAR(40))
@@ -10218,7 +10138,6 @@ class PSANonce(Base, NonceMixin, RepresentById):
 class PSAPartial(Base, PartialMixin, RepresentById):
     __tablename__ = "psa_partial"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     token: Mapped[Optional[str]] = mapped_column(VARCHAR(32))
     data: Mapped[Optional[str]] = mapped_column(TEXT)
     next_step: Mapped[Optional[int]]
@@ -10262,7 +10181,6 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     __tablename__ = "oidc_user_authnz_tokens"
     __table_args__ = (UniqueConstraint("provider", "uid"),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     uid: Mapped[Optional[str]] = mapped_column(VARCHAR(255))
     provider: Mapped[Optional[str]] = mapped_column(VARCHAR(32))
@@ -10425,7 +10343,6 @@ class CustosAuthnzToken(Base, RepresentById):
         UniqueConstraint("external_user_id", "provider"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), nullable=True)
     external_user_id: Mapped[Optional[str]] = mapped_column(String(255))
     provider: Mapped[Optional[str]] = mapped_column(String(255))
@@ -10441,7 +10358,6 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     __tablename__ = "page"
     __table_args__ = (Index("ix_page_slug", "slug", mysql_length=200),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
@@ -10521,7 +10437,6 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
 class PageRevision(Base, Dictifiable, RepresentById):
     __tablename__ = "page_revision"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True)
@@ -10559,7 +10474,6 @@ class Visualization(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpda
         Index("ix_visualization_slug", "slug", mysql_length=200),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
@@ -10667,7 +10581,6 @@ class VisualizationRevision(Base, RepresentById):
     __tablename__ = "visualization_revision"
     __table_args__ = (Index("ix_visualization_revision_dbkey", "dbkey", mysql_length=200),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True)
@@ -10705,7 +10618,6 @@ class Tag(Base, RepresentById):
     __tablename__ = "tag"
     __table_args__ = (UniqueConstraint("name"),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     type: Mapped[Optional[int]]
     parent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tag.id"))
     name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
@@ -10740,7 +10652,6 @@ class ItemTagAssociation(Dictifiable):
 class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "history_tag_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
@@ -10754,7 +10665,6 @@ class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
 class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "history_dataset_association_tag_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     history_dataset_association_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True, nullable=True
     )
@@ -10770,7 +10680,6 @@ class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, Represen
 class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "library_dataset_dataset_association_tag_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     library_dataset_dataset_association_id: Mapped[int] = mapped_column(
         ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True
     )
@@ -10788,7 +10697,6 @@ class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, R
 class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "page_tag_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
@@ -10802,7 +10710,6 @@ class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
 class WorkflowStepTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "workflow_step_tag_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True, nullable=True)
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
@@ -10816,7 +10723,6 @@ class WorkflowStepTagAssociation(Base, ItemTagAssociation, RepresentById):
 class StoredWorkflowTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "stored_workflow_tag_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
@@ -10830,7 +10736,6 @@ class StoredWorkflowTagAssociation(Base, ItemTagAssociation, RepresentById):
 class VisualizationTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "visualization_tag_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
@@ -10844,7 +10749,6 @@ class VisualizationTagAssociation(Base, ItemTagAssociation, RepresentById):
 class HistoryDatasetCollectionTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "history_dataset_collection_tag_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     history_dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
@@ -10860,7 +10764,6 @@ class HistoryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
 class LibraryDatasetCollectionTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "library_dataset_collection_tag_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     library_dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("library_dataset_collection_association.id"), index=True, nullable=True
     )
@@ -10876,7 +10779,6 @@ class LibraryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
 class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "tool_tag_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     tool_id: Mapped[str] = mapped_column(TrimmedString(255), index=True, nullable=True)
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
@@ -10891,7 +10793,6 @@ class HistoryAnnotationAssociation(Base, RepresentById):
     __tablename__ = "history_annotation_association"
     __table_args__ = (Index("ix_history_anno_assoc_annotation", "annotation", mysql_length=200),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
@@ -10903,7 +10804,6 @@ class HistoryDatasetAssociationAnnotationAssociation(Base, RepresentById):
     __tablename__ = "history_dataset_association_annotation_association"
     __table_args__ = (Index("ix_history_dataset_anno_assoc_annotation", "annotation", mysql_length=200),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     history_dataset_association_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True, nullable=True
     )
@@ -10917,7 +10817,6 @@ class StoredWorkflowAnnotationAssociation(Base, RepresentById):
     __tablename__ = "stored_workflow_annotation_association"
     __table_args__ = (Index("ix_stored_workflow_ann_assoc_annotation", "annotation", mysql_length=200),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
@@ -10929,7 +10828,6 @@ class WorkflowStepAnnotationAssociation(Base, RepresentById):
     __tablename__ = "workflow_step_annotation_association"
     __table_args__ = (Index("ix_workflow_step_ann_assoc_annotation", "annotation", mysql_length=200),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
@@ -10941,7 +10839,6 @@ class PageAnnotationAssociation(Base, RepresentById):
     __tablename__ = "page_annotation_association"
     __table_args__ = (Index("ix_page_annotation_association_annotation", "annotation", mysql_length=200),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
@@ -10953,7 +10850,6 @@ class VisualizationAnnotationAssociation(Base, RepresentById):
     __tablename__ = "visualization_annotation_association"
     __table_args__ = (Index("ix_visualization_annotation_association_annotation", "annotation", mysql_length=200),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
@@ -10964,7 +10860,6 @@ class VisualizationAnnotationAssociation(Base, RepresentById):
 class HistoryDatasetCollectionAssociationAnnotationAssociation(Base, RepresentById):
     __tablename__ = "history_dataset_collection_annotation_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     history_dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
@@ -10979,7 +10874,6 @@ class HistoryDatasetCollectionAssociationAnnotationAssociation(Base, RepresentBy
 class LibraryDatasetCollectionAnnotationAssociation(Base, RepresentById):
     __tablename__ = "library_dataset_collection_annotation_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     library_dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("library_dataset_collection_association.id"), index=True, nullable=True
     )
@@ -11018,7 +10912,6 @@ class ItemRatingAssociation(Base):
 class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = "history_rating_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     rating: Mapped[int] = mapped_column(index=True, nullable=True)
@@ -11033,7 +10926,6 @@ class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
 class HistoryDatasetAssociationRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = "history_dataset_association_rating_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     history_dataset_association_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True, nullable=True
     )
@@ -11050,7 +10942,6 @@ class HistoryDatasetAssociationRatingAssociation(ItemRatingAssociation, Represen
 class StoredWorkflowRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = "stored_workflow_rating_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     rating: Mapped[int] = mapped_column(index=True, nullable=True)
@@ -11065,7 +10956,6 @@ class StoredWorkflowRatingAssociation(ItemRatingAssociation, RepresentById):
 class PageRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = "page_rating_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     rating: Mapped[int] = mapped_column(index=True, nullable=True)
@@ -11080,7 +10970,6 @@ class PageRatingAssociation(ItemRatingAssociation, RepresentById):
 class VisualizationRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = "visualization_rating_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     rating: Mapped[int] = mapped_column(index=True, nullable=True)
@@ -11095,7 +10984,6 @@ class VisualizationRatingAssociation(ItemRatingAssociation, RepresentById):
 class HistoryDatasetCollectionRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = "history_dataset_collection_rating_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     history_dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
@@ -11112,7 +11000,6 @@ class HistoryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
 class LibraryDatasetCollectionRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = "library_dataset_collection_rating_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     library_dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("library_dataset_collection_association.id"), index=True, nullable=True
     )
@@ -11130,7 +11017,6 @@ class LibraryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
 class DataManagerHistoryAssociation(Base, RepresentById):
     __tablename__ = "data_manager_history_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
@@ -11143,7 +11029,6 @@ class DataManagerJobAssociation(Base, RepresentById):
     __tablename__ = "data_manager_job_association"
     __table_args__ = (Index("ix_data_manager_job_association_data_manager_id", "data_manager_id", mysql_length=200),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
@@ -11154,7 +11039,6 @@ class DataManagerJobAssociation(Base, RepresentById):
 class UserPreference(Base, RepresentById):
     __tablename__ = "user_preference"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     name: Mapped[Optional[str]] = mapped_column(Unicode(255), index=True)
     value: Mapped[Optional[str]] = mapped_column(Text)
@@ -11410,7 +11294,6 @@ class WorkflowLandingRequest(Base):
 class UserAction(Base, RepresentById):
     __tablename__ = "user_action"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id"), index=True)
@@ -11423,7 +11306,6 @@ class UserAction(Base, RepresentById):
 class APIKeys(Base, RepresentById):
     __tablename__ = "api_keys"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     key: Mapped[Optional[str]] = mapped_column(TrimmedString(32), index=True, unique=True)
