@@ -13,6 +13,7 @@ from fastapi import (
     Body,
     Depends,
     Request,
+    Response,
     UploadFile,
 )
 from starlette.datastructures import UploadFile as StarletteUploadFile
@@ -69,6 +70,10 @@ class JsonApiRoute(APIContentTypeRoute):
     match_content_type = "application/json"
 
 
+class PNGIconResponse(Response):
+    media_type = "image/png"
+
+
 router = Router(tags=["tools"])
 
 FetchDataForm = as_form(FetchDataFormPayload)
@@ -106,9 +111,27 @@ class FetchTools:
     ):
         return self.service.create_fetch(trans, payload, files)
 
-    @router.get("/api/tools/{id}/icon", summary="Get tool icon")
-    def get_icon(self, id: str, trans: ProvidesHistoryContext = DependsOnTrans):
-        return self.service.get_tool_icon(trans=trans, tool_id=id)
+    @router.get(
+        "/api/tools/{tool_id}/icon",
+        summary="Get the icon image associated with a tool",
+        response_class=PNGIconResponse,
+        responses={
+            200: {
+                "content": {"image/png": {}},
+                "description": "Tool icon image in PNG format",
+            },
+            404: {
+                "description": "Tool icon file not found or not provided by the tool",
+            },
+        },
+    )
+    def get_icon(self, tool_id: str, trans: ProvidesHistoryContext = DependsOnTrans):
+        """Returns the icon image associated with a tool.
+
+        If the tool has no icon defined, a null response is returned.
+        If the tool has an icon defined, but the icon file is not found, a 404 response is returned.
+        """
+        return self.service.get_tool_icon(trans=trans, tool_id=tool_id)
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
