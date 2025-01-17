@@ -8,6 +8,7 @@ import shutil
 import tarfile
 import tempfile
 import zipfile
+from types import TracebackType
 from typing import (
     Any,
     cast,
@@ -18,10 +19,14 @@ from typing import (
     Optional,
     overload,
     Tuple,
+    Type,
     Union,
 )
 
-from typing_extensions import Literal
+from typing_extensions import (
+    Literal,
+    Self,
+)
 
 from galaxy.util.path import (
     safe_relpath,
@@ -167,12 +172,16 @@ def decompress_bytes_to_directory(content: bytes) -> str:
     with tempfile.NamedTemporaryFile(delete=False) as fp:
         fp.write(content)
         fp.close()
-        return CompressedFile(fp.name).extract(temp_directory)
+        with CompressedFile(fp.name) as cf:
+            outdir = cf.extract(temp_directory)
+        return outdir
 
 
 def decompress_path_to_directory(path: str) -> str:
     temp_directory = tempfile.mkdtemp()
-    return CompressedFile(path).extract(temp_directory)
+    with CompressedFile(path) as cf:
+        outdir = cf.extract(temp_directory)
+    return outdir
 
 
 class CompressedFile:
@@ -360,6 +369,21 @@ class CompressedFile:
             if not member_path.startswith(basename):
                 return False
         return True
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> bool:
+        try:
+            self.archive.close()
+            return exc_type is None
+        except Exception:
+            return False
 
 
 class FastZipFile(zipfile.ZipFile):

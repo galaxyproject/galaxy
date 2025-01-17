@@ -60,11 +60,13 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
 
     def test_export_ro_crate_basic(self):
         ro_crate_path = self._export_invocation_to_format(extension="rocrate.zip", to_uri=False)
-        assert CompressedFile(ro_crate_path).file_type == "zip"
+        with CompressedFile(ro_crate_path) as cf:
+            assert cf.file_type == "zip"
 
     def test_export_ro_crate_to_uri(self):
         ro_crate_path = self._export_invocation_to_format(extension="rocrate.zip", to_uri=True)
-        assert CompressedFile(ro_crate_path).file_type == "zip"
+        with CompressedFile(ro_crate_path) as cf:
+            assert cf.file_type == "zip"
 
     def test_export_bco_basic(self):
         bco_path = self._export_invocation_to_format(extension="bco.json", to_uri=False)

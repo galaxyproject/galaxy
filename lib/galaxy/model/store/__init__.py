@@ -3075,7 +3075,8 @@ def source_to_import_store(
             if ModelStoreFormat.is_compressed(model_store_format):
                 try:
                     temp_dir = mkdtemp()
-                    target_dir = CompressedFile(target_path).extract(temp_dir)
+                    with CompressedFile(target_path) as cf:
+                        target_dir = cf.extract(temp_dir)
                 finally:
                     if delete:
                         os.remove(target_path)
