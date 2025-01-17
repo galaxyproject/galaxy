@@ -1438,7 +1438,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     __tablename__ = "job"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True, nullable=True)
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
@@ -2580,7 +2579,6 @@ class ImplicitlyCreatedDatasetCollectionInput(Base, RepresentById):
 class ImplicitCollectionJobs(Base, Serializable):
     __tablename__ = "implicit_collection_jobs"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     populated_state: Mapped[str] = mapped_column(TrimmedString(64), default="new")
     jobs: Mapped[List["ImplicitCollectionJobsJobAssociation"]] = relationship(back_populates="implicit_collection_jobs")
 
@@ -3127,7 +3125,6 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     __tablename__ = "history"
     __table_args__ = (Index("ix_history_slug", "slug", mysql_length=200),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     _update_time: Mapped[datetime] = mapped_column(
         "update_time", DateTime, index=True, default=now, onupdate=now, nullable=True
@@ -4091,7 +4088,6 @@ class Dataset(Base, StorableObject, Serializable):
     __tablename__ = "dataset"
     __table_args__ = (UniqueConstraint("uuid", name="uq_uuid_column"),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
@@ -4469,7 +4465,6 @@ class Dataset(Base, StorableObject, Serializable):
 class DatasetSource(Base, Dictifiable, Serializable):
     __tablename__ = "dataset_source"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset.id"), index=True)
     source_uri: Mapped[Optional[str]] = mapped_column(TEXT)
     extra_files_path: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -4517,7 +4512,6 @@ class HasHashFunctionName:
 class DatasetSourceHash(Base, Serializable, HasHashFunctionName):
     __tablename__ = "dataset_source_hash"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     dataset_source_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset_source.id"), index=True)
     hash_function: Mapped[Optional[str]] = mapped_column(TEXT)
     hash_value: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -4542,7 +4536,6 @@ class DatasetSourceHash(Base, Serializable, HasHashFunctionName):
 class DatasetHash(Base, Dictifiable, Serializable, HasHashFunctionName):
     __tablename__ = "dataset_hash"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset.id"), index=True)
     hash_function: Mapped[Optional[str]] = mapped_column(TEXT)
     hash_value: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -5701,7 +5694,6 @@ class HistoryDatasetAssociationSubset(Base, RepresentById):
 class Library(Base, Dictifiable, HasName, Serializable):
     __tablename__ = "library"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     root_folder_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_folder.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
@@ -5779,7 +5771,6 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
     __tablename__ = "library_folder"
     __table_args__ = (Index("ix_library_folder_name", "name", mysql_length=200),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     parent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_folder.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
@@ -5916,7 +5907,6 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
 class LibraryDataset(Base, Serializable):
     __tablename__ = "library_dataset"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     # current version of dataset, if null, there is not a current version selected
     library_dataset_dataset_association_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey(
@@ -6342,7 +6332,6 @@ class LibraryDatasetDatasetInfoAssociation(Base, RepresentById):
 class ImplicitlyConvertedDatasetAssociation(Base, Serializable):
     __tablename__ = "implicitly_converted_dataset_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     hda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
@@ -6450,7 +6439,6 @@ class InnerCollectionFilter(NamedTuple):
 class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     __tablename__ = "dataset_collection"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     collection_type: Mapped[str] = mapped_column(Unicode(255))
     populated_state: Mapped[str] = mapped_column(TrimmedString(64), default="ok")
     populated_state_message: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -6926,7 +6914,6 @@ class HistoryDatasetCollectionAssociation(
 
     __tablename__ = "history_dataset_collection_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     collection_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
     name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
@@ -7350,7 +7337,6 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
 
     __tablename__ = "dataset_collection_element"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     # Parent collection id describing what collection this element belongs to.
     dataset_collection_id: Mapped[int] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
     # Child defined by this association - HDA, LDDA, or another dataset association...
@@ -8434,7 +8420,6 @@ class WorkflowStepConnection(Base, RepresentById):
 class WorkflowOutput(Base, Serializable):
     __tablename__ = "workflow_output"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True)
     output_name: Mapped[Optional[str]] = mapped_column(String(255))
     label: Mapped[Optional[str]] = mapped_column(Unicode(255))
@@ -8592,7 +8577,6 @@ class InputToMaterialize:
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True, nullable=True)
     workflow_id: Mapped[int] = mapped_column(ForeignKey("workflow.id"), index=True)
@@ -9223,7 +9207,6 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(Base, Dictifiable, Re
 
 class WorkflowInvocationMessage(Base, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation_message"
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_invocation_id: Mapped[int] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
     reason: Mapped[Optional[str]] = mapped_column(String(32))
     details: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
@@ -9298,7 +9281,6 @@ class WorkflowInvocationStepObjectStores(NamedTuple):
 class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation_step"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     workflow_invocation_id: Mapped[int] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
@@ -9504,7 +9486,6 @@ class WorkflowRequestInputParameter(Base, Dictifiable, Serializable):
 
     __tablename__ = "workflow_request_input_parameters"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
@@ -9534,7 +9515,6 @@ class WorkflowRequestStepState(Base, Dictifiable, Serializable):
 
     __tablename__ = "workflow_request_step_states"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
@@ -9557,7 +9537,6 @@ class WorkflowRequestToInputDatasetAssociation(Base, Dictifiable, Serializable):
 
     __tablename__ = "workflow_request_to_input_dataset"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[Optional[str]] = mapped_column(String(255))
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
@@ -9586,7 +9565,6 @@ class WorkflowRequestToInputDatasetCollectionAssociation(Base, Dictifiable, Seri
 
     __tablename__ = "workflow_request_to_input_collection_dataset"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[Optional[str]] = mapped_column(String(255))
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
@@ -9618,7 +9596,6 @@ class WorkflowRequestInputStepParameter(Base, Dictifiable, Serializable):
 
     __tablename__ = "workflow_request_input_step_parameter"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
     parameter_value: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
@@ -9641,7 +9618,6 @@ class WorkflowInvocationOutputDatasetAssociation(Base, Dictifiable, Serializable
 
     __tablename__ = "workflow_invocation_output_dataset_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
@@ -9667,7 +9643,6 @@ class WorkflowInvocationOutputDatasetCollectionAssociation(Base, Dictifiable, Se
 
     __tablename__ = "workflow_invocation_output_dataset_collection_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("workflow_invocation.id", name="fk_wiodca_wii"), index=True
     )
@@ -9706,7 +9681,6 @@ class WorkflowInvocationOutputValue(Base, Dictifiable, Serializable):
 
     __tablename__ = "workflow_invocation_output_value"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
     workflow_output_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_output.id"), index=True)
@@ -9784,7 +9758,6 @@ class WorkflowInvocationStepOutputDatasetCollectionAssociation(Base, Dictifiable
 class MetadataFile(Base, StorableObject, Serializable):
     __tablename__ = "metadata_file"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[Optional[str]] = mapped_column(TEXT)
     hda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
     lda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_dataset_dataset_association.id"), index=True)
