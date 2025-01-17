@@ -1,5 +1,7 @@
+from galaxy.security import validate_user_input
 from galaxy.security.validate_user_input import (
     extract_domain,
+    is_email_banned,
     validate_email_domain_name,
     validate_email_str,
     validate_publicname_str,
@@ -46,3 +48,17 @@ def test_validate_email_str():
     assert validate_email_str('"i-like-to-break-email-valid@tors"@foo.com') != ""
     too_long_email = "N" * 255 + "@foo.com"
     assert validate_email_str(too_long_email) != ""
+
+
+def test_is_email_banned(monkeypatch):
+    mock_ban_list = ["ab@foo.com", "ab@gmail.com", "Not.Canonical+email+gmail+address@gmail.com"]
+    monkeypatch.setattr(validate_user_input, "_read_email_ban_list", lambda a: mock_ban_list)
+
+    assert is_email_banned("a.b@gmail.com", "_")
+    assert is_email_banned("ab@gmail.com", "_")
+    assert is_email_banned("a.b+c@gmail.com", "_")
+    assert is_email_banned("Ab@foo.com", "_")
+    assert is_email_banned("a.b.+c.d@gmail.com", "_")
+    assert is_email_banned("not.canonical@gmail.com", "_")
+    assert not is_email_banned("ab@not-gmail.com", "_")
+    assert not is_email_banned("a.b+c@not-gmail.com", "_")
