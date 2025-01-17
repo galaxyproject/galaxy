@@ -345,18 +345,24 @@ class CompressedFile:
             return True
         return False
 
-    def open_tar(self, filepath: StrPath, mode: Literal["a", "r", "w", "x"]) -> tarfile.TarFile:
-        tf = tarfile.open(filepath, mode, errorlevel=0)
+    @staticmethod
+    def open_tar(file: Union[StrPath, IO[bytes]], mode: Literal["a", "r", "w", "x"] = "r") -> tarfile.TarFile:
+        if isinstance(file, (str, os.PathLike)):
+            tf = tarfile.open(file, mode=mode, errorlevel=0)
+        else:
+            tf = tarfile.open(mode=mode, fileobj=file, errorlevel=0)
         # Set a safe default ("data_filter") for the extraction filter if
         # available, reverting to Python 3.11 behavior otherwise, see
         # https://docs.python.org/3/library/tarfile.html#supporting-older-python-versions
         tf.extraction_filter = getattr(tarfile, "data_filter", (lambda member, path: member))
         return tf
 
-    def open_zip(self, filepath: StrPath, mode: Literal["a", "r", "w", "x"]) -> zipfile.ZipFile:
-        return zipfile.ZipFile(filepath, mode)
+    @staticmethod
+    def open_zip(file: Union[StrPath, IO[bytes]], mode: Literal["a", "r", "w", "x"] = "r") -> zipfile.ZipFile:
+        return zipfile.ZipFile(file, mode)
 
-    def zipfile_ok(self, path_to_archive: StrPath) -> bool:
+    @staticmethod
+    def zipfile_ok(path_to_archive: StrPath) -> bool:
         """
         This function is a bit pedantic and not functionally necessary.  It checks whether there is
         no file pointing outside of the extraction, because ZipFile.extractall() has some potential
