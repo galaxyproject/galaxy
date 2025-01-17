@@ -8537,7 +8537,6 @@ class WorkflowComment(Base, RepresentById):
 class StoredWorkflowUserShareAssociation(Base, UserShareAssociation):
     __tablename__ = "stored_workflow_user_share_connection"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
     user: Mapped[User] = relationship()
@@ -10433,7 +10432,6 @@ class PageRevision(Base, Dictifiable, RepresentById):
 class PageUserShareAssociation(Base, UserShareAssociation):
     __tablename__ = "page_user_share_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
     user: Mapped[User] = relationship()
@@ -10580,7 +10578,6 @@ class VisualizationRevision(Base, RepresentById):
 class VisualizationUserShareAssociation(Base, UserShareAssociation):
     __tablename__ = "visualization_user_share_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
     user: Mapped[User] = relationship()
