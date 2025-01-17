@@ -328,8 +328,11 @@ class Base(DeclarativeBase, _HasTable):
         cls.table = cls.__table__
 
 
-class RepresentById:
+class HasId:
     id: Mapped[int] = mapped_column(primary_key=True)
+
+
+class RepresentById(HasId):
 
     def __repr__(self):
         try:
@@ -503,11 +506,10 @@ class UsesCreateAndUpdateTime:
         self.update_time = now()
 
 
-class WorkerProcess(Base, UsesCreateAndUpdateTime):
+class WorkerProcess(Base, HasId, UsesCreateAndUpdateTime):
     __tablename__ = "worker_process"
     __table_args__ = (UniqueConstraint("server_name", "hostname"),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     server_name: Mapped[Optional[str]] = mapped_column(String(255), index=True)
     hostname: Mapped[Optional[str]] = mapped_column(String(255))
     pid: Mapped[Optional[int]]
@@ -5607,10 +5609,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         return (type_coerce(cls.content_type, Unicode) + "-" + type_coerce(cls.id, Unicode)).label("type_id")
 
 
-class HistoryDatasetAssociationHistory(Base):
+class HistoryDatasetAssociationHistory(Base, HasId):
     __tablename__ = "history_dataset_association_history"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     history_dataset_association_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True
     )
@@ -11083,7 +11084,6 @@ class UserObjectStore(Base, HasConfigTemplate):
     __tablename__ = "user_object_store"
     secret_config_type = "object_store_config"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("galaxy_user.id"), index=True)
     uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
     create_time: Mapped[datetime] = mapped_column(DateTime, default=now)
@@ -11151,7 +11151,6 @@ class UserFileSource(Base, HasConfigTemplate):
     __tablename__ = "user_file_source"
     secret_config_type = "file_source_config"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now)
@@ -11221,10 +11220,9 @@ class UserFileSource(Base, HasConfigTemplate):
 
 
 # TODO: add link from tool_request to this
-class ToolLandingRequest(Base):
+class ToolLandingRequest(Base, HasId):
     __tablename__ = "tool_landing_request"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[Optional[datetime]] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
@@ -11239,10 +11237,9 @@ class ToolLandingRequest(Base):
 
 
 # TODO: add link from workflow_invocation to this
-class WorkflowLandingRequest(Base):
+class WorkflowLandingRequest(Base, HasId):
     __tablename__ = "workflow_landing_request"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("stored_workflow.id"), nullable=True)
     stored_workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow.id"), nullable=True)
@@ -11310,81 +11307,72 @@ def _prepare_metadata_for_serialization(id_encoder, serialization_options, metad
 # however making them models keeps things simple and consistent.
 
 
-class CleanupEvent(Base):
+class CleanupEvent(Base, HasId):
     __tablename__ = "cleanup_event"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     message: Mapped[Optional[str]] = mapped_column(TrimmedString(1024))
 
 
-class CleanupEventDatasetAssociation(Base):
+class CleanupEventDatasetAssociation(Base, HasId):
     __tablename__ = "cleanup_event_dataset_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
     dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"), index=True, nullable=True)
 
 
-class CleanupEventMetadataFileAssociation(Base):
+class CleanupEventMetadataFileAssociation(Base, HasId):
     __tablename__ = "cleanup_event_metadata_file_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
     metadata_file_id: Mapped[int] = mapped_column(ForeignKey("metadata_file.id"), index=True, nullable=True)
 
 
-class CleanupEventHistoryAssociation(Base):
+class CleanupEventHistoryAssociation(Base, HasId):
     __tablename__ = "cleanup_event_history_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
 
 
-class CleanupEventHistoryDatasetAssociationAssociation(Base):
+class CleanupEventHistoryDatasetAssociationAssociation(Base, HasId):
     __tablename__ = "cleanup_event_hda_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
     hda_id: Mapped[int] = mapped_column(ForeignKey("history_dataset_association.id"), index=True, nullable=True)
 
 
-class CleanupEventLibraryAssociation(Base):
+class CleanupEventLibraryAssociation(Base, HasId):
     __tablename__ = "cleanup_event_library_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
     library_id: Mapped[int] = mapped_column(ForeignKey("library.id"), index=True, nullable=True)
 
 
-class CleanupEventLibraryFolderAssociation(Base):
+class CleanupEventLibraryFolderAssociation(Base, HasId):
     __tablename__ = "cleanup_event_library_folder_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
     library_folder_id: Mapped[int] = mapped_column(ForeignKey("library_folder.id"), index=True, nullable=True)
 
 
-class CleanupEventLibraryDatasetAssociation(Base):
+class CleanupEventLibraryDatasetAssociation(Base, HasId):
     __tablename__ = "cleanup_event_library_dataset_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
     library_dataset_id: Mapped[int] = mapped_column(ForeignKey("library_dataset.id"), index=True, nullable=True)
 
 
-class CleanupEventLibraryDatasetDatasetAssociationAssociation(Base):
+class CleanupEventLibraryDatasetDatasetAssociationAssociation(Base, HasId):
     __tablename__ = "cleanup_event_ldda_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
     ldda_id: Mapped[int] = mapped_column(
@@ -11392,10 +11380,9 @@ class CleanupEventLibraryDatasetDatasetAssociationAssociation(Base):
     )
 
 
-class CleanupEventImplicitlyConvertedDatasetAssociationAssociation(Base):
+class CleanupEventImplicitlyConvertedDatasetAssociationAssociation(Base, HasId):
     __tablename__ = "cleanup_event_icda_association"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
     icda_id: Mapped[int] = mapped_column(
