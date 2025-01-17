@@ -17,17 +17,21 @@ import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 
-interface Input {
+interface BaseDataToolParameterInput {
     batch: boolean;
     product: boolean;
     values: { id: string; src: "dce" | "hda" | "hdca" | "ldda"; map_over_type: string }[];
 }
+interface DataToolParameterInput extends BaseDataToolParameterInput {}
+interface DataCollectionToolParameterInput extends BaseDataToolParameterInput {}
+type DataInput = DataToolParameterInput | DataCollectionToolParameterInput | boolean | string | null;
 
 interface Props {
     workflowId: string;
     storedId: string;
     version: number;
-    inputs: Record<string, Input | null>;
+    inputs: Record<string, DataInput | null>;
+    stepValidation: any; // TODO: type as [string, string] | null;
     formInputs: any[];
 }
 
@@ -69,31 +73,98 @@ function syncStepsWithInputVals() {
     for (const s of Object.values(loadedWorkflow.value?.steps)) {
         const step = s as any;
         if (isWorkflowInput(step.type)) {
-            const dataInput = props.inputs[step.id.toString()];
-            const inputVals = dataInput?.values;
-
+            let dataInput = props.inputs[step.id.toString()];
             const formInput = props.formInputs.find((input) => parseInt(input.name) === step.id);
-            const options = formInput?.options;
+            const optional = formInput?.optional as boolean;
 
-            if (inputVals?.length === 1 && inputVals[0]) {
-                const { id, src } = inputVals[0];
-                const item = options[src].find((option: any) => option.id === id);
-                set(step, "nodeText", `${item.hid}: <b>${item.name}</b>`);
-                set(step, "headerClass", getHeaderClass("ok"));
-                set(step, "headerIcon", faCheckCircle);
-            } else if (inputVals?.length) {
-                set(step, "nodeText", `${inputVals.length} inputs provided`);
-                set(step, "headerClass", getHeaderClass("ok"));
-                set(step, "headerIcon", faCheckCircle);
+            if (formInput.model_class === "BooleanToolParameter") {
+                setStepDescription(step, dataInput as boolean, true);
+            } else if (
+                ["TextToolParameter", "IntegerToolParameter", "FloatToolParameter"].includes(formInput.model_class)
+            ) {
+                if (!dataInput || dataInput.toString().trim() === "") {
+                    let infoText: string;
+                    switch (formInput.model_class) {
+                        case "TextToolParameter":
+                            infoText = `Provide text input${optional ? " (optional)" : ""}`;
+                            break;
+                        case "IntegerToolParameter":
+                            infoText = `Provide an integer${optional ? " (optional)" : ""}`;
+                            break;
+                        default:
+                            infoText = `Provide a float${optional ? " (optional)" : ""}`;
+                            break;
+                    }
+                    setStepDescription(step, infoText, false, optional);
+                } else {
+                    setStepDescription(step, `<b>${dataInput}</b>`, true);
+                }
+            } else if (formInput.model_class === "ColorToolParameter") {
+                if (!dataInput) {
+                    setStepDescription(step, "Provide a color", false);
+                } else {
+                    setStepDescription(step, dataInput as string, true);
+                }
+            } else if (formInput.model_class === "DirectoryUriToolParameter") {
+                if (!dataInput) {
+                    setStepDescription(step, `Provide a directory${optional ? " (optional)" : ""}`, false, optional);
+                } else {
+                    setStepDescription(step, `Directory: <b>${dataInput}</b>`, true);
+                }
+            } else if (
+                formInput.model_class === "DataToolParameter" ||
+                formInput.model_class === "DataCollectionToolParameter"
+            ) {
+                dataInput = dataInput as DataToolParameterInput | DataCollectionToolParameterInput;
+                const inputVals = dataInput?.values;
+                const options = formInput?.options;
+
+                if (inputVals?.length === 1 && inputVals[0]) {
+                    const { id, src } = inputVals[0];
+                    const item = options[src].find((option: any) => option.id === id);
+                    setStepDescription(step, `${item.hid}: <b>${item.name}</b>`, true);
+                } else if (inputVals?.length) {
+                    setStepDescription(step, `${inputVals.length} inputs provided`, true);
+                } else if (formInput.model_class === "DataToolParameter") {
+                    setStepDescription(step, `Provide a dataset${optional ? " (optional)" : ""}`, false, optional);
+                } else {
+                    setStepDescription(step, `Provide a collection${optional ? " (optional)" : ""}`, false, optional);
+                }
             } else {
-                set(step, "nodeText", "Populate this input");
-
-                // color variant for `running` state works best
-                set(step, "headerClass", getHeaderClass("running"));
-                set(step, "headerIcon", faExclamationCircle);
+                set(step, "nodeText", "This is an input");
             }
         }
     }
+}
+
+/** Annotate the step for the workflow graph with the current input value or prompt
+ * @param step The step to annotate
+ * @param text The text to display
+ * @param populated Whether the input is populated, undefined for optional inputs
+ * @param optional Whether the input is optional
+ */
+function setStepDescription(step: any, text: string | boolean, populated: boolean, optional?: boolean) {
+    // color variant for `paused` state works best for unpopulated inputs,
+    // "" for optional inputs and `ok` for populated inputs
+    const headerClass = optional ? "" : populated ? "ok" : "paused";
+    const headerIcon = populated ? faCheckCircle : faExclamationCircle;
+
+    set(step, "nodeText", text);
+    set(step, "headerClass", getHeaderClass(headerClass));
+    set(step, "headerIcon", headerIcon);
+}
+
+function setStepDescriptionForValidation(): boolean {
+    if (props.stepValidation && props.stepValidation.length == 2) {
+        const [stepId, message] = props.stepValidation;
+        const step = loadedWorkflow.value.steps[stepId];
+        if (step) {
+            const text = message.length < 20 ? message : "Fix errors for this step";
+            setStepDescription(step, text, false);
+            return true;
+        }
+    }
+    return false;
 }
 
 watch(
@@ -101,6 +172,17 @@ watch(
     () => {
         syncStepsWithInputVals();
     }
+);
+
+watch(
+    () => props.stepValidation,
+    () => {
+        if (!loadedWorkflow.value?.steps) {
+            return;
+        }
+        setStepDescriptionForValidation();
+    },
+    { immediate: true }
 );
 </script>
 
@@ -110,7 +192,6 @@ watch(
     </BAlert>
     <BAlert v-else-if="datatypesMapperLoading || !loadedWorkflow" variant="info" show>
         <LoadingSpan message="Loading workflow" />
-        {{ datatypesMapperLoading ? "mapperLoading" : "mapper loaded" }}
     </BAlert>
     <div v-else-if="datatypesMapper && hasLoadedGraph">
         <Heading h2 separator bold size="sm"> Graph </Heading>
