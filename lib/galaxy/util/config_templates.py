@@ -57,7 +57,7 @@ EnvironmentDict = Dict[str, str]
 
 
 class StrictModel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", coerce_numbers_to_str=True)
 
 
 class BaseTemplateVariable(StrictModel):
