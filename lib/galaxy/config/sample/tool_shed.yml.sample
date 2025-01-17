@@ -322,6 +322,24 @@ tool_shed:
   # <email_domain_blocklist_file> will be ignored.
   #email_domain_allowlist_file: null
 
+  # E-mail ban file is used to specify email addresses that have been
+  # banned. If a user attempts to register a new account using an email
+  # address listed in this file, registration will be denied. This file
+  # does not affect user sign-in.
+  # Email addresses are matched against a canonical address
+  # representation based on the following set of rules. - Values are not
+  # case-sensitive (RickDeckard@foo.cOM == rickdeckard@foo.com) - Plus
+  # suffixes in the local-part of a Gmail account are ignored
+  # (rickdeckard+anything@gmail.com == rickdeckard@gmail.com) - Periods
+  # in the local_part of a Gmail account are ignored
+  # (rick.deckard@gmail.com == rickdeckard@gmail.com)
+  # The file should include one email address per line. Lines starting
+  # with the "#" character are ignored.
+  # Example value 'banned_emails.conf'
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #email_ban_file: null
+
   # Append "/{brand}" to the "Galaxy" text in the masthead.
   #brand: null
 
