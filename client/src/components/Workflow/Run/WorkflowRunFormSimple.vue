@@ -3,7 +3,7 @@ import { faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BDropdown, BDropdownForm, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref, set } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { allowCachedJobs } from "@/components/Tool/utilities";
 import { isWorkflowInput } from "@/components/Workflow/constants";
@@ -50,7 +50,7 @@ const { showPanels } = usePanels();
 
 const formData = ref<Record<string, any>>({});
 const inputTypes = ref<Record<string, string>>({});
-const stepValidations = ref<Record<string, string | null>>({});
+const stepValidation = ref<[string, string] | null>(null);
 const sendToNewHistory = ref(props.targetHistory === "new" || props.targetHistory === "prefer_new");
 const useCachedJobs = ref(props.useJobCache);
 const splitObjectStore = ref(false);
@@ -61,6 +61,23 @@ const waitingForRequest = ref(false);
 //       (panel that toggles between readme/help or graph) to `true` if the readme/help exists, and if no
 //       readme/help exists, it will be `false`.
 const showGraph = ref(!showPanels.value);
+
+watch(
+    () => showGraph.value,
+    (show) => {
+        if (!show) {
+            activeNodeId.value = null;
+        }
+    }
+);
+const computedActiveNodeId = computed<number | undefined>(() => {
+    if (showGraph.value) {
+        if (activeNodeId.value !== null && activeNodeId.value !== undefined) {
+            return activeNodeId.value;
+        }
+    }
+    return undefined;
+});
 
 const formInputs = computed(() => {
     const inputs = [] as any[];
@@ -98,17 +115,15 @@ const formInputs = computed(() => {
     return inputs;
 });
 
-const hasValidationErrors = computed(() => {
-    return Boolean(Object.values(stepValidations.value).find((value) => value !== null && value !== undefined));
-});
+const hasValidationErrors = computed(() => stepValidation.value !== null);
 
 const canRunOnHistory = computed(() => props.canMutateCurrentHistory || sendToNewHistory.value);
 
-function onValidation(validation: any) {
-    if (validation) {
-        set(stepValidations.value, validation[0], validation[1]);
+function onValidation(validation: [string, string] | null) {
+    if (validation && validation.length == 2) {
+        stepValidation.value = [validation[0], validation[1]];
     } else {
-        stepValidations.value = {};
+        stepValidation.value = null;
     }
 }
 
@@ -252,15 +267,17 @@ async function onExecute() {
         <WorkflowAnnotation :workflow-id="model.runData.workflow_id" :history-id="model.historyId" show-details />
 
         <div ref="runFormContainer" class="d-flex">
-            <div class="overflow-auto" :class="!showGraph ? 'w-100' : 'w-50'">
-                <Heading h2 separator bold size="sm"> Parameters </Heading>
+            <div :class="!showGraph ? 'w-100' : 'w-50'">
+                <Heading v-if="showGraph" h2 separator bold size="sm"> Parameters </Heading>
                 <FormDisplay
                     :inputs="formInputs"
                     :allow-empty-value-on-required-input="true"
                     :sync-with-graph="showGraph"
-                    :active-node-id.sync="activeNodeId"
+                    :active-node-id="computedActiveNodeId"
+                    workflow-run
                     @onChange="onChange"
-                    @onValidation="onValidation" />
+                    @onValidation="onValidation"
+                    @update:active-node-id="($event) => (activeNodeId = $event)" />
                 <!-- Options to default one way or the other, disable if admins want, etc.. -->
                 <a href="#" class="workflow-expand-form-link" @click="emit('showAdvanced')">
                     Expand to full workflow form.
@@ -270,6 +287,7 @@ async function onExecute() {
                 <WorkflowRunGraph
                     v-if="isConfigLoaded"
                     :workflow-id="model.workflowId"
+                    :step-validation="stepValidation"
                     :stored-id="model.runData.workflow_id"
                     :version="model.runData.version"
                     :inputs="formData"
