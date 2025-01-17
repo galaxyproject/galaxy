@@ -1,7 +1,17 @@
 <template>
     <div>
-        <b-alert v-if="errorMessage" class="mt-2" :show="dismissCountDown" variant="info" @dismissed="resetAlert">
+        <b-alert
+            v-if="errorMessage"
+            class="mt-2"
+            :show="dismissCountDown"
+            variant="info"
+            dismissible
+            @dismissed="resetAlert"
+            @dismiss-count-down="($event) => (dismissCountDown = $event)">
             {{ errorMessage }}
+            <b-progress :max="dismissSecs" :value="dismissCountDown" height="4px" class="mt-1">
+                <b-progress-bar :value="dismissCountDown" variant="info" />
+            </b-progress>
         </b-alert>
         <b-row align-v="center">
             <b-col :sm="isRangeValid ? defaultInputSizeWithSlider : false">
@@ -13,6 +23,7 @@
                     :step="step"
                     :type="fieldType"
                     @change="onInputChange"
+                    @keypress="isNumberOrDecimal"
                     @keydown.190.capture="onFloatInput"
                     @keydown.110.capture="onFloatInput" />
             </b-col>
@@ -54,7 +65,7 @@ export default {
     data() {
         return {
             defaultInputSizeWithSlider: 4,
-            dismissSecs: 5,
+            dismissSecs: 4,
             dismissCountDown: 0,
             errorMessage: "",
             fractionWarning: "This output doesn't allow fractions!",
@@ -124,6 +135,15 @@ export default {
                 this.errorMessage = error;
                 this.dismissCountDown = this.dismissSecs;
             }
+        },
+        isNumberOrDecimal(event) {
+            // NOTE: Should we check for `fieldType` here?
+            const charCode = event.charCode;
+            if ((charCode >= 48 && charCode <= 57) || charCode === 46) {
+                return true;
+            }
+            event.preventDefault();
+            return false;
         },
         isOutOfRange(value) {
             /* If value=null, then value is within range. */
