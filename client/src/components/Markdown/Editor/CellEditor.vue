@@ -2,10 +2,12 @@
     <div class="h-100 w-100">
         <div v-for="(cell, cellIndex) of cells" :key="cellIndex">
             <CellButtonAdd :cell-index="cellIndex" @click="onClick" />
-            <div class="cell-card d-flex flex-column border rounded mx-3">
-                <div class="cell-card-header rounded-top p-1 small text-primary">{{ cell.name }}</div>
-                <div class="p-2">{{ cell.content }}</div>
+            <hr class="solid m-0">
+            <div class="cell-card d-flex rounded my-1 mx-3">
+                <span class="small text-primary">{{ cell.name }}</span>
+                <div class="ml-2">{{ cell.content }}</div>
             </div>
+            <hr class="solid m-0">
         </div>
         <CellButtonAdd :cell-index="cells.length" @click="onClick" />
     </div>
@@ -38,9 +40,10 @@ function onClick(cellIndex: number, cellType: string) {
 @import "theme/blue.scss";
 
 .cell-card {
+    //background: $gray-100;
     .cell-card-header {
-        //background: $brand-primary;
-        //color: $white;
+        background: lighten($brand-info, 20%);
+        color: $white;
     }
 }
 </style>
