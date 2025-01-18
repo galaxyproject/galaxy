@@ -27,6 +27,7 @@ export const monarchConfig: languages.IMonarchLanguage = {
                     token: "@rematch",
                     bracket: "@open",
                     next: "jsEmbedded",
+                    log: "Open fragment",
                 },
             ],
             [
@@ -36,9 +37,11 @@ export const monarchConfig: languages.IMonarchLanguage = {
                         "@eos": {
                             token: "source.js",
                             next: "@pop",
+                            log: "@eos",
                         },
                         default: {
                             token: "source.js",
+                            log: "default",
                         },
                     },
                 },
@@ -48,9 +51,9 @@ export const monarchConfig: languages.IMonarchLanguage = {
             // Hack? `)` would normally end the JS scope without some clever
             // regex that counts how many times we can use `)` before we quit the embedded javascript state.
             // The workaround is to open another jsEmbedded state when encountering `(`.
-            [/\(/, { token: "parens", next: "jsEmbedded" }],
-            [/\)/, { token: "@rematch", next: "@pop", nextEmbedded: "@pop" }],
-            [/[^(]+/, { token: "source.js", nextEmbedded: "javascript" }],
+            [/\(/, { token: "parens", next: "jsEmbedded", log: "nesting" }],
+            [/\)/, { token: "@rematch", next: "@pop", nextEmbedded: "@pop", log: "pop" }],
+            [/[^(]+/, { token: "source.js", nextEmbedded: "javascript", log: "embedded source.js" }],
         ],
         // Inline JavaScript ends at the end of the line
         inlineJs: [
