@@ -228,7 +228,8 @@ class TestShedRepositoriesApi(ShedApiTestCase):
 
     def test_repo_tars(self):
         for index, repo_path in enumerate(repo_tars("column_maker")):
-            path = CompressedFile(repo_path).extract(tempfile.mkdtemp())
+            with CompressedFile(repo_path) as cf:
+                path = cf.extract(tempfile.mkdtemp())
             tool_xml_path = os.path.join(path, "column_maker.xml")
             tool_source = get_tool_source(config_file=tool_xml_path)
             tool_version = tool_source.parse_version()

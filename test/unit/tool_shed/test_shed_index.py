@@ -1,6 +1,5 @@
 import os
 import shutil
-import tarfile
 import tempfile
 from collections import namedtuple
 from io import BytesIO
@@ -9,6 +8,7 @@ import pytest
 import requests
 from whoosh import index
 
+from galaxy.util.compression_utils import CompressedFile
 from tool_shed.util.shed_index import build_index
 
 URL = "https://github.com/mvdbeek/toolshed-test-data/blob/master/toolshed_community_files.tgz?raw=true"
@@ -29,7 +29,8 @@ def community_file_dir():
     response = requests.get(URL)
     response.raise_for_status()
     b = BytesIO(response.content)
-    tarfile.open(fileobj=b, mode="r:gz").extractall(extracted_archive_dir)
+    with CompressedFile.open_tar(b) as tar:
+        tar.extractall(extracted_archive_dir)
     try:
         yield extracted_archive_dir
     finally:

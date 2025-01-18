@@ -5,7 +5,6 @@ import os
 import re
 import shutil
 import sys
-import tarfile
 import tempfile
 import time
 import urllib.parse
@@ -45,6 +44,7 @@ from galaxy.tool_util.parser.interface import (
 )
 from galaxy.util import requests
 from galaxy.util.bunch import Bunch
+from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.hash_util import (
     memory_bound_hexdigest,
     parse_checksum_hash,
@@ -434,7 +434,14 @@ class GalaxyInteractorApi:
             return result
         raise Exception(result["err_msg"])
 
-    def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None):
+    def test_data_download(
+        self,
+        tool_id: str,
+        filename: str,
+        mode: Literal["directory", "file"] = "file",
+        is_output: bool = True,
+        tool_version: Optional[str] = None,
+    ):
         result = None
         local_path = None
 
@@ -453,7 +460,7 @@ class GalaxyInteractorApi:
                             contents.extractall(path=path)
                     else:
                         # Galaxy < 21.01
-                        with tarfile.open(fileobj=fileobj) as tar_contents:
+                        with CompressedFile.open_tar(fileobj) as tar_contents:
                             tar_contents.extractall(path=path)
                     result = path
         else:

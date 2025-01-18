@@ -442,8 +442,8 @@ def _decompress_target(upload_config: "UploadConfig", target: Dict[str, Any]):
     # fuzzy_root to False to literally interpret the target.
     fuzzy_root = target.get("fuzzy_root", True)
     temp_directory = os.path.abspath(tempfile.mkdtemp(prefix=elements_from_name, dir=upload_config.working_directory))
-    cf = CompressedFile(elements_from_path)
-    result = cf.extract(temp_directory)
+    with CompressedFile(elements_from_path) as cf:
+        result = cf.extract(temp_directory)
     return result if fuzzy_root else temp_directory
 
 
