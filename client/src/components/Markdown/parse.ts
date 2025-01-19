@@ -4,7 +4,7 @@ const FUNCTION_ARGUMENT_REGEX = `\\s*[\\w\\|]+\\s*=` + FUNCTION_ARGUMENT_VALUE_R
 const FUNCTION_CALL_LINE = `\\s*(\\w+)\\s*\\(\\s*(?:(${FUNCTION_ARGUMENT_REGEX})(,${FUNCTION_ARGUMENT_REGEX})*)?\\s*\\)\\s*`;
 const FUNCTION_CALL_LINE_TEMPLATE = new RegExp(FUNCTION_CALL_LINE, "m");
 
-type DefaultSection = { name: "default"; content: string };
+type DefaultSection = { name: "markdown"; content: string };
 type GalaxySection = { name: string; content: string; args: { [key: string]: string } };
 type Section = DefaultSection | GalaxySection;
 
@@ -23,13 +23,13 @@ function parseResult(result: { name: string; content: string }[], name: string, 
 export function parseMarkdown(input: string): { name: string; content: string }[] {
     const result: { name: string; content: string }[] = [];
     const lines = input.split("\n");
-    let currentName: string = "default";
+    let currentName: string = "markdown";
     let currentContent: string[] = [];
     lines.forEach((line) => {
         const sectionMatch = line.match(/^```(.*)$/);
         if (sectionMatch) {
             parseResult(result, currentName, currentContent);
-            currentName = sectionMatch[1] || "default";
+            currentName = sectionMatch[1] || "markdown";
             currentContent = [];
         } else {
             currentContent.push(line);
@@ -53,7 +53,7 @@ export function splitMarkdown(markdown: string, preserveWhitespace = false) {
                     const defaultContent = rawContent.trim();
                     if (preserveWhitespace || defaultContent) {
                         sections.push({
-                            name: "default",
+                            name: "markdown",
                             content: preserveWhitespace ? rawContent : defaultContent,
                         });
                     }
@@ -76,7 +76,7 @@ export function splitMarkdown(markdown: string, preserveWhitespace = false) {
             }
         } else {
             sections.push({
-                name: "default",
+                name: "markdown",
                 content: digest,
             });
             break;
