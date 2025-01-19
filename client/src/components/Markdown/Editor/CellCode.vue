@@ -1,5 +1,5 @@
 <template>
-    <div ref="editor" class="editor" />
+    <div ref="editor" class="w-100" />
 </template>
 
 <script setup>
@@ -34,12 +34,16 @@ async function buildEditor() {
     const themeUrl = await import(`ace-builds/src-noconflict/theme-${props.theme}?url`);
     ace.config.setModuleUrl(modePath, modeUrl);
     ace.config.setModuleUrl(themePath, themeUrl);
-    ace.edit(editor.value, {
-        value: props.modelValue,
-        theme: themePath,
+    const aceEditor = ace.edit(editor.value, {
+        highlightActiveLine: false,
+        highlightGutterLine: false,
+        maxLines: 30,
+        minLines: 1,
         mode: modePath,
         showPrintMargin: false,
+        theme: themePath,
         useWorker: false,
+        value: props.modelValue,
     });
 
     /*/ Update modelValue when editor content changes
@@ -49,6 +53,15 @@ async function buildEditor() {
       const newValue = aceEditor.getValue();
       emit('update:modelValue', newValue);
     });*/
+
+    aceEditor.on("focus", () => {
+        aceEditor.setOption("highlightActiveLine", true);
+        aceEditor.setOption("highlightGutterLine", true);
+    });
+    aceEditor.on("blur", () => {
+        aceEditor.setOption("highlightActiveLine", false);
+        aceEditor.setOption("highlightGutterLine", false);
+    });
 }
 
 // Initialize the Ace editor
@@ -66,11 +79,3 @@ onMounted(() => {
     }
   );*/
 </script>
-
-<style>
-.editor {
-    width: 100%;
-    height: 300px;
-    border: 1px solid #ddd;
-}
-</style>
