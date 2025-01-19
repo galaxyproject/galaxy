@@ -18,7 +18,7 @@ const props = defineProps({
     },
     mode: {
         type: String,
-        default: "javascript",
+        default: "json",
     },
 });
 
