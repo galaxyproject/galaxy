@@ -5,7 +5,12 @@
             <hr class="solid m-0" />
             <div class="d-flex my-1 mx-3">
                 <span class="cell-name small text-primary">{{ cell.name }}</span>
-                <CellCode :model-value="cell.content" :mode="getMode(cell.name)" class="ml-2" />
+                <div class="ml-2 w-100">
+                    <MarkdownDefault v-if="cell.name === 'markdown'" :content="cell.content" />
+                    <MarkdownVega v-else-if="cell.name === 'vega'" :content="cell.content" />
+                    <MarkdownVitessce v-else-if="cell.name === 'vitessce'" :content="cell.content" />
+                    <CellCode :model-value="cell.content" :mode="getMode(cell.name)" />
+                </div>
             </div>
             <hr class="solid m-0" />
         </div>
@@ -18,6 +23,9 @@ import { ref } from "vue";
 
 import { parseMarkdown } from "@/components/Markdown/parse";
 
+import MarkdownDefault from "../Sections/MarkdownDefault.vue";
+import MarkdownVega from "../Sections/MarkdownVega.vue";
+import MarkdownVitessce from "../Sections/MarkdownVitessce.vue";
 import CellButtonAdd from "./CellButtonAdd.vue";
 import CellCode from "./CellCode.vue";
 
