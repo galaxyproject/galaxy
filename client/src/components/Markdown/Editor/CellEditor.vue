@@ -5,7 +5,7 @@
             <hr class="solid m-0" />
             <div class="d-flex my-1 mx-3">
                 <span class="cell-name small text-primary">{{ cell.name }}</span>
-                <CellCode :model-value="cell.content" class="ml-2" />
+                <CellCode :model-value="cell.content" :mode="getMode(cell.name)" class="ml-2" />
             </div>
             <hr class="solid m-0" />
         </div>
@@ -31,6 +31,16 @@ interface CellType {
 }
 
 const cells = ref<Array<CellType>>(parseMarkdown(props.markdownText));
+
+function getMode(cellName: string) {
+    switch (cellName) {
+        case "galaxy":
+            return "python";
+        case "markdown":
+            return "markdown";
+    }
+    return "json";
+}
 
 function onClick(cellIndex: number, cellType: string) {
     console.log([cellIndex, cellType]);
