@@ -156,7 +156,7 @@ onMounted(() => {
                 </b-alert>
             </div>
             <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
-                <MarkdownDefault v-if="obj.name === 'default'" :content="obj.content" />
+                <MarkdownDefault v-if="obj.name === 'markdown'" :content="obj.content" />
                 <MarkdownVega v-else-if="obj.name === 'vega'" :content="obj.content" />
                 <MarkdownVitessce v-else-if="obj.name === 'vitessce'" :content="obj.content" />
                 <MarkdownGalaxy
