@@ -44,24 +44,26 @@ async function buildEditor() {
         theme: themePath,
         useWorker: false,
         value: props.modelValue,
+        wrap: true,
     });
-
-    /*/ Update modelValue when editor content changes
-    // Set the mode (language) if needed
-    editor.session.setMode("ace/mode/javascript");
-    aceEditor.session.on('change', () => {
-      const newValue = aceEditor.getValue();
-      emit('update:modelValue', newValue);
-    });*/
 
     aceEditor.on("focus", () => {
         aceEditor.setOption("highlightActiveLine", true);
         aceEditor.setOption("highlightGutterLine", true);
+        editor.value.classList.add("cell-code-focus");
     });
     aceEditor.on("blur", () => {
         aceEditor.setOption("highlightActiveLine", false);
         aceEditor.setOption("highlightGutterLine", false);
+        editor.value.classList.remove("cell-code-focus");
     });
+
+    /*/ Update modelValue when editor content changes
+    // Set the mode (language) if needed
+    aceEditor.session.on('change', () => {
+      const newValue = aceEditor.getValue();
+      emit('update:modelValue', newValue);
+    });*/
 }
 
 // Initialize the Ace editor
@@ -79,3 +81,10 @@ onMounted(() => {
     }
   );*/
 </script>
+
+<style lang="scss">
+@import "theme/blue.scss";
+.cell-code-focus {
+    background-color: $gray-100;
+}
+</style>
