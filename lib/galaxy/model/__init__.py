@@ -2416,7 +2416,7 @@ class JobToInputDatasetAssociation(Base, RepresentById):
     dataset_id: Mapped[int] = mapped_column(ForeignKey("history_dataset_association.id"), index=True, nullable=True)
     dataset_version: Mapped[Optional[int]]
     name: Mapped[str] = mapped_column(String(255), nullable=True)
-    adapter: Mapped[Dict[str, Any]] = mapped_column(JSONType)
+    adapter: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONType, nullable=True)
     dataset: Mapped["HistoryDatasetAssociation"] = relationship(lazy="joined", back_populates="dependent_jobs")
     job: Mapped["Job"] = relationship(back_populates="input_datasets")
 
@@ -2459,7 +2459,7 @@ class JobToInputDatasetCollectionAssociation(Base, RepresentById):
         ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=True)
-    adapter: Mapped[Dict[str, Any]] = mapped_column(JSONType)
+    adapter: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONType, nullable=True)
     dataset_collection: Mapped["HistoryDatasetCollectionAssociation"] = relationship(lazy="joined")
     job: Mapped["Job"] = relationship(back_populates="input_dataset_collections")
 
@@ -2478,7 +2478,7 @@ class JobToInputDatasetCollectionElementAssociation(Base, RepresentById):
         ForeignKey("dataset_collection_element.id"), index=True, nullable=True
     )
     name: Mapped[str] = mapped_column(Unicode(255), nullable=True)
-    adapter: Mapped[Dict[str, Any]] = mapped_column(JSONType)
+    adapter: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONType, nullable=True)
     dataset_collection_element: Mapped["DatasetCollectionElement"] = relationship(lazy="joined")
     job: Mapped["Job"] = relationship(back_populates="input_dataset_collection_elements")
 

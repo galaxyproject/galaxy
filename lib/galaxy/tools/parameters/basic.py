@@ -2542,7 +2542,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             and "src" in value
             and ("id" in value or value["src"] == "CollectionAdapter")
         ):
-            rval = src_id_to_item(sa_session=trans.sa_session, value=value, security=trans.security)
+            rval = src_id_to_item_collection(sa_session=trans.sa_session, value=value, security=trans.security)
         elif isinstance(value, list):
             if len(value) > 0:
                 value = value[0]
