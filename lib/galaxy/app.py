@@ -349,7 +349,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.citations_manager = CitationsManager(self)
         self.biotools_metadata_source = get_galaxy_biotools_metadata_source(self.config)
 
-        self.dynamic_tools_manager = DynamicToolManager(self)
+        self.dynamic_tool_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
         self._toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
         galaxy_root_dir = os.path.abspath(self.config.root)

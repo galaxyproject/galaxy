@@ -32,7 +32,7 @@ class DynamicToolsController(BaseAPIController):
         inputs and outputs, use the standard tools API indexed by the
         ID (and optionally version) returned from this endpoint.
         """
-        manager = self.app.dynamic_tools_manager
+        manager = self.app.dynamic_tool_manager
         return [t.to_dict() for t in manager.list_tools()]
 
     @expose_api_anonymous_and_sessionless
@@ -56,7 +56,7 @@ class DynamicToolsController(BaseAPIController):
         :type uuid: str
         :param uuid: the uuid to associate with the tool being created
         """
-        dynamic_tool = self.app.dynamic_tools_manager.create_tool(
+        dynamic_tool = self.app.dynamic_tool_manager.create_tool(
             trans, payload, allow_load=util.asbool(kwd.get("allow_load", True))
         )
         return dynamic_tool.to_dict()
@@ -70,13 +70,13 @@ class DynamicToolsController(BaseAPIController):
         Deactivate the specified dynamic tool. Deactivated tools will not
         be loaded into the toolbox.
         """
-        manager = self.app.dynamic_tools_manager
+        manager = self.app.dynamic_tool_manager
         dynamic_tool = self._get_dynamic_tool(trans, id)
         updated_dynamic_tool = manager.deactivate(dynamic_tool)
         return updated_dynamic_tool.to_dict()
 
     def _get_dynamic_tool(self, trans, request_id):
-        manager = self.app.dynamic_tools_manager
+        manager = self.app.dynamic_tool_manager
         if util.is_uuid(request_id):
             dynamic_tool = manager.get_tool_by_uuid(request_id)
         else:
