@@ -17,6 +17,7 @@ export const monarchConfig: languages.IMonarchLanguage = {
             [/(expressionLib):\s*\|/, { token: "key", nextEmbedded: "javascript", next: "@jsBlockMultiline" }],
             // Inline JavaScript: Key followed by code on the same line
             [/(expressionLib):\s*/, { token: "key", nextEmbedded: "javascript", next: "@inlineJs" }],
+            [/(shell_command):\s*\|/, { token: "key", next: "@shellCommand" }],
             [/(shell_command):\s*/, { token: "key", next: "@shellCommand" }],
             [/.*/, { token: "@rematch", nextEmbedded: "yaml", next: "@yamlRest" }],
         ],
@@ -52,7 +53,7 @@ export const monarchConfig: languages.IMonarchLanguage = {
             // regex that counts how many times we can use `)` before we quit the embedded javascript state.
             // The workaround is to open another jsEmbedded state when encountering `(`.
             [/\(/, { token: "parens", next: "jsEmbedded", log: "nesting" }],
-            [/\)/, { token: "@rematch", next: "@pop", nextEmbedded: "@pop", log: "pop" }],
+            [/\/\/end\)/, { token: "comment", next: "@pop", nextEmbedded: "@pop", log: "pop" }],
             [/[^(]+/, { token: "source.js", nextEmbedded: "javascript", log: "embedded source.js" }],
         ],
         // Inline JavaScript ends at the end of the line
