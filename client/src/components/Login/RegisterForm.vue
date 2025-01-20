@@ -157,7 +157,10 @@ async function submit() {
                                             required />
                                         <span
                                             class="input-group-text password-toggle-icon"
-                                            @click="togglePasswordVisibility">
+                                            role="button"
+                                            tabindex="0"
+                                            @click.prevent="togglePasswordVisibility"
+                                            @keydown.enter="togglePasswordVisibility">
                                             <FontAwesomeIcon :icon="showPassword ? faEyeSlash : faEye" />
                                         </span>
                                     </div>

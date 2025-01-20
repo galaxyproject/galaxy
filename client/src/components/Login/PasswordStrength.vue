@@ -12,7 +12,7 @@ const props = defineProps({
 const passwordStrength = ref<string>("empty");
 const strengthScore = ref<number>(0);
 const showPasswordGuidelines: Ref<boolean> = ref(false);
-const crackTime = ref<string>(""); // Time to crack password
+const crackTime = ref<string>("");
 
 function evaluatePasswordStrength(newPassword: string) {
     if (newPassword.length === 0) {
@@ -123,7 +123,7 @@ watch(
         background-color: $brand-success;
     }
 }
-//
+
 .password-strength,
 .crack-time span {
     &.weak {
