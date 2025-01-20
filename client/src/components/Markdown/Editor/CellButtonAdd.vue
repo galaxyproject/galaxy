@@ -1,11 +1,7 @@
 <template>
     <Popper trigger="click" placement="right" mode="light">
         <template v-slot:reference>
-            <b-button
-                v-b-tooltip.right
-                class="border-0 p-0 px-1"
-                title="Insert new Cell"
-                variant="outline-primary">
+            <b-button v-b-tooltip.right class="border-0 p-0 px-1" title="Insert new Cell" variant="outline-primary">
                 <FontAwesomeIcon :icon="faPlusSquare" />
             </b-button>
         </template>
