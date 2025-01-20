@@ -66,7 +66,15 @@ function onChange(cellIndex: number, cellContent: string) {
 }
 
 function onUpdate() {
-    const newMarkdownText = "";
+    let newMarkdownText = "";
+    cells.value.forEach((cell) => {
+        if (cell.name === "markdown") {
+            newMarkdownText += cell.content;
+        } else {
+            newMarkdownText += `\`\`\`${cell.name}\n` + cell.content + "\n```";
+        }
+        newMarkdownText += "\n\n";
+    });
     emit("update", newMarkdownText);
 }
 </script>
