@@ -3,7 +3,7 @@
         <template v-slot:reference>
             <b-button
                 v-b-tooltip.right
-                class="border-0 m-1 py-0 px-1"
+                class="border-0 m-1 px-1 py-0"
                 title="Insert new Cell"
                 variant="outline-primary">
                 <FontAwesomeIcon :icon="faPlusSquare" />

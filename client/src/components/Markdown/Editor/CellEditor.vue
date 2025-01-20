@@ -60,6 +60,6 @@ function onUpdate() {
 
 <style>
 .cell-guide {
-    width: 3rem;
+    width: 5rem;
 }
 </style>
