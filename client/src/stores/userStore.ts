@@ -28,6 +28,7 @@ export const useUserStore = defineStore("userStore", () => {
     const currentPreferences = ref<Preferences | null>(null);
 
     const preferredListViewMode = useUserLocalStorage("user-store-preferred-list-view-mode", "grid", currentUser);
+    const hasSeenUploadHelp = useUserLocalStorage("user-store-seen-upload-help", false, currentUser);
 
     let loadPromise: Promise<void> | null = null;
 
@@ -148,6 +149,7 @@ export const useUserStore = defineStore("userStore", () => {
         currentTheme,
         currentFavorites,
         preferredListViewMode,
+        hasSeenUploadHelp,
         loadUser,
         matchesCurrentUsername,
         setCurrentUser,

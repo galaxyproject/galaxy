@@ -145,3 +145,5 @@ galaxy:
       A utility for uploading files to a Galaxy server from the command line. Use ``galaxy-upload`` to upload
       file(s) to a Galaxy server, and ``galaxy-history-search``, a helper utility to find Galaxy histories
       to pass to the ``galaxy-upload`` command.
+    ruleBased: |
+      Galaxy can bulk import lists & tables of URLs into datasets or collections using reproducible rules.
