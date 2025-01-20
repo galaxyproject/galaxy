@@ -10,19 +10,23 @@ const props = defineProps<{
 const errorMessage = ref("");
 const spec = ref({});
 
+function render() {
+    try {
+        errorMessage.value = "";
+        spec.value = {
+            ...JSON.parse(props.content),
+            width: "container",
+        };
+    } catch (e: any) {
+        errorMessage.value = String(e);
+        spec.value = {};
+    }
+}
+
 watch(
     () => props.content,
     () => {
-        try {
-            errorMessage.value = "";
-            spec.value = {
-                ...JSON.parse(props.content),
-                width: "container",
-            };
-        } catch (e: any) {
-            errorMessage.value = String(e);
-            spec.value = {};
-        }
+        render();
     },
     { immediate: true }
 );
