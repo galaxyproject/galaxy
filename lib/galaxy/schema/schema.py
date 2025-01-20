@@ -1853,9 +1853,6 @@ class ExportObjectResultMetadata(Model):
         """
         Ensure unsuccessful exports do not have a URI.
         """
-        # short therm exports need not have a URI
-        # if model.success and not model.uri:
-        #     raise ValueError("successful exports must have a URI")
 
         if not model.success and model.uri:
             raise ValueError("unsuccessful exports cannot have a URI")
