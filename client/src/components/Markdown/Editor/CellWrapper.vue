@@ -5,8 +5,14 @@
                 <b-button v-b-tooltip.right class="border-0 m-1 px-1 py-0" title="Expand" variant="outline-primary">
                     <div class="small">{{ name }}</div>
                 </b-button>
-                <b-button v-b-tooltip.right class="border-0 m-1 px-1 py-0" title="Expand" variant="outline-primary">
-                    <FontAwesomeIcon :icon="faAngleDoubleUp" />
+                <b-button
+                    v-b-tooltip.right
+                    class="border-0 m-1 px-1 py-0"
+                    title="Expand"
+                    variant="outline-primary"
+                    @click="onToggle($event)">
+                    <FontAwesomeIcon v-if="toggle" :icon="faAngleDoubleUp" />
+                    <FontAwesomeIcon v-else :icon="faAngleDoubleDown" />
                 </b-button>
             </div>
             <div class="ml-2 w-100">
@@ -15,7 +21,7 @@
                 <MarkdownVitessce v-else-if="name === 'vitessce'" :content="content" />
             </div>
         </div>
-        <div class="d-flex">
+        <div v-if="toggle" class="d-flex">
             <div class="cell-guide d-flex flex-column justify-content-between">
                 <b-button v-b-tooltip.right class="border-0 m-1 px-1 py-0" title="Delete" variant="outline-primary">
                     <FontAwesomeIcon :icon="faTrash" />
@@ -29,8 +35,9 @@
 </template>
 
 <script setup lang="ts">
-import { faAngleDoubleUp, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faAngleDoubleDown, faAngleDoubleUp, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { ref } from "vue";
 
 import MarkdownDefault from "../Sections/MarkdownDefault.vue";
 import MarkdownVega from "../Sections/MarkdownVega.vue";
@@ -44,6 +51,8 @@ defineProps<{
 
 defineEmits(["change"]);
 
+const toggle = ref(true);
+
 function getMode(cellName: string) {
     switch (cellName) {
         case "galaxy":
@@ -52,5 +61,11 @@ function getMode(cellName: string) {
             return "markdown";
     }
     return "json";
+}
+
+function onToggle(event: Event) {
+    const target = event.target as HTMLElement;
+    target.blur();
+    toggle.value = !toggle.value;
 }
 </script>
