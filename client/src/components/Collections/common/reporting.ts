@@ -2,11 +2,6 @@ import { GalaxyApi } from "@/api";
 import { type HDADetailed } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-export interface ReportableObject {
-    id: string;
-    creating_job: string;
-}
-
 export async function submitReport(
     reportableData: HDADetailed,
     message: string,
