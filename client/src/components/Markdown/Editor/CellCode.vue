@@ -7,7 +7,7 @@ import ace from "ace-builds";
 import { debounce } from "lodash";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
-const DELAY = 3000;
+const DELAY = 300;
 
 const props = defineProps({
     theme: {
