@@ -360,7 +360,7 @@ class IrodsResource(StrictModel):
 
 
 class IrodsZoneTemplate(StrictModel):
-    zone: str
+    zone: Union[str, TemplateExpansion]
 
 
 class IrodsZone(StrictModel):
