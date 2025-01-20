@@ -45,6 +45,7 @@ interface Props {
     searchTitle?: string;
     okButtonText?: string;
     filterClass?: Filtering<any>;
+    watchOnPageChanges?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -71,6 +72,7 @@ const props = withDefaults(defineProps<Props>(), {
     searchTitle: undefined,
     okButtonText: "Select",
     filterClass: undefined,
+    watchOnPageChanges: true,
 });
 
 const emit = defineEmits<{
@@ -143,31 +145,26 @@ function resetFilter() {
     filter.value = "";
 }
 
-function resetPagination() {
-    currentPage.value = 1;
+function resetPagination(toInitialPage = 1) {
+    currentPage.value = toInitialPage;
+}
+
+if (props.watchOnPageChanges) {
+    watch(
+        () => props.items,
+        () => {
+            if (props.itemsProvider === undefined) {
+                resetPagination();
+            }
+        }
+    );
 }
 
 defineExpose({
     resetFilter,
     resetPagination,
+    currentPage,
 });
-
-watch(
-    () => props.items,
-    () => {
-        filtered(props.items);
-    }
-);
-
-watch(
-    () => props.providerUrl,
-    () => {
-        // We need to reset the current page when drilling down sub-folders
-        if (props.itemsProvider !== undefined) {
-            resetPagination();
-        }
-    }
-);
 </script>
 
 <template>
