@@ -49,10 +49,12 @@ export const monarchConfig: languages.IMonarchLanguage = {
             ],
         ],
         jsEmbedded: [
-            // Hack? `)` would normally end the JS scope without some clever
-            // regex that counts how many times we can use `)` before we quit the embedded javascript state.
-            // The workaround is to open another jsEmbedded state when encountering `(`.
-            [/\(/, { token: "parens", next: "jsEmbedded", log: "nesting" }],
+            /* known problems:
+              - end sequence `//end)` is awkward, if not used we only pop out of syntax highlighting at the end of a line
+              - we always pop out of the embedded js highlighting on the end of the line
+              - if we don't pop out at the of the line we might mark the whole document in js syntax
+              - if we pop out of the embedded state on `)` the first function call (or other use of `)`) will end the js highlighting
+            */
             [/\/\/end\)/, { token: "comment", next: "@pop", nextEmbedded: "@pop", log: "pop" }],
             [/$/, { token: "@rematch", next: "@pop", nextEmbedded: "@pop", log: "pop" }],
             [/[^(]+/, { token: "source.js", nextEmbedded: "javascript", log: "embedded source.js" }],
