@@ -54,6 +54,7 @@ export const monarchConfig: languages.IMonarchLanguage = {
             // The workaround is to open another jsEmbedded state when encountering `(`.
             [/\(/, { token: "parens", next: "jsEmbedded", log: "nesting" }],
             [/\/\/end\)/, { token: "comment", next: "@pop", nextEmbedded: "@pop", log: "pop" }],
+            [/$/, { token: "@rematch", next: "@pop", nextEmbedded: "@pop", log: "pop" }],
             [/[^(]+/, { token: "source.js", nextEmbedded: "javascript", log: "embedded source.js" }],
         ],
         // Inline JavaScript ends at the end of the line
