@@ -27,12 +27,16 @@ const chartContainer = ref<HTMLDivElement | null>(null);
 let vegaView: any;
 
 async function embedChart() {
-    if (vegaView) {
-        vegaView.finalize();
-    }
-    if (chartContainer.value !== null) {
-        const result = await embed(chartContainer.value, props.spec, { renderer: "svg" });
-        vegaView = result.view;
+    try {
+        if (vegaView) {
+            vegaView.finalize();
+        }
+        if (chartContainer.value !== null) {
+            const result = await embed(chartContainer.value, props.spec, { renderer: "svg" });
+            vegaView = result.view;
+        }
+    } catch (e: any) {
+        console.error(String(e));
     }
 }
 
