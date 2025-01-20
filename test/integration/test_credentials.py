@@ -39,6 +39,23 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         assert len(list_user_credentials) == 1
         assert list_user_credentials[0]["source_id"] == source_id
 
+    def test_other_users_cannot_list_credentials(self):
+        source_id = f"test_others_cant_list_credentials_{uuid4()}"
+        payload = self._build_credentials_payload(source_id=source_id)
+        self._provide_user_credentials(payload)
+
+        response = self._get(f"/api/users/current/credentials?source_type=tool&source_id={source_id}")
+        self._assert_status_code_is(response, 200)
+        list_user_credentials = response.json()
+        assert len(list_user_credentials) == 1
+        assert list_user_credentials[0]["source_id"] == source_id
+
+        with self._different_user():
+            response = self._get(f"/api/users/current/credentials?source_type=tool&source_id={source_id}")
+            self._assert_status_code_is(response, 200)
+            list_user_credentials = response.json()
+            assert len(list_user_credentials) == 0
+
     def test_list_by_source_id_requires_source_type(self):
         response = self._get("/api/users/current/credentials?source_id=test_tool")
         self._assert_status_code_is(response, 400)
