@@ -9,7 +9,7 @@
                     <MarkdownDefault v-if="cell.name === 'markdown'" :content="cell.content" />
                     <MarkdownVega v-else-if="cell.name === 'vega'" :content="cell.content" />
                     <MarkdownVitessce v-else-if="cell.name === 'vitessce'" :content="cell.content" />
-                    <CellCode :value="cell.content" :mode="getMode(cell.name)" @update="onUpdate(cellIndex, $event)" />
+                    <CellCode :value="cell.content" :mode="getMode(cell.name)" @change="onChange(cellIndex, $event)" />
                 </div>
             </div>
             <hr class="solid m-0" />
@@ -38,7 +38,7 @@ const props = defineProps<{
     markdownText: string;
 }>();
 
-//const emit = defineEmits(["update"]);
+const emit = defineEmits(["update"]);
 
 const cells = ref<Array<CellType>>(parseMarkdown(props.markdownText));
 
@@ -54,13 +54,20 @@ function getMode(cellName: string) {
 
 function onAdd(cellIndex: number, cellType: string) {
     console.log([cellIndex, cellType]);
+    onUpdate();
 }
 
-function onUpdate(cellIndex: number, cellContent: string) {
+function onChange(cellIndex: number, cellContent: string) {
     const cell = cells.value?.[cellIndex];
     if (cell) {
         cell.content = cellContent;
     }
+    onUpdate();
+}
+
+function onUpdate() {
+    const newMarkdownText = "";
+    emit("update", newMarkdownText);
 }
 </script>
 
