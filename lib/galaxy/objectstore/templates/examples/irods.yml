@@ -12,9 +12,9 @@
       help: Host url to connect to.
     port:
       label: iRODS host port
-      type: integer
+      type: string
       help: Host port to connect to.
-      default: 1247
+      default: "1247"
     username:
       label: Username
       type: string
@@ -35,7 +35,7 @@
       help: Connection timeout in seconds.
       default: 30
     refresh_time:
-      label: iRODS host
+      label: Refresh time
       type: integer
       help: Connection refresh time in seconds.
       default: 300
@@ -105,12 +105,12 @@
       default: "hostname"
     ssl_ca_certificate_file:
       label: Username
-      type: string
+      type: variable
       help: |
         Location of a file of trusted CA certificates in PEM format. 
         Note that the certificates in this file are used in conjunction with the system default 
         trusted certificates
-      default: "/etc/irods/ssl/irods.crt"
+      default: ""
   secrets:
     password:
       label: Password
@@ -119,30 +119,27 @@
   configuration:
     type: irods
     auth:
-      username: "{{ variables.username }}"
-      password: "{{ secrets.password }}"
+      username: '{{ variables.username }}'
+      password: '{{ secrets.password }}'
     resource:
-      name: "{{ environment.resource }}"
+      name: '{{ environment.resource }}'
     zone:
-      name: "{{ environment.zone }}"
+      name: '{{ environment.zone }}'
     connection:
-      host: "{{ variables.host }}"
-      port: "{{ variables.port }}"
-      timeout: "{{ environment.timeout }}"
-      refresh_time: "{{ environment.refresh_time }}"
-      connection_pool_monitor_interval: "{{ environment.connection_pool_monitor_interval }}"
-    # ssl section is optional
+      host: '{{ variables.host }}'
+      port: '{{ variables.port }}'
+      timeout: '{{ environment.timeout }}'
+      refresh_time: '{{ environment.refresh_time }}'
+      connection_pool_monitor_interval: '{{ environment.connection_pool_monitor_interval }}'
     ssl:
-      client_server_negotiation: "{{ ssl.client_server_negotiation }}"
-      client_server_policy: "{{ ssl.client_server_policy }}"
-      encryption_algorithm: "{{ ssl.encryption_algorithm }}"
-      encryption_key_size: "{{ ssl.encryption_key_size }}"
-      encryption_num_hash_rounds: "{{ ssl.encryption_num_hash_rounds }}"
-      encryption_salt_size: "{{ ssl.encryption_salt_size }}"
-      ssl_verify_server: "{{ ssl.ssl_verify_server }}"
-      ssl_ca_certificate_file: "{{ ssl.ssl_ca_certificate_file }}"
-    # The logical section is optional and is meant for defining the remote path
-    # if not defined the default path is: /zone_name/home/username
+      client_server_negotiation: '{{ ssl.client_server_negotiation }}'
+      client_server_policy: '{{ ssl.client_server_policy }}'
+      encryption_algorithm: '{{ ssl.encryption_algorithm }}'
+      encryption_key_size: '{{ ssl.encryption_key_size }}'
+      encryption_num_hash_rounds: '{{ ssl.encryption_num_hash_rounds }}'
+      encryption_salt_size: '{{ ssl.encryption_salt_size }}'
+      ssl_verify_server: '{{ ssl.ssl_verify_server }}'
+      ssl_ca_certificate_file: '{{ ssl.ssl_ca_certificate_file }}'
     logical:
-      path: "{{ variables.logical_path }}"
+      path: '{{ variables.logical_path }}'
 
