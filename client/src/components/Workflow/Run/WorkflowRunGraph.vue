@@ -159,7 +159,7 @@ function setStepDescriptionForValidation(): boolean {
         const [stepId, message] = props.stepValidation;
         const step = loadedWorkflow.value.steps[stepId];
         if (step) {
-            const text = message.length < 20 ? message : "Fix errors for this step";
+            const text = message.length < 20 ? message : "Fix error(s) for this step";
             setStepDescription(step, text, false);
             return true;
         }
