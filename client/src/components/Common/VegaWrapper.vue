@@ -1,5 +1,8 @@
 <template>
-    <div ref="chartContainer" :style="style"></div>
+    <b-alert v-if="errorMessage" class="p-2" variant="danger" show>
+        {{ errorMessage }}
+    </b-alert>
+    <div v-else ref="chartContainer" :style="style" />
 </template>
 
 <script setup lang="ts">
@@ -24,6 +27,8 @@ const style = computed(() => {
 });
 
 const chartContainer = ref<HTMLDivElement | null>(null);
+const errorMessage = ref<string>("");
+
 let vegaView: any;
 
 async function embedChart() {
@@ -35,8 +40,9 @@ async function embedChart() {
             const result = await embed(chartContainer.value, props.spec, { renderer: "svg" });
             vegaView = result.view;
         }
+        errorMessage.value = "";
     } catch (e: any) {
-        console.error(String(e));
+        errorMessage.value = String(e);
     }
 }
 
