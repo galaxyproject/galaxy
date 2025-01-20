@@ -1,8 +1,10 @@
 <template>
-    <b-alert v-if="errorMessage" class="p-2" variant="danger" show>
-        {{ errorMessage }}
-    </b-alert>
-    <div v-else ref="chartContainer" :style="style" />
+    <div>
+        <b-alert v-if="errorMessage" class="p-2" variant="danger" show>
+            {{ errorMessage }}
+        </b-alert>
+        <div ref="chartContainer" :style="style" />
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -48,7 +50,7 @@ async function embedChart() {
 
 onMounted(embedChart);
 
-watch(props, embedChart, { immediate: true, deep: true });
+watch(props, embedChart, { deep: true });
 useResizeObserver(chartContainer, () => {
     if (vegaView) {
         vegaView.resize();
