@@ -2,12 +2,14 @@ import json
 import os
 import subprocess
 from typing import (
+    List,
     Optional,
     TYPE_CHECKING,
 )
 
 from cwl_utils.expression import do_eval as _do_eval
 
+from galaxy.tool_util.parser.interface import JavascriptRequirement
 from .util import find_engine
 
 if TYPE_CHECKING:
@@ -23,14 +25,21 @@ NODE_ENGINE = os.path.join(FILE_DIRECTORY, "cwlNodeEngine.js")
 def do_eval(
     expression: str,
     jobinput: "CWLObjectType",
+    javascript_requirements: Optional[List[JavascriptRequirement]] = None,
     outdir: Optional[str] = None,
     tmpdir: Optional[str] = None,
     context: Optional["CWLOutputType"] = None,
 ):
+    if javascript_requirements:
+        requirements = [
+            {"class": "InlineJavascriptRequirement", "expressionLib": r.expression_lib} for r in javascript_requirements
+        ]
+    else:
+        requirements = [{"class": "InlineJavascriptRequirement"}]
     return _do_eval(
         expression,
         jobinput,
-        [{"class": "InlineJavascriptRequirement"}],
+        requirements,
         None,
         None,
         {},

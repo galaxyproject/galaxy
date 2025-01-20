@@ -34,7 +34,7 @@ from .util import _parse_name
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.requirements import (
         ContainerDescription,
-        ResourceRequirement,
+        ResourceRequirement as ToolResourceRequirement,
         ToolRequirements,
     )
     from galaxy.tool_util.parser.output_objects import (
@@ -45,6 +45,52 @@ if TYPE_CHECKING:
 
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
+
+
+class Container(BaseModel):
+    type: Literal["docker", "singularity"]
+    container_id: str
+
+
+class Requirement(BaseModel):
+    type: Literal["package", "set_environment"]
+
+
+class ContainerRequirement(Requirement):
+    type: Literal["container"]
+    container: Container
+
+
+class PackageRequirement(Requirement):
+    type: Literal["package"]
+    name: str
+    version: Optional[str]
+
+
+class SetEnvironmentRequirement(Requirement):
+    type: Literal["set_environment"]
+    environment: str
+
+
+class ResourceRequirement(BaseModel):
+    type: Literal["resource"]
+    cores_min: Optional[Union[int, float]]
+    cores_max: Optional[Union[int, float]]
+    ram_min: Optional[Union[int, float]]
+    ram_max: Optional[Union[int, float]]
+    tmpdir_min: Optional[Union[int, float]]
+    tmpdir_max: Optional[Union[int, float]]
+    cuda_version_min: Optional[Union[int, float]]
+    cuda_compute_capability: Optional[Union[int, float]]
+    gpu_memory_min: Optional[Union[int, float]]
+    cuda_device_count_min: Optional[Union[int, float]]
+    cuda_device_count_max: Optional[Union[int, float]]
+    shm_size: Optional[Union[int, float]]
+
+
+class JavascriptRequirement(BaseModel):
+    type: Literal["javascript"]
+    expression_lib: Optional[List[str]]
 
 
 class AssertionDict(TypedDict):
@@ -325,7 +371,9 @@ class ToolSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_requirements_and_containers(
         self,
-    ) -> Tuple["ToolRequirements", List["ContainerDescription"], List["ResourceRequirement"]]:
+    ) -> Tuple[
+        "ToolRequirements", List["ContainerDescription"], List["ToolResourceRequirement"], List["JavascriptRequirement"]
+    ]:
         """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
 
     @abstractmethod

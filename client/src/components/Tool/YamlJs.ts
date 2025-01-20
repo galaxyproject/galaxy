@@ -129,7 +129,7 @@ export async function setupEditor(providerFunctions: any) {
 }
 
 function extractExpressionLibJavaScript(yamlContent: string) {
-    const scriptRegex = /(expressionLib):\s*(?:\|([\s\S]*?)(?=\n\s*\w+:|\n\s*$)|(.+))/g;
+    const scriptRegex = /(expression_lib):\s*-\s*\|([\s\S]*?)(?=\n\s*-\s|\n\s*\w+:|\n\s*$)/g;
     const match = scriptRegex.exec(yamlContent);
     if (match) {
         if (match[2]) {
@@ -142,12 +142,8 @@ function extractExpressionLibJavaScript(yamlContent: string) {
 }
 
 const fragment = `
-interface Runtime {
-    readonly inputs: components["schemas"]["inputs"]
-}
-
 declare global {
-    const runtime: Runtime
+    const inputs: components["schemas"]["inputs"]
 }
 `;
 
