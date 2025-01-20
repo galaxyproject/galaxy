@@ -1,16 +1,7 @@
 <script setup lang="ts">
-import {
-    faCaretDown,
-    faCaretUp,
-    faExclamation,
-    faLink,
-    faPlus,
-    faSpinner,
-    faUnlink,
-} from "@fortawesome/free-solid-svg-icons";
+import { faExclamation, faLink, faSpinner, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
+import { BAlert, BButton, BButtonGroup, BDropdown, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { isDatasetElement, isDCE } from "@/api";
@@ -18,22 +9,16 @@ import { getGalaxyInstance } from "@/app";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
-import { useHistoryStore } from "@/stores/historyStore";
 import { orList } from "@/utils/strings";
 
 import type { DataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
-import CollectionCreatorModal from "@/components/Collections/CollectionCreatorModal.vue";
+import FormDataExtensions from "./FormDataExtensions.vue";
+import FormDataWorkflowRunTabs from "./FormDataWorkflowRunTabs.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import HelpText from "@/components/Help/HelpText.vue";
-
-const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
-    list: "list",
-    "list:paired": "list of dataset pairs",
-    paired: "dataset pair",
-};
 
 type SelectOption = {
     label: string;
@@ -54,6 +39,7 @@ const props = withDefaults(
         collectionTypes?: Array<string>;
         flavor?: string;
         tag?: string;
+        workflowRun?: boolean;
     }>(),
     {
         loading: false,
@@ -71,7 +57,7 @@ const props = withDefaults(
 const eventStore = useEventStore();
 const { datatypesMapper } = useDatatypesMapper();
 
-const $emit = defineEmits(["input", "alert"]);
+const $emit = defineEmits(["input", "alert", "focus"]);
 
 // Determines wether values should be processed as linked or unlinked
 const currentLinked = ref(true);
@@ -86,10 +72,9 @@ const currentHighlighting: Ref<string | null> = ref(null);
 const dragData: Ref<EventData | null> = ref(null);
 const dragTarget: Ref<EventTarget | null> = ref(null);
 
-// Collection creator modal settings
-const collectionModalShow = ref(false);
-const collectionModalType = ref<"list" | "list:paired" | "paired">("list");
-const { currentHistoryId } = storeToRefs(useHistoryStore());
+// Workflow Run Tabs element reference
+const browseSection = ref<HTMLDivElement | null>(null);
+
 const restrictsExtensions = computed(() => {
     const extensions = props.extensions;
     if (!extensions || extensions.length == 0 || extensions.indexOf("data") >= 0) {
@@ -497,21 +482,9 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
     }
 }
 
-/** Allowed collection types for collection creation */
-const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) =>
-    ["list", "list:paired", "paired"].includes(collectionType)
-);
-
-function buildNewCollection(collectionType: string) {
-    if (!["list", "list:paired", "paired"].includes(collectionType)) {
-        throw Error(`Unknown collection type: ${collectionType}`);
-    }
-    collectionModalType.value = collectionType as "list" | "list:paired" | "paired";
-    collectionModalShow.value = true;
-}
-
-function createdCollection(collection: any) {
-    handleIncoming(collection);
+function scrollToBrowseSection() {
+    $emit("focus");
+    browseSection.value?.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 // Drag/Drop event handlers
@@ -604,7 +577,7 @@ watch(
     }
 );
 
-const formatsVisible = ref(false);
+const formatsVisible = ref(props.workflowRun || false);
 const formatsButtonId = useUid("form-data-formats-");
 
 function collectionTypeToText(collectionType: string): string {
@@ -640,118 +613,131 @@ const noOptionsWarningMessage = computed(() => {
         @dragleave.prevent="onDragLeave"
         @dragover.prevent
         @drop.prevent="onDrop">
-        <div class="d-flex flex-column">
-            <BButtonGroup v-if="variant && variant.length > 1" buttons class="align-self-start">
-                <BButton
-                    v-for="(v, index) in variant"
-                    :key="index"
-                    v-b-tooltip.hover.bottom
-                    :pressed="currentField === index"
-                    :title="v.tooltip"
-                    @click="currentField = index">
-                    <FontAwesomeIcon :icon="['far', v.icon]" />
-                </BButton>
-                <BButton v-if="canBrowse" v-b-tooltip.hover.bottom title="Browse or Upload Datasets" @click="onBrowse">
-                    <FontAwesomeIcon v-if="loading" :icon="faSpinner" spin />
-                    <span v-else class="font-weight-bold">...</span>
-                </BButton>
-                <BButtonGroup v-if="effectiveCollectionTypes?.length > 0" size="sm" buttons>
-                    <BButton
-                        v-for="collectionType in effectiveCollectionTypes"
-                        :key="collectionType"
-                        v-b-tooltip.hover.bottom
-                        :title="`Create a new ${COLLECTION_TYPE_TO_LABEL[collectionType]}`"
-                        :variant="formattedOptions.length === 0 ? 'warning' : 'secondary'"
-                        @click="buildNewCollection(collectionType)">
-                        <FontAwesomeIcon :icon="faPlus" fixed-width />
-                    </BButton>
-                </BButtonGroup>
-            </BButtonGroup>
-            <div v-if="restrictsExtensions">
-                <BButton :id="formatsButtonId" class="ui-link" @click="formatsVisible = !formatsVisible">
-                    accepted formats
-                    <FontAwesomeIcon v-if="formatsVisible" :icon="faCaretUp" />
-                    <FontAwesomeIcon v-else :icon="faCaretDown" />
-                </BButton>
-                <BCollapse v-model="formatsVisible">
-                    <ul class="pl-3 m-0">
-                        <li v-for="extension in extensions" :key="extension">{{ extension }}</li>
-                    </ul>
-                </BCollapse>
-                <BTooltip :target="formatsButtonId" noninteractive placement="bottom" triggers="hover">
-                    <div class="form-data-extensions-tooltip">
-                        <span v-for="extension in extensions" :key="extension">{{ extension }}</span>
-                    </div>
-                </BTooltip>
+        <div ref="browseSection" class="d-flex flex-gapx-1" :class="{ 'align-items-center': props.workflowRun }">
+            <div class="d-flex flex-column">
+                <div v-if="variant && variant.length > 1">
+                    <BButtonGroup v-if="!props.workflowRun" buttons class="align-self-start">
+                        <BButton
+                            v-for="(v, index) in variant"
+                            :key="index"
+                            v-b-tooltip.hover.bottom
+                            :pressed="currentField === index"
+                            :title="v.tooltip"
+                            @click="currentField = index">
+                            <FontAwesomeIcon :icon="['far', v.icon]" />
+                        </BButton>
+                        <BButton
+                            v-if="canBrowse"
+                            v-b-tooltip.hover.bottom
+                            title="Browse or Upload Datasets"
+                            @click="onBrowse">
+                            <FontAwesomeIcon v-if="loading" :icon="faSpinner" spin />
+                            <span v-else class="font-weight-bold">...</span>
+                        </BButton>
+                    </BButtonGroup>
+                    <BDropdown
+                        v-else
+                        variant="link"
+                        toggle-class="text-decoration-none text-nowrap"
+                        class="align-self-start">
+                        <template v-slot:button-content>
+                            <FontAwesomeIcon v-if="currentVariant?.icon" :icon="currentVariant?.icon" />
+                            <span v-localize>{{ currentVariant?.tooltip }}</span>
+                        </template>
+                        <BDropdownItem
+                            v-for="(v, index) in variant"
+                            :key="index"
+                            :active="index === currentField"
+                            @click="currentField = index">
+                            {{ v.tooltip }}
+                        </BDropdownItem>
+                    </BDropdown>
+                </div>
+
+                <FormDataExtensions
+                    v-if="restrictsExtensions && !props.workflowRun"
+                    :extensions="props.extensions"
+                    :formats-button-id="formatsButtonId"
+                    :formats-visible.sync="formatsVisible" />
+            </div>
+
+            <div class="w-100">
+                <FormSelect
+                    v-if="currentVariant && !currentVariant.multiple"
+                    v-model="currentValue"
+                    class="align-self-start"
+                    :multiple="currentVariant.multiple"
+                    :optional="currentVariant.multiple || optional"
+                    :options="formattedOptions"
+                    :placeholder="`Select a ${placeholder}`">
+                    <template v-slot:no-options>
+                        <BAlert class="mb-0" variant="warning" show>
+                            {{ noOptionsWarningMessage }}
+                        </BAlert>
+                    </template>
+                </FormSelect>
+                <FormSelection
+                    v-else-if="currentVariant?.multiple"
+                    v-model="currentValue"
+                    :data="formattedOptions"
+                    optional
+                    multiple />
             </div>
         </div>
 
-        <FormSelect
-            v-if="currentVariant && !currentVariant.multiple"
-            v-model="currentValue"
-            class="align-self-start"
-            :multiple="currentVariant.multiple"
-            :optional="currentVariant.multiple || optional"
-            :options="formattedOptions"
-            :placeholder="`Select a ${placeholder}`">
-            <template v-slot:no-options>
-                <BAlert class="w-100 align-items-center" variant="warning" show>
-                    {{ noOptionsWarningMessage }}
-                </BAlert>
-            </template>
-        </FormSelect>
-        <FormSelection
-            v-else-if="currentVariant?.multiple"
-            v-model="currentValue"
-            :data="formattedOptions"
-            optional
-            multiple />
-
-        <CollectionCreatorModal
-            v-if="currentHistoryId && effectiveCollectionTypes?.length > 0"
-            :history-id="currentHistoryId"
-            :collection-type="collectionModalType"
-            :extensions="props.extensions.filter((ext) => ext !== 'data')"
-            :show-modal.sync="collectionModalShow"
-            @created-collection="createdCollection" />
-
-        <template v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
-            <BFormCheckbox
-                v-if="currentVariant.batch === BATCH.ENABLED"
-                v-model="currentLinked"
-                class="checkbox no-highlight"
-                switch>
-                <span v-if="currentLinked">
-                    <FontAwesomeIcon :icon="faLink" />
-                    <b v-localize class="mr-1">Linked:</b>
-                    <span v-localize>Datasets will be run in matched order with other datasets.</span>
-                </span>
-                <span v-else>
-                    <FontAwesomeIcon :icon="faUnlink" />
-                    <b v-localize class="mr-1">Unlinked:</b>
-                    <span v-localize>Dataset will be run against *all* other datasets.</span>
-                </span>
-            </BFormCheckbox>
-            <div class="info text-info">
-                <FontAwesomeIcon :icon="faExclamation" />
-                <span v-if="props.type == 'data' && currentVariant.src == SOURCE.COLLECTION" class="ml-1">
-                    The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
-                    tool.
-                </span>
-                <span v-else v-localize class="ml-1">
-                    This is a batch mode input field. Individual jobs will be triggered for each dataset.
-                </span>
+        <div :class="{ 'd-flex justify-content-between': props.workflowRun }">
+            <div v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
+                <BFormCheckbox
+                    v-if="currentVariant.batch === BATCH.ENABLED"
+                    v-model="currentLinked"
+                    class="checkbox no-highlight"
+                    switch>
+                    <span v-if="currentLinked">
+                        <FontAwesomeIcon :icon="faLink" />
+                        <b v-localize class="mr-1">Linked:</b>
+                        <span v-localize>Datasets will be run in matched order with other datasets.</span>
+                    </span>
+                    <span v-else>
+                        <FontAwesomeIcon :icon="faUnlink" />
+                        <b v-localize class="mr-1">Unlinked:</b>
+                        <span v-localize>Dataset will be run against *all* other datasets.</span>
+                    </span>
+                </BFormCheckbox>
+                <div class="info text-info">
+                    <FontAwesomeIcon :icon="faExclamation" />
+                    <span v-if="props.type == 'data' && currentVariant.src == SOURCE.COLLECTION" class="ml-1">
+                        The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
+                        tool.
+                    </span>
+                    <span v-else v-localize class="ml-1">
+                        This is a batch mode input field. Individual jobs will be triggered for each dataset.
+                    </span>
+                </div>
             </div>
-        </template>
+
+            <FormDataExtensions
+                v-if="props.workflowRun && restrictsExtensions"
+                class="ml-auto"
+                :extensions="props.extensions"
+                :formats-button-id="formatsButtonId"
+                :formats-visible.sync="formatsVisible" />
+        </div>
+
+        <FormDataWorkflowRunTabs
+            v-if="props.workflowRun"
+            class="mt-4"
+            :current-value="currentValue"
+            :current-variant="currentVariant"
+            :can-browse="canBrowse"
+            :extensions="props.extensions"
+            :collection-types="props.collectionTypes"
+            @focus="scrollToBrowseSection"
+            @created-collection="($event) => handleIncoming($event)" />
     </div>
 </template>
 
 <style scoped lang="scss">
 .form-data {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.5rem;
-
     .checkbox {
         grid-column: span 2;
     }
