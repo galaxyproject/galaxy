@@ -1,14 +1,13 @@
 <template>
     <Popper trigger="click" placement="right" mode="light">
         <template v-slot:reference>
-            <span
+            <b-button
                 v-b-tooltip.right
-                role="button"
-                tabindex="0"
-                class="d-inline text-muted ml-3 cursor-pointer"
-                title="Insert new Cell">
-                <FontAwesomeIcon class="text-primary" :icon="faPlusSquare" />
-            </span>
+                class="border-0 p-0 px-1"
+                title="Insert new Cell"
+                variant="outline-primary">
+                <FontAwesomeIcon :icon="faPlusSquare" />
+            </b-button>
         </template>
         <div class="cursor-pointer">
             <CellOption

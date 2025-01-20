@@ -1,11 +1,13 @@
 <template>
     <div class="h-100 w-75 mx-auto">
         <div v-for="(cell, cellIndex) of cells" :key="cellIndex">
-            <CellButtonAdd :cell-index="cellIndex" @click="onAdd" />
+            <div class="cell-guide my-1 mx-1">
+                <CellButtonAdd :cell-index="cellIndex" @click="onAdd" />
+            </div>
             <hr class="solid m-0" />
-            <div class="d-flex my-1 mx-3">
+            <div class="d-flex my-1 mx-2">
                 <div class="d-flex flex-column justify-content-between">
-                    <div class="cell-name small text-primary">
+                    <div class="cell-guide small text-primary">
                         {{ cell.name }}
                     </div>
                     <div
@@ -25,15 +27,14 @@
                 </div>
             </div>
             <div class="d-flex my-1 mx-3">
-                <div class="cell-name d-flex flex-column justify-content-between">
-                    <div
+                <div class="cell-guide d-flex flex-column justify-content-between">
+                    <b-button
                         v-b-tooltip.right
-                        role="button"
-                        tabindex="0"
-                        class="d-inline text-muted cursor-pointer mt-4 align-self-end"
-                        title="Insert new Cell">
-                        <FontAwesomeIcon class="text-primary" :icon="faTrash" />
-                    </div>
+                        class="border-0 p-0 m-0"
+                        title="Delete"
+                        variant="outline-primary">
+                        <FontAwesomeIcon :icon="faTrash" />
+                    </b-button>
                 </div>
                 <div class="ml-2 w-100">
                     <CellCode :value="cell.content" :mode="getMode(cell.name)" @change="onChange(cellIndex, $event)" />
@@ -58,6 +59,7 @@ import MarkdownVega from "../Sections/MarkdownVega.vue";
 import MarkdownVitessce from "../Sections/MarkdownVitessce.vue";
 import CellButtonAdd from "./CellButtonAdd.vue";
 import CellCode from "./CellCode.vue";
+import CellWrapper from "./CellWrapper.vue";
 
 interface CellType {
     name: string;
@@ -110,7 +112,7 @@ function onUpdate() {
 </script>
 
 <style scoped>
-.cell-name {
+.cell-guide {
     width: 3rem;
 }
 </style>
