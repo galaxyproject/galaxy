@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import {
     BAlert,
@@ -21,8 +23,8 @@ import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 import PasswordStrength from "@/components/Login/PasswordStrength.vue";
+import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
 interface Props {
     sessionCsrfToken: string;
@@ -145,23 +147,20 @@ async function submit() {
                                 </BFormGroup>
 
                                 <BFormGroup :label="labelPassword" label-for="register-form-password">
-                                    <BFormInput
-                                        id="register-form-password"
-                                        v-model="password"
-                                        name="password"
-                                        :type="showPassword ? 'text' : 'password'"
-                                        autocomplete="new-password"
-                                        required />
-                                    <!-- Eye Icon to show Password -->
-                                    <button
-                                        type="button"
-                                        class="password-toggle-icon"
-                                        aria-label="Toggle password visibility"
-                                        @click="togglePasswordVisibility">
-                                        <i :class="showPassword ? 'fa fa-eye-slash' : 'fa fa-eye'"></i>
-                                    </button>
-
-                                    <!-- Password Strength Component -->
+                                    <div class="input-group">
+                                        <BFormInput
+                                            id="register-form-password"
+                                            v-model="password"
+                                            name="password"
+                                            :type="showPassword ? 'text' : 'password'"
+                                            autocomplete="new-password"
+                                            required />
+                                        <span
+                                            class="input-group-text password-toggle-icon"
+                                            @click="togglePasswordVisibility">
+                                            <FontAwesomeIcon :icon="showPassword ? faEyeSlash : faEye" />
+                                        </span>
+                                    </div>
                                     <PasswordStrength :password="password" />
                                 </BFormGroup>
 
@@ -260,17 +259,35 @@ async function submit() {
     }
 }
 
-.password-toggle-icon {
-    position: absolute;
-    right: 0.75rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: $gray-600;
-    font-size: 1rem;
-}
+.input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
 
-.password-toggle-icon:hover {
-    color: $gray-900;
+    input {
+        flex: 1;
+        padding-right: 2.5rem;
+    }
+
+    .password-toggle-icon {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        font-size: 1rem;
+        color: $gray-600;
+
+        &:hover {
+            color: $gray-900;
+        }
+    }
+
+    .input-group-text {
+        background: transparent;
+        border: none;
+        padding: 0;
+        z-index: 10;
+    }
 }
 </style>

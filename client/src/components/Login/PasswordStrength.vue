@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, type PropType, type Ref, ref } from "vue";
+import { type PropType, type Ref, ref, watch } from "vue";
 import zxcvbn from "zxcvbn";
 
 const props = defineProps({
@@ -12,23 +12,20 @@ const props = defineProps({
 const passwordStrength = ref<string>("empty");
 const strengthScore = ref<number>(0);
 const showPasswordGuidelines: Ref<boolean> = ref(false);
-
-const passwordRules = ref({
-    minLength: false,
-    hasNumber: false,
-    hasUppercase: false,
-    hasSpecialChar: false,
-});
+const crackTime = ref<string>(""); // Time to crack password
 
 function evaluatePasswordStrength(newPassword: string) {
     if (newPassword.length === 0) {
         passwordStrength.value = "empty";
         strengthScore.value = 0;
+        crackTime.value = "";
         return;
     }
 
     const result = zxcvbn(newPassword);
     strengthScore.value = result.score;
+
+    crackTime.value = String(result.crack_times_display.online_no_throttling_10_per_second || "N/A");
 
     if (strengthScore.value === 0 || strengthScore.value === 1) {
         passwordStrength.value = "weak";
@@ -39,20 +36,11 @@ function evaluatePasswordStrength(newPassword: string) {
     }
 }
 
-// Function to validate password rules
-function validatePasswordRules(password: string) {
-    passwordRules.value.minLength = password.length >= 12;
-    passwordRules.value.hasNumber = /\d/.test(password);
-    passwordRules.value.hasUppercase = /[A-Z]/.test(password);
-    passwordRules.value.hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-}
-
 watch(
     () => props.password,
     (newPassword) => {
         if (typeof newPassword === "string") {
             evaluatePasswordStrength(newPassword);
-            validatePasswordRules(newPassword || "");
         }
     }
 );
@@ -60,13 +48,32 @@ watch(
 
 <template>
     <div>
-        <BButton variant="info" class="mt-3" @click="showPasswordGuidelines = true"> Password Guidelines </BButton>
+        <div class="password-strength-bar-container mt-2">
+            <div
+                class="password-strength-bar"
+                :class="passwordStrength"
+                :style="{ width: `${(strengthScore / 4) * 100}%` }"></div>
+        </div>
+
+        <div :class="['password-strength', passwordStrength]" class="mt-2">
+            <span v-if="passwordStrength === 'empty'"></span>
+            <span v-else-if="passwordStrength === 'weak'">Weak Password</span>
+            <span v-else-if="passwordStrength === 'medium'">Medium Password</span>
+            <span v-else>Strong Password</span>
+        </div>
+
+        <div v-if="passwordStrength !== 'empty'" class="crack-time mt-2">
+            <strong>Estimated time to crack:</strong>
+            <span :class="passwordStrength"> {{ crackTime }}</span>
+        </div>
+
+        <BButton variant="secondary" class="mt-3" @click="showPasswordGuidelines = true"> Password Guidelines </BButton>
 
         <div>
             <BModal v-model="showPasswordGuidelines" title="Tips for a secure Password">
                 <p>A good password should meet the following criteria:</p>
                 <ul>
-                    <li>At least 12 characters long.</li>
+                    <li>At least 11 characters long.</li>
                     <li>Use uppercase and lowercase letters.</li>
                     <li>At least one number and one special character.</li>
                     <li>Avoid common passwords like <code>123456</code> or <code>password</code>.</li>
@@ -85,40 +92,6 @@ watch(
                     <BButton variant="secondary" @click="showPasswordGuidelines = false">Schließen</BButton>
                 </template>
             </BModal>
-        </div>
-        <div class="password-strength-bar-container mt-2">
-            <div
-                class="password-strength-bar"
-                :class="passwordStrength"
-                :style="{ width: `${(strengthScore / 4) * 100}%` }"></div>
-        </div>
-
-        <div :class="['password-strength', passwordStrength]" class="mt-2">
-            <span v-if="passwordStrength === 'empty'"></span>
-            <span v-else-if="passwordStrength === 'weak'">Weak Password</span>
-            <span v-else-if="passwordStrength === 'medium'">Medium Password</span>
-            <span v-else>Strong Password</span>
-        </div>
-
-        <div class="password-help">
-            <ul>
-                <li :class="{ 'rule-met': passwordRules.minLength }">
-                    <i class="fa" :class="passwordRules.minLength ? 'fa-check' : 'fa-times'"></i>
-                    At least 12 characters
-                </li>
-                <li :class="{ 'rule-met': passwordRules.hasNumber }">
-                    <i class="fa" :class="passwordRules.hasNumber ? 'fa-check' : 'fa-times'"></i>
-                    Contains a number
-                </li>
-                <li :class="{ 'rule-met': passwordRules.hasUppercase }">
-                    <i class="fa" :class="passwordRules.hasUppercase ? 'fa-check' : 'fa-times'"></i>
-                    Contains an uppercase letter
-                </li>
-                <li :class="{ 'rule-met': passwordRules.hasSpecialChar }">
-                    <i class="fa" :class="passwordRules.hasSpecialChar ? 'fa-check' : 'fa-times'"></i>
-                    Contains a special character
-                </li>
-            </ul>
         </div>
     </div>
 </template>
@@ -150,8 +123,9 @@ watch(
         background-color: $brand-success;
     }
 }
-
-.password-strength {
+//
+.password-strength,
+.crack-time span {
     &.weak {
         color: $brand-danger;
     }
