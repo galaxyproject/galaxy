@@ -565,7 +565,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.model.engine.dispose()
 
 
-class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, InstallationTarget[tools.ToolBox]):
+class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
 
     model: GalaxyModelMapping
@@ -662,9 +662,6 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
         # to setup the installed repositories ... this is not ideal
         self._configure_tool_config_files()
-        self.installed_repository_manager = self._register_singleton(
-            InstalledRepositoryManager, InstalledRepositoryManager(self)
-        )
         self.dynamic_tool_manager = self._register_singleton(DynamicToolManager)
         self.trs_proxy = self._register_singleton(TrsProxy, TrsProxy(self.config))
         self._configure_datatypes_registry(
@@ -713,7 +710,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         ) or not self.config.track_jobs_in_database
 
 
-class UniverseApplication(StructuredApp, GalaxyManagerApplication):
+class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationTarget[tools.ToolBox]):
     """Encapsulates the state of a Universe application"""
 
     model: GalaxyModelMapping
@@ -775,6 +772,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self._configure_toolbox()
         # Load Data Manager
         self.data_managers = self._register_singleton(DataManagers)
+        self.installed_repository_manager = self._register_singleton(
+            InstalledRepositoryManager, InstalledRepositoryManager(self)
+        )
         # Load the update repository manager.
         self.update_repository_manager = self._register_singleton(
             UpdateRepositoryManager, UpdateRepositoryManager(self)

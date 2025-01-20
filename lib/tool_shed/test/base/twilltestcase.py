@@ -41,7 +41,6 @@ import galaxy.model.tool_shed_install as galaxy_model
 from galaxy.schema.schema import CheckForUpdatesResponse
 from galaxy.security import idencoding
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
-from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
@@ -195,7 +194,7 @@ class ToolShedInstallationClient(metaclass=abc.ABCMeta):
 class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
     """A Galaxy API + Database as a installation target for the tool shed."""
 
-    def __init__(self, testcase):
+    def __init__(self, testcase: "ShedTwillTestCase"):
         self.testcase = testcase
 
     def setup(self):
@@ -448,7 +447,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
 
 
 class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
-    def __init__(self, testcase):
+    def __init__(self, testcase: "ShedTwillTestCase"):
         self.testcase = testcase
         self.temp_directory = Path(tempfile.mkdtemp(prefix="toolshedtestinstalltarget"))
         tool_shed_target = ToolShedTarget(
@@ -472,7 +471,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
         ), f"Expected to find tool panel section *{expected_tool_panel_section}*, but instead found *{tool_panel_section}*\nMetadata: {metadata}\n"
 
     def deactivate_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
-        irm = InstalledRepositoryManager(app=self._installation_target)
+        irm = self._installation_target.installed_repository_manager
         errors = irm.uninstall_repository(repository=installed_repository, remove_from_disk=False)
         if errors:
             raise Exception(
@@ -519,7 +518,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
             )
 
     def reactivate_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
-        irm = InstalledRepositoryManager(app=self._installation_target)
+        irm = self._installation_target.installed_repository_manager
         irm.activate_repository(installed_repository)
 
     def reset_metadata_on_installed_repositories(self, repositories: List[galaxy_model.ToolShedRepository]) -> None:
@@ -534,7 +533,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
         irmm.reset_all_metadata_on_installed_repository()
 
     def uninstall_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
-        irm = InstalledRepositoryManager(app=self._installation_target)
+        irm = self._installation_target.installed_repository_manager
         errors = irm.uninstall_repository(repository=installed_repository, remove_from_disk=True)
         if errors:
             raise Exception(

@@ -1,6 +1,7 @@
 """Typed description of Galaxy's app object."""
 
 import abc
+import threading
 from typing import (
     Any,
     Optional,
@@ -50,6 +51,7 @@ if TYPE_CHECKING:
         WorkflowContentsManager,
         WorkflowsManager,
     )
+    from galaxy.tool_shed.galaxy_install.client import DataManagersInterface
     from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
     from galaxy.tool_util.data import ToolDataTableManager
     from galaxy.tools import ToolBox
@@ -118,7 +120,6 @@ class MinimalManagerApp(MinimalApp):
     library_folder_manager: Any  # 'galaxy.managers.folders.FolderManager'
     library_manager: Any  # 'galaxy.managers.libraries.LibraryManager'
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
-    installed_repository_manager: "InstalledRepositoryManager"
     user_manager: Any
     job_config: "JobConfiguration"
     job_manager: Any  # galaxy.jobs.manager.JobManager
@@ -150,7 +151,9 @@ class StructuredApp(MinimalManagerApp):
     """
 
     amqp_internal_connection_obj: Optional[Connection]
+    data_managers: "DataManagersInterface"
     dependency_resolvers_view: DependencyResolversView
+    installed_repository_manager: "InstalledRepositoryManager"
     container_finder: ContainerFinder
     tool_dependency_dir: Optional[str]
     test_data_resolver: test_data.TestDataResolver
@@ -166,3 +169,4 @@ class StructuredApp(MinimalManagerApp):
     interactivetool_manager: Any
     api_keys_manager: Any  # 'galaxy.managers.api_keys.ApiKeyManager'
     visualizations_registry: Any  # 'galaxy.visualization.plugins.registry.VisualizationsRegistry'
+    _toolbox_lock: threading.RLock

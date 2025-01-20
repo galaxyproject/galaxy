@@ -47,6 +47,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.structured_app import BasicSharedApp
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
@@ -71,7 +72,7 @@ class BaseController:
     Base class for Galaxy web application controllers.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: BasicSharedApp):
         """Initialize an interface for application 'app'"""
         self.app = app
         self.sa_session = app.model.context

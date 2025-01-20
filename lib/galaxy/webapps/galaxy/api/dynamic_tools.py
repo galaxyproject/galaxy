@@ -9,12 +9,12 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class DynamicToolsController(BaseAPIController):
+class DynamicToolsController(BaseGalaxyAPIController):
     """
     RESTful controller for interactions with dynamic tools.
 

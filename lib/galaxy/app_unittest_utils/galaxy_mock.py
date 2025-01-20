@@ -175,7 +175,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
     def wait_for_toolbox_reload(self, toolbox):
         # TODO: If the tpm test case passes, does the operation really
         # need to wait.
-        return True
+        return
 
     def reindex_tool_search(self) -> None:
         raise NotImplementedError

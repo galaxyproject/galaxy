@@ -30,7 +30,6 @@ log = logging.getLogger(__name__)
 
 
 class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
-    app: InstallationTarget
 
     def __init__(
         self,
