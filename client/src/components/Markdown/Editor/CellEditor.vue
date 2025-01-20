@@ -20,12 +20,14 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+
 import { parseMarkdown } from "@/components/Markdown/parse";
-import CellButtonAdd from "./CellButtonAdd.vue";
-import CellCode from "./CellCode.vue";
+
 import MarkdownDefault from "../Sections/MarkdownDefault.vue";
 import MarkdownVega from "../Sections/MarkdownVega.vue";
 import MarkdownVitessce from "../Sections/MarkdownVitessce.vue";
+import CellButtonAdd from "./CellButtonAdd.vue";
+import CellCode from "./CellCode.vue";
 
 interface CellType {
     name: string;
@@ -36,7 +38,7 @@ const props = defineProps<{
     markdownText: string;
 }>();
 
-const emit = defineEmits(["update"]);
+//const emit = defineEmits(["update"]);
 
 const cells = ref<Array<CellType>>(parseMarkdown(props.markdownText));
 
