@@ -13,6 +13,7 @@
         :on-change="onChange"
         :on-change-form="onChangeForm"
         :workflow-building-mode="workflowBuildingMode"
+        :workflow-run="workflowRun"
         :active-node-id="activeNodeId"
         :sync-with-graph="syncWithGraph"
         @update:active-node-id="updateActiveNode" />
@@ -86,6 +87,10 @@ export default {
             default: null,
         },
         workflowBuildingMode: {
+            type: Boolean,
+            default: false,
+        },
+        workflowRun: {
             type: Boolean,
             default: false,
         },

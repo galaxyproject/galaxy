@@ -1,5 +1,5 @@
 /** Data input variations interface */
-interface VariantInterface {
+export interface VariantInterface {
     batch: string;
     icon: string;
     library?: boolean;
