@@ -321,7 +321,6 @@ def mull_targets(
         conda_install = f"""conda install {verbose} --yes {" ".join(f"'{spec}'" for spec in specs)}"""
         involucro_args.extend(["-set", f"PREINSTALL=if {mamba_test} ; then {conda_install} ; fi"])
 
-    involucro_args.append(command)
     if test_files:
         test_bind = []
         for test_file in test_files:
@@ -332,12 +331,23 @@ def mull_targets(
                 if os.path.exists(test_file.split(":")[0]):
                     test_bind.append(test_file)
         if test_bind:
-            involucro_args.insert(6, "-set")
-            involucro_args.insert(7, f"TEST_BINDS={','.join(test_bind)}")
-    cmd = involucro_context.build_command(involucro_args)
-    print(f"Executing: {shlex_join(cmd)}")
+            involucro_args.append("-set")
+            involucro_args.append(f"TEST_BINDS={','.join(test_bind)}")
+
+    involucro_args_list = []
+    for strict_channel_priority in [True, False]:
+        involucro_args_list.append(involucro_args[:])
+        if strict_channel_priority:
+            involucro_args_list[-1].extend(["-set", "STRICT_CHANNEL_PRIORITY=1"])
+
+    for involucro_args in involucro_args_list:
+        involucro_args.append(command)
+
     if dry_run:
+        cmd = involucro_context.build_command(involucro_args_list[0])
+        print(f"Executing: {shlex_join(cmd)}")
         return 0
+
     ensure_installed(involucro_context, True)
     if singularity:
         if not os.path.exists(singularity_image_dir):
@@ -348,12 +358,19 @@ def mull_targets(
                 "base_image": dest_base_image or DEFAULT_BASE_IMAGE,
             }
             sin_def.write(fill_template)
-    with PrintProgress():
-        ret = involucro_context.exec_command(involucro_args)
-    if singularity:
-        # we can not remove this folder as it contains the image wich is owned by root
-        pass
-        # shutil.rmtree('./singularity_import')
+
+    for involucro_args in involucro_args_list:
+        cmd = involucro_context.build_command(involucro_args)
+        print(f"Executing: {shlex_join(cmd)}")
+
+        with PrintProgress():
+            ret = involucro_context.exec_command(involucro_args)
+        if singularity:
+            # we can not remove this folder as it contains the image wich is owned by root
+            pass
+            # shutil.rmtree('./singularity_import')
+        if not ret:
+            break
     return ret
 
 
@@ -379,7 +396,7 @@ class InvolucroContext(installable.InstallableContext):
     def build_command(self, involucro_args):
         return [self.involucro_bin, f"-v={self.verbose}"] + involucro_args
 
-    def exec_command(self, involucro_args):
+    def exec_command(self, involucro_args) -> int:
         cmd = self.build_command(involucro_args)
         # Create ./build dir manually, otherwise Docker will do it as root
         created_build_dir = False
@@ -557,6 +574,8 @@ def args_to_mull_targets_kwds(args):
         kwds["singularity_image_dir"] = args.singularity_image_dir
     if hasattr(args, "invfile"):
         kwds["invfile"] = args.invfile
+    if hasattr(args, "verbose"):
+        kwds["verbose"] = args.verbose
 
     kwds["involucro_context"] = context_from_args(args)
 
