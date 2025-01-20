@@ -4,14 +4,9 @@
 
 <script setup>
 import ace from "ace-builds";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 
-// Props
 const props = defineProps({
-    modelValue: {
-        type: String,
-        required: true,
-    },
     theme: {
         type: String,
         default: "github_light_default",
@@ -20,12 +15,17 @@ const props = defineProps({
         type: String,
         default: "json",
     },
+    value: {
+        type: String,
+        required: true,
+    },
 });
 
-// Emit for v-model
-//const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(["update"]);
 
-const editor = ref(null); // Reference to the editor DOM element
+const editor = ref(null);
+
+let aceEditor = null;
 
 async function buildEditor() {
     const modePath = `ace/mode/${props.mode}`;
@@ -34,7 +34,7 @@ async function buildEditor() {
     const themeUrl = await import(`ace-builds/src-noconflict/theme-${props.theme}?url`);
     ace.config.setModuleUrl(modePath, modeUrl);
     ace.config.setModuleUrl(themePath, themeUrl);
-    const aceEditor = ace.edit(editor.value, {
+    aceEditor = ace.edit(editor.value, {
         highlightActiveLine: false,
         highlightGutterLine: false,
         maxLines: 30,
@@ -43,7 +43,7 @@ async function buildEditor() {
         showPrintMargin: false,
         theme: themePath,
         useWorker: false,
-        value: props.modelValue,
+        value: props.value,
         wrap: true,
     });
 
@@ -52,34 +52,31 @@ async function buildEditor() {
         aceEditor.setOption("highlightGutterLine", true);
         editor.value.classList.add("cell-code-focus");
     });
+
     aceEditor.on("blur", () => {
         aceEditor.setOption("highlightActiveLine", false);
         aceEditor.setOption("highlightGutterLine", false);
         editor.value.classList.remove("cell-code-focus");
     });
 
-    /*/ Update modelValue when editor content changes
-    // Set the mode (language) if needed
-    aceEditor.session.on('change', () => {
-      const newValue = aceEditor.getValue();
-      emit('update:modelValue', newValue);
-    });*/
+    aceEditor.on("change", () => {
+        const newValue = aceEditor.getValue();
+        emit("update", newValue);
+    });
 }
 
-// Initialize the Ace editor
 onMounted(() => {
     buildEditor();
 });
 
-/*/ Watch for external modelValue changes and update the editor
-  watch(
-    () => props.modelValue,
+watch(
+    () => props.value,
     (newValue) => {
-      if (newValue !== aceEditor.getValue()) {
-        aceEditor.setValue(newValue, -1); // -1 prevents cursor jump
-      }
+        if (aceEditor && newValue !== aceEditor.getValue()) {
+            aceEditor.setValue(newValue, -1);
+        }
     }
-  );*/
+);
 </script>
 
 <style lang="scss">
