@@ -792,6 +792,12 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_baseurl"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "baseurl"
         }
         /** Body_repositories__create_revision */
         Body_repositories__create_revision: {
@@ -965,6 +971,12 @@ export interface components {
             test_parameter:
                 | components["schemas"]["BooleanParameterModel"]
                 | components["schemas"]["SelectParameterModel"]
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "conditional"
             /** Whens */
             whens: components["schemas"]["ConditionalWhen"][]
         }
@@ -1265,6 +1277,12 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_data_column"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "data_column"
         }
         /** DataParameterModel */
         DataParameterModel: {
@@ -1395,6 +1413,12 @@ export interface components {
              */
             parameter_type: "gx_directory_uri"
             /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "directory"
+            /**
              * Validators
              * @default []
              */
@@ -1456,6 +1480,12 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_drill_down"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "drill_down"
         }
         /** EmptyFieldParameterValidatorModel */
         EmptyFieldParameterValidatorModel: {
@@ -1625,6 +1655,12 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_genomebuild"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "genomebuild"
         }
         /** GroupTagParameterModel */
         GroupTagParameterModel: {
@@ -1659,6 +1695,12 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_group_tag"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "group_tag"
         }
         /** HelpContent */
         HelpContent: {
@@ -1701,6 +1743,12 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_hidden"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "hidden"
             /**
              * Validators
              * @default []
@@ -2068,6 +2116,12 @@ export interface components {
                 | components["schemas"]["RepeatParameterModel"]
                 | components["schemas"]["SectionParameterModel"]
             )[]
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "repeat"
         }
         /** RepositoriesByCategory */
         RepositoriesByCategory: {
@@ -2355,6 +2409,12 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_rules"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "rules"
         }
         /** SectionParameterModel */
         SectionParameterModel: {
@@ -2417,6 +2477,12 @@ export interface components {
                 | components["schemas"]["RepeatParameterModel"]
                 | components["schemas"]["SectionParameterModel"]
             )[]
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "section"
         }
         /** SelectParameterModel */
         SelectParameterModel: {
@@ -2453,6 +2519,12 @@ export interface components {
              * @constant
              */
             parameter_type: "gx_select"
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "select"
             /** Validators */
             validators: components["schemas"]["NoOptionsParameterValidatorModel"][]
         }

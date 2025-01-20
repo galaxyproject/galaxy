@@ -6111,27 +6111,7 @@ export interface components {
              * Inputs
              * @default []
              */
-            inputs: (
-                | components["schemas"]["TextParameterModel"]
-                | components["schemas"]["IntegerParameterModel"]
-                | components["schemas"]["FloatParameterModel"]
-                | components["schemas"]["BooleanParameterModel"]
-                | components["schemas"]["HiddenParameterModel"]
-                | components["schemas"]["SelectParameterModel"]
-                | components["schemas"]["DataParameterModel"]
-                | components["schemas"]["DataCollectionParameterModel"]
-                | components["schemas"]["DataColumnParameterModel"]
-                | components["schemas"]["DirectoryUriParameterModel"]
-                | components["schemas"]["RulesParameterModel"]
-                | components["schemas"]["DrillDownParameterModel-Input"]
-                | components["schemas"]["GroupTagParameterModel"]
-                | components["schemas"]["BaseUrlParameterModel"]
-                | components["schemas"]["GenomeBuildParameterModel"]
-                | components["schemas"]["ColorParameterModel"]
-                | components["schemas"]["ConditionalParameterModel-Input"]
-                | components["schemas"]["RepeatParameterModel-Input"]
-                | components["schemas"]["SectionParameterModel-Input"]
-            )[];
+            inputs: components["schemas"]["GalaxyToolParameterModel-Input"][];
             /** License */
             license?: string | null;
             /** Name */
@@ -6150,6 +6130,17 @@ export interface components {
             )[];
             /** Profile */
             profile?: number | null;
+            /**
+             * Requirements
+             * @default []
+             */
+            requirements:
+                | (
+                      | components["schemas"]["JavascriptRequirement"]
+                      | components["schemas"]["ResourceRequirement"]
+                      | components["schemas"]["ContainerRequirement"]
+                  )[]
+                | null;
             /**
              * Version
              * @default 1.0
@@ -6500,6 +6491,11 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_baseurl";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "baseurl";
         };
         /** BasicRoleModel */
         BasicRoleModel: {
@@ -6653,8 +6649,7 @@ export interface components {
             /** Truevalue */
             truevalue?: string | null;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "boolean";
@@ -7013,8 +7008,7 @@ export interface components {
              */
             parameter_type: "gx_color";
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "color";
@@ -7208,6 +7202,11 @@ export interface components {
             test_parameter:
                 | components["schemas"]["BooleanParameterModel"]
                 | components["schemas"]["SelectParameterModel"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "conditional";
             /** Whens */
             whens: components["schemas"]["ConditionalWhen-Input"][];
         };
@@ -7247,6 +7246,11 @@ export interface components {
             test_parameter:
                 | components["schemas"]["BooleanParameterModel"]
                 | components["schemas"]["SelectParameterModel"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "conditional";
             /** Whens */
             whens: components["schemas"]["ConditionalWhen-Output"][];
         };
@@ -7337,6 +7341,26 @@ export interface components {
             output:
                 | components["schemas"]["OutputReferenceByOrderIndex"]
                 | components["schemas"]["OutputReferenceByLabel"];
+        };
+        /** Container */
+        Container: {
+            /** Container Id */
+            container_id: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "docker" | "singularity";
+        };
+        /** ContainerRequirement */
+        ContainerRequirement: {
+            container: components["schemas"]["Container"];
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "container";
         };
         /** ContentsObject */
         ContentsObject: {
@@ -8538,8 +8562,7 @@ export interface components {
              */
             parameter_type: "gx_data_collection";
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "data_collection";
@@ -8580,6 +8603,11 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_data_column";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "data_column";
         };
         /** DataElementsFromTarget */
         DataElementsFromTarget: {
@@ -8686,8 +8714,7 @@ export interface components {
              */
             parameter_type: "gx_data";
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "data";
@@ -9375,6 +9402,11 @@ export interface components {
              */
             parameter_type: "gx_directory_uri";
             /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "directory";
+            /**
              * Validators
              * @default []
              */
@@ -9491,6 +9523,11 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_drill_down";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "drill_down";
         };
         /** DrillDownParameterModel */
         "DrillDownParameterModel-Output": {
@@ -9533,6 +9570,11 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_drill_down";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "drill_down";
         };
         /** DrsObject */
         DrsObject: {
@@ -10495,8 +10537,7 @@ export interface components {
              */
             parameter_type: "gx_float";
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "float";
@@ -10636,6 +10677,48 @@ export interface components {
             /** Tags */
             tags?: string[] | null;
         };
+        /** GalaxyToolParameterModel */
+        "GalaxyToolParameterModel-Input":
+            | components["schemas"]["TextParameterModel"]
+            | components["schemas"]["IntegerParameterModel"]
+            | components["schemas"]["FloatParameterModel"]
+            | components["schemas"]["BooleanParameterModel"]
+            | components["schemas"]["HiddenParameterModel"]
+            | components["schemas"]["SelectParameterModel"]
+            | components["schemas"]["DataParameterModel"]
+            | components["schemas"]["DataCollectionParameterModel"]
+            | components["schemas"]["DataColumnParameterModel"]
+            | components["schemas"]["DirectoryUriParameterModel"]
+            | components["schemas"]["RulesParameterModel"]
+            | components["schemas"]["DrillDownParameterModel-Input"]
+            | components["schemas"]["GroupTagParameterModel"]
+            | components["schemas"]["BaseUrlParameterModel"]
+            | components["schemas"]["GenomeBuildParameterModel"]
+            | components["schemas"]["ColorParameterModel"]
+            | components["schemas"]["ConditionalParameterModel-Input"]
+            | components["schemas"]["RepeatParameterModel-Input"]
+            | components["schemas"]["SectionParameterModel-Input"];
+        /** GalaxyToolParameterModel */
+        "GalaxyToolParameterModel-Output":
+            | components["schemas"]["TextParameterModel"]
+            | components["schemas"]["IntegerParameterModel"]
+            | components["schemas"]["FloatParameterModel"]
+            | components["schemas"]["BooleanParameterModel"]
+            | components["schemas"]["HiddenParameterModel"]
+            | components["schemas"]["SelectParameterModel"]
+            | components["schemas"]["DataParameterModel"]
+            | components["schemas"]["DataCollectionParameterModel"]
+            | components["schemas"]["DataColumnParameterModel"]
+            | components["schemas"]["DirectoryUriParameterModel"]
+            | components["schemas"]["RulesParameterModel"]
+            | components["schemas"]["DrillDownParameterModel-Output"]
+            | components["schemas"]["GroupTagParameterModel"]
+            | components["schemas"]["BaseUrlParameterModel"]
+            | components["schemas"]["GenomeBuildParameterModel"]
+            | components["schemas"]["ColorParameterModel"]
+            | components["schemas"]["ConditionalParameterModel-Output"]
+            | components["schemas"]["RepeatParameterModel-Output"]
+            | components["schemas"]["SectionParameterModel-Output"];
         /** GenomeBuildParameterModel */
         GenomeBuildParameterModel: {
             /** Argument */
@@ -10670,6 +10753,11 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_genomebuild";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "genomebuild";
         };
         /**
          * GroupCreatePayload
@@ -10812,6 +10900,11 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_group_tag";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "group_tag";
         };
         /** GroupUpdatePayload */
         GroupUpdatePayload: {
@@ -12440,6 +12533,11 @@ export interface components {
              */
             parameter_type: "gx_hidden";
             /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "hidden";
+            /**
              * Validators
              * @default []
              */
@@ -13174,8 +13272,7 @@ export interface components {
              */
             parameter_type: "gx_integer";
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "integer";
@@ -14029,6 +14126,17 @@ export interface components {
          * @enum {string}
          */
         ItemsFromSrc: "url" | "files" | "path" | "ftp_import" | "server_dir";
+        /** JavascriptRequirement */
+        JavascriptRequirement: {
+            /** Expression Lib */
+            expression_lib: string[] | null;
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "javascript";
+        };
         /** JobBaseModel */
         JobBaseModel: {
             /**
@@ -17122,6 +17230,11 @@ export interface components {
                 | components["schemas"]["RepeatParameterModel-Input"]
                 | components["schemas"]["SectionParameterModel-Input"]
             )[];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "repeat";
         };
         /** RepeatParameterModel */
         "RepeatParameterModel-Output": {
@@ -17189,6 +17302,11 @@ export interface components {
                 | components["schemas"]["RepeatParameterModel-Output"]
                 | components["schemas"]["SectionParameterModel-Output"]
             )[];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "repeat";
         };
         /** Report */
         Report: {
@@ -17234,6 +17352,39 @@ export interface components {
          * @enum {string}
          */
         Requirement: "logged_in" | "new_history" | "admin";
+        /** ResourceRequirement */
+        ResourceRequirement: {
+            /** Cores Max */
+            cores_max: number | null;
+            /** Cores Min */
+            cores_min: number | null;
+            /** Cuda Compute Capability */
+            cuda_compute_capability: number | null;
+            /** Cuda Device Count Max */
+            cuda_device_count_max: number | null;
+            /** Cuda Device Count Min */
+            cuda_device_count_min: number | null;
+            /** Cuda Version Min */
+            cuda_version_min: number | null;
+            /** Gpu Memory Min */
+            gpu_memory_min: number | null;
+            /** Ram Max */
+            ram_max: number | null;
+            /** Ram Min */
+            ram_min: number | null;
+            /** Shm Size */
+            shm_size: number | null;
+            /** Tmpdir Max */
+            tmpdir_max: number | null;
+            /** Tmpdir Min */
+            tmpdir_min: number | null;
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "resource";
+        };
         /** RoleDefinitionModel */
         RoleDefinitionModel: {
             /**
@@ -17328,6 +17479,11 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_rules";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "rules";
         };
         /** SearchJobsPayload */
         SearchJobsPayload: {
@@ -17411,6 +17567,11 @@ export interface components {
                 | components["schemas"]["RepeatParameterModel-Input"]
                 | components["schemas"]["SectionParameterModel-Input"]
             )[];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "section";
         };
         /** SectionParameterModel */
         "SectionParameterModel-Output": {
@@ -17474,6 +17635,11 @@ export interface components {
                 | components["schemas"]["RepeatParameterModel-Output"]
                 | components["schemas"]["SectionParameterModel-Output"]
             )[];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "section";
         };
         /** SelectParameterModel */
         SelectParameterModel: {
@@ -17511,6 +17677,11 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_select";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "select";
             /** Validators */
             validators: components["schemas"]["NoOptionsParameterValidatorModel"][];
         };
@@ -18585,8 +18756,7 @@ export interface components {
              */
             parameter_type: "gx_text";
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "text";
@@ -19871,27 +20041,7 @@ export interface components {
              * Inputs
              * @default []
              */
-            inputs: (
-                | components["schemas"]["TextParameterModel"]
-                | components["schemas"]["IntegerParameterModel"]
-                | components["schemas"]["FloatParameterModel"]
-                | components["schemas"]["BooleanParameterModel"]
-                | components["schemas"]["HiddenParameterModel"]
-                | components["schemas"]["SelectParameterModel"]
-                | components["schemas"]["DataParameterModel"]
-                | components["schemas"]["DataCollectionParameterModel"]
-                | components["schemas"]["DataColumnParameterModel"]
-                | components["schemas"]["DirectoryUriParameterModel"]
-                | components["schemas"]["RulesParameterModel"]
-                | components["schemas"]["DrillDownParameterModel-Input"]
-                | components["schemas"]["GroupTagParameterModel"]
-                | components["schemas"]["BaseUrlParameterModel"]
-                | components["schemas"]["GenomeBuildParameterModel"]
-                | components["schemas"]["ColorParameterModel"]
-                | components["schemas"]["ConditionalParameterModel-Input"]
-                | components["schemas"]["RepeatParameterModel-Input"]
-                | components["schemas"]["SectionParameterModel-Input"]
-            )[];
+            inputs: components["schemas"]["GalaxyToolParameterModel-Input"][];
             /** License */
             license?: string | null;
             /** Name */
@@ -19908,12 +20058,20 @@ export interface components {
                 | components["schemas"]["ToolOutputFloat"]
                 | components["schemas"]["ToolOutputBoolean"]
             )[];
+            /**
+             * Requirements
+             * @default []
+             */
+            requirements:
+                | (
+                      | components["schemas"]["JavascriptRequirement"]
+                      | components["schemas"]["ResourceRequirement"]
+                      | components["schemas"]["ContainerRequirement"]
+                  )[]
+                | null;
             /** Shell Command */
             shell_command: string;
-            /**
-             * Version
-             * @default 1.0
-             */
+            /** Version */
             version: string | null;
             /** Xrefs */
             xrefs?: components["schemas"]["XrefDict"][] | null;
@@ -19943,27 +20101,7 @@ export interface components {
              * Inputs
              * @default []
              */
-            inputs: (
-                | components["schemas"]["TextParameterModel"]
-                | components["schemas"]["IntegerParameterModel"]
-                | components["schemas"]["FloatParameterModel"]
-                | components["schemas"]["BooleanParameterModel"]
-                | components["schemas"]["HiddenParameterModel"]
-                | components["schemas"]["SelectParameterModel"]
-                | components["schemas"]["DataParameterModel"]
-                | components["schemas"]["DataCollectionParameterModel"]
-                | components["schemas"]["DataColumnParameterModel"]
-                | components["schemas"]["DirectoryUriParameterModel"]
-                | components["schemas"]["RulesParameterModel"]
-                | components["schemas"]["DrillDownParameterModel-Output"]
-                | components["schemas"]["GroupTagParameterModel"]
-                | components["schemas"]["BaseUrlParameterModel"]
-                | components["schemas"]["GenomeBuildParameterModel"]
-                | components["schemas"]["ColorParameterModel"]
-                | components["schemas"]["ConditionalParameterModel-Output"]
-                | components["schemas"]["RepeatParameterModel-Output"]
-                | components["schemas"]["SectionParameterModel-Output"]
-            )[];
+            inputs: components["schemas"]["GalaxyToolParameterModel-Output"][];
             /** License */
             license?: string | null;
             /** Name */
@@ -19980,12 +20118,20 @@ export interface components {
                 | components["schemas"]["ToolOutputFloat"]
                 | components["schemas"]["ToolOutputBoolean"]
             )[];
+            /**
+             * Requirements
+             * @default []
+             */
+            requirements:
+                | (
+                      | components["schemas"]["JavascriptRequirement"]
+                      | components["schemas"]["ResourceRequirement"]
+                      | components["schemas"]["ContainerRequirement"]
+                  )[]
+                | null;
             /** Shell Command */
             shell_command: string;
-            /**
-             * Version
-             * @default 1.0
-             */
+            /** Version */
             version: string | null;
             /** Xrefs */
             xrefs?: components["schemas"]["XrefDict"][] | null;
