@@ -4,7 +4,10 @@
 
 <script setup>
 import ace from "ace-builds";
-import { onMounted, ref, watch } from "vue";
+import { debounce } from "lodash";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+
+const DELAY = 3000;
 
 const props = defineProps({
     theme: {
@@ -27,6 +30,10 @@ const editor = ref(null);
 
 let aceEditor = null;
 
+const emitChange = debounce((newValue) => {
+    emit("change", newValue);
+}, DELAY);
+
 async function buildEditor() {
     const modePath = `ace/mode/${props.mode}`;
     const themePath = `ace/theme/${props.theme}`;
@@ -47,12 +54,6 @@ async function buildEditor() {
         wrap: true,
     });
 
-    aceEditor.on("focus", () => {
-        aceEditor.setOption("highlightActiveLine", true);
-        aceEditor.setOption("highlightGutterLine", true);
-        editor.value.classList.add("cell-code-focus");
-    });
-
     aceEditor.on("blur", () => {
         aceEditor.setOption("highlightActiveLine", false);
         aceEditor.setOption("highlightGutterLine", false);
@@ -61,9 +62,19 @@ async function buildEditor() {
 
     aceEditor.on("change", () => {
         const newValue = aceEditor.getValue();
-        emit("update", newValue);
+        emitChange(newValue);
+    });
+
+    aceEditor.on("focus", () => {
+        aceEditor.setOption("highlightActiveLine", true);
+        aceEditor.setOption("highlightGutterLine", true);
+        editor.value.classList.add("cell-code-focus");
     });
 }
+
+onBeforeUnmount(() => {
+    emitChange.cancel();
+});
 
 onMounted(() => {
     buildEditor();
