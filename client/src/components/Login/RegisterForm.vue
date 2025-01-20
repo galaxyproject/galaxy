@@ -263,6 +263,7 @@ async function submit() {
 }
 
 .input-group {
+    background-color: transparent;
     position: relative;
     display: flex;
     align-items: center;
