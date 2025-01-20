@@ -15,6 +15,7 @@ from abc import (
 from typing import (
     Dict,
     List,
+    Optional,
     overload,
     Union,
 )
@@ -531,7 +532,7 @@ class WorkflowProxy:
     def __init__(self, workflow, workflow_path=None):
         self._workflow = workflow
         self._workflow_path = workflow_path
-        self._step_proxies = None
+        self._step_proxies: Optional[List[Union[SubworkflowStepProxy, ToolStepProxy]]] = None
 
     @property
     def cwl_id(self):
@@ -562,7 +563,7 @@ class WorkflowProxy:
 
     def tool_reference_proxies(self):
         """Fetch tool source definitions for all referenced tools."""
-        references = []
+        references: List[ToolProxy] = []
         for step in self.step_proxies():
             references.extend(step.tool_reference_proxies())
         return references
