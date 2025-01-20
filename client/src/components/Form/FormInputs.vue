@@ -3,20 +3,7 @@
         <div
             v-for="(input, index) in inputs"
             :key="index"
-            class="position-relative"
             :class="{ 'bordered-input': syncWithGraph && activeNodeId === index }">
-            <b-button
-                v-if="syncWithGraph"
-                class="position-absolute text-decoration-none"
-                :style="{ 'z-index': 100, right: 0 }"
-                size="sm"
-                variant="link"
-                :title="activeNodeId === index ? 'Active' : 'View in Graph'"
-                :disabled="activeNodeId === index"
-                @click="$emit('update:active-node-id', index)">
-                <span class="fas fa-sitemap" />
-                <span class="fas fa-arrow-right" />
-            </b-button>
             <div v-if="input.type == 'conditional'" class="ui-portlet-section mt-3">
                 <div class="portlet-header">
                     <b>{{ input.test_param.label || input.test_param.name }}</b>
@@ -77,7 +64,23 @@
                 :collapsed-disable-icon="collapsedDisableIcon"
                 :loading="loading"
                 :workflow-building-mode="workflowBuildingMode"
-                @change="onChange" />
+                :workflow-run="workflowRun"
+                @change="onChange">
+                <template v-slot:workflow-run-form-title-items>
+                    <b-button
+                        v-if="syncWithGraph"
+                        class="text-decoration-none"
+                        :style="{ 'z-index': 100, right: 0 }"
+                        size="sm"
+                        variant="link"
+                        :title="activeNodeId === index ? 'Active' : 'View in Graph'"
+                        :disabled="activeNodeId === index"
+                        @click="$emit('update:active-node-id', index)">
+                        <span class="fas fa-sitemap" />
+                        <span class="fas fa-arrow-right" />
+                    </b-button>
+                </template>
+            </FormElement>
         </div>
     </div>
 </template>
@@ -144,6 +147,10 @@ export default {
             required: true,
         },
         workflowBuildingMode: {
+            type: Boolean,
+            default: false,
+        },
+        workflowRun: {
             type: Boolean,
             default: false,
         },

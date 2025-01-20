@@ -22,6 +22,8 @@
                     :no-wheel="true"
                     :step="step"
                     :type="fieldType"
+                    :placeholder="placeholder"
+                    :state="showState ? (!currentValue && currentValue !== 0 ? (optional ? null : false) : true) : null"
                     @change="onInputChange"
                     @keypress="isNumberOrDecimal"
                     @keydown.190.capture="onFloatInput"
@@ -58,6 +60,18 @@ export default {
             validator: (prop) => typeof prop == "number" || prop === null,
         },
         workflowBuildingMode: {
+            type: Boolean,
+            default: false,
+        },
+        placeholder: {
+            type: String,
+            default: "",
+        },
+        optional: {
+            type: Boolean,
+            default: false,
+        },
+        showState: {
             type: Boolean,
             default: false,
         },

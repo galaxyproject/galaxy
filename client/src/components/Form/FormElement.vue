@@ -3,7 +3,9 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 import { faArrowsAltH, faExclamation, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge } from "bootstrap-vue";
 import { sanitize } from "dompurify";
+import { faCheck } from "font-awesome-6";
 import type { ComputedRef } from "vue";
 import { computed, ref, useAttrs } from "vue";
 
@@ -17,6 +19,7 @@ import FormData from "./Elements/FormData/FormData.vue";
 import FormDataUri from "./Elements/FormData/FormDataUri.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
 import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
+import FormError from "./Elements/FormError.vue";
 import FormHidden from "./Elements/FormHidden.vue";
 import FormInput from "./Elements/FormInput.vue";
 import FormNumber from "./Elements/FormNumber.vue";
@@ -27,6 +30,12 @@ import FormTags from "./Elements/FormTags.vue";
 import FormText from "./Elements/FormText.vue";
 import FormUpload from "./Elements/FormUpload.vue";
 import FormElementHelpMarkdown from "./FormElementHelpMarkdown.vue";
+
+const TYPE_TO_PLACEHOLDER: Record<string, string> = {
+    text: "text input",
+    integer: "an integer",
+    float: "a floating point number",
+};
 
 interface FormElementProps {
     id?: string;
@@ -50,6 +59,8 @@ interface FormElementProps {
     connectedEnableIcon?: string;
     connectedDisableIcon?: string;
     workflowBuildingMode?: boolean;
+    /** If true, this element is part of a workflow run form. */
+    workflowRun?: boolean;
 }
 
 const props = withDefaults(defineProps<FormElementProps>(), {
@@ -66,6 +77,7 @@ const props = withDefaults(defineProps<FormElementProps>(), {
     connectedDisableIcon: "fa fa-arrows-alt-h",
     helpFormat: "html",
     workflowBuildingMode: false,
+    workflowRun: false,
 });
 
 const emit = defineEmits<{
@@ -84,6 +96,79 @@ const attrs: ComputedRef<FormParameterAttributes> = computed(() => props.attribu
 const collapsibleValue: ComputedRef<FormParameterValue> = computed(() => attrs.value["collapsible_value"]);
 const defaultValue: ComputedRef<FormParameterValue> = computed(() => attrs.value["default_value"]);
 const connectedValue: FormParameterValue = { __class__: "ConnectedValue" };
+
+const computedPlaceholder = computed(() => {
+    if (!props.workflowRun) {
+        return "";
+    }
+    if (props.attributes?.placeholder || !props.type) {
+        return props.attributes?.placeholder;
+    }
+    return `please provide ${props.type in TYPE_TO_PLACEHOLDER ? TYPE_TO_PLACEHOLDER[props.type] : "a value"}${
+        isOptional.value ? " (optional)" : ""
+    }`;
+});
+
+/** In the case this is an element in a workflow run form, this is true
+ * when the element is unpopulated and the only alert is the unpopulated error.
+ */
+const unPopulatedError = computed(
+    () =>
+        props.workflowRun && alerts.value?.length === 1 && alerts.value[0] === "Please provide a value for this option."
+);
+
+// TODO: Uncomment and unify and when decided on badge or not
+// const titleClass = computed(() => {
+//     return props.workflowRun
+//         ? {
+//               "card-header": true,
+//               "mb-2": true,
+//               populated: !isEmpty.value,
+//               unpopulated: hasAlert.value || (isEmpty.value && !isOptional.value),
+//           }
+//         : {};
+// });
+
+// TODO: Temporary, remove and unify and when decided on badge or not
+const isBadge = true;
+// TODO: Temporary, remove and unify and when decided on badge or not
+const titleClass = computed(() => {
+    if (!props.workflowRun) {
+        return {};
+    }
+    const retClass: Record<string, boolean> = {
+        "card-header": true,
+        "mb-2": true,
+    };
+    if (!isBadge) {
+        if (populatedClass.value) {
+            retClass[`${populatedClass.value}`] = true;
+        }
+    }
+    return retClass;
+});
+const populatedClass = computed<string>(() => {
+    if (hasAlert.value || (isEmpty.value && !isOptional.value)) {
+        return "unpopulated";
+    } else if (!isEmpty.value) {
+        return "populated";
+    }
+    return "";
+});
+// -------------------------------------------------------------------
+
+const workflowRunFormTitleItems = computed(() => {
+    switch (true) {
+        case hasAlert.value:
+            return { icon: faExclamation, class: "text-danger", message: "Fix error(s) for this step." };
+        case isEmpty.value && !isOptional.value:
+            return { icon: faExclamation, message: "Provide a value for this step." };
+        case !isEmpty.value:
+            return { icon: faCheck, class: "text-success", message: "Step is populated." };
+        default:
+            return {};
+    }
+});
 
 const connected = ref(false);
 const collapsed = ref(false);
@@ -192,6 +277,17 @@ const alerts = computed(() => {
         .map((v) => linkify(sanitize(v!, { USE_PROFILES: { html: true } })));
 });
 
+/** Adds a temporary 2 sec focus to the element. */
+function addTempFocus() {
+    const element = document.getElementById(elementId.value);
+    if (element) {
+        element.classList.add("temp-focus");
+        setTimeout(() => {
+            element.classList.remove("temp-focus");
+        }, 2000);
+    }
+}
+
 function onAlert(value: string | undefined) {
     formAlert.value = value;
 }
@@ -202,49 +298,68 @@ function onAlert(value: string | undefined) {
         v-show="!isHidden"
         :id="elementId"
         class="ui-form-element section-row"
-        :class="{ alert: hasAlert, 'alert-info': hasAlert }">
-        <div v-for="(alert, index) in alerts" :key="index" class="ui-form-error">
-            <FontAwesomeIcon class="mr-1" icon="fa-exclamation" />
-            <span class="ui-form-error-text" v-html="alert" />
-        </div>
+        :class="{
+            alert: hasAlert || props.workflowRun,
+            'alert-info': hasAlert && !props.workflowRun,
+            'workflow-run-element': props.workflowRun,
+        }">
+        <FormError v-if="hasAlert && !props.workflowRun" :alerts="alerts" />
 
-        <div class="ui-form-title">
-            <span v-if="collapsible || connectable">
-                <b-button
-                    v-if="collapsible && !connected"
-                    class="ui-form-collapsible-icon"
-                    :title="collapseText"
-                    @click="onCollapse">
-                    <FontAwesomeIcon v-if="collapsed" :icon="props.collapsedEnableIcon" />
-                    <FontAwesomeIcon v-else :icon="props.collapsedDisableIcon" />
-                </b-button>
+        <div class="ui-form-title" :class="titleClass">
+            <div>
+                <span v-if="collapsible || connectable">
+                    <b-button
+                        v-if="collapsible && !connected"
+                        class="ui-form-collapsible-icon"
+                        :title="collapseText"
+                        @click="onCollapse">
+                        <FontAwesomeIcon v-if="collapsed" :icon="props.collapsedEnableIcon" />
+                        <FontAwesomeIcon v-else :icon="props.collapsedDisableIcon" />
+                    </b-button>
 
-                <b-button v-if="connectable" class="ui-form-connected-icon" :title="connectText" @click="onConnect">
-                    <FontAwesomeIcon v-if="connected" :icon="props.connectedEnableIcon" />
-                    <FontAwesomeIcon v-else :icon="props.connectedDisableIcon" />
-                </b-button>
+                    <b-button v-if="connectable" class="ui-form-connected-icon" :title="connectText" @click="onConnect">
+                        <FontAwesomeIcon v-if="connected" :icon="props.connectedEnableIcon" />
+                        <FontAwesomeIcon v-else :icon="props.connectedDisableIcon" />
+                    </b-button>
 
-                <span v-if="props.title" class="ui-form-title-text ml-1">
+                    <span v-if="props.title" class="ui-form-title-text ml-1">
+                        <label :for="props.id">{{ props.title }}</label>
+                    </span>
+                </span>
+                <span v-else-if="props.title" class="ui-form-title-text">
                     <label :for="props.id">{{ props.title }}</label>
                 </span>
-            </span>
-            <span v-else-if="props.title" class="ui-form-title-text">
-                <label :for="props.id">{{ props.title }}</label>
-            </span>
 
-            <span
-                v-if="isRequired && isRequiredType && props.title"
-                v-b-tooltip.hover
-                class="ui-form-title-star"
-                title="required"
-                :class="{ warning: isEmpty }">
-                *
-                <span v-if="isEmpty" class="ui-form-title-message warning"> required </span>
-            </span>
-            <span v-else-if="isOptional && isRequiredType && props.title" class="ui-form-title-message">
-                - optional
-            </span>
+                <span
+                    v-if="isRequired && isRequiredType && props.title"
+                    v-b-tooltip.hover
+                    class="ui-form-title-star"
+                    title="required"
+                    :class="{ warning: isEmpty }">
+                    *
+                    <span v-if="isEmpty" class="ui-form-title-message warning"> required </span>
+                </span>
+                <span v-else-if="isOptional && isRequiredType && props.title" class="ui-form-title-message">
+                    - optional
+                </span>
+            </div>
+            <component
+                :is="isBadge ? BBadge : 'div'"
+                v-if="props.workflowRun"
+                class="flex-gapx-1 workflow-run-element-title"
+                :class="isBadge ? populatedClass : ''">
+                <i>{{ workflowRunFormTitleItems.message }}</i>
+                <FontAwesomeIcon
+                    v-if="workflowRunFormTitleItems?.icon"
+                    :icon="workflowRunFormTitleItems.icon"
+                    :class="workflowRunFormTitleItems.class"
+                    fixed-width />
+                <slot name="workflow-run-form-title-items" />
+            </component>
         </div>
+
+        <FormError v-if="props.workflowRun && hasAlert && !unPopulatedError" :alerts="alerts" has-alert-class />
+
         <div v-if="showField" class="ui-form-field" :data-label="props.title">
             <FormBoolean v-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
             <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
@@ -254,6 +369,9 @@ function onAlert(value: string | undefined) {
                 v-model="currentValue"
                 :max="attrs.max"
                 :min="attrs.min"
+                :placeholder="computedPlaceholder"
+                :optional="isOptional"
+                :show-state="props.workflowRun"
                 :type="props.type ?? 'float'"
                 :workflow-building-mode="workflowBuildingMode" />
             <FormOptionalText
@@ -263,7 +381,7 @@ function onAlert(value: string | undefined) {
                 :readonly="attrs.readonly"
                 :value="attrs.value"
                 :area="attrs.area"
-                :placeholder="attrs.placeholder"
+                :placeholder="computedPlaceholder"
                 :multiple="attrs.multiple"
                 :datalist="attrs.datalist"
                 :type="props.type" />
@@ -278,7 +396,9 @@ function onAlert(value: string | undefined) {
                 :readonly="attrs.readonly"
                 :value="attrs.value"
                 :area="attrs.area"
-                :placeholder="attrs.placeholder"
+                :placeholder="computedPlaceholder"
+                :optional="isOptional"
+                :show-state="props.workflowRun"
                 :color="attrs.color"
                 :multiple="attrs.multiple"
                 :cls="attrs.cls"
@@ -315,7 +435,9 @@ function onAlert(value: string | undefined) {
                 :tag="attrs.tag"
                 :type="props.type"
                 :collection-types="attrs.collection_types"
-                @alert="onAlert" />
+                :workflow-run="props.workflowRun"
+                @alert="onAlert"
+                @focus="addTempFocus" />
             <FormDrilldown
                 v-else-if="props.type === 'drill_down'"
                 :id="id"
