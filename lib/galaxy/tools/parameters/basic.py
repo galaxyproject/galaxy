@@ -2021,15 +2021,23 @@ class BaseDataToolParameter(ToolParameter):
                 raise ValueError(f"At most {self.max} datasets are required for {self.name}")
 
 
-def src_id_to_item(
-    sa_session: "Session", value: typing.MutableMapping[str, Any], security: "IdEncodingHelper"
-) -> Union[
+ItemFromSrcAny = Union[
     DatasetCollectionElement,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
     CollectionAdapter,
-]:
+]
+ItemFromSrcCollection = Union[
+    DatasetCollectionElement,
+    HistoryDatasetCollectionAssociation,
+    CollectionAdapter,
+]
+
+
+def src_id_to_item(
+    sa_session: "Session", value: typing.MutableMapping[str, Any], security: "IdEncodingHelper"
+) -> ItemFromSrcAny:
     adapter_model = None
     if value["src"] == "CollectionAdapter":
         adapter_model = validate_collection_adapter_src_dict(value)
@@ -2063,6 +2071,15 @@ def src_id_to_item(
         item = recover_adapter(item, adapter_model)
     item.extra_params = {k: v for k, v in value.items() if k not in ("src", "id")}
     return item
+
+
+def src_id_to_item_collection(
+    sa_session: "Session", value: typing.MutableMapping[str, Any], security: "IdEncodingHelper"
+) -> ItemFromSrcCollection:
+    rval = src_id_to_item(sa_session, value, security)
+    if isinstance(rval, (LibraryDatasetDatasetAssociation, HistoryDatasetAssociation)):
+        raise ValueError("Expected to find collection, but got single dataset wrapper")
+    return cast(ItemFromSrcCollection, rval)
 
 
 class DataToolParameter(BaseDataToolParameter):
@@ -2498,7 +2515,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         session = trans.sa_session
 
         other_values = other_values or {}
-        rval: Optional[Union[DatasetCollectionElement, HistoryDatasetCollectionAssociation, CollectionAdapter]] = None
+        rval: Optional[ItemFromSrcCollection] = None
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional and not self.default_object:

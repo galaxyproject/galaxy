@@ -784,7 +784,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         return self.__input_supplied and len(self.__element_instance_list) == 1
 
     @property
-    def single_item(self) -> "DatasetCollectionElementWrapper":
+    def single_item(self) -> Optional["DatasetCollectionElementWrapper"]:
         return self[0]
 
     @property
