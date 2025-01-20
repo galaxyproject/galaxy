@@ -22,27 +22,29 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     historyId: string;
-    showModal: boolean;
+    show: boolean;
     collectionType: CollectionType;
     selectedItems?: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
     extensions?: string[];
     fromRulesInput?: boolean;
-    hideModalOnCreate?: boolean;
+    hideOnCreate?: boolean;
     filterText?: string;
+    notModal?: boolean;
 }
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "created-collection", collection: any): void;
-    (e: "update:show-modal", showModal: boolean): void;
+    (e: "update:show", show: boolean): void;
+    (e: "on-hide"): void;
 }>();
 
-/** Computed toggle that handles opening and closing the modal */
+/** Computed toggle that handles showing and hiding the creator */
 const localShowToggle = computed({
-    get: () => props.showModal,
+    get: () => props.show,
     set: (value: boolean) => {
-        emit("update:show-modal", value);
+        emit("update:show", value);
     },
 });
 
@@ -201,8 +203,8 @@ async function createHDCA(
         emit("created-collection", collection);
         createdCollection.value = collection;
 
-        if (props.hideModalOnCreate) {
-            hideModal();
+        if (props.hideOnCreate) {
+            hideCreator();
         }
     } catch (error) {
         createCollectionError.value = error as string;
@@ -225,18 +227,20 @@ async function fetchHistoryDatasets() {
     }
 }
 
-function hideModal() {
+function hideCreator() {
     localShowToggle.value = false;
+    emit("on-hide");
 }
 
-function resetModal() {
+function resetCreator() {
     createCollectionError.value = null;
     createdCollection.value = null;
 }
 </script>
 
 <template>
-    <BModal
+    <component
+        :is="props.notModal ? 'div' : BModal"
         id="collection-creator-modal"
         v-model="localShowToggle"
         :busy="(fromSelection && isFetchingItems) || creatingCollection"
@@ -245,7 +249,7 @@ function resetModal() {
         ok-only
         :ok-title="localize('Exit')"
         ok-variant="secondary"
-        @hidden="resetModal">
+        @hidden="resetCreator">
         <template v-slot:modal-header>
             <Heading class="w-100" size="sm">
                 <div class="d-flex justify-content-between unselectable w-100">
@@ -267,7 +271,7 @@ function resetModal() {
         </BAlert>
         <BAlert v-else-if="createCollectionError" variant="danger" show>
             {{ createCollectionError }}
-            <BLink class="text-decoration-none" @click.stop.prevent="resetModal">
+            <BLink class="text-decoration-none" @click.stop.prevent="resetCreator">
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
                 {{ localize("Try again") }}
             </BLink>
@@ -276,7 +280,7 @@ function resetModal() {
             <BAlert variant="success" show>
                 <FontAwesomeIcon :icon="faCheckCircle" class="text-success" fixed-width />
                 {{ localize("Collection created successfully.") }}
-                <BLink v-if="!fromSelection" class="text-decoration-none" @click.stop.prevent="resetModal">
+                <BLink v-if="!fromSelection" class="text-decoration-none" @click.stop.prevent="resetCreator">
                     <FontAwesomeIcon :icon="faUndo" fixed-width />
                     {{ localize("Create another collection") }}
                 </BLink>
@@ -293,7 +297,7 @@ function resetModal() {
             :from-selection="fromSelection"
             :extensions="props.extensions"
             @clicked-create="createListCollection"
-            @on-cancel="hideModal" />
+            @on-cancel="hideCreator" />
         <PairedListCollectionCreator
             v-else-if="props.collectionType === 'list:paired'"
             :history-id="props.historyId"
@@ -302,7 +306,7 @@ function resetModal() {
             :from-selection="fromSelection"
             :extensions="props.extensions"
             @clicked-create="createListPairedCollection"
-            @on-cancel="hideModal" />
+            @on-cancel="hideCreator" />
         <PairCollectionCreator
             v-else-if="props.collectionType === 'paired'"
             :history-id="props.historyId"
@@ -311,8 +315,8 @@ function resetModal() {
             :from-selection="fromSelection"
             :extensions="props.extensions"
             @clicked-create="createPairedCollection"
-            @on-cancel="hideModal" />
-    </BModal>
+            @on-cancel="hideCreator" />
+    </component>
 </template>
 
 <style lang="scss">

@@ -11,7 +11,7 @@ import { UploadQueue } from "@/utils/upload-queue.js";
 import { defaultModel } from "./model.js";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
-import CollectionCreatorModal from "../Collections/CollectionCreatorModal.vue";
+import CollectionCreatorIndex from "../Collections/CollectionCreatorIndex.vue";
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
 import UploadSelect from "./UploadSelect.vue";
@@ -500,12 +500,12 @@ defineExpose({
                 <span v-else v-localize>Close</span>
             </BButton>
         </div>
-        <CollectionCreatorModal
+        <CollectionCreatorIndex
             v-if="isCollection && historyId"
             :history-id="historyId"
             :collection-type="collectionType"
             :selected-items="collectionSelection"
-            :show-modal.sync="collectionModalShow"
+            :show.sync="collectionModalShow"
             default-hide-source-items />
     </div>
 </template>
