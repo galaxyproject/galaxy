@@ -16,6 +16,11 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         assert len(created_user_credentials[0]["groups"]["default"]["variables"]) == 1
         assert len(created_user_credentials[0]["groups"]["default"]["secrets"]) == 3
 
+    def test_anon_users_cannot_provide_credentials(self):
+        payload = self._build_credentials_payload()
+        response = self._post("/api/users/current/credentials", data=payload, json=True, anon=True)
+        self._assert_status_code_is(response, 403)
+
     def test_list_user_credentials(self):
         source_id = f"test_tool_list_credentials_{uuid4()}"
         payload = self._build_credentials_payload(source_id=source_id)
