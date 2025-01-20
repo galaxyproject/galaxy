@@ -37,8 +37,11 @@ from .parameters import (
 )
 from .parser.interface import (
     Citation,
+    ContainerRequirement,
     HelpContent,
+    JavascriptRequirement,
     OutputCompareType,
+    ResourceRequirement,
     ToolSource,
     XrefDict,
 )
@@ -65,6 +68,7 @@ class ToolSourceBase(BaseModel):
     profile: Optional[float] = None
     description: Optional[str] = None
     container: Optional[str] = None
+    requirements: Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]] = []
     inputs: List[GalaxyToolParameterModel] = []
     outputs: List[IncomingToolOutput] = []
     citations: Optional[List[Citation]] = None
@@ -90,6 +94,7 @@ class UserToolSource(BaseModel):
     name: str
     description: Optional[str] = None
     container: str
+    requirements: Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]] = []
     shell_command: str
     inputs: List[GalaxyToolParameterModel] = []
     outputs: List[IncomingToolOutput] = []
