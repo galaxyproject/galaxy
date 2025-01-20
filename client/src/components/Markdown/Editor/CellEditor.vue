@@ -1,9 +1,7 @@
 <template>
     <div class="h-100 w-75 mx-auto">
         <div v-for="(cell, cellIndex) of cells" :key="cellIndex">
-            <div class="cell-guide my-1 mx-1">
-                <CellButtonAdd :cell-index="cellIndex" @click="onAdd" />
-            </div>
+            <CellButtonAdd :cell-index="cellIndex" @click="onAdd" />
             <hr class="solid m-0" />
             <CellWrapper :name="cell.name" :content="cell.content" @change="onChange(cellIndex, $event)" />
             <hr class="solid m-0" />
