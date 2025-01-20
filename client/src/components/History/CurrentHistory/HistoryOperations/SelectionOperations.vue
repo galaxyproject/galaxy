@@ -138,14 +138,14 @@
             <p v-localize>Remove the following tags from {{ numSelected }} items:</p>
             <StatelessTags v-model="selectedTags" class="tags" />
         </b-modal>
-        <CollectionCreatorModal
+        <CollectionCreatorIndex
             v-if="collectionModalType"
             :history-id="history.id"
             :collection-type="collectionModalType"
             :filter-text="filterText"
             :selected-items="collectionSelection"
-            :show-modal.sync="collectionModalShow"
-            hide-modal-on-create
+            :show.sync="collectionModalShow"
+            hide-on-create
             default-hide-source-items
             @created-collection="createdCollection" />
     </section>
@@ -173,11 +173,11 @@ import { useConfig } from "@/composables/config";
 
 import { buildRuleCollectionModal } from "../../adapters/buildCollectionModal";
 
-import CollectionCreatorModal from "@/components/Collections/CollectionCreatorModal.vue";
+import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 
 export default {
     components: {
-        CollectionCreatorModal,
+        CollectionCreatorIndex,
         DbKeyProvider,
         DatatypesProvider,
         SingleItemSelector,
