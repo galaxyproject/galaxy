@@ -1,19 +1,13 @@
 <template>
     <div>
-        <div class="d-flex my-1 mx-2">
-            <div class="d-flex flex-column justify-content-between">
-                <div class="cell-guide small text-primary">
-                    {{ name }}
-                </div>
-                <div
-                    v-b-tooltip.right
-                    role="button"
-                    tabindex="0"
-                    class="d-inline text-muted cursor-pointer mt-4 align-self-end"
-                    title="Expand to Edit">
-                    <FontAwesomeIcon class="text-primary" :icon="faAngleDoubleDown" />
-                    <FontAwesomeIcon class="text-primary" :icon="faAngleDoubleUp" />
-                </div>
+        <div class="d-flex">
+            <div class="cell-guide d-flex flex-column justify-content-between">
+                <b-button v-b-tooltip.right class="border-0 m-1 px-1 py-0" title="Expand" variant="outline-primary">
+                    <div class="small">{{ name }}</div>
+                </b-button>
+                <b-button v-b-tooltip.right class="border-0 m-1 px-1 py-0" title="Expand" variant="outline-primary">
+                    <FontAwesomeIcon :icon="faAngleDoubleUp" />
+                </b-button>
             </div>
             <div class="ml-2 w-100">
                 <MarkdownDefault v-if="name === 'markdown'" :content="content" />
@@ -21,9 +15,9 @@
                 <MarkdownVitessce v-else-if="name === 'vitessce'" :content="content" />
             </div>
         </div>
-        <div class="d-flex my-1 mx-3">
+        <div class="d-flex">
             <div class="cell-guide d-flex flex-column justify-content-between">
-                <b-button v-b-tooltip.right class="border-0 p-0 m-0" title="Delete" variant="outline-primary">
+                <b-button v-b-tooltip.right class="border-0 m-1 px-1 py-0" title="Delete" variant="outline-primary">
                     <FontAwesomeIcon :icon="faTrash" />
                 </b-button>
             </div>
@@ -35,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { faAngleDoubleDown, faAngleDoubleUp, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faAngleDoubleUp, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import MarkdownDefault from "../Sections/MarkdownDefault.vue";
