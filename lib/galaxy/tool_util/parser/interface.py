@@ -33,6 +33,7 @@ from galaxy.tool_util_models.tool_source import (
     DrillDownOptionsDict,
     FieldDict,
     HelpContent,
+    JavascriptRequirement,
     JsonTestCollectionDefCollectionElementDict,
     JsonTestCollectionDefDatasetElementDict,
     JsonTestCollectionDefDict,
@@ -48,7 +49,7 @@ from .util import _parse_name
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.requirements import (
         ContainerDescription,
-        ResourceRequirement,
+        ResourceRequirement as ToolResourceRequirement,
         ToolRequirements,
     )
     from galaxy.tool_util.parser.output_actions import ToolOutputActionApp
@@ -319,7 +320,9 @@ class ToolSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_requirements_and_containers(
         self,
-    ) -> Tuple["ToolRequirements", List["ContainerDescription"], List["ResourceRequirement"]]:
+    ) -> Tuple[
+        "ToolRequirements", List["ContainerDescription"], List["ToolResourceRequirement"], List["JavascriptRequirement"]
+    ]:
         """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
 
     @abstractmethod

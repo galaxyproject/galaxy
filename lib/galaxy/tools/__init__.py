@@ -114,7 +114,10 @@ from galaxy.tool_util.version import (
     LegacyVersion,
     parse_version,
 )
-from galaxy.tool_util_models.tool_source import HelpContent
+from galaxy.tool_util_models.tool_source import (
+    HelpContent,
+    JavascriptRequirement,
+)
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
     DefaultToolAction,
@@ -1070,6 +1073,7 @@ class Tool(UsesDictVisibleKeys):
         self.base_command: Optional[List[str]] = None
         self.arguments: Optional[List[str]] = []
         self.shell_command: Optional[str] = None
+        self.javascript_requirements: Optional[List[JavascriptRequirement]] = None
         self._is_workflow_compatible = None
         self.__help = None
         self.__tests: Optional[str] = None
@@ -1443,10 +1447,13 @@ class Tool(UsesDictVisibleKeys):
                     raise Exception(message)
 
         # Requirements (dependencies)
-        requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements, javasscript_requirements = (
+            tool_source.parse_requirements_and_containers()
+        )
         self.requirements = requirements
         self.containers = containers
         self.resource_requirements = resource_requirements
+        self.javascript_requirements = javasscript_requirements
 
         required_files = tool_source.parse_required_files()
         if required_files is None:

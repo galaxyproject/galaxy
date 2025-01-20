@@ -139,9 +139,10 @@ class YamlToolSource(ToolSource):
         else:
             containers = []
         return requirements.parse_requirements_from_lists(
-            software_requirements=[r for r in mixed_requirements if r.get("type") != "resource"],
+            software_requirements=[r for r in mixed_requirements if r.get("type") == "package"],
             containers=containers,
             resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
+            javascript_requirements=[r for r in mixed_requirements if r.get("type") == "javascript"],
         )
 
     def parse_input_pages(self) -> PagesSource:

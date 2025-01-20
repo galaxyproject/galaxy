@@ -37,8 +37,11 @@ from .tool_outputs import (
 )
 from .tool_source import (
     Citation,
+    ContainerRequirement,
     HelpContent,
+    JavascriptRequirement,
     OutputCompareType,
+    ResourceRequirement,
     XrefDict,
 )
 from .tool_outputs import (
@@ -62,6 +65,7 @@ class ToolSourceBase(BaseModel):
     profile: Optional[float] = None
     description: Optional[str] = None
     container: Optional[str] = None
+    requirements: Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]] = []
     inputs: List[GalaxyToolParameterModel] = []
     outputs: List[IncomingToolOutput] = []
     citations: Optional[List[Citation]] = None
@@ -87,6 +91,7 @@ class UserToolSource(BaseModel):
     name: str
     description: Optional[str] = None
     container: str
+    requirements: Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]] = []
     shell_command: str
     inputs: List[GalaxyToolParameterModel] = []
     outputs: List[IncomingToolOutput] = []

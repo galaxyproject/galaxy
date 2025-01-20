@@ -13,6 +13,52 @@ from typing_extensions import (
 )
 
 
+class Container(BaseModel):
+    type: Literal["docker", "singularity"]
+    container_id: str
+
+
+class Requirement(BaseModel):
+    type: Literal["package", "set_environment"]
+
+
+class ContainerRequirement(BaseModel):
+    type: Literal["container"]
+    container: Container
+
+
+class PackageRequirement(Requirement):
+    type: Literal["package"]
+    name: str
+    version: Optional[str]
+
+
+class SetEnvironmentRequirement(Requirement):
+    type: Literal["set_environment"]
+    environment: str
+
+
+class ResourceRequirement(BaseModel):
+    type: Literal["resource"]
+    cores_min: Optional[Union[int, float]]
+    cores_max: Optional[Union[int, float]]
+    ram_min: Optional[Union[int, float]]
+    ram_max: Optional[Union[int, float]]
+    tmpdir_min: Optional[Union[int, float]]
+    tmpdir_max: Optional[Union[int, float]]
+    cuda_version_min: Optional[Union[int, float]]
+    cuda_compute_capability: Optional[Union[int, float]]
+    gpu_memory_min: Optional[Union[int, float]]
+    cuda_device_count_min: Optional[Union[int, float]]
+    cuda_device_count_max: Optional[Union[int, float]]
+    shm_size: Optional[Union[int, float]]
+
+
+class JavascriptRequirement(BaseModel):
+    type: Literal["javascript"]
+    expression_lib: Optional[List[str]]
+
+
 class XrefDict(TypedDict):
     value: str
     type: str

@@ -13,10 +13,7 @@ export const monarchConfig: languages.IMonarchLanguage = {
     brackets: brackets,
     tokenizer: {
         root: [
-            // Multiline JavaScript block
-            [/(expressionLib):\s*\|/, { token: "key", nextEmbedded: "javascript", next: "@jsBlockMultiline" }],
-            // Inline JavaScript: Key followed by code on the same line
-            [/(expressionLib):\s*/, { token: "key", nextEmbedded: "javascript", next: "@inlineJs" }],
+            [/(requirements):\s*/, { token: "yaml.key", next: "@requirements", log: "requirements" }],
             [/(shell_command):\s*\|/, { token: "key", next: "@shellCommand" }],
             [/(shell_command):\s*/, { token: "key", next: "@shellCommand" }],
             [/.*/, { token: "@rematch", nextEmbedded: "yaml", next: "@yamlRest" }],
@@ -58,6 +55,26 @@ export const monarchConfig: languages.IMonarchLanguage = {
             [/\/\/end\)/, { token: "comment", next: "@pop", nextEmbedded: "@pop", log: "pop" }],
             [/$/, { token: "@rematch", next: "@pop", nextEmbedded: "@pop", log: "pop" }],
             [/[^(]+/, { token: "source.js", nextEmbedded: "javascript", log: "embedded source.js" }],
+        ],
+        requirements: [
+            // Match array item in `requirements`
+            [/\s*-\s*type:\s*javascript/, { token: "key", next: "@javascriptRequirement", log: "array of" }],
+            [/.*/, { token: "@rematch", next: "@root" }], // Back to root if no match
+        ],
+
+        javascriptRequirement: [
+            // Match `expression_lib` key followed by a block scalar array item
+            [/\s*(expression_lib):\s*/, { token: "key", next: "@expressionLib", log: "expressionLib" }],
+            [/.*/, { token: "@rematch", next: "@root" }], // Back to root if no match
+        ],
+
+        expressionLib: [
+            // Match array item with block scalar `- |`
+            [
+                /\s*-\s*\|/,
+                { token: "key", nextEmbedded: "javascript", next: "@jsBlockMultiline", log: "jsBlockMultiLine" },
+            ],
+            [/.*/, { token: "@rematch", next: "@root" }], // Back to root if no match
         ],
         // Inline JavaScript ends at the end of the line
         inlineJs: [

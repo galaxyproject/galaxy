@@ -966,7 +966,12 @@ class UserToolEvaluator(ToolEvaluator):
                     bound_arguments.append(bound_argument)
             command_line = " ".join(bound_arguments)
         elif self.tool.shell_command:
-            command_line = do_eval(self.tool.shell_command, self.param_dict["inputs"], outdir=self.param_dict["outdir"])
+            command_line = do_eval(
+                self.tool.shell_command,
+                self.param_dict["inputs"],
+                javascript_requirements=self.tool.javascript_requirements,
+                outdir=self.param_dict["outdir"],
+            )
         else:
             raise Exception("Tool must define shell_command or base_command")
         self.command_line = command_line
