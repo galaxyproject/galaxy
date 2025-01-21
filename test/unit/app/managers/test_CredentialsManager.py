@@ -3,7 +3,10 @@ from typing import (
     Tuple,
 )
 
-from galaxy.managers.credentials import CredentialsManager
+from galaxy.managers.credentials import (
+    CredentialsManager,
+    CredentialsModelList,
+)
 from galaxy.model import (
     CredentialsGroup,
     Secret,
@@ -11,10 +14,7 @@ from galaxy.model import (
     UserCredentials,
     Variable,
 )
-from galaxy.schema.credentials import (
-    CredentialsModelList,
-    SOURCE_TYPE,
-)
+from galaxy.schema.credentials import SOURCE_TYPE
 from .base import BaseTestCase
 
 
