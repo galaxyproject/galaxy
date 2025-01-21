@@ -110,12 +110,6 @@ function stageLibs(callback) {
     return callback();
 }
 
-function fonts() {
-    return src(path.resolve(path.join(PATHS.nodeModules, "font-awesome/fonts/**/*"))).pipe(
-        dest("../static/images/fonts")
-    );
-}
-
 async function icons() {
     await buildIcons("./src/assets/icons.json");
 }
@@ -290,7 +284,7 @@ function cleanPlugins() {
     return del(["../static/plugins/{visualizations,welcome_page}/*"], { force: true });
 }
 
-const client = parallel(fonts, stageLibs, icons);
+const client = parallel(stageLibs, icons);
 const plugins = series(buildPlugins, installPlugins, cleanPlugins, stagePlugins);
 const pluginsRebuild = series(forceBuildPlugins, installPlugins, cleanPlugins, stagePlugins);
 
@@ -301,7 +295,6 @@ function watchPlugins() {
     watch(BUILD_PLUGIN_WATCH_GLOB, { queue: false }, plugins);
 }
 
-module.exports.fonts = fonts;
 module.exports.client = client;
 module.exports.plugins = plugins;
 module.exports.pluginsRebuild = pluginsRebuild;
