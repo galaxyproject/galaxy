@@ -112,12 +112,14 @@ function newTool(toolUuid?: string) {
                     :active="tool.uuid === currentItemId">
                     <div class="overflow-auto w-100" @click="() => cardClicked(tool)">
                         <Heading bold size="text" icon="fa-wrench">
-                            <span class="truncate-n-lines three-lines">
-                                {{ tool.representation.name }}
-                            </span>
-                            <small class="text-muted truncate-n-lines two-lines">
-                                {{ tool.representation.description }}
-                            </small>
+                            <div style="flex-direction: column">
+                                <span class="truncate-n-lines three-lines">
+                                    {{ tool.representation.name }}
+                                </span>
+                                <small class="text-muted truncate-n-lines two-lines">
+                                    {{ tool.representation.description }}
+                                </small>
+                            </div>
                         </Heading>
                         <div class="d-flex justify-content-between">
                             <BBadge v-b-tooltip.noninteractive.hover pill>
