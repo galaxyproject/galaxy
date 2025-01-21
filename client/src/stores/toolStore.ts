@@ -158,6 +158,7 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     async function fetchTools(filterSettings?: FilterSettings) {
+        // This is if we are performing a backend search
         if (filterSettings && Object.keys(filterSettings).length !== 0) {
             // Parsing filterSettings to Whoosh query
             const q = createWhooshQuery(filterSettings);
@@ -165,21 +166,25 @@ export const useToolStore = defineStore("toolStore", () => {
             if (toolResults.value[q]) {
                 return;
             }
-            const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { q } });
-            saveToolResults(q, data);
+            try {
+                const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { q } });
+                saveToolResults(q, data);
+            } catch (e) {
+                rethrowSimple(e);
+            }
         }
+
+        // This is if we are fetching all tools by ids
         if (!loading.value && !allToolsByIdFetched.value) {
             loading.value = true;
-            await axios
-                .get(`${getAppRoot()}api/tools?in_panel=False`)
-                .then(({ data }) => {
-                    saveAllTools(data as Tool[]);
-                    loading.value = false;
-                })
-                .catch((error) => {
-                    console.error(error);
-                    loading.value = false;
-                });
+            try {
+                const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=False`);
+                saveAllTools(data as Tool[]);
+            } catch (e) {
+                rethrowSimple(e);
+            } finally {
+                loading.value = false;
+            }
         }
     }
 
@@ -204,23 +209,24 @@ export const useToolStore = defineStore("toolStore", () => {
     async function initCurrentPanelView(siteDefaultPanelView: string) {
         if (!loading.value && !isPanelPopulated.value) {
             loading.value = true;
-            const panelView = currentPanelView.value || siteDefaultPanelView;
-            if (currentPanelView.value == "") {
-                currentPanelView.value = panelView;
+            currentPanelView.value = currentPanelView.value || siteDefaultPanelView;
+            try {
+                if (!currentPanelView.value) {
+                    throw new Error("No valid panel view found.");
+                }
+                const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${currentPanelView.value}`);
+                savePanelView(currentPanelView.value, data);
+                loading.value = false;
+            } catch (e) {
+                loading.value = false;
+
+                if (currentPanelView.value !== siteDefaultPanelView) {
+                    // If the stored panelView failed to load, try the default panel for this site.
+                    await setCurrentPanelView(siteDefaultPanelView);
+                } else {
+                    rethrowSimple(e);
+                }
             }
-            await axios
-                .get(`${getAppRoot()}api/tool_panels/${panelView}`)
-                .then(({ data }) => {
-                    loading.value = false;
-                    savePanelView(panelView, data);
-                })
-                .catch(async (error) => {
-                    loading.value = false;
-                    if (error.response && error.response.status == 400) {
-                        // Assume the stored panelView disappeared, revert to the panel default for this site.
-                        await setCurrentPanelView(siteDefaultPanelView);
-                    }
-                });
         }
     }
 
@@ -235,18 +241,21 @@ export const useToolStore = defineStore("toolStore", () => {
                 const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
                 currentPanelView.value = panelView;
                 savePanelView(panelView, data);
-                loading.value = false;
             } catch (e) {
-                const error = e as { response: { data: { err_msg: string } } };
-                console.error("Could not change panel view", error.response.data.err_msg ?? error.response);
+                rethrowSimple(e);
+            } finally {
                 loading.value = false;
             }
         }
     }
 
     async function fetchPanel(panelView: string) {
-        const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
-        savePanelView(panelView, data);
+        try {
+            const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
+            savePanelView(panelView, data);
+        } catch (e) {
+            rethrowSimple(e);
+        }
     }
 
     function saveToolForId(toolId: string, toolData: Tool) {

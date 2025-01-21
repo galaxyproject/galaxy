@@ -3,10 +3,11 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 import { types_to_icons } from "./utilities";
 
@@ -40,17 +41,20 @@ const { currentPanelView, defaultPanelView, isPanelPopulated, loading, panel, pa
 const loadingView = ref<string | undefined>(undefined);
 const query = ref("");
 const showAdvanced = ref(false);
+const errorMessage = ref<string | undefined>(undefined);
 
-onMounted(async () => {
+initializeToolPanel();
+async function initializeToolPanel() {
     try {
         await toolStore.fetchPanelViews();
         await initializeTools();
     } catch (error) {
         console.error(error);
+        errorMessage.value = errorMessageAsString(error);
     } finally {
         arePanelsFetched.value = true;
     }
-});
+}
 
 watch(
     () => currentPanelView.value,
@@ -106,6 +110,8 @@ async function initializeTools() {
         await toolStore.initCurrentPanelView(defaultPanelView.value);
     } catch (error: any) {
         console.error("ToolPanel - Intialize error:", error);
+        errorMessage.value = errorMessageAsString(error);
+        rethrowSimple(error);
     }
 }
 
@@ -187,6 +193,11 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
             @onInsertModule="onInsertModule"
             @onInsertWorkflow="onInsertWorkflow"
             @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+        <div v-else-if="errorMessage" data-description="tool panel error message">
+            <b-alert class="m-2" variant="danger" show>
+                {{ errorMessage }}
+            </b-alert>
+        </div>
         <div v-else>
             <b-badge class="alert-info w-100">
                 <LoadingSpan message="Loading Toolbox" />
