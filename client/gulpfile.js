@@ -301,6 +301,7 @@ function watchPlugins() {
     watch(BUILD_PLUGIN_WATCH_GLOB, { queue: false }, plugins);
 }
 
+module.exports.fonts = fonts;
 module.exports.client = client;
 module.exports.plugins = plugins;
 module.exports.pluginsRebuild = pluginsRebuild;
