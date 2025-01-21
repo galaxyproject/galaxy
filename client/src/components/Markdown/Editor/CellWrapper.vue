@@ -2,18 +2,15 @@
     <div>
         <div class="d-flex">
             <div class="cell-guide d-flex flex-column justify-content-between">
-                <b-button v-b-tooltip.right class="border-0 m-1 px-1 py-0" title="Expand" variant="outline-primary">
+                <CellButton title="Learn more">
                     <div class="small">{{ name }}</div>
-                </b-button>
-                <b-button
-                    v-b-tooltip.right
-                    class="border-0 m-1 px-1 py-0"
-                    title="Expand"
-                    variant="outline-primary"
-                    @click="onToggle($event)">
-                    <FontAwesomeIcon v-if="toggle" :icon="faAngleDoubleUp" />
-                    <FontAwesomeIcon v-else :icon="faAngleDoubleDown" />
-                </b-button>
+                </CellButton>
+                <CellButton v-if="toggle" title="Collapse" @click="toggle = false">
+                    <FontAwesomeIcon :icon="faAngleDoubleUp" />
+                </CellButton>
+                <CellButton v-else title="Expand" @click="toggle = true">
+                    <FontAwesomeIcon :icon="faAngleDoubleDown" />
+                </CellButton>
             </div>
             <div class="ml-2 w-100">
                 <MarkdownDefault v-if="name === 'markdown'" :content="content" />
@@ -23,9 +20,9 @@
         </div>
         <div v-if="toggle" class="d-flex">
             <div class="cell-guide d-flex flex-column justify-content-between">
-                <b-button v-b-tooltip.right class="border-0 m-1 px-1 py-0" title="Delete" variant="outline-primary">
+                <CellButton title="Delete">
                     <FontAwesomeIcon :icon="faTrash" />
-                </b-button>
+                </CellButton>
             </div>
             <div class="ml-2 w-100">
                 <CellCode :value="content" :mode="getMode(name)" @change="$emit('change', $event)" />
@@ -42,6 +39,7 @@ import { ref } from "vue";
 import MarkdownDefault from "../Sections/MarkdownDefault.vue";
 import MarkdownVega from "../Sections/MarkdownVega.vue";
 import MarkdownVitessce from "../Sections/MarkdownVitessce.vue";
+import CellButton from "./CellButton.vue";
 import CellCode from "./CellCode.vue";
 
 defineProps<{
@@ -63,9 +61,7 @@ function getMode(cellName: string) {
     return "json";
 }
 
-function onToggle(event: Event) {
-    const target = event.target as HTMLElement;
-    target.blur();
+function onToggle() {
     toggle.value = !toggle.value;
 }
 </script>

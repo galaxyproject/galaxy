@@ -1,12 +1,12 @@
 <template>
     <div class="h-100 w-75 mx-auto">
         <div v-for="(cell, cellIndex) of cells" :key="cellIndex">
-            <CellButtonAdd :cell-index="cellIndex" @click="onAdd" />
+            <CellAdd :cell-index="cellIndex" @click="onAdd" />
             <hr class="solid m-0" />
             <CellWrapper :name="cell.name" :content="cell.content" @change="onChange(cellIndex, $event)" />
             <hr class="solid m-0" />
         </div>
-        <CellButtonAdd :cell-index="cells.length" @click="onAdd" />
+        <CellAdd :cell-index="cells.length" @click="onAdd" />
     </div>
 </template>
 
@@ -15,7 +15,7 @@ import { ref } from "vue";
 
 import { parseMarkdown } from "@/components/Markdown/parse";
 
-import CellButtonAdd from "./CellButtonAdd.vue";
+import CellAdd from "./CellAdd.vue";
 import CellWrapper from "./CellWrapper.vue";
 
 interface CellType {

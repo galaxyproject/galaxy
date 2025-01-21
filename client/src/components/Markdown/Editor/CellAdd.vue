@@ -1,13 +1,9 @@
 <template>
     <Popper trigger="click" placement="right" mode="light">
         <template v-slot:reference>
-            <b-button
-                v-b-tooltip.right
-                class="border-0 m-1 px-1 py-0"
-                title="Insert new Cell"
-                variant="outline-primary">
+            <CellButton title="Insert new Cell">
                 <FontAwesomeIcon :icon="faPlusSquare" />
-            </b-button>
+            </CellButton>
         </template>
         <div class="cursor-pointer">
             <CellOption
@@ -34,8 +30,10 @@
 import { faPlusSquare } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import CellOption from "./CellOption.vue";
 import Popper from "@/components/Popper/Popper.vue";
+
+import CellOption from "./CellOption.vue";
+import CellButton from "./CellButton.vue";
 
 const props = defineProps<{
     cellIndex: number;
