@@ -33,8 +33,10 @@ IncomingNotRequiredDatasetCollectionDescription = NotRequired[List["DatasetColle
 
 
 class ToolOutputBaseModelG(BaseModel, Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT]):
-    name: IncomingNotRequiredStringT
-    label: Optional[str] = None
+    name: Annotated[
+        IncomingNotRequiredStringT, Field(description="Parameter name. Used when referencing parameter in workflows.")
+    ]
+    label: Optional[Annotated[str, Field(description="Output label. Will be used as dataset name in history.")]] = None
     hidden: IncomingNotRequiredBoolT
 
 
@@ -46,11 +48,19 @@ class ToolOutputDatasetG(
     Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
 ):
     type: Literal["data"]
-    format: IncomingNotRequiredStringT
+    format: Annotated[IncomingNotRequiredStringT, Field(description="The short name for the output datatype.")]
     format_source: Optional[str] = None
     metadata_source: Optional[str] = None
     discover_datasets: Optional[List["DatasetCollectionDescriptionT"]] = None
-    from_work_dir: Optional[str] = None
+    from_work_dir: Optional[
+        Annotated[
+            str,
+            Field(
+                title="from_work_dir",
+                description="Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.",
+            ),
+        ]
+    ] = None
 
 
 ToolOutputDataset = ToolOutputDatasetG[bool, str]

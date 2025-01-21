@@ -92,7 +92,14 @@ class UserToolSource(BaseModel):
     description: Optional[str] = None
     container: str
     requirements: Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]] = []
-    shell_command: str
+    shell_command: Annotated[
+        str,
+        Field(
+            title="shell_command",
+            description="A string that contains the command to be executed. Parameters can be referenced inside $().",
+            examples=["head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'"],
+        ),
+    ]
     inputs: List[GalaxyToolParameterModel] = []
     outputs: List[IncomingToolOutput] = []
     citations: Optional[List[Citation]] = None

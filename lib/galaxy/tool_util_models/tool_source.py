@@ -5,8 +5,12 @@ from typing import (
     Union,
 )
 
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from typing_extensions import (
+    Annotated,
     Literal,
     NotRequired,
     TypedDict,
@@ -56,7 +60,26 @@ class ResourceRequirement(BaseModel):
 
 class JavascriptRequirement(BaseModel):
     type: Literal["javascript"]
-    expression_lib: Optional[List[str]]
+    expression_lib: Optional[
+        List[
+            Annotated[
+                str,
+                Field(
+                    title="expression_lib",
+                    description="Provide Javascript/ECMAScript 5.1 code here that will be available for expressions inside the `shell_command` field.",
+                    examples=[
+                        r"""function pickValue() {
+    if (inputs.conditional_parameter.test_parameter == "a") {
+        return inputs.conditional_parameter.integer_parameter
+    } else {
+        return inputs.conditional_parameter.boolean_parameter
+    }
+}"""
+                    ],
+                ),
+            ]
+        ]
+    ]
 
 
 class XrefDict(TypedDict):
