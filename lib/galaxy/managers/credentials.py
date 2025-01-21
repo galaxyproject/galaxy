@@ -16,7 +16,10 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.credentials import SOURCE_TYPE
+from galaxy.schema.credentials import (
+    CredentialsModelList,
+    SOURCE_TYPE,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
 
 
@@ -70,13 +73,13 @@ class CredentialsManager:
 
     def add_user_credentials(
         self,
-        db_user_credentials: List[Tuple[UserCredentials, CredentialsGroup]],
+        existing_user_credentials: List[Tuple[UserCredentials, CredentialsGroup]],
         user_id: DecodedDatabaseIdField,
         reference: str,
         source_type: SOURCE_TYPE,
         source_id: str,
     ) -> DecodedDatabaseIdField:
-        user_credentials = next((uc[0] for uc in db_user_credentials if uc[0].reference == reference), None)
+        user_credentials = next((uc[0] for uc in existing_user_credentials if uc[0].reference == reference), None)
         if not user_credentials:
             user_credentials = UserCredentials(
                 user_id=user_id,
@@ -90,13 +93,13 @@ class CredentialsManager:
 
     def add_group(
         self,
-        db_user_credentials: List[Tuple[UserCredentials, CredentialsGroup]],
+        existing_user_credentials: List[Tuple[UserCredentials, CredentialsGroup]],
         user_credentials_id: DecodedDatabaseIdField,
         group_name: str,
         reference: str,
     ) -> DecodedDatabaseIdField:
         credentials_group = next(
-            (uc[1] for uc in db_user_credentials if uc[1].name == group_name and uc[0].reference == reference),
+            (uc[1] for uc in existing_user_credentials if uc[1].name == group_name and uc[0].reference == reference),
             None,
         )
         if not credentials_group:
@@ -157,8 +160,8 @@ class CredentialsManager:
         user_credentials_id: DecodedDatabaseIdField,
         group_name: str,
     ) -> None:
-        db_user_credentials = self.get_user_credentials(user_id, user_credentials_id=user_credentials_id)
-        for user_credentials, credentials_group in db_user_credentials:
+        existing_user_credentials = self.get_user_credentials(user_id, user_credentials_id=user_credentials_id)
+        for user_credentials, credentials_group in existing_user_credentials:
             if credentials_group.name == group_name:
                 user_credentials.current_group_id = credentials_group.id
                 self.session.add(user_credentials)
@@ -168,7 +171,7 @@ class CredentialsManager:
 
     def delete_rows(
         self,
-        rows_to_delete: List,
+        rows_to_delete: CredentialsModelList,
     ) -> None:
         for row in rows_to_delete:
             self.session.delete(row)
