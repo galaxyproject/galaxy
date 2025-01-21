@@ -386,10 +386,10 @@ class InvolucroContext(installable.InstallableContext):
         self.shell_exec = shell_exec or commands.shell
         self.verbose = verbose
 
-    def build_command(self, involucro_args):
+    def build_command(self, involucro_args: List[str]) -> List[str]:
         return [self.involucro_bin, f"-v={self.verbose}"] + involucro_args
 
-    def exec_command(self, involucro_args) -> int:
+    def exec_command(self, involucro_args: List[str]) -> int:
         cmd = self.build_command(involucro_args)
         # Create ./build dir manually, otherwise Docker will do it as root
         created_build_dir = False
