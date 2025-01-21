@@ -32,7 +32,7 @@ export function syncRefToLocalStorage<T>(key: string, refToSync: Ref<T>) {
         window.localStorage.setItem(key, stringified);
     };
 
-    if (stored) {
+    if (stored !== null) {
         try {
             refToSync.value = parse(stored, typeof refToSync.value as "string" | "number" | "boolean" | "object");
         } catch (e) {
