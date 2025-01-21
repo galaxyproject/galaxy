@@ -435,8 +435,8 @@ class IrodsObjectStoreTemplateConfiguration(StrictModel):
     connection: IrodsConnectionTemplate
     zone: IrodsZoneTemplate
     resource: IrodsResourceTemplate
-    ssl: IrodsSslTemplate
-    logical: IrodsPathTemplate
+    ssl: Optional[IrodsSslTemplate] = None
+    logical: Optional[IrodsPathTemplate] = None
     badges: BadgeList = None
     template_start: Optional[str] = None
     template_end: Optional[str] = None
@@ -448,8 +448,8 @@ class IrodsObjectStoreConfiguration(StrictModel):
     connection: IrodsConnection
     zone: IrodsZone
     resource: IrodsResource
-    ssl: IrodsSsl
-    logical: IrodsPath
+    ssl: Optional[IrodsSsl] = None
+    logical: Optional[IrodsPath] = None
     badges: BadgeList = None
 
 

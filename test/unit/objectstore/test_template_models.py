@@ -335,6 +335,7 @@ def test_examples_parse():
     assert_example_parses("azure_just_container.yml")
     assert_example_parses("production_gcp_s3.yml")
     assert_example_parses("irods.yml")
+    assert_example_parses("irods_ssl.yml")
 
 
 def assert_example_parses(filename: str):
