@@ -4,7 +4,6 @@ from typing import (
     List,
     Optional,
     Tuple,
-    Union,
 )
 
 from galaxy.exceptions import (
@@ -17,13 +16,12 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.credentials import CredentialsManager
 from galaxy.model import (
     CredentialsGroup,
-    Secret,
     UserCredentials,
-    Variable,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import (
     CreateSourceCredentialsPayload,
+    CredentialsModelList,
     SOURCE_TYPE,
     UserCredentialsListResponse,
     UserCredentialsResponse,
@@ -42,8 +40,8 @@ class CredentialsService:
         app: StructuredApp,
         credentials_manager: CredentialsManager,
     ) -> None:
-        self._app = app
-        self._credentials_manager = credentials_manager
+        self.app = app
+        self.credentials_manager = credentials_manager
 
     def list_user_credentials(
         self,
@@ -76,23 +74,24 @@ class CredentialsService:
     ) -> None:
         """Deletes a specific credential group or all credentials for a specific service."""
         self._check_access(trans, user_id)
-        db_user_credentials = self._credentials_manager.get_user_credentials(
+        existing_user_credentials = self.credentials_manager.get_user_credentials(
             trans.user.id, user_credentials_id=user_credentials_id, group_id=group_id
         )
-        if not db_user_credentials:
+        if not existing_user_credentials:
             raise ObjectNotFound("No credentials found.")
-        rows_to_delete: List[Union[UserCredentials, CredentialsGroup, Variable, Secret]] = []
-        for uc, credentials_group in db_user_credentials:
-            if not group_id:
-                rows_to_delete.append(uc)
-            else:
+        rows_to_delete: CredentialsModelList = []
+        for uc, credentials_group in existing_user_credentials:
+            if group_id:
                 if credentials_group.name == "default":
                     raise RequestParameterInvalidException("Cannot delete the default group.")
                 if credentials_group.id == uc.current_group_id:
-                    self._credentials_manager.update_current_group(trans.user.id, uc.id, "default")
-            variables, secrets = self._credentials_manager.fetch_credentials(credentials_group.id)
+                    self.credentials_manager.update_current_group(trans.user.id, uc.id, "default")
+            else:
+                rows_to_delete.append(uc)
+
+            variables, secrets = self.credentials_manager.fetch_credentials(credentials_group.id)
             rows_to_delete.extend([credentials_group, *variables, *secrets])
-        self._credentials_manager.delete_rows(rows_to_delete)
+        self.credentials_manager.delete_rows(rows_to_delete)
 
     def _list_user_credentials(
         self,
@@ -100,10 +99,10 @@ class CredentialsService:
         source_type: Optional[SOURCE_TYPE] = None,
         source_id: Optional[str] = None,
     ) -> UserCredentialsListResponse:
-        db_user_credentials = self._credentials_manager.get_user_credentials(trans.user.id, source_type, source_id)
-        credentials_dict = self._map_user_credentials(db_user_credentials)
-        for user_credentials, credentials_group in db_user_credentials:
-            variables, secrets = self._credentials_manager.fetch_credentials(credentials_group.id)
+        existing_user_credentials = self.credentials_manager.get_user_credentials(trans.user.id, source_type, source_id)
+        credentials_dict = self._user_credentials_to_dict(existing_user_credentials)
+        for user_credentials, credentials_group in existing_user_credentials:
+            variables, secrets = self.credentials_manager.fetch_credentials(credentials_group.id)
             group = credentials_dict[user_credentials.id]["groups"].get(credentials_group.name, {})
             group["variables"].extend(
                 {"id": variable.id, "name": variable.name, "value": variable.value} for variable in variables
@@ -114,13 +113,13 @@ class CredentialsService:
 
         return UserCredentialsListResponse(root=[UserCredentialsResponse(**cred) for cred in credentials_dict.values()])
 
-    def _map_user_credentials(
+    def _user_credentials_to_dict(
         self,
-        db_user_credentials: List[Tuple[UserCredentials, CredentialsGroup]],
+        existing_user_credentials: List[Tuple[UserCredentials, CredentialsGroup]],
     ) -> Dict[int, Dict[str, Any]]:
         user_credentials_dict: Dict[int, Dict[str, Any]] = {}
-        group_name = {group.id: group.name for _, group in db_user_credentials}
-        for user_credentials, credentials_group in db_user_credentials:
+        group_name = {group.id: group.name for _, group in existing_user_credentials}
+        for user_credentials, credentials_group in existing_user_credentials:
             cred_id = user_credentials.id
             user_credentials_dict.setdefault(
                 cred_id,
@@ -154,27 +153,27 @@ class CredentialsService:
         payload: CreateSourceCredentialsPayload,
     ) -> None:
         source_type, source_id = payload.source_type, payload.source_id
-        db_user_credentials = self._credentials_manager.get_user_credentials(trans.user.id, source_type, source_id)
+        existing_user_credentials = self.credentials_manager.get_user_credentials(trans.user.id, source_type, source_id)
         for service_payload in payload.credentials:
             reference = service_payload.reference
             current_group_name = service_payload.current_group
             if not current_group_name:
                 current_group_name = "default"
-            user_credentials_id = self._credentials_manager.add_user_credentials(
-                db_user_credentials, trans.user.id, reference, source_type, source_id
+            user_credentials_id = self.credentials_manager.add_user_credentials(
+                existing_user_credentials, trans.user.id, reference, source_type, source_id
             )
             for group in service_payload.groups:
                 group_name = group.name
-                user_credential_group_id = self._credentials_manager.add_group(
-                    db_user_credentials, user_credentials_id, group_name, reference
+                user_credential_group_id = self.credentials_manager.add_group(
+                    existing_user_credentials, user_credentials_id, group_name, reference
                 )
-                variables, secrets = self._credentials_manager.fetch_credentials(user_credential_group_id)
-                user_vault = UserVaultWrapper(self._app.vault, trans.user)
+                variables, secrets = self.credentials_manager.fetch_credentials(user_credential_group_id)
+                user_vault = UserVaultWrapper(self.app.vault, trans.user)
                 for variable_payload in group.variables:
                     variable_name, variable_value = variable_payload.name, variable_payload.value
                     if variable_value is None:
                         continue
-                    self._credentials_manager.add_variable(
+                    self.credentials_manager.add_variable(
                         variables, user_credential_group_id, variable_name, variable_value
                     )
                 for secret_payload in group.secrets:
@@ -183,10 +182,10 @@ class CredentialsService:
                         continue
                     vault_ref = f"{source_type}|{source_id}|{reference}|{group_name}|{secret_name}"
                     user_vault.write_secret(vault_ref, secret_value)
-                    self._credentials_manager.add_secret(secrets, user_credential_group_id, secret_name, secret_value)
+                    self.credentials_manager.add_secret(secrets, user_credential_group_id, secret_name, secret_value)
 
-            self._credentials_manager.update_current_group(trans.user.id, user_credentials_id, current_group_name)
-        self._credentials_manager.commit_session()
+            self.credentials_manager.update_current_group(trans.user.id, user_credentials_id, current_group_name)
+        self.credentials_manager.commit_session()
 
     def _check_access(
         self,
