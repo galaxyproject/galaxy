@@ -27,16 +27,16 @@ class TestCredentialsManager(BaseTestCase):
         reference = "ref1"
         source_type: SOURCE_TYPE = "tool"
         source_id = "tool_id"
-        db_user_credentials: List[Tuple[UserCredentials, CredentialsGroup]] = []
+        user_credentials: List[Tuple[UserCredentials, CredentialsGroup]] = []
 
         user_credentials_id = self.credentials_manager.add_user_credentials(
-            db_user_credentials, user_id, reference, source_type, source_id
+            user_credentials, user_id, reference, source_type, source_id
         )
 
         group_name = "group1"
 
         user_credential_group_id = self.credentials_manager.add_group(
-            db_user_credentials, user_credentials_id, group_name, reference
+            user_credentials, user_credentials_id, group_name, reference
         )
 
         variable_name = "var1"
