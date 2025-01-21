@@ -201,7 +201,7 @@ watch(
                 :steps="loadedWorkflow.steps"
                 :datatypes-mapper="datatypesMapper"
                 :scroll-to-id="activeNodeId"
-                fixed-height
+                :fixed-height="60"
                 populated-inputs
                 show-minimap
                 show-zoom-controls
