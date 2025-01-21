@@ -91,7 +91,7 @@
         Salt size for parallel transfer encryption
       default: 8
     ssl_verify_server:
-      label: Username
+      label: Ssl verify server
       type: string
       help: |
         What level of server certificate based authentication to perform. 
@@ -102,13 +102,13 @@
         'hostname' is the default setting.
       default: "hostname"
     ssl_ca_certificate_file:
-      label: Username
+      label: Ssl ca certificate file path
       type: string
       help: |
         Location of a file of trusted CA certificates in PEM format. 
         Note that the certificates in this file are used in conjunction with the system default 
         trusted certificates
-      default: ""
+      default: "/etc/irods/ssl/irods.crt"
   secrets:
     password:
       label: Password
