@@ -13,9 +13,22 @@ export const monarchConfig: languages.IMonarchLanguage = {
     brackets: brackets,
     tokenizer: {
         root: [
-            [/(requirements):\s*/, { token: "yaml.key", next: "@requirements", log: "requirements" }],
-            [/(shell_command):\s*\|/, { token: "key", next: "@shellCommand" }],
-            [/(shell_command):\s*/, { token: "key", next: "@shellCommand" }],
+            [
+                /(requirements)(:)(\s*)/,
+                [
+                    { token: "type.yaml", next: "@requirements", log: "requirements" },
+                    "operators.yaml",
+                    "whitespace.yaml",
+                ],
+            ],
+            [
+                /(shell_command)(:)(\s*)(\|)/,
+                [{ token: "type.yaml", next: "@shellCommand" }, "operators.yaml", "whitespace.yaml", "operators.yaml"],
+            ],
+            [
+                /(shell_command)(:)(\s*)/,
+                [{ token: "type.yaml", next: "@shellCommand" }, "operator.yaml", "whitespace.yaml"],
+            ],
             [/.*/, { token: "@rematch", nextEmbedded: "yaml", next: "@yamlRest" }],
         ],
         shellCommand: [
@@ -52,19 +65,30 @@ export const monarchConfig: languages.IMonarchLanguage = {
               - if we don't pop out at the of the line we might mark the whole document in js syntax
               - if we pop out of the embedded state on `)` the first function call (or other use of `)`) will end the js highlighting
             */
-            [/\/\/end\)/, { token: "comment", next: "@pop", nextEmbedded: "@pop", log: "pop" }],
+            [/\/\/end(?=\))/, { token: "comment", next: "@pop", nextEmbedded: "@pop", log: "pop embedded inline" }],
             [/$/, { token: "@rematch", next: "@pop", nextEmbedded: "@pop", log: "pop" }],
             [/[^(]+/, { token: "source.js", nextEmbedded: "javascript", log: "embedded source.js" }],
         ],
         requirements: [
             // Match array item in `requirements`
-            [/\s*-\s*type:\s*javascript/, { token: "key", next: "@javascriptRequirement", log: "array of" }],
+            [
+                /(\s*)(-)(\s*)(type)(:)(\s*)(javascript)/,
+                [
+                    "whitespace",
+                    "operators",
+                    "whitespace",
+                    "type",
+                    "operators",
+                    "whitespace",
+                    { token: "string.yaml", next: "@javascriptRequirement", log: "array of" },
+                ],
+            ],
             [/.*/, { token: "@rematch", next: "@root" }], // Back to root if no match
         ],
 
         javascriptRequirement: [
             // Match `expression_lib` key followed by a block scalar array item
-            [/\s*(expression_lib):\s*/, { token: "key", next: "@expressionLib", log: "expressionLib" }],
+            [/\s*(expression_lib):\s*/, { token: "type.yaml", next: "@expressionLib", log: "expressionLib" }],
             [/.*/, { token: "@rematch", next: "@root" }], // Back to root if no match
         ],
 
