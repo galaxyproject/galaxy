@@ -4581,7 +4581,8 @@ Name | Description
 ``$__root_dir__`` | Top-level Galaxy source directory made absolute via ``os.path.abspath()``
 ``$__datatypes_config__`` | ``config/galaxy.ini``'s datatypes_config value
 ``$__user_id__`` | Numeric ID of user (id column of ``galaxy_user`` table in the database)
-``$__user_email__`` | Email address of user
+``$__user_email__`` | Email address of the user
+``$__user_name__`` | User name of the user
 ``$__app__`` | The ``galaxy.app.UniverseApplication`` instance, gives access to all other configuration file variables (e.g. $__app__.config.output_size_limit). Should be used as a last resort, may go away in future releases.
 ``$__target_datatype__`` | Only available in converter tools when run internally by Galaxy. Contains the target datatype of the conversion
 
