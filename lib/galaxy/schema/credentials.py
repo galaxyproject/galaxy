@@ -2,15 +2,25 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from pydantic import RootModel
 from typing_extensions import Literal
 
+from galaxy.model import (
+    CredentialsGroup,
+    Secret,
+    UserCredentials,
+    Variable,
+)
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import Model
 
 SOURCE_TYPE = Literal["tool"]
+
+
+CredentialsModelList = List[Union[UserCredentials, CredentialsGroup, Variable, Secret]]
 
 
 class CredentialResponse(Model):

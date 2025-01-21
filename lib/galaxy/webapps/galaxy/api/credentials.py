@@ -90,5 +90,5 @@ class FastAPICredentials:
         group_id: DecodedDatabaseIdField,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
-        self.service.delete_credentials(trans, user_id, group_id=group_id)
+        self.service.delete_credentials(trans, user_id, user_credentials_id=user_credentials_id, group_id=group_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
