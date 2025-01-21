@@ -12,9 +12,9 @@
       help: Host url to connect to.
     port:
       label: iRODS host port
-      type: string
+      type: integer
       help: Host port to connect to.
-      default: "1247"
+      default: 1247
     username:
       label: Username
       type: string
@@ -28,7 +28,6 @@
         which is a logical name for that set of Data Objects.
         All Galaxy output will be stored in this collection
       default: ""
-  environment:
     timeout:
       label: Connection timeout
       type: integer
@@ -55,7 +54,6 @@
       type: string
       help: |
         The iRODS resource to use
-  ssl:
     client_server_negotiation:
       label: Server negotiation
       type: string
@@ -105,7 +103,7 @@
       default: "hostname"
     ssl_ca_certificate_file:
       label: Username
-      type: variable
+      type: string
       help: |
         Location of a file of trusted CA certificates in PEM format. 
         Note that the certificates in this file are used in conjunction with the system default 
@@ -122,24 +120,24 @@
       username: '{{ variables.username }}'
       password: '{{ secrets.password }}'
     resource:
-      name: '{{ environment.resource }}'
+      name: '{{ variables.resource }}'
     zone:
-      name: '{{ environment.zone }}'
+      name: '{{ variables.zone }}'
     connection:
       host: '{{ variables.host }}'
       port: '{{ variables.port }}'
-      timeout: '{{ environment.timeout }}'
-      refresh_time: '{{ environment.refresh_time }}'
-      connection_pool_monitor_interval: '{{ environment.connection_pool_monitor_interval }}'
+      timeout: '{{ variables.timeout }}'
+      refresh_time: '{{ variables.refresh_time }}'
+      connection_pool_monitor_interval: '{{ variables.connection_pool_monitor_interval }}'
     ssl:
-      client_server_negotiation: '{{ ssl.client_server_negotiation }}'
-      client_server_policy: '{{ ssl.client_server_policy }}'
-      encryption_algorithm: '{{ ssl.encryption_algorithm }}'
-      encryption_key_size: '{{ ssl.encryption_key_size }}'
-      encryption_num_hash_rounds: '{{ ssl.encryption_num_hash_rounds }}'
-      encryption_salt_size: '{{ ssl.encryption_salt_size }}'
-      ssl_verify_server: '{{ ssl.ssl_verify_server }}'
-      ssl_ca_certificate_file: '{{ ssl.ssl_ca_certificate_file }}'
+      client_server_negotiation: '{{ variables.client_server_negotiation }}'
+      client_server_policy: '{{ variables.client_server_policy }}'
+      encryption_algorithm: '{{ variables.encryption_algorithm }}'
+      encryption_key_size: '{{ variables.encryption_key_size }}'
+      encryption_num_hash_rounds: '{{ variables.encryption_num_hash_rounds }}'
+      encryption_salt_size: '{{ variables.encryption_salt_size }}'
+      ssl_verify_server: '{{ variables.ssl_verify_server }}'
+      ssl_ca_certificate_file: '{{ variables.ssl_ca_certificate_file }}'
     logical:
       path: '{{ variables.logical_path }}'
 
