@@ -251,6 +251,10 @@ async function onExecute() {
                                 v-model="splitObjectStore">
                                 Send outputs and intermediate to different storage locations?
                             </BFormCheckbox>
+                            <!-- Options to default one way or the other, disable if admins want, etc.. -->
+                            <BFormCheckbox class="workflow-expand-form-link" @change="emit('showAdvanced')">
+                                Expand to full workflow form.
+                            </BFormCheckbox>
                             <WorkflowStorageConfiguration
                                 v-if="isConfigLoaded && config.object_store_allows_id_selection"
                                 :split-object-store="splitObjectStore"
@@ -278,10 +282,6 @@ async function onExecute() {
                     @onChange="onChange"
                     @onValidation="onValidation"
                     @update:active-node-id="($event) => (activeNodeId = $event)" />
-                <!-- Options to default one way or the other, disable if admins want, etc.. -->
-                <a href="#" class="workflow-expand-form-link" @click="emit('showAdvanced')">
-                    Expand to full workflow form.
-                </a>
             </div>
             <div v-show="showGraph" class="w-50">
                 <WorkflowRunGraph
