@@ -289,7 +289,7 @@ def abort_when_job_stops(function: Callable, session: galaxy_scoped_session, job
     if not is_aborted(session, job_id):
         future = celery_app.fork_pool.submit(
             function,
-            timeout=None,
+            None,
             **kwargs,
         )
         while True:

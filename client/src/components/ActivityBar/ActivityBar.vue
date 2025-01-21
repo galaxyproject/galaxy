@@ -228,6 +228,7 @@ defineExpose({
                                 v-if="activity.id === 'upload'"
                                 :id="`${activity.id}`"
                                 :key="activity.id"
+                                :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip" />
@@ -235,6 +236,7 @@ defineExpose({
                                 v-else-if="activity.to && activity.id === 'interactivetools'"
                                 :id="`${activity.id}`"
                                 :key="activity.id"
+                                :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
                                 :is-active="isActiveRoute(activity.to)"
                                 :title="activity.title"
@@ -272,6 +274,7 @@ defineExpose({
                 <NotificationItem
                     v-if="isConfigLoaded && config.enable_notification_system"
                     id="notifications"
+                    :activity-bar-id="props.activityBarId"
                     :icon="faBell"
                     :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
                     title="Notifications"

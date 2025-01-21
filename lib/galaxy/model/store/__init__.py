@@ -24,6 +24,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Optional,
     Set,
     Tuple,
@@ -2954,9 +2955,7 @@ def get_export_store_factory(
 
 
 def tar_export_directory(export_directory: StrPath, out_file: StrPath, gzip: bool) -> None:
-    tarfile_mode = "w"
-    if gzip:
-        tarfile_mode += ":gz"
+    tarfile_mode: Literal["w", "w:gz"] = "w:gz" if gzip else "w"
 
     with tarfile.open(out_file, tarfile_mode, dereference=True) as store_archive:
         for export_path in os.listdir(export_directory):
@@ -3043,7 +3042,8 @@ def source_to_import_store(
             if ModelStoreFormat.is_compressed(model_store_format):
                 try:
                     temp_dir = mkdtemp()
-                    target_dir = CompressedFile(target_path).extract(temp_dir)
+                    with CompressedFile(target_path) as cf:
+                        target_dir = cf.extract(temp_dir)
                 finally:
                     if delete:
                         os.remove(target_path)

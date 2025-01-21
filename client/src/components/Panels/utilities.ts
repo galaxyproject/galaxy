@@ -4,12 +4,7 @@
  */
 import { orderBy } from "lodash";
 
-import {
-    type FilterSettings as ToolFilters,
-    type Tool,
-    type ToolSection,
-    type ToolSectionLabel,
-} from "@/stores/toolStore";
+import type { FilterSettings as ToolFilters, Tool, ToolSection, ToolSectionLabel } from "@/stores/toolStore";
 import levenshteinDistance from "@/utils/levenshtein";
 
 const FILTER_KEYS = {

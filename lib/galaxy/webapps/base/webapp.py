@@ -181,7 +181,7 @@ class WebApplication(base.WebApplication):
     def create_mako_template_lookup(self, galaxy_app, name):
         paths = []
         base_package = (
-            "tool_shed.webapp" if galaxy_app.name == "tool_shed" else "galaxy.webapps.base"
+            "tool_shed.webapp" if galaxy_app.name == "tool_shed" else __name__
         )  # reports has templates in galaxy package
         base_template_path = resource_path(base_package, "templates")
         with ExitStack() as stack:

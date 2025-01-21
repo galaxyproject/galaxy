@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMemoize, watchImmediate } from "@vueuse/core";
+import { BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { loadWorkflows, type Workflow } from "@/components/Workflow/workflows.services";
@@ -19,6 +22,7 @@ const props = defineProps<{
 const emit = defineEmits<{
     (e: "insertWorkflow", id: string, name: string): void;
     (e: "insertWorkflowSteps", id: string, stepCount: number): void;
+    (e: "createWorkflow"): void;
 }>();
 
 const scrollable = ref<HTMLDivElement | null>(null);
@@ -52,7 +56,7 @@ const loadWorkflowsOptions = {
     sortBy: "update_time",
     sortDesc: true,
     limit: 20,
-    showPublished: true,
+    showPublished: false,
     skipStepCounts: false,
 } as const;
 
@@ -138,11 +142,26 @@ watch(
 function scrollToTop() {
     scrollable.value?.scrollTo({ top: 0, behavior: "smooth" });
 }
+
+function createNew(event: Event) {
+    event.preventDefault();
+    emit("createWorkflow");
+}
 </script>
 
 <template>
     <ActivityPanel title="Workflows">
         <template v-slot:header-buttons>
+            <BButton
+                v-b-tooltip.hover.top.noninteractive
+                size="sm"
+                variant="link"
+                class="create-button"
+                title="Create new workflow"
+                href="/workflows/edit"
+                @click="createNew">
+                <FontAwesomeIcon :icon="faPlus" />
+            </BButton>
             <FavoritesButton v-model="showFavorites" tooltip="Show bookmarked" />
         </template>
 
@@ -188,5 +207,10 @@ function scrollToTop() {
     align-self: center;
     color: $text-light;
     margin: 0.5rem;
+}
+
+.create-button:hover {
+    background-color: #c8cfd6;
+    border-color: #c1c9d0;
 }
 </style>

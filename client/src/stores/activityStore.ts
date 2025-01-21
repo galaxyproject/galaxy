@@ -127,10 +127,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
             }
         });
 
-        // update activities stored in local cache only if changes were applied
-        if (JSON.stringify(activities.value) !== JSON.stringify(newActivities)) {
-            activities.value = newActivities;
-        }
+        activities.value = newActivities;
 
         // if toggled side-bar does not exist, choose the first option
         if (toggledSideBar.value !== "") {

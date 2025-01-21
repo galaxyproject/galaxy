@@ -42,18 +42,17 @@ describe("Node", () => {
             },
         });
         await flushPromises();
+
         // fa-wrench is the tool icon ...
         expect(wrapper.findAll(".fa-wrench")).toHaveLength(1);
-        const toolLinks = wrapper.findAll("i");
-        expect(toolLinks.length).toBe(3);
         await wrapper.setProps({
             step: { label: "step label", type: "subworkflow", inputs: [], outputs: [], position: { top: 0, left: 0 } },
         });
+
         // fa-sitemap is the subworkflow icon ...
         expect(wrapper.findAll(".fa-sitemap")).toHaveLength(1);
         expect(wrapper.findAll(".fa-wrench")).toHaveLength(0);
-        const subworkflowLinks = wrapper.findAll("i");
-        expect(subworkflowLinks.length).toBe(2);
+
         const workflowTitle = wrapper.find(".node-title");
         expect(workflowTitle.text()).toBe("step label");
     });

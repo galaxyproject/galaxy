@@ -123,25 +123,27 @@ class WorkflowRunCrateProfileBuilder:
     def _add_files(self, crate: ROCrate):
         for wfda in self.invocation.input_datasets:
             if not self.file_entities.get(wfda.dataset.dataset.id):
-                properties = {
-                    "exampleOfWork": {"@id": f"#{wfda.dataset.dataset.uuid}"},
-                }
-                file_entity = self._add_file(wfda.dataset, properties, crate)
                 dataset_formal_param = self._add_dataset_formal_parameter(wfda.dataset, crate)
                 crate.mainEntity.append_to("input", dataset_formal_param)
+                properties = {
+                    "exampleOfWork": {"@id": dataset_formal_param.id},
+                }
+                file_entity = self._add_file(wfda.dataset, properties, crate)
                 self.create_action.append_to("object", file_entity)
 
         for wfda in self.invocation.output_datasets:
             if not self.file_entities.get(wfda.dataset.dataset.id):
-                properties = {
-                    "exampleOfWork": {"@id": f"#{wfda.dataset.dataset.uuid}"},
-                }
-                file_entity = self._add_file(wfda.dataset, properties, crate)
                 dataset_formal_param = self._add_dataset_formal_parameter(wfda.dataset, crate)
                 crate.mainEntity.append_to("output", dataset_formal_param)
+                properties = {
+                    "exampleOfWork": {"@id": dataset_formal_param.id},
+                }
+                file_entity = self._add_file(wfda.dataset, properties, crate)
                 self.create_action.append_to("result", file_entity)
 
-    def _add_collection(self, hdca: HistoryDatasetCollectionAssociation, crate: ROCrate) -> ContextEntity:
+    def _add_collection(
+        self, hdca: HistoryDatasetCollectionAssociation, crate: ROCrate, collection_formal_param: ContextEntity
+    ) -> ContextEntity:
         name = hdca.name
         dataset_ids = []
         for hda in hdca.dataset_instances:
@@ -158,7 +160,7 @@ class WorkflowRunCrateProfileBuilder:
             "@type": "Collection",
             "additionalType": self._get_collection_additional_type(hdca.collection.collection_type),
             "hasPart": dataset_ids,
-            "exampleOfWork": {"@id": f"#{hdca.type_id}-param"},
+            "exampleOfWork": {"@id": collection_formal_param.id},
         }
         collection_entity = crate.add(
             ContextEntity(
@@ -185,14 +187,14 @@ class WorkflowRunCrateProfileBuilder:
 
     def _add_collections(self, crate: ROCrate):
         for wfdca in self.invocation.input_dataset_collections:
-            collection_entity = self._add_collection(wfdca.dataset_collection, crate)
             collection_formal_param = self._add_collection_formal_parameter(wfdca.dataset_collection, crate)
+            collection_entity = self._add_collection(wfdca.dataset_collection, crate, collection_formal_param)
             crate.mainEntity.append_to("input", collection_formal_param)
             self.create_action.append_to("object", collection_entity)
 
         for wfdca in self.invocation.output_dataset_collections:
-            collection_entity = self._add_collection(wfdca.dataset_collection, crate)
             collection_formal_param = self._add_collection_formal_parameter(wfdca.dataset_collection, crate)
+            collection_entity = self._add_collection(wfdca.dataset_collection, crate, collection_formal_param)
             crate.mainEntity.append_to("output", collection_formal_param)
             self.create_action.append_to("result", collection_entity)
 
@@ -336,30 +338,14 @@ class WorkflowRunCrateProfileBuilder:
     def _add_parameters(self, crate: ROCrate):
         for step in self.invocation.steps:
             if step.workflow_step.type == "parameter_input":
-                property_value = self._add_step_parameter_pv(step, crate)
-                formal_param = self._add_step_parameter_fp(step, crate)
-                crate.mainEntity.append_to("input", formal_param)
+                property_value = self._add_step_parameter(step, crate)
                 self.create_action.append_to("object", property_value)
 
-    def _add_step_parameter_pv(self, step: WorkflowInvocationStep, crate: ROCrate):
+    def _add_step_parameter(self, step: WorkflowInvocationStep, crate: ROCrate) -> ContextEntity:
         param_id = step.workflow_step.label
-        return crate.add(
-            ContextEntity(
-                crate,
-                f"{param_id}-pv",
-                properties={
-                    "@type": "PropertyValue",
-                    "name": f"{param_id}",
-                    "value": step.output_value.value,
-                    "exampleOfWork": {"@id": f"#{param_id}-param"},
-                },
-            )
-        )
-
-    def _add_step_parameter_fp(self, step: WorkflowInvocationStep, crate: ROCrate):
-        param_id = step.workflow_step.label
+        assert step.workflow_step.tool_inputs
         param_type = step.workflow_step.tool_inputs["parameter_type"]
-        return crate.add(
+        formal_param = crate.add(
             ContextEntity(
                 crate,
                 f"{param_id}-param",
@@ -372,18 +358,16 @@ class WorkflowRunCrateProfileBuilder:
                 },
             )
         )
-
-    def _add_step_tool_pv(self, step: WorkflowInvocationStep, tool_input: str, crate: ROCrate):
-        param_id = tool_input
+        crate.mainEntity.append_to("input", formal_param)
         return crate.add(
             ContextEntity(
                 crate,
                 f"{param_id}-pv",
                 properties={
                     "@type": "PropertyValue",
-                    "name": f"{step.workflow_step.label}",
-                    "value": step.workflow_step.tool_inputs[tool_input],
-                    "exampleOfWork": {"@id": f"#{param_id}-param"},
+                    "name": f"{param_id}",
+                    "value": step.output_value.value,
+                    "exampleOfWork": {"@id": formal_param.id},
                 },
             )
         )
@@ -417,7 +401,9 @@ class WorkflowRunCrateProfileBuilder:
             )
         )
 
-    def _add_collection_formal_parameter(self, hdca: HistoryDatasetCollectionAssociation, crate: ROCrate):
+    def _add_collection_formal_parameter(
+        self, hdca: HistoryDatasetCollectionAssociation, crate: ROCrate
+    ) -> ContextEntity:
         return crate.add(
             ContextEntity(
                 crate,

@@ -8,7 +8,6 @@ import os
 from typing import (
     Any,
     Dict,
-    Generic,
     List,
     Optional,
     Type,
@@ -327,11 +326,10 @@ U = TypeVar("U", bound=DatasetInstance)
 
 
 class DatasetAssociationManager(
-    base.ModelManager[DatasetInstance],
+    base.ModelManager[U],
     secured.AccessibleManagerMixin,
     secured.OwnableManagerMixin,
     deletable.PurgableManagerMixin,
-    Generic[U],
 ):
     """
     DatasetAssociation/DatasetInstances are intended to be working
@@ -384,6 +382,7 @@ class DatasetAssociationManager(
         self.stop_creating_job(item, flush=True)
 
         # more importantly, purge underlying dataset as well
+        assert item.dataset
         if item.dataset.user_can_purge:
             self.dataset_manager.purge(item.dataset, flush=flush, **kwargs)
         return item
@@ -443,6 +442,7 @@ class DatasetAssociationManager(
         """Return a list of file paths for composite files, an empty list otherwise."""
         if not self.is_composite(dataset_assoc):
             return []
+        assert dataset_assoc.dataset
         return glob.glob(os.path.join(dataset_assoc.dataset.extra_files_path, "*"))
 
     def serialize_dataset_association_roles(self, dataset_assoc: U):

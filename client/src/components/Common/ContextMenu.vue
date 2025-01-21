@@ -36,10 +36,10 @@ watch(
         <Popper
             placement="right"
             class="context-menu"
-            :style="placeContextMenu"
-            :force-show="true"
+            mode="light"
+            trigger="manual"
             :arrow="false"
-            mode="light">
+            :style="placeContextMenu">
             <div class="context-menu-slot">
                 <slot />
             </div>

@@ -43,7 +43,7 @@ def _from_dict(entry):
     return (name, ErrorCode(code, message))
 
 
-error_codes_json = resource_string(__package__, "error_codes.json")
+error_codes_json = resource_string(__name__, "error_codes.json")
 error_codes_by_name: Dict[str, ErrorCode] = {}
 error_codes_by_int_code: Dict[int, ErrorCode] = {}
 

@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 #: time of the most recent server startup
 server_starttime = int(time.time())
 try:
-    meta_json = json.loads(resource_string(__package__, "meta.json"))
+    meta_json = json.loads(resource_string(__name__, "meta.json"))
     server_starttime = meta_json.get("epoch") or server_starttime
 except Exception:
     meta_json = {}

@@ -9,6 +9,7 @@ import { computed, onMounted, ref } from "vue";
 import { GalaxyApi, type HDADetailed } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
 import { type JobDetails, type JobInputSummary } from "@/api/jobs";
+import { useConfig } from "@/composables/config";
 import { useMarkdown } from "@/composables/markdown";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -30,6 +31,7 @@ const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
+const { config, isConfigLoaded } = useConfig();
 
 const message = ref("");
 const jobLoading = ref(true);
@@ -46,6 +48,8 @@ const showForm = computed(() => {
 
     return noResult || hasError;
 });
+
+const showWizard = computed(() => isConfigLoaded && config.value?.llm_api_configured);
 
 async function getDatasetDetails() {
     datasetLoading.value = true;
@@ -154,21 +158,22 @@ onMounted(async () => {
                 <b id="dataset-error-tool-id" class="text-break">{{ jobDetails.tool_id }}</b
                 >.
             </p>
-
-            <h4 class="mb-3 h-md">Possible Causes</h4>
-            <p>
-                <span>
-                    We can use AI to analyze the issue and suggest possible fixes. Please note that the diagnosis may
-                    not always be accurate.
-                </span>
-            </p>
-            <BCard class="mb-2">
-                <GalaxyWizard
-                    view="error"
-                    :query="jobDetails.tool_stderr"
-                    context="tool_error"
-                    :job-id="jobDetails.id" />
-            </BCard>
+            <template v-if="showWizard">
+                <h4 class="mb-3 h-md">Possible Causes</h4>
+                <p>
+                    <span>
+                        We can use AI to analyze the issue and suggest possible fixes. Please note that the diagnosis
+                        may not always be accurate.
+                    </span>
+                </p>
+                <BCard class="mb-2">
+                    <GalaxyWizard
+                        view="error"
+                        :query="jobDetails.tool_stderr"
+                        context="tool_error"
+                        :job-id="jobDetails.id" />
+                </BCard>
+            </template>
 
             <DatasetErrorDetails
                 :tool-stderr="jobDetails.tool_stderr"

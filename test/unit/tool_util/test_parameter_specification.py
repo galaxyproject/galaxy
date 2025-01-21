@@ -28,7 +28,10 @@ from galaxy.tool_util.parameters import (
     validate_workflow_step_linked,
     ValidationFunctionT,
 )
-from galaxy.tool_util.parameters.json import to_json_schema_string
+from galaxy.tool_util.parameters.json import (
+    to_json_schema,
+    to_json_schema_string,
+)
 from galaxy.tool_util.unittest_utils.parameters import (
     parameter_bundle_for_file,
     parameter_bundle_for_framework_tool,
@@ -41,7 +44,7 @@ if sys.version_info < (3, 8):  # noqa: UP036
 
 def specification_object():
     try:
-        yaml_str = resource_string(__package__, "parameter_specification.yml")
+        yaml_str = resource_string(__name__, "parameter_specification.yml")
     except AttributeError:
         # hack for the main() function below where this file is interpreted as part of the
         # Galaxy tree.
@@ -54,7 +57,7 @@ def framework_tool_checks():
     # There is something beautiful about a targeted tool for every parameter feature but realistically
     # we've been doing a version of the for a decade with tool tests and we can leverage those also.
     try:
-        yaml_str = resource_string(__package__, "framework_tool_checks.yml")
+        yaml_str = resource_string(__name__, "framework_tool_checks.yml")
     except AttributeError:
         # hack for the main() function below where this file is interpreted as part of the
         # Galaxy tree.
@@ -223,7 +226,11 @@ def test_decode_gx_int():
 def test_json_schema_for_conditional():
     input_bundle = parameter_bundle_for_file("gx_conditional_boolean")
     tool_state = RequestToolState.parameter_model_for(input_bundle)
-    print(to_json_schema_string(tool_state))
+    json_schema = to_json_schema(tool_state)
+    assert json_schema["$defs"]["When_test_parameter_False"]["properties"]["test_parameter"]["const"] is False
+    assert json_schema["$defs"]["When_test_parameter_True"]["properties"]["test_parameter"]["const"] is True
+    assert "test_parameter" not in json_schema["$defs"]["When_test_parameter___absent"]["properties"]
+    assert to_json_schema_string(tool_state)
 
 
 def test_encode_gx_data():
@@ -244,7 +251,7 @@ if __name__ == "__main__":
     parameter_models_json = {}
     for file in parameter_spec.keys():
         tool_parameter_model = parameter_bundle_for_file(file)
-        parameter_models_json[file] = tool_parameter_model.dict()
+        parameter_models_json[file] = tool_parameter_model.model_dump()
     yaml_str = yaml.safe_dump(parameter_models_json)
     with open("client/src/components/Tool/parameter_models.yml", "w") as f:
         f.write("# auto generated file for JavaScript testing, do not modify manually\n")

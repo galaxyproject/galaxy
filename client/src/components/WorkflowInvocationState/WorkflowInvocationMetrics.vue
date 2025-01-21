@@ -176,7 +176,8 @@ function metricToAggregateData(
             aggregateByX[x] = 0;
         }
         if (x in aggregateByX) {
-            aggregateByX[x] += y;
+            const newX = aggregateByX[x] || 0 + y;
+            aggregateByX[x] = newX;
         }
     });
     const values = Object.keys(aggregateByX).map((key) => {

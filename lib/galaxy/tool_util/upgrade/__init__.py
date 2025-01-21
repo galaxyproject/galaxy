@@ -46,7 +46,7 @@ class AdviceCode(TypedDict):
     url: NotRequired[str]
 
 
-upgrade_codes_json = resource_string(__package__, "upgrade_codes.json")
+upgrade_codes_json = resource_string(__name__, "upgrade_codes.json")
 upgrade_codes_by_name: Dict[str, AdviceCode] = {}
 
 for name, upgrade_object in loads(upgrade_codes_json).items():

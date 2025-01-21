@@ -2,6 +2,7 @@ import os.path
 from typing import (
     Set,
     TYPE_CHECKING,
+    Union,
 )
 
 # from galaxy import config
@@ -10,15 +11,17 @@ from galaxy.util import (
     listify,
     parse_xml,
 )
+from galaxy.util.resources import resource_path
 
 if TYPE_CHECKING:
     from galaxy.tool_util.lint import LintContext
     from galaxy.tool_util.parser import ToolSource
+    from galaxy.util.resources import Traversable
 
-DATATYPES_CONF = os.path.join(os.path.dirname(__file__), "datatypes_conf.xml.sample")
+DATATYPES_CONF = resource_path(__name__, "datatypes_conf.xml.sample")
 
 
-def _parse_datatypes(datatype_conf_path: str) -> Set[str]:
+def _parse_datatypes(datatype_conf_path: Union[str, "Traversable"]) -> Set[str]:
     datatypes = set()
     tree = parse_xml(datatype_conf_path)
     root = tree.getroot()

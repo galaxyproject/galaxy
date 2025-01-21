@@ -26,7 +26,7 @@ from .psa_authnz import (
     PSAAuthnz,
 )
 
-OIDC_BACKEND_SCHEMA = resource_path(__package__, "xsd/oidc_backends_config.xsd")
+OIDC_BACKEND_SCHEMA = resource_path(__name__, "xsd/oidc_backends_config.xsd")
 
 log = logging.getLogger(__name__)
 

@@ -235,7 +235,7 @@ class TaskedJobRunner(BaseJobRunner):
                 log.warning(
                     "_stop_pid(): %s: Got errno %s when attempting to signal %d to PID %d: %s",
                     job_id,
-                    errno.errorcode[e.errno],
+                    errno.errorcode[e.errno] if e.errno is not None else None,
                     sig,
                     pid,
                     e.strerror,
