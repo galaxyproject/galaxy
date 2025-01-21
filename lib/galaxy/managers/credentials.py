@@ -2,6 +2,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Union,
 )
 
 from sqlalchemy import select
@@ -16,11 +17,10 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.credentials import (
-    CredentialsModelList,
-    SOURCE_TYPE,
-)
+from galaxy.schema.credentials import SOURCE_TYPE
 from galaxy.schema.fields import DecodedDatabaseIdField
+
+CredentialsModelList = List[Union[UserCredentials, CredentialsGroup, Variable, Secret]]
 
 
 class CredentialsManager:
