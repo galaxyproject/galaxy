@@ -218,7 +218,8 @@ defineExpose({
                         :model="workflowModel"
                         :can-mutate-current-history="canRunOnHistory"
                         @submissionSuccess="handleInvocations"
-                        @submissionError="handleSubmissionError" />
+                        @submissionError="handleSubmissionError"
+                        @showSimple="advancedForm = false" />
                 </div>
             </div>
         </span>
