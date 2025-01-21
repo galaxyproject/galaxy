@@ -369,7 +369,7 @@ class IrodsAuth(StrictModel):
 
 class IrodsConnectionTemplate(StrictModel):
     host: Union[str, TemplateExpansion]
-    port: Union[str, TemplateExpansion]
+    port: Union[int, TemplateExpansion]
     timeout: Optional[Union[int, TemplateExpansion]]
     refresh_time: Optional[Union[int, TemplateExpansion]]
     connection_pool_monitor_interval: Optional[Union[int, TemplateExpansion]]
@@ -378,33 +378,33 @@ class IrodsConnectionTemplate(StrictModel):
 class IrodsConnection(StrictModel):
     host: str
     port: Optional[int]
-    timeout: Optional[int]
-    refresh_time: Optional[int]
-    connection_pool_monitor_interval: Optional[int]
+    timeout: Optional[int] = None
+    refresh_time: Optional[int] = None
+    connection_pool_monitor_interval: Optional[int] = None
 
 
 class IrodsPathTemplate(StrictModel):
-    logical_path: Optional[Union[str, TemplateExpansion]] = ""
+    path: Optional[Union[str, TemplateExpansion]] = ""
 
 
 class IrodsPath(StrictModel):
-    logical_path: Optional[str] = ""
+    path: Optional[str] = ""
 
 
 class IrodsResourceTemplate(StrictModel):
-    resource: Union[str, TemplateExpansion]
+    name: Union[str, TemplateExpansion]
 
 
 class IrodsResource(StrictModel):
-    resource: str
+    name: str
 
 
 class IrodsZoneTemplate(StrictModel):
-    zone: Union[str, TemplateExpansion]
+    name: Union[str, TemplateExpansion]
 
 
 class IrodsZone(StrictModel):
-    zone: str
+    name: str
 
 
 class IrodsSslTemplate(StrictModel):
