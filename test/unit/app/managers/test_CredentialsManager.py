@@ -11,7 +11,10 @@ from galaxy.model import (
     UserCredentials,
     Variable,
 )
-from galaxy.schema.credentials import SOURCE_TYPE
+from galaxy.schema.credentials import (
+    CredentialsModelList,
+    SOURCE_TYPE,
+)
 from .base import BaseTestCase
 
 
@@ -73,7 +76,7 @@ class TestCredentialsManager(BaseTestCase):
         assert secrets[0].name == secret_name
         assert secrets[0].already_set
 
-        rows_to_delete = [result_user_credentials, result_credentials_group, *variables, *secrets]
+        rows_to_delete: CredentialsModelList = [result_user_credentials, result_credentials_group, *variables, *secrets]
         self.credentials_manager.delete_rows(rows_to_delete)
         self.credentials_manager.commit_session()
 
