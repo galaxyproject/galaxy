@@ -25,7 +25,7 @@
             <b-button-group class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
                 <b-button
-                    v-if="canClone && !readonly"
+                    v-if="!readonly"
                     v-b-tooltip.hover
                     class="node-clone py-0"
                     variant="primary"
@@ -241,7 +241,6 @@ const title = computed(() => props.step.label || props.step.name);
 const idString = computed(() => `wf-node-step-${props.id}`);
 const showRule = computed(() => props.step.inputs?.length > 0 && props.step.outputs?.length > 0);
 const iconClass = computed(() => `icon fa fa-fw ${WorkflowIcons[props.step.type]}`);
-const canClone = computed(() => props.step.type !== "subworkflow"); // Why ?
 const isEnabled = getGalaxyInstance().config.enable_tool_recommendations; // getGalaxyInstance is not reactive
 
 const isActive = computed(() => props.id === props.activeNodeId);

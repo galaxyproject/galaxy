@@ -55,6 +55,8 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     smart_str,
 )
+from galaxy.util.compression_utils import CompressedFile
+from galaxy.util.resources import as_file
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
 from galaxy_test.base.api_util import get_admin_api_key
 from galaxy_test.base.populators import wait_on_assertion
@@ -64,7 +66,6 @@ from tool_shed.util import (
     hgweb_config,
     xml_util,
 )
-from tool_shed.util.repository_content_util import tar_open
 from tool_shed.webapp.model import Repository as DbRepository
 from tool_shed_client.schema import (
     Category,
@@ -1146,7 +1147,8 @@ class ShedTwillTestCase(ShedApiTestCase):
                 target = os.path.basename(source)
             full_target = os.path.join(temp_directory, target)
             full_source = TEST_DATA_REPO_FILES.joinpath(source)
-            shutil.copyfile(str(full_source), full_target)
+            with as_file(full_source) as full_source_path:
+                shutil.copyfile(full_source_path, full_target)
             commit_message = commit_message or "Uploaded revision with added file."
             self._upload_dir_to_repository(
                 repository, temp_directory, commit_message=commit_message, strings_displayed=strings_displayed
@@ -1155,9 +1157,9 @@ class ShedTwillTestCase(ShedApiTestCase):
     def add_tar_to_repository(self, repository: Repository, source: str, strings_displayed=None):
         with self.cloned_repo(repository) as temp_directory:
             full_source = TEST_DATA_REPO_FILES.joinpath(source)
-            tar = tar_open(full_source)
-            tar.extractall(path=temp_directory)
-            tar.close()
+            with full_source.open("rb") as full_source_fileobj:
+                with CompressedFile.open_tar(full_source_fileobj) as tar:
+                    tar.extractall(path=temp_directory)
             commit_message = "Uploaded revision with added files from tar."
             self._upload_dir_to_repository(
                 repository, temp_directory, commit_message=commit_message, strings_displayed=strings_displayed

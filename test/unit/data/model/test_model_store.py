@@ -646,9 +646,9 @@ def test_export_invocation_to_ro_crate_archive(tmp_path):
     crate_zip = tmp_path / "crate.zip"
     with store.ROCrateArchiveModelExportStore(crate_zip, app=app, export_files="symlink") as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
-    compressed_file = CompressedFile(crate_zip)
-    assert compressed_file.file_type == "zip"
-    compressed_file.extract(tmp_path)
+    with CompressedFile(crate_zip) as compressed_file:
+        assert compressed_file.file_type == "zip"
+        compressed_file.extract(tmp_path)
     crate_directory = tmp_path / "crate"
     validate_invocation_crate_directory(crate_directory)
 
@@ -1249,7 +1249,8 @@ class Options:
 
 def import_archive(archive_path, app, user, import_options=None):
     dest_parent = mkdtemp()
-    dest_dir = CompressedFile(archive_path).extract(dest_parent)
+    with CompressedFile(archive_path) as cf:
+        dest_dir = cf.extract(dest_parent)
 
     import_options = import_options or store.ImportOptions()
     model_store = store.get_import_model_store_for_directory(
