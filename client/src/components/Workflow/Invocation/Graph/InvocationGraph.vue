@@ -194,7 +194,7 @@ function stepClicked(nodeId: number | null) {
                             :scroll-to-id="activeNodeId"
                             :show-minimap="props.showMinimap"
                             :show-zoom-controls="props.showZoomControls"
-                            fixed-height
+                            :fixed-height="60"
                             is-invocation
                             readonly
                             @stepClicked="stepClicked" />
