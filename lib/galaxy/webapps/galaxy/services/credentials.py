@@ -13,7 +13,10 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.credentials import CredentialsManager
+from galaxy.managers.credentials import (
+    CredentialsManager,
+    CredentialsModelList,
+)
 from galaxy.model import (
     CredentialsGroup,
     UserCredentials,
@@ -21,7 +24,6 @@ from galaxy.model import (
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import (
     CreateSourceCredentialsPayload,
-    CredentialsModelList,
     SOURCE_TYPE,
     UserCredentialsListResponse,
     UserCredentialsResponse,
