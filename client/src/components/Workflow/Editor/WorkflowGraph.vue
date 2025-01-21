@@ -37,7 +37,7 @@ const props = defineProps({
     isInvocation: { type: Boolean, default: false },
     showMinimap: { type: Boolean, default: true },
     showZoomControls: { type: Boolean, default: true },
-    fixedHeight: { type: Boolean, default: false },
+    fixedHeight: { type: Number, default: undefined },
     populatedInputs: { type: Boolean, default: false },
 });
 
@@ -171,7 +171,7 @@ defineExpose({
             id="canvas-container"
             ref="canvas"
             class="canvas-content"
-            :class="props.fixedHeight ? 'fixed-window-height' : 'h-100'"
+            :style="{ height: props.fixedHeight ? `${props.fixedHeight}vh` : '100%' }"
             @drop.prevent
             @dragover.prevent>
             <AdaptiveGrid
@@ -239,11 +239,6 @@ defineExpose({
         left: 0px;
         top: 0px;
         overflow: hidden;
-
-        /* TODO: w/out this, canvas height = 0 when width goes beyond a point (invocation graph) */
-        &.fixed-window-height {
-            height: 60vh;
-        }
     }
 
     .node-area {
