@@ -156,3 +156,19 @@ galaxy:
       to pass to the ``galaxy-upload`` command.
     ruleBased: |
       Galaxy can bulk import lists & tables of URLs into datasets or collections using reproducible rules.
+  
+  datasets:
+    formatVsDatatypeVsExtension: |
+      In Galaxy, the terms "datatype," "format," and "extension" are used to describe the nature of a dataset,
+      each with specific meanings.
+      
+      The ``datatype`` defines how a dataset is interpreted, validated, and processed, such as "fastqsanger", "bam",
+      or "vcf". Each datatype corresponds to a Python class that specifies how Galaxy should handle the file.
+      
+      The ``format`` is the user-facing label for the dataset's datatype, appearing in the Galaxy user interface
+      to indicate the structure and content expectations of the dataset.
+      
+      The ``extension`` is a string associated with each datatype, stored in Galaxy’s database to identify the
+      dataset’s datatype. This extension can match a file’s actual disk suffix (e.g., ".vcf") but may also be more
+      specialized (e.g., "fastqsanger"). Understanding these distinctions ensures that datasets are processed
+      correctly within Galaxy, maintaining the integrity and reproducibility of analyses.
