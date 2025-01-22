@@ -8,13 +8,27 @@ from typing import (
     List,
     Optional,
 )
-
+from galaxy.schema.tools import (
+    # DeleteJobPayload,
+    # EncodedJobDetails,
+    # JobConsoleOutput,
+    # JobDestinationParams,
+    # JobDisplayParametersSummary,
+    # JobErrorSummary,
+    # JobInputAssociation,
+    # JobInputSummary,
+    # JobOutputAssociation,
+    ReportToolErrorPayload,
+    # SearchJobsPayload,
+    # ShowFullJobResponse,
+)
 from fastapi import (
     Body,
     Depends,
     Request,
     UploadFile,
 )
+from typing_extensions import Annotated
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from galaxy import (
@@ -51,6 +65,7 @@ from . import (
     DependsOnTrans,
     Router,
 )
+from webob import Response
 
 log = logging.getLogger(__name__)
 
@@ -60,6 +75,7 @@ PROTECTED_TOOLS = ["__DATA_FETCH__"]
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
+ReportErrorBody = Body(default=..., title="Report error", description="The values to report an Error")
 
 class FormDataApiRoute(APIContentTypeRoute):
     match_content_type = "multipart/form-data"
@@ -594,6 +610,19 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
         return self.service._create(trans, payload, **kwd)
+
+    @web.expose # TODO Try: @expose_api
+    def error(
+        self,
+        payload: Annotated[ReportToolErrorPayload, ReportErrorBody],
+        id: str,
+        trans: GalaxyWebTransaction,
+    ):
+        """
+        POST /api/tools/{tool_id}/error
+        Submit bug report.
+        """
+        return Response("ok", status=200, content_type="text/html")
 
 
 def _kwd_or_payload(kwd: Dict[str, Any]) -> Dict[str, Any]:

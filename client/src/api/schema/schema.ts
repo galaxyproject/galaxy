@@ -2934,6 +2934,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tools/{tool_id}/error": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submits a bug report via the API. */
+        post: operations["report_error_api_tools__tool_id__error_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/jobs/{job_id}/inputs": {
         parameters: {
             query?: never;
@@ -12765,6 +12782,14 @@ export interface components {
              */
             parameters: components["schemas"]["JobParameter"][];
         };
+        /** ToolErrorSummary */
+        ToolErrorSummary: {
+            /**
+             * Error messages
+             * @description The error messages for the specified job.
+             */
+            messages: string[][];
+        };
         /** JobErrorSummary */
         JobErrorSummary: {
             /**
@@ -15574,6 +15599,25 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             dataset_id: string;
+            /**
+             * Email
+             * @description Email address for communication with the user. Only required for anonymous users.
+             */
+            email?: string | null;
+            /**
+             * Message
+             * @description The optional message sent with the error report.
+             */
+            message?: string | null;
+        };
+        /** ReportToolErrorPayload */
+        ReportToolErrorPayload: {
+            /**
+             * Tool ID
+             * @description Tool ID related to the error.
+             * @example "myTool"
+             */
+            tool_id: string;
             /**
              * Email
              * @description Email address for communication with the user. Only required for anonymous users.
@@ -28075,6 +28119,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobDestinationParams"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    report_error_api_tools__tool_id__error_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the tool */
+                tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportToolErrorPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolErrorSummary"];
                 };
             };
             /** @description Request Error */

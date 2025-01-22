@@ -21,6 +21,10 @@
             <small class="text-muted">
                 <pre>{{ errorContentPretty }}</pre>
             </small>
+            <UserReportingError
+                report-type="tool"
+                :reportable-data="this.errorContent"
+                :reporting-email="currentUser?.email" />
         </b-modal>
         <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
         <ToolCard
@@ -132,6 +136,7 @@ import { getToolFormData, submitJob, updateToolFormData } from "./services";
 import ToolCard from "./ToolCard";
 import { allowCachedJobs } from "./utilities";
 
+import UserReportingError from "../Collections/common/UserReportingError.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
 export default {
@@ -145,6 +150,7 @@ export default {
         ToolEntryPoints,
         ToolRecommendation,
         Heading,
+        UserReportingError,
     },
     props: {
         id: {
@@ -176,7 +182,7 @@ export default {
             showForm: false,
             showEntryPoints: false,
             showRecommendation: false,
-            showError: false,
+            showError: true, //false,
             showExecuting: false,
             formConfig: {},
             formData: undefined,

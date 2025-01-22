@@ -171,7 +171,10 @@ onMounted(async () => {
             </p>
 
             <h4 class="mb-3 h-md">Issue Report</h4>
-            <UserReportingError :reportable-data="dataset" :reporting-email="currentUser?.email" />
+            <UserReportingError
+                report-type="dataset"
+                :reportable-data="dataset"
+                :reporting-email="currentUser?.email" />
         </div>
     </div>
 </template>

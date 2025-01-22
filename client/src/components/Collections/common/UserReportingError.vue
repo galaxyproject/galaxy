@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { submitReport } from "@/components/Collections/common/reporting";
+import { dispatchReport, type ReportType } from "@/components/Collections/common/reporting";
 import { useMarkdown } from "@/composables/markdown";
 import localize from "@/utils/localization";
 
@@ -14,6 +14,7 @@ import FormElement from "@/components/Form/FormElement.vue";
 library.add(faBug);
 
 interface Props {
+    reportType: ReportType;
     reportableData: object;
     reportingEmail: string;
 }
@@ -24,9 +25,10 @@ const message = ref("");
 const errorMessage = ref("");
 const resultMessages = ref<string[][]>([]);
 const showForm = computed(() => {
-    const noResult = !resultMessages.value.length;
-    const hasError = resultMessages.value.some((msg) => msg[1] === "danger");
-    return noResult || hasError;
+    return true;
+    // const noResult = !resultMessages.value.length;
+    // const hasError = resultMessages.value.some((msg) => msg[1] === "danger");
+    // return noResult || hasError;
 });
 const FIELD_MESSAGE = {
     loginRequired: localize("You must be logged in to send emails."),
@@ -38,12 +40,12 @@ const fieldMessages = computed(() =>
     )
 );
 
-async function handleSubmit(data?: any, email?: string | null) {
+async function handleSubmit(reportType: ReportType, data?: any, email?: string | null) {
     if (!data || !email) {
         return;
     }
 
-    const { messages, error } = await submitReport(data, message.value, email);
+    const { messages, error } = await dispatchReport(reportType, data, message.value, email);
 
     if (error) {
         errorMessage.value = error;
@@ -78,7 +80,7 @@ async function handleSubmit(data?: any, email?: string | null) {
                 :title="fieldMessages.join('\n')"
                 variant="primary"
                 class="mt-3"
-                @click="handleSubmit(props.reportableData, props.reportingEmail)">
+                @click="handleSubmit(props.reportType, props.reportableData, props.reportingEmail)">
                 <FontAwesomeIcon :icon="faBug" class="mr-1" />
                 Report
             </BButton>
