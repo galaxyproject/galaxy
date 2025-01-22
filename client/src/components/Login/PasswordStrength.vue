@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { zxcvbn } from '@zxcvbn-ts/core';
+import { zxcvbn, zxcvbnOptions } from "@zxcvbn-ts/core";
+import * as zxcvbnCommonPackage from "@zxcvbn-ts/language-common";
+import * as zxcvbnEnPackage from "@zxcvbn-ts/language-en";
 import { type PropType, type Ref, ref, watch } from "vue";
 
 const props = defineProps({
@@ -13,6 +15,15 @@ const passwordStrength = ref<string>("empty");
 const strengthScore = ref<number>(0);
 const showPasswordGuidelines: Ref<boolean> = ref(false);
 const crackTime = ref<string>("");
+const options = {
+  translations: zxcvbnEnPackage.translations,
+  graphs: zxcvbnCommonPackage.adjacencyGraphs,
+  dictionary: {
+    ...zxcvbnCommonPackage.dictionary,
+    ...zxcvbnEnPackage.dictionary,
+  },
+};
+zxcvbnOptions.setOptions(options);
 
 function evaluatePasswordStrength(newPassword: string) {
     if (newPassword.length === 0) {
@@ -24,8 +35,7 @@ function evaluatePasswordStrength(newPassword: string) {
 
     const result = zxcvbn(newPassword);
     strengthScore.value = result.score;
-    const crackTimeInSeconds = result.crackTimesSeconds.onlineNoThrottling10PerSecond;
-    crackTime.value = formatCrackTime(crackTimeInSeconds);
+    crackTime.value = String(result.crackTimesDisplay.onlineNoThrottling10PerSecond || "N/A");
 
     if (strengthScore.value <= 1) {
         passwordStrength.value = "weak";
@@ -33,28 +43,6 @@ function evaluatePasswordStrength(newPassword: string) {
         passwordStrength.value = "medium";
     } else {
         passwordStrength.value = "strong";
-    }
-}
-
-function formatCrackTime(seconds: number){
-    const secondsInMinute = 60;
-    const secondsInHour = 3600;
-    const secondsInDay = 86400;
-    const secondsInYear = 31536000;
-    const secondsInCentury = 100 * secondsInYear;
-
-    if (seconds >= secondsInCentury) {
-        return "centuries";
-    } else if (seconds >= secondsInYear) {
-        return `${Math.round(seconds / secondsInYear)} years`;
-    } else if (seconds >= secondsInDay) {
-        return `${Math.round(seconds / secondsInDay)} days`;
-    } else if (seconds >= secondsInHour) {
-        return `${Math.round(seconds / secondsInHour)} hours`;
-    } else if (seconds >= secondsInMinute) {
-        return `${Math.round(seconds / secondsInMinute)} minutes`;
-    } else {
-        return `${Math.round(seconds)} seconds`;
     }
 }
 
@@ -89,7 +77,9 @@ watch(
             <span :class="passwordStrength"> {{ crackTime }}</span>
         </div>
 
-        <BButton variant="secondary" class="ui-link mt-3" @click="showPasswordGuidelines = true"> Password Guidelines </BButton>
+        <BButton variant="secondary" class="ui-link mt-3" @click="showPasswordGuidelines = true">
+            Password Guidelines
+        </BButton>
 
         <div>
             <BModal v-model="showPasswordGuidelines" title="Tips for a secure Password">
