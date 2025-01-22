@@ -26,6 +26,8 @@ try:
 except ImportError:
     settings_to_sample = None
 
+from pykwalify.errors import RuleError
+
 try:
     from pykwalify.core import Core
 except ImportError:
@@ -373,7 +375,13 @@ def _validate(args: Namespace, app_desc: App) -> None:
             schema_files=[fp.name],
         )
     os.remove(config_p.name)
-    c.validate()
+    try:
+        c.validate()
+    except RuleError as error:
+        if error.error_key == "default.not_scalar":
+            # Default values are not supported by pykwalify (or kwalify) for map types. Yet, it is
+            # beneficial to provide those defaults since they are loaded with the schema.
+            pass
 
 
 def _run_conversion(args: Namespace, app_desc: App) -> None:
