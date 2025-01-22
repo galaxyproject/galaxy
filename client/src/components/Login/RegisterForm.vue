@@ -155,14 +155,12 @@ async function submit() {
                                             :type="showPassword ? 'text' : 'password'"
                                             autocomplete="new-password"
                                             required />
-                                        <span
+                                        <button
+                                            type="button"
                                             class="input-group-text password-toggle-icon"
-                                            role="button"
-                                            tabindex="0"
-                                            @click.prevent="togglePasswordVisibility"
-                                            @keydown.enter="togglePasswordVisibility">
+                                            @click.prevent="togglePasswordVisibility">
                                             <FontAwesomeIcon :icon="showPassword ? faEyeSlash : faEye" />
-                                        </span>
+                                        </button>
                                     </div>
                                     <PasswordStrength :password="password" />
                                 </BFormGroup>

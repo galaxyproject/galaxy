@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { zxcvbn } from '@zxcvbn-ts/core';
 import { type PropType, type Ref, ref, watch } from "vue";
-import zxcvbn from "zxcvbn";
 
 const props = defineProps({
     password: {
@@ -24,15 +24,37 @@ function evaluatePasswordStrength(newPassword: string) {
 
     const result = zxcvbn(newPassword);
     strengthScore.value = result.score;
+    const crackTimeInSeconds = result.crackTimesSeconds.onlineNoThrottling10PerSecond;
+    crackTime.value = formatCrackTime(crackTimeInSeconds);
 
-    crackTime.value = String(result.crack_times_display.online_no_throttling_10_per_second || "N/A");
-
-    if (strengthScore.value === 0 || strengthScore.value === 1) {
+    if (strengthScore.value <= 1) {
         passwordStrength.value = "weak";
-    } else if (strengthScore.value === 2 || strengthScore.value === 3) {
+    } else if (strengthScore.value <= 3) {
         passwordStrength.value = "medium";
     } else {
         passwordStrength.value = "strong";
+    }
+}
+
+function formatCrackTime(seconds: number){
+    const secondsInMinute = 60;
+    const secondsInHour = 3600;
+    const secondsInDay = 86400;
+    const secondsInYear = 31536000;
+    const secondsInCentury = 100 * secondsInYear;
+
+    if (seconds >= secondsInCentury) {
+        return "centuries";
+    } else if (seconds >= secondsInYear) {
+        return `${Math.round(seconds / secondsInYear)} years`;
+    } else if (seconds >= secondsInDay) {
+        return `${Math.round(seconds / secondsInDay)} days`;
+    } else if (seconds >= secondsInHour) {
+        return `${Math.round(seconds / secondsInHour)} hours`;
+    } else if (seconds >= secondsInMinute) {
+        return `${Math.round(seconds / secondsInMinute)} minutes`;
+    } else {
+        return `${Math.round(seconds)} seconds`;
     }
 }
 
@@ -67,7 +89,7 @@ watch(
             <span :class="passwordStrength"> {{ crackTime }}</span>
         </div>
 
-        <BButton variant="secondary" class="mt-3" @click="showPasswordGuidelines = true"> Password Guidelines </BButton>
+        <BButton variant="secondary" class="ui-link mt-3" @click="showPasswordGuidelines = true"> Password Guidelines </BButton>
 
         <div>
             <BModal v-model="showPasswordGuidelines" title="Tips for a secure Password">
