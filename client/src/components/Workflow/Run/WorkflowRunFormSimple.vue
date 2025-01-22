@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BDropdown, BDropdownForm, BFormCheckbox } from "bootstrap-vue";
+import { BAlert, BDropdown, BDropdownForm, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -58,6 +58,7 @@ const preferredObjectStoreId = ref<string | null>(null);
 const preferredIntermediateObjectStoreId = ref<string | null>(null);
 const waitingForRequest = ref(false);
 const showGraph = ref(!showPanels.value);
+const topDown = ref(false);
 
 watch(
     () => showGraph.value,
@@ -115,6 +116,29 @@ const formInputs = computed(() => {
 const hasValidationErrors = computed(() => stepValidation.value !== null);
 
 const canRunOnHistory = computed(() => props.canMutateCurrentHistory || sendToNewHistory.value);
+
+const displayInputsClass = computed(() => {
+    return {
+        "flex-grow-1": isSideBySideGraph.value,
+        "order-2": showGraph.value && topDown.value,
+        "order-1": isSideBySideGraph.value,
+        "w-50": isSideBySideGraph.value,
+        "w-100": !showGraph.value,
+    };
+});
+
+const runGraphClass = computed(() => {
+    return {
+        "order-1": topDown.value,
+        "order-2": !topDown.value,
+        "w-100": topDown.value,
+        "w-50": !topDown.value,
+        "d-flex": true,
+        "flex-shrink-0": true,
+    };
+});
+
+const isSideBySideGraph = computed(() => showGraph.value && !topDown.value);
 
 function onValidation(validation: [string, string] | null) {
     if (validation && validation.length == 2) {
@@ -197,9 +221,9 @@ async function onExecute() {
 </script>
 
 <template>
-    <div>
-        <div class="ui-form-header-underlay sticky-top" />
-        <div v-if="isConfigLoaded" class="sticky-top">
+    <div :class="{ 'd-flex flex-column h-100': isSideBySideGraph }">
+        <div v-if="!isSideBySideGraph" class="ui-form-header-underlay sticky-top" />
+        <div v-if="isConfigLoaded" :class="{ 'sticky-top': !isSideBySideGraph }">
             <BAlert v-if="!canRunOnHistory" variant="warning" show>
                 <span v-localize>
                     The workflow cannot run because the current history is immutable. Please select a different history
@@ -212,15 +236,21 @@ async function onExecute() {
                 :run-waiting="waitingForRequest"
                 @on-execute="onExecute">
                 <template v-slot:workflow-title-actions>
-                    <BButton
+                    <BDropdown
                         v-b-tooltip.hover.noninteractive.html
+                        split
                         size="sm"
                         :title="!showGraph ? 'Show workflow graph' : 'Hide workflow graph'"
                         variant="link"
                         :pressed="showGraph"
                         @click="showGraph = !showGraph">
-                        <FontAwesomeIcon :icon="faSitemap" fixed-width />
-                    </BButton>
+                        <template v-slot:button-content>
+                            <FontAwesomeIcon :icon="faSitemap" fixed-width />
+                        </template>
+                        <BFormCheckbox v-model="topDown" switch :disabled="!showGraph" class="mx-1 unselectable">
+                            Show top down view
+                        </BFormCheckbox>
+                    </BDropdown>
                     <BDropdown
                         v-if="showRuntimeSettings(currentUser)"
                         id="dropdown-form"
@@ -267,28 +297,36 @@ async function onExecute() {
 
         <WorkflowAnnotation :workflow-id="model.runData.workflow_id" :history-id="model.historyId" show-details />
 
-        <div ref="runFormContainer" class="d-flex">
-            <div :class="!showGraph ? 'w-100' : 'w-50'">
-                <Heading v-if="showGraph" h2 separator bold size="sm"> Parameters </Heading>
-                <FormDisplay
-                    :inputs="formInputs"
-                    :allow-empty-value-on-required-input="true"
-                    :sync-with-graph="showGraph"
-                    :active-node-id="computedActiveNodeId"
-                    workflow-run
-                    @onChange="onChange"
-                    @onValidation="onValidation"
-                    @update:active-node-id="($event) => (activeNodeId = $event)" />
-            </div>
-            <div v-show="showGraph" class="w-50">
-                <WorkflowRunGraph
-                    v-if="isConfigLoaded"
-                    :workflow-id="model.workflowId"
-                    :step-validation="stepValidation"
-                    :stored-id="model.runData.workflow_id"
-                    :version="model.runData.version"
-                    :inputs="formData"
-                    :form-inputs="formInputs" />
+        <div class="overflow-auto">
+            <div class="d-flex h-100" :class="{ 'flex-column': topDown && showGraph }">
+                <div :class="displayInputsClass" :style="{ 'overflow-y': 'auto', 'overflow-x': 'hidden' }">
+                    <div v-if="isSideBySideGraph" class="ui-form-header-underlay sticky-top" />
+                    <Heading v-if="isSideBySideGraph" class="sticky-top" h2 separator bold size="sm">
+                        Parameters
+                    </Heading>
+                    <FormDisplay
+                        :inputs="formInputs"
+                        :allow-empty-value-on-required-input="true"
+                        :sync-with-graph="showGraph"
+                        :top-down="topDown"
+                        :active-node-id="computedActiveNodeId"
+                        workflow-run
+                        @onChange="onChange"
+                        @onValidation="onValidation"
+                        @update:active-node-id="($event) => (activeNodeId = $event)" />
+                </div>
+                <!-- TODO: (BIG BUG) After toggling between show graph or not, we lose node activation capability -->
+                <div v-if="showGraph" :class="runGraphClass" :style="{ height: topDown ? '50vh' : '100%' }">
+                    <WorkflowRunGraph
+                        v-if="isConfigLoaded"
+                        :top-down="topDown"
+                        :workflow-id="model.workflowId"
+                        :step-validation="stepValidation"
+                        :stored-id="model.runData.workflow_id"
+                        :version="model.runData.version"
+                        :inputs="formData"
+                        :form-inputs="formInputs" />
+                </div>
             </div>
         </div>
     </div>

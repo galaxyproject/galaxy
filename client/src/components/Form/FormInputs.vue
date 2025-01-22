@@ -3,84 +3,107 @@
         <div
             v-for="(input, index) in inputs"
             :key="index"
-            :class="{ 'bordered-input': syncWithGraph && activeNodeId === index }">
-            <div v-if="input.type == 'conditional'" class="ui-portlet-section mt-3">
-                <div class="portlet-header">
-                    <b>{{ input.test_param.label || input.test_param.name }}</b>
-                </div>
-                <div class="portlet-content">
-                    <FormElement
-                        :id="conditionalPrefix(input, input.test_param.name)"
-                        v-model="input.test_param.value"
-                        :type="input.test_param.type"
-                        :help="input.test_param.help"
-                        :help-format="input.test_param.help_format"
-                        :refresh-on-change="false"
-                        :disabled="sustainConditionals"
-                        :attributes="input.test_param"
-                        @change="onChange" />
-                    <div v-for="(caseDetails, caseId) in input.cases" :key="caseId">
-                        <FormNode
-                            v-if="conditionalMatch(input, caseId)"
-                            v-bind="$props"
-                            :inputs="caseDetails.inputs"
-                            :prefix="getPrefix(input.name)" />
+            :class="{ 'bordered-input': syncWithGraph && !topDown && activeNodeId === index }">
+            <div v-if="!syncWithGraph || !topDown || activeNodeId === index">
+                <div v-if="input.type == 'conditional'" class="ui-portlet-section mt-3">
+                    <div class="portlet-header">
+                        <b>{{ input.test_param.label || input.test_param.name }}</b>
+                    </div>
+                    <div class="portlet-content">
+                        <FormElement
+                            :id="conditionalPrefix(input, input.test_param.name)"
+                            v-model="input.test_param.value"
+                            :type="input.test_param.type"
+                            :help="input.test_param.help"
+                            :help-format="input.test_param.help_format"
+                            :refresh-on-change="false"
+                            :disabled="sustainConditionals"
+                            :attributes="input.test_param"
+                            @change="onChange" />
+                        <div v-for="(caseDetails, caseId) in input.cases" :key="caseId">
+                            <FormNode
+                                v-if="conditionalMatch(input, caseId)"
+                                v-bind="$props"
+                                :inputs="caseDetails.inputs"
+                                :prefix="getPrefix(input.name)" />
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div v-else-if="input.type == 'repeat'">
-                <FormRepeat
-                    :input="input"
-                    :sustain-repeats="sustainRepeats"
-                    :passthrough-props="$props"
-                    :prefix="prefix"
-                    @insert="() => repeatInsert(input)"
-                    @delete="(id) => repeatDelete(input, id)"
-                    @swap="(a, b) => repeatSwap(input, a, b)" />
-            </div>
-            <div v-else-if="input.type == 'section'">
-                <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
-                    <template v-slot:body>
-                        <div v-if="input.help" class="my-2" data-description="section help">{{ input.help }}</div>
-                        <FormNode v-bind="$props" :inputs="input.inputs" :prefix="getPrefix(input.name)" />
+                <div v-else-if="input.type == 'repeat'">
+                    <FormRepeat
+                        :input="input"
+                        :sustain-repeats="sustainRepeats"
+                        :passthrough-props="$props"
+                        :prefix="prefix"
+                        @insert="() => repeatInsert(input)"
+                        @delete="(id) => repeatDelete(input, id)"
+                        @swap="(a, b) => repeatSwap(input, a, b)" />
+                </div>
+                <div v-else-if="input.type == 'section'">
+                    <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
+                        <template v-slot:body>
+                            <div v-if="input.help" class="my-2" data-description="section help">{{ input.help }}</div>
+                            <FormNode v-bind="$props" :inputs="input.inputs" :prefix="getPrefix(input.name)" />
+                        </template>
+                    </FormCard>
+                </div>
+                <FormElement
+                    v-else
+                    :id="getPrefix(input.name)"
+                    v-model="input.value"
+                    :title="input.label || input.name"
+                    :type="input.type"
+                    :error="input.error"
+                    :warning="input.warning"
+                    :help="input.help"
+                    :help-format="input.help_format"
+                    :refresh-on-change="input.refresh_on_change"
+                    :attributes="input.attributes || input"
+                    :collapsed-enable-text="collapsedEnableText"
+                    :collapsed-enable-icon="collapsedEnableIcon"
+                    :collapsed-disable-text="collapsedDisableText"
+                    :collapsed-disable-icon="collapsedDisableIcon"
+                    :loading="loading"
+                    :workflow-building-mode="workflowBuildingMode"
+                    :workflow-run="workflowRun"
+                    @change="onChange">
+                    <template v-slot:workflow-run-form-title-items>
+                        <template v-if="syncWithGraph">
+                            <b-button
+                                v-if="!topDown"
+                                class="text-decoration-none"
+                                size="sm"
+                                variant="link"
+                                :title="activeNodeId === index ? 'Active' : 'View in Graph'"
+                                :disabled="activeNodeId === index"
+                                @click="$emit('update:active-node-id', index)">
+                                <span class="fas fa-sitemap" />
+                                <span class="fas fa-arrow-right" />
+                            </b-button>
+                            <b-button-group v-else class="ml-2">
+                                <b-button
+                                    v-b-tooltip.hover.noninteractive
+                                    title="Previous Input"
+                                    :disabled="activeNodeId === 0"
+                                    @click="$emit('update:active-node-id', index - 1)">
+                                    <span class="fas fa-arrow-left" />
+                                </b-button>
+                                <b-button
+                                    v-b-tooltip.hover.noninteractive
+                                    title="Next Input"
+                                    :disabled="activeNodeId === inputs.length - 1"
+                                    @click="$emit('update:active-node-id', index + 1)">
+                                    <span class="fas fa-arrow-right" />
+                                </b-button>
+                            </b-button-group>
+                        </template>
                     </template>
-                </FormCard>
+                </FormElement>
             </div>
-            <FormElement
-                v-else
-                :id="getPrefix(input.name)"
-                v-model="input.value"
-                :title="input.label || input.name"
-                :type="input.type"
-                :error="input.error"
-                :warning="input.warning"
-                :help="input.help"
-                :help-format="input.help_format"
-                :refresh-on-change="input.refresh_on_change"
-                :attributes="input.attributes || input"
-                :collapsed-enable-text="collapsedEnableText"
-                :collapsed-enable-icon="collapsedEnableIcon"
-                :collapsed-disable-text="collapsedDisableText"
-                :collapsed-disable-icon="collapsedDisableIcon"
-                :loading="loading"
-                :workflow-building-mode="workflowBuildingMode"
-                :workflow-run="workflowRun"
-                @change="onChange">
-                <template v-slot:workflow-run-form-title-items>
-                    <b-button
-                        v-if="syncWithGraph"
-                        class="text-decoration-none"
-                        :style="{ 'z-index': 100, right: 0 }"
-                        size="sm"
-                        variant="link"
-                        :title="activeNodeId === index ? 'Active' : 'View in Graph'"
-                        :disabled="activeNodeId === index"
-                        @click="$emit('update:active-node-id', index)">
-                        <span class="fas fa-sitemap" />
-                        <span class="fas fa-arrow-right" />
-                    </b-button>
-                </template>
-            </FormElement>
+            <!-- TODO:
+                Here, need `v-else-if="syncWithGraph && topDown && activeNodeId && activeNodeId >= inputs.length"`
+                for when syncing with graph in top-down, and user activates a node that isn't an input
+            -->
         </div>
     </div>
 </template>
@@ -159,6 +182,10 @@ export default {
             default: null,
         },
         syncWithGraph: {
+            type: Boolean,
+            default: false,
+        },
+        topDown: {
             type: Boolean,
             default: false,
         },

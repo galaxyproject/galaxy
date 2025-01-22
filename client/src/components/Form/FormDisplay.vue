@@ -16,6 +16,7 @@
         :workflow-run="workflowRun"
         :active-node-id="activeNodeId"
         :sync-with-graph="syncWithGraph"
+        :top-down="topDown"
         @update:active-node-id="updateActiveNode" />
 </template>
 
@@ -106,6 +107,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        topDown: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -121,7 +126,9 @@ export default {
     },
     watch: {
         activeNodeId() {
-            this.scrollToElement(this.activeNodeId);
+            if (!this.topDown) {
+                this.scrollToElement(this.activeNodeId);
+            }
         },
         id() {
             this.onCloneInputs();

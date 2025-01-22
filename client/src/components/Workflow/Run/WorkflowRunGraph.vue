@@ -33,6 +33,7 @@ interface Props {
     inputs: Record<string, DataInput | null>;
     stepValidation: any; // TODO: type as [string, string] | null;
     formInputs: any[];
+    topDown?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -184,6 +185,19 @@ watch(
     },
     { immediate: true }
 );
+
+watch(
+    () => props.topDown,
+    (isTopDown) => {
+        if (isTopDown) {
+            // set the active node to the first input node
+            activeNodeId.value = 0;
+
+            // TODO: Is this bad? Will users dislike if they toggle between top-down
+            //       and side-by-side and their active step is reset to the first step?
+        }
+    }
+);
 </script>
 
 <template>
@@ -193,15 +207,14 @@ watch(
     <BAlert v-else-if="datatypesMapperLoading || !loadedWorkflow" variant="info" show>
         <LoadingSpan message="Loading workflow" />
     </BAlert>
-    <div v-else-if="datatypesMapper && hasLoadedGraph">
-        <Heading h2 separator bold size="sm"> Graph </Heading>
-        <BCard class="workflow-preview mx-1">
+    <div v-else-if="datatypesMapper && hasLoadedGraph" class="d-flex flex-column">
+        <Heading v-if="!props.topDown" h2 separator bold size="sm"> Graph </Heading>
+        <BCard class="workflow-preview mx-1 flex-grow-1">
             <WorkflowGraph
                 v-if="loadedWorkflow.steps"
                 :steps="loadedWorkflow.steps"
                 :datatypes-mapper="datatypesMapper"
                 :scroll-to-id="activeNodeId"
-                :fixed-height="60"
                 populated-inputs
                 show-minimap
                 show-zoom-controls
@@ -209,3 +222,12 @@ watch(
         </BCard>
     </div>
 </template>
+
+<style scoped>
+.alert {
+    width: 100%;
+    margin: 2rem;
+    text-align: center;
+    align-content: center;
+}
+</style>
