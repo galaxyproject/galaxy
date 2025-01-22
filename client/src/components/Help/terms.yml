@@ -64,13 +64,13 @@ galaxy:
         Toggling this on means that the original history items that will become a part of the collection
         will be hidden from the history panel (they will still be searchable via the 'visible: false' filter).
       filteredExtensions: |
-        The history is filtered for the extensions that are required for this collection. You might see some
-        items with other extensions since those can still be valid inputs via implicit conversion.
+        The history is filtered for the formats that are required for this collection. You might see some
+        items with other formats since those can still be valid inputs via implicit conversion.
       requiredUploadExtensions: |
-        The extensions that are required for this collection. The files you upload will be assumed to have
-        these extensions. In the case of more than one extension, you can select a specific extension for
-        each individual file above. If there is only one extension, Galaxy will attempt to set that as the
-        extension for each file.
+        The formats that are required for this collection. The files you upload will be assumed to have
+        these formats. In the case of more than one format, you can select a specific format for
+        each individual file above. If there is only one format, Galaxy will attempt to set that as the
+        format for each file.
       whyHomogenousCollections: |
         Dataset collections are designed to streamline the analysis of large numbers of datasets by grouping
         them together into a single, manageable entity. Unlike generic folders on your computer, which can hold

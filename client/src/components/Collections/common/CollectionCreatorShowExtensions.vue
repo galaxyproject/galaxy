@@ -18,7 +18,7 @@ defineProps<Props>();
         <BAlert v-if="extensions?.length" class="w-100 py-0" variant="secondary" show>
             <HelpText
                 uri="galaxy.collections.collectionBuilder.filteredExtensions"
-                :text="localize('Filtered extensions: ')" />
+                :text="localize('Filtered format(s): ')" />
             <strong>{{ orList(extensions) }}</strong>
         </BAlert>
     </div>

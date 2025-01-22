@@ -175,7 +175,7 @@ function _isElementInvalid(element: HistoryItemSummary): string | null {
         element.extension &&
         !datatypesMapper.value?.isSubTypeOfAny(element.extension, props.extensions!)
     ) {
-        return localize(`has an invalid extension: ${element.extension}`);
+        return localize(`has an invalid format: ${element.extension}`);
     }
     return null;
 }
@@ -572,7 +572,7 @@ function renameElement(element: any, name: string) {
                                 )
                             }}
                             <div v-if="extensions?.length">
-                                {{ localize("The following extensions are required for this list: ") }}
+                                {{ localize("The following format(s) are required for this list: ") }}
                                 <ul>
                                     <li v-for="extension in extensions" :key="extension">
                                         {{ extension }}

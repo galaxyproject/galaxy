@@ -254,7 +254,7 @@ watch(
                             <BAlert v-if="extensions?.length" class="w-100 py-0" variant="secondary" show>
                                 <HelpText
                                     uri="galaxy.collections.collectionBuilder.requiredUploadExtensions"
-                                    :text="localize('Required extensions: ')" />
+                                    :text="localize('Required format(s): ')" />
                                 <strong>{{ orList(extensions) }}</strong>
                             </BAlert>
                         </div>
