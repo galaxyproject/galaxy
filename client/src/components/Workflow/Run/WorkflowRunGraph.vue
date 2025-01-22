@@ -193,15 +193,14 @@ watch(
     <BAlert v-else-if="datatypesMapperLoading || !loadedWorkflow" variant="info" show>
         <LoadingSpan message="Loading workflow" />
     </BAlert>
-    <div v-else-if="datatypesMapper && hasLoadedGraph">
+    <div v-else-if="datatypesMapper && hasLoadedGraph" class="d-flex flex-column">
         <Heading h2 separator bold size="sm"> Graph </Heading>
-        <BCard class="workflow-preview mx-1">
+        <BCard class="workflow-preview mx-1 flex-grow-1">
             <WorkflowGraph
                 v-if="loadedWorkflow.steps"
                 :steps="loadedWorkflow.steps"
                 :datatypes-mapper="datatypesMapper"
                 :scroll-to-id="activeNodeId"
-                :fixed-height="60"
                 populated-inputs
                 show-minimap
                 show-zoom-controls
@@ -209,3 +208,12 @@ watch(
         </BCard>
     </div>
 </template>
+
+<style scoped>
+.alert {
+    width: 100%;
+    margin: 2rem;
+    text-align: center;
+    align-content: center;
+}
+</style>

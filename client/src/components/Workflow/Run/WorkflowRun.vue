@@ -208,7 +208,7 @@ defineExpose({
                 v-else-if="invocations.length > 0"
                 :invocations="invocations"
                 :workflow-name="workflowName" />
-            <div v-else>
+            <div v-else class="h-100">
                 <BAlert
                     v-if="hasUpgradeMessages || hasStepVersionChanges"
                     class="mb-4"
@@ -223,7 +223,7 @@ defineExpose({
                     <BLink v-else @click="onImport">click here to import the workflow and review the issues</BLink>
                     <span>before running this workflow.</span>
                 </BAlert>
-                <div v-else>
+                <div v-else class="h-100">
                     <BAlert
                         v-if="submissionError"
                         class="mb-4"
