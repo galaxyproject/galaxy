@@ -1,7 +1,7 @@
 <template>
-    <div>
+    <div @mouseenter="hover = true" @mouseleave="hover = false">
         <div class="d-flex">
-            <div class="cell-guide d-flex flex-column justify-content-between">
+            <div class="cell-guide d-flex flex-column justify-content-between" :class="{ 'cell-hover': hover }">
                 <CellButton title="Learn more">
                     <div class="small">{{ name }}</div>
                 </CellButton>
@@ -19,7 +19,7 @@
             </div>
         </div>
         <div v-if="toggle" class="d-flex">
-            <div class="cell-guide d-flex flex-column justify-content-between">
+            <div class="cell-guide d-flex flex-column justify-content-between" :class="{ 'cell-hover': hover }">
                 <CellButton title="Delete">
                     <FontAwesomeIcon :icon="faTrash" />
                 </CellButton>
@@ -49,6 +49,7 @@ defineProps<{
 
 defineEmits(["change"]);
 
+const hover = ref(false);
 const toggle = ref(true);
 
 function getMode(cellName: string) {
@@ -60,8 +61,11 @@ function getMode(cellName: string) {
     }
     return "json";
 }
-
-function onToggle() {
-    toggle.value = !toggle.value;
-}
 </script>
+
+<style lang="scss">
+@import "theme/blue.scss";
+.cell-hover {
+    background-color: $gray-100;
+}
+</style>

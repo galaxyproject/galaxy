@@ -30,10 +30,9 @@
 import { faPlusSquare } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import Popper from "@/components/Popper/Popper.vue";
-
-import CellOption from "./CellOption.vue";
 import CellButton from "./CellButton.vue";
+import CellOption from "./CellOption.vue";
+import Popper from "@/components/Popper/Popper.vue";
 
 const props = defineProps<{
     cellIndex: number;
