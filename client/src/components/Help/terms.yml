@@ -71,6 +71,15 @@ galaxy:
         these extensions. In the case of more than one extension, you can select a specific extension for
         each individual file above. If there is only one extension, Galaxy will attempt to set that as the
         extension for each file.
+      whyHomogenousCollections: |
+        Dataset collections are designed to streamline the analysis of large numbers of datasets by grouping
+        them together into a single, manageable entity. Unlike generic folders on your computer, which can hold
+        any mix of file types, dataset collections are specifically intended to be homogenous. This homogeneity
+        is crucial for consistency in processing. Homogeneous datasets ensure that each dataset in the collection
+        can be processed uniformly with the same tools and workflows. This eliminates the need for individual
+        adjustments, which can be time-consuming and prone to error. Most tools and workflows in Galaxy are designed
+        to operate on collections of similar data types. Homogeneous collections allow these tools to operate
+        uniformly over the collection.
 
   jobs:
     metrics:

@@ -16,6 +16,7 @@ import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import localize from "@/utils/localization";
 
 import FormSelectMany from "../Form/Elements/FormSelectMany/FormSelectMany.vue";
+import HelpText from "../Help/HelpText.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 import DatasetCollectionElementView from "@/components/Collections/ListDatasetCollectionElementView.vue";
 
@@ -544,9 +545,13 @@ function renameElement(element: any, name: string) {
                 </template>
 
                 <template v-slot:middle-content>
-                    <BAlert v-if="listHasMixedExtensions" show variant="warning">
-                        {{ localize("The selected datasets have mixed extensions.") }}
-                        {{ localize("You can still create the list but its elements will have different extensions.") }}
+                    <BAlert v-if="listHasMixedExtensions" show variant="warning" dismissible>
+                        {{ localize("The selected datasets have mixed formats.") }}
+                        {{ localize("You can still create the list but generally") }}
+                        {{ localize("dataset lists should contain datasets of the same type.") }}
+                        <HelpText
+                            uri="galaxy.collections.collectionBuilder.whyHomogenousCollections"
+                            :text="localize('Why?')" />
                     </BAlert>
                     <div v-if="noInitialElements">
                         <BAlert show variant="warning" dismissible>

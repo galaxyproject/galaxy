@@ -15,6 +15,7 @@ import localize from "@/utils/localization";
 import type { DatasetPair } from "../History/adapters/buildCollectionModal";
 
 import DelayedInput from "../Common/DelayedInput.vue";
+import HelpText from "../Help/HelpText.vue";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
@@ -517,12 +518,12 @@ function _naiveStartingAndEndingLCS(s1: string, s2: string) {
                                     </span>
                                 </BAlert>
                                 <BAlert v-else-if="pairHasMixedExtensions" show variant="warning">
-                                    {{ localize("The selected datasets have mixed extensions.") }}
-                                    {{
-                                        localize(
-                                            "You can still create the pair but its elements will have different extensions."
-                                        )
-                                    }}
+                                    {{ localize("The selected datasets have mixed formats.") }}
+                                    {{ localize("You can still create the pair but generally") }}
+                                    {{ localize("dataset pairs should contain datasets of the same type.") }}
+                                    <HelpText
+                                        uri="galaxy.collections.collectionBuilder.whyHomogenousCollections"
+                                        :text="localize('Why?')" />
                                 </BAlert>
                                 <BAlert v-else show variant="success">
                                     {{ localize("The Dataset Pair is ready to be created.") }}
