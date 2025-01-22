@@ -132,7 +132,10 @@ class AuthnzManager:
                 elif idp in KEYCLOAK_BACKENDS:
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = "custos"
-                    self.app.config.oidc[idp] = {"icon": self._get_idp_icon(idp)}
+                    self.app.config.oidc[idp] = {
+                        "icon": self._get_idp_icon(idp),
+                        "label": self.oidc_backends_config[idp].get("label", idp),
+                    }
                 else:
                     raise etree.ParseError("Unknown provider specified")
             if len(self.oidc_backends_config) == 0:

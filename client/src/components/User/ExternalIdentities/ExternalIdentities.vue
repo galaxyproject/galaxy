@@ -46,7 +46,8 @@
                 title="Disconnect External Identity"
                 class="d-block mt-3"
                 @click="onDisconnect(item)">
-                Disconnect {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
+                Disconnect {{ item.provider_label.charAt(0).toUpperCase() + item.provider_label.slice(1) }} -
+                {{ item.email }}
             </b-button>
 
             <b-modal

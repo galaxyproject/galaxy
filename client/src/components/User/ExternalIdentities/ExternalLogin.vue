@@ -271,7 +271,12 @@ function getIdpPreference() {
                         <BButton class="d-block mt-3" @click="submitOIDCLogin(idp)">
                             <i :class="oIDCIdps[idp]" />
                             Sign in with
-                            {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
+                            <span v-if="iDPInfo['label']">
+                                {{ iDPInfo["label"].charAt(0).toUpperCase() + iDPInfo["label"].slice(1) }}
+                            </span>
+                            <span v-else>
+                                {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
+                            </span>
                         </BButton>
                     </span>
                 </div>
