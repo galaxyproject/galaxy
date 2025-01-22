@@ -343,19 +343,20 @@ function onAlert(value: string | undefined) {
                     - optional
                 </span>
             </div>
-            <component
-                :is="isBadge ? BBadge : 'div'"
-                v-if="props.workflowRun"
-                class="flex-gapx-1 workflow-run-element-title"
-                :class="isBadge ? populatedClass : ''">
-                <i>{{ workflowRunFormTitleItems.message }}</i>
-                <FontAwesomeIcon
-                    v-if="workflowRunFormTitleItems?.icon"
-                    :icon="workflowRunFormTitleItems.icon"
-                    :class="workflowRunFormTitleItems.class"
-                    fixed-width />
+            <div v-if="props.workflowRun" class="d-flex align-items-center">
+                <component
+                    :is="isBadge ? BBadge : 'div'"
+                    class="flex-gapx-1 workflow-run-element-title"
+                    :class="isBadge ? populatedClass : ''">
+                    <i>{{ workflowRunFormTitleItems.message }}</i>
+                    <FontAwesomeIcon
+                        v-if="workflowRunFormTitleItems?.icon"
+                        :icon="workflowRunFormTitleItems.icon"
+                        :class="workflowRunFormTitleItems.class"
+                        fixed-width />
+                </component>
                 <slot name="workflow-run-form-title-items" />
-            </component>
+            </div>
         </div>
 
         <FormError v-if="props.workflowRun && hasAlert && !unPopulatedError" :alerts="alerts" has-alert-class />

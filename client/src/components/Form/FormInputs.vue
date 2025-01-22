@@ -70,7 +70,6 @@
                     <b-button
                         v-if="syncWithGraph"
                         class="text-decoration-none"
-                        :style="{ 'z-index': 100, right: 0 }"
                         size="sm"
                         variant="link"
                         :title="activeNodeId === index ? 'Active' : 'View in Graph'"

@@ -200,9 +200,9 @@ async function onExecute() {
 </script>
 
 <template>
-    <div>
-        <div class="ui-form-header-underlay sticky-top" />
-        <div v-if="isConfigLoaded" class="sticky-top">
+    <div :class="{ 'd-flex flex-column h-100': showGraph }">
+        <div v-if="!showGraph" class="ui-form-header-underlay sticky-top" />
+        <div v-if="isConfigLoaded" :class="{ 'sticky-top': !showGraph }">
             <BAlert v-if="!canRunOnHistory" variant="warning" show>
                 <span v-localize>
                     The workflow cannot run because the current history is immutable. Please select a different history
@@ -270,28 +270,34 @@ async function onExecute() {
 
         <WorkflowAnnotation :workflow-id="model.runData.workflow_id" :history-id="model.historyId" show-details />
 
-        <div ref="runFormContainer" class="d-flex">
-            <div :class="!showGraph ? 'w-100' : 'w-50'">
-                <Heading v-if="showGraph" h2 separator bold size="sm"> Parameters </Heading>
-                <FormDisplay
-                    :inputs="formInputs"
-                    :allow-empty-value-on-required-input="true"
-                    :sync-with-graph="showGraph"
-                    :active-node-id="computedActiveNodeId"
-                    workflow-run
-                    @onChange="onChange"
-                    @onValidation="onValidation"
-                    @update:active-node-id="($event) => (activeNodeId = $event)" />
-            </div>
-            <div v-show="showGraph" class="w-50">
-                <WorkflowRunGraph
-                    v-if="isConfigLoaded"
-                    :workflow-id="model.workflowId"
-                    :step-validation="stepValidation"
-                    :stored-id="model.runData.workflow_id"
-                    :version="model.runData.version"
-                    :inputs="formData"
-                    :form-inputs="formInputs" />
+        <div class="overflow-auto">
+            <div class="d-flex h-100">
+                <div
+                    :class="showGraph ? 'w-50 flex-grow-1' : 'w-100'"
+                    :style="{ 'overflow-y': 'auto', 'overflow-x': 'hidden' }">
+                    <div v-if="showGraph" class="ui-form-header-underlay sticky-top" />
+                    <Heading v-if="showGraph" class="sticky-top" h2 separator bold size="sm"> Parameters </Heading>
+                    <FormDisplay
+                        :inputs="formInputs"
+                        :allow-empty-value-on-required-input="true"
+                        :sync-with-graph="showGraph"
+                        :active-node-id="computedActiveNodeId"
+                        workflow-run
+                        @onChange="onChange"
+                        @onValidation="onValidation"
+                        @update:active-node-id="($event) => (activeNodeId = $event)" />
+                </div>
+                <!-- TODO: (BIG BUG) After toggling between show graph or not, we lose node activation capability -->
+                <div v-if="showGraph" class="h-100 w-50 d-flex flex-shrink-0">
+                    <WorkflowRunGraph
+                        v-if="isConfigLoaded"
+                        :workflow-id="model.workflowId"
+                        :step-validation="stepValidation"
+                        :stored-id="model.runData.workflow_id"
+                        :version="model.runData.version"
+                        :inputs="formData"
+                        :form-inputs="formInputs" />
+                </div>
             </div>
         </div>
     </div>
