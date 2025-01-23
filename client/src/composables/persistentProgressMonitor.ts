@@ -96,7 +96,6 @@ export interface MonitoringData {
     /**
      * The status of the task when it was last checked.
      * The meaning of the status string is up to the monitor implementation.
-     * In case of an error, this will be the error message.
      */
     taskStatus?: string;
 }
@@ -119,6 +118,7 @@ export function usePersistentProgressTaskMonitor(
         isRunning,
         isCompleted,
         hasFailed,
+        failureReason,
         requestHasFailed,
         taskStatus,
         expirationTime,
@@ -221,6 +221,11 @@ export function usePersistentProgressTaskMonitor(
         hasFailed,
 
         /**
+         * The reason why the task has failed.
+         */
+        failureReason,
+
+        /**
          * If true, the status of the task cannot be determined because of a request error.
          */
         requestHasFailed,
@@ -238,7 +243,6 @@ export function usePersistentProgressTaskMonitor(
         /**
          * The current status of the task.
          * The meaning of the status string is up to the monitor implementation.
-         * In case of an error, this will be the error message.
          */
         status: taskStatus,
 
