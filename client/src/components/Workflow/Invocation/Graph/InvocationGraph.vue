@@ -9,9 +9,10 @@ import {
     faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { until } from "@vueuse/core";
 import { BAlert, BButton, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
@@ -65,6 +66,7 @@ const errorMessage = ref("");
 const pollTimeout = ref<any>(null);
 const stepCard = ref<BCard | null>(null);
 const loadedJobInfo = ref<typeof WorkflowInvocationStep | null>(null);
+const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
 
 const invocationRef = computed(() => props.invocation);
 
@@ -73,11 +75,19 @@ const { datatypesMapper } = useDatatypesMapper();
 const workflowId = computed(() => props.workflow?.id);
 const workflowVersion = computed(() => props.workflow?.version);
 
-const { steps, storeId, loadInvocationGraph } = useInvocationGraph(
+const { steps, storeId, loadInvocationGraph, loading } = useInvocationGraph(
     invocationRef,
     workflowId.value,
     workflowVersion.value
 );
+
+onMounted(async () => {
+    await until(loading).toBe(false);
+    await nextTick();
+
+    // @ts-ignore: TS2339 webpack dev issue. hopefully we can remove this with vite
+    workflowGraph.value?.fitWorkflow(0.25, 1.5, 20.0);
+});
 
 // Equivalent to onMounted; this is where the graph is initialized, and the polling is started
 watch(
@@ -171,6 +181,7 @@ function stepClicked(nodeId: number | null) {
                 <div class="position-relative w-100">
                     <BCard no-body>
                         <WorkflowGraph
+                            ref="workflowGraph"
                             class="invocation-graph"
                             :steps="steps"
                             :datatypes-mapper="datatypesMapper"

@@ -98,9 +98,13 @@ export function useInvocationGraph(
     /** The workflow that was invoked */
     const loadedWorkflow = ref<any>(null);
 
+    const loading = ref(true);
+
     provideScopedWorkflowStores(storeId);
 
     async function loadInvocationGraph() {
+        loading.value = true;
+
         try {
             if (!workflowId) {
                 throw new Error("Workflow Id is not defined");
@@ -143,6 +147,8 @@ export function useInvocationGraph(
             }
         } catch (e) {
             rethrowSimple(e);
+        } finally {
+            loading.value = false;
         }
     }
 
@@ -358,6 +364,7 @@ export function useInvocationGraph(
          * and displays the job states on the workflow graph steps.
          */
         loadInvocationGraph,
+        loading,
     };
 }
 
