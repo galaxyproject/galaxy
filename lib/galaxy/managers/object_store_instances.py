@@ -31,6 +31,7 @@ from galaxy.objectstore import (
     build_test_object_store_from_user_config,
     ConcreteObjectStoreModel,
     QuotaModel,
+    USER_OBJECTS_SCHEME,
     UserObjectStoresAppConfig,
 )
 from galaxy.objectstore.badges import serialize_badges
@@ -300,7 +301,7 @@ class ObjectStoreInstancesManager:
         )
         secrets = persisted_object_store.template_secrets or []
         uuid = str(persisted_object_store.uuid)
-        object_store_id = f"user_objects://{uuid}"
+        object_store_id = f"{USER_OBJECTS_SCHEME}{uuid}"
 
         return UserConcreteObjectStoreModel(
             uuid=uuid,

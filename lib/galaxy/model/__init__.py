@@ -162,7 +162,10 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
-from galaxy.objectstore import ObjectStorePopulator
+from galaxy.objectstore import (
+    ObjectStorePopulator,
+    USER_OBJECTS_SCHEME,
+)
 from galaxy.objectstore.templates import (
     ObjectStoreConfiguration,
     ObjectStoreTemplate,
@@ -644,6 +647,7 @@ FROM dataset
 LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
 WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
     AND library_dataset_dataset_association.id IS NULL
+    AND (dataset.object_store_id NOT LIKE '{user_objects_scheme}%' OR dataset.object_store_id IS NULL)
     {and_dataset_condition}
 """
 
@@ -659,7 +663,9 @@ def calculate_user_disk_usage_statements(user_id, quota_source_map, for_sqlite=F
     default_usage_dataset_condition = f"{default_cond} {use_or} {exclude_cond}"
     if default_usage_dataset_condition.strip():
         default_usage_dataset_condition = f"AND ( {default_usage_dataset_condition} )"
-    default_usage = UNIQUE_DATASET_USER_USAGE.format(and_dataset_condition=default_usage_dataset_condition)
+    default_usage = UNIQUE_DATASET_USER_USAGE.format(
+        and_dataset_condition=default_usage_dataset_condition, user_objects_scheme=USER_OBJECTS_SCHEME
+    )
     default_usage = f"""
 UPDATE galaxy_user SET disk_usage = ({default_usage})
 WHERE id = :id
@@ -673,7 +679,8 @@ WHERE id = :id
     # the object_store_id to quota_source_label into a temp table of values
     for quota_source_label, object_store_ids in source.items():
         label_usage = UNIQUE_DATASET_USER_USAGE.format(
-            and_dataset_condition="AND ( dataset.object_store_id IN :include_object_store_ids )"
+            and_dataset_condition="AND ( dataset.object_store_id IN :include_object_store_ids )",
+            user_objects_scheme=USER_OBJECTS_SCHEME,
         )
         if for_sqlite:
             # hacky alternative for older sqlite
@@ -1126,7 +1133,9 @@ ON CONFLICT
             if exclude_objectstore_ids
             else ""
         )
-        default_usage = UNIQUE_DATASET_USER_USAGE.format(and_dataset_condition=default_usage_dataset_condition)
+        default_usage = UNIQUE_DATASET_USER_USAGE.format(
+            and_dataset_condition=default_usage_dataset_condition, user_objects_scheme=USER_OBJECTS_SCHEME
+        )
         sql_calc = text(default_usage)
         params = {"id": self.id}
         bindparams = [bindparam("id")]
