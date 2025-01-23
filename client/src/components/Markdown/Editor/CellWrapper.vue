@@ -12,8 +12,9 @@
                     <FontAwesomeIcon :icon="faAngleDoubleDown" />
                 </CellButton>
             </div>
-            <div class="ml-2 w-100">
+            <div class="m-2 w-100">
                 <MarkdownDefault v-if="name === 'markdown'" :content="content" />
+                <MarkdownGalaxy v-else-if="name === 'galaxy'" :content="content" />
                 <MarkdownVega v-else-if="name === 'vega'" :content="content" />
                 <MarkdownVitessce v-else-if="name === 'vitessce'" :content="content" />
             </div>
@@ -37,6 +38,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
 import MarkdownDefault from "../Sections/MarkdownDefault.vue";
+import MarkdownGalaxy from "../Sections/MarkdownGalaxy.vue";
 import MarkdownVega from "../Sections/MarkdownVega.vue";
 import MarkdownVitessce from "../Sections/MarkdownVitessce.vue";
 import CellButton from "./CellButton.vue";
