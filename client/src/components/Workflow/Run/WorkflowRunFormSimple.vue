@@ -221,7 +221,7 @@ async function onExecute() {
 </script>
 
 <template>
-    <div :class="{ 'd-flex flex-column h-100': isSideBySideGraph }">
+    <div :class="{ 'd-flex flex-column h-100': isSideBySideGraph }" class="workflow-run-form-simple">
         <div v-if="!isSideBySideGraph" class="ui-form-header-underlay sticky-top" />
         <div v-if="isConfigLoaded" :class="{ 'sticky-top': !isSideBySideGraph }">
             <BAlert v-if="!canRunOnHistory" variant="warning" show>
