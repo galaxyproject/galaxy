@@ -869,6 +869,10 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
             )
         if container == "history_link":
             return (f"history_link(history_id={invocation.history.id})\n", False)
+        if container == "invocation_inputs":
+            return (f"invocation_inputs(invocation_id={invocation.id})\n", False)
+        if container == "invocation_outputs":
+            return (f"invocation_outputs(invocation_id={invocation.id})\n", False)
         if container == "invocation_time":
             return (f"invocation_time(invocation_id={invocation.id})\n", False)
         ref_object_type = None
