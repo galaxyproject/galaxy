@@ -876,19 +876,11 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
         if container == "invocation_time":
             return (f"invocation_time(invocation_id={invocation.id})\n", False)
 
-        def find_non_empty_group(match):
-            for group in match.groups():
-                if group:
-                    return group
-
-        ref_object_type = None
         output_match = re.search(OUTPUT_LABEL_PATTERN, line)
         input_match = re.search(INPUT_LABEL_PATTERN, line)
         step_match = re.search(STEP_LABEL_PATTERN, line)
         target_match = input_match or output_match or step_match
-
         if (target_match):
-            name = find_non_empty_group(target_match)
             line = line.replace(f"{container}(", f"{container}(invocation_id={invocation.id}, ")
 
         return (line, False)
