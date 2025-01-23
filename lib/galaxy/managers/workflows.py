@@ -46,7 +46,10 @@ from sqlalchemy.orm import (
     joinedload,
     subqueryload,
 )
-from typing_extensions import Annotated
+from typing_extensions import (
+    Annotated,
+    TypeAlias,
+)
 
 from galaxy import (
     exceptions,
@@ -1827,7 +1830,7 @@ class WorkflowContentsManager(UsesAnnotations):
             self.add_item_annotation(sa_session, trans.get_user(), step, annotation)
 
         # Stick this in the step temporarily
-        DictConnection = Dict[str, Union[int, str]]
+        DictConnection: TypeAlias = Dict[str, Union[int, str]]
         temp_input_connections: Dict[str, Union[List[DictConnection], DictConnection]] = step_dict.get(
             "input_connections", {}
         )

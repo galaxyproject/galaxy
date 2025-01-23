@@ -21,6 +21,7 @@ from typing import (
 
 from boltons.iterutils import remap
 from packaging.version import Version
+from typing_extensions import TypeAlias
 
 from galaxy import model
 from galaxy.exceptions import ToolInputsNotOKException
@@ -52,7 +53,7 @@ BATCH_EXECUTION_MESSAGE = "Created ${job_count} job(s) for tool ${tool_id} reque
 
 
 CompletedJobsT = Dict[int, Optional[model.Job]]
-JobCallbackT = Callable
+JobCallbackT: TypeAlias = Callable
 WorkflowResourceParametersT = Dict[str, Any]
 DatasetCollectionElementsSliceT = Dict[str, model.DatasetCollectionElement]
 DEFAULT_USE_CACHED_JOB = False

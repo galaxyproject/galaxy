@@ -458,10 +458,10 @@ class ToolBox(AbstractToolBox):
     dependency management, etc.
     """
 
-    def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel=True):
+    def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel: bool = True):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
-        self.cache_regions = {}
+        self.cache_regions: Dict[str, ToolDocumentCache] = {}
         # This is here to deal with the old default value, which doesn't make
         # sense in an "installed Galaxy" world.
         # FIXME: ./
@@ -517,7 +517,7 @@ class ToolBox(AbstractToolBox):
             tool.hidden = False
             section.elems.append_tool(tool)
 
-    def persist_cache(self, register_postfork=False):
+    def persist_cache(self, register_postfork: bool = False):
         """
         Persists any modified tool cache files to disk.
 
@@ -561,13 +561,13 @@ class ToolBox(AbstractToolBox):
         # Deprecated method, TODO - eliminate calls to this in test/.
         return self._tools_by_id
 
-    def get_cache_region(self, tool_cache_data_dir):
+    def get_cache_region(self, tool_cache_data_dir: Optional[str]):
         if self.app.config.enable_tool_document_cache and tool_cache_data_dir:
             if tool_cache_data_dir not in self.cache_regions:
                 self.cache_regions[tool_cache_data_dir] = ToolDocumentCache(cache_dir=tool_cache_data_dir)
             return self.cache_regions[tool_cache_data_dir]
 
-    def create_tool(self, config_file: str, tool_cache_data_dir=None, **kwds):
+    def create_tool(self, config_file: str, tool_cache_data_dir: Optional[str] = None, **kwds):
         cache = self.get_cache_region(tool_cache_data_dir)
         if config_file.endswith(".xml") and cache and not cache.disabled:
             tool_document = cache.get(config_file)

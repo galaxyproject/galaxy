@@ -6,6 +6,7 @@ into Galaxy from the Tool Shed.
 import json
 import logging
 import os
+from typing import TYPE_CHECKING
 from urllib.error import HTTPError
 from urllib.parse import (
     urlencode,
@@ -17,7 +18,6 @@ from urllib.request import (
 )
 
 from galaxy.model.base import transaction
-from galaxy.tool_shed.galaxy_install import installed_repository_manager
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_shed.util import repository_util
 from galaxy.tool_shed.util.container_util import get_components_from_key
@@ -35,11 +35,14 @@ from galaxy.util.tool_shed import (
     encoding_util,
 )
 
+if TYPE_CHECKING:
+    from galaxy.tool_shed.galaxy_install.client import InstallationTarget
+
 log = logging.getLogger(__name__)
 
 
 class RepositoryDependencyInstallManager:
-    def __init__(self, app):
+    def __init__(self, app: "InstallationTarget"):
         self.app = app
 
     def build_repository_dependency_relationships(self, repo_info_dicts, tool_shed_repositories):
@@ -270,7 +273,7 @@ class RepositoryDependencyInstallManager:
                                 log.info(
                                     f"Reactivating deactivated tool_shed_repository '{str(repository_db_record.name)}'."
                                 )
-                                irm = installed_repository_manager.InstalledRepositoryManager(self.app)
+                                irm = self.app.installed_repository_manager
                                 irm.activate_repository(repository_db_record)
                                 # No additional updates to the database record are necessary.
                                 can_update_db_record = False

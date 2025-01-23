@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from galaxy.managers.base import OrmFilterParsersType
 
 
-class DynamicToolManager(ModelManager):
+class DynamicToolManager(ModelManager[model.DynamicTool]):
     """Manages dynamic tools stored in Galaxy's database."""
 
     model_class = model.DynamicTool

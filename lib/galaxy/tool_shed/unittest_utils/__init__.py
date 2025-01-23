@@ -22,6 +22,7 @@ from galaxy.tool_shed.galaxy_install.client import (
     DataManagersInterface,
     InstallationTarget,
 )
+from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_util.data import (
     OutputDataset,
@@ -221,6 +222,7 @@ class StandaloneInstallationTarget(InstallationTarget):
         )
         dependency_dir = target_directory / "_dependencies"
         dependency_dir.mkdir()
+        self.installed_repository_manager = InstalledRepositoryManager(self)
 
     @property
     def tool_dependency_dir(self) -> Optional[str]:
@@ -236,3 +238,6 @@ class StandaloneInstallationTarget(InstallationTarget):
     @property
     def toolbox(self) -> TestToolBox:
         return self._toolbox
+
+    def wait_for_toolbox_reload(self, toolbox):
+        return
