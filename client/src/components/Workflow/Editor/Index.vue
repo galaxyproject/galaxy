@@ -158,6 +158,7 @@
                 </div>
                 <WorkflowGraph
                     v-if="!datatypesMapperLoading"
+                    ref="workflowGraph"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
                     :highlight-id="highlightId"
@@ -193,7 +194,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArrowLeft, faArrowRight, faCog, faHistory, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { whenever } from "@vueuse/core";
+import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
 import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
@@ -297,6 +298,7 @@ export default {
         whenever(redoKeys, redo);
 
         const activityBar = ref(null);
+        const workflowGraph = ref(null);
         const reportActive = computed(() => activityBar.value?.isActiveSideBar("workflow-editor-report"));
 
         const parameters = ref(null);
@@ -483,6 +485,7 @@ export default {
             id,
             name,
             parameters,
+            workflowGraph,
             ensureParametersSet,
             showAttributes,
             setName,
@@ -996,6 +999,8 @@ export default {
                 await this.resetStores();
                 this.onWorkflowMessage("Loading workflow...", "progress");
 
+                console.log("loading");
+
                 try {
                     const data = await this.lastQueue.enqueue(loadWorkflow, { id, version });
                     await fromSimple(id, data);
@@ -1003,6 +1008,11 @@ export default {
                 } catch (e) {
                     this.onWorkflowError("Loading workflow failed...", e);
                 }
+
+                await until(() => this.datatypesMapperLoading).toBe(false);
+                await nextTick();
+
+                this.workflowGraph.fitWorkflow();
             }
         },
         onLicense(license) {
