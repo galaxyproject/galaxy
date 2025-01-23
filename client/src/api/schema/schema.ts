@@ -16609,10 +16609,20 @@ export interface components {
             | "Page"
             | "StoredWorkflow"
             | "Visualization";
-        /** TaskResult */
+        /**
+         * TaskResult
+         * @description Contains information about the result of an asynchronous task.
+         */
         TaskResult: {
-            /** Result */
+            /**
+             * Result
+             * @description The result message of the task. Empty if the task is still running. If the task failed, this will contain the exception message.
+             */
             result: string;
+            /**
+             * State
+             * @description The current state of the task.
+             */
             state: components["schemas"]["TaskState"];
         };
         /**

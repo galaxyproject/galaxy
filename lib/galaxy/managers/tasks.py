@@ -2,35 +2,14 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
-from enum import Enum
 from uuid import UUID
 
 from celery.result import AsyncResult
-from pydantic import BaseModel
 
-
-class TaskState(str, Enum):
-    """Enum representing the possible states of a task."""
-
-    PENDING = "PENDING"
-    """The task is waiting for execution."""
-
-    STARTED = "STARTED"
-    """The task has been started."""
-
-    RETRY = "RETRY"
-    """The task is to be retried, possibly because of failure."""
-
-    FAILURE = "FAILURE"
-    """The task raised an exception, or has exceeded the retry limit."""
-
-    SUCCESS = "SUCCESS"
-    """The task executed successfully."""
-
-
-class TaskResult(BaseModel):
-    state: TaskState
-    result: str
+from galaxy.schema.tasks import (
+    TaskResult,
+    TaskState,
+)
 
 
 class AsyncTasksManager(metaclass=ABCMeta):
