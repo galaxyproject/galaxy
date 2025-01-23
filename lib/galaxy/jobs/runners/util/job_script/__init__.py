@@ -1,16 +1,10 @@
 import logging
 import os
-import subprocess
-import time
-from dataclasses import dataclass
 from string import Template
 from typing import (
     Any,
     Dict,
-    Optional,
 )
-
-from typing_extensions import Protocol
 
 from galaxy.util import (
     RWXR_XR_X,
@@ -32,19 +26,6 @@ SLOTS_STATEMENT_SINGLE = """
 GALAXY_SLOTS="1"
 """
 
-INTEGRITY_INJECTION = """
-# The following block can be used by the job system
-# to ensure this script is runnable before actually attempting
-# to run it.
-if [ -n "$ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ" ]; then
-    exit 42
-fi
-"""
-
-INTEGRITY_SYNC_COMMAND = "/bin/sync"
-DEFAULT_INTEGRITY_CHECK = True
-DEFAULT_INTEGRITY_COUNT = 35
-DEFAULT_INTEGRITY_SLEEP = 0.25
 REQUIRED_TEMPLATE_PARAMS = ["working_directory", "command"]
 OPTIONAL_TEMPLATE_PARAMS: Dict[str, Any] = {
     "galaxy_lib": None,
@@ -54,7 +35,6 @@ OPTIONAL_TEMPLATE_PARAMS: Dict[str, Any] = {
     "slots_statement": SLOTS_STATEMENT_CLUSTER_DEFAULT,
     "instrument_pre_commands": "",
     "instrument_post_commands": "",
-    "integrity_injection": INTEGRITY_INJECTION,
     "shell": DEFAULT_SHELL,
     "preserve_python_environment": True,
     "tmp_dir_creation_statement": '""',
@@ -113,67 +93,19 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     return template.safe_substitute(template_params)
 
 
-class DescribesScriptIntegrityChecks(Protocol):
-    check_job_script_integrity: bool
-    check_job_script_integrity_count: Optional[int]
-    check_job_script_integrity_sleep: Optional[float]
-
-
-@dataclass
-class ScriptIntegrityChecks:
-    """Minimal class implementing the DescribesScriptIntegrityChecks protocol"""
-
-    check_job_script_integrity: bool
-    check_job_script_integrity_count: Optional[int] = None
-    check_job_script_integrity_sleep: Optional[float] = None
-
-
-def write_script(path: str, contents, job_io: DescribesScriptIntegrityChecks, mode: int = RWXR_XR_X) -> None:
+def write_script(path: str, contents, mode: int = RWXR_XR_X, use_fork_safe_write=False) -> None:
     dir = os.path.dirname(path)
     if not os.path.exists(dir):
         os.makedirs(dir)
-    fork_safe_write(path, contents)
+    if use_fork_safe_write:
+        fork_safe_write(path, contents)
+    else:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(unicodify(contents))
     os.chmod(path, mode)
-    if job_io.check_job_script_integrity:
-        assert job_io.check_job_script_integrity_count is not None
-        assert job_io.check_job_script_integrity_sleep is not None
-        _handle_script_integrity(path, job_io.check_job_script_integrity_count, job_io.check_job_script_integrity_sleep)
-
-
-def _handle_script_integrity(
-    path: str, check_job_script_integrity_count: int, check_job_script_integrity_sleep: float
-) -> None:
-    script_integrity_verified = False
-    for _ in range(check_job_script_integrity_count):
-        try:
-            returncode = subprocess.call([path], env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"})
-            if returncode == 42:
-                script_integrity_verified = True
-                break
-
-            log.debug("Script integrity error for file '%s': returncode was %d", path, returncode)
-
-            # Else we will sync and wait to see if the script becomes
-            # executable.
-            try:
-                # sync file system to avoid "Text file busy" problems.
-                # These have occurred both in Docker containers and on EC2 clusters
-                # under high load.
-                subprocess.check_call(INTEGRITY_SYNC_COMMAND)
-            except Exception as e:
-                log.debug("Error syncing the filesystem: %s", unicodify(e))
-
-        except Exception as exc:
-            log.debug("Script not available yet: %s", unicodify(exc))
-
-        time.sleep(check_job_script_integrity_sleep)
-
-    if not script_integrity_verified:
-        raise Exception(f"Failed to write job script '{path}', could not verify job script integrity.")
 
 
 __all__ = (
     "job_script",
     "write_script",
-    "INTEGRITY_INJECTION",
 )

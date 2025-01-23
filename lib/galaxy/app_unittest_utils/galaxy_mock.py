@@ -262,9 +262,6 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.enable_tool_document_cache = False
         self.tool_cache_data_dir = os.path.join(self.root, "tool_cache")
         self.external_chown_script = None
-        self.check_job_script_integrity = False
-        self.check_job_script_integrity_count = 0
-        self.check_job_script_integrity_sleep = 0
 
         self.default_panel_view = "default"
         self.panel_views_dir = ""

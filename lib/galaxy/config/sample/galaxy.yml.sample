@@ -914,18 +914,6 @@ galaxy:
   # <cache_dir>.
   #template_cache_path: compiled_templates
 
-  # Set to false to disable various checks Galaxy will do to ensure it
-  # can run job scripts before attempting to execute or submit them.
-  #check_job_script_integrity: true
-
-  # Number of checks to execute if check_job_script_integrity is
-  # enabled.
-  #check_job_script_integrity_count: 35
-
-  # Time to sleep between checks if check_job_script_integrity is
-  # enabled (in seconds).
-  #check_job_script_integrity_sleep: 0.25
-
   # Set the default shell used by non-containerized jobs Galaxy-wide.
   # This defaults to bash for all jobs and can be overridden at the
   # destination level for heterogeneous clusters. conda job resolution

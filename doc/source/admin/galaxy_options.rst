@@ -1168,39 +1168,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``check_job_script_integrity``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Set to false to disable various checks Galaxy will do to ensure it
-    can run job scripts before attempting to execute or submit them.
-:Default: ``true``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``check_job_script_integrity_count``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Number of checks to execute if check_job_script_integrity is
-    enabled.
-:Default: ``35``
-:Type: int
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``check_job_script_integrity_sleep``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Time to sleep between checks if check_job_script_integrity is
-    enabled (in seconds).
-:Default: ``0.25``
-:Type: float
-
-
 ~~~~~~~~~~~~~~~~~~~~~
 ``default_job_shell``
 ~~~~~~~~~~~~~~~~~~~~~
