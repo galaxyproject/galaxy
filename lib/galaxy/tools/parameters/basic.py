@@ -1998,6 +1998,7 @@ class BaseDataToolParameter(ToolParameter):
                         dataset_count += 1
                         do_validate(v.hda)
                     else:
+                        assert v.child_collection
                         for dataset_instance in v.child_collection.dataset_instances:
                             dataset_count += 1
                             do_validate(dataset_instance)
@@ -2176,33 +2177,39 @@ class DataToolParameter(BaseDataToolParameter):
         dataset_matcher_factory = get_dataset_matcher_factory(trans)
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         for v in rval:
+            value_to_check: Union[
+                DatasetInstance, DatasetCollection, DatasetCollectionElement, HistoryDatasetCollectionAssociation
+            ] = v
             if isinstance(v, DatasetCollectionElement):
                 if hda := v.hda:
-                    v = hda
+                    value_to_check = hda
                 elif ldda := v.ldda:
-                    v = ldda
+                    value_to_check = ldda
                 elif collection := v.child_collection:
-                    v = collection
-                elif not v.collection and v.collection.populated_optimized:
+                    value_to_check = collection
+                elif v.collection and not v.collection.populated_optimized:
                     raise ParameterValueError("the selected collection has not been populated.", self.name)
                 else:
                     raise ParameterValueError("Collection element in unexpected state", self.name)
-            if isinstance(v, DatasetInstance):
-                if v.deleted:
+            if isinstance(value_to_check, DatasetInstance):
+                if value_to_check.deleted:
                     raise ParameterValueError("the previously selected dataset has been deleted.", self.name)
-                elif v.dataset and v.dataset.state in [Dataset.states.ERROR, Dataset.states.DISCARDED]:
+                elif value_to_check.dataset and value_to_check.dataset.state in [
+                    Dataset.states.ERROR,
+                    Dataset.states.DISCARDED,
+                ]:
                     raise ParameterValueError(
                         "the previously selected dataset has entered an unusable state", self.name
                     )
-                match = dataset_matcher.hda_match(v)
+                match = dataset_matcher.hda_match(value_to_check)
                 if match and match.implicit_conversion:
-                    v.implicit_conversion = True  # type:ignore[union-attr]
-            elif isinstance(v, HistoryDatasetCollectionAssociation):
-                if v.deleted:
+                    value_to_check.implicit_conversion = True  # type:ignore[attr-defined]
+            elif isinstance(value_to_check, HistoryDatasetCollectionAssociation):
+                if value_to_check.deleted:
                     raise ParameterValueError("the previously selected dataset collection has been deleted.", self.name)
-                v = v.collection
-            if isinstance(v, DatasetCollection):
-                if v.elements_deleted:
+                value_to_check = value_to_check.collection
+            if isinstance(value_to_check, DatasetCollection):
+                if value_to_check.elements_deleted:
                     raise ParameterValueError(
                         "the previously selected dataset collection has elements that are deleted.", self.name
                     )

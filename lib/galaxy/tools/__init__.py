@@ -83,6 +83,10 @@ from galaxy.tool_util.parser.interface import (
     PageSource,
     ToolSource,
 )
+from galaxy.tool_util.parser.output_objects import (
+    ToolOutput,
+    ToolOutputCollection,
+)
 from galaxy.tool_util.parser.util import (
     parse_profile_version,
     parse_tool_version_with_defaults,
@@ -847,6 +851,8 @@ class Tool(UsesDictVisibleKeys):
         self.tool_errors = None
         # Parse XML element containing configuration
         self.tool_source = tool_source
+        self.outputs: Dict[str, ToolOutput] = {}
+        self.output_collections: Dict[str, ToolOutputCollection] = {}
         self._is_workflow_compatible = None
         self.__help = None
         self.__tests: Optional[str] = None

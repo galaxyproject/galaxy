@@ -2260,6 +2260,38 @@ some_file:
         assert dataset_details["metadata_bam_index"]
         assert dataset_details["file_ext"] == "bam"
 
+    def test_expression_tool_output_in_format_source(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+steps:
+  skip:
+    tool_id: cat_data_and_sleep
+    in:
+      input1: input
+    when: $(false)
+  pick_larger:
+    tool_id: expression_pick_larger_file
+    in:
+      input1: skip/out_file1
+      input2: input
+  format_source:
+    tool_id: cat_data_and_sleep
+    in:
+      input1: pick_larger/larger_file
+test_data:
+  input:
+    value: 1.fastqsanger.gz
+    type: File
+    file_type: fastqsanger.gz
+""",
+                history_id=history_id,
+            )
+            self.dataset_populator.wait_for_history(history_id=history_id, assert_ok=True)
+
     def test_run_workflow_simple_conditional_step(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(

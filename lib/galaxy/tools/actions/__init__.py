@@ -9,6 +9,7 @@ from typing import (
     cast,
     Dict,
     List,
+    MutableMapping,
     Optional,
     Set,
     Tuple,
@@ -533,7 +534,7 @@ class DefaultToolAction(ToolAction):
                     output,
                     wrapped_params.params,
                     inp_data,
-                    inp_dataset_collections,
+                    input_collections,
                     input_ext,
                     python_template_version=tool.python_template_version,
                     execution_cache=execution_cache,
@@ -1156,7 +1157,7 @@ def determine_output_format(
     output: "ToolOutput",
     parameter_context,
     input_datasets,
-    input_dataset_collections,
+    input_dataset_collections: MutableMapping[str, model.HistoryDatasetCollectionAssociation],
     random_input_ext,
     python_template_version="3",
     execution_cache=None,
@@ -1198,7 +1199,7 @@ def determine_output_format(
 
         if collection_name in input_dataset_collections:
             try:
-                input_collection = input_dataset_collections[collection_name][0][0]
+                input_collection = input_dataset_collections[collection_name]
                 input_collection_collection = input_collection.collection
                 if element_index is None:
                     # just pick the first HDA
