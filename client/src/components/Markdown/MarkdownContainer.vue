@@ -140,7 +140,8 @@ function argToBoolean(args, name, booleanDefault) {
                 :compact="argToBoolean(args, 'compact', false)"
                 :show-column-headers="argToBoolean(args, 'show_column_headers', true)"
                 :title="args.title"
-                :footer="args.footer" />
+                :footer="args.footer"
+                :path="args.path" />
             <HistoryDatasetLink v-else-if="name == 'history_dataset_link'" :args="args" />
             <HistoryDatasetIndex v-else-if="name == 'history_dataset_index'" :args="args" />
             <InvocationTime v-else-if="name == 'invocation_time'" :args="args" :invocations="invocations" />
