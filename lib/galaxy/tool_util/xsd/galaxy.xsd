@@ -8075,7 +8075,6 @@ favour of a ``has_size`` assertion.</xs:documentation>
       </xs:simpleType>
     </xs:union>
   </xs:simpleType>
-  
   <xs:simpleType name="Format">
     <xs:restriction base="xs:string">
       <xs:pattern value="[0-9a-z.-_]+"/>
@@ -8086,7 +8085,6 @@ favour of a ``has_size`` assertion.</xs:documentation>
       <xs:pattern value="([a-z0-9._-]+)(,([a-z0-9._-]+))*"/>
     </xs:restriction>
   </xs:simpleType>
-  
   <xs:complexType name="EdamTopics">
     <xs:annotation gxdocs:best_practices="tool-annotations-edam">
       <xs:documentation xml:lang="en"><![CDATA[
