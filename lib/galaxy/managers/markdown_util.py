@@ -858,7 +858,7 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
                 stored_workflow_id = invocation.workflow.stored_workflow.id
                 workflow_version = invocation.workflow.version
                 return (
-                    f"{workflow_instance_directive}(workflow_id={stored_workflow_id},workflow_checkpoint={workflow_version})\n",
+                    f"{workflow_instance_directive}(workflow_id={stored_workflow_id}, workflow_checkpoint={workflow_version})\n",
                     False,
                 )
         if container == "workflow_license":
@@ -875,47 +875,22 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
             return (f"invocation_outputs(invocation_id={invocation.id})\n", False)
         if container == "invocation_time":
             return (f"invocation_time(invocation_id={invocation.id})\n", False)
-        ref_object_type = None
-        output_match = re.search(OUTPUT_LABEL_PATTERN, line)
-        input_match = re.search(INPUT_LABEL_PATTERN, line)
-        step_match = re.search(STEP_LABEL_PATTERN, line)
 
         def find_non_empty_group(match):
             for group in match.groups():
                 if group:
                     return group
 
-        target_match: Optional[Match]
-        ref_object: Optional[Any]
-        if output_match:
-            target_match = output_match
+        ref_object_type = None
+        output_match = re.search(OUTPUT_LABEL_PATTERN, line)
+        input_match = re.search(INPUT_LABEL_PATTERN, line)
+        step_match = re.search(STEP_LABEL_PATTERN, line)
+        target_match = input_match or output_match or step_match
+
+        if (target_match):
             name = find_non_empty_group(target_match)
-            ref_object = invocation.get_output_object(name)
-        elif input_match:
-            target_match = input_match
-            name = find_non_empty_group(target_match)
-            ref_object = invocation.get_input_object(name)
-        elif step_match:
-            target_match = step_match
-            name = find_non_empty_group(target_match)
-            invocation_step = invocation.step_invocation_for_label(name)
-            if invocation_step and invocation_step.job:
-                ref_object_type = "job"
-                ref_object = invocation_step.job
-            elif invocation_step and invocation_step.implicit_collection_jobs:
-                ref_object_type = "implicit_collection_jobs"
-                ref_object = invocation_step.implicit_collection_jobs
-        else:
-            target_match = None
-            ref_object = None
-        if ref_object:
-            assert target_match  # tell type system, this is set when ref_object is set
-            if ref_object_type is None:
-                if ref_object.history_content_type == "dataset":
-                    ref_object_type = "history_dataset"
-                else:
-                    ref_object_type = "history_dataset_collection"
-            line = line.replace(target_match.group(), f"{ref_object_type}_id={ref_object.id}")
+            line = line.replace(f"{container}(", f"{container}(invocation_id={invocation.id}, ")
+
         return (line, False)
 
     galaxy_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
