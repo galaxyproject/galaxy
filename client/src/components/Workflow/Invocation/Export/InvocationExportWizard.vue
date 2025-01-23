@@ -178,6 +178,15 @@ watch(
     }
 );
 
+watch(
+    () => isWizardBusy.value,
+    (newValue, oldValue) => {
+        if (oldValue && !newValue) {
+            resetWizard();
+        }
+    }
+);
+
 function onRecordSelected(recordUri: string) {
     exportData.remoteUri = recordUri;
 }
@@ -304,6 +313,12 @@ function initializeExportData(): InvocationExportData {
             authorization: "",
         },
     };
+}
+
+function resetWizard() {
+    const initialExportData = initializeExportData();
+    Object.assign(exportData, initialExportData);
+    wizard.goTo("select-format");
 }
 </script>
 
