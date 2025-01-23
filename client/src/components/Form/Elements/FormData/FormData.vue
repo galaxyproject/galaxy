@@ -6,6 +6,7 @@ import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { isDatasetElement, isDCE } from "@/api";
 import { getGalaxyInstance } from "@/app";
+import type { CollectionType } from "@/components/History/adapters/buildCollectionModal";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
@@ -36,7 +37,7 @@ const props = withDefaults(
         };
         extensions?: Array<string>;
         type?: "data" | "data_collection";
-        collectionTypes?: Array<string>;
+        collectionTypes?: Array<CollectionType>;
         flavor?: string;
         tag?: string;
         workflowRun?: boolean;
@@ -71,6 +72,8 @@ const currentHighlighting: Ref<string | null> = ref(null);
 // Drag/Drop related values
 const dragData: Ref<EventData | null> = ref(null);
 const dragTarget: Ref<EventTarget | null> = ref(null);
+
+const workflowTab = ref("view");
 
 // Workflow Run Tabs element reference
 const browseSection = ref<HTMLDivElement | null>(null);
@@ -440,7 +443,7 @@ function canAcceptDatatype(itemDatatypes: string | Array<string>) {
     return true;
 }
 
-function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", collectionType?: string) {
+function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", collectionType?: CollectionType) {
     if (historyContentType === "dataset") {
         // HDA can only be fed into data parameters, not collection parameters
         if (props.type === "data") {
@@ -488,7 +491,7 @@ function scrollToBrowseSection() {
 }
 
 // Drag/Drop event handlers
-function onDragEnter(evt: MouseEvent) {
+function onDragEnter(evt: DragEvent) {
     const eventData = eventStore.getDragData();
     if (eventData) {
         const extensions = (eventData.extension as string) || (eventData.elements_datatypes as Array<string>);
@@ -499,7 +502,7 @@ function onDragEnter(evt: MouseEvent) {
         } else if (
             !canAcceptSrc(
                 eventData.history_content_type as "dataset" | "dataset_collection",
-                eventData.collection_type as string
+                eventData.collection_type as CollectionType
             )
         ) {
             highlightingState = "warning";
@@ -508,6 +511,15 @@ function onDragEnter(evt: MouseEvent) {
         currentHighlighting.value = highlightingState;
         dragTarget.value = evt.target;
         dragData.value = eventData;
+    } else if (props.workflowRun && canBrowse.value && evt.dataTransfer?.items) {
+        // if any item in DataTransfer is a file
+        const hasFiles = Array.from(evt.dataTransfer.items).some((item) => item.kind === "file");
+        if (hasFiles) {
+            currentHighlighting.value = "success";
+            $emit("alert", "Drop files in the upload area below to create datasets.");
+            workflowTab.value = "upload";
+            dragTarget.value = evt.target;
+        }
     }
 }
 
@@ -518,7 +530,7 @@ function onDragLeave(evt: MouseEvent) {
     }
 }
 
-function onDrop() {
+function onDrop(e: DragEvent) {
     if (dragData.value) {
         let accept = false;
         if (eventStore.multipleDragData) {
@@ -528,9 +540,16 @@ function onDrop() {
         }
         if (accept) {
             currentHighlighting.value = "success";
+            if (props.workflowRun) {
+                workflowTab.value = "view";
+            }
         } else {
             currentHighlighting.value = "warning";
         }
+        $emit("alert", undefined);
+        dragData.value = null;
+        clearHighlighting();
+    } else if (props.workflowRun && e.dataTransfer?.files?.length) {
         $emit("alert", undefined);
         dragData.value = null;
         clearHighlighting();
@@ -731,6 +750,7 @@ const noOptionsWarningMessage = computed(() => {
             :can-browse="canBrowse"
             :extensions="props.extensions"
             :collection-types="props.collectionTypes"
+            :workflow-tab.sync="workflowTab"
             @focus="scrollToBrowseSection"
             @created-collection="($event) => handleIncoming($event)" />
     </div>
