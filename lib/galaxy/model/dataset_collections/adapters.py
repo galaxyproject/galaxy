@@ -45,7 +45,7 @@ class CollectionAdapter:
     def elements(self):
         raise NotImplementedError()
 
-    def to_adapter_model(self, adapting):
+    def to_adapter_model(self):
         # json kwds to recover state from database after the job has been
         # recorded
         raise NotImplementedError()
@@ -110,12 +110,19 @@ class DCECollectionAdapter(CollectionAdapter):
     def adapting(self):
         return self._dce
 
+    @property
+    def _adapting_src_dict(self):
+        return {
+            "src": "dce",
+            "id": self._dce.id,
+        }
+
 
 class PromoteCollectionElementToCollectionAdapter(DCECollectionAdapter):
     # allow a singleton list element to act as paired_or_unpaired collection
 
-    def to_adapter_model(self, adapting) -> AdaptedDataCollectionPromoteCollectionElementToCollectionRequestInternal:
-        adapting_model = DatasetCollectionElementReference.model_validate(adapting)
+    def to_adapter_model(self) -> AdaptedDataCollectionPromoteCollectionElementToCollectionRequestInternal:
+        adapting_model = DatasetCollectionElementReference.model_validate(self._adapting_src_dict)
         return AdaptedDataCollectionPromoteCollectionElementToCollectionRequestInternal(
             src="CollectionAdapter",
             adapter_type="PromoteCollectionElementToCollection",
@@ -134,7 +141,11 @@ class PromoteDatasetToCollection(CollectionAdapter):
         self._hda = hda
         self._collection_type = collection_type
 
-    def to_adapter_model(self, adapting) -> AdaptedDataCollectionPromoteDatasetToCollectionRequestInternal:
+    def to_adapter_model(self) -> AdaptedDataCollectionPromoteDatasetToCollectionRequestInternal:
+        adapting = {
+            "src": "hda",
+            "id": self._hda.id,
+        }
         adapting_model = DataRequestInternalHda.model_validate(adapting)
         return AdaptedDataCollectionPromoteDatasetToCollectionRequestInternal(
             src="CollectionAdapter",
@@ -186,7 +197,7 @@ class PromoteDatasetsToCollection(CollectionAdapter):
         self._collection_type = collection_type
         self._elements = elements
 
-    def to_adapter_model(self, adapting) -> AdaptedDataCollectionPromoteDatasetsToCollectionRequestInternal:
+    def to_adapter_model(self) -> AdaptedDataCollectionPromoteDatasetsToCollectionRequestInternal:
         element_models = []
         for element in self._elements:
             element_model = AdapterElementRequestInternal(

@@ -2882,13 +2882,7 @@ def history_item_to_json(value, app, use_security):
     collection_adapter: Optional[CollectionAdapter] = None
     if isinstance(value, CollectionAdapter):
         collection_adapter = value
-        value = value.adapting
-        if isinstance(value, list):
-            # if we are not just adapting one thing... skip the rest of this
-            # and just serialize the stuff we know we want anyway. Perhaps all
-            # this should just be the only path through. The CollectionAdapter
-            # should know what to do with just use_security I think?
-            return collection_adapter.to_adapter_model(value).dict()
+        return collection_adapter.to_adapter_model().dict()
     if isinstance(value, MutableMapping) and "src" in value and "id" in value:
         return value
     elif isinstance(value, DatasetCollectionElement):
@@ -2905,6 +2899,4 @@ def history_item_to_json(value, app, use_security):
     if src is not None:
         object_id = cached_id(value)
         rval = {"id": app.security.encode_id(object_id) if use_security else object_id, "src": src}
-        if collection_adapter:
-            rval = collection_adapter.to_adapter_model(rval).dict()
         return rval

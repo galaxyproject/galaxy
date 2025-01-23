@@ -946,7 +946,7 @@ class DefaultToolAction(ToolAction):
                     # of datasets -> collection adaption because it isn't clear where to track that
                     # (see elif isinstance(adapting, list) branch below).
                     adapting = adapter.adapting
-                    adapter_model = cast(BaseModel, adapter.to_adapter_model(adapting))
+                    adapter_model = cast(BaseModel, adapter.to_adapter_model())
                     if isinstance(adapting, model.DatasetCollectionElement):
                         job.add_input_dataset_collection_element(
                             name, adapting, adapter_json=adapter_model.model_dump()
