@@ -5,6 +5,22 @@ import { errorMessageAsString } from "@/utils/simple-error";
 const DEFAULT_POLL_DELAY = 10000;
 
 /**
+ * Represents the data that can be stored and restored to monitor the status of a task.
+ */
+export interface StoredTaskStatus {
+    /**
+     * The status of the task when it was last checked.
+     * The meaning of the status string is up to the monitor implementation.
+     */
+    taskStatus?: string;
+
+    /**
+     * The reason why the task has failed in case of an error.
+     */
+    failureReason?: string;
+}
+
+/**
  * Represents a task monitor that can be used to wait for a background task to complete or
  * check its status.
  */
@@ -50,9 +66,9 @@ export interface TaskMonitor {
 
     /**
      * Loads the status of the task from a stored value.
-     * @param storedStatus The status string to load.
+     * @param persistedTaskStatus The stored state of the task.
      */
-    loadStatus: (storedStatus: string) => void;
+    loadStatus: (persistedTaskStatus: StoredTaskStatus) => void;
 
     /**
      * Determines if the status represents a final state.
@@ -115,8 +131,9 @@ export function useGenericMonitor(options: {
         return options.completedCondition(status) || options.failedCondition(status);
     }
 
-    function loadStatus(storedStatus: string) {
-        taskStatus.value = storedStatus;
+    function loadStatus(persistedTaskStatus: StoredTaskStatus) {
+        taskStatus.value = persistedTaskStatus.taskStatus;
+        failureReason.value = persistedTaskStatus.failureReason;
     }
 
     async function waitForTask(taskId: string, pollDelayInMs?: number) {

@@ -58,7 +58,6 @@ const {
     failureReason,
     requestHasFailed,
     storedTaskId,
-    status,
     hasExpired,
     expirationDate,
     monitoringData,
