@@ -66,19 +66,7 @@ const errorMessage = ref<string>();
 
 const existingProgress = ref<InstanceType<typeof ExistingInvocationExportProgressCard>>();
 
-const exportData: InvocationExportData = reactive({
-    exportPluginFormat: "ro-crate",
-    destination: "download",
-    remoteUri: "",
-    outputFileName: "",
-    includeData: true,
-    bcoDatabase: {
-        serverBaseUrl: "https://biocomputeobject.org",
-        table: "GALXY",
-        ownerGroup: "",
-        authorization: "",
-    },
-});
+const exportData: InvocationExportData = reactive(initializeExportData());
 
 const exportButtonLabel = computed(() => {
     switch (exportData.destination) {
@@ -300,6 +288,22 @@ Examples of RDM repositories include [Zenodo](https://zenodo.org/), [Invenio RDM
     }
 
     return destinations;
+}
+
+function initializeExportData(): InvocationExportData {
+    return {
+        exportPluginFormat: "ro-crate",
+        destination: "download",
+        remoteUri: "",
+        outputFileName: "",
+        includeData: true,
+        bcoDatabase: {
+            serverBaseUrl: "https://biocomputeobject.org",
+            table: "GALXY",
+            ownerGroup: "",
+            authorization: "",
+        },
+    };
 }
 </script>
 
