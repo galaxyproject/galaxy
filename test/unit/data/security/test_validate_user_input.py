@@ -1,3 +1,6 @@
+import pytest
+
+from galaxy import config
 from galaxy.security import validate_user_input
 from galaxy.security.validate_user_input import (
     extract_domain,
@@ -6,6 +9,11 @@ from galaxy.security.validate_user_input import (
     validate_email_str,
     validate_publicname_str,
 )
+
+
+@pytest.fixture()
+def appconfig():
+    return config.GalaxyAppConfiguration(override_tempdir=False)
 
 
 def test_extract_full_domain():
@@ -50,15 +58,58 @@ def test_validate_email_str():
     assert validate_email_str(too_long_email) != ""
 
 
-def test_is_email_banned(monkeypatch):
-    mock_ban_list = ["ab@foo.com", "ab@gmail.com", "Not.Canonical+email+gmail+address@gmail.com"]
-    monkeypatch.setattr(validate_user_input, "_read_email_ban_list", lambda a: mock_ban_list)
+class TestIsEmailBanned:
 
-    assert is_email_banned("a.b@gmail.com", "_")
-    assert is_email_banned("ab@gmail.com", "_")
-    assert is_email_banned("a.b+c@gmail.com", "_")
-    assert is_email_banned("Ab@foo.com", "_")
-    assert is_email_banned("a.b.+c.d@gmail.com", "_")
-    assert is_email_banned("not.canonical@gmail.com", "_")
-    assert not is_email_banned("ab@not-gmail.com", "_")
-    assert not is_email_banned("a.b+c@not-gmail.com", "_")
+    mock_ban_list = ["ab@foo.com", "ab@gmail.com", "Not.Canonical+email+gmail+address@gmail.com"]
+
+    def test_default_canonical_rules(self, monkeypatch, appconfig):
+        """Rules loaded from schema."""
+        monkeypatch.setattr(validate_user_input, "_read_email_ban_list", lambda a: self.mock_ban_list)
+
+        rules = appconfig.canonical_email_rules
+        assert is_email_banned("ab@foo.com", "_", rules)
+        assert not is_email_banned("Ab@foo.com", "_", rules)
+        assert not is_email_banned("a.b@foo.com", "_", rules)
+        assert not is_email_banned("ab+bar@foo.com", "_", rules)
+        assert not is_email_banned("something-else@foo.com", "_", rules)
+
+        # default rules for gmail are applied:
+        assert is_email_banned("ab@googlemail.com", "_", rules)
+        assert is_email_banned("Ab@gmail.com", "_", rules)
+        assert is_email_banned("a.b@gmail.com", "_", rules)
+        assert is_email_banned("ab+bar@gmail.com", "_", rules)
+        assert not is_email_banned("ab-bar@gmail.com", "_", rules)  # different sub-addressing delimiter
+
+    def test_no_canonical_rules(self, monkeypatch, appconfig):
+        """No rules loaded."""
+        monkeypatch.setattr(validate_user_input, "_read_email_ban_list", lambda a: self.mock_ban_list)
+
+        rules = None
+        assert is_email_banned("ab@foo.com", "_", rules)
+        assert not is_email_banned("Ab@foo.com", "_", rules)
+        assert not is_email_banned("a.b@foo.com", "_", rules)
+        assert not is_email_banned("ab+bar@foo.com", "_", rules)
+        assert not is_email_banned("something-else@foo.com", "_", rules)
+
+        # default rules for gmail are NOT applied:
+        assert not is_email_banned("ab@googlemail.com", "_", rules)
+        assert not is_email_banned("Ab@gmail.com", "_", rules)
+        assert not is_email_banned("a.b@gmail.com", "_", rules)
+        assert not is_email_banned("ab+bar@gmail.com", "_", rules)
+
+    def test_custom_canonical_rules(self, monkeypatch, appconfig):
+        """No rules loaded."""
+        monkeypatch.setattr(validate_user_input, "_read_email_ban_list", lambda a: self.mock_ban_list)
+
+        rules = {"all": {"ignore_case": True}, "foo.com": {"ignore_dots": True}}
+        assert is_email_banned("ab@foo.com", "_", rules)
+        assert is_email_banned("Ab@foo.com", "_", rules)  # ignore_case for all
+        assert is_email_banned("a.b@foo.com", "_", rules)  # ignore_dots for foo.com
+        assert not is_email_banned("ab+bar@foo.com", "_", rules)
+        assert not is_email_banned("something-else@foo.com", "_", rules)
+
+        # default rules for gmail are NOT applied:
+        assert not is_email_banned("ab@googlemail.com", "_", rules)
+        assert is_email_banned("Ab@gmail.com", "_", rules)  # ignore_case for all
+        assert not is_email_banned("a.b@gmail.com", "_", rules)
+        assert not is_email_banned("ab+bar@gmail.com", "_", rules)
