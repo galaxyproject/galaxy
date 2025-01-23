@@ -227,6 +227,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.email_domain_allowlist_content = None
         self.email_domain_blocklist_content = None
         self.email_ban_file = None
+        self.canonical_email_rules = None
         self.email_from = "email_from"
         self.enable_old_display_applications = True
         self.error_email_to = "admin@email.to"
