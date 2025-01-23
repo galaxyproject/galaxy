@@ -18,6 +18,7 @@ export interface Workflow {
     annotation?: string;
     tags?: string[];
     update_time?: string;
+    source_metadata?: Record<string, unknown>;
 }
 
 export const useWorkflowStore = defineStore("workflowStore", () => {

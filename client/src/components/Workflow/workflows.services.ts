@@ -105,3 +105,35 @@ export async function getWorkflowInfo(workflowId: string) {
     const { data } = await axios.get(withPrefix(`/api/workflows/${workflowId}`));
     return data;
 }
+
+/**
+ * For dockstore imported IWC workflows, fetch the README file from the GitHub repository.
+ * @param trsId of form `#workflow/github.com/iwc-workflows/<directory>/...`
+ * @returns the README file content
+ */
+export async function fetchReadmeForIwcWorkflow(trsId: string) {
+    try {
+        const parts = trsId.split("/");
+        if (parts.length !== 5) {
+            throw new Error("Invalid trsId");
+        }
+
+        // Ensure that the trsID is for a GitHub workflow at iwc-workflows
+        if (parts[0] !== "#workflow" || parts[1] !== "github.com" || parts[2] !== "iwc-workflows") {
+            throw new Error("Workflow is not from iwc-workflows");
+        }
+
+        const directory = parts[3];
+
+        // Construct the URL for the README file
+        const readmeUrl = `https://raw.githubusercontent.com/iwc-workflows/${directory}/refs/heads/main/README.md`;
+
+        // Now fetch the README file
+        const response = await fetch(readmeUrl);
+        if (response.ok) {
+            return await response.text();
+        }
+    } catch (error) {
+        rethrowSimple(error);
+    }
+}
