@@ -987,5 +987,6 @@ __all__ = (
     "internal_galaxy_markdown_to_pdf",
     "ready_galaxy_markdown_for_export",
     "ready_galaxy_markdown_for_import",
+    "resolve_invocation_markdown",
     "to_basic_markdown",
 )
