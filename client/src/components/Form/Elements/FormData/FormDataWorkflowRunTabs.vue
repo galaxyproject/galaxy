@@ -3,8 +3,9 @@ import { faEye, faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
+import type { CollectionType } from "@/components/History/adapters/buildCollectionModal";
 import { useConfig } from "@/composables/config";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -22,8 +23,9 @@ const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
     paired: "dataset pair",
 };
 
-const WorkflowRunTabs = {
+const WorkflowRunTabs: Record<string, number> = {
     view: 0,
+    upload: 1,
 };
 
 const props = defineProps<{
@@ -31,15 +33,22 @@ const props = defineProps<{
     currentValue?: DataOption[];
     canBrowse?: boolean;
     extensions?: string[];
-    collectionTypes?: string[];
+    collectionTypes?: CollectionType[];
+    workflowTab: string;
 }>();
 
 const emit = defineEmits<{
     (e: "focus"): void;
     (e: "created-collection", collection: Record<string, any>): void;
+    (e: "update:workflow-tab", value: string): void;
 }>();
 
-const currentWorkflowTab = ref(WorkflowRunTabs.view);
+const currentWorkflowTab = computed({
+    get: () => WorkflowRunTabs[props.workflowTab],
+    set: (value) => {
+        emit("update:workflow-tab", Object.keys(WorkflowRunTabs).find((key) => WorkflowRunTabs[key] === value) || "");
+    },
+});
 
 /** Allowed collection types for collection creation */
 const effectiveCollectionTypes = props.collectionTypes?.filter((collectionType) =>
@@ -107,12 +116,12 @@ function goToFirstWorkflowTab() {
                     v-if="currentHistoryId && currentUser && 'id' in currentUser"
                     :current-user-id="currentUser?.id"
                     :current-history-id="currentHistoryId"
-                    :multiple="false"
+                    no-collection-tab
                     v-bind="configOptions"
                     @dismiss="goToFirstWorkflowTab" />
             </BTab>
         </template>
-        <template v-if="effectiveCollectionTypes && effectiveCollectionTypes?.length > 0">
+        <template v-if="currentHistoryId && effectiveCollectionTypes && effectiveCollectionTypes?.length > 0">
             <BTab v-for="collectionType in effectiveCollectionTypes" :key="collectionType">
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faPlus" fixed-width />
