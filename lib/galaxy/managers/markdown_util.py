@@ -843,46 +843,6 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
     # TODO: convert step outputs?
     # convert step_output=index/name -to- history_dataset_id=<id> | history_dataset_collection_id=<id>
 
-    def _section_remap(container, line):
-        section_markdown = ""
-        if container == "invocation_outputs":
-            for output_assoc in invocation.output_associations:
-                if not output_assoc.workflow_output.label:
-                    continue
-
-                if output_assoc.history_content_type == "dataset":
-                    section_markdown += f"""#### Output Dataset: {output_assoc.workflow_output.label}
-```galaxy
-history_dataset_display(output="{output_assoc.workflow_output.label}")
-```
-"""
-                else:
-                    section_markdown += f"""#### Output Dataset Collection: {output_assoc.workflow_output.label}
-```galaxy
-history_dataset_collection_display(output="{output_assoc.workflow_output.label}")
-```
-"""
-        elif container == "invocation_inputs":
-            for input_assoc in invocation.input_associations:
-                if not input_assoc.workflow_step.label:
-                    continue
-
-                if input_assoc.history_content_type == "dataset":
-                    section_markdown += f"""#### Input Dataset: {input_assoc.workflow_step.label}
-```galaxy
-history_dataset_display(input="{input_assoc.workflow_step.label}")
-```
-"""
-                else:
-                    section_markdown += f"""#### Input Dataset Collection: {input_assoc.workflow_step.label}
-```galaxy
-history_dataset_collection_display(input={input_assoc.workflow_step.label})
-```
-"""
-        else:
-            return line, False
-        return section_markdown, True
-
     def _remap(container, line):
         for workflow_instance_directive in ["workflow_display", "workflow_image"]:
             if container == workflow_instance_directive:
@@ -945,10 +905,6 @@ history_dataset_collection_display(input={input_assoc.workflow_step.label})
             line = line.replace(target_match.group(), f"{ref_object_type}_id={ref_object.id}")
         return (line, False)
 
-    workflow_markdown = _remap_galaxy_markdown_calls(
-        _section_remap,
-        workflow_markdown,
-    )
     galaxy_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
     return galaxy_markdown
 
@@ -1018,6 +974,5 @@ __all__ = (
     "internal_galaxy_markdown_to_pdf",
     "ready_galaxy_markdown_for_export",
     "ready_galaxy_markdown_for_import",
-    "resolve_invocation_markdown",
     "to_basic_markdown",
 )
