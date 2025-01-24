@@ -482,6 +482,15 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
             "%Y-%m-%d, %H:%M:%S"
         )
 
+    def handle_invocation_inputs(self, line, date):
+        pass
+
+    def handle_invocation_outputs(self, line, date):
+        pass
+
+    def handle_visualization(self, line, date):
+        pass
+
     def handle_dataset_type(self, line, hda):
         self.extend_history_dataset_rendering_data(hda, "ext", hda.ext, "*Unknown dataset type*")
 
@@ -742,6 +751,15 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
     def handle_invocation_time(self, line, invocation):
         content = literal_via_fence(invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S"))
         return (content, True)
+
+    def handle_invocation_inputs(self, line, date):
+        return ("*Invocation inputs not implemented*", True)
+
+    def handle_invocation_outputs(self, line, date):
+        return ("*Invocation outputs not implemented*", True)
+
+    def handle_visualization(self, line, date):
+        return ("*Visualization inputs not implemented*", True)
 
     def handle_dataset_name(self, line, hda):
         if hda.name:
